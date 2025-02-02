@@ -5,7 +5,7 @@ extraction.
 
 Why?
 
-I am building, like many do now, a RAG focused service. I have text extraction needs.
+I am building, like many do now, a RAG focused service (checkout https://grantflow.ai). I have text extraction needs.
 There are quite a lot of commercial options out there, and several open-source + paid options.
 But I wanted something simple, which does not require expansive round-trips to an external API.
 Furthermore, I wanted something that is easy to run locally and isn't very heavy / requires a GPU.
@@ -50,13 +50,13 @@ polished and well maintained.
 
 V1:
 
-- [ ] - extra install groups (to make dependencies optional and offer alternatives)
 - [ ] - html file text extraction
 - [ ] - better PDF table extraction
 - [ ] - TBD
 
 V2:
 
+- [ ] - extra install groups (to make dependencies optional)
 - [ ] - metadata extraction (possible breaking change)
 - [ ] - TBD
 
