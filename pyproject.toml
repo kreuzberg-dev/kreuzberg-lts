@@ -1,6 +1,6 @@
 [project]
 name = "kreuzberg"
-version = "1.3.0"
+version = "1.4.0"
 description = "A text extraction library supporting PDFs, images, office documents and more"
 readme = "README.md"
 keywords = [
