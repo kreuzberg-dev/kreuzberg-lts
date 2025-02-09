@@ -35,16 +35,12 @@ pip install kreuzberg
 
 ### 2. Install System Dependencies
 
-Kreuzberg requires two open-source tools:
+Kreuzberg requires two system level dependencies:
 
 - [Pandoc](https://pandoc.org/installing.html) - For document format conversion
-
-  - GPL v2.0 licensed (used via CLI only)
-  - Handles office documents and markup formats
-
 - [Tesseract OCR](https://tesseract-ocr.github.io/) - For image and PDF OCR
-  - Apache License
-  - Required for scanned documents and images
+
+Please install these using their respective installation guides.
 
 ## Architecture
 
@@ -54,9 +50,10 @@ Kreuzberg is designed as a high-level async abstraction over established open-so
   - `pdfium2` for searchable PDFs
   - Tesseract OCR for scanned content
 - **Document Conversion**:
-  - Pandoc for office documents and markup
+  - Pandoc for many document and markup formats
   - `python-pptx` for PowerPoint files
   - `html-to-markdown` for HTML content
+  - `xlsx2csv` for Excel spreadsheets
 - **Text Processing**:
   - Smart encoding detection
   - Markdown and plain text handling
@@ -88,6 +85,7 @@ Kreuzberg is designed as a high-level async abstraction over established open-so
 
 #### Data and Research Formats
 
+- Excel spreadsheets (`.xlsx`)
 - CSV (`.csv`) and TSV (`.tsv`) files
 - Jupyter Notebooks (`.ipynb`)
 - BibTeX (`.bib`) and BibLaTeX (`.bib`)

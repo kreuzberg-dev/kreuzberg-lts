@@ -53,3 +53,8 @@ def pptx_document() -> Path:
 @pytest.fixture(scope="session")
 def html_document() -> Path:
     return Path(__file__).parent / "source" / "html.html"
+
+
+@pytest.fixture(scope="session")
+def excel_document() -> Path:
+    return Path(__file__).parent / "source" / "excel.xlsx"

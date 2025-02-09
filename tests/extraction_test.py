@@ -4,7 +4,13 @@ from pathlib import Path
 
 import pytest
 
-from kreuzberg._mime_types import MARKDOWN_MIME_TYPE, PDF_MIME_TYPE, PLAIN_TEXT_MIME_TYPE, POWER_POINT_MIME_TYPE
+from kreuzberg._mime_types import (
+    EXCEL_MIME_TYPE,
+    MARKDOWN_MIME_TYPE,
+    PDF_MIME_TYPE,
+    PLAIN_TEXT_MIME_TYPE,
+    POWER_POINT_MIME_TYPE,
+)
 from kreuzberg.exceptions import ValidationError
 from kreuzberg.extraction import extract_bytes, extract_file
 
@@ -164,3 +170,23 @@ async def test_extract_file_invalid_mime() -> None:
 async def test_extract_file_not_exists() -> None:
     with pytest.raises(ValidationError, match="The file does not exist"):
         await extract_file("/invalid/path.txt", PLAIN_TEXT_MIME_TYPE)
+
+
+async def test_extract_bytes_excel(excel_document: Path) -> None:
+    content = excel_document.read_bytes()
+    result = await extract_bytes(content, EXCEL_MIME_TYPE)
+    assert result.mime_type == MARKDOWN_MIME_TYPE
+    assert isinstance(result.content, str)
+    assert result.content.strip()
+
+
+async def test_extract_file_excel(excel_document: Path) -> None:
+    result = await extract_file(excel_document, EXCEL_MIME_TYPE)
+    assert result.mime_type == MARKDOWN_MIME_TYPE
+    assert isinstance(result.content, str)
+    assert result.content.strip()
+
+
+async def test_extract_file_excel_invalid() -> None:
+    with pytest.raises(ValidationError, match="The file does not exist"):
+        await extract_file("/invalid/path.xlsx", EXCEL_MIME_TYPE)

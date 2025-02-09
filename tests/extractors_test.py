@@ -18,6 +18,7 @@ from kreuzberg._extractors import (
     extract_pdf_with_pdfium2,
     extract_pdf_with_tesseract,
     extract_pptx_file,
+    extract_xlsx_file,
 )
 from kreuzberg._tesseract import process_image_with_tesseract
 from kreuzberg.exceptions import OCRError, ParsingError
@@ -140,4 +141,37 @@ async def test_extract_pdf_with_pdfium2_raises_parsing_error(tmp_path: Path) -> 
 
     assert "Could not extract text from PDF file" in str(exc_info.value)
     assert str(pdf_path) in str(exc_info.value.context["file_path"])
+    assert "error" in exc_info.value.context
+
+
+async def test_extract_xlsx_file(excel_document: Path) -> None:
+    result = await extract_xlsx_file(excel_document)
+    assert isinstance(result, str)
+    assert result.strip()
+
+    extracted = await extract_xlsx_file(excel_document)
+    assert isinstance(extracted, str)
+    assert extracted.strip()
+
+
+async def test_extract_xlsx_file_raises_parsing_error(tmp_path: Path) -> None:
+    xlsx_path = tmp_path / "invalid.xlsx"
+    xlsx_path.write_text("invalid xlsx content")
+
+    with pytest.raises(ParsingError) as exc_info:
+        await extract_xlsx_file(xlsx_path)
+
+    assert "Could not extract text from XLSX file" in str(exc_info.value)
+    assert str(xlsx_path) in str(exc_info.value.context["file_path"])
+    assert "error" in exc_info.value.context
+
+
+async def test_extract_xlsx_file_with_invalid_bytes() -> None:
+    invalid_content = b"invalid xlsx content"
+
+    with pytest.raises(ParsingError) as exc_info:
+        await extract_xlsx_file(invalid_content)
+
+    assert "Could not extract text from XLSX file" in str(exc_info.value)
+    assert exc_info.value.context["file_path"] is None
     assert "error" in exc_info.value.context
