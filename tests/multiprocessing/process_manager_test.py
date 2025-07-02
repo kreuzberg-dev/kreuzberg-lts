@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 import multiprocessing as mp
-from unittest.mock import Mock, patch
+from typing import Any
+from unittest.mock import patch
 
 import pytest
 
@@ -95,14 +96,21 @@ class TestProcessPoolManager:
         """Test that _ensure_executor recreates executor with different workers."""
         manager = ProcessPoolManager(max_processes=4)
 
-        with patch.object(manager, "_executor") as mock_executor:
-            mock_executor._max_workers = 2
-            mock_executor.shutdown = Mock()
+        class _MockExecutor:
+            def __init__(self) -> None:
+                self._max_workers = 2
+                self.shutdown_called = False
 
-            new_executor = manager._ensure_executor(max_workers=4)
+            def shutdown(self, wait: bool = True) -> None:
+                self.shutdown_called = True
 
-            mock_executor.shutdown.assert_called_once_with(wait=False)
-            assert new_executor is not mock_executor
+        mock_executor = _MockExecutor()
+        manager._executor = mock_executor  # type: ignore[assignment]
+
+        new_executor = manager._ensure_executor(max_workers=4)
+
+        assert mock_executor.shutdown_called
+        assert new_executor is not mock_executor  # type: ignore[comparison-overlap]
 
     @pytest.mark.anyio
     async def test_submit_task_success(self) -> None:
@@ -203,13 +211,22 @@ class TestProcessPoolManager:
     def test_shutdown_with_executor(self) -> None:
         """Test shutdown when executor exists."""
         manager = ProcessPoolManager(max_processes=2)
-        executor = manager._ensure_executor()
+        manager._ensure_executor()
 
-        with patch.object(executor, "shutdown") as mock_shutdown:
-            manager.shutdown(wait=True)
+        class _MockExecutor:
+            def __init__(self) -> None:
+                self.shutdown_called_with: bool | None = None
 
-            mock_shutdown.assert_called_once_with(wait=True)
-            assert manager._executor is None
+            def shutdown(self, wait: bool = True) -> None:
+                self.shutdown_called_with = wait
+
+        mock_executor = _MockExecutor()
+        manager._executor = mock_executor  # type: ignore[assignment]
+
+        manager.shutdown(wait=True)
+
+        assert mock_executor.shutdown_called_with is True
+        assert manager._executor is None
 
     def test_shutdown_without_executor(self) -> None:
         """Test shutdown when no executor exists."""
@@ -222,22 +239,40 @@ class TestProcessPoolManager:
         """Test synchronous context manager."""
         manager = ProcessPoolManager(max_processes=2)
 
-        with patch.object(manager, "shutdown") as mock_shutdown:
-            with manager:
-                pass
+        shutdown_called = False
+        original_shutdown = manager.shutdown
 
-            mock_shutdown.assert_called_once()
+        def mock_shutdown(*args: Any, **kwargs: Any) -> None:
+            nonlocal shutdown_called
+            shutdown_called = True
+            return original_shutdown(*args, **kwargs)
+
+        manager.shutdown = mock_shutdown  # type: ignore[method-assign]
+
+        with manager:
+            pass
+
+        assert shutdown_called
 
     @pytest.mark.anyio
     async def test_context_manager_async(self) -> None:
         """Test asynchronous context manager."""
         manager = ProcessPoolManager(max_processes=2)
 
-        with patch.object(manager, "shutdown") as mock_shutdown:
-            async with manager:
-                pass
+        shutdown_called = False
+        original_shutdown = manager.shutdown
 
-            mock_shutdown.assert_called_once()
+        def mock_shutdown(*args: Any, **kwargs: Any) -> None:
+            nonlocal shutdown_called
+            shutdown_called = True
+            return original_shutdown(*args, **kwargs)
+
+        manager.shutdown = mock_shutdown  # type: ignore[method-assign]
+
+        async with manager:
+            pass
+
+        assert shutdown_called
 
     @pytest.mark.anyio
     async def test_context_manager_with_task(self) -> None:

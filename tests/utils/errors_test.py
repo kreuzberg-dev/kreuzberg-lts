@@ -128,12 +128,17 @@ def test_create_error_context_system_info_error() -> None:
 
 def test_create_error_context_with_path_string() -> None:
     """Test error context with string path."""
+    import os
+
+    test_path = "/some/path/file.txt"
     context = create_error_context(
         operation="test",
-        file_path="/some/path/file.txt",
+        file_path=test_path,
     )
 
-    assert context["file"]["path"] == "/some/path/file.txt"
+    # Normalize path separators for cross-platform compatibility
+    expected_path = os.path.normpath(test_path)
+    assert context["file"]["path"] == expected_path
     assert context["file"]["name"] == "file.txt"
 
 

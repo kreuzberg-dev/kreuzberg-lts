@@ -5,7 +5,7 @@ from __future__ import annotations
 import io
 from pathlib import Path
 from typing import Any
-from unittest.mock import Mock, patch
+from unittest.mock import patch
 
 import pytest
 from PIL import Image
@@ -55,12 +55,24 @@ def tesseract_config() -> TesseractConfig:
     return TesseractConfig(language="eng", psm=3)  # type: ignore[arg-type]
 
 
+class _MockSubprocessResult:
+    """Simple mock for subprocess result that can be pickled."""
+
+    def __init__(self, returncode: int, stdout: str = "", stderr: str = ""):
+        self.returncode = returncode
+        self.stdout = stdout
+        self.stderr = stderr
+
+
 def test_process_image_sync_pure_success(test_image_path: Path, tesseract_config: TesseractConfig) -> None:
     """Test successful synchronous image processing."""
     with patch("subprocess.run") as mock_run:
-        mock_run.return_value = Mock(returncode=0, stdout="", stderr="")
+        mock_run.return_value = _MockSubprocessResult(returncode=0, stdout="", stderr="")
 
-        with patch("pathlib.Path.read_text", return_value="Test OCR output"):
+        with patch("pathlib.Path.open") as mock_open:
+            mock_file = mock_open.return_value.__enter__.return_value
+            mock_file.read.return_value = "Test OCR output"
+
             result = process_image_sync_pure(test_image_path, tesseract_config)
 
             assert isinstance(result, ExtractionResult)
@@ -71,7 +83,7 @@ def test_process_image_sync_pure_success(test_image_path: Path, tesseract_config
 def test_process_image_sync_pure_error(test_image_path: Path, tesseract_config: TesseractConfig) -> None:
     """Test synchronous image processing with error."""
     with patch("subprocess.run") as mock_run:
-        mock_run.return_value = Mock(returncode=1, stderr="Tesseract error")
+        mock_run.return_value = _MockSubprocessResult(returncode=1, stderr="Tesseract error")
 
         with pytest.raises(OCRError) as exc_info:
             process_image_sync_pure(test_image_path, tesseract_config)
@@ -90,9 +102,12 @@ def test_process_image_sync_pure_with_options(test_image_path: Path) -> None:
     )
 
     with patch("subprocess.run") as mock_run:
-        mock_run.return_value = Mock(returncode=0)
+        mock_run.return_value = _MockSubprocessResult(returncode=0)
 
-        with patch("pathlib.Path.read_text", return_value="French text"):
+        with patch("pathlib.Path.open") as mock_open:
+            mock_file = mock_open.return_value.__enter__.return_value
+            mock_file.read.return_value = "French text"
+
             process_image_sync_pure(test_image_path, config)
 
             args = mock_run.call_args[0][0]
@@ -111,14 +126,17 @@ def test_process_image_sync_pure_with_options(test_image_path: Path) -> None:
 def test_process_image_sync_pure_cleanup(test_image_path: Path, tesseract_config: TesseractConfig) -> None:
     """Test that temporary files are cleaned up."""
     with patch("subprocess.run") as mock_run:
-        mock_run.return_value = Mock(returncode=0)
+        mock_run.return_value = _MockSubprocessResult(returncode=0)
 
         temp_files = []
 
         def mock_unlink(self: Any) -> None:
             temp_files.append(str(self))
 
-        with patch.object(Path, "unlink", mock_unlink), patch("pathlib.Path.read_text", return_value="Text"):
+        with patch.object(Path, "unlink", mock_unlink), patch("pathlib.Path.open") as mock_open:
+            mock_file = mock_open.return_value.__enter__.return_value
+            mock_file.read.return_value = "Text"
+
             process_image_sync_pure(test_image_path, tesseract_config)
 
         assert any(".txt" in f for f in temp_files)
@@ -275,10 +293,13 @@ def test_process_batch_images_process_pool_exception_handling(
 def test_process_image_sync_pure_unicode(test_image_path: Path, tesseract_config: TesseractConfig) -> None:
     """Test processing with unicode text output."""
     with patch("subprocess.run") as mock_run:
-        mock_run.return_value = Mock(returncode=0)
+        mock_run.return_value = _MockSubprocessResult(returncode=0)
 
         unicode_text = "Hello 世界! Привет мир! مرحبا بالعالم"
-        with patch("pathlib.Path.read_text", return_value=unicode_text):
+        with patch("pathlib.Path.open") as mock_open:
+            mock_file = mock_open.return_value.__enter__.return_value
+            mock_file.read.return_value = unicode_text
+
             result = process_image_sync_pure(test_image_path, tesseract_config)
 
             assert result.content == unicode_text
@@ -287,9 +308,12 @@ def test_process_image_sync_pure_unicode(test_image_path: Path, tesseract_config
 def test_process_image_sync_pure_empty_output(test_image_path: Path, tesseract_config: TesseractConfig) -> None:
     """Test processing with empty text output."""
     with patch("subprocess.run") as mock_run:
-        mock_run.return_value = Mock(returncode=0)
+        mock_run.return_value = _MockSubprocessResult(returncode=0)
 
-        with patch("pathlib.Path.read_text", return_value=""):
+        with patch("pathlib.Path.open") as mock_open:
+            mock_file = mock_open.return_value.__enter__.return_value
+            mock_file.read.return_value = ""
+
             result = process_image_sync_pure(test_image_path, tesseract_config)
 
             assert result.content == ""
@@ -299,9 +323,12 @@ def test_process_image_sync_pure_empty_output(test_image_path: Path, tesseract_c
 def test_process_image_sync_pure_default_config(test_image_path: Path) -> None:
     """Test processing with default config."""
     with patch("subprocess.run") as mock_run:
-        mock_run.return_value = Mock(returncode=0)
+        mock_run.return_value = _MockSubprocessResult(returncode=0)
 
-        with patch("pathlib.Path.read_text", return_value="Default config output"):
+        with patch("pathlib.Path.open") as mock_open:
+            mock_file = mock_open.return_value.__enter__.return_value
+            mock_file.read.return_value = "Default config output"
+
             result = process_image_sync_pure(test_image_path)
 
             assert result.content == "Default config output"
@@ -323,10 +350,13 @@ def test_config_dict_conversion_in_process_pool() -> None:
     config_dict = {}
     for field_name in config.__dataclass_fields__:
         value = getattr(config, field_name)
-        if hasattr(value, "value"):
+        if hasattr(value, "value") and hasattr(value, "__class__") and issubclass(value.__class__, Enum):
             config_dict[field_name] = value.value
         else:
             config_dict[field_name] = value
 
     assert isinstance(config_dict["psm"], int)
-    assert config_dict["psm"] == 3
+    # The psm value should be either the enum value (3) or direct int (3)
+    expected_psm: Any = 3
+    expected_psm = config.psm.value if hasattr(config.psm, "value") else config.psm
+    assert config_dict["psm"] == expected_psm

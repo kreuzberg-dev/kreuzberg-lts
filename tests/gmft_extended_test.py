@@ -180,24 +180,3 @@ def test_extract_tables_sync_no_tables(tiny_pdf_with_tables: Path) -> None:
         results = extract_tables_sync(tiny_pdf_with_tables)
 
         assert results == []
-
-
-def test_extract_tables_sync_with_pages(tiny_pdf_with_tables: Path) -> None:
-    """Test sync extraction with specific pages."""
-    mock_auto_table_detector = Mock()
-    mock_pdf_handler = Mock()
-
-    mock_table = Mock()
-    mock_table.bbox = [0, 0, 100, 100]
-    mock_table.page_number = 1
-    mock_table.confidence_score = 0.99
-
-    mock_cropped = Mock()
-    mock_cropped.df.to_dict.return_value = {"data": [1, 2, 3]}
-
-    mock_auto_table_detector.return_value.extract.return_value = [(mock_table, mock_cropped)]
-
-    with patch("kreuzberg._gmft._import_gmft") as mock_import:
-        mock_import.return_value = (mock_auto_table_detector, mock_pdf_handler)
-
-        # This test is invalid - extract_tables_sync doesn't support pages parameter
