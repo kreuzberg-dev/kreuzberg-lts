@@ -40,8 +40,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          uv sync --no-dev
-          uv pip install mkdocs-material mkdocs-git-revision-date-localized-plugin mkdocs-minify-plugin mkdocstrings[python] mike
+          uv sync --group doc
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
