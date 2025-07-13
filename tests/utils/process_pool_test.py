@@ -162,7 +162,7 @@ def test_extract_pdf_text_worker_with_mock() -> None:
         mock_pdf.__iter__ = Mock(return_value=iter([mock_page]))
         mock_pdf_class.return_value = mock_pdf
         mock_page.get_textpage.return_value = mock_text_page
-        mock_text_page.get_text_range.return_value = "Test text"
+        mock_text_page.get_text_bounded.return_value = "Test text"
 
         result = _extract_pdf_text_worker("test.pdf")
 

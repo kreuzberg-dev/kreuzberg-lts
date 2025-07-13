@@ -137,7 +137,7 @@ lint.ignore = [
   "FBT",     # Boolean-typed positional argument in function definition
   "FIX",     # We allow todo and fixme comments
   "ISC001",  # Conflicts with formatter
-  "PLC0415", # Import should be at top-level (we use conditional imports)
+  "PLC0415", # Import should be at the top-level of a file
   "PLR2004", # Magic value used in comparison
   "PLW0603", # Using global statement is discouraged
   "S110",    # try-except-pass detected

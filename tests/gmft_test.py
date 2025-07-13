@@ -358,7 +358,17 @@ async def test_extract_tables_cache_hit(tiny_pdf_with_tables: Path) -> None:
     from kreuzberg._utils._cache import get_table_cache
 
     cache = get_table_cache()
-    cached_tables = [{"page_number": 1, "text": "cached table", "df": {"col": [1, 2]}, "cropped_image": None}]
+    import pandas as pd
+    from PIL import Image
+
+    cached_tables = [
+        {
+            "page_number": 1,
+            "text": "cached table",
+            "df": pd.DataFrame({"col": [1, 2]}),
+            "cropped_image": Image.new("RGB", (10, 10), color="white"),
+        }
+    ]
 
     file_stat = tiny_pdf_with_tables.stat()
     cache_kwargs = {
@@ -379,6 +389,10 @@ async def test_extract_tables_cache_hit(tiny_pdf_with_tables: Path) -> None:
 
     result = await extract_tables(tiny_pdf_with_tables)
 
-    assert result == cached_tables
+    assert len(result) == len(cached_tables)
+    assert result[0]["page_number"] == cached_tables[0]["page_number"]
+    assert result[0]["text"] == cached_tables[0]["text"]
+    assert result[0]["df"].equals(cached_tables[0]["df"])
+    assert result[0]["cropped_image"].size == cached_tables[0]["cropped_image"].size
     assert len(result) == 1
     assert result[0]["text"] == "cached table"
