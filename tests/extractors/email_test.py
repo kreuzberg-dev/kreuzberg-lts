@@ -164,8 +164,8 @@ def test_email_complex_headers(email_extractor: EmailExtractor) -> None:
 
         # Should handle complex header structures
         assert "From: sender@example.com" in result.content
-        assert "To: recipient1@example.com" in result.content
-        assert "CC: cc1@example.com" in result.content
+        assert "To: recipient1@example.com, recipient2@example.com" in result.content
+        assert "CC: cc1@example.com, cc2@example.com" in result.content
 
 
 def test_email_missing_headers(email_extractor: EmailExtractor) -> None:

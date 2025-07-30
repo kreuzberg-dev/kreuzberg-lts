@@ -246,7 +246,8 @@ def test_extract_file_sync_not_exists() -> None:
 @pytest.mark.anyio
 async def test_batch_extract_with_different_configs() -> None:
     """Test that batch operations use the same config for all files."""
-    config = ExtractionConfig(chunk_content=True, max_chars=20)
+    # Set max_overlap to be less than max_chars to avoid validation error
+    config = ExtractionConfig(chunk_content=True, max_chars=20, max_overlap=5)
 
     contents = [
         (b"First content that should be chunked", PLAIN_TEXT_MIME_TYPE),
