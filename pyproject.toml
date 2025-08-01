@@ -5,7 +5,7 @@ requires = [ "hatchling" ]
 
 [project]
 name = "kreuzberg"
-version = "3.10.1"
+version = "3.11.0"
 description = "Document intelligence framework for Python - Extract text, metadata, and structured data from diverse file formats"
 readme = "README.md"
 keywords = [
@@ -61,7 +61,7 @@ dependencies = [
   "chardetng-py>=0.3.5",
   "exceptiongroup>=1.2.2; python_version<'3.11'",
   "html-to-markdown[lxml]>=1.9.0",
-  "mcp>=1.12.2",
+  "mcp>=1.12.3",
   "msgspec>=0.18.0",
   "playa-pdf>=0.6.4",                                 # pinned due to breaking changes in 0.5.0
   "psutil>=7.0.0",
@@ -76,14 +76,10 @@ optional-dependencies.additional-extensions = [
   "tomli>=2.0.0; python_version<'3.11'",
 ]
 optional-dependencies.all = [
-  "kreuzberg[additional-extensions,api,chunking,cli,crypto,easyocr,entity-extraction,gmft,langdetect,paddleocr]",
+  "kreuzberg[additional-extensions,api,chunking,cli,crypto,document-classification,easyocr,entity-extraction,gmft,langdetect,paddleocr]",
 ]
 optional-dependencies.api = [
   "litestar[standard,structlog,opentelemetry]>=2.16.0",
-]
-optional-dependencies.auto-classify-document-type = [
-  "deep-translator>=1.11.4",
-  "pandas>=2.3.1",
 ]
 optional-dependencies.chunking = [ "semantic-text-splitter>=0.27.0" ]
 optional-dependencies.cli = [
@@ -92,6 +88,10 @@ optional-dependencies.cli = [
   "tomli>=2.0.0; python_version<'3.11'",
 ]
 optional-dependencies.crypto = [ "playa-pdf[crypto]>=0.6.4" ]
+optional-dependencies.document-classification = [
+  "deep-translator>=1.11.4",
+  "pandas>=2.3.1",
+]
 optional-dependencies.easyocr = [ "easyocr>=1.7.2" ]
 optional-dependencies.entity-extraction = [ "keybert>=0.9.0", "spacy>=3.8.7" ]
 optional-dependencies.gmft = [ "gmft>=0.4.2" ]

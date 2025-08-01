@@ -134,6 +134,16 @@ python -m spacy download es_core_news_sm  # Spanish
 
     spaCy language models are large (50-500MB each) and are downloaded separately. Only download the models for languages you actually need to process. See the [spaCy models documentation](https://spacy.io/models) for a complete list of available models.
 
+### Document Classification
+
+For automatic document type detection (invoice, contract, receipt, etc.), install the document classification extra:
+
+```shell
+pip install "kreuzberg[document-classification]"
+```
+
+This feature uses Google Translate for multi-language support and requires explicit opt-in by setting `auto_detect_document_type=True` in your configuration.
+
 ### All Optional Dependencies
 
 To install Kreuzberg with all optional dependencies, you can use the `all` extra group:
@@ -145,5 +155,5 @@ pip install "kreuzberg[all]"
 This is equivalent to:
 
 ```shell
-pip install "kreuzberg[chunking,easyocr,entity-extraction,gmft,langdetect,paddleocr]"
+pip install "kreuzberg[chunking,document-classification,easyocr,entity-extraction,gmft,langdetect,paddleocr]"
 ```

@@ -2,9 +2,17 @@
 
 Kreuzberg can automatically classify documents into common types like invoices, contracts, and receipts. This allows you to build custom processing pipelines tailored to each document type.
 
+## Installation
+
+Document classification requires the `document-classification` extra to be installed:
+
+```bash
+pip install "kreuzberg[document-classification]"
+```
+
 ## Enabling Document Classification
 
-To enable this feature, set `auto_detect_document_type=True` in your `ExtractionConfig`:
+Document classification is disabled by default. To enable this feature, set `auto_detect_document_type=True` in your `ExtractionConfig`:
 
 ```python
 from kreuzberg import ExtractionConfig, extract_file

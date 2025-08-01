@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import builtins
+import sys
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import pandas as pd
 import pytest
@@ -15,6 +17,7 @@ from kreuzberg._document_classification import (
     classify_document_from_layout,
 )
 from kreuzberg._types import ExtractionConfig, ExtractionResult
+from kreuzberg.exceptions import MissingDependencyError
 
 if TYPE_CHECKING:
     from pytest_mock import MockerFixture
@@ -112,7 +115,7 @@ def test_classify_document_with_metadata() -> None:
         mime_type="text/plain",
         metadata={"title": "Invoice #12345", "subject": "Payment Due"},
     )
-    config = ExtractionConfig()
+    config = ExtractionConfig(auto_detect_document_type=True)
 
     doc_type, confidence = classify_document(result, config)
 
@@ -142,7 +145,7 @@ def test_classify_document_empty_content() -> None:
         mime_type="text/plain",
         metadata={},
     )
-    config = ExtractionConfig()
+    config = ExtractionConfig(auto_detect_document_type=True)
 
     doc_type, confidence = classify_document(result, config)
 
@@ -158,7 +161,7 @@ def test_classify_document_with_exclusions() -> None:
         mime_type="text/plain",
         metadata={},
     )
-    config = ExtractionConfig()
+    config = ExtractionConfig(auto_detect_document_type=True)
 
     doc_type, confidence = classify_document(result, config)
 
@@ -184,7 +187,7 @@ def test_classify_document_from_layout_basic() -> None:
         metadata={},
         layout=layout_df,
     )
-    config = ExtractionConfig()
+    config = ExtractionConfig(auto_detect_document_type=True)
 
     doc_type, confidence = classify_document_from_layout(result, config)
 
@@ -200,7 +203,7 @@ def test_classify_document_from_layout_no_layout() -> None:
         mime_type="text/plain",
         metadata={},
     )
-    config = ExtractionConfig()
+    config = ExtractionConfig(auto_detect_document_type=True)
 
     doc_type, confidence = classify_document_from_layout(result, config)
 
@@ -218,7 +221,7 @@ def test_classify_document_from_layout_empty_layout() -> None:
         metadata={},
         layout=layout_df,
     )
-    config = ExtractionConfig()
+    config = ExtractionConfig(auto_detect_document_type=True)
 
     doc_type, confidence = classify_document_from_layout(result, config)
 
@@ -236,7 +239,7 @@ def test_classify_document_from_layout_missing_columns() -> None:
         metadata={},
         layout=layout_df,
     )
-    config = ExtractionConfig()
+    config = ExtractionConfig(auto_detect_document_type=True)
 
     doc_type, confidence = classify_document_from_layout(result, config)
 
@@ -260,7 +263,7 @@ def test_classify_document_from_layout_no_pattern_matches() -> None:
         metadata={},
         layout=layout_df,
     )
-    config = ExtractionConfig()
+    config = ExtractionConfig(auto_detect_document_type=True)
 
     doc_type, confidence = classify_document_from_layout(result, config)
 
@@ -285,7 +288,7 @@ def test_classify_document_from_layout_header_patterns() -> None:
         metadata={},
         layout=layout_df,
     )
-    config = ExtractionConfig()
+    config = ExtractionConfig(auto_detect_document_type=True)
 
     doc_type, confidence = classify_document_from_layout(result, config)
 
@@ -312,7 +315,7 @@ def test_classify_document_from_layout_position_scoring() -> None:
         metadata={},
         layout=layout_df,
     )
-    config = ExtractionConfig()
+    config = ExtractionConfig(auto_detect_document_type=True)
 
     doc_type, confidence = classify_document_from_layout(result, config)
 
@@ -327,7 +330,7 @@ def test_auto_detect_document_type_from_content() -> None:
         mime_type="text/plain",
         metadata={},
     )
-    config = ExtractionConfig()
+    config = ExtractionConfig(auto_detect_document_type=True)
 
     detection_result = auto_detect_document_type(result, config)
 
@@ -352,7 +355,7 @@ def test_auto_detect_document_type_from_layout() -> None:
         metadata={},
         layout=layout_df,
     )
-    config = ExtractionConfig()
+    config = ExtractionConfig(auto_detect_document_type=True)
 
     detection_result = auto_detect_document_type(result, config)
 
@@ -382,7 +385,7 @@ def test_auto_detect_document_type_no_matches() -> None:
         mime_type="text/plain",
         metadata={},
     )
-    config = ExtractionConfig()
+    config = ExtractionConfig(auto_detect_document_type=True)
 
     detection_result = auto_detect_document_type(result, config)
 
@@ -884,3 +887,35 @@ def test_classify_document_confidence_calculation(mocker: MockerFixture) -> None
 
     assert doc_type == "invoice"
     assert confidence == 1.0  # All 3 matches are for invoice, so 3/3 = 1.0
+
+
+def test_missing_deep_translator_import_error(mocker: MockerFixture) -> None:
+    """Test that MissingDependencyError is raised when deep-translator is not installed."""
+    # Temporarily remove deep_translator from sys.modules if it exists
+    original_module = sys.modules.pop("deep_translator", None)
+
+    try:
+        # Mock the import to raise ImportError when importing deep_translator
+        def mock_import(name: str, *args: Any, **kwargs: Any) -> Any:
+            if name == "deep_translator":
+                raise ImportError("No module named 'deep_translator'")
+            return original_import(name, *args, **kwargs)
+
+        original_import = builtins.__import__
+        mocker.patch("builtins.__import__", side_effect=mock_import)
+
+        # Import _get_translated_text after setting up the mock
+        from kreuzberg._document_classification import _get_translated_text
+
+        result = ExtractionResult(content="Test content", mime_type="text/plain", metadata={})
+
+        # Should raise MissingDependencyError when trying to import deep_translator
+        with pytest.raises(MissingDependencyError) as exc_info:
+            _get_translated_text(result)
+
+        assert "deep-translator" in str(exc_info.value)
+        assert "pip install 'kreuzberg[document-classification]'" in str(exc_info.value)
+    finally:
+        # Restore original module if it existed
+        if original_module is not None:
+            sys.modules["deep_translator"] = original_module
