@@ -23,21 +23,12 @@ jobs:
       max-parallel: 1  # Build one at a time to save disk space ~keep
       matrix:
         include:
-          - name: core
-            extras: ""
+          - name: base
+            extras: "cli"
             tag_suffix: ""
-          - name: easyocr
-            extras: "easyocr"
-            tag_suffix: "-easyocr"
-          - name: paddle
-            extras: "paddleocr"
-            tag_suffix: "-paddle"
-          - name: gmft
-            extras: "gmft"
-            tag_suffix: "-gmft"
-          - name: all
-            extras: "all"
-            tag_suffix: "-all"
+          - name: core
+            extras: "cli,chunking,crypto,document-classification,langdetect,additional-extensions"
+            tag_suffix: "-core"
 
     steps:
       - name: Free up disk space

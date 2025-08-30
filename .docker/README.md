@@ -17,12 +17,22 @@ docker run -p 8000:8000 goldziher/kreuzberg:latest
 
 ## Available Tags
 
-- `latest` - Latest stable release with API server and Tesseract OCR
-- `X.Y.Z` - Specific version (e.g., `3.0.0`)
-- `X.Y.Z-easyocr` - With EasyOCR support
-- `X.Y.Z-paddle` - With PaddleOCR support
-- `X.Y.Z-gmft` - With GMFT table extraction
-- `X.Y.Z-all` - With all optional dependencies
+### Base Image (`latest`, `X.Y.Z`)
+
+- **Includes**: API server, CLI, Tesseract OCR
+- **Use case**: Basic document extraction with REST API
+- **Size**: ~500MB
+
+### Core Image (`X.Y.Z-core`)
+
+- **Includes**: Everything from base plus:
+    - Semantic text chunking
+    - Encrypted PDF support (crypto)
+    - Document classification
+    - Language detection
+    - Email parsing (.eml, .msg)
+- **Use case**: Advanced document processing
+- **Size**: ~700MB
 
 ## Usage
 
