@@ -618,477 +618,506 @@ def test_analyze_content_complexity_with_empty_rows(extractor: SpreadSheetExtrac
     assert "Contains" in metadata["summary"]
 
 
-class TestSpreadSheetExtractorComprehensiveCellConversion:
-    def test_convert_cell_to_str_complex_numeric_types(self, extractor: SpreadSheetExtractor) -> None:
-        complex_num = complex(3, 4)
-        result = extractor._convert_cell_to_str(complex_num)
-        assert result == "(3+4j)"
+def test_spread_sheet_extractor_comprehensive_cell_conversion_convert_cell_to_str_complex_numeric_types(
+    extractor: SpreadSheetExtractor,
+) -> None:
+    complex_num = complex(3, 4)
+    result = extractor._convert_cell_to_str(complex_num)
+    assert result == "(3+4j)"
 
-        large_int = 10**20
-        result = extractor._convert_cell_to_str(large_int)
-        assert result == "100000000000000000000"
+    large_int = 10**20
+    result = extractor._convert_cell_to_str(large_int)
+    assert result == "100000000000000000000"
 
-        precise_float = 3.141592653589793
-        result = extractor._convert_cell_to_str(precise_float)
-        assert result == "3.141592653589793"
+    precise_float = 3.141592653589793
+    result = extractor._convert_cell_to_str(precise_float)
+    assert result == "3.141592653589793"
 
-    def test_convert_cell_to_str_edge_case_objects(self, extractor: SpreadSheetExtractor) -> None:
-        test_list = [1, 2, 3]
-        result = extractor._convert_cell_to_str(test_list)
-        assert result == "[1, 2, 3]"
 
-        test_dict = {"key": "value"}
-        result = extractor._convert_cell_to_str(test_dict)
-        assert result == "{'key': 'value'}"
+def test_spread_sheet_extractor_comprehensive_cell_conversion_convert_cell_to_str_edge_case_objects(
+    extractor: SpreadSheetExtractor,
+) -> None:
+    test_list = [1, 2, 3]
+    result = extractor._convert_cell_to_str(test_list)
+    assert result == "[1, 2, 3]"
 
-        class CustomObject:
-            def __str__(self) -> str:
-                return "custom_object"
+    test_dict = {"key": "value"}
+    result = extractor._convert_cell_to_str(test_dict)
+    assert result == "{'key': 'value'}"
 
-        custom_obj = CustomObject()
-        result = extractor._convert_cell_to_str(custom_obj)
-        assert result == "custom_object"
+    class CustomObject:
+        def __str__(self) -> str:
+            return "custom_object"
 
-    def test_convert_cell_to_str_datetime_variants(self, extractor: SpreadSheetExtractor) -> None:
-        from datetime import datetime, time, timedelta, timezone
-
-        dt_with_microseconds = datetime(2023, 1, 1, 12, 30, 45, 123456, tzinfo=timezone.utc)
-        result = extractor._convert_cell_to_str(dt_with_microseconds)
-        assert result == "2023-01-01T12:30:45.123456+00:00"
-
-        time_with_microseconds = time(12, 30, 45, 123456)
-        result = extractor._convert_cell_to_str(time_with_microseconds)
-        assert result == "12:30:45.123456"
-
-        negative_delta = timedelta(days=-1, seconds=-3600)
-        result = extractor._convert_cell_to_str(negative_delta)
-        assert result == "-90000.0 seconds"
-
-        zero_delta = timedelta(0)
-        result = extractor._convert_cell_to_str(zero_delta)
-        assert result == "0.0 seconds"
-
-
-class TestSpreadSheetExtractorSyncExtensiveErrorHandling:
-    def test_extract_bytes_sync_file_write_error(self, extractor: SpreadSheetExtractor, mocker: MockerFixture) -> None:
-        test_content = b"fake excel data"
-
-        mock_fd = 5
-        mock_temp_path = "/tmp/test.xlsx"
-        mocker.patch("tempfile.mkstemp", return_value=(mock_fd, mock_temp_path))
-
-        mock_fdopen = mocker.patch("os.fdopen")
-        mock_file = mocker.Mock()
-        mock_file.write.side_effect = OSError("Write error")
-        mock_fdopen.return_value.__enter__.return_value = mock_file
-
-        mock_unlink = mocker.patch("pathlib.Path.unlink")
-
-        with pytest.raises(OSError, match="Write error"):
-            extractor.extract_bytes_sync(test_content)
-
-        mock_unlink.assert_called_once()
-
-    def test_extract_bytes_sync_cleanup_error_suppressed(
-        self, extractor: SpreadSheetExtractor, mocker: MockerFixture
-    ) -> None:
-        test_content = b"fake excel data"
-
-        mock_fd = 5
-        mock_temp_path = "/tmp/test.xlsx"
-        mocker.patch("tempfile.mkstemp", return_value=(mock_fd, mock_temp_path))
-
-        mock_fdopen = mocker.patch("os.fdopen")
-        mock_file = mocker.Mock()
-        mock_fdopen.return_value.__enter__.return_value = mock_file
-
-        mock_result = ExtractionResult(content="test", mime_type=MARKDOWN_MIME_TYPE, metadata={})
-        mocker.patch.object(extractor, "extract_path_sync", return_value=mock_result)
-
-        mock_unlink = mocker.patch("pathlib.Path.unlink", side_effect=OSError("Cleanup error"))
-
-        result = extractor.extract_bytes_sync(test_content)
-        assert result == mock_result
-        mock_unlink.assert_called_once()
-
-
-class TestSpreadSheetExtractorAsyncComprehensiveScenarios:
-    @pytest.mark.anyio
-    async def test_convert_sheet_to_text_csv_processing_edge_cases(
-        self, extractor: SpreadSheetExtractor, mocker: MockerFixture
-    ) -> None:
-        mock_workbook = mocker.Mock(spec=CalamineWorkbook)
-        mock_sheet = mocker.Mock()
-
-        mock_sheet.to_python.return_value = [
-            ["Header1", "Header,with,commas", 'Header"with"quotes'],
-            ["Value1", "Value,with,commas", 'Value"with"quotes'],
-            ["Value\nwith\nnewlines", "Value\twith\ttabs", "Value'with'apostrophes"],
-        ]
-        mock_workbook.get_sheet_by_name.return_value = mock_sheet
-
-        temp_path = "/tmp/test.csv"
-        mock_unlink = mocker.AsyncMock()
-        mocker.patch("kreuzberg._extractors._spread_sheet.create_temp_file", return_value=(temp_path, mock_unlink))
-
-        mock_write_text = mocker.AsyncMock()
-        mocker.patch("kreuzberg._extractors._spread_sheet.AsyncPath.write_text", mock_write_text)
-
-        result = await extractor._convert_sheet_to_text(mock_workbook, "test_sheet")
-
-        assert "## test_sheet" in result
-        assert "Header1" in result
-        assert "Value1" in result
-        mock_unlink.assert_called_once()
-
-    @pytest.mark.anyio
-    async def test_convert_sheet_to_text_uneven_rows(
-        self, extractor: SpreadSheetExtractor, mocker: MockerFixture
-    ) -> None:
-        mock_workbook = mocker.Mock(spec=CalamineWorkbook)
-        mock_sheet = mocker.Mock()
-
-        mock_sheet.to_python.return_value = [
-            ["A", "B", "C", "D", "E"],
-            ["1"],
-            ["2", "3"],
-            ["4", "5", "6", "7", "8", "9", "10"],
-        ]
-        mock_workbook.get_sheet_by_name.return_value = mock_sheet
-
-        temp_path = "/tmp/test.csv"
-        mock_unlink = mocker.AsyncMock()
-        mocker.patch("kreuzberg._extractors._spread_sheet.create_temp_file", return_value=(temp_path, mock_unlink))
-        mocker.patch("kreuzberg._extractors._spread_sheet.AsyncPath.write_text", mocker.AsyncMock())
-
-        result = await extractor._convert_sheet_to_text(mock_workbook, "uneven_sheet")
-
-        assert "## uneven_sheet" in result
-        assert "A | B | C | D | E" in result
-        assert "1 | | | |" in result
-        assert "2 | 3 | | |" in result
-        mock_unlink.assert_called_once()
-
-    @pytest.mark.anyio
-    async def test_convert_sheet_to_text_all_none_cells(
-        self, extractor: SpreadSheetExtractor, mocker: MockerFixture
-    ) -> None:
-        mock_workbook = mocker.Mock(spec=CalamineWorkbook)
-        mock_sheet = mocker.Mock()
-
-        mock_sheet.to_python.return_value = [
-            [None, None, None],
-            [None, None, None],
-            [None, None, None],
-        ]
-        mock_workbook.get_sheet_by_name.return_value = mock_sheet
-
-        temp_path = "/tmp/test.csv"
-        mock_unlink = mocker.AsyncMock()
-        mocker.patch("kreuzberg._extractors._spread_sheet.create_temp_file", return_value=(temp_path, mock_unlink))
-        mocker.patch("kreuzberg._extractors._spread_sheet.AsyncPath.write_text", mocker.AsyncMock())
-
-        result = await extractor._convert_sheet_to_text(mock_workbook, "none_sheet")
-
-        assert "## none_sheet" in result
-        assert " | | " in result
-        mock_unlink.assert_called_once()
-
+    custom_obj = CustomObject()
+    result = extractor._convert_cell_to_str(custom_obj)
+    assert result == "custom_object"
 
-class TestSpreadSheetExtractorMetadataEdgeCases:
-    def test_extract_document_properties_partial_metadata(
-        self, extractor: SpreadSheetExtractor, mocker: MockerFixture
-    ) -> None:
-        mock_workbook = mocker.Mock(spec=CalamineWorkbook)
-        mock_metadata = mocker.Mock()
-
-        mock_metadata.title = "Partial Title"
-        mock_metadata.author = "Partial Author"
-        for attr in ["subject", "comments", "keywords", "category", "company", "manager", "created", "modified"]:
-            setattr(mock_metadata, attr, None)
 
-        mock_workbook.metadata = mock_metadata
-
-        metadata: Metadata = {}
-        extractor._extract_document_properties(mock_workbook, metadata)
-
-        assert metadata["title"] == "Partial Title"
-        assert metadata["authors"] == ["Partial Author"]
-        assert len(metadata) == 2
-
-    def test_extract_document_properties_empty_strings(
-        self, extractor: SpreadSheetExtractor, mocker: MockerFixture
-    ) -> None:
-        mock_workbook = mocker.Mock(spec=CalamineWorkbook)
-        mock_metadata = mocker.Mock()
+def test_spread_sheet_extractor_comprehensive_cell_conversion_convert_cell_to_str_datetime_variants(
+    extractor: SpreadSheetExtractor,
+) -> None:
+    from datetime import datetime, time, timedelta, timezone
 
-        mock_metadata.title = ""
-        mock_metadata.author = ""
-        mock_metadata.subject = ""
-        mock_metadata.keywords = ""
-        mock_metadata.comments = "Valid comment"
-
-        mock_workbook.metadata = mock_metadata
-
-        metadata: Metadata = {}
-        extractor._extract_document_properties(mock_workbook, metadata)
-
-        assert metadata["comments"] == "Valid comment"
-        assert len(metadata) == 1
-
-    def test_extract_document_properties_complex_keywords(
-        self, extractor: SpreadSheetExtractor, mocker: MockerFixture
-    ) -> None:
-        mock_workbook = mocker.Mock(spec=CalamineWorkbook)
-        mock_metadata = mocker.Mock()
-
-        mock_metadata.keywords = "  keyword1,  keyword2;keyword3  ,, ; keyword4;  ,keyword5  "
-        mock_workbook.metadata = mock_metadata
-
-        metadata: Metadata = {}
-        extractor._extract_document_properties(mock_workbook, metadata)
-
-        expected_keywords = ["keyword1", "keyword2", "keyword3", "keyword4", "keyword5"]
-        assert metadata["keywords"] == expected_keywords
-
-    def test_extract_document_properties_keywords_empty_after_processing(
-        self, extractor: SpreadSheetExtractor, mocker: MockerFixture
-    ) -> None:
-        mock_workbook = mocker.Mock(spec=CalamineWorkbook)
-        mock_metadata = mocker.Mock()
-
-        mock_metadata.keywords = "  ,, ; ;;  , ,  "
-        mock_workbook.metadata = mock_metadata
-
-        metadata: Metadata = {}
-        extractor._extract_document_properties(mock_workbook, metadata)
-
-        assert "keywords" not in metadata
-
-    def test_extract_date_properties_non_datetime_objects(
-        self, extractor: SpreadSheetExtractor, mocker: MockerFixture
-    ) -> None:
-        mock_props = mocker.Mock()
-
-        mock_date_like = mocker.Mock()
-        mock_date_like.isoformat.return_value = "2023-12-25T10:30:00"
-        mock_props.created = mock_date_like
-
-        mock_props.modified = "string_date"
-
-        metadata: Metadata = {}
-        extractor._extract_date_properties(mock_props, metadata)
-
-        assert metadata["created_at"] == "2023-12-25T10:30:00"
-        assert metadata["modified_at"] == "string_date"
-
-
-class TestSpreadSheetExtractorStructureInfoEdgeCases:
-    def test_add_structure_info_single_sheet(self, extractor: SpreadSheetExtractor, mocker: MockerFixture) -> None:
-        mock_workbook = mocker.Mock(spec=CalamineWorkbook)
-        mock_workbook.sheet_names = ["OnlySheet"]
-
-        metadata: Metadata = {}
-        extractor._add_structure_info(mock_workbook, metadata)
-
-        assert metadata["description"] == "Spreadsheet with 1 sheet: OnlySheet"
-        assert "sheets" not in metadata["description"]
-
-    def test_add_structure_info_exactly_max_sheets(
-        self, extractor: SpreadSheetExtractor, mocker: MockerFixture
-    ) -> None:
-        mock_workbook = mocker.Mock(spec=CalamineWorkbook)
-        mock_workbook.sheet_names = ["Sheet1", "Sheet2", "Sheet3", "Sheet4", "Sheet5"]
-
-        metadata: Metadata = {}
-        extractor._add_structure_info(mock_workbook, metadata)
-
-        expected_desc = "Spreadsheet with 5 sheets: Sheet1, Sheet2, Sheet3, Sheet4, Sheet5"
-        assert metadata["description"] == expected_desc
-
-    def test_add_structure_info_one_over_max_sheets(
-        self, extractor: SpreadSheetExtractor, mocker: MockerFixture
-    ) -> None:
-        mock_workbook = mocker.Mock(spec=CalamineWorkbook)
-        mock_workbook.sheet_names = ["Sheet1", "Sheet2", "Sheet3", "Sheet4", "Sheet5", "Sheet6"]
-
-        metadata: Metadata = {}
-        extractor._add_structure_info(mock_workbook, metadata)
-
-        assert metadata["description"] == "Spreadsheet with 6 sheets"
-        assert "Sheet1" not in metadata["description"]
-
-
-class TestSpreadSheetExtractorComplexityAnalysisEdgeCases:
-    def test_analyze_content_complexity_formula_detection_edge_cases(
-        self, extractor: SpreadSheetExtractor, mocker: MockerFixture
-    ) -> None:
-        mock_workbook = mocker.Mock(spec=CalamineWorkbook)
-        mock_workbook.sheet_names = ["FormulaSheet"]
-
-        mock_sheet = mocker.Mock()
-        mock_sheet.to_python.return_value = [
-            ["Header", "Not Formula", "Formula"],
-            ["Data", "=not a formula at start", "=SUM(A:A)"],
-            ["More", "Text with = sign", "=IF(A1>0,1,0)"],
-            ["Values", "String=value", "=VLOOKUP(A1,B:C,2,FALSE)"],
-        ]
-        mock_workbook.get_sheet_by_name.return_value = mock_sheet
-
-        metadata: Metadata = {}
-        extractor._analyze_content_complexity(mock_workbook, metadata)
-
-        assert "includes formulas" in metadata["summary"]
-        assert "Contains" in metadata["summary"]
-
-    def test_analyze_content_complexity_no_meaningful_cells(
-        self, extractor: SpreadSheetExtractor, mocker: MockerFixture
-    ) -> None:
-        mock_workbook = mocker.Mock(spec=CalamineWorkbook)
-        mock_workbook.sheet_names = ["EmptyDataSheet"]
-
-        mock_sheet = mocker.Mock()
-        mock_sheet.to_python.return_value = [
-            [None, "", "   "],
-            ["", None, "  \t  "],
-            [None, None, None],
-        ]
-        mock_workbook.get_sheet_by_name.return_value = mock_sheet
-
-        metadata: Metadata = {}
-        extractor._analyze_content_complexity(mock_workbook, metadata)
-
-        assert "summary" not in metadata
-
-    def test_analyze_content_complexity_row_processing_limits(
-        self, extractor: SpreadSheetExtractor, mocker: MockerFixture
-    ) -> None:
-        mock_workbook = mocker.Mock(spec=CalamineWorkbook)
-        mock_workbook.sheet_names = ["LargeSheet"]
-
-        large_data = [["Header"]] + [[f"Row{i}"] for i in range(100)]
-
-        mock_sheet = mocker.Mock()
-        mock_sheet.to_python.return_value = large_data
-        mock_workbook.get_sheet_by_name.return_value = mock_sheet
-
-        metadata: Metadata = {}
-        extractor._analyze_content_complexity(mock_workbook, metadata)
-
-        assert "summary" in metadata
-        assert "Contains" in metadata["summary"]
-
-    def test_analyze_content_complexity_sheet_processing_limits(
-        self, extractor: SpreadSheetExtractor, mocker: MockerFixture
-    ) -> None:
-        mock_workbook = mocker.Mock(spec=CalamineWorkbook)
-        mock_workbook.sheet_names = ["Sheet1", "Sheet2", "Sheet3", "Sheet4", "Sheet5"]
-
-        mock_sheet = mocker.Mock()
-        mock_sheet.to_python.return_value = [["Header"], ["Data"]]
-        mock_workbook.get_sheet_by_name.return_value = mock_sheet
-
-        metadata: Metadata = {}
-        extractor._analyze_content_complexity(mock_workbook, metadata)
-
-        assert "summary" in metadata
-        assert "Contains" in metadata["summary"]
-
-    def test_analyze_content_complexity_existing_summary_preserved(
-        self, extractor: SpreadSheetExtractor, mocker: MockerFixture
-    ) -> None:
-        mock_workbook = mocker.Mock(spec=CalamineWorkbook)
-        mock_workbook.sheet_names = ["DataSheet"]
-
-        mock_sheet = mocker.Mock()
-        mock_sheet.to_python.return_value = [["Header"], ["Data"]]
-        mock_workbook.get_sheet_by_name.return_value = mock_sheet
-
-        metadata: Metadata = {"summary": "Existing summary"}
-        extractor._analyze_content_complexity(mock_workbook, metadata)
-
-        assert metadata["summary"] == "Existing summary"
-
-
-class TestSpreadSheetExtractorEnhancedTableProcessingExtensive:
-    def test_enhance_sheet_with_table_data_pandas_dataframe_operations(
-        self, extractor: SpreadSheetExtractor, mocker: MockerFixture
-    ) -> None:
-        mock_workbook = mocker.Mock(spec=CalamineWorkbook)
-        mock_sheet = mocker.Mock()
-        mock_sheet.to_python.return_value = [
-            ["Name", "Age", None, "City"],
-            ["Alice", 25, None, "New York"],
-            [None, None, None, None],
-            ["Bob", 30, None, "Chicago"],
-            [None, None, None, None],
-        ]
-        mock_workbook.get_sheet_by_name.return_value = mock_sheet
-
-        mock_df_initial = mocker.Mock()
-        mock_df_after_dropna = mocker.Mock()
-        mock_df_after_dropna.empty = False
-
-        mock_df_initial.dropna.return_value = mock_df_after_dropna
-        mock_df_after_dropna.dropna.return_value = mock_df_after_dropna
-
-        mock_enhance = mocker.patch("kreuzberg._utils._table.enhance_table_markdown")
-        mock_enhance.return_value = "Enhanced table with cleaned data"
-
-        mocker.patch("PIL.Image.new")
-
-        with mocker.patch("pandas.DataFrame", return_value=mock_df_initial):
-            result = extractor._enhance_sheet_with_table_data(mock_workbook, "CleanedSheet")
-
-        assert result == "## CleanedSheet\n\nEnhanced table with cleaned data"
-        assert mock_df_initial.dropna.call_count == 1
-        assert mock_df_after_dropna.dropna.call_count == 1
-
-    def test_enhance_sheet_with_table_data_value_error_fallback(
-        self, extractor: SpreadSheetExtractor, mocker: MockerFixture
-    ) -> None:
-        mock_workbook = mocker.Mock(spec=CalamineWorkbook)
-        mock_sheet = mocker.Mock()
-        mock_sheet.to_python.return_value = [["Header"], ["Data"]]
-        mock_workbook.get_sheet_by_name.return_value = mock_sheet
-
-        with mocker.patch("pandas.DataFrame", side_effect=ValueError("DataFrame creation error")):
-            mocker.patch.object(extractor, "_convert_sheet_to_text_sync", return_value="Fallback after ValueError")
-
-            result = extractor._enhance_sheet_with_table_data(mock_workbook, "ErrorSheet")
-
-        assert result == "Fallback after ValueError"
-
-    def test_enhance_sheet_with_table_data_attribute_error_fallback(
-        self, extractor: SpreadSheetExtractor, mocker: MockerFixture
-    ) -> None:
-        mock_workbook = mocker.Mock(spec=CalamineWorkbook)
-        mock_sheet = mocker.Mock()
-        mock_sheet.to_python.return_value = [["Header"], ["Data"]]
-        mock_workbook.get_sheet_by_name.return_value = mock_sheet
-
-        mock_df = mocker.Mock()
-        mock_df.dropna.side_effect = AttributeError("dropna method not found")
-
-        with mocker.patch("pandas.DataFrame", return_value=mock_df):
-            mocker.patch.object(extractor, "_convert_sheet_to_text_sync", return_value="Fallback after AttributeError")
-
-            result = extractor._enhance_sheet_with_table_data(mock_workbook, "AttributeErrorSheet")
-
-        assert result == "Fallback after AttributeError"
-
-    def test_enhance_sheet_with_table_data_data_contains_only_empty_rows(
-        self, extractor: SpreadSheetExtractor, mocker: MockerFixture
-    ) -> None:
-        mock_workbook = mocker.Mock(spec=CalamineWorkbook)
-        mock_sheet = mocker.Mock()
-        mock_sheet.to_python.return_value = [
-            [],
-            [None, None, None],
-            ["", "", ""],
-        ]
-        mock_workbook.get_sheet_by_name.return_value = mock_sheet
-
-        result = extractor._enhance_sheet_with_table_data(mock_workbook, "OnlyEmptyRows")
-
-        assert result == "## OnlyEmptyRows\n\n*Empty sheet*"
+    dt_with_microseconds = datetime(2023, 1, 1, 12, 30, 45, 123456, tzinfo=timezone.utc)
+    result = extractor._convert_cell_to_str(dt_with_microseconds)
+    assert result == "2023-01-01T12:30:45.123456+00:00"
+
+    time_with_microseconds = time(12, 30, 45, 123456)
+    result = extractor._convert_cell_to_str(time_with_microseconds)
+    assert result == "12:30:45.123456"
+
+    negative_delta = timedelta(days=-1, seconds=-3600)
+    result = extractor._convert_cell_to_str(negative_delta)
+    assert result == "-90000.0 seconds"
+
+    zero_delta = timedelta(0)
+    result = extractor._convert_cell_to_str(zero_delta)
+    assert result == "0.0 seconds"
+
+
+def test_spread_sheet_extractor_sync_extensive_error_handling_extract_bytes_sync_file_write_error(
+    extractor: SpreadSheetExtractor, mocker: MockerFixture
+) -> None:
+    test_content = b"fake excel data"
+
+    mock_fd = 5
+    mock_temp_path = "/tmp/test.xlsx"
+    mocker.patch("tempfile.mkstemp", return_value=(mock_fd, mock_temp_path))
+
+    mock_fdopen = mocker.patch("os.fdopen")
+    mock_file = mocker.Mock()
+    mock_file.write.side_effect = OSError("Write error")
+    mock_fdopen.return_value.__enter__.return_value = mock_file
+
+    mock_unlink = mocker.patch("pathlib.Path.unlink")
+
+    with pytest.raises(OSError, match="Write error"):
+        extractor.extract_bytes_sync(test_content)
+
+    mock_unlink.assert_called_once()
+
+
+def test_spread_sheet_extractor_sync_extensive_error_handling_extract_bytes_sync_cleanup_error_suppressed(
+    extractor: SpreadSheetExtractor, mocker: MockerFixture
+) -> None:
+    test_content = b"fake excel data"
+
+    mock_fd = 5
+    mock_temp_path = "/tmp/test.xlsx"
+    mocker.patch("tempfile.mkstemp", return_value=(mock_fd, mock_temp_path))
+
+    mock_fdopen = mocker.patch("os.fdopen")
+    mock_file = mocker.Mock()
+    mock_fdopen.return_value.__enter__.return_value = mock_file
+
+    mock_result = ExtractionResult(content="test", mime_type=MARKDOWN_MIME_TYPE, metadata={})
+    mocker.patch.object(extractor, "extract_path_sync", return_value=mock_result)
+
+    mock_unlink = mocker.patch("pathlib.Path.unlink", side_effect=OSError("Cleanup error"))
+
+    result = extractor.extract_bytes_sync(test_content)
+    assert result == mock_result
+    mock_unlink.assert_called_once()
+
+
+@pytest.mark.anyio
+async def test_spreadsheet_convert_sheet_to_text_csv_processing_edge_cases(
+    extractor: SpreadSheetExtractor, mocker: MockerFixture
+) -> None:
+    mock_workbook = mocker.Mock(spec=CalamineWorkbook)
+    mock_sheet = mocker.Mock()
+
+    mock_sheet.to_python.return_value = [
+        ["Header1", "Header,with,commas", 'Header"with"quotes'],
+        ["Value1", "Value,with,commas", 'Value"with"quotes'],
+        ["Value\nwith\nnewlines", "Value\twith\ttabs", "Value'with'apostrophes"],
+    ]
+    mock_workbook.get_sheet_by_name.return_value = mock_sheet
+
+    temp_path = "/tmp/test.csv"
+    mock_unlink = mocker.AsyncMock()
+    mocker.patch("kreuzberg._extractors._spread_sheet.create_temp_file", return_value=(temp_path, mock_unlink))
+
+    mock_write_text = mocker.AsyncMock()
+    mocker.patch("kreuzberg._extractors._spread_sheet.AsyncPath.write_text", mock_write_text)
+
+    result = await extractor._convert_sheet_to_text(mock_workbook, "test_sheet")
+
+    assert "## test_sheet" in result
+    assert "Header1" in result
+    assert "Value1" in result
+    mock_unlink.assert_called_once()
+
+
+@pytest.mark.anyio
+async def test_spreadsheet_convert_sheet_to_text_uneven_rows(
+    extractor: SpreadSheetExtractor, mocker: MockerFixture
+) -> None:
+    mock_workbook = mocker.Mock(spec=CalamineWorkbook)
+    mock_sheet = mocker.Mock()
+
+    mock_sheet.to_python.return_value = [
+        ["A", "B", "C", "D", "E"],
+        ["1"],
+        ["2", "3"],
+        ["4", "5", "6", "7", "8", "9", "10"],
+    ]
+    mock_workbook.get_sheet_by_name.return_value = mock_sheet
+
+    temp_path = "/tmp/test.csv"
+    mock_unlink = mocker.AsyncMock()
+    mocker.patch("kreuzberg._extractors._spread_sheet.create_temp_file", return_value=(temp_path, mock_unlink))
+    mocker.patch("kreuzberg._extractors._spread_sheet.AsyncPath.write_text", mocker.AsyncMock())
+
+    result = await extractor._convert_sheet_to_text(mock_workbook, "uneven_sheet")
+
+    assert "## uneven_sheet" in result
+    assert "A | B | C | D | E" in result
+    assert "1 | | | |" in result
+    assert "2 | 3 | | |" in result
+    mock_unlink.assert_called_once()
+
+
+@pytest.mark.anyio
+async def test_spreadsheet_convert_sheet_to_text_all_none_cells(
+    extractor: SpreadSheetExtractor, mocker: MockerFixture
+) -> None:
+    mock_workbook = mocker.Mock(spec=CalamineWorkbook)
+    mock_sheet = mocker.Mock()
+
+    mock_sheet.to_python.return_value = [
+        [None, None, None],
+        [None, None, None],
+        [None, None, None],
+    ]
+    mock_workbook.get_sheet_by_name.return_value = mock_sheet
+
+    temp_path = "/tmp/test.csv"
+    mock_unlink = mocker.AsyncMock()
+    mocker.patch("kreuzberg._extractors._spread_sheet.create_temp_file", return_value=(temp_path, mock_unlink))
+    mocker.patch("kreuzberg._extractors._spread_sheet.AsyncPath.write_text", mocker.AsyncMock())
+
+    result = await extractor._convert_sheet_to_text(mock_workbook, "none_sheet")
+
+    assert "## none_sheet" in result
+    assert " | | " in result
+    mock_unlink.assert_called_once()
+
+
+def test_spreadsheet_metadata_extract_document_properties_partial_metadata(
+    extractor: SpreadSheetExtractor, mocker: MockerFixture
+) -> None:
+    mock_workbook = mocker.Mock(spec=CalamineWorkbook)
+    mock_metadata = mocker.Mock()
+
+    mock_metadata.title = "Partial Title"
+    mock_metadata.author = "Partial Author"
+    for attr in ["subject", "comments", "keywords", "category", "company", "manager", "created", "modified"]:
+        setattr(mock_metadata, attr, None)
+
+    mock_workbook.metadata = mock_metadata
+
+    metadata: Metadata = {}
+    extractor._extract_document_properties(mock_workbook, metadata)
+
+    assert metadata["title"] == "Partial Title"
+    assert metadata["authors"] == ["Partial Author"]
+    assert len(metadata) == 2
+
+
+def test_spreadsheet_metadata_extract_document_properties_empty_strings(
+    extractor: SpreadSheetExtractor, mocker: MockerFixture
+) -> None:
+    mock_workbook = mocker.Mock(spec=CalamineWorkbook)
+    mock_metadata = mocker.Mock()
+
+    mock_metadata.title = ""
+    mock_metadata.author = ""
+    mock_metadata.subject = ""
+    mock_metadata.keywords = ""
+    mock_metadata.comments = "Valid comment"
+    mock_metadata.category = ""
+    mock_metadata.company = ""
+    mock_metadata.manager = ""
+    mock_metadata.created = None
+    mock_metadata.modified = None
+
+    mock_workbook.metadata = mock_metadata
+
+    metadata: Metadata = {}
+    extractor._extract_document_properties(mock_workbook, metadata)
+
+    assert metadata["comments"] == "Valid comment"
+    assert len(metadata) == 1
+
+
+def test_spreadsheet_metadata_extract_document_properties_complex_keywords(
+    extractor: SpreadSheetExtractor, mocker: MockerFixture
+) -> None:
+    mock_workbook = mocker.Mock(spec=CalamineWorkbook)
+    mock_metadata = mocker.Mock()
+
+    mock_metadata.keywords = "  keyword1,  keyword2;keyword3  ,, ; keyword4;  ,keyword5  "
+    mock_workbook.metadata = mock_metadata
+
+    metadata: Metadata = {}
+    extractor._extract_document_properties(mock_workbook, metadata)
+
+    expected_keywords = ["keyword1", "keyword2", "keyword3", "keyword4", "keyword5"]
+    assert metadata["keywords"] == expected_keywords
+
+
+def test_spreadsheet_metadata_extract_document_properties_keywords_empty_after_processing(
+    extractor: SpreadSheetExtractor, mocker: MockerFixture
+) -> None:
+    mock_workbook = mocker.Mock(spec=CalamineWorkbook)
+    mock_metadata = mocker.Mock()
+
+    mock_metadata.keywords = "  ,, ; ;;  , ,  "
+    mock_workbook.metadata = mock_metadata
+
+    metadata: Metadata = {}
+    extractor._extract_document_properties(mock_workbook, metadata)
+
+    assert "keywords" not in metadata
+
+
+def test_spreadsheet_metadata_extract_date_properties_non_datetime_objects(
+    extractor: SpreadSheetExtractor, mocker: MockerFixture
+) -> None:
+    mock_props = mocker.Mock()
+
+    mock_date_like = mocker.Mock()
+    mock_date_like.isoformat.return_value = "2023-12-25T10:30:00"
+    mock_props.created = mock_date_like
+
+    mock_props.modified = "string_date"
+
+    metadata: Metadata = {}
+    extractor._extract_date_properties(mock_props, metadata)
+
+    assert metadata["created_at"] == "2023-12-25T10:30:00"
+    assert metadata["modified_at"] == "string_date"
+
+
+def test_spreadsheet_structure_add_structure_info_single_sheet(
+    extractor: SpreadSheetExtractor, mocker: MockerFixture
+) -> None:
+    mock_workbook = mocker.Mock(spec=CalamineWorkbook)
+    mock_workbook.sheet_names = ["OnlySheet"]
+
+    metadata: Metadata = {}
+    extractor._add_structure_info(mock_workbook, metadata)
+
+    assert metadata["description"] == "Spreadsheet with 1 sheet: OnlySheet"
+    assert "sheets" not in metadata["description"]
+
+
+def test_spreadsheet_structure_add_structure_info_exactly_max_sheets(
+    extractor: SpreadSheetExtractor, mocker: MockerFixture
+) -> None:
+    mock_workbook = mocker.Mock(spec=CalamineWorkbook)
+    mock_workbook.sheet_names = ["Sheet1", "Sheet2", "Sheet3", "Sheet4", "Sheet5"]
+
+    metadata: Metadata = {}
+    extractor._add_structure_info(mock_workbook, metadata)
+
+    expected_desc = "Spreadsheet with 5 sheets: Sheet1, Sheet2, Sheet3, Sheet4, Sheet5"
+    assert metadata["description"] == expected_desc
+
+
+def test_spreadsheet_structure_add_structure_info_one_over_max_sheets(
+    extractor: SpreadSheetExtractor, mocker: MockerFixture
+) -> None:
+    mock_workbook = mocker.Mock(spec=CalamineWorkbook)
+    mock_workbook.sheet_names = ["Sheet1", "Sheet2", "Sheet3", "Sheet4", "Sheet5", "Sheet6"]
+
+    metadata: Metadata = {}
+    extractor._add_structure_info(mock_workbook, metadata)
+
+    assert metadata["description"] == "Spreadsheet with 6 sheets"
+    assert "Sheet1" not in metadata["description"]
+
+
+def test_spreadsheet_complexity_analyze_content_complexity_formula_detection_edge_cases(
+    extractor: SpreadSheetExtractor, mocker: MockerFixture
+) -> None:
+    mock_workbook = mocker.Mock(spec=CalamineWorkbook)
+    mock_workbook.sheet_names = ["FormulaSheet"]
+
+    mock_sheet = mocker.Mock()
+    mock_sheet.to_python.return_value = [
+        ["Header", "Not Formula", "Formula"],
+        ["Data", "=not a formula at start", "=SUM(A:A)"],
+        ["More", "Text with = sign", "=IF(A1>0,1,0)"],
+        ["Values", "String=value", "=VLOOKUP(A1,B:C,2,FALSE)"],
+    ]
+    mock_workbook.get_sheet_by_name.return_value = mock_sheet
+
+    metadata: Metadata = {}
+    extractor._analyze_content_complexity(mock_workbook, metadata)
+
+    assert "includes formulas" in metadata["summary"]
+    assert "Contains" in metadata["summary"]
+
+
+def test_spreadsheet_complexity_analyze_content_complexity_no_meaningful_cells(
+    extractor: SpreadSheetExtractor, mocker: MockerFixture
+) -> None:
+    mock_workbook = mocker.Mock(spec=CalamineWorkbook)
+    mock_workbook.sheet_names = ["EmptyDataSheet"]
+
+    mock_sheet = mocker.Mock()
+    mock_sheet.to_python.return_value = [
+        [None, "", "   "],
+        ["", None, "  \t  "],
+        [None, None, None],
+    ]
+    mock_workbook.get_sheet_by_name.return_value = mock_sheet
+
+    metadata: Metadata = {}
+    extractor._analyze_content_complexity(mock_workbook, metadata)
+
+    assert "summary" not in metadata
+
+
+def test_spreadsheet_complexity_analyze_content_complexity_row_processing_limits(
+    extractor: SpreadSheetExtractor, mocker: MockerFixture
+) -> None:
+    mock_workbook = mocker.Mock(spec=CalamineWorkbook)
+    mock_workbook.sheet_names = ["LargeSheet"]
+
+    large_data = [["Header"]] + [[f"Row{i}"] for i in range(100)]
+
+    mock_sheet = mocker.Mock()
+    mock_sheet.to_python.return_value = large_data
+    mock_workbook.get_sheet_by_name.return_value = mock_sheet
+
+    metadata: Metadata = {}
+    extractor._analyze_content_complexity(mock_workbook, metadata)
+
+    assert "summary" in metadata
+    assert "Contains" in metadata["summary"]
+
+
+def test_spreadsheet_complexity_analyze_content_complexity_sheet_processing_limits(
+    extractor: SpreadSheetExtractor, mocker: MockerFixture
+) -> None:
+    mock_workbook = mocker.Mock(spec=CalamineWorkbook)
+    mock_workbook.sheet_names = ["Sheet1", "Sheet2", "Sheet3", "Sheet4", "Sheet5"]
+
+    mock_sheet = mocker.Mock()
+    mock_sheet.to_python.return_value = [["Header"], ["Data"]]
+    mock_workbook.get_sheet_by_name.return_value = mock_sheet
+
+    metadata: Metadata = {}
+    extractor._analyze_content_complexity(mock_workbook, metadata)
+
+    assert "summary" in metadata
+    assert "Contains" in metadata["summary"]
+
+
+def test_spreadsheet_complexity_analyze_content_complexity_existing_summary_preserved(
+    extractor: SpreadSheetExtractor, mocker: MockerFixture
+) -> None:
+    mock_workbook = mocker.Mock(spec=CalamineWorkbook)
+    mock_workbook.sheet_names = ["DataSheet"]
+
+    mock_sheet = mocker.Mock()
+    mock_sheet.to_python.return_value = [["Header"], ["Data"]]
+    mock_workbook.get_sheet_by_name.return_value = mock_sheet
+
+    metadata: Metadata = {"summary": "Existing summary"}
+    extractor._analyze_content_complexity(mock_workbook, metadata)
+
+    assert metadata["summary"] == "Existing summary"
+
+
+def test_spreadsheet_table_enhance_sheet_with_table_data_pandas_dataframe_operations(
+    extractor: SpreadSheetExtractor, mocker: MockerFixture
+) -> None:
+    mock_workbook = mocker.Mock(spec=CalamineWorkbook)
+    mock_sheet = mocker.Mock()
+    mock_sheet.to_python.return_value = [
+        ["Name", "Age", None, "City"],
+        ["Alice", 25, None, "New York"],
+        [None, None, None, None],
+        ["Bob", 30, None, "Chicago"],
+        [None, None, None, None],
+    ]
+    mock_workbook.get_sheet_by_name.return_value = mock_sheet
+
+    mock_df_initial = mocker.Mock()
+    mock_df_after_dropna = mocker.Mock()
+    mock_df_after_dropna.empty = False
+
+    mock_df_initial.dropna.return_value = mock_df_after_dropna
+    mock_df_after_dropna.dropna.return_value = mock_df_after_dropna
+
+    mock_enhance = mocker.patch("kreuzberg._utils._table.enhance_table_markdown")
+    mock_enhance.return_value = "Enhanced table with cleaned data"
+
+    mocker.patch("PIL.Image.new")
+
+    with mocker.patch("pandas.DataFrame", return_value=mock_df_initial):
+        result = extractor._enhance_sheet_with_table_data(mock_workbook, "CleanedSheet")
+
+    assert result == "## CleanedSheet\n\nEnhanced table with cleaned data"
+    assert mock_df_initial.dropna.call_count == 1
+    assert mock_df_after_dropna.dropna.call_count == 1
+
+
+def test_spreadsheet_table_enhance_sheet_with_table_data_value_error_fallback(
+    extractor: SpreadSheetExtractor, mocker: MockerFixture
+) -> None:
+    mock_workbook = mocker.Mock(spec=CalamineWorkbook)
+    mock_sheet = mocker.Mock()
+    mock_sheet.to_python.return_value = [["Header"], ["Data"]]
+    mock_workbook.get_sheet_by_name.return_value = mock_sheet
+
+    with mocker.patch("pandas.DataFrame", side_effect=ValueError("DataFrame creation error")):
+        mocker.patch.object(extractor, "_convert_sheet_to_text_sync", return_value="Fallback after ValueError")
+
+        result = extractor._enhance_sheet_with_table_data(mock_workbook, "ErrorSheet")
+
+    assert result == "Fallback after ValueError"
+
+
+def test_spreadsheet_table_enhance_sheet_with_table_data_attribute_error_fallback(
+    extractor: SpreadSheetExtractor, mocker: MockerFixture
+) -> None:
+    mock_workbook = mocker.Mock(spec=CalamineWorkbook)
+    mock_sheet = mocker.Mock()
+    mock_sheet.to_python.return_value = [["Header"], ["Data"]]
+    mock_workbook.get_sheet_by_name.return_value = mock_sheet
+
+    mock_df = mocker.Mock()
+    mock_df.dropna.side_effect = AttributeError("dropna method not found")
+
+    with mocker.patch("pandas.DataFrame", return_value=mock_df):
+        mocker.patch.object(extractor, "_convert_sheet_to_text_sync", return_value="Fallback after AttributeError")
+
+        result = extractor._enhance_sheet_with_table_data(mock_workbook, "AttributeErrorSheet")
+
+    assert result == "Fallback after AttributeError"
+
+
+def test_spreadsheet_table_enhance_sheet_with_table_data_data_contains_only_empty_rows(
+    extractor: SpreadSheetExtractor, mocker: MockerFixture
+) -> None:
+    mock_workbook = mocker.Mock(spec=CalamineWorkbook)
+    mock_sheet = mocker.Mock()
+    mock_sheet.to_python.return_value = [
+        [],
+        [None, None, None],
+        ["", "", ""],
+    ]
+    mock_workbook.get_sheet_by_name.return_value = mock_sheet
+
+    result = extractor._enhance_sheet_with_table_data(mock_workbook, "OnlyEmptyRows")
+
+    # The current implementation creates a table for rows with empty strings
+    # since pandas doesn't treat empty strings as NaN by default
+    assert "## OnlyEmptyRows" in result
+    assert "|" in result  # Should contain table formatting

@@ -40,7 +40,8 @@ async def test_extract_pdf_searchable_not_fallback_to_ocr(test_contract: Path) -
     extractor = PDFExtractor(mime_type="application/pdf", config=ExtractionConfig(force_ocr=False))
     result = await extractor.extract_path_async(test_contract)
     assert result.content.startswith(
-        "Page 1\nSample Contract\nContract No....\nPROFESSIONAL SERVICES AGREEMENT\nTHIS AGREEMENT made and entered into this"
+        "Page 1\nSample Contract\nContract No....\nPROFESSIONAL SERVICES "
+        "AGREEMENT\nTHIS AGREEMENT made and entered into this"
     )
 
 
@@ -481,398 +482,419 @@ startxref
 %%EOF"""
 
 
-class TestPDFExtractor:
-    def test_supported_mime_types(self, pdf_extractor: PDFExtractor) -> None:
-        assert "application/pdf" in pdf_extractor.SUPPORTED_MIME_TYPES
-
-    def test_constants(self, pdf_extractor: PDFExtractor) -> None:
-        assert pdf_extractor.SHORT_TEXT_THRESHOLD == 50
-        assert pdf_extractor.MINIMUM_CORRUPTED_RESULTS == 2
-        assert pdf_extractor.CORRUPTED_PATTERN is not None
+def test_pdf_extractor_supported_mime_types(pdf_extractor: PDFExtractor) -> None:
+    assert "application/pdf" in pdf_extractor.SUPPORTED_MIME_TYPES
 
-    def test_validate_extracted_text_empty(self, pdf_extractor: PDFExtractor) -> None:
-        assert not pdf_extractor._validate_extracted_text("")
-        assert not pdf_extractor._validate_extracted_text("   ")
-        assert not pdf_extractor._validate_extracted_text("\\n\\t")
-
-    def test_validate_extracted_text_valid(self, pdf_extractor: PDFExtractor) -> None:
-        assert pdf_extractor._validate_extracted_text("Hello world, this is valid text!")
-        assert pdf_extractor._validate_extracted_text("Normal text with numbers 123 and symbols @#$")
 
-    def test_validate_extracted_text_short_valid(self, pdf_extractor: PDFExtractor) -> None:
-        assert pdf_extractor._validate_extracted_text("Short text")
-        assert pdf_extractor._validate_extracted_text("OK")
+def test_pdf_extractor_constants(pdf_extractor: PDFExtractor) -> None:
+    assert pdf_extractor.SHORT_TEXT_THRESHOLD == 50
+    assert pdf_extractor.MINIMUM_CORRUPTED_RESULTS == 2
+    assert pdf_extractor.CORRUPTED_PATTERN is not None
 
-    def test_validate_extracted_text_short_corrupted(self, pdf_extractor: PDFExtractor) -> None:
-        corrupted_text = "A\\x00B\\x01C\\uFFFD"
-        assert not pdf_extractor._validate_extracted_text(corrupted_text)
-
-    def test_validate_extracted_text_long_corrupted(self, pdf_extractor: PDFExtractor) -> None:
-        base_text = "Valid text " * 10
-        corrupted_text = base_text + "\\x00\\x01\\x02\\uFFFD" * 10
-        assert not pdf_extractor._validate_extracted_text(corrupted_text)
 
-    def test_validate_extracted_text_long_low_corruption(self, pdf_extractor: PDFExtractor) -> None:
-        base_text = "Valid text with good content " * 20
-        corrupted_text = base_text + "\\x00\\uFFFD"
-        assert pdf_extractor._validate_extracted_text(corrupted_text)
+def test_pdf_validation_empty_text(pdf_extractor: PDFExtractor) -> None:
+    assert not pdf_extractor._validate_extracted_text("")
+    assert not pdf_extractor._validate_extracted_text("   ")
+    assert not pdf_extractor._validate_extracted_text("\n\t")
 
-    def test_validate_extracted_text_custom_threshold(self, pdf_extractor: PDFExtractor) -> None:
-        base_text = "Text " * 20
-        corrupted_text = base_text + "\\x00" * 8
 
-        assert not pdf_extractor._validate_extracted_text(corrupted_text)
+def test_pdf_validation_valid_text(pdf_extractor: PDFExtractor) -> None:
+    assert pdf_extractor._validate_extracted_text("Hello world, this is valid text!")
+    assert pdf_extractor._validate_extracted_text("Normal text with numbers 123 and symbols @#$")
 
-        assert pdf_extractor._validate_extracted_text(corrupted_text, corruption_threshold=0.10)
 
-    @pytest.mark.anyio
-    async def test_extract_bytes_async_basic(
-        self, pdf_extractor: PDFExtractor, sample_pdf_content: bytes, mocker: MockerFixture
-    ) -> None:
-        mock_create_temp_file = mocker.patch("kreuzberg._extractors._pdf.create_temp_file")
-        mock_create_temp_file.return_value = ("/tmp/test.pdf", mocker.AsyncMock())
+def test_pdf_validation_short_valid(pdf_extractor: PDFExtractor) -> None:
+    assert pdf_extractor._validate_extracted_text("Short text")
+    assert pdf_extractor._validate_extracted_text("OK")
 
-        mock_async_path = mocker.patch("kreuzberg._extractors._pdf.AsyncPath")
-        mock_async_path.return_value.write_bytes = mocker.AsyncMock()
 
-        mock_extract_metadata = mocker.patch.object(pdf_extractor, "_extract_metadata_with_password_attempts")
-        mock_extract_metadata.return_value = {"pages": 1}
+def test_pdf_validation_short_corrupted(pdf_extractor: PDFExtractor) -> None:
+    corrupted_text = "A\x00B\x01C\ufffd"
+    assert not pdf_extractor._validate_extracted_text(corrupted_text)
 
-        mock_extract_path = mocker.patch.object(pdf_extractor, "extract_path_async")
-        mock_extract_path.return_value = ExtractionResult(
-            content="Test content", mime_type="text/plain", metadata={}, chunks=[]
-        )
 
-        result = await pdf_extractor.extract_bytes_async(sample_pdf_content)
+def test_pdf_validation_long_corrupted(pdf_extractor: PDFExtractor) -> None:
+    base_text = "Valid text " * 10
+    corrupted_text = base_text + "\x00\x01\x02\ufffd" * 10
+    assert not pdf_extractor._validate_extracted_text(corrupted_text)
 
-        assert result.content == "Test content"
-        assert result.metadata == {"pages": 1}
-        mock_create_temp_file.assert_called_once_with(".pdf")
 
-    def test_extract_bytes_sync_basic(
-        self, pdf_extractor: PDFExtractor, sample_pdf_content: bytes, mocker: MockerFixture
-    ) -> None:
-        mock_mkstemp = mocker.patch("tempfile.mkstemp")
-        mock_mkstemp.return_value = (5, "/tmp/test.pdf")
+def test_pdf_validation_long_low_corruption(pdf_extractor: PDFExtractor) -> None:
+    base_text = "Valid text with good content " * 20
+    corrupted_text = base_text + "\x00\ufffd"
+    assert pdf_extractor._validate_extracted_text(corrupted_text)
 
-        mock_fdopen = mocker.patch("os.fdopen")
-        mock_file = mocker.Mock()
-        mock_fdopen.return_value.__enter__.return_value = mock_file
-        mock_fdopen.return_value.__exit__.return_value = None
 
-        mock_extract_path = mocker.patch.object(pdf_extractor, "extract_path_sync")
-        mock_extract_path.return_value = ExtractionResult(
-            content="Sync test content", mime_type="text/plain", metadata={}, chunks=[]
-        )
+def test_pdf_validation_custom_threshold(pdf_extractor: PDFExtractor) -> None:
+    base_text = "Text " * 20
+    corrupted_text = base_text + "\x00" * 8
 
-        mock_extract_metadata = mocker.patch.object(pdf_extractor, "_extract_metadata_with_password_attempts_sync")
-        mock_extract_metadata.return_value = {"title": "Test PDF"}
+    assert not pdf_extractor._validate_extracted_text(corrupted_text)
 
-        mocker.patch("pathlib.Path.unlink")
+    assert pdf_extractor._validate_extracted_text(corrupted_text, corruption_threshold=0.10)
 
-        result = pdf_extractor.extract_bytes_sync(sample_pdf_content)
 
-        assert result.content == "Sync test content"
-        assert result.metadata == {"title": "Test PDF"}
-        mock_file.write.assert_called_once_with(sample_pdf_content)
+@pytest.mark.anyio
+async def test_pdf_extract_bytes_async_basic(
+    pdf_extractor: PDFExtractor, sample_pdf_content: bytes, mocker: MockerFixture
+) -> None:
+    mock_create_temp_file = mocker.patch("kreuzberg._extractors._pdf.create_temp_file")
+    mock_create_temp_file.return_value = ("/tmp/test.pdf", mocker.AsyncMock())
 
-    @pytest.mark.anyio
-    async def test_extract_path_async_searchable_text(
-        self, pdf_extractor: PDFExtractor, tmp_path: Path, mocker: MockerFixture
-    ) -> None:
-        test_file = tmp_path / "test.pdf"
-        test_file.write_bytes(b"dummy pdf content")
+    mock_async_path = mocker.patch("kreuzberg._extractors._pdf.AsyncPath")
+    mock_async_path.return_value.write_bytes = mocker.AsyncMock()
 
-        mock_async_path = mocker.patch("kreuzberg._extractors._pdf.AsyncPath")
-        mock_async_path.return_value.read_bytes = mocker.AsyncMock(return_value=b"dummy pdf content")
+    mock_extract_metadata = mocker.patch.object(pdf_extractor, "_extract_metadata_with_password_attempts")
+    mock_extract_metadata.return_value = {"pages": 1}
 
-        mock_extract_searchable = mocker.patch.object(pdf_extractor, "_extract_pdf_searchable_text")
-        mock_extract_searchable.return_value = "Extracted searchable text"
+    mock_extract_path = mocker.patch.object(pdf_extractor, "extract_path_async")
+    mock_extract_path.return_value = ExtractionResult(
+        content="Test content", mime_type="text/plain", metadata={}, chunks=[]
+    )
 
-        mock_extract_metadata = mocker.patch.object(pdf_extractor, "_extract_metadata_with_password_attempts")
-        mock_extract_metadata.return_value = {"pages": 1}
+    result = await pdf_extractor.extract_bytes_async(sample_pdf_content)
 
-        mock_apply_quality = mocker.patch.object(pdf_extractor, "_apply_quality_processing")
-        mock_apply_quality.side_effect = lambda x: x
+    assert result.content == "Test content"
+    assert result.metadata == {"pages": 1}
+    mock_create_temp_file.assert_called_once_with(".pdf")
 
-        result = await pdf_extractor.extract_path_async(test_file)
 
-        assert result.content == "Extracted searchable text"
-        mock_extract_searchable.assert_called_once_with(test_file)
+def test_pdf_extract_bytes_sync_basic(
+    pdf_extractor: PDFExtractor, sample_pdf_content: bytes, mocker: MockerFixture
+) -> None:
+    mock_mkstemp = mocker.patch("tempfile.mkstemp")
+    mock_mkstemp.return_value = (5, "/tmp/test.pdf")
 
-    @pytest.mark.anyio
-    async def test_extract_path_async_force_ocr(
-        self, pdf_extractor: PDFExtractor, tmp_path: Path, mocker: MockerFixture
-    ) -> None:
-        pdf_extractor.config.force_ocr = True
-        pdf_extractor.config.ocr_backend = "tesseract"
+    mock_fdopen = mocker.patch("os.fdopen")
+    mock_file = mocker.Mock()
+    mock_fdopen.return_value.__enter__.return_value = mock_file
+    mock_fdopen.return_value.__exit__.return_value = None
 
-        test_file = tmp_path / "test.pdf"
-        test_file.write_bytes(b"dummy pdf content")
+    mock_extract_path = mocker.patch.object(pdf_extractor, "extract_path_sync")
+    mock_extract_path.return_value = ExtractionResult(
+        content="Sync test content", mime_type="text/plain", metadata={}, chunks=[]
+    )
 
-        mock_async_path = mocker.patch("kreuzberg._extractors._pdf.AsyncPath")
-        mock_async_path.return_value.read_bytes = mocker.AsyncMock(return_value=b"dummy pdf content")
+    mock_extract_metadata = mocker.patch.object(pdf_extractor, "_extract_metadata_with_password_attempts_sync")
+    mock_extract_metadata.return_value = {"title": "Test PDF"}
 
-        mock_extract_ocr = mocker.patch.object(pdf_extractor, "_extract_pdf_text_with_ocr")
-        mock_extract_ocr.return_value = ExtractionResult(
-            content="OCR extracted text", mime_type="text/plain", metadata={}, chunks=[]
-        )
+    mocker.patch("pathlib.Path.unlink")
 
-        mock_extract_metadata = mocker.patch.object(pdf_extractor, "_extract_metadata_with_password_attempts")
-        mock_extract_metadata.return_value = {"pages": 1}
+    result = pdf_extractor.extract_bytes_sync(sample_pdf_content)
 
-        mock_apply_quality = mocker.patch.object(pdf_extractor, "_apply_quality_processing")
-        mock_apply_quality.side_effect = lambda x: x
+    assert result.content == "Sync test content"
+    assert result.metadata == {"title": "Test PDF"}
+    mock_file.write.assert_called_once_with(sample_pdf_content)
 
-        result = await pdf_extractor.extract_path_async(test_file)
 
-        assert result.content == "OCR extracted text"
-        mock_extract_ocr.assert_called_once_with(test_file, "tesseract")
+@pytest.mark.anyio
+async def test_pdf_extract_path_async_searchable_text(
+    pdf_extractor: PDFExtractor, tmp_path: Path, mocker: MockerFixture
+) -> None:
+    test_file = tmp_path / "test.pdf"
+    test_file.write_bytes(b"dummy pdf content")
 
-    @pytest.mark.anyio
-    async def test_extract_path_async_with_tables(
-        self, pdf_extractor: PDFExtractor, tmp_path: Path, mocker: MockerFixture
-    ) -> None:
-        pdf_extractor.config.extract_tables = True
+    mock_async_path = mocker.patch("kreuzberg._extractors._pdf.AsyncPath")
+    mock_async_path.return_value.read_bytes = mocker.AsyncMock(return_value=b"dummy pdf content")
 
-        test_file = tmp_path / "test.pdf"
-        test_file.write_bytes(b"dummy pdf content")
+    mock_extract_searchable = mocker.patch.object(pdf_extractor, "_extract_pdf_searchable_text")
+    mock_extract_searchable.return_value = "Extracted searchable text"
 
-        mock_async_path = mocker.patch("kreuzberg._extractors._pdf.AsyncPath")
-        mock_async_path.return_value.read_bytes = mocker.AsyncMock(return_value=b"dummy pdf content")
+    mock_extract_metadata = mocker.patch.object(pdf_extractor, "_extract_metadata_with_password_attempts")
+    mock_extract_metadata.return_value = {"pages": 1}
 
-        mock_extract_searchable = mocker.patch.object(pdf_extractor, "_extract_pdf_searchable_text")
-        mock_extract_searchable.return_value = "Text with tables"
+    mock_apply_quality = mocker.patch.object(pdf_extractor, "_apply_quality_processing")
+    mock_apply_quality.side_effect = lambda x: x
 
-        mock_extract_metadata = mocker.patch.object(pdf_extractor, "_extract_metadata_with_password_attempts")
-        mock_extract_metadata.return_value = {"pages": 2}
+    result = await pdf_extractor.extract_path_async(test_file)
 
-        mock_extract_tables = mocker.patch("kreuzberg._gmft.extract_tables")
-        mock_extract_tables.return_value = [
-            {"text": "Table 1", "page_number": 1},
-            {"text": "Table 2", "page_number": 2},
-        ]
+    assert result.content == "Extracted searchable text"
+    mock_extract_searchable.assert_called_once_with(test_file)
 
-        mock_generate_summary = mocker.patch("kreuzberg._extractors._pdf.generate_table_summary")
-        mock_generate_summary.return_value = {"table_count": 2, "pages_with_tables": 2, "total_rows": 10}
 
-        mock_apply_quality = mocker.patch.object(pdf_extractor, "_apply_quality_processing")
-        mock_apply_quality.side_effect = lambda x: x
+@pytest.mark.anyio
+async def test_pdf_extract_path_async_force_ocr(
+    pdf_extractor: PDFExtractor, tmp_path: Path, mocker: MockerFixture
+) -> None:
+    pdf_extractor.config.force_ocr = True
+    pdf_extractor.config.ocr_backend = "tesseract"
 
-        result = await pdf_extractor.extract_path_async(test_file)
+    test_file = tmp_path / "test.pdf"
+    test_file.write_bytes(b"dummy pdf content")
 
-        assert result.content == "Text with tables"
-        assert len(result.tables) == 2
-        assert result.metadata["table_count"] == 2
-        assert "2 tables" in result.metadata["tables_summary"]
+    mock_async_path = mocker.patch("kreuzberg._extractors._pdf.AsyncPath")
+    mock_async_path.return_value.read_bytes = mocker.AsyncMock(return_value=b"dummy pdf content")
 
-    @pytest.mark.anyio
-    async def test_extract_path_async_searchable_text_fails(
-        self, pdf_extractor: PDFExtractor, tmp_path: Path, mocker: MockerFixture
-    ) -> None:
-        test_file = tmp_path / "test.pdf"
-        test_file.write_bytes(b"dummy pdf content")
+    mock_extract_ocr = mocker.patch.object(pdf_extractor, "_extract_pdf_text_with_ocr")
+    mock_extract_ocr.return_value = ExtractionResult(
+        content="OCR extracted text", mime_type="text/plain", metadata={}, chunks=[]
+    )
 
-        mock_async_path = mocker.patch("kreuzberg._extractors._pdf.AsyncPath")
-        mock_async_path.return_value.read_bytes = mocker.AsyncMock(return_value=b"dummy pdf content")
+    mock_extract_metadata = mocker.patch.object(pdf_extractor, "_extract_metadata_with_password_attempts")
+    mock_extract_metadata.return_value = {"pages": 1}
 
-        mock_extract_searchable = mocker.patch.object(pdf_extractor, "_extract_pdf_searchable_text")
-        mock_extract_searchable.side_effect = ParsingError("PDF parsing failed")
+    mock_apply_quality = mocker.patch.object(pdf_extractor, "_apply_quality_processing")
+    mock_apply_quality.side_effect = lambda x: x
 
-        pdf_extractor.config.ocr_backend = "tesseract"
-        mock_extract_ocr = mocker.patch.object(pdf_extractor, "_extract_pdf_text_with_ocr")
-        mock_extract_ocr.return_value = ExtractionResult(
-            content="OCR fallback content", mime_type="text/plain", metadata={}, chunks=[]
-        )
+    result = await pdf_extractor.extract_path_async(test_file)
 
-        mock_extract_metadata = mocker.patch.object(pdf_extractor, "_extract_metadata_with_password_attempts")
-        mock_extract_metadata.return_value = {"pages": 1}
+    assert result.content == "OCR extracted text"
+    mock_extract_ocr.assert_called_once_with(test_file, "tesseract")
 
-        mock_apply_quality = mocker.patch.object(pdf_extractor, "_apply_quality_processing")
-        mock_apply_quality.side_effect = lambda x: x
 
-        result = await pdf_extractor.extract_path_async(test_file)
+@pytest.mark.anyio
+async def test_pdf_extract_path_async_with_tables(
+    pdf_extractor: PDFExtractor, tmp_path: Path, mocker: MockerFixture
+) -> None:
+    pdf_extractor.config.extract_tables = True
 
-        assert result.content == "OCR fallback content"
-        mock_extract_ocr.assert_called_once()
+    test_file = tmp_path / "test.pdf"
+    test_file.write_bytes(b"dummy pdf content")
 
-    @pytest.mark.anyio
-    async def test_extract_path_async_no_extraction_possible(
-        self, pdf_extractor: PDFExtractor, tmp_path: Path, mocker: MockerFixture
-    ) -> None:
-        pdf_extractor.config.ocr_backend = None
+    mock_async_path = mocker.patch("kreuzberg._extractors._pdf.AsyncPath")
+    mock_async_path.return_value.read_bytes = mocker.AsyncMock(return_value=b"dummy pdf content")
 
-        test_file = tmp_path / "test.pdf"
-        test_file.write_bytes(b"dummy pdf content")
+    mock_extract_searchable = mocker.patch.object(pdf_extractor, "_extract_pdf_searchable_text")
+    mock_extract_searchable.return_value = "Text with tables"
 
-        mock_async_path = mocker.patch("kreuzberg._extractors._pdf.AsyncPath")
-        mock_async_path.return_value.read_bytes = mocker.AsyncMock(return_value=b"dummy pdf content")
+    mock_extract_metadata = mocker.patch.object(pdf_extractor, "_extract_metadata_with_password_attempts")
+    mock_extract_metadata.return_value = {"pages": 2}
 
-        mock_extract_searchable = mocker.patch.object(pdf_extractor, "_extract_pdf_searchable_text")
-        mock_extract_searchable.side_effect = ParsingError("PDF parsing failed")
+    mock_extract_tables = mocker.patch("kreuzberg._gmft.extract_tables")
+    mock_extract_tables.return_value = [
+        {"text": "Table 1", "page_number": 1},
+        {"text": "Table 2", "page_number": 2},
+    ]
 
-        mock_extract_metadata = mocker.patch.object(pdf_extractor, "_extract_metadata_with_password_attempts")
-        mock_extract_metadata.return_value = {"pages": 1}
+    mock_generate_summary = mocker.patch("kreuzberg._extractors._pdf.generate_table_summary")
+    mock_generate_summary.return_value = {"table_count": 2, "pages_with_tables": 2, "total_rows": 10}
 
-        mock_apply_quality = mocker.patch.object(pdf_extractor, "_apply_quality_processing")
-        mock_apply_quality.side_effect = lambda x: x
+    mock_apply_quality = mocker.patch.object(pdf_extractor, "_apply_quality_processing")
+    mock_apply_quality.side_effect = lambda x: x
 
-        result = await pdf_extractor.extract_path_async(test_file)
+    result = await pdf_extractor.extract_path_async(test_file)
 
-        assert result.content == ""
-        assert result.mime_type == "text/plain"
+    assert result.content == "Text with tables"
+    assert len(result.tables) == 2
+    assert result.metadata["table_count"] == 2
+    assert "2 tables" in result.metadata["tables_summary"]
 
-    def test_extract_path_sync_basic(self, pdf_extractor: PDFExtractor, tmp_path: Path, mocker: MockerFixture) -> None:
-        test_file = tmp_path / "test.pdf"
-        test_file.write_bytes(b"dummy pdf content")
 
-        mock_extract_searchable = mocker.patch.object(pdf_extractor, "_extract_pdf_searchable_text_sync")
-        mock_extract_searchable.return_value = "Extracted text"
+@pytest.mark.anyio
+async def test_pdf_extract_path_async_searchable_fails(
+    pdf_extractor: PDFExtractor, tmp_path: Path, mocker: MockerFixture
+) -> None:
+    test_file = tmp_path / "test.pdf"
+    test_file.write_bytes(b"dummy pdf content")
 
-        mock_extract_playa = mocker.patch.object(pdf_extractor, "_extract_with_playa_sync")
-        mock_extract_playa.return_value = "Enhanced text with structure"
+    mock_async_path = mocker.patch("kreuzberg._extractors._pdf.AsyncPath")
+    mock_async_path.return_value.read_bytes = mocker.AsyncMock(return_value=b"dummy pdf content")
 
-        mock_normalize = mocker.patch("kreuzberg._extractors._pdf.normalize_spaces")
-        mock_normalize.return_value = "Normalized text"
+    mock_extract_searchable = mocker.patch.object(pdf_extractor, "_extract_pdf_searchable_text")
+    mock_extract_searchable.side_effect = ParsingError("PDF parsing failed")
 
-        mock_apply_quality = mocker.patch.object(pdf_extractor, "_apply_quality_processing")
-        mock_apply_quality.side_effect = lambda x: x
+    pdf_extractor.config.ocr_backend = "tesseract"
+    mock_extract_ocr = mocker.patch.object(pdf_extractor, "_extract_pdf_text_with_ocr")
+    mock_extract_ocr.return_value = ExtractionResult(
+        content="OCR fallback content", mime_type="text/plain", metadata={}, chunks=[]
+    )
 
-        result = pdf_extractor.extract_path_sync(test_file)
+    mock_extract_metadata = mocker.patch.object(pdf_extractor, "_extract_metadata_with_password_attempts")
+    mock_extract_metadata.return_value = {"pages": 1}
 
-        assert result.content == "Normalized text"
-        mock_extract_playa.assert_called_once_with(test_file, fallback_text="Extracted text")
+    mock_apply_quality = mocker.patch.object(pdf_extractor, "_apply_quality_processing")
+    mock_apply_quality.side_effect = lambda x: x
 
-    def test_extract_path_sync_parsing_error(
-        self, pdf_extractor: PDFExtractor, tmp_path: Path, mocker: MockerFixture
-    ) -> None:
-        test_file = tmp_path / "test.pdf"
-        test_file.write_bytes(b"dummy pdf content")
+    result = await pdf_extractor.extract_path_async(test_file)
 
-        mock_extract_searchable = mocker.patch.object(pdf_extractor, "_extract_pdf_searchable_text_sync")
-        mock_extract_searchable.side_effect = ParsingError("Sync parsing failed")
+    assert result.content == "OCR fallback content"
+    mock_extract_ocr.assert_called_once()
 
-        pdf_extractor.config.ocr_backend = "tesseract"
-        mock_extract_ocr = mocker.patch.object(pdf_extractor, "_extract_pdf_with_ocr_sync")
-        mock_extract_ocr.return_value = "OCR sync content"
 
-        mock_normalize = mocker.patch("kreuzberg._extractors._pdf.normalize_spaces")
-        mock_normalize.return_value = "Normalized OCR content"
+@pytest.mark.anyio
+async def test_pdf_extract_path_async_no_extraction_possible(
+    pdf_extractor: PDFExtractor, tmp_path: Path, mocker: MockerFixture
+) -> None:
+    pdf_extractor.config.ocr_backend = None
 
-        mock_apply_quality = mocker.patch.object(pdf_extractor, "_apply_quality_processing")
-        mock_apply_quality.side_effect = lambda x: x
+    test_file = tmp_path / "test.pdf"
+    test_file.write_bytes(b"dummy pdf content")
 
-        result = pdf_extractor.extract_path_sync(test_file)
+    mock_async_path = mocker.patch("kreuzberg._extractors._pdf.AsyncPath")
+    mock_async_path.return_value.read_bytes = mocker.AsyncMock(return_value=b"dummy pdf content")
 
-        assert result.content == "Normalized OCR content"
-        mock_extract_ocr.assert_called_once_with(test_file)
+    mock_extract_searchable = mocker.patch.object(pdf_extractor, "_extract_pdf_searchable_text")
+    mock_extract_searchable.side_effect = ParsingError("PDF parsing failed")
 
-    def test_extract_path_sync_with_tables_import_error(
-        self, pdf_extractor: PDFExtractor, tmp_path: Path, mocker: MockerFixture
-    ) -> None:
-        pdf_extractor.config.extract_tables = True
+    mock_extract_metadata = mocker.patch.object(pdf_extractor, "_extract_metadata_with_password_attempts")
+    mock_extract_metadata.return_value = {"pages": 1}
 
-        test_file = tmp_path / "test.pdf"
-        test_file.write_bytes(b"dummy pdf content")
+    mock_apply_quality = mocker.patch.object(pdf_extractor, "_apply_quality_processing")
+    mock_apply_quality.side_effect = lambda x: x
 
-        mock_extract_searchable = mocker.patch.object(pdf_extractor, "_extract_pdf_searchable_text_sync")
-        mock_extract_searchable.return_value = "Text content"
+    result = await pdf_extractor.extract_path_async(test_file)
 
-        mock_extract_playa = mocker.patch.object(pdf_extractor, "_extract_with_playa_sync")
-        mock_extract_playa.return_value = "Enhanced text"
+    assert result.content == ""
+    assert result.mime_type == "text/plain"
 
-        mock_normalize = mocker.patch("kreuzberg._extractors._pdf.normalize_spaces")
-        mock_normalize.return_value = "Normalized text"
 
-        with patch.dict("sys.modules", {"kreuzberg._gmft": None}):
-            mock_apply_quality = mocker.patch.object(pdf_extractor, "_apply_quality_processing")
-            mock_apply_quality.side_effect = lambda x: x
+def test_pdf_extract_path_sync_basic(pdf_extractor: PDFExtractor, tmp_path: Path, mocker: MockerFixture) -> None:
+    test_file = tmp_path / "test.pdf"
+    test_file.write_bytes(b"dummy pdf content")
 
-            result = pdf_extractor.extract_path_sync(test_file)
+    mock_extract_searchable = mocker.patch.object(pdf_extractor, "_extract_pdf_searchable_text_sync")
+    mock_extract_searchable.return_value = "Extracted text"
 
-        assert result.content == "Normalized text"
-        assert result.tables == []
+    mock_extract_playa = mocker.patch.object(pdf_extractor, "_extract_with_playa_sync")
+    mock_extract_playa.return_value = "Enhanced text with structure"
 
-    def test_extract_path_sync_invalid_text_triggers_ocr(
-        self, pdf_extractor: PDFExtractor, tmp_path: Path, mocker: MockerFixture
-    ) -> None:
-        pdf_extractor.config.ocr_backend = "tesseract"
+    mock_normalize = mocker.patch("kreuzberg._extractors._pdf.normalize_spaces")
+    mock_normalize.return_value = "Normalized text"
 
-        test_file = tmp_path / "test.pdf"
-        test_file.write_bytes(b"dummy pdf content")
+    mock_apply_quality = mocker.patch.object(pdf_extractor, "_apply_quality_processing")
+    mock_apply_quality.side_effect = lambda x: x
 
-        mock_extract_searchable = mocker.patch.object(pdf_extractor, "_extract_pdf_searchable_text_sync")
-        mock_extract_searchable.return_value = ""
+    result = pdf_extractor.extract_path_sync(test_file)
 
-        mock_extract_ocr = mocker.patch.object(pdf_extractor, "_extract_pdf_with_ocr_sync")
-        mock_extract_ocr.return_value = "Valid OCR text"
+    assert result.content == "Normalized text"
+    mock_extract_playa.assert_called_once_with(test_file, fallback_text="Extracted text")
 
-        mock_normalize = mocker.patch("kreuzberg._extractors._pdf.normalize_spaces")
-        mock_normalize.return_value = "Normalized OCR text"
 
+def test_pdf_extract_path_sync_parsing_error(
+    pdf_extractor: PDFExtractor, tmp_path: Path, mocker: MockerFixture
+) -> None:
+    test_file = tmp_path / "test.pdf"
+    test_file.write_bytes(b"dummy pdf content")
+
+    mock_extract_searchable = mocker.patch.object(pdf_extractor, "_extract_pdf_searchable_text_sync")
+    mock_extract_searchable.side_effect = ParsingError("Sync parsing failed")
+
+    pdf_extractor.config.ocr_backend = "tesseract"
+    mock_extract_ocr = mocker.patch.object(pdf_extractor, "_extract_pdf_with_ocr_sync")
+    mock_extract_ocr.return_value = "OCR sync content"
+
+    mock_normalize = mocker.patch("kreuzberg._extractors._pdf.normalize_spaces")
+    mock_normalize.return_value = "Normalized OCR content"
+
+    mock_apply_quality = mocker.patch.object(pdf_extractor, "_apply_quality_processing")
+    mock_apply_quality.side_effect = lambda x: x
+
+    result = pdf_extractor.extract_path_sync(test_file)
+
+    assert result.content == "Normalized OCR content"
+    mock_extract_ocr.assert_called_once_with(test_file)
+
+
+def test_pdf_extract_path_sync_tables_import_error(
+    pdf_extractor: PDFExtractor, tmp_path: Path, mocker: MockerFixture
+) -> None:
+    pdf_extractor.config.extract_tables = True
+
+    test_file = tmp_path / "test.pdf"
+    test_file.write_bytes(b"dummy pdf content")
+
+    mock_extract_searchable = mocker.patch.object(pdf_extractor, "_extract_pdf_searchable_text_sync")
+    mock_extract_searchable.return_value = "Text content"
+
+    mock_extract_playa = mocker.patch.object(pdf_extractor, "_extract_with_playa_sync")
+    mock_extract_playa.return_value = "Enhanced text"
+
+    mock_normalize = mocker.patch("kreuzberg._extractors._pdf.normalize_spaces")
+    mock_normalize.return_value = "Normalized text"
+
+    with patch.dict("sys.modules", {"kreuzberg._gmft": None}):
         mock_apply_quality = mocker.patch.object(pdf_extractor, "_apply_quality_processing")
         mock_apply_quality.side_effect = lambda x: x
 
         result = pdf_extractor.extract_path_sync(test_file)
 
-        assert result.content == "Normalized OCR text"
-        mock_extract_ocr.assert_called_once_with(test_file)
+    assert result.content == "Normalized text"
+    assert result.tables == []
 
-    def test_corrupted_pattern_matching(self, pdf_extractor: PDFExtractor) -> None:
-        test_cases = [
-            ("\\x00", True),
-            ("\\x01", True),
-            ("\\x08", True),
-            ("\\x0B", True),
-            ("\\x0C", True),
-            ("\\x0E", True),
-            ("\\x1F", True),
-            ("\\uFFFD", True),
-            ("A", False),
-            ("1", False),
-            (" ", False),
-            ("\\n", False),
-            ("\\t", False),
-            ("\\r", False),
-        ]
 
-        for char, should_match in test_cases:
-            matches = pdf_extractor.CORRUPTED_PATTERN.findall(char)
-            if should_match:
-                assert len(matches) > 0, f"Character {char!r} should match corrupted pattern"
-            else:
-                assert len(matches) == 0, f"Character {char!r} should not match corrupted pattern"
+def test_pdf_extract_path_sync_invalid_text_ocr_fallback(
+    pdf_extractor: PDFExtractor, tmp_path: Path, mocker: MockerFixture
+) -> None:
+    pdf_extractor.config.ocr_backend = "tesseract"
 
-    def test_class_constants_values(self, pdf_extractor: PDFExtractor) -> None:
-        assert pdf_extractor.SHORT_TEXT_THRESHOLD == 50
-        assert pdf_extractor.MINIMUM_CORRUPTED_RESULTS == 2
+    test_file = tmp_path / "test.pdf"
+    test_file.write_bytes(b"dummy pdf content")
 
-        assert pdf_extractor.CORRUPTED_PATTERN is not None
-        assert hasattr(pdf_extractor.CORRUPTED_PATTERN, "pattern")
+    mock_extract_searchable = mocker.patch.object(pdf_extractor, "_extract_pdf_searchable_text_sync")
+    mock_extract_searchable.return_value = ""
 
-    @pytest.mark.anyio
-    async def test_extract_path_async_table_extraction_import_error(
-        self, pdf_extractor: PDFExtractor, tmp_path: Path, mocker: MockerFixture
-    ) -> None:
-        pdf_extractor.config.extract_tables = True
+    mock_extract_ocr = mocker.patch.object(pdf_extractor, "_extract_pdf_with_ocr_sync")
+    mock_extract_ocr.return_value = "Valid OCR text"
 
-        test_file = tmp_path / "test.pdf"
-        test_file.write_bytes(b"dummy pdf content")
+    mock_normalize = mocker.patch("kreuzberg._extractors._pdf.normalize_spaces")
+    mock_normalize.return_value = "Normalized OCR text"
 
-        mock_async_path = mocker.patch("kreuzberg._extractors._pdf.AsyncPath")
-        mock_async_path.return_value.read_bytes = mocker.AsyncMock(return_value=b"dummy pdf content")
+    mock_apply_quality = mocker.patch.object(pdf_extractor, "_apply_quality_processing")
+    mock_apply_quality.side_effect = lambda x: x
 
-        mock_extract_searchable = mocker.patch.object(pdf_extractor, "_extract_pdf_searchable_text")
-        mock_extract_searchable.return_value = "Text content"
+    result = pdf_extractor.extract_path_sync(test_file)
 
-        mock_extract_metadata = mocker.patch.object(pdf_extractor, "_extract_metadata_with_password_attempts")
-        mock_extract_metadata.return_value = {"pages": 1}
+    assert result.content == "Normalized OCR text"
+    mock_extract_ocr.assert_called_once_with(test_file)
 
-        with patch.dict("sys.modules", {"kreuzberg._gmft": None}):
-            mock_apply_quality = mocker.patch.object(pdf_extractor, "_apply_quality_processing")
-            mock_apply_quality.side_effect = lambda x: x
 
-            result = await pdf_extractor.extract_path_async(test_file)
+def test_pdf_corrupted_pattern_matching(pdf_extractor: PDFExtractor) -> None:
+    test_cases = [
+        ("\x00", True),
+        ("\x01", True),
+        ("\x08", True),
+        ("\x0b", True),
+        ("\x0c", True),
+        ("\x0e", True),
+        ("\x1f", True),
+        ("\ufffd", True),
+        ("A", False),
+        ("1", False),
+        (" ", False),
+        ("\n", False),
+        ("\t", False),
+        ("\r", False),
+    ]
 
-        assert result.content == "Text content"
-        assert result.tables == []
+    for char, should_match in test_cases:
+        matches = pdf_extractor.CORRUPTED_PATTERN.findall(char)
+        if should_match:
+            assert len(matches) > 0, f"Character {char!r} should match corrupted pattern"
+        else:
+            assert len(matches) == 0, f"Character {char!r} should not match corrupted pattern"
+
+
+def test_pdf_class_constants_values(pdf_extractor: PDFExtractor) -> None:
+    assert pdf_extractor.SHORT_TEXT_THRESHOLD == 50
+    assert pdf_extractor.MINIMUM_CORRUPTED_RESULTS == 2
+
+    assert pdf_extractor.CORRUPTED_PATTERN is not None
+    assert hasattr(pdf_extractor.CORRUPTED_PATTERN, "pattern")
+
+
+@pytest.mark.anyio
+async def test_pdf_extract_path_async_table_import_error(
+    pdf_extractor: PDFExtractor, tmp_path: Path, mocker: MockerFixture
+) -> None:
+    pdf_extractor.config.extract_tables = True
+
+    test_file = tmp_path / "test.pdf"
+    test_file.write_bytes(b"dummy pdf content")
+
+    mock_async_path = mocker.patch("kreuzberg._extractors._pdf.AsyncPath")
+    mock_async_path.return_value.read_bytes = mocker.AsyncMock(return_value=b"dummy pdf content")
+
+    mock_extract_searchable = mocker.patch.object(pdf_extractor, "_extract_pdf_searchable_text")
+    mock_extract_searchable.return_value = "Text content"
+
+    mock_extract_metadata = mocker.patch.object(pdf_extractor, "_extract_metadata_with_password_attempts")
+    mock_extract_metadata.return_value = {"pages": 1}
+
+    with patch.dict("sys.modules", {"kreuzberg._gmft": None}):
+        mock_apply_quality = mocker.patch.object(pdf_extractor, "_apply_quality_processing")
+        mock_apply_quality.side_effect = lambda x: x
+
+        result = await pdf_extractor.extract_path_async(test_file)
+
+    assert result.content == "Text content"
+    assert result.tables == []

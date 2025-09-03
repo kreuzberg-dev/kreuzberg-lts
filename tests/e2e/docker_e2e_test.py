@@ -33,7 +33,7 @@ test_results: dict[str, dict[str, Any]] = {}
 
 def run_command(cmd: list[str], timeout: int = 30) -> tuple[int, str, str]:
     try:
-        result = subprocess.run(cmd, check=False, capture_output=True, text=True, timeout=timeout)
+        result = subprocess.run(cmd, check=False, capture_output=True, text=True, timeout=timeout, encoding="utf-8")
         return result.returncode, result.stdout, result.stderr
     except subprocess.TimeoutExpired:
         return -1, "", "Command timed out"

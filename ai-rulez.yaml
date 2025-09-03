@@ -110,15 +110,6 @@ agents:
     description: "Expert Python developer for implementing features and fixing bugs"
     priority: 10
     targets: ["@claude-files"]
-    tools:
-      - "Read"
-      - "Write"
-      - "Edit"
-      - "MultiEdit"
-      - "Grep"
-      - "Glob"
-      - "LS"
-      - "Bash"
     system_prompt: |
       You are an expert Python engineer specializing in the Kreuzberg text extraction library.
 
@@ -152,15 +143,6 @@ agents:
     description: "Writes comprehensive tests for kreuzberg functionality"
     priority: 9
     targets: ["@claude-files"]
-    tools:
-      - "Read"
-      - "Write"
-      - "Edit"
-      - "MultiEdit"
-      - "Grep"
-      - "Glob"
-      - "LS"
-      - "Bash"
     system_prompt: |
       You are a test automation expert for the Kreuzberg text extraction library.
 
@@ -254,15 +236,6 @@ agents:
     description: "Manages infrastructure, CI/CD, Docker, and deployment configurations"
     priority: 9
     targets: ["@claude-files"]
-    tools:
-      - "Read"
-      - "Write"
-      - "Edit"
-      - "MultiEdit"
-      - "Grep"
-      - "Glob"
-      - "LS"
-      - "Bash"
     system_prompt: |
       You are an infrastructure and DevOps engineer for the Kreuzberg text extraction library.
 
@@ -332,13 +305,6 @@ agents:
     description: "Optimizes performance and resource usage"
     priority: 8
     targets: ["@claude-files"]
-    tools:
-      - "Read"
-      - "Edit"
-      - "MultiEdit"
-      - "Grep"
-      - "Glob"
-      - "Bash"
     system_prompt: |
       You are a performance optimization specialist for the Kreuzberg text extraction library.
 
