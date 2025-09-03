@@ -1,6 +1,6 @@
 """Command-line interface for Kreuzberg benchmarks."""
 
-# type: ignore[index,unused-ignore] 
+# type: ignore[index,unused-ignore]
 
 from __future__ import annotations
 
@@ -248,8 +248,7 @@ def run(
         runner.print_summary(suite)
 
         output_dir.mkdir(parents=True, exist_ok=True)
-        timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
-        output_file = output_dir / f"{suite_name}_{timestamp}.json"
+        output_file = output_dir / f"{suite_name}.json"
         runner.save_results(suite, output_file)
 
         latest_file = output_dir / "latest.json"
@@ -455,6 +454,14 @@ def baseline(
         with open(output_file, "w") as f:
             json.dump(results, f, indent=2)
         console.print(f"[blue]Results saved to {output_file}[/blue]")
+    else:
+        # Save to default location
+        output_dir = Path("results")
+        output_dir.mkdir(parents=True, exist_ok=True)
+        default_file = output_dir / "baseline.json"
+        with open(default_file, "w") as f:
+            json.dump(results, f, indent=2)
+        console.print(f"[blue]Results saved to {default_file}[/blue]")
 
 
 @app.command()
@@ -536,22 +543,30 @@ def statistical(
     }
 
     # Display summary
-    cold_cache = results["cold_cache"]  # type: ignore[index]
-    warm_cache = results["warm_cache"]  # type: ignore[index]
+    cold_cache = results["cold_cache"]
+    warm_cache = results["warm_cache"]
 
     console.print(
-        f"\n[green]Cold cache - Mean: {cold_cache['mean']:.3f}s ± {cold_cache['stdev']:.3f}s[/green]"
+        f"\n[green]Cold cache - Mean: {cold_cache['mean']:.3f}s ± {cold_cache['stdev']:.3f}s[/green]"  # type: ignore[index]
     )
     console.print(
-        f"[green]Warm cache - Mean: {warm_cache['mean']:.3f}s ± {warm_cache['stdev']:.3f}s[/green]"
+        f"[green]Warm cache - Mean: {warm_cache['mean']:.3f}s ± {warm_cache['stdev']:.3f}s[/green]"  # type: ignore[index]
     )
-    speedup = cold_cache["mean"] / warm_cache["mean"] if warm_cache["mean"] > 0 else 0
+    speedup = cold_cache["mean"] / warm_cache["mean"] if warm_cache["mean"] > 0 else 0  # type: ignore[index]
     console.print(f"[yellow]Average speedup: {speedup:.2f}x[/yellow]")
 
     if output_file:
         with open(output_file, "w") as f:
             json.dump(results, f, indent=2)
         console.print(f"[blue]Results saved to {output_file}[/blue]")
+    else:
+        # Save to default location
+        output_dir = Path("results")
+        output_dir.mkdir(parents=True, exist_ok=True)
+        default_file = output_dir / "statistical.json"
+        with open(default_file, "w") as f:
+            json.dump(results, f, indent=2)
+        console.print(f"[blue]Results saved to {default_file}[/blue]")
 
 
 @app.command()
@@ -664,19 +679,19 @@ def serialization(
     # Display results
     json_data = results["json"]  # type: ignore[index]
     console.print(
-        f"\n[green]JSON serialize: {json_data['serialize_mean']:.6f}s ± {json_data['serialize_stdev']:.6f}s[/green]"
+        f"\n[green]JSON serialize: {json_data['serialize_mean']:.6f}s ± {json_data['serialize_stdev']:.6f}s[/green]"  # type: ignore[index]
     )
     console.print(
-        f"[green]JSON deserialize: {json_data['deserialize_mean']:.6f}s ± {json_data['deserialize_stdev']:.6f}s[/green]"
+        f"[green]JSON deserialize: {json_data['deserialize_mean']:.6f}s ± {json_data['deserialize_stdev']:.6f}s[/green]"  # type: ignore[index]
     )
 
     if "msgpack" in results:
         msgpack_data = results["msgpack"]  # type: ignore[index]
         console.print(
-            f"[green]msgpack serialize: {msgpack_data['serialize_mean']:.6f}s ± {msgpack_data['serialize_stdev']:.6f}s[/green]"
+            f"[green]msgpack serialize: {msgpack_data['serialize_mean']:.6f}s ± {msgpack_data['serialize_stdev']:.6f}s[/green]"  # type: ignore[index]
         )
         console.print(
-            f"[green]msgpack deserialize: {msgpack_data['deserialize_mean']:.6f}s ± {msgpack_data['deserialize_stdev']:.6f}s[/green]"
+            f"[green]msgpack deserialize: {msgpack_data['deserialize_mean']:.6f}s ± {msgpack_data['deserialize_stdev']:.6f}s[/green]"  # type: ignore[index]
         )
         speedup_val = results["msgpack_speedup"]  # type: ignore[index]
         console.print(f"[yellow]msgpack speedup: {speedup_val:.2f}x[/yellow]")
@@ -685,6 +700,14 @@ def serialization(
         with open(output_file, "w") as f:
             json.dump(results, f, indent=2)
         console.print(f"[blue]Results saved to {output_file}[/blue]")
+    else:
+        # Save to default location
+        output_dir = Path("results")
+        output_dir.mkdir(parents=True, exist_ok=True)
+        default_file = output_dir / "serialization.json"
+        with open(default_file, "w") as f:
+            json.dump(results, f, indent=2)
+        console.print(f"[blue]Results saved to {default_file}[/blue]")
 
 
 if __name__ == "__main__":
