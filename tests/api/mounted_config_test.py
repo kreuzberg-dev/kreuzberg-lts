@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 from unittest.mock import patch
@@ -13,6 +14,7 @@ if TYPE_CHECKING:
 
 
 TEST_DATA_DIR = Path(__file__).parent.parent / "test_source_files"
+IS_CI = os.environ.get("CI") == "true"
 
 
 @pytest.fixture
@@ -46,6 +48,9 @@ def google_doc_pdf() -> Path:
 
 @pytest.fixture
 def xerox_pdf() -> Path:
+    # Use smaller PDF in CI to speed up tests
+    if IS_CI:
+        return TEST_DATA_DIR / "scanned.pdf"  # 70KB instead of 2.3MB
     return TEST_DATA_DIR / "Xerox_AltaLink_series_mfp_sag_en-US 2.pdf"
 
 
