@@ -144,7 +144,7 @@ def test_validate_device_memory_limit_exceeded(mock_memory: Mock, mock_detect: M
     mock_detect.return_value = [DeviceInfo(device_type="cuda", device_id=0, name="NVIDIA RTX 3080", memory_total=8.0)]
     mock_memory.return_value = (8.0, 6.0)
 
-    with pytest.raises(ValidationError, match="Requested memory limit.*exceeds device capacity"):
+    with pytest.raises(ValidationError, match=r"Requested memory limit.*exceeds device capacity"):
         validate_device_request("cuda", "EasyOCR", memory_limit=10.0)
 
 

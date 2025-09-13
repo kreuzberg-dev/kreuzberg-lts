@@ -134,7 +134,7 @@ async def test_easyocr_init_with_gpu_device(mock_resolve: Mock, mock_validate_la
         await EasyOCRBackend._init_easyocr(**asdict(config))
 
     mock_run_sync.assert_called_once()
-    args, kwargs = mock_run_sync.call_args
+    _args, kwargs = mock_run_sync.call_args
     assert kwargs["gpu"] is True
 
     EasyOCRBackend._reader = None
@@ -161,7 +161,7 @@ async def test_easyocr_init_with_cpu_device(mock_resolve: Mock, mock_validate_la
         await EasyOCRBackend._init_easyocr(**asdict(config))
 
     mock_run_sync.assert_called_once()
-    args, kwargs = mock_run_sync.call_args
+    _args, kwargs = mock_run_sync.call_args
     assert kwargs["gpu"] is False
 
     EasyOCRBackend._reader = None
@@ -193,7 +193,7 @@ async def test_paddleocr_init_with_gpu_device_and_memory_limit(
     await PaddleBackend._init_paddle_ocr(**asdict(config))
 
     mock_run_sync.assert_called_once()
-    args, kwargs = mock_run_sync.call_args
+    args, _kwargs = mock_run_sync.call_args
     assert args[0].__name__ == "PaddleOCR"
 
     PaddleBackend._paddle_ocr = None
@@ -225,7 +225,7 @@ async def test_paddleocr_init_cpu_device_no_gpu_package(
     await PaddleBackend._init_paddle_ocr(**asdict(config))
 
     mock_run_sync.assert_called_once()
-    args, kwargs = mock_run_sync.call_args
+    args, _kwargs = mock_run_sync.call_args
     assert args[0].__name__ == "PaddleOCR"
 
     PaddleBackend._paddle_ocr = None

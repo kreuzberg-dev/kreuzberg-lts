@@ -561,7 +561,7 @@ def test_classify_document_comprehensive_with_metadata_detailed(mocker: MockerFi
     result = ExtractionResult(content="Document content", mime_type="text/plain", metadata={"title": "Invoice"})
     config = ExtractionConfig(auto_detect_document_type=True, document_type_confidence_threshold=0.3)
 
-    doc_type, confidence = classify_document(result, config)
+    doc_type, _confidence = classify_document(result, config)
 
     assert doc_type == "invoice"
     mock_translate.assert_called_once_with(result)

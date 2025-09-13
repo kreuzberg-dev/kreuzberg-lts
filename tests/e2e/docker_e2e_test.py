@@ -83,7 +83,7 @@ def test_cli_help(image_name: str) -> bool:
         "kreuzberg",
         "--help",
     ]
-    exit_code, stdout, stderr = run_command(cmd)
+    exit_code, stdout, _stderr = run_command(cmd)
     success = exit_code == 0 and "Text extraction from documents" in stdout
     if not success:
         pass
@@ -103,7 +103,7 @@ def test_cli_version(image_name: str) -> bool:
         "kreuzberg",
         "--version",
     ]
-    exit_code, stdout, stderr = run_command(cmd)
+    exit_code, stdout, _stderr = run_command(cmd)
     success = exit_code == 0 and "kreuzberg" in stdout.lower()
     if not success:
         pass
@@ -130,7 +130,7 @@ def test_api_health(image_name: str) -> bool:
         f"{port}:8000",
         image_name,
     ]
-    exit_code, container_id, stderr = run_command(cmd)
+    exit_code, _container_id, _stderr = run_command(cmd)
     if exit_code != 0:
         return False
 
@@ -247,7 +247,7 @@ def test_api_extraction(image_name: str) -> bool:
         f"{port}:8000",
         image_name,
     ]
-    exit_code, container_id, stderr = run_command(cmd)
+    exit_code, _container_id, stderr = run_command(cmd)
     if exit_code != 0:
         return False
 

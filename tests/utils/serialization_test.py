@@ -140,7 +140,7 @@ def test_encode_hook_unsupported() -> None:
 
     obj = UnsupportedType()
 
-    with pytest.raises(TypeError, match="Unsupported type.*UnsupportedType"):
+    with pytest.raises(TypeError, match=r"Unsupported type.*UnsupportedType"):
         encode_hook(obj)
 
 

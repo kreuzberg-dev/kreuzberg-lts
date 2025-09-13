@@ -44,7 +44,7 @@ async def test_create_temp_file_cleanup_error(mocker: MockerFixture) -> None:
 
     mocker.patch("kreuzberg._utils._tmp.AsyncPath", return_value=mock_path)
 
-    temp_file_path2, cleanup2 = await create_temp_file(".txt")
+    _temp_file_path2, cleanup2 = await create_temp_file(".txt")
     await cleanup2()
 
     await cleanup()

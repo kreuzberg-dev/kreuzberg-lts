@@ -61,9 +61,9 @@ dependencies = [
   "chardetng-py>=0.3.5",
   "exceptiongroup>=1.2.2; python_version<'3.11'",
   "html-to-markdown[lxml]>=1.10.0",
-  "mcp>=1.13.0",
+  "mcp>=1.14.0",
   "msgspec>=0.18.0",
-  "numpy>=1.24.0",
+  "numpy>=2.0.0",
   "playa-pdf>=0.7.0",
   "polars>=1.33.1",
   "psutil>=7.0.0",
@@ -109,7 +109,7 @@ scripts.kreuzberg-mcp = "kreuzberg._mcp.server:main"
 [dependency-groups]
 dev = [
   "covdefaults>=2.3.0",
-  "mypy>=1.16.1",
+  "mypy>=1.18.1",
   "pre-commit>=4.3.0",
   "pytest>=8.4.2",
   "pytest-cov>=7.0.0",
@@ -117,9 +117,9 @@ dev = [
   "pytest-rerunfailures>=16.0.1",
   "pytest-timeout>=2.4.0",
   "rich>=14.1.0",
-  "ruff>=0.12.12",
+  "ruff>=0.13.0",
   "tabulate>=0.9.0",
-  "trio>=0.30.0",
+  "trio>=0.31.0",
   "uv-bump",
 ]
 doc = [

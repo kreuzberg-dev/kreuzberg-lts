@@ -435,7 +435,7 @@ def test_resolve_device_config_validation_error_fallback() -> None:
 
 
 def test_resolve_device_config_validation_error_reraise_other_cases() -> None:
-    with pytest.raises(ValidationError, match="Requested device.*not available"):
+    with pytest.raises(ValidationError, match=r"Requested device.*not available"):
         EasyOCRBackend._resolve_device_config(use_gpu=True, device="cuda", fallback_to_cpu=False)
 
 
