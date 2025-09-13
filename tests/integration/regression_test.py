@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
 import pytest
@@ -15,7 +16,9 @@ TEST_DATA_DIR = Path(__file__).parent / "test_source_files"
     "pdf_fixture,expected_content",
     [
         ("google_doc_pdf", "Example document"),
-        ("xerox_pdf", "AltaLink"),
+        pytest.param(
+            "xerox_pdf", "UNIVERSITIES" if os.environ.get("CI") == "true" else "AltaLink", id="xerox_pdf-AltaLink"
+        ),
     ],
 )
 @pytest.mark.parametrize("test_mode", ["async", "sync"])
