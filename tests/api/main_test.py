@@ -782,3 +782,34 @@ async def test_extract_with_invalid_extraction_config(test_client: AsyncTestClie
     assert "Invalid extraction configuration" in error_response["message"]
     assert "max_chars must be positive" in error_response["message"]
     assert '"max_chars": -100' in error_response["details"]
+
+
+@pytest.mark.anyio
+async def test_extract_pdf_without_tables_with_table_extraction_enabled(
+    test_client: AsyncTestClient[Any], searchable_pdf: Path
+) -> None:
+    from kreuzberg import ExtractionConfig, GMFTConfig
+
+    test_config = ExtractionConfig(
+        extract_tables=True,
+        gmft_config=GMFTConfig(
+            detector_base_threshold=0.9,
+            remove_null_rows=True,
+        ),
+    )
+
+    with patch("kreuzberg._api.main.discover_config", return_value=test_config):
+        with searchable_pdf.open("rb") as f:
+            response = await test_client.post(
+                "/extract", files=[("data", (searchable_pdf.name, f.read(), "application/pdf"))]
+            )
+
+    assert response.status_code == 201
+    data = response.json()
+    assert len(data) == 1
+    assert "content" in data[0]
+
+    assert "Sample PDF" in data[0]["content"]
+
+    if "tables" in data[0]:
+        assert isinstance(data[0]["tables"], list)

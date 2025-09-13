@@ -21,9 +21,8 @@ def google_doc_pdf() -> Path:
 
 @pytest.fixture
 def xerox_pdf() -> Path:
-    # Use smaller PDF in CI to speed up tests
     if IS_CI:
-        return TEST_DATA_DIR / "scanned.pdf"  # 70KB instead of 2.3MB
+        return TEST_DATA_DIR / "scanned.pdf"
     return TEST_DATA_DIR / "Xerox_AltaLink_series_mfp_sag_en-US 2.pdf"
 
 
@@ -37,7 +36,6 @@ async def test_large_pdf_upload(test_client: AsyncTestClient[Any], xerox_pdf: Pa
     with xerox_pdf.open("rb") as f:
         pdf_content = f.read()
 
-    # Adjust size check for CI
     if IS_CI:
         assert len(pdf_content) > 50_000, f"File too small: {len(pdf_content)} bytes"
     else:
@@ -52,8 +50,7 @@ async def test_large_pdf_upload(test_client: AsyncTestClient[Any], xerox_pdf: Pa
     data = response.json()
     assert len(data) == 1
     assert data[0]["mime_type"] == "text/plain"
-    assert len(data[0]["content"]) > 100  # Reduced from 1000 for smaller file
-    # Check for content existence rather than specific text
+    assert len(data[0]["content"]) > 100
     if not IS_CI:
         assert "Xerox" in data[0]["content"]
 

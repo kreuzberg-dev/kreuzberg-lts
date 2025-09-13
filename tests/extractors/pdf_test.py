@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, NoReturn
 from unittest.mock import patch
 
-import pandas as pd
+import polars as pl
 import pytest
 from PIL.Image import Image
 from pytest import MonkeyPatch
@@ -214,7 +214,7 @@ async def test_extract_tables_from_pdf(pdf_with_table: Path) -> None:
         assert isinstance(table["text"], str)
         assert "df" in table
 
-        assert isinstance(table["df"], (pd.DataFrame, dict))
+        assert isinstance(table["df"], (pl.DataFrame, dict))
 
         assert isinstance(table["cropped_image"], (Image, type(None)))
 

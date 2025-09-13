@@ -389,6 +389,18 @@ rules:
     name: Important Instructions
     priority: critical
   - content: |
+      ### Docstrings and Comments Guidelines
+      - **NO docstrings in private functions** (functions starting with `_`)
+      - **NO docstrings in private files** (files starting with `_`)
+      - **NO docstrings in private folders** (folders starting with `_`)
+      - **NO docstrings in test files** (files in `tests/` directory)
+      - **ONLY use docstrings in public API** (what's documented in API reference)
+      - **NO redundant comments** - code should be self-documenting
+      - **Comments only when necessary** to explain complex logic or non-obvious decisions
+      - **Prefer clear variable/function names** over comments
+    name: Documentation Standards
+    priority: critical
+  - content: |
       ### Core Extraction Flow
       1. **Entry Point**: `extraction.py` provides main functions (`extract_file`, `extract_bytes`, etc.)
       2. **Registry Pattern**: `ExtractorRegistry` selects appropriate extractor based on MIME type

@@ -856,3 +856,37 @@ def test_cli_unicode_character_handling(tmp_path: Path) -> None:
     assert "•" in result.stdout
     assert "€" in result.stdout
     assert "中文" in result.stdout
+
+
+def test_cli_pdf_without_tables_extract_tables_enabled() -> None:
+    pdf_path = Path("tests/test_source_files/searchable.pdf")
+    if not pdf_path.exists():
+        pytest.skip("Test PDF file not available")
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "kreuzberg",
+            "extract",
+            str(pdf_path),
+            "--extract-tables",
+            "--output-format",
+            "json",
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+        timeout=120,
+        cwd=Path.cwd(),
+    )
+
+    assert result.returncode == 0
+
+    output_data = json.loads(result.stdout)
+    assert "content" in output_data
+
+    assert "Sample PDF" in output_data["content"]
+
+    if "tables" in output_data:
+        assert isinstance(output_data["tables"], list)

@@ -11,6 +11,7 @@ from dataclasses import asdict
 from typing import TYPE_CHECKING, Any
 from unittest.mock import MagicMock, patch
 
+import pandas as pd
 import pytest
 from PIL import Image
 
@@ -87,8 +88,6 @@ def test_extract_tables_in_process_success(sample_pdf: Path, mock_gmft_modules: 
     config_dict = asdict(config).copy()
     result_queue: Any = mp.Queue()
 
-    import pandas as pd
-
     mock_df = pd.DataFrame({"col1": [1, 2], "col2": [3, 4]})
 
     mock_page = MagicMock()
@@ -122,6 +121,8 @@ def test_extract_tables_in_process_success(sample_pdf: Path, mock_gmft_modules: 
         _extract_tables_in_process(str(sample_pdf), config_dict, result_queue)
 
         success, result = result_queue.get(timeout=1)
+        if not success:
+            pass
         assert success is True
         assert len(result) == 1
         assert result[0]["page_number"] == 1
@@ -236,8 +237,6 @@ def test_extract_tables_isolated_success(sample_pdf: Path) -> None:
         mock_ctx = MagicMock()
         mock_get_context.return_value = mock_ctx
 
-        import pandas as pd
-
         df = pd.DataFrame({"col1": [1, 2], "col2": [3, 4]})
 
         img = Image.new("RGB", (100, 100), color="white")
@@ -301,8 +300,6 @@ async def test_extract_tables_isolated_async_success(sample_pdf: Path) -> None:
         mock_ctx = MagicMock()
         mock_get_context.return_value = mock_ctx
 
-        import pandas as pd
-
         df = pd.DataFrame({"col1": [1, 2], "col2": [3, 4]})
 
         img = Image.new("RGB", (100, 100), color="white")
@@ -320,7 +317,7 @@ async def test_extract_tables_isolated_async_success(sample_pdf: Path) -> None:
         ]
 
         mock_queue = MagicMock()
-        mock_queue.get_nowait.return_value = (True, result)
+        mock_queue.get.return_value = (True, result)
         mock_ctx.Queue.return_value = mock_queue
 
         mock_process = MagicMock()
@@ -343,7 +340,7 @@ async def test_extract_tables_isolated_async_timeout(sample_pdf: Path) -> None:
         mock_get_context.return_value = mock_ctx
 
         mock_queue = MagicMock()
-        mock_queue.get_nowait.side_effect = queue.Empty
+        mock_queue.get.side_effect = queue.Empty
         mock_ctx.Queue.return_value = mock_queue
 
         mock_process = MagicMock()
@@ -363,7 +360,7 @@ async def test_extract_tables_isolated_async_segfault(sample_pdf: Path) -> None:
         mock_get_context.return_value = mock_ctx
 
         mock_queue = MagicMock()
-        mock_queue.get_nowait.side_effect = queue.Empty
+        mock_queue.get.side_effect = queue.Empty
         mock_ctx.Queue.return_value = mock_queue
 
         mock_process = MagicMock()
@@ -384,7 +381,7 @@ async def test_extract_tables_isolated_async_unexpected_death(sample_pdf: Path) 
         mock_get_context.return_value = mock_ctx
 
         mock_queue = MagicMock()
-        mock_queue.get_nowait.side_effect = queue.Empty
+        mock_queue.get.side_effect = queue.Empty
         mock_ctx.Queue.return_value = mock_queue
 
         mock_process = MagicMock()
@@ -406,7 +403,7 @@ async def test_extract_tables_isolated_async_error_result(sample_pdf: Path) -> N
 
         mock_queue = MagicMock()
         error_info = {"error": "Async table extraction failed", "type": "ValueError", "traceback": "Traceback..."}
-        mock_queue.get_nowait.return_value = (False, error_info)
+        mock_queue.get.return_value = (False, error_info)
         mock_ctx.Queue.return_value = mock_queue
 
         mock_process = MagicMock()
@@ -426,7 +423,7 @@ async def test_extract_tables_isolated_async_process_cleanup(sample_pdf: Path) -
         mock_get_context.return_value = mock_ctx
 
         mock_queue = MagicMock()
-        mock_queue.get_nowait.side_effect = queue.Empty
+        mock_queue.get.side_effect = queue.Empty
         mock_ctx.Queue.return_value = mock_queue
 
         mock_process = MagicMock()

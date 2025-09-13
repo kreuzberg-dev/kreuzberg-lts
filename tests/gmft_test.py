@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 from unittest.mock import AsyncMock, MagicMock, patch
 
-import pandas as pd
+import polars as pl
 import pytest
 from PIL import Image
 
@@ -30,7 +30,7 @@ def mock_cropped_table() -> MagicMock:
 @pytest.fixture
 def mock_formatted_table() -> MagicMock:
     mock = MagicMock()
-    df = pd.DataFrame({"Column1": [1, 2, 3], "Column2": ["A", "B", "C"]})
+    df = pl.DataFrame({"Column1": [1, 2, 3], "Column2": ["A", "B", "C"]})
     mock.df = AsyncMock(return_value=df)
     return mock
 
@@ -51,7 +51,7 @@ async def test_extract_tables_with_default_config(tiny_pdf_with_tables: Path) ->
             assert isinstance(table["text"], str)
             assert "df" in table
 
-            assert isinstance(table["df"], (pd.DataFrame, dict))
+            assert isinstance(table["df"], (pl.DataFrame, dict))
             assert "cropped_image" in table
 
             assert isinstance(table["cropped_image"], (Image.Image, type(None)))
@@ -130,7 +130,7 @@ async def test_extract_tables_with_mocks(tiny_pdf_with_tables: Path) -> None:
     mock_cropped_table.image.return_value = Image.new("RGB", (100, 100))
 
     mock_formatted_table = MagicMock()
-    mock_df = pd.DataFrame({"Col1": [1, 2], "Col2": ["A", "B"]})
+    mock_df = pl.DataFrame({"Col1": [1, 2], "Col2": ["A", "B"]})
     mock_formatted_table.df = AsyncMock(return_value=mock_df)
 
     mock_auto = MagicMock()
@@ -178,7 +178,7 @@ async def test_extract_tables_with_mocks(tiny_pdf_with_tables: Path) -> None:
         table_data = result[0]
         assert isinstance(table_data, dict)
         assert table_data["page_number"] == 1
-        assert isinstance(table_data["df"], pd.DataFrame)
+        assert isinstance(table_data["df"], pl.DataFrame)
         assert isinstance(table_data["text"], str)
         assert isinstance(table_data["cropped_image"], Image.Image)
 
@@ -261,7 +261,7 @@ def test_extract_tables_sync_with_tiny_pdf(tiny_pdf_with_tables: Path) -> None:
             assert "text" in table
             assert isinstance(table["text"], str)
             assert "df" in table
-            assert isinstance(table["df"], (pd.DataFrame, dict))
+            assert isinstance(table["df"], (pl.DataFrame, dict))
             assert "cropped_image" in table
             assert isinstance(table["cropped_image"], (Image.Image, type(None)))
     except MissingDependencyError:
@@ -355,13 +355,11 @@ async def test_extract_tables_cache_hit(tiny_pdf_with_tables: Path) -> None:
     from kreuzberg._utils._cache import get_table_cache
 
     cache = get_table_cache()
-    import pandas as pd
-
     cached_tables = [
         {
             "page_number": 1,
             "text": "cached table",
-            "df": pd.DataFrame({"col": [1, 2]}),
+            "df": pl.DataFrame({"col": [1, 2]}),
             "cropped_image": Image.new("RGB", (10, 10), color="white"),
         }
     ]
@@ -390,7 +388,7 @@ async def test_extract_tables_cache_hit(tiny_pdf_with_tables: Path) -> None:
     assert result[0]["text"] == cached_tables[0]["text"]
     assert result[0]["df"] is not None
     assert cached_tables[0]["df"] is not None
-    assert result[0]["df"].equals(cached_tables[0]["df"])
+    assert result[0]["df"].equals(cached_tables[0]["df"])  # type: ignore[arg-type]
     assert len(result) == 1
     assert result[0]["text"] == "cached table"
 
@@ -551,14 +549,12 @@ async def test_gmft_cache_processing_edge_cases_coordination_wait_failure(tiny_p
     cache.mark_processing(**cache_kwargs)
 
     try:
-        with patch("anyio.to_thread.run_sync") as mock_to_thread:
-            mock_event = MagicMock()
-            mock_event.wait = MagicMock()
-            mock_to_thread.return_value = None
+        mock_event = MagicMock()
+        mock_event.wait = MagicMock()
 
-            with patch.object(cache, "mark_processing", return_value=mock_event):
-                result = await extract_tables(tiny_pdf_with_tables)
-                assert isinstance(result, list)
+        with patch.object(cache, "mark_processing", return_value=mock_event):
+            result = await extract_tables(tiny_pdf_with_tables)
+            assert isinstance(result, list)
     except (MissingDependencyError, ParsingError, TimeoutError):
         pass
     finally:
@@ -645,9 +641,7 @@ async def test_gmft_without_tables_pdf_async() -> None:
             assert "df" in table
             assert "cropped_image" in table
 
-            import pandas as pd
-
-            assert isinstance(table["df"], pd.DataFrame)
+            assert isinstance(table["df"], pl.DataFrame)
     except MissingDependencyError:
         pytest.skip("GMFT dependency not installed")
 
@@ -666,9 +660,7 @@ def test_gmft_without_tables_pdf_sync() -> None:
             assert "df" in table
             assert "cropped_image" in table
 
-            import pandas as pd
-
-            assert isinstance(table["df"], pd.DataFrame)
+            assert isinstance(table["df"], pl.DataFrame)
     except MissingDependencyError:
         pytest.skip("GMFT dependency not installed")
 
@@ -701,9 +693,7 @@ async def test_gmft_without_tables_extract_file_with_gmft() -> None:
             assert "df" in table
             assert "cropped_image" in table
 
-            import pandas as pd
-
-            assert isinstance(table["df"], pd.DataFrame)
+            assert isinstance(table["df"], pl.DataFrame)
     except MissingDependencyError:
         pytest.skip("GMFT dependency not installed")
 
@@ -737,9 +727,7 @@ def test_gmft_without_tables_extract_file_sync_with_gmft() -> None:
             assert "df" in table
             assert "cropped_image" in table
 
-            import pandas as pd
-
-            assert isinstance(table["df"], pd.DataFrame)
+            assert isinstance(table["df"], pl.DataFrame)
     except MissingDependencyError:
         pytest.skip("GMFT dependency not installed")
 
@@ -786,3 +774,42 @@ def test_gmft_config_serialization_complex_cell_confidence() -> None:
     recreated_config = GMFTConfig(**serialized)
 
     assert recreated_config.cell_required_confidence == complex_confidence
+
+
+@pytest.mark.anyio
+async def test_gmft_pdf_without_tables_isolated_process() -> None:
+    pdf_path = Path("tests/test_source_files/searchable.pdf")
+
+    try:
+        tables = await extract_tables(pdf_path, use_isolated_process=True)
+
+        assert isinstance(tables, list)
+
+        for table in tables:
+            assert "page_number" in table
+            assert "text" in table
+            assert "df" in table
+            assert "cropped_image" in table
+
+            assert isinstance(table["df"], pl.DataFrame)
+    except MissingDependencyError:
+        pytest.skip("GMFT dependency not installed")
+
+
+def test_gmft_pdf_without_tables_isolated_process_sync() -> None:
+    pdf_path = Path("tests/test_source_files/searchable.pdf")
+
+    try:
+        tables = extract_tables_sync(pdf_path, use_isolated_process=True)
+
+        assert isinstance(tables, list)
+
+        for table in tables:
+            assert "page_number" in table
+            assert "text" in table
+            assert "df" in table
+            assert "cropped_image" in table
+
+            assert isinstance(table["df"], pl.DataFrame)
+    except MissingDependencyError:
+        pytest.skip("GMFT dependency not installed")

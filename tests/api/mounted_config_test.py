@@ -48,9 +48,8 @@ def google_doc_pdf() -> Path:
 
 @pytest.fixture
 def xerox_pdf() -> Path:
-    # Use smaller PDF in CI to speed up tests
     if IS_CI:
-        return TEST_DATA_DIR / "scanned.pdf"  # 70KB instead of 2.3MB
+        return TEST_DATA_DIR / "scanned.pdf"
     return TEST_DATA_DIR / "Xerox_AltaLink_series_mfp_sag_en-US 2.pdf"
 
 
