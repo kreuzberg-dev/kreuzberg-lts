@@ -14,9 +14,13 @@ from kreuzberg.exceptions import ParsingError
 @pytest.mark.anyio
 async def test_extract_pdf_metadata_success() -> None:
     """Test extract_pdf_metadata successfully extracts metadata."""
+    mock_page = Mock()
+    mock_page.width = 612.0
+    mock_page.height = 792.0
+
     mock_document = Mock()
     mock_document.info = [{"title": b"Test Document", "author": b"Test Author"}]
-    mock_document.pages = [Mock()]
+    mock_document.pages = [mock_page]
     mock_document.outline = None
     mock_document.structure = None
 
@@ -38,9 +42,13 @@ async def test_extract_pdf_metadata_with_outline() -> None:
     mock_outline_entry.title = "Chapter 1"
     mock_outline_entry.children = None
 
+    mock_page = Mock()
+    mock_page.width = 612.0
+    mock_page.height = 792.0
+
     mock_document = Mock()
     mock_document.info = [{}]
-    mock_document.pages = [Mock()]
+    mock_document.pages = [mock_page]
     mock_document.outline = [mock_outline_entry]
     mock_document.structure = None
 
@@ -74,6 +82,14 @@ async def test_extract_pdf_metadata_with_password() -> None:
     mock_document.pages = []
     mock_document.outline = None
     mock_document.structure = None
+    mock_document.status = None
+    mock_document.is_printable = None
+    mock_document.is_modifiable = None
+    mock_document.is_extractable = None
+    mock_document.is_encrypted = None
+    mock_document.encryption_method = None
+    mock_document.is_pdf_a = None
+    mock_document.pdf_a_level = None
 
     with (
         patch("kreuzberg._playa.parse", return_value=mock_document) as mock_parse,
@@ -96,6 +112,14 @@ async def test_extract_pdf_metadata_with_pages_for_dimensions() -> None:
     mock_document.pages = [mock_page]
     mock_document.outline = None
     mock_document.structure = None
+    mock_document.status = None
+    mock_document.is_printable = None
+    mock_document.is_modifiable = None
+    mock_document.is_extractable = None
+    mock_document.is_encrypted = None
+    mock_document.encryption_method = None
+    mock_document.is_pdf_a = None
+    mock_document.pdf_a_level = None
 
     with patch("kreuzberg._playa.parse", return_value=mock_document), patch("kreuzberg._playa.asobj", return_value={}):
         result = await extract_pdf_metadata(b"pdf with pages")
@@ -118,6 +142,14 @@ async def test_extract_pdf_metadata_with_structure() -> None:
     mock_document.pages = []
     mock_document.outline = None
     mock_document.structure = [mock_element]
+    mock_document.status = None
+    mock_document.is_printable = None
+    mock_document.is_modifiable = None
+    mock_document.is_extractable = None
+    mock_document.is_encrypted = None
+    mock_document.encryption_method = None
+    mock_document.is_pdf_a = None
+    mock_document.pdf_a_level = None
 
     with (
         patch("kreuzberg._playa.parse", return_value=mock_document),
@@ -137,6 +169,14 @@ def test_extract_pdf_metadata_sync_success() -> None:
     mock_document.pages = []
     mock_document.outline = None
     mock_document.structure = None
+    mock_document.status = None
+    mock_document.is_printable = None
+    mock_document.is_modifiable = None
+    mock_document.is_extractable = None
+    mock_document.is_encrypted = None
+    mock_document.encryption_method = None
+    mock_document.is_pdf_a = None
+    mock_document.pdf_a_level = None
 
     with (
         patch("kreuzberg._playa.parse", return_value=mock_document),
@@ -156,6 +196,14 @@ def test_extract_pdf_metadata_sync_with_password() -> None:
     mock_document.pages = []
     mock_document.outline = None
     mock_document.structure = None
+    mock_document.status = None
+    mock_document.is_printable = None
+    mock_document.is_modifiable = None
+    mock_document.is_extractable = None
+    mock_document.is_encrypted = None
+    mock_document.encryption_method = None
+    mock_document.is_pdf_a = None
+    mock_document.pdf_a_level = None
 
     with (
         patch("kreuzberg._playa.parse", return_value=mock_document) as mock_parse,
@@ -214,9 +262,14 @@ async def test_extract_pdf_metadata_document_permissions() -> None:
     mock_document.pages = []
     mock_document.outline = None
     mock_document.structure = None
+    mock_document.status = None
     mock_document.is_printable = True
     mock_document.is_modifiable = False
     mock_document.is_extractable = True
+    mock_document.is_encrypted = None
+    mock_document.encryption_method = None
+    mock_document.is_pdf_a = None
+    mock_document.pdf_a_level = None
 
     with patch("kreuzberg._playa.parse", return_value=mock_document), patch("kreuzberg._playa.asobj", return_value={}):
         result = await extract_pdf_metadata(b"pdf with permissions")
@@ -234,8 +287,14 @@ async def test_extract_pdf_metadata_encrypted_document() -> None:
     mock_document.pages = []
     mock_document.outline = None
     mock_document.structure = None
+    mock_document.status = None
+    mock_document.is_printable = None
+    mock_document.is_modifiable = None
+    mock_document.is_extractable = None
     mock_document.is_encrypted = True
     mock_document.encryption_method = "AES-256"
+    mock_document.is_pdf_a = None
+    mock_document.pdf_a_level = None
 
     with patch("kreuzberg._playa.parse", return_value=mock_document), patch("kreuzberg._playa.asobj", return_value={}):
         result = await extract_pdf_metadata(b"encrypted pdf")
@@ -253,6 +312,12 @@ async def test_extract_pdf_metadata_pdf_a_compliant() -> None:
     mock_document.pages = []
     mock_document.outline = None
     mock_document.structure = None
+    mock_document.status = None
+    mock_document.is_printable = None
+    mock_document.is_modifiable = None
+    mock_document.is_extractable = None
+    mock_document.is_encrypted = None
+    mock_document.encryption_method = None
     mock_document.is_pdf_a = True
     mock_document.pdf_a_level = "2b"
 

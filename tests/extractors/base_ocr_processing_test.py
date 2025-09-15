@@ -47,14 +47,10 @@ class TestImageOCRProcessing:
             ExtractedImage(data=b"bmp_data", format="bmp", filename="test.bmp"),
         ]
 
-        from kreuzberg._ocr import get_ocr_backend
-
-        get_ocr_backend.cache_clear()
-
         async def mock_process_image(*args: Any, **kwargs: Any) -> ExtractionResult:
             return ExtractionResult(content="OCR text", mime_type="text/plain", metadata={})
 
-        with patch("kreuzberg._ocr.get_ocr_backend") as mock_get_backend:
+        with patch("kreuzberg._extractors._base.get_ocr_backend") as mock_get_backend:
             mock_backend = MagicMock()
             mock_backend.process_image = mock_process_image
             mock_get_backend.return_value = mock_backend
@@ -103,14 +99,10 @@ class TestImageOCRProcessing:
             ExtractedImage(data=b"no_dim", format="png", dimensions=None, filename="no_dim.png"),
         ]
 
-        from kreuzberg._ocr import get_ocr_backend
-
-        get_ocr_backend.cache_clear()
-
         async def mock_process_image(*args: Any, **kwargs: Any) -> ExtractionResult:
             return ExtractionResult(content="OCR text", mime_type="text/plain", metadata={})
 
-        with patch("kreuzberg._ocr.get_ocr_backend") as mock_get_backend:
+        with patch("kreuzberg._extractors._base.get_ocr_backend") as mock_get_backend:
             mock_backend = MagicMock()
             mock_backend.process_image = mock_process_image
             mock_get_backend.return_value = mock_backend
@@ -151,14 +143,10 @@ class TestImageOCRProcessing:
             ExtractedImage(data=b"y" * (10 * 1024 * 1024), format="png", filename="small.png"),
         ]
 
-        from kreuzberg._ocr import get_ocr_backend
-
-        get_ocr_backend.cache_clear()
-
         async def mock_process_image(*args: Any, **kwargs: Any) -> ExtractionResult:
             return ExtractionResult(content="OCR text", mime_type="text/plain", metadata={})
 
-        with patch("kreuzberg._ocr.get_ocr_backend") as mock_get_backend:
+        with patch("kreuzberg._extractors._base.get_ocr_backend") as mock_get_backend:
             mock_backend = MagicMock()
             mock_backend.process_image = mock_process_image
             mock_get_backend.return_value = mock_backend
@@ -192,7 +180,7 @@ class TestImageOCRProcessing:
             call_count += 1
             return ExtractionResult(content=f"OCR {call_count}", mime_type="text/plain", metadata={})
 
-        with patch("kreuzberg._ocr.get_ocr_backend") as mock_get_backend:
+        with patch("kreuzberg._extractors._base.get_ocr_backend") as mock_get_backend:
             mock_backend = MagicMock()
             mock_backend.process_image = mock_process_image
             mock_get_backend.return_value = mock_backend
@@ -230,7 +218,7 @@ class TestImageOCRProcessing:
                 raise ValueError("OCR processing failed")
             return ExtractionResult(content="OCR success", mime_type="text/plain", metadata={})
 
-        with patch("kreuzberg._ocr.get_ocr_backend") as mock_get_backend:
+        with patch("kreuzberg._extractors._base.get_ocr_backend") as mock_get_backend:
             mock_backend = MagicMock()
             mock_backend.process_image = mock_process_image
             mock_get_backend.return_value = mock_backend
@@ -276,7 +264,7 @@ class TestImageOCRProcessing:
 
                 return mock_process
 
-            with patch("kreuzberg._ocr.get_ocr_backend") as mock_get_backend:
+            with patch("kreuzberg._extractors._base.get_ocr_backend") as mock_get_backend:
                 mock_backend = MagicMock()
                 mock_backend.process_image = make_mock_process(backend_name)
                 mock_get_backend.return_value = mock_backend
