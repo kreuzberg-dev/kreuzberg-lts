@@ -49,6 +49,25 @@ class TestDPIConfiguration:
         with pytest.raises(ValidationError, match="max_image_dimension must be positive"):
             ExtractionConfig(max_image_dimension=-1000)
 
+    def test_invalid_dpi_values(self) -> None:
+        with pytest.raises(ValidationError, match="target_dpi must be positive"):
+            ExtractionConfig(target_dpi=-1)
+
+        with pytest.raises(ValidationError, match="target_dpi must be positive"):
+            ExtractionConfig(target_dpi=0)
+
+        with pytest.raises(ValidationError, match="min_dpi must be positive"):
+            ExtractionConfig(min_dpi=-1)
+
+        with pytest.raises(ValidationError, match="min_dpi must be positive"):
+            ExtractionConfig(min_dpi=0)
+
+        with pytest.raises(ValidationError, match="max_dpi must be positive"):
+            ExtractionConfig(max_dpi=-1)
+
+        with pytest.raises(ValidationError, match="max_dpi must be positive"):
+            ExtractionConfig(max_dpi=0)
+
     def test_edge_case_dpi_values(self) -> None:
         config = ExtractionConfig(
             target_dpi=1,

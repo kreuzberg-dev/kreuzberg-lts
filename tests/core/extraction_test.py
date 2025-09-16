@@ -113,6 +113,37 @@ def test_extract_file_sync_with_cache_disabled(tmp_path: Path) -> None:
 
 
 @pytest.mark.anyio
+async def test_extract_file_with_cache_hit(tmp_path: Path) -> None:
+    test_file = tmp_path / "test.txt"
+    test_file.write_text("Test content for cache")
+
+    config = ExtractionConfig(use_cache=True)
+
+    result1 = await extract_file(test_file, config=config)
+
+    result2 = await extract_file(test_file, config=config)
+
+    assert result1.content == result2.content
+    assert result1.content == "Test content for cache"
+    assert result1.mime_type == result2.mime_type == "text/plain"
+
+
+def test_extract_file_sync_with_cache_hit(tmp_path: Path) -> None:
+    test_file = tmp_path / "test.txt"
+    test_file.write_text("Test content for cache sync")
+
+    config = ExtractionConfig(use_cache=True)
+
+    result1 = extract_file_sync(test_file, config=config)
+
+    result2 = extract_file_sync(test_file, config=config)
+
+    assert result1.content == result2.content
+    assert result1.content == "Test content for cache sync"
+    assert result1.mime_type == result2.mime_type == "text/plain"
+
+
+@pytest.mark.anyio
 async def test_extract_file_with_unknown_mime_type(tmp_path: Path) -> None:
     test_file = tmp_path / "test.unknown"
     test_file.write_text("Unknown file type content")
@@ -419,3 +450,45 @@ def test_validate_and_post_process_helper_with_all_features() -> None:
     mock_keywords.assert_called_once_with(result.content, keyword_count=3)
     mock_languages.assert_called_once()
     mock_doc_type.assert_called_once_with(result, config, file_path=Path("/test/path.txt"))
+
+
+@pytest.mark.anyio
+async def test_extract_bytes_with_html_extractor() -> None:
+    content = b"<html><body><h1>Test HTML</h1></body></html>"
+    mime_type = "text/html"
+
+    result = await extract_bytes(content, mime_type)
+
+    assert "Test HTML" in result.content
+    assert result.mime_type == "text/markdown"
+
+
+def test_extract_bytes_sync_with_html_extractor() -> None:
+    content = b"<html><body><h1>Test HTML</h1></body></html>"
+    mime_type = "text/html"
+
+    result = extract_bytes_sync(content, mime_type)
+
+    assert "Test HTML" in result.content
+    assert result.mime_type == "text/markdown"
+
+
+@pytest.mark.anyio
+async def test_extract_file_with_html_extractor(tmp_path: Path) -> None:
+    test_file = tmp_path / "test.html"
+    test_file.write_text("<html><body><h1>Test HTML File</h1></body></html>")
+
+    result = await extract_file(test_file, mime_type="text/html")
+
+    assert "Test HTML File" in result.content
+    assert result.mime_type == "text/markdown"
+
+
+def test_extract_file_sync_with_html_extractor(tmp_path: Path) -> None:
+    test_file = tmp_path / "test.html"
+    test_file.write_text("<html><body><h1>Test HTML File</h1></body></html>")
+
+    result = extract_file_sync(test_file, mime_type="text/html")
+
+    assert "Test HTML File" in result.content
+    assert result.mime_type == "text/markdown"
