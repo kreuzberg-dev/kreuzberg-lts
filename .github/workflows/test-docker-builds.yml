@@ -3,6 +3,10 @@ name: Test Docker Builds (No Push)
 on:
   workflow_dispatch:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   test-build-all-images:
     runs-on: ubuntu-latest
