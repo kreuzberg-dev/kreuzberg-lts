@@ -168,10 +168,8 @@ def test_detect_languages_exception_handling() -> None:
     mock_detect = Mock(side_effect=RuntimeError("Detection failed"))
 
     with patch("fast_langdetect.detect", mock_detect):
-        result = detect_languages(text)
-
-    assert result is None
-    mock_detect.assert_called_once_with(text, model="auto", k=1)
+        with pytest.raises(RuntimeError):
+            detect_languages(text)
 
 
 def test_detect_languages_multilingual_exception_handling() -> None:

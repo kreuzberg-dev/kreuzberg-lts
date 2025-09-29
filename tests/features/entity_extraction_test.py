@@ -212,9 +212,8 @@ def test_extract_keywords_runtime_error() -> None:
     mock_keybert_module.KeyBERT = mock_keybert_class
 
     with patch.dict("sys.modules", {"keybert": mock_keybert_module}):
-        keywords = extract_keywords(text)
-
-    assert keywords == []
+        with pytest.raises(RuntimeError):
+            extract_keywords(text)
 
 
 def test_extract_keywords_os_error() -> None:
@@ -229,9 +228,8 @@ def test_extract_keywords_os_error() -> None:
     mock_keybert_module.KeyBERT = mock_keybert_class
 
     with patch.dict("sys.modules", {"keybert": mock_keybert_module}):
-        keywords = extract_keywords(text)
-
-    assert keywords == []
+        with pytest.raises(OSError, match="File not found"):
+            extract_keywords(text)
 
 
 def test_extract_keywords_value_error() -> None:

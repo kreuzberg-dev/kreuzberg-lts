@@ -153,7 +153,7 @@ class TestImageExtractionErrorHandling:
             mock_backend = MagicMock()
 
             async def failing_process(*args: Any, **kwargs: Any) -> None:
-                raise RuntimeError("OCR engine crashed")
+                raise ValueError("OCR engine crashed")
 
             mock_backend.process_image = failing_process
             mock_get_backend.return_value = mock_backend
@@ -165,7 +165,7 @@ class TestImageExtractionErrorHandling:
         for result in results:
             assert result.ocr_result.content == ""
             assert result.skipped_reason
-            assert "Backend error: RuntimeError: OCR engine crashed" in result.skipped_reason
+            assert "Backend error: ValueError: OCR engine crashed" in result.skipped_reason
 
     def test_empty_image_data(self) -> None:
         config = ExtractionConfig(extract_images=True)
