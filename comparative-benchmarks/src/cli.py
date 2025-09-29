@@ -19,6 +19,7 @@ from .data_transform import (
     load_results_from_json,
 )
 from .docs_generator import (
+    DocConfig,
     generate_detailed_results_page,
     generate_framework_comparison_page,
     generate_index_page,
@@ -131,7 +132,7 @@ def benchmark(iterations: int, timeout: int, framework: str | None, output: Path
     except KeyboardInterrupt:
         console.print("[yellow]Benchmark interrupted by user[/yellow]")
         sys.exit(1)
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         console.print(f"[red]Benchmark failed: {e}[/red]")
         logger.error("Benchmark failed", error=str(e))
         sys.exit(1)
@@ -234,7 +235,7 @@ def generate_docs(input_file: Path, output_dir: Path, charts_dir: Path | None) -
     export_to_json(summary_df, output_dir / "data" / "latest.json")
     export_to_parquet(summary_df, output_dir / "data" / "latest.parquet")
 
-    config = {"charts_dir": charts_dir} if charts_dir else {}
+    config: DocConfig = {"charts_dir": charts_dir} if charts_dir else {}
 
     console.print("📝 Generating index page...")
     generate_index_page(summary_df, output_dir / "index.md", config)

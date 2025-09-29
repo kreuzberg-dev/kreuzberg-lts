@@ -81,6 +81,7 @@ def generate_index_page(
         Path to generated markdown file
     """
     cfg = {**DEFAULT_DOC_CONFIG, **(config or {})}
+    charts_dir: Path | None = cfg.get("charts_dir")  # type: ignore[assignment]
 
     timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC") if cfg["include_timestamp"] else ""
 
@@ -88,7 +89,7 @@ def generate_index_page(
     best_memory = summary_df.sort("avg_peak_memory_mb").head(1)
     best_success = summary_df.sort("success_rate", descending=True).head(1)
 
-    content = f"""# {cfg['title']}
+    content = f"""# {cfg["title"]}
 
 > Last updated: {timestamp} | [View Detailed Results →](latest-results.md)
 
@@ -96,20 +97,20 @@ def generate_index_page(
 
 | Metric | Winner | Score |
 |--------|--------|-------|
-| **Speed Champion** | {_get_framework_emoji(best_speed.get_column('framework').item())} {best_speed.get_column('framework').item()} | {_format_number(best_speed.get_column('avg_extraction_time').item())}s avg |
-| **Memory Efficient** | {_get_framework_emoji(best_memory.get_column('framework').item())} {best_memory.get_column('framework').item()} | {_format_memory(best_memory.get_column('avg_peak_memory_mb').item())} |
-| **Best Success Rate** | {_get_framework_emoji(best_success.get_column('framework').item())} {best_success.get_column('framework').item()} | {_format_percentage(best_success.get_column('success_rate').item())} |
+| **Speed Champion** | {_get_framework_emoji(best_speed.get_column("framework").item())} {best_speed.get_column("framework").item()} | {_format_number(best_speed.get_column("avg_extraction_time").item())}s avg |
+| **Memory Efficient** | {_get_framework_emoji(best_memory.get_column("framework").item())} {best_memory.get_column("framework").item()} | {_format_memory(best_memory.get_column("avg_peak_memory_mb").item())} |
+| **Best Success Rate** | {_get_framework_emoji(best_success.get_column("framework").item())} {best_success.get_column("framework").item()} | {_format_percentage(best_success.get_column("success_rate").item())} |
 
 ## 📊 Latest Benchmark Run
 
 """
 
-    if cfg["charts_dir"] and (cfg["charts_dir"] / "dashboard.html").exists():
+    if charts_dir and (charts_dir / "dashboard.html").exists():
         content += '<iframe src="charts/dashboard.html" width="100%" height="850" frameborder="0"></iframe>\n\n'
 
     content += f"""## Quick Stats
 
-- **Total Files Tested**: {summary_df.get_column('total_files').sum():,}
+- **Total Files Tested**: {summary_df.get_column("total_files").sum():,}
 - **Frameworks Tested**: {len(summary_df)}
 
 ## Framework Comparison
@@ -169,6 +170,7 @@ def generate_detailed_results_page(
         Path to generated markdown file
     """
     cfg = {**DEFAULT_DOC_CONFIG, **(config or {})}
+    charts_dir: Path | None = cfg.get("charts_dir")  # type: ignore[assignment]
 
     timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC") if cfg["include_timestamp"] else ""
 
@@ -178,15 +180,17 @@ def generate_detailed_results_page(
 
 ## Summary Statistics
 
-- **Total Files Processed**: {summary_df.get_column('total_files').sum():,}
+- **Total Files Processed**: {summary_df.get_column("total_files").sum():,}
 - **Frameworks Tested**: {len(summary_df)}
 
 ## Performance by Framework
 
 """
 
-    if cfg["charts_dir"] and (cfg["charts_dir"] / "performance_comparison.html").exists():
-        content += '<iframe src="charts/performance_comparison.html" width="100%" height="550" frameborder="0"></iframe>\n\n'
+    if charts_dir and (charts_dir / "performance_comparison.html").exists():
+        content += (
+            '<iframe src="charts/performance_comparison.html" width="100%" height="550" frameborder="0"></iframe>\n\n'
+        )
 
     content += """### Detailed Metrics
 
@@ -212,8 +216,10 @@ def generate_detailed_results_page(
 ## Performance by File Format
 
 """
-        if cfg["charts_dir"] and (cfg["charts_dir"] / "format_heatmap.html").exists():
-            content += '<iframe src="charts/format_heatmap.html" width="100%" height="550" frameborder="0"></iframe>\n\n'
+        if charts_dir and (charts_dir / "format_heatmap.html").exists():
+            content += (
+                '<iframe src="charts/format_heatmap.html" width="100%" height="550" frameborder="0"></iframe>\n\n'
+            )
 
         for file_type in by_format_df.get_column("file_type").unique().sort():
             format_data = by_format_df.filter(pl.col("file_type") == file_type)
@@ -402,6 +408,7 @@ def generate_framework_comparison_page(
         Path to generated markdown file
     """
     cfg = {**DEFAULT_DOC_CONFIG, **(config or {})}
+    charts_dir: Path | None = cfg.get("charts_dir")  # type: ignore[assignment]
 
     content = """# Framework Comparison
 
@@ -411,7 +418,7 @@ def generate_framework_comparison_page(
 
 """
 
-    if cfg["charts_dir"] and (cfg["charts_dir"] / "dashboard.html").exists():
+    if charts_dir and (charts_dir / "dashboard.html").exists():
         content += '<iframe src="charts/dashboard.html" width="100%" height="850" frameborder="0"></iframe>\n\n'
 
     content += """## Detailed Comparison
@@ -423,11 +430,21 @@ def generate_framework_comparison_page(
     for row in summary_df.sort("avg_extraction_time").iter_rows(named=True):
         emoji = _get_framework_emoji(row["framework"])
 
-        speed_rating = "⚡⚡⚡" if row["avg_extraction_time"] < 0.5 else "⚡⚡" if row["avg_extraction_time"] < 2 else "⚡"
-        memory_rating = "💾💾💾" if row["avg_peak_memory_mb"] < 500 else "💾💾" if row["avg_peak_memory_mb"] < 1500 else "💾"
+        speed_rating = (
+            "⚡⚡⚡" if row["avg_extraction_time"] < 0.5 else "⚡⚡" if row["avg_extraction_time"] < 2 else "⚡"
+        )
+        memory_rating = (
+            "💾💾💾" if row["avg_peak_memory_mb"] < 500 else "💾💾" if row["avg_peak_memory_mb"] < 1500 else "💾"
+        )
         reliability_rating = "✅✅✅" if row["success_rate"] > 0.98 else "✅✅" if row["success_rate"] > 0.95 else "✅"
 
-        best_for = "Speed & efficiency" if row["avg_extraction_time"] < 1 and row["avg_peak_memory_mb"] < 600 else "Accuracy" if row["success_rate"] > 0.99 else "General use"
+        best_for = (
+            "Speed & efficiency"
+            if row["avg_extraction_time"] < 1 and row["avg_peak_memory_mb"] < 600
+            else "Accuracy"
+            if row["success_rate"] > 0.99
+            else "General use"
+        )
 
         content += f"| {emoji} **{row['framework']}** | "
         content += f"{speed_rating} | "

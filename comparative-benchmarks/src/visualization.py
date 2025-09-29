@@ -4,9 +4,9 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, TypedDict
 
-import plotly.graph_objects as go
+import plotly.graph_objects as go  # type: ignore[import-untyped]
 import polars as pl
-from plotly.subplots import make_subplots
+from plotly.subplots import make_subplots  # type: ignore[import-untyped]
 
 if TYPE_CHECKING:
     from pathlib import Path

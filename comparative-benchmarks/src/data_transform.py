@@ -93,26 +93,32 @@ def aggregate_by_framework(df: pl.DataFrame) -> pl.DataFrame:
     Returns:
         DataFrame with aggregated metrics per framework
     """
-    return df.group_by("framework").agg(
-        pl.col("extraction_time").count().alias("total_files"),
-        pl.col("status").filter(pl.col("status") == "success").count().alias("successful_files"),
-        pl.col("status").filter(pl.col("status") == "failed").count().alias("failed_files"),
-        pl.col("status").filter(pl.col("status") == "timeout").count().alias("timeout_files"),
-        pl.col("extraction_time").mean().alias("avg_extraction_time"),
-        pl.col("extraction_time").median().alias("median_extraction_time"),
-        pl.col("extraction_time").quantile(0.95).alias("p95_extraction_time"),
-        pl.col("extraction_time").quantile(0.99).alias("p99_extraction_time"),
-        pl.col("extraction_time").std().alias("std_extraction_time"),
-        pl.col("extraction_time").min().alias("min_extraction_time"),
-        pl.col("extraction_time").max().alias("max_extraction_time"),
-        pl.col("peak_memory_mb").mean().alias("avg_peak_memory_mb"),
-        pl.col("peak_memory_mb").max().alias("peak_memory_mb"),
-        pl.col("avg_cpu_percent").mean().alias("avg_cpu_percent"),
-        pl.col("file_size").sum().alias("total_bytes_processed"),
-    ).with_columns(
-        (pl.col("successful_files") / pl.col("total_files")).alias("success_rate"),
-        (pl.col("total_files") / pl.col("avg_extraction_time").sum()).alias("files_per_second"),
-        (pl.col("total_bytes_processed") / 1024 / 1024 / pl.col("avg_extraction_time").sum()).alias("mb_per_second"),
+    return (
+        df.group_by("framework")
+        .agg(
+            pl.col("extraction_time").count().alias("total_files"),
+            pl.col("status").filter(pl.col("status") == "success").count().alias("successful_files"),
+            pl.col("status").filter(pl.col("status") == "failed").count().alias("failed_files"),
+            pl.col("status").filter(pl.col("status") == "timeout").count().alias("timeout_files"),
+            pl.col("extraction_time").mean().alias("avg_extraction_time"),
+            pl.col("extraction_time").median().alias("median_extraction_time"),
+            pl.col("extraction_time").quantile(0.95).alias("p95_extraction_time"),
+            pl.col("extraction_time").quantile(0.99).alias("p99_extraction_time"),
+            pl.col("extraction_time").std().alias("std_extraction_time"),
+            pl.col("extraction_time").min().alias("min_extraction_time"),
+            pl.col("extraction_time").max().alias("max_extraction_time"),
+            pl.col("peak_memory_mb").mean().alias("avg_peak_memory_mb"),
+            pl.col("peak_memory_mb").max().alias("peak_memory_mb"),
+            pl.col("avg_cpu_percent").mean().alias("avg_cpu_percent"),
+            pl.col("file_size").sum().alias("total_bytes_processed"),
+        )
+        .with_columns(
+            (pl.col("successful_files") / pl.col("total_files")).alias("success_rate"),
+            (pl.col("total_files") / pl.col("avg_extraction_time").sum()).alias("files_per_second"),
+            (pl.col("total_bytes_processed") / 1024 / 1024 / pl.col("avg_extraction_time").sum()).alias(
+                "mb_per_second"
+            ),
+        )
     )
 
 
@@ -125,14 +131,16 @@ def aggregate_by_framework_and_format(df: pl.DataFrame) -> pl.DataFrame:
     Returns:
         DataFrame with aggregated metrics per framework and file type
     """
-    return df.group_by(["framework", "file_type"]).agg(
-        pl.col("extraction_time").count().alias("total_files"),
-        pl.col("status").filter(pl.col("status") == "SUCCESS").count().alias("successful_files"),
-        pl.col("extraction_time").mean().alias("avg_extraction_time"),
-        pl.col("extraction_time").median().alias("median_extraction_time"),
-        pl.col("peak_memory_mb").mean().alias("avg_peak_memory_mb"),
-    ).with_columns(
-        (pl.col("successful_files") / pl.col("total_files")).alias("success_rate")
+    return (
+        df.group_by(["framework", "file_type"])
+        .agg(
+            pl.col("extraction_time").count().alias("total_files"),
+            pl.col("status").filter(pl.col("status") == "SUCCESS").count().alias("successful_files"),
+            pl.col("extraction_time").mean().alias("avg_extraction_time"),
+            pl.col("extraction_time").median().alias("median_extraction_time"),
+            pl.col("peak_memory_mb").mean().alias("avg_peak_memory_mb"),
+        )
+        .with_columns((pl.col("successful_files") / pl.col("total_files")).alias("success_rate"))
     )
 
 
@@ -145,18 +153,20 @@ def aggregate_by_framework_and_category(df: pl.DataFrame) -> pl.DataFrame:
     Returns:
         DataFrame with aggregated metrics per framework and category
     """
-    return df.group_by(["framework", "category"]).agg(
-        pl.col("extraction_time").count().alias("total_files"),
-        pl.col("status").filter(pl.col("status") == "SUCCESS").count().alias("successful_files"),
-        pl.col("extraction_time").mean().alias("avg_extraction_time"),
-        pl.col("extraction_time").median().alias("median_extraction_time"),
-        pl.col("peak_memory_mb").mean().alias("avg_peak_memory_mb"),
-    ).with_columns(
-        (pl.col("successful_files") / pl.col("total_files")).alias("success_rate")
+    return (
+        df.group_by(["framework", "category"])
+        .agg(
+            pl.col("extraction_time").count().alias("total_files"),
+            pl.col("status").filter(pl.col("status") == "SUCCESS").count().alias("successful_files"),
+            pl.col("extraction_time").mean().alias("avg_extraction_time"),
+            pl.col("extraction_time").median().alias("median_extraction_time"),
+            pl.col("peak_memory_mb").mean().alias("avg_peak_memory_mb"),
+        )
+        .with_columns((pl.col("successful_files") / pl.col("total_files")).alias("success_rate"))
     )
 
 
-def calculate_percentiles(df: pl.DataFrame, column: str, percentiles: list[float]) -> dict[str, float]:
+def calculate_percentiles(df: pl.DataFrame, column: str, percentiles: list[float]) -> dict[str, float | None]:
     """Calculate multiple percentiles for a column.
 
     Args:
