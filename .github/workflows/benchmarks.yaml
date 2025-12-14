@@ -24,6 +24,7 @@ env:
   CARGO_PROFILE_DEV_DEBUG: 0
   RUST_BACKTRACE: short
   RUST_MIN_STACK: 16777216
+  RUSTFLAGS: "-C strip=symbols"
 
 permissions:
   contents: read
@@ -45,6 +46,16 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.inputs.branch || github.ref_name }}
+
+      - name: Free disk space
+        run: |
+          echo "Disk before cleanup:"
+          df -h
+          sudo docker system prune -af
+          sudo apt-get clean
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc
+          echo "Disk after cleanup:"
+          df -h
 
       - name: Ensure benchmark harness exists
         run: |
@@ -79,6 +90,11 @@ jobs:
           set -euo pipefail
           bash scripts/benchmarks/build-native-libs.sh
 
+      - name: Log disk space before artifact upload
+        run: |
+          echo "Disk space before artifact upload:"
+          df -h
+
       - name: Upload target artifact
         uses: actions/upload-artifact@v5
         with:
@@ -86,6 +102,11 @@ jobs:
           path: |
             target/release
           retention-days: 7
+
+      - name: Log disk space after artifact upload
+        run: |
+          echo "Disk space after artifact upload:"
+          df -h
 
   bench-native:
     name: kreuzberg-native (${{ matrix.mode }})
@@ -102,6 +123,16 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.inputs.branch || github.ref_name }}
+
+      - name: Free disk space
+        run: |
+          echo "Disk before cleanup:"
+          df -h
+          sudo docker system prune -af
+          sudo apt-get clean
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc
+          echo "Disk after cleanup:"
+          df -h
 
       - name: Download build artifacts
         uses: actions/download-artifact@v6
@@ -159,6 +190,16 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.inputs.branch || github.ref_name }}
+
+      - name: Free disk space
+        run: |
+          echo "Disk before cleanup:"
+          df -h
+          sudo docker system prune -af
+          sudo apt-get clean
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc
+          echo "Disk after cleanup:"
+          df -h
 
       - name: Download build artifacts
         uses: actions/download-artifact@v6
@@ -226,6 +267,16 @@ jobs:
         with:
           ref: ${{ github.event.inputs.branch || github.ref_name }}
 
+      - name: Free disk space
+        run: |
+          echo "Disk before cleanup:"
+          df -h
+          sudo docker system prune -af
+          sudo apt-get clean
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc
+          echo "Disk after cleanup:"
+          df -h
+
       - name: Download build artifacts
         uses: actions/download-artifact@v6
         with:
@@ -292,6 +343,16 @@ jobs:
         with:
           ref: ${{ github.event.inputs.branch || github.ref_name }}
 
+      - name: Free disk space
+        run: |
+          echo "Disk before cleanup:"
+          df -h
+          sudo docker system prune -af
+          sudo apt-get clean
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc
+          echo "Disk after cleanup:"
+          df -h
+
       - name: Download build artifacts
         uses: actions/download-artifact@v6
         with:
@@ -357,6 +418,16 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.inputs.branch || github.ref_name }}
+
+      - name: Free disk space
+        run: |
+          echo "Disk before cleanup:"
+          df -h
+          sudo docker system prune -af
+          sudo apt-get clean
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc
+          echo "Disk after cleanup:"
+          df -h
 
       - name: Download build artifacts
         uses: actions/download-artifact@v6
@@ -431,6 +502,16 @@ jobs:
         with:
           ref: ${{ github.event.inputs.branch || github.ref_name }}
 
+      - name: Free disk space
+        run: |
+          echo "Disk before cleanup:"
+          df -h
+          sudo docker system prune -af
+          sudo apt-get clean
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc
+          echo "Disk after cleanup:"
+          df -h
+
       - name: Download build artifacts
         uses: actions/download-artifact@v6
         with:
@@ -504,6 +585,16 @@ jobs:
         with:
           ref: ${{ github.event.inputs.branch || github.ref_name }}
 
+      - name: Free disk space
+        run: |
+          echo "Disk before cleanup:"
+          df -h
+          sudo docker system prune -af
+          sudo apt-get clean
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc
+          echo "Disk after cleanup:"
+          df -h
+
       - name: Download build artifacts
         uses: actions/download-artifact@v6
         with:
@@ -562,6 +653,16 @@ jobs:
         with:
           ref: ${{ github.event.inputs.branch || github.ref_name }}
 
+      - name: Free disk space
+        run: |
+          echo "Disk before cleanup:"
+          df -h
+          sudo docker system prune -af
+          sudo apt-get clean
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc
+          echo "Disk after cleanup:"
+          df -h
+
       - name: Download build artifacts
         uses: actions/download-artifact@v6
         with:
@@ -619,6 +720,16 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.inputs.branch || github.ref_name }}
+
+      - name: Free disk space
+        run: |
+          echo "Disk before cleanup:"
+          df -h
+          sudo docker system prune -af
+          sudo apt-get clean
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc
+          echo "Disk after cleanup:"
+          df -h
 
       - name: Download build artifacts
         uses: actions/download-artifact@v6
@@ -690,6 +801,16 @@ jobs:
         with:
           ref: ${{ github.event.inputs.branch || github.ref_name }}
 
+      - name: Free disk space
+        run: |
+          echo "Disk before cleanup:"
+          df -h
+          sudo docker system prune -af
+          sudo apt-get clean
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc
+          echo "Disk after cleanup:"
+          df -h
+
       - name: Download build artifacts
         uses: actions/download-artifact@v6
         with:
@@ -759,6 +880,16 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.inputs.branch || github.ref_name }}
+
+      - name: Free disk space
+        run: |
+          echo "Disk before cleanup:"
+          df -h
+          sudo docker system prune -af
+          sudo apt-get clean
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc
+          echo "Disk after cleanup:"
+          df -h
 
       - name: Download build artifacts
         uses: actions/download-artifact@v6
@@ -831,6 +962,16 @@ jobs:
         with:
           ref: ${{ github.event.inputs.branch || github.ref_name }}
 
+      - name: Free disk space
+        run: |
+          echo "Disk before cleanup:"
+          df -h
+          sudo docker system prune -af
+          sudo apt-get clean
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc
+          echo "Disk after cleanup:"
+          df -h
+
       - name: Download build artifacts
         uses: actions/download-artifact@v6
         with:
@@ -902,6 +1043,16 @@ jobs:
         with:
           ref: ${{ github.event.inputs.branch || github.ref_name }}
 
+      - name: Free disk space
+        run: |
+          echo "Disk before cleanup:"
+          df -h
+          sudo docker system prune -af
+          sudo apt-get clean
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc
+          echo "Disk after cleanup:"
+          df -h
+
       - name: Download build artifacts
         uses: actions/download-artifact@v6
         with:
@@ -968,6 +1119,16 @@ jobs:
         with:
           ref: ${{ github.event.inputs.branch || github.ref_name }}
 
+      - name: Free disk space
+        run: |
+          echo "Disk before cleanup:"
+          df -h
+          sudo docker system prune -af
+          sudo apt-get clean
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc
+          echo "Disk after cleanup:"
+          df -h
+
       - name: Download build artifacts
         uses: actions/download-artifact@v6
         with:
@@ -1032,6 +1193,16 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.inputs.branch || github.ref_name }}
+
+      - name: Free disk space
+        run: |
+          echo "Disk before cleanup:"
+          df -h
+          sudo docker system prune -af
+          sudo apt-get clean
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc
+          echo "Disk after cleanup:"
+          df -h
 
       - name: Download build artifacts
         uses: actions/download-artifact@v6
@@ -1099,6 +1270,16 @@ jobs:
         with:
           ref: ${{ github.event.inputs.branch || github.ref_name }}
 
+      - name: Free disk space
+        run: |
+          echo "Disk before cleanup:"
+          df -h
+          sudo docker system prune -af
+          sudo apt-get clean
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc
+          echo "Disk after cleanup:"
+          df -h
+
       - name: Download build artifacts
         uses: actions/download-artifact@v6
         with:
@@ -1164,6 +1345,16 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.inputs.branch || github.ref_name }}
+
+      - name: Free disk space
+        run: |
+          echo "Disk before cleanup:"
+          df -h
+          sudo docker system prune -af
+          sudo apt-get clean
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc
+          echo "Disk after cleanup:"
+          df -h
 
       - name: Download build artifacts
         uses: actions/download-artifact@v6
@@ -1231,6 +1422,16 @@ jobs:
         with:
           ref: ${{ github.event.inputs.branch || github.ref_name }}
 
+      - name: Free disk space
+        run: |
+          echo "Disk before cleanup:"
+          df -h
+          sudo docker system prune -af
+          sudo apt-get clean
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc
+          echo "Disk after cleanup:"
+          df -h
+
       - name: Download build artifacts
         uses: actions/download-artifact@v6
         with:
@@ -1297,6 +1498,16 @@ jobs:
         with:
           ref: ${{ github.event.inputs.branch || github.ref_name }}
 
+      - name: Free disk space
+        run: |
+          echo "Disk before cleanup:"
+          df -h
+          sudo docker system prune -af
+          sudo apt-get clean
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc
+          echo "Disk after cleanup:"
+          df -h
+
       - name: Download build artifacts
         uses: actions/download-artifact@v6
         with:
@@ -1359,6 +1570,16 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.inputs.branch || github.ref_name }}
+
+      - name: Free disk space
+        run: |
+          echo "Disk before cleanup:"
+          df -h
+          sudo docker system prune -af
+          sudo apt-get clean
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc
+          echo "Disk after cleanup:"
+          df -h
 
       - name: Download build artifacts
         uses: actions/download-artifact@v6

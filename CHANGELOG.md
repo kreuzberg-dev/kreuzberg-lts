@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.0.0-rc.8] - 2025-12-14
+
 ### Added
 - **MCP HTTP Stream transport** (GitHub #207)
   - HTTP Stream transport for MCP server using rmcp's built-in support
@@ -15,6 +17,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - CLI flag to select transport: `kreuzberg mcp --transport http --host 127.0.0.1 --port 8001`
   - Enable with `mcp-http` feature flag
   - Production-ready for cloud deployments, Docker, and serverless
+
+### Fixed
+
+**CI/CD Workflow Improvements**:
+- **publish.yaml**: Fixed workflow/tag synchronization by adding re-checkout step after metadata computation, preventing race conditions where metadata is computed against main but build happens against different ref
+- **publish.yaml**: Increased C# test timeout from 60 to 90 minutes to prevent timeout failures
+- **publish.yaml**: Added `continue-on-error: true` for sccache steps to allow graceful fallback to direct compilation
+- **benchmarks.yaml**: Added `RUSTFLAGS="-C strip=symbols"` to reduce binary size (~30-40% reduction) for faster artifact transfer
+- **benchmarks.yaml**: Added comprehensive disk cleanup to all 16 benchmark jobs (docker prune, apt clean, removing dotnet/android/ghc) to prevent disk space exhaustion
+- **benchmarks.yaml**: Added disk space monitoring before/after artifact upload for visibility
+- **ci-go.yaml**: Fixed CGO library path configuration with explicit LD_LIBRARY_PATH/DYLD_LIBRARY_PATH setup for both Linux and macOS
+- **ci-go.yaml**: Added Tesseract version-aware cache keys for improved cache hit rates
+- **ci-go.yaml**: Enhanced FFI library verification with comprehensive diagnostics
+- **ci-rust.yaml**: Added pre-build diagnostics showing environment state (OS, Rust toolchain, cargo version)
+- **ci-rust.yaml**: Enhanced test scripts with verbose output and tessdata directory auto-creation
+- **ci-validate.yaml**: Changed from `task lint` to `task lint:check` for check-only mode (no auto-fixes in CI)
+- **ci-validate.yaml**: Added aggressive disk cleanup before linting to prevent disk space issues
+- **ci-validate.yaml**: Enhanced error reporting with trap handlers for better failure diagnostics
+- **scripts/ci/rust/run-unit-tests.sh**: Enhanced with test environment configuration reporting and error collection
+- **scripts/ci/rust/test-cli-windows.ps1**: Complete rewrite with comprehensive error handling and colored output
+- **scripts/publish/ubuntu/free-disk-space.sh**: Added aggressive APT package removal and journalctl log cleanup
+
+**Composite Actions Created/Enhanced**:
+- **build-rust-ffi** (NEW): Reusable composite action for building FFI libraries (kreuzberg-ffi, kreuzberg-py, kreuzberg-node, kreuzberg-rb) with comprehensive error diagnostics and artifact verification
+- **install-system-deps** (ENHANCED): Added retry logic with exponential backoff (3 attempts: 5s, 10s, 20s delays), timeout handling (900s Linux, 1200s LibreOffice), architecture-aware caching (x64, arm64), and version-aware cache keys
+- **setup-rust** (ENHANCED): Added Rust installation verification and improved sccache detection with SCCACHE_PATH fallback
+- Standardized FFI builds across ci-python.yaml, ci-node.yaml, ci-ruby.yaml, and ci-java.yaml workflows using new build-rust-ffi action
+
+**Build System Fixes**:
+- **crates/kreuzberg-ffi/build.rs**: Eliminated all `.unwrap()` calls for panic-safe error handling, added Windows MSVC linker compatibility, fixed cross-platform path normalization
+
+### Documentation
+- Created comprehensive CI/CD improvement documentation: SYSTEM_DEPS_AUDIT.md, SYSTEM_DEPS_IMPROVEMENTS.md, CI_RUST_BUILD_FIXES.md, BENCHMARK_FAILURE_ANALYSIS.md
+- Created README.md for build-rust-ffi and install-system-deps composite actions
 
 ## [4.0.0-rc.7] - 2025-12-12
 

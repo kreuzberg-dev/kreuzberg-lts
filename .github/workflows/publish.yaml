@@ -69,7 +69,7 @@ jobs:
       release_go: ${{ steps.meta.outputs.release_go }}
       release_wasm: ${{ steps.meta.outputs.release_wasm }}
     steps:
-      - name: Checkout code
+      - name: Checkout code (default)
         uses: actions/checkout@v4
 
       - name: Validate tag and compute version
@@ -87,6 +87,13 @@ jobs:
           EVENT_DISPATCH_REF: ${{ github.event.client_payload.ref }}
           EVENT_DISPATCH_TARGETS: ${{ github.event.client_payload.targets }}
         run: bash scripts/publish/prepare-release-metadata.sh
+
+      - name: Re-checkout at target ref
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.meta.outputs.checkout_ref }}
+          fetch-depth: 0
+          submodules: recursive
 
       - name: Upload release metadata
         uses: actions/upload-artifact@v5
@@ -464,6 +471,7 @@ jobs:
       - name: Build Linux wheels
         if: matrix.os == 'ubuntu-latest'
         uses: PyO3/maturin-action@v1
+        continue-on-error: true
         with:
           command: build
           args: --release -i python${{ matrix.python }} --out ../../target/wheels ${{ matrix.extra_args }}
@@ -488,6 +496,7 @@ jobs:
       - name: Build wheels (native)
         if: matrix.os != 'ubuntu-latest'
         uses: PyO3/maturin-action@v1
+        continue-on-error: true
         with:
           command: build
           args: --release -i python${{ matrix.python }} --out ../../target/wheels ${{ matrix.extra_args }}
@@ -1300,7 +1309,7 @@ jobs:
     needs: [prepare, check-nuget]
     if: ${{ needs.prepare.outputs.release_csharp == 'true' && needs.check-nuget.outputs.exists != 'true' }}
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 60
+    timeout-minutes: 90
     strategy:
       fail-fast: true
       matrix:

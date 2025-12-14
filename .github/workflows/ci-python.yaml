@@ -109,6 +109,14 @@ jobs:
         shell: bash
         run: bash scripts/ci/python/clean-artifacts.sh
 
+      - name: Build Rust FFI for Python (PyO3)
+        uses: ./.github/actions/build-rust-ffi
+        with:
+          crate-name: kreuzberg-py
+          features: extension-module
+          build-profile: release
+          verbose: true
+
       - name: Build Python wheels
         uses: PyO3/maturin-action@v1
         env:

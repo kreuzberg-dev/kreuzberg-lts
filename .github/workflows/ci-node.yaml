@@ -115,6 +115,14 @@ jobs:
         with:
           ort-version: ${{ env.ORT_VERSION }}
 
+      - name: Build Rust FFI for Node.js (NAPI-RS)
+        uses: ./.github/actions/build-rust-ffi
+        with:
+          crate-name: kreuzberg-node
+          target: ${{ matrix.target }}
+          build-profile: release
+          verbose: true
+
       - name: Build Node bindings
         shell: bash
         run: scripts/ci/node/build-napi.sh ${{ matrix.target }}

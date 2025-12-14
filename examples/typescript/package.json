@@ -1,6 +1,6 @@
 {
 	"name": "@kreuzberg/examples-typescript",
-	"version": "4.0.0-rc.6",
+	"version": "4.0.0-rc.8",
 	"private": true,
 	"description": "Kreuzberg Node.js binding examples",
 	"type": "module",
@@ -16,7 +16,7 @@
 		"format": "biome format --write ."
 	},
 	"dependencies": {
-		"@kreuzberg/node": "workspace:*"
+		"@kreuzberg/node": "4.0.0-rc.8"
 	},
 	"devDependencies": {
 		"@types/node": "^24.10.1",

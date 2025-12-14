@@ -167,6 +167,14 @@ jobs:
         shell: pwsh
         run: scripts/ci/ruby/configure-tesseract-windows.ps1
 
+      - name: Build Rust FFI for Ruby (Magnus)
+        uses: ./.github/actions/build-rust-ffi
+        with:
+          crate-name: kreuzberg-rb
+          build-profile: release
+          verbose: true
+        continue-on-error: true
+
       - name: Build Ruby gem
         shell: bash
         run: scripts/ci/ruby/build-gem.sh

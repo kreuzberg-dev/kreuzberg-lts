@@ -40,6 +40,17 @@ runs:
         components: ${{ inputs.components }}
         target: ${{ inputs.target }}
 
+    - name: Verify Rust installation
+      shell: bash
+      run: |
+        set -euo pipefail
+        echo "Rust toolchain information:"
+        rustc --version
+        rustup --version
+        cargo --version
+        echo "Available targets:"
+        rustup target list | grep -E "installed|${{ inputs.target }}" | head -5
+
     - name: Setup sccache
       if: inputs.use-sccache == 'true'
       uses: mozilla-actions/sccache-action@v0.0.9
@@ -49,21 +60,34 @@ runs:
       shell: bash
       run: |
         set -euo pipefail
+        echo "Configuring Rust compilation environment..."
+
         if [ "${{ inputs.use-sccache }}" = "true" ]; then
           # Check if sccache is actually available before enabling it
           if command -v sccache &> /dev/null; then
+            sccache_version=$(sccache --version 2>&1 || echo "unknown")
+            echo "sccache is available (version: $sccache_version), enabling as RUSTC_WRAPPER"
             echo "SCCACHE_GHA_ENABLED=true" >> "$GITHUB_ENV"
             echo "RUSTC_WRAPPER=sccache" >> "$GITHUB_ENV"
-            echo "sccache is available, enabling as RUSTC_WRAPPER"
           else
-            echo "SCCACHE_GHA_ENABLED=false" >> "$GITHUB_ENV"
-            echo "RUSTC_WRAPPER=" >> "$GITHUB_ENV"
-            echo "Warning: sccache requested but not found, proceeding without it"
+            echo "Warning: sccache requested but not found in PATH"
+            echo "Checking SCCACHE_PATH environment variable..."
+            if [ -n "${SCCACHE_PATH:-}" ] && [ -f "${SCCACHE_PATH}/sccache" ]; then
+              echo "Found sccache at SCCACHE_PATH: ${SCCACHE_PATH}/sccache"
+              echo "SCCACHE_GHA_ENABLED=true" >> "$GITHUB_ENV"
+              echo "RUSTC_WRAPPER=${SCCACHE_PATH}/sccache" >> "$GITHUB_ENV"
+            else
+              echo "sccache not available, proceeding with direct compilation"
+              echo "SCCACHE_GHA_ENABLED=false" >> "$GITHUB_ENV"
+              echo "RUSTC_WRAPPER=" >> "$GITHUB_ENV"
+            fi
           fi
         else
+          echo "sccache disabled by configuration"
           echo "SCCACHE_GHA_ENABLED=false" >> "$GITHUB_ENV"
           echo "RUSTC_WRAPPER=" >> "$GITHUB_ENV"
         fi
+
         base="-D warnings"
         # IMPORTANT: Do NOT add WASM-specific RUSTFLAGS here. They will break host builds
         # (build scripts, proc-macros) and native target builds (aarch64-apple-darwin, etc).
@@ -177,9 +201,25 @@ runs:
       shell: bash
       run: |
         set -euo pipefail
-        echo "Adding Rust target: ${{ inputs.target }}"
-        rustup target add ${{ inputs.target }}
-        echo "Successfully added target: ${{ inputs.target }}"
+        target="${{ inputs.target }}"
+        echo "Checking Rust target: $target"
+
+        # Check if target is already installed
+        if rustup target list | grep -q "^$target (installed)"; then
+          echo "Target $target is already installed"
+        else
+          echo "Installing target: $target"
+          rustup target add "$target" || {
+            echo "Failed to install target $target"
+            echo "Available targets:"
+            rustup target list | head -20
+            exit 1
+          }
+          echo "Successfully installed target: $target"
+        fi
+
+        # Verify installation
+        rustup target list | grep "$target"
 
     - name: Install cargo-llvm-cov if not cached
       shell: bash

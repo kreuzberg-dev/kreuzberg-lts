@@ -131,6 +131,29 @@ jobs:
             echo "TESSDATA_PREFIX=/usr/share/tesseract-ocr/5/tessdata" >> "$GITHUB_ENV"
           fi
 
+      - name: Pre-build diagnostics
+        shell: bash
+        run: |
+          set -eo pipefail
+          echo "=== Build Environment Diagnostics ==="
+          echo "OS: ${RUNNER_OS}"
+          echo "Arch: ${RUNNER_ARCH}"
+          echo "Rust toolchain:"
+          rustc --version
+          cargo --version
+          echo "Available targets (installed):"
+          rustup target list | grep installed || echo "No targets installed"
+          echo "Environment variables:"
+          echo "  CARGO_TERM_COLOR=${CARGO_TERM_COLOR:-not set}"
+          echo "  CARGO_INCREMENTAL=${CARGO_INCREMENTAL:-not set}"
+          echo "  RUST_BACKTRACE=${RUST_BACKTRACE:-not set}"
+          echo "  RUSTFLAGS=${RUSTFLAGS:-not set}"
+          echo "  RUSTC_WRAPPER=${RUSTC_WRAPPER:-not set}"
+          echo "  TESSDATA_PREFIX=${TESSDATA_PREFIX:-not set}"
+          echo "Disk space:"
+          df -h / || du -h / 2>/dev/null | head -1
+          echo "=== End diagnostics ==="
+
       - name: Run unit tests
         run: scripts/ci/rust/run-unit-tests.sh
         shell: bash
@@ -327,6 +350,26 @@ jobs:
         uses: ./.github/actions/download-pdfium
         with:
           pdfium-version: ${{ env.PDFIUM_VERSION }}
+
+      - name: Pre-build diagnostics (CLI)
+        shell: bash
+        run: |
+          set -eo pipefail
+          echo "=== CLI Build Diagnostics ==="
+          echo "Target: ${{ matrix.target }}"
+          echo "Rust toolchain:"
+          rustc --version --verbose
+          echo "Cargo version:"
+          cargo --version
+          echo "PDFium environment:"
+          echo "  KREUZBERG_PDFIUM_PREBUILT=${KREUZBERG_PDFIUM_PREBUILT:-not set}"
+          if [ -n "${KREUZBERG_PDFIUM_PREBUILT:-}" ] && [ -d "${KREUZBERG_PDFIUM_PREBUILT}" ]; then
+            echo "  PDFium directory exists"
+            find "${KREUZBERG_PDFIUM_PREBUILT}" -maxdepth 1 -ls | head -10
+          fi
+          echo "Disk space (before build):"
+          df -h . || du -h . 2>/dev/null | head -1
+          echo "=== End diagnostics ==="
 
       - name: Build CLI
         run: cargo build -p kreuzberg-cli --release --target ${{ matrix.target }}
