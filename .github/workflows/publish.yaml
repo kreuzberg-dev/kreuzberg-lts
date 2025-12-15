@@ -1213,7 +1213,7 @@ jobs:
           ort-version: ${{ env.ORT_VERSION }}
 
       - name: Download Java native artifacts
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v7
         with:
           pattern: java-natives-*
           path: artifacts/java-natives
@@ -1251,7 +1251,7 @@ jobs:
           ref: ${{ needs.prepare.outputs.checkout_ref }}
 
       - name: Download JAR artifact
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v7
         with:
           name: maven-packages
           path: artifacts/java
@@ -1394,7 +1394,7 @@ jobs:
         run: scripts/publish/csharp/ensure-dotnet.sh
 
       - name: Download native assets
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v7
         with:
           pattern: csharp-native-assets-*
           path: packages/csharp/Kreuzberg
@@ -1548,7 +1548,7 @@ jobs:
           dotnet-version: "10.x"
 
       - name: Download NuGet artifact
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v7
         with:
           name: csharp-nuget
           path: dist
@@ -1724,7 +1724,7 @@ jobs:
         run: scripts/publish/ensure-github-release-exists.sh "${{ needs.prepare.outputs.tag }}"
 
       - name: Download CLI artifacts
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v7
         with:
           pattern: cli-*
           path: dist/cli
@@ -1759,7 +1759,7 @@ jobs:
         run: scripts/publish/ensure-github-release-exists.sh "${{ needs.prepare.outputs.tag }}"
 
       - name: Download C# artifacts
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v7
         with:
           name: csharp-nuget
           path: dist/csharp
@@ -1794,7 +1794,7 @@ jobs:
         run: scripts/publish/ensure-github-release-exists.sh "${{ needs.prepare.outputs.tag }}"
 
       - name: Download Go FFI artifacts
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v7
         with:
           pattern: go-ffi-*
           path: dist/go
@@ -1891,14 +1891,14 @@ jobs:
       id-token: write
     steps:
       - name: Download wheel artifacts
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v7
         with:
           pattern: python-wheels-*
           path: dist
           merge-multiple: true
 
       - name: Download sdist artifact
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v7
         with:
           name: python-sdist
           path: dist
@@ -1938,7 +1938,7 @@ jobs:
           ref: ${{ needs.prepare.outputs.tag }}
 
       - name: Download Ruby gem artifacts
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v7
         with:
           pattern: rubygems-*
           path: dist
@@ -1990,14 +1990,14 @@ jobs:
           package_json_file: package.json
 
       - name: Download Node artifacts
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v7
         with:
           pattern: node-bindings-*
           path: node-artifacts
           merge-multiple: true
 
       - name: Download TypeScript definitions
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v7
         with:
           name: node-typescript-defs
           path: typescript-defs
@@ -2255,7 +2255,7 @@ jobs:
 
       - name: Download Java native artifacts
         if: ${{ needs.prepare.outputs.dry_run != 'true' && steps.maven_check.outputs.exists != 'true' }}
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v7
         with:
           pattern: java-natives-*
           path: artifacts/java-natives
@@ -2316,7 +2316,7 @@ jobs:
       id-token: write
     steps:
       - name: Download NuGet artifact
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v7
         with:
           name: csharp-nuget
           path: dist

@@ -179,7 +179,7 @@ jobs:
           cache: 'maven'
 
       - name: Download JAR
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v7
         with:
           name: java-jar-${{ matrix.os }}
           path: packages/java/target/
