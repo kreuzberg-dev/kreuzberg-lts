@@ -229,7 +229,7 @@ jobs:
           ort-version: ${{ env.ORT_VERSION }}
 
       - name: Download FFI library
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v7
         with:
           name: go-ffi-lib-${{ matrix.os }}
           path: ffi-download
