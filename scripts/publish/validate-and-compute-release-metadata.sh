@@ -74,7 +74,16 @@ version="${tag#v}"
 
 # Determine ref to checkout
 if [[ -n "$ref_input" ]]; then
-	ref="$ref_input"
+	# Accept tags passed as plain names in workflow_dispatch (e.g. "v4.0.0-rc.1")
+	# and normalize them to an explicit tag ref so checkout doesn't try to treat them
+	# as branches.
+	if [[ "$ref_input" == "$tag" ]]; then
+		ref="refs/tags/${tag}"
+	elif [[ "$ref_input" =~ ^v[0-9] ]]; then
+		ref="refs/tags/${ref_input}"
+	else
+		ref="$ref_input"
+	fi
 else
 	ref="refs/tags/${tag}"
 fi
