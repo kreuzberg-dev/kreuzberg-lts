@@ -60,7 +60,11 @@ def update_package_json(file_path: Path, version: str) -> Tuple[bool, str, str]:
             return
 
         for dep_name, dep_version in list(data[dep_section].items()):
-            if dep_name.startswith(("kreuzberg-", "@kreuzberg/")) and dep_version != version:
+            if not dep_name.startswith(("kreuzberg-", "@kreuzberg/")):
+                continue
+            if isinstance(dep_version, str) and dep_version.startswith(("workspace:", "file:", "link:", "portal:")):
+                continue
+            if dep_version != version:
                 data[dep_section][dep_name] = version
                 changed = True
 
