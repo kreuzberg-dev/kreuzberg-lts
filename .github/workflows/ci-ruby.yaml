@@ -98,6 +98,8 @@ jobs:
         uses: ./.github/actions/setup-rust
         with:
           cache-key-prefix: ruby-${{ matrix.platform }}
+          toolchain: ${{ runner.os == 'Windows' && 'stable-x86_64-pc-windows-gnu' || '' }}
+          target: ${{ runner.os == 'Windows' && 'x86_64-pc-windows-gnu' || '' }}
 
       - name: Setup Ruby
         uses: ruby/setup-ruby@v1
@@ -164,6 +166,7 @@ jobs:
         uses: ./.github/actions/build-rust-ffi
         with:
           crate-name: kreuzberg-rb
+          target: ${{ runner.os == 'Windows' && 'x86_64-pc-windows-gnu' || '' }}
           build-profile: release
           verbose: true
         continue-on-error: true
@@ -223,6 +226,8 @@ jobs:
         uses: ./.github/actions/setup-rust
         with:
           cache-key-prefix: ruby-test-${{ matrix.platform }}
+          toolchain: ${{ runner.os == 'Windows' && 'stable-x86_64-pc-windows-gnu' || '' }}
+          target: ${{ runner.os == 'Windows' && 'x86_64-pc-windows-gnu' || '' }}
 
       - name: Setup Ruby
         uses: ruby/setup-ruby@v1
