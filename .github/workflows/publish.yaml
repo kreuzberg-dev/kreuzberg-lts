@@ -1627,7 +1627,7 @@ jobs:
       - validate-versions
       - check-docker
     runs-on: ubuntu-latest
-    timeout-minutes: 240
+    timeout-minutes: 120
     permissions:
       contents: read
       packages: write
@@ -1696,7 +1696,7 @@ jobs:
             type=raw,value=${{ needs.prepare.outputs.version }}${{ matrix.tag_suffix }}
             type=raw,value=${{ matrix.extra_tag }}
 
-      - name: Build and push multi-arch image
+      - name: Build and push image
         if: ${{ needs.prepare.outputs.dry_run != 'true' && (needs.prepare.outputs.force_republish == 'true' || (matrix.variant == 'core' && needs.check-docker.outputs.core_exists != 'true') || (matrix.variant == 'full' && needs.check-docker.outputs.full_exists != 'true')) }}
         uses: docker/build-push-action@v6
         with:
@@ -1707,7 +1707,7 @@ jobs:
             PDFIUM_VERSION=${{ env.PDFIUM_VERSION }}
           tags: ${{ steps.docker_meta.outputs.tags }}
           labels: ${{ steps.docker_meta.outputs.labels }}
-          platforms: linux/amd64,linux/arm64
+          platforms: linux/amd64
           cache-from: type=gha
           cache-to: type=gha,mode=max,scope=publish-docker-${{ matrix.variant }}
 
