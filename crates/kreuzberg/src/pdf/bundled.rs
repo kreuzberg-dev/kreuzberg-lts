@@ -4,13 +4,25 @@
 //! using `include_bytes!` during compilation. This module handles runtime extraction to a
 //! temporary directory and provides the path for dynamic loading.
 //!
+//! # Thread Safety
+//!
+//! Extraction is protected by a `Mutex` to prevent race conditions during concurrent access.
+//! The first thread to call `extract_bundled_pdfium()` will perform the extraction while
+//! others wait for completion.
+//!
+//! To prevent the "file too short" race condition where one thread loads a partially-written
+//! file, we use atomic file operations: write to a temporary file, then atomically rename to
+//! the final location. This ensures other threads never observe a partial file.
+//!
 //! # How It Works
 //!
 //! 1. During build (build.rs): PDFium is copied to OUT_DIR and the build script sets
 //!    `KREUZBERG_PDFIUM_BUNDLED_PATH` environment variable
 //! 2. At compile time: `include_bytes!` embeds the library binary in the executable
 //! 3. At runtime: `extract_bundled_pdfium()` extracts to `$TMPDIR/kreuzberg-pdfium/`
-//! 4. Library is reused if already present (based on modification time)
+//! 4. Library is reused if already present (based on file size validation)
+//! 5. Concurrent calls are serialized with a `Mutex` to prevent partial writes
+//! 6. Atomic rename (write temp file → rename) prevents "file too short" race conditions
 //!
 //! # Example
 //!
@@ -30,9 +42,16 @@
 use std::fs;
 use std::io;
 use std::path::{Path, PathBuf};
+use std::sync::Mutex;
 
 #[cfg(unix)]
 use std::os::unix::fs::PermissionsExt;
+
+// SAFETY: Global mutex protects against TOCTOU (time-of-check-time-of-use) race conditions
+// where multiple threads simultaneously check if the file exists, both find it missing,
+// and try to write concurrently. This mutex ensures only one thread performs extraction
+// while others wait for completion.
+static EXTRACTION_LOCK: Mutex<()> = Mutex::new(());
 
 /// Runtime library name and extraction directory for the bundled PDFium library.
 ///
@@ -93,6 +112,13 @@ fn is_extracted_library_valid(lib_path: &Path, embedded_size: usize) -> bool {
 /// - Reuses extracted library if size matches
 /// - Sets permissions to 0755 on Unix
 /// - Returns path to extracted library
+/// - **Thread-safe**: Synchronized with a global `Mutex` to prevent concurrent writes
+///
+/// # Concurrency
+///
+/// This function is fully thread-safe. When multiple threads call it simultaneously,
+/// only the first thread performs the actual extraction while others wait. This prevents
+/// the "file too short" error that occurs when one thread reads a partially-written file.
 ///
 /// # WASM Handling
 ///
@@ -150,33 +176,67 @@ pub fn extract_bundled_pdfium() -> io::Result<PathBuf> {
         return Ok(lib_path);
     }
 
-    // Write library to disk
-    fs::write(&lib_path, bundled_lib).map_err(|e| {
+    // SAFETY: EXTRACTION_LOCK is a static Mutex that protects against concurrent writes.
+    // This serializes extraction across threads, preventing the "file too short" error
+    // that occurs when one thread reads a partially-written file.
+    let _guard = EXTRACTION_LOCK
+        .lock()
+        .map_err(|e| io::Error::other(format!("Failed to acquire extraction lock: {}", e)))?;
+
+    // Double-check after acquiring lock: another thread may have already extracted the file
+    if is_extracted_library_valid(&lib_path, bundled_lib.len()) {
+        return Ok(lib_path);
+    }
+
+    // Write to a temporary file first, then atomically rename to prevent other threads
+    // from reading a partially written file. This fixes the "file too short" race condition.
+    let temp_path = lib_path.with_extension(format!("tmp.{}", std::process::id()));
+
+    // Write library to temporary file
+    fs::write(&temp_path, bundled_lib).map_err(|e| {
         io::Error::new(
             e.kind(),
             format!(
-                "Failed to extract bundled pdfium library to '{}': {}",
-                lib_path.display(),
+                "Failed to write bundled pdfium library to temp file '{}': {}",
+                temp_path.display(),
                 e
             ),
         )
     })?;
 
-    // Set executable permissions on Unix
+    // Set executable permissions on Unix (before rename)
     #[cfg(unix)]
     {
         let perms = fs::Permissions::from_mode(0o755);
-        fs::set_permissions(&lib_path, perms).map_err(|e| {
+        fs::set_permissions(&temp_path, perms).map_err(|e| {
+            // Clean up temp file on error
+            let _ = fs::remove_file(&temp_path);
             io::Error::new(
                 e.kind(),
                 format!(
-                    "Failed to set permissions on bundled pdfium library '{}': {}",
-                    lib_path.display(),
+                    "Failed to set permissions on bundled pdfium temp file '{}': {}",
+                    temp_path.display(),
                     e
                 ),
             )
         })?;
     }
+
+    // Atomically rename temp file to final location
+    // This ensures other threads never see a partially written file
+    fs::rename(&temp_path, &lib_path).map_err(|e| {
+        // Clean up temp file on error
+        let _ = fs::remove_file(&temp_path);
+        io::Error::new(
+            e.kind(),
+            format!(
+                "Failed to rename bundled pdfium library from '{}' to '{}': {}",
+                temp_path.display(),
+                lib_path.display(),
+                e
+            ),
+        )
+    })?;
 
     Ok(lib_path)
 }
@@ -322,6 +382,52 @@ mod tests {
         let metadata2 = fs::metadata(&path2).expect("Should be able to read metadata");
         let size2 = metadata2.len();
         assert_eq!(size1, size2, "Reused library should have same file size");
+    }
+
+    #[test]
+    #[cfg(feature = "bundled-pdfium")]
+    fn test_extract_bundled_pdfium_concurrent_access() {
+        use std::thread;
+
+        // Spawn multiple threads that all try to extract simultaneously
+        let handles: Vec<_> = (0..10)
+            .map(|_| {
+                thread::spawn(|| {
+                    let result = extract_bundled_pdfium();
+                    assert!(result.is_ok(), "Concurrent extraction should succeed");
+                    result.unwrap()
+                })
+            })
+            .collect();
+
+        // Collect all results
+        let paths: Vec<PathBuf> = handles
+            .into_iter()
+            .map(|h| h.join().expect("Thread should complete"))
+            .collect();
+
+        // All paths should be identical
+        let first_path = &paths[0];
+        assert!(
+            paths.iter().all(|p| p == first_path),
+            "All concurrent extractions should return the same path"
+        );
+
+        // Verify file exists and is valid
+        assert!(
+            first_path.exists(),
+            "Extracted library should exist at: {}",
+            first_path.display()
+        );
+
+        // Verify file size is not truncated/partial
+        let metadata = fs::metadata(first_path).expect("Should be able to read metadata");
+        let file_size = metadata.len();
+        assert!(
+            file_size > 1_000_000,
+            "PDFium library should be at least 1MB, got {} bytes",
+            file_size
+        );
     }
 
     #[test]
