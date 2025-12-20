@@ -1,5 +1,22 @@
 $ErrorActionPreference = "Stop"
 
+# Convert Windows path to MSYS2 format (C:\foo\bar -> /c/foo/bar)
+function ConvertTo-Msys2Path {
+  param([string]$WindowsPath)
+
+  # Normalize path separators
+  $normalized = $WindowsPath -replace '\\', '/'
+
+  # Convert drive letter (C: -> /c)
+  if ($normalized -match '^([A-Za-z]):(.*)$') {
+    $drive = $matches[1].ToLower()
+    $path = $matches[2]
+    return "/$drive$path"
+  }
+
+  return $normalized
+}
+
 $ffiLibDir = $args[0]
 if ([string]::IsNullOrWhiteSpace($ffiLibDir)) { $ffiLibDir = "target/release" }
 
@@ -14,11 +31,27 @@ if (Test-Path $gnuTargetPath) {
   throw "Error: FFI library directory not found: $ffiPath"
 }
 
+# Convert paths to MSYS2 format for pkg-config compatibility
+$msys2RepoRoot = ConvertTo-Msys2Path $repoRoot
+$pkgConfigDir = "$msys2RepoRoot/crates/kreuzberg-ffi"
+
+# Use colon separator for MSYS2 (not semicolon)
+if ([string]::IsNullOrWhiteSpace($env:PKG_CONFIG_PATH)) {
+  $pkgConfigPath = $pkgConfigDir
+} else {
+  # If PKG_CONFIG_PATH already exists, preserve it with colon separator
+  $pkgConfigPath = "${pkgConfigDir}:$($env:PKG_CONFIG_PATH)"
+}
+
 $env:PATH = "${ffiPath};$($env:PATH)"
-$pkgConfigPath = "$(Join-Path $repoRoot 'crates/kreuzberg-ffi');$env:PKG_CONFIG_PATH"
+
+# Convert FFI path to MSYS2 format for CGO flags
+$msys2FfiPath = ConvertTo-Msys2Path $ffiPath
+$msys2IncludePath = "$msys2RepoRoot/crates/kreuzberg-ffi/include"
+
 $cgoEnabled = "1"
-$cgoCflags = "-I$(Join-Path $repoRoot 'crates/kreuzberg-ffi/include')"
-$cgoLdflags = "-L$ffiPath -lkreuzberg_ffi -static-libgcc -static-libstdc++ -lws2_32 -luserenv -lbcrypt"
+$cgoCflags = "-I$msys2IncludePath"
+$cgoLdflags = "-L$msys2FfiPath -lkreuzberg_ffi -static-libgcc -static-libstdc++ -lws2_32 -luserenv -lbcrypt"
 
 Add-Content -Path $env:GITHUB_ENV -Value "PATH=$env:PATH"
 Add-Content -Path $env:GITHUB_ENV -Value "PKG_CONFIG_PATH=$pkgConfigPath"
@@ -27,6 +60,8 @@ Add-Content -Path $env:GITHUB_ENV -Value "CGO_CFLAGS=$cgoCflags"
 Add-Content -Path $env:GITHUB_ENV -Value "CGO_LDFLAGS=$cgoLdflags"
 
 Write-Host "✓ Go cgo environment configured (Windows)"
-Write-Host "  FFI Library Path: $ffiPath"
+Write-Host "  FFI Library Path (Windows): $ffiPath"
+Write-Host "  FFI Library Path (MSYS2): $msys2FfiPath"
 Write-Host "  PKG_CONFIG_PATH: $pkgConfigPath"
+Write-Host "  CGO_CFLAGS: $cgoCflags"
 Write-Host "  CGO_LDFLAGS: $cgoLdflags"
