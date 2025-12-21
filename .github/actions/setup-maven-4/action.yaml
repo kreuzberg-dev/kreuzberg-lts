@@ -1,0 +1,23 @@
+name: Setup Maven 4
+description: Install Maven 4.0.0-rc-4 in a cross-platform way
+runs:
+  using: composite
+  steps:
+    - name: Setup Maven 4
+      shell: bash
+      run: |
+        MAVEN_VERSION="4.0.0-rc-4"
+        MAVEN_URL="https://archive.apache.org/dist/maven/maven-4/${MAVEN_VERSION}/binaries/apache-maven-${MAVEN_VERSION}-bin.tar.gz"
+
+        # Use a temp directory that works across platforms
+        TEMP_DIR="$(pwd)/maven-temp"
+        mkdir -p "$TEMP_DIR"
+
+        curl -fsSL "$MAVEN_URL" -o "$TEMP_DIR/maven.tar.gz"
+        tar -xzf "$TEMP_DIR/maven.tar.gz" -C "$TEMP_DIR"
+
+        MAVEN_HOME="$TEMP_DIR/apache-maven-${MAVEN_VERSION}"
+        echo "$MAVEN_HOME/bin" >> "$GITHUB_PATH"
+
+        # Verify Maven version
+        "$MAVEN_HOME/bin/mvn" --version
