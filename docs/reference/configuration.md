@@ -1,25 +1,19 @@
 # Configuration Reference
 
-This page provides a comprehensive reference for all Kreuzberg configuration types. For usage guides and examples, see the [Configuration Guide](../guides/configuration.md).
+This page provides complete documentation for all Kreuzberg configuration types and fields. For quick-start examples and common use cases, see the [Configuration Guide](../guides/configuration.md).
 
-## Overview
+## Getting Started
 
-Kreuzberg supports multiple configuration methods:
+New users should start with the [Configuration Guide](../guides/configuration.md) which covers:
+- Configuration discovery mechanism
+- Quick-start examples in all languages
+- Common use cases (OCR setup, chunking for RAG)
+- Configuration file formats (TOML, YAML, JSON)
 
-1. **TOML files** - Preferred format, clear syntax
-2. **YAML files** - Alternative format
-3. **JSON files** - For programmatic generation
-4. **Programmatic** - Direct object instantiation
-
-### Configuration Discovery
-
-Kreuzberg automatically discovers configuration files in this order:
-
-1. Current directory: `./kreuzberg.{toml,yaml,yml,json}`
-2. User config: `~/.config/kreuzberg/config.{toml,yaml,yml,json}`
-3. System config: `/etc/kreuzberg/config.{toml,yaml,yml,json}`
-
-For complete examples, see the [examples directory](https://github.com/kreuzberg-dev/kreuzberg/tree/main/examples).
+This reference page is the comprehensive source for:
+- All configuration field details
+- Default values and constraints
+- Technical specifications for each config type
 
 ---
 
