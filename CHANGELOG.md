@@ -31,6 +31,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Root cause: LibreOffice conversion tests (test_office_doc_legacy, test_office_ppt_legacy, test_office_xls_legacy, test_legacy_doc_extraction_async) timeout after 60+ seconds on Windows CI
   - Solution: Added `#[cfg_attr(target_os = "windows", ignore)]` to all LibreOffice/legacy Office tests
   - Impact: Windows CI no longer hangs on LibreOffice tests, test suite completes successfully
+- **Ruby gem publish Zlib corruption**: Fixed gem file corruption during GitHub Actions artifact transfer
+  - Root cause: GitHub Actions artifact download/merge corrupts binary gem files causing `Zlib::DataError: invalid stored block lengths`
+  - Solution: Redesigned publish workflow to rebuild gems fresh from source on publish runner instead of using transferred artifacts
+  - Created new `publish-gems-direct.sh` script for simplified gem publication
+  - Impact: Ruby gems publish successfully without corruption errors
 
 ## [4.0.0-rc.15] - 2025-12-20
 

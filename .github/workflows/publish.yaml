@@ -1879,6 +1879,8 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: ${{ needs.prepare.outputs.tag }}
+          fetch-depth: 0
+          submodules: recursive
 
       - name: Download Ruby gem artifacts
         uses: actions/download-artifact@v7
@@ -1891,6 +1893,49 @@ jobs:
         uses: ruby/setup-ruby@v1
         with:
           ruby-version: '3.3'
+          bundler: none
+          bundler-cache: false
+
+      - name: Install Bundler
+        shell: bash
+        run: (gem install bundler -v 4.0.0 --no-document || gem install bundler --no-document) && bundler --version
+
+      - name: Cache Pdfium binaries
+        uses: ./.github/actions/cache-pdfium
+        with:
+          pdfium-version: ${{ env.PDFIUM_VERSION }}
+
+      - name: Download Pdfium runtime
+        uses: ./.github/actions/download-pdfium
+        with:
+          pdfium-version: ${{ env.PDFIUM_VERSION }}
+
+      - name: Stage PDFium runtime artifacts
+        uses: ./.github/actions/stage-pdfium-runtime
+        with:
+          destination: packages/ruby/ext/kreuzberg_rb/native
+          additional-destinations: |
+            packages/ruby
+            packages/ruby/lib
+
+      - name: Install Ruby dependencies
+        shell: bash
+        run: scripts/ci/ruby/install-ruby-deps.sh packages/ruby
+
+      - name: Vendor kreuzberg core crate
+        shell: bash
+        run: scripts/ci/ruby/vendor-kreuzberg-core.sh
+
+      - name: Rebuild gems from source
+        shell: bash
+        working-directory: packages/ruby
+        run: bundle exec rake clean && bundle exec rake build
+
+      - name: Copy rebuilt gems to dist directory
+        shell: bash
+        run: |
+          mkdir -p dist
+          cp packages/ruby/pkg/*.gem dist/
 
       - name: Configure trusted publishing credentials
         if: ${{ needs.prepare.outputs.dry_run != 'true' }}
@@ -1900,7 +1945,7 @@ jobs:
         if: ${{ needs.prepare.outputs.dry_run != 'true' }}
         env:
           RUBYGEMS_VERSION: ${{ needs.prepare.outputs.version }}
-        run: scripts/publish/rebuild-and-publish-gems.sh dist
+        run: scripts/publish/publish-gems-direct.sh dist
 
       - name: Dry run summary
         if: ${{ needs.prepare.outputs.dry_run == 'true' }}
