@@ -1,12 +1,12 @@
-name: Setup Maven 3.9.12
-description: Install Maven 3.9.12 in a cross-platform way
+name: Setup Maven 3.9.11
+description: Install Maven 3.9.11 in a cross-platform way
 runs:
   using: composite
   steps:
-    - name: Setup Maven 3.9.12
+    - name: Setup Maven 3.9.11
       shell: bash
       run: |
-        MAVEN_VERSION="3.9.12"
+        MAVEN_VERSION="3.9.11"
         MAVEN_PRIMARY_URL="https://repo.maven.apache.org/maven2/org/apache/maven/apache-maven/${MAVEN_VERSION}/apache-maven-${MAVEN_VERSION}-bin.tar.gz"
         MAVEN_FALLBACK_URL="https://archive.apache.org/dist/maven/maven-3/${MAVEN_VERSION}/binaries/apache-maven-${MAVEN_VERSION}-bin.tar.gz"
 
