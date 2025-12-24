@@ -226,7 +226,7 @@ if ($IsWindowsOS) {
     Write-Host ""
     Write-Host "=== Build Artifacts Verification ==="
     $releaseDir = "target\release"
-    Write-Host "Checking for FFI libraries in $releaseDir:"
+    Write-Host "Checking for FFI libraries in ${releaseDir}:"
     $builtLibs = Get-ChildItem -Path $releaseDir -Filter "libkreuzberg_ffi.*" -ErrorAction SilentlyContinue
     if ($builtLibs) {
         Write-Host "✓ FFI libraries found:"
