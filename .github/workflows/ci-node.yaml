@@ -55,6 +55,7 @@ env:
   ORT_VERSION: "1.23.2"
   MACOSX_DEPLOYMENT_TARGET: "14.0"
   VERBOSE_DEBUG: "true"
+  BUILD_PROFILE: "ci"
 
 jobs:
   changes:
@@ -235,9 +236,10 @@ jobs:
         env:
           VERBOSE: "1"
           CARGO_BUILD_VERBOSE: "true"
+          TARGET: ${{ matrix.target }}
         run: |
           set -x
-          scripts/ci/node/build-napi.sh ${{ matrix.target }}
+          task node:build:ci
           set +x
 
       - name: Report Node binding artifacts size
@@ -369,7 +371,7 @@ jobs:
           VERBOSE: "1"
         run: |
           set -x
-          time scripts/ci/node/build-ts-wrapper.sh
+          time task node:build
           set +x
 
       - name: Report TypeScript build artifacts size
@@ -388,7 +390,7 @@ jobs:
           DEBUG: "kreuzberg*"
         run: |
           set -x
-          time scripts/ci/node/run-typescript-tests.sh "${{ matrix.coverage }}"
+          time task node:test:ci
           set +x
 
       - name: Upload coverage
@@ -409,7 +411,7 @@ jobs:
           DEBUG: "kreuzberg*"
         run: |
           set -x
-          time scripts/ci/node/run-e2e.sh
+          time task node:e2e:test
           set +x
 
       - name: Report E2E artifacts size (if Windows)

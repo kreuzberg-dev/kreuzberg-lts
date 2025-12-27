@@ -1,0 +1,257 @@
+================================================================================
+LINUX COMPATIBILITY REVIEW - EXECUTIVE SUMMARY
+================================================================================
+
+Date: 2025-12-27
+Scope: All Taskfile YAML and supporting shell scripts
+Review Type: Critical compatibility analysis
+
+================================================================================
+OVERALL ASSESSMENT
+================================================================================
+
+CURRENT STATE: Taskfiles work on Ubuntu/Debian only
+TARGET STATE: Full Linux ecosystem support (RHEL, Alpine, Fedora, Arch)
+EFFORT: 27-33 hours (approximately 1 week)
+
+Positive Findings:
+  ✓ Good platform detection patterns in place
+  ✓ Proper LD_LIBRARY_PATH/DYLD_LIBRARY_PATH handling
+  ✓ Conditional command execution working well
+  ✓ Shell script quality is generally good
+
+Critical Gaps:
+  ✗ Hardcoded apt-get with no distribution detection
+  ✗ No package name mapping across distributions
+  ✗ Python commands used in cleanup (6 files affected)
+  ✗ RPATH hardcoded to development paths
+  ✗ No Alpine Linux (musl) support
+
+================================================================================
+CRITICAL ISSUES - MUST FIX FIRST
+================================================================================
+
+ISSUE 1.1: Hardcoded apt-get Package Manager
+  File: scripts/ci/install-system-deps/install-linux.sh:12-34
+  Severity: CRITICAL
+  Impact: Prevents builds on RHEL, CentOS, Fedora, Alpine, Arch
+  Fix: Add distribution detection and package manager abstraction
+  Effort: 3-4 hours
+
+ISSUE 1.2: No Package Name Mapping
+  File: scripts/ci/install-system-deps/install-linux.sh:16-31
+  Severity: CRITICAL
+  Impact: Different packages across distributions (libssl-dev vs openssl-devel)
+  Fix: Create distribution-specific package mapping table
+  Effort: 4-5 hours
+
+ISSUE 6.1: Wrong PDFium Package Names
+  File: .task/tools/pdfium.yml:20-24
+  Severity: HIGH
+  Impact: libpdfium-dev and pdfium-devel don't exist in repos
+  Fix: Use prebuilt binary download script instead
+  Effort: 1 hour
+
+================================================================================
+HIGH PRIORITY ISSUES
+================================================================================
+
+ISSUE 2.1: Python Commands in Cleanup
+  Files: .task/languages/*.yml (6 files)
+  Severity: MEDIUM-HIGH
+  Impact: Cleanup fails if Python not available or different version
+  Lines: python.yml:131-133, node.yml:103-104, ruby.yml:119-120, etc.
+  Fix: Replace with native shell commands (rm, find)
+  Effort: 2 hours
+
+ISSUE 3.1: RPATH Hardcoded to Development Path
+  File: scripts/lib/library-paths.sh:217, 224
+  Severity: HIGH
+  Impact: Deployed binaries won't find libraries
+  Fix: Use RUNPATH with $ORIGIN instead
+  Effort: 2 hours
+
+ISSUE 5.1: Scripts Assume bash (Alpine has only sh)
+  Files: .task/languages/{python,go,ruby}.yml
+  Severity: MEDIUM
+  Impact: E2E tests fail on Alpine Docker images
+  Fix: Use /bin/sh or detect bash availability
+  Effort: 1 hour
+
+================================================================================
+MEDIUM PRIORITY ISSUES
+================================================================================
+
+ISSUE 3.2: No musl libc Distinction
+  File: .task/config/platforms.yml:15-31
+  Severity: MEDIUM
+  Impact: Alpine Linux library lookup failures
+  Fix: Detect musl and handle differently from glibc
+  Effort: 3 hours
+
+ISSUE 4.1: CGO_ENABLED Unconditional
+  File: .task/languages/go.yml:33, 43, 53, 63
+  Severity: MEDIUM
+  Impact: Confusing build errors if FFI library missing
+  Fix: Add FFI library validation before Go build
+  Effort: 1 hour
+
+ISSUE 5.2: sdkman Hard-coded Home Path
+  File: Taskfile.yml:65
+  Severity: MEDIUM
+  Impact: Setup fails if sdkman not at ~/.sdkman
+  Fix: Use $SDKMAN_DIR environment variable
+  Effort: 30 minutes
+
+ISSUE 4.2: No musl Rust Target Support
+  File: .task/languages/rust.yml (entire file)
+  Severity: MEDIUM
+  Impact: Rust builds fail or produce incompatible binaries on Alpine
+  Fix: Add x86_64-unknown-linux-musl target variant
+  Effort: 2 hours
+
+================================================================================
+DISTRIBUTION COMPATIBILITY MATRIX
+================================================================================
+
+Linux Distribution    | Status | Notes
+---------------------|--------|------------------------------------------
+Ubuntu 22.04 (LTS)   | WORKS  | Primary test platform
+Debian 12            | WORKS  | Same as Ubuntu
+Alpine 3.18          | FAILS  | Issues: 1.1, 1.2, 3.2, 4.2, 5.1
+CentOS 9             | FAILS  | Issues: 1.1, 1.2, 6.1
+Fedora 38            | FAILS  | Issues: 1.1, 1.2
+Arch Linux           | FAILS  | Issues: 1.1, 1.2
+Red Hat EL 9         | FAILS  | Issues: 1.1, 1.2, 6.1
+
+================================================================================
+RECOMMENDED PRIORITY ORDER
+================================================================================
+
+Week 1 (CRITICAL):
+  1. Fix apt-get hardcoding (Issue 1.1) - 3-4 hours
+  2. Add package name mapping (Issue 1.2) - 4-5 hours
+  3. Fix PDFium package names (Issue 6.1) - 1 hour
+  → Subtotal: 8-10 hours
+
+Week 1-2 (HIGH PRIORITY):
+  1. Replace Python cleanup with shell (Issue 2.1) - 2 hours
+  2. Fix RPATH hardcoding (Issue 3.1) - 2 hours
+  3. Add bash/sh detection (Issue 5.1) - 1 hour
+  → Subtotal: 5-6 hours
+
+Week 2 (MEDIUM PRIORITY):
+  1. Add musl libc handling (Issue 3.2) - 3 hours
+  2. Add CGO FFI validation (Issue 4.1) - 1 hour
+  3. Fix sdkman path (Issue 5.2) - 30 minutes
+  4. Add musl Rust target (Issue 4.2) - 2 hours
+  → Subtotal: 6.5-7 hours
+
+Testing & Validation: 5-6 hours
+
+TOTAL ESTIMATED EFFORT: 27-33 hours (1 week of focused development)
+
+================================================================================
+FILES REQUIRING CHANGES
+================================================================================
+
+Primary Changes Required:
+  • scripts/ci/install-system-deps/install-linux.sh (distribution detection)
+  • .task/tools/pdfium.yml (remove package manager logic)
+  • .task/config/platforms.yml (musl detection)
+  • scripts/lib/library-paths.sh (RPATH -> RUNPATH)
+  • Taskfile.yml (sdkman path fix)
+
+Secondary Changes (cleanup):
+  • .task/languages/python.yml (remove Python cleanup)
+  • .task/languages/node.yml (remove Python cleanup)
+  • .task/languages/ruby.yml (remove Python cleanup)
+  • .task/languages/php.yml (remove Python cleanup)
+  • .task/languages/go.yml (remove Python cleanup + add validation)
+  • .task/languages/csharp.yml (remove Python cleanup)
+  • .task/languages/rust.yml (add musl target)
+
+================================================================================
+SPECIFIC LINE REFERENCES
+================================================================================
+
+CRITICAL ISSUES:
+
+install-linux.sh:12
+  if ! retry_with_backoff sudo apt-get update; then
+
+install-linux.sh:34
+  if retry_with_backoff_timeout 900 sudo apt-get install -y "${packages[@]}"; then
+
+install-linux.sh:44
+  if retry_with_backoff_timeout 300 sudo apt-get install -y "$pkg" 2>&1; then
+
+python.yml:131-133
+  - python -c "import shutil, os, glob; [shutil.rmtree(d, ignore_errors=True) ..."
+
+pdfium.yml:20-24
+  install:linux:
+    cmds:
+      - if command -v apt-get &> /dev/null; then
+          sudo apt-get install -y libpdfium-dev
+
+library-paths.sh:217
+  export CGO_LDFLAGS="-L${repo_root}/target/release ... -Wl,-rpath,${repo_root}/target/release"
+
+Taskfile.yml:65
+  - bash -c "source ~/.sdkman/bin/sdkman-init.sh && sdk env install"
+
+================================================================================
+KEY INSIGHTS
+================================================================================
+
+1. Architecture is Sound
+   The overall platform detection strategy is good. Just needs implementation
+   across all package managers and library paths.
+
+2. Quick Wins Available
+   Several issues (pdfi um, sdkman) can be fixed in under 1 hour each.
+
+3. Python Cleanup is Anti-pattern
+   Using Python to clean Python artifacts is circular and fragile. Shell
+   commands are more reliable and portable.
+
+4. Container Compatibility is Missing
+   Alpine is critical for modern containerization but completely unsupported.
+   Adding musl support enables Docker-based workflows.
+
+5. Package Manager Abstraction Needed
+   A central package manager detection function would solve 50% of issues.
+
+================================================================================
+SUCCESS CRITERIA
+================================================================================
+
+After applying all fixes, verify:
+
+✓ Builds succeed on Ubuntu 22.04 (current baseline)
+✓ Builds succeed on Debian 12
+✓ Builds succeed on Alpine 3.18 (Docker)
+✓ Builds succeed on CentOS 9
+✓ Builds succeed on Fedora 38
+✓ All cleanup commands work without Python
+✓ FFI library properly linked with RUNPATH
+✓ CI pipelines pass on multi-distribution matrix
+
+================================================================================
+CONCLUSION
+================================================================================
+
+The Taskfile system needs focused effort on distribution support, but the
+architectural foundation is solid. Most issues stem from Ubuntu-centric
+assumptions rather than fundamental design problems.
+
+Priority should be:
+  1. Distribution detection (1.1, 1.2) - enables other distributions
+  2. Cleanup cleanup (2.1) - improves robustness
+  3. Linking fixes (3.1) - production readiness
+  4. musl support (3.2, 4.2) - container support
+
+Estimated 1 week of focused effort yields full Linux ecosystem support.
+
+================================================================================

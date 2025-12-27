@@ -50,6 +50,7 @@ env:
   CARGO_PROFILE_DEV_DEBUG: 0
   RUST_BACKTRACE: short
   RUST_MIN_STACK: 16777216
+  BUILD_PROFILE: ci
   DOTNET_VERSION: '8.0'
   PDFIUM_VERSION: '7578'
   PDFIUM_STATIC_VERSION: '7442b'
@@ -198,12 +199,14 @@ jobs:
         with:
           ort-version: ${{ env.ORT_VERSION }}
 
+      - name: Install Task
+        uses: ./.github/actions/install-task
+
       - name: Build FFI library
-        run: cargo build -p kreuzberg-ffi --release
+        run: task rust:ffi:build:ci
 
       - name: Build C# bindings
-        shell: bash
-        run: scripts/ci/csharp/build-csharp.sh
+        run: task csharp:build:ci
 
       - name: Upload FFI library
         uses: actions/upload-artifact@v6
@@ -299,7 +302,6 @@ jobs:
         run: mkdir -p packages/csharp/target/crash-dumps
 
       - name: Run C# tests
-        shell: bash
         env:
           KREUZBERG_FFI_DIR: ${{ github.workspace }}/target/release
           COMPlus_DbgEnableMiniDump: "1"
@@ -310,23 +312,15 @@ jobs:
           DOTNET_DbgMiniDumpName: ${{ github.workspace }}/packages/csharp/target/crash-dumps/kreuzberg.%p.dmp
           DOTNET_EnableDiagnostics: "1"
           RUST_BACKTRACE: full
-        run: |
-          if [ "${RUNNER_OS}" != "Windows" ]; then
-            ulimit -c unlimited || true
-          fi
-          scripts/ci/csharp/run-tests.sh
-
-      - name: Install Task
-        uses: ./.github/actions/install-task
+        run: task csharp:test:ci
 
       - name: Run E2E tests
-        shell: bash
         env:
           KREUZBERG_FFI_DIR: ${{ github.workspace }}/target/release
           LD_LIBRARY_PATH: ${{ github.workspace }}/target/release:${{ env.LD_LIBRARY_PATH }}
           DYLD_LIBRARY_PATH: ${{ github.workspace }}/target/release:${{ env.DYLD_LIBRARY_PATH }}
           KREUZBERG_SKIP_LEGACY_OFFICE: ${{ runner.os == 'Windows' && '1' || '' }}
-        run: scripts/ci/csharp/run-e2e.sh
+        run: task csharp:e2e:test
 
       - name: Upload C# crash dumps
         if: always()

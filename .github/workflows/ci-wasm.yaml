@@ -59,6 +59,7 @@ env:
   PDFIUM_WASM_VERSION: "7442b"
   MACOSX_DEPLOYMENT_TARGET: "14.0"
   WASM_RUSTFLAGS: "-C target-feature=+atomics,+bulk-memory -C link-arg=--shared-memory -C link-arg=--max-memory=2147483648 -C link-arg=--import-memory -C link-arg=--export=__wasm_init_tls -C link-arg=--export=__tls_size -C link-arg=--export=__tls_align -C link-arg=--export=__tls_base"
+  BUILD_PROFILE: ci
 
 jobs:
   # ============================================================================
@@ -98,16 +99,11 @@ jobs:
         shell: bash
         run: scripts/ci/wasm/install-wasm-pack.sh
 
-      - name: Run Rust unit tests
-        run: wasm-pack test --node --release
-        working-directory: crates/kreuzberg-wasm
+      - name: Run WASM tests
         shell: bash
+        run: task wasm:test:ci
         env:
           RUST_BACKTRACE: 1
-
-      - name: Run TypeScript tests
-        run: scripts/ci/wasm/pnpm-test-wasm-crate.sh
-        shell: bash
 
       - name: Cleanup Rust cache
         if: always()
@@ -153,27 +149,9 @@ jobs:
         shell: bash
         run: scripts/ci/wasm/install-wasm-pack.sh
 
-      - name: Build WASM for Web
-        run: scripts/ci/wasm/pnpm-build-wasm.sh web
+      - name: Build WASM for all targets
         shell: bash
-        env:
-          RUSTFLAGS: ${{ env.WASM_RUSTFLAGS }}
-
-      - name: Build WASM for Bundler
-        run: scripts/ci/wasm/pnpm-build-wasm.sh bundler
-        shell: bash
-        env:
-          RUSTFLAGS: ${{ env.WASM_RUSTFLAGS }}
-
-      - name: Build WASM for Node.js
-        run: scripts/ci/wasm/pnpm-build-wasm.sh nodejs
-        shell: bash
-        env:
-          RUSTFLAGS: ${{ env.WASM_RUSTFLAGS }}
-
-      - name: Build WASM for Deno
-        run: scripts/ci/wasm/pnpm-build-wasm.sh deno
-        shell: bash
+        run: task wasm:build:all
         env:
           RUSTFLAGS: ${{ env.WASM_RUSTFLAGS }}
 
@@ -186,8 +164,8 @@ jobs:
           tar -xzf /tmp/pdfium-wasm.tgz -C wasm-libs
 
       - name: Build WASM with PDFium (native target)
-        run: scripts/ci/wasm/pnpm-build-wasm.sh nodejs
         shell: bash
+        run: task wasm:build:nodejs
         env:
           PDFIUM_WASM_LIB: ${{ github.workspace }}/wasm-libs
           RUSTFLAGS: ${{ env.WASM_RUSTFLAGS }}
@@ -235,14 +213,14 @@ jobs:
         run: scripts/ci/wasm/install-wasm-pack.sh
 
       - name: Build WASM (required for type generation)
-        run: scripts/ci/wasm/pnpm-build-wasm.sh bundler
         shell: bash
+        run: task wasm:build:bundler
         env:
           RUSTFLAGS: ${{ env.WASM_RUSTFLAGS }}
 
-      - name: Run TypeScript type check
-        run: scripts/ci/wasm/typecheck-wasm-crate.sh
+      - name: Type-check WASM
         shell: bash
+        run: task wasm:typecheck
 
       - name: Verify .d.ts files exist
         shell: bash
@@ -282,17 +260,9 @@ jobs:
           name: wasm-x86_64-unknown-linux-gnu
           path: crates/kreuzberg-wasm/
 
-      - name: Install dependencies
-        run: scripts/ci/wasm/pnpm-install-wasm-crate.sh
+      - name: Run WASM tests
         shell: bash
-
-      - name: Build TypeScript wrapper
-        run: scripts/ci/wasm/pnpm-build-ts-wasm-crate.sh
-        shell: bash
-
-      - name: Run integration tests
-        run: scripts/ci/wasm/pnpm-test-wasm-crate.sh
-        shell: bash
+        run: task wasm:test:ci
 
   # ============================================================================
   # DENO RUNTIME TESTS (MULTIPLE VERSIONS & PLATFORMS)
@@ -329,31 +299,19 @@ jobs:
         with:
           deno-version: "2.x"
 
-      - name: Build WASM package
+      - name: Build WASM for Deno
         shell: bash
-        run: scripts/ci/wasm/pnpm-build-wasm.sh deno
+        run: task wasm:build:deno
         env:
           RUSTFLAGS: ${{ env.WASM_RUSTFLAGS }}
 
-      - name: Build TypeScript wrapper
-        shell: bash
-        run: scripts/ci/wasm/pnpm-build-ts-wasm-crate.sh
-
       - name: Generate Deno E2E tests
         shell: bash
-        run: scripts/ci/wasm/generate-e2e-tests.sh wasm-deno
+        run: task wasm:e2e:deno:generate
 
-      - name: Link WASM package for testing
+      - name: Run Deno E2E tests
         shell: bash
-        run: scripts/ci/wasm/pack-wasm-and-export-path.sh
-
-      - name: Install WASM package in Deno tests
-        shell: bash
-        run: scripts/ci/wasm/deno-print-wasm-package-path.sh
-
-      - name: Run Deno tests
-        shell: bash
-        run: scripts/ci/wasm/run-deno-tests.sh
+        run: task wasm:e2e:deno:test
 
       - name: Cleanup Rust cache
         if: always()
@@ -389,24 +347,18 @@ jobs:
         run: scripts/ci/wasm/install-wasm-pack.sh
 
       - name: Build WASM package (size-optimized)
-        run: scripts/ci/wasm/pnpm-build-wasm.sh bundler
+        run: task wasm:build:bundler
         env:
           RUSTFLAGS: ${{ env.WASM_RUSTFLAGS }}
-
-      - name: Build TypeScript wrapper
-        run: scripts/ci/wasm/pnpm-build-ts-wasm-crate.sh
 
       - name: Verify WASM size for Workers
         run: scripts/ci/wasm/verify-workers-wasm-size.sh
 
       - name: Generate Workers E2E tests
-        run: scripts/ci/wasm/generate-e2e-tests.sh wasm-workers
+        run: task wasm:e2e:workers:generate
 
-      - name: Install Workers test dependencies
-        run: scripts/ci/wasm/pnpm-install-dir.sh e2e/wasm-workers
-
-      - name: Run Miniflare tests
-        run: scripts/ci/wasm/pnpm-test-dir.sh e2e/wasm-workers
+      - name: Run Cloudflare Workers E2E tests
+        run: task wasm:e2e:workers:test
 
       - name: Cleanup Rust cache
         if: always()

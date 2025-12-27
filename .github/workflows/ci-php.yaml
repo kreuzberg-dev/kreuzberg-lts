@@ -56,6 +56,7 @@ env:
   CARGO_TARGET_DIR: target
   CARGO_LOG: cargo::core::compiler::fingerprint=info
   RUST_LOG: debug
+  BUILD_PROFILE: ci
 
 jobs:
   changes:
@@ -186,7 +187,7 @@ jobs:
 
       - name: Build PHP extension
         shell: bash
-        run: scripts/ci/php/build-extension.sh
+        run: task php:build:ci
 
       - name: Cleanup Rust cache
         if: always()
@@ -250,21 +251,19 @@ jobs:
 
       - name: Build PHP extension
         shell: bash
-        run: scripts/ci/php/build-extension.sh
+        run: task php:build:ci
 
       - name: Run PHPStan
         shell: bash
-        working-directory: packages/php
-        run: composer exec -- phpstan analyse
+        run: task php:lint:check
 
       - name: Run PHP-CS-Fixer check
         shell: bash
-        working-directory: packages/php
-        run: composer exec -- php-cs-fixer fix --dry-run --diff
+        run: task php:format:check
 
       - name: Run PHP tests
         shell: bash
-        run: scripts/ci/php/run-tests.sh
+        run: task php:test:ci
 
       - name: Build kreuzberg CLI binary
         shell: bash
@@ -275,4 +274,4 @@ jobs:
 
       - name: Run E2E tests
         shell: bash
-        run: task e2e:php:test
+        run: task php:e2e:test

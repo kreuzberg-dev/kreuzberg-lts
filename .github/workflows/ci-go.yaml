@@ -47,6 +47,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
+  BUILD_PROFILE: ci
   CARGO_TERM_COLOR: always
   CARGO_INCREMENTAL: 0
   CARGO_PROFILE_DEV_DEBUG: 0
@@ -225,19 +226,13 @@ jobs:
         shell: pwsh
         run: scripts/ci/go/setup-msys2-windows.ps1
 
-      - name: Build FFI library (Windows)
-        if: matrix.os == 'windows-latest'
-        run: scripts/ci/go/build-ffi.ps1
-        shell: pwsh
-        env:
-          KREUZBERG_BUILD_VERBOSE: '1'
+      - name: Install Task
+        uses: ./.github/actions/install-task
 
-      - name: Build FFI library (Unix)
-        if: matrix.os != 'windows-latest'
-        run: scripts/ci/go/build-ffi.sh
-        shell: bash
+      - name: Build FFI library
         env:
           KREUZBERG_BUILD_VERBOSE: '1'
+        run: task rust:ffi:build:ci
 
       - name: Copy FFI header (Unix)
         if: matrix.os != 'windows-latest'
@@ -260,15 +255,8 @@ jobs:
           echo "pkg-config file:"
           ls -lh crates/kreuzberg-ffi/kreuzberg-ffi.pc 2>/dev/null || echo "  (not found)"
 
-      - name: Build Go bindings (Windows)
-        if: matrix.os == 'windows-latest'
-        run: scripts/ci/go/build-bindings.ps1
-        shell: pwsh
-
-      - name: Build Go bindings (Unix)
-        if: matrix.os != 'windows-latest'
-        run: scripts/ci/go/build-bindings.sh
-        shell: bash
+      - name: Build Go bindings
+        run: task go:build:ci
 
       - name: Upload FFI library
         uses: actions/upload-artifact@v6
@@ -437,8 +425,7 @@ jobs:
           echo "${PATH:0:1000}..."
 
       - name: Run Go tests
-        run: scripts/ci/go/run-tests.sh
-        shell: bash
+        run: task go:test:ci
         env:
           LD_LIBRARY_PATH: ${{ env.LD_LIBRARY_PATH }}
           DYLD_LIBRARY_PATH: ${{ env.DYLD_LIBRARY_PATH }}
@@ -454,10 +441,10 @@ jobs:
         uses: ./.github/actions/install-task
 
       - name: Generate Go E2E tests
-        run: task e2e:go:generate
+        run: task go:e2e:generate
 
       - name: Run E2E tests
-        run: scripts/ci/go/run-e2e.sh
+        run: task go:e2e:test
         env:
           LD_LIBRARY_PATH: ${{ env.LD_LIBRARY_PATH }}
           DYLD_LIBRARY_PATH: ${{ env.DYLD_LIBRARY_PATH }}

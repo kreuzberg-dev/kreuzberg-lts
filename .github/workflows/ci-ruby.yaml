@@ -58,6 +58,7 @@ env:
   CARGO_TARGET_DIR: target
   CARGO_LOG: cargo::core::compiler::fingerprint=info
   RUST_LOG: debug
+  BUILD_PROFILE: ci
 
 jobs:
   changes:
@@ -323,7 +324,7 @@ jobs:
 
       - name: Build Ruby gem
         shell: bash
-        run: scripts/ci/ruby/build-gem.sh
+        run: task ruby:build:ci
         env:
           RB_SYS_VERBOSE: "1"
           CARGO_BUILD_JOBS: "1"
@@ -503,16 +504,17 @@ jobs:
             tail -100 mkmf.log
           fi
 
+      - name: Install Task
+        uses: ./.github/actions/install-task
+
       - name: Build kreuzberg CLI binary
         shell: bash
         run: cargo build --release --package kreuzberg-cli
 
       - name: Run Ruby tests
         shell: bash
-        run: scripts/ci/ruby/run-tests.sh
-
-      - name: Install Task
-        uses: ./.github/actions/install-task
+        run: task ruby:test:ci
 
       - name: Run E2E tests
-        run: scripts/ci/ruby/run-e2e.sh
+        shell: bash
+        run: task ruby:e2e:test

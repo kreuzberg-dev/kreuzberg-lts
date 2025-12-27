@@ -52,6 +52,7 @@ env:
   PDFIUM_STATIC_VERSION: "7442b"
   ORT_VERSION: "1.23.2"
   MACOSX_DEPLOYMENT_TARGET: "14.0"
+  BUILD_PROFILE: ci
 
 jobs:
   changes:
@@ -182,11 +183,8 @@ jobs:
           dest-dir: target/release
 
       - name: Build Rust FFI library (C API)
-        uses: ./.github/actions/build-rust-ffi
-        with:
-          crate-name: kreuzberg-ffi
-          build-profile: release
-          verbose: true
+        shell: bash
+        run: task rust:ffi:build:ci
 
       - name: Log platform information
         shell: bash
@@ -215,7 +213,7 @@ jobs:
 
       - name: Build Java bindings
         shell: bash
-        run: scripts/ci/java/build-java.sh
+        run: task java:build:ci
 
       - name: Upload JAR
         uses: actions/upload-artifact@v6
@@ -307,7 +305,7 @@ jobs:
 
       - name: Build native FFI library
         shell: bash
-        run: cargo build -p kreuzberg-ffi --release
+        run: task rust:ffi:build:ci
 
       - name: Log test environment (pre-test diagnostics)
         shell: bash
@@ -353,7 +351,7 @@ jobs:
             -XX:HeapDumpPath=${{ github.workspace }}/packages/java/target/jvm-crash/heapdump.hprof
             -Xlog:os=info
           RUST_BACKTRACE: full
-        run: scripts/ci/java/run-tests.sh
+        run: task java:test:ci
 
       - name: Collect macOS system diagnostics (on failure)
         if: failure() && runner.os == 'macOS'
