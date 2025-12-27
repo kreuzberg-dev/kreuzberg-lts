@@ -54,6 +54,7 @@ env:
   PDFIUM_STATIC_VERSION: "7442b"
   ORT_VERSION: "1.23.2"
   MACOSX_DEPLOYMENT_TARGET: "14.0"
+  BUILD_PROFILE: ci
 
 jobs:
   changes:
@@ -206,12 +207,10 @@ jobs:
           verbose: true
 
       - name: Build Python wheels
-        uses: PyO3/maturin-action@v1
-        with:
-          working-directory: packages/python
-          command: build
-          args: --release --strip --out ../../target/wheels
-          manylinux: off
+        shell: bash
+        env:
+          TARGET: ${{ matrix.target }}
+        run: task python:build:ci
 
       - name: Upload wheels
         uses: actions/upload-artifact@v6
@@ -248,7 +247,8 @@ jobs:
           cache-prefix: sdist
 
       - name: Build sdist
-        run: scripts/ci/python/build-sdist.sh
+        shell: bash
+        run: task python:build:sdist
 
       - name: Upload sdist
         uses: actions/upload-artifact@v6
@@ -317,7 +317,7 @@ jobs:
 
       - name: Run Python tests
         shell: bash
-        run: scripts/ci/python/run-tests.sh "${{ matrix.coverage }}"
+        run: task python:test:ci
 
       - name: Upload coverage
         if: matrix.coverage
@@ -349,4 +349,4 @@ jobs:
         shell: bash
         env:
           PYTEST_TIMEOUT: 300
-        run: scripts/ci/python/run-e2e.sh
+        run: task python:e2e:test

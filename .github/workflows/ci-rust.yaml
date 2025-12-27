@@ -57,6 +57,7 @@ env:
   PDFIUM_STATIC_VERSION: "7442b"
   ORT_VERSION: "1.23.2"
   MACOSX_DEPLOYMENT_TARGET: "14.0"
+  BUILD_PROFILE: "ci"
 
 jobs:
   changes:
@@ -258,8 +259,11 @@ jobs:
         shell: bash
         run: scripts/ci/rust/pre-build-diagnostics.sh
 
+      - name: Install Task
+        uses: ./.github/actions/install-task
+
       - name: Run unit tests
-        run: scripts/ci/rust/run-unit-tests.sh
+        run: task rust:test:ci
         shell: bash
         env:
           LD_LIBRARY_PATH: ${{ env.LD_LIBRARY_PATH || '' }}
@@ -379,14 +383,17 @@ jobs:
           cache-key-prefix: system-pdfium-${{ matrix.os }}
           target: ${{ matrix.target }}
 
+      - name: Install Task
+        uses: ./.github/actions/install-task
+
       - name: Build kreuzberg with pdf,system-pdfium features
-        run: cargo build -p kreuzberg --features pdf,system-pdfium
+        run: task rust:build:ci
         shell: bash
         env:
           PKG_CONFIG_PATH: "${{ matrix.os == 'macos-latest' && '/usr/local/lib/pkgconfig' || '' }}"
 
       - name: Run tests with pdf,system-pdfium features
-        run: cargo test -p kreuzberg --features pdf,system-pdfium
+        run: task rust:test:ci
         shell: bash
         env:
           PKG_CONFIG_PATH: "${{ matrix.os == 'macos-latest' && '/usr/local/lib/pkgconfig' || '' }}"
@@ -446,12 +453,15 @@ jobs:
         with:
           pdfium-version: ${{ env.PDFIUM_VERSION }}
 
+      - name: Install Task
+        uses: ./.github/actions/install-task
+
       - name: Pre-build diagnostics (CLI)
         shell: bash
         run: scripts/ci/rust/pre-build-diagnostics-cli.sh "${{ matrix.target }}"
 
       - name: Build CLI
-        run: cargo build -p kreuzberg-cli --release --target ${{ matrix.target }}
+        run: task rust:cli:build
         shell: bash
 
       - name: Package CLI (Unix)

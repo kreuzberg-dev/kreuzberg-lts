@@ -184,9 +184,8 @@ jobs:
         run: scripts/ci/validate/show-disk-space.sh "Disk space before lint"
         shell: bash
 
-      - name: Run lint
-        run: scripts/ci/validate/run-lint.sh
-        shell: bash
+      - name: Run lint checks
+        run: task lint:check
 
       - name: Check final disk space
         if: always()

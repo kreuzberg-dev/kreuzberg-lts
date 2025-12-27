@@ -1,0 +1,205 @@
+version: "3"
+
+tasks:
+  # All linting with auto-fix - runs all linters with modifications
+  all:
+    desc: Run all linters with auto-fix across all languages
+    cmds:
+      - task: rust:lint
+      - task: python:lint
+      - task: node:lint
+      - task: go:lint
+      - task: java:lint
+      - task: csharp:lint
+      - task: wasm:lint
+      - task: ruby:lint
+      - task: php:lint
+
+  # Check mode - no modifications
+  check:
+    desc: Run all linters in check-only mode (no modifications)
+    cmds:
+      - task: rust:lint:check
+      - task: python:lint:check
+      - task: node:lint:check
+      - task: go:lint:check
+      - task: java:lint:check
+      - task: csharp:lint:check
+      - task: wasm:lint:check
+      - task: ruby:lint:check
+      - task: php:lint:check
+
+  # Core linting (Rust only)
+  core:
+    desc: Lint core Rust code with auto-fix
+    cmds:
+      - task: rust:lint
+
+  core:check:
+    desc: Check core Rust code linting without modifications
+    cmds:
+      - task: rust:lint:check
+
+  # Data science stack (Python + Rust)
+  datascience:
+    desc: Lint data science bindings (Rust + Python) with auto-fix
+    cmds:
+      - task: rust:lint
+      - task: python:lint
+
+  datascience:check:
+    desc: Check data science stack linting without modifications
+    cmds:
+      - task: rust:lint:check
+      - task: python:lint:check
+
+  # JS ecosystem (Node + WASM)
+  js-ecosystem:
+    desc: Lint JavaScript ecosystem (Node.js + WASM) with auto-fix
+    cmds:
+      - task: node:lint
+      - task: wasm:lint
+
+  js-ecosystem:check:
+    desc: Check JS ecosystem linting without modifications
+    cmds:
+      - task: node:lint:check
+      - task: wasm:lint:check
+
+  # Systems languages (Rust + Go + C#)
+  systems:
+    desc: Lint systems languages (Rust, Go, C#) with auto-fix
+    cmds:
+      - task: rust:lint
+      - task: go:lint
+      - task: csharp:lint
+
+  systems:check:
+    desc: Check systems languages linting without modifications
+    cmds:
+      - task: rust:lint:check
+      - task: go:lint:check
+      - task: csharp:lint:check
+
+  # JVM ecosystem (Java, C#, Ruby, PHP)
+  jvm-bindings:
+    desc: Lint JVM-dependent bindings (Java, C#, Ruby, PHP) with auto-fix
+    cmds:
+      - task: java:lint
+      - task: csharp:lint
+      - task: ruby:lint
+      - task: php:lint
+
+  jvm-bindings:check:
+    desc: Check JVM bindings linting without modifications
+    cmds:
+      - task: java:lint:check
+      - task: csharp:lint:check
+      - task: ruby:lint:check
+      - task: php:lint:check
+
+  # Web-focused (Node + WASM + Python)
+  web:
+    desc: Lint web-focused bindings (Node.js, WASM, Python) with auto-fix
+    cmds:
+      - task: node:lint
+      - task: wasm:lint
+      - task: python:lint
+
+  web:check:
+    desc: Check web-focused bindings linting without modifications
+    cmds:
+      - task: node:lint:check
+      - task: wasm:lint:check
+      - task: python:lint:check
+
+  # Individual language linting (sequential)
+  rust:
+    desc: Lint Rust code with auto-fix
+    cmds:
+      - task: rust:lint
+
+  rust:check:
+    desc: Check Rust code linting without modifications
+    cmds:
+      - task: rust:lint:check
+
+  python:
+    desc: Lint Python code with auto-fix
+    cmds:
+      - task: python:lint
+
+  python:check:
+    desc: Check Python code linting without modifications
+    cmds:
+      - task: python:lint:check
+
+  node:
+    desc: Lint Node.js/TypeScript code with auto-fix
+    cmds:
+      - task: node:lint
+
+  node:check:
+    desc: Check Node.js/TypeScript code linting without modifications
+    cmds:
+      - task: node:lint:check
+
+  go:
+    desc: Lint Go code with auto-fix
+    cmds:
+      - task: go:lint
+
+  go:check:
+    desc: Check Go code linting without modifications
+    cmds:
+      - task: go:lint:check
+
+  java:
+    desc: Lint Java code with auto-fix
+    cmds:
+      - task: java:lint
+
+  java:check:
+    desc: Check Java code linting without modifications
+    cmds:
+      - task: java:lint:check
+
+  csharp:
+    desc: Lint C# code with auto-fix
+    cmds:
+      - task: csharp:lint
+
+  csharp:check:
+    desc: Check C# code linting without modifications
+    cmds:
+      - task: csharp:lint:check
+
+  wasm:
+    desc: Lint WASM TypeScript code with auto-fix
+    cmds:
+      - task: wasm:lint
+
+  wasm:check:
+    desc: Check WASM TypeScript code linting without modifications
+    cmds:
+      - task: wasm:lint:check
+
+  ruby:
+    desc: Lint Ruby code with auto-fix
+    cmds:
+      - task: ruby:lint
+
+  ruby:check:
+    desc: Check Ruby code linting without modifications
+    cmds:
+      - task: ruby:lint:check
+
+  php:
+    desc: Lint PHP code with auto-fix
+    cmds:
+      - task: php:lint
+
+  php:check:
+    desc: Check PHP code linting without modifications
+    cmds:
+      - task: php:lint:check

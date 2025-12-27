@@ -1,0 +1,161 @@
+version: "3"
+
+includes:
+  _cfg:
+    taskfile: ../config/vars.yml
+    internal: true
+  _platforms:
+    taskfile: ../config/platforms.yml
+    internal: true
+
+vars:
+  PHP_VERSION: "8.2"
+
+tasks:
+  # Installation
+  install:
+    desc: Install PHP dependencies with Composer
+    dir: packages/php
+    cmds:
+      - composer install
+
+  setup:
+    desc: Setup PHP dependencies with Composer (alias for install)
+    dir: packages/php
+    cmds:
+      - task: php:install
+
+  # Build Tasks
+  build:
+    desc: Build PHP extension
+    dir: packages/php
+    cmds:
+      - cmd: bash scripts/ci/php/build-extension.sh
+        platforms: [linux, darwin]
+
+  build:dev:
+    desc: Build PHP extension in debug mode
+    dir: packages/php
+    cmds:
+      - cmd: bash scripts/ci/php/build-extension.sh --debug
+        platforms: [linux, darwin]
+
+  # Test Tasks
+  test:
+    desc: Run PHP tests with PHPUnit
+    dir: packages/php
+    cmds:
+      - cmd: bash scripts/ci/php/run-tests.sh
+        platforms: [linux, darwin]
+
+  test:quick:
+    desc: Run PHP unit tests only (no integration tests)
+    dir: packages/php
+    cmds:
+      - composer exec -- phpunit --testsuite=unit
+
+  test:integration:
+    desc: Run PHP integration tests
+    dir: packages/php
+    cmds:
+      - composer exec -- phpunit --testsuite=integration
+
+  test:coverage:
+    desc: Run PHP tests with coverage report
+    dir: packages/php
+    cmds:
+      - composer exec -- phpunit --coverage-html=coverage
+
+  # Linting Tasks
+  lint:
+    desc: Lint PHP code with auto-fix (php-cs-fixer + phpstan)
+    dir: packages/php
+    cmds:
+      - composer exec -- php-cs-fixer fix
+      - composer exec -- phpstan analyse
+
+  lint:check:
+    desc: Lint PHP code in check-only mode (php-cs-fixer + phpstan, no fixes)
+    dir: packages/php
+    cmds:
+      - composer exec -- php-cs-fixer fix --dry-run --diff
+      - composer exec -- phpstan analyse
+
+  lint:phpstan:
+    desc: Run static analysis with PHPStan
+    dir: packages/php
+    cmds:
+      - composer exec -- phpstan analyse
+
+  lint:phpstan:check:
+    desc: Check static analysis with PHPStan in strict mode
+    dir: packages/php
+    cmds:
+      - composer exec -- phpstan analyse --level=max
+
+  # Formatting Tasks
+  format:
+    desc: Format PHP code with modifications (php-cs-fixer)
+    dir: packages/php
+    cmds:
+      - composer exec -- php-cs-fixer fix
+
+  format:check:
+    desc: Check PHP code formatting without modifications (php-cs-fixer)
+    dir: packages/php
+    cmds:
+      - composer exec -- php-cs-fixer fix --dry-run --diff
+
+  # Cleanup
+  clean:
+    desc: Clean PHP build artifacts
+    dir: packages/php
+    cmds:
+      - python -c "import shutil, glob, os; [shutil.rmtree(d, ignore_errors=True) for d in ['vendor', 'build', 'coverage']]; [os.remove(f) for f in glob.glob('*.so')]"
+
+  # Dependency Management
+  update:
+    desc: Update PHP dependencies
+    dir: packages/php
+    cmds:
+      - echo "Updating PHP dependencies..."
+      - composer update
+
+  update:check:
+    desc: Check for outdated PHP dependencies
+    dir: packages/php
+    cmds:
+      - composer outdated
+
+  # E2E Tests
+  e2e:generate:
+    desc: Generate PHP E2E tests from fixtures
+    dir: packages/php
+    cmds:
+      - cmd: bash scripts/task/e2e-generate.sh php
+        platforms: [linux, darwin]
+      - cmd: echo "E2E generation not yet supported on Windows - use WSL or CI"
+        platforms: [windows]
+
+  e2e:lint:
+    desc: Lint PHP E2E code
+    dir: e2e/php
+    cmds:
+      - composer exec -- php-cs-fixer fix --dry-run --diff
+      - composer exec -- phpstan analyse
+
+  e2e:test:
+    desc: Run PHP E2E tests
+    dir: packages/php
+    cmds:
+      - cmd: ./vendor/bin/phpunit
+        platforms: [linux, darwin]
+      - cmd: .\vendor\bin\phpunit.bat
+        platforms: [windows]
+
+  e2e:verify:
+    desc: Regenerate and validate PHP E2E suite (generate + lint + test)
+    cmds:
+      - task: e2e:generate
+      - task: e2e:lint
+      - task: e2e:test

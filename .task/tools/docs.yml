@@ -1,0 +1,53 @@
+version: "3"
+
+includes:
+  _cfg:
+    taskfile: ../config/vars.yml
+    internal: true
+
+tasks:
+  build:
+    desc: Build documentation
+    cmds:
+      - uv run mkdocs build --clean --strict
+
+  serve:
+    desc: Serve documentation locally
+    cmds:
+      - uv run mkdocs serve
+
+  serve:versioned:
+    desc: Serve versioned documentation with mike
+    cmds:
+      - uv run mike serve
+
+  deploy:v4:
+    desc: Deploy v4 documentation with mike
+    cmds:
+      - uv run mike deploy --update-aliases 4.0 latest
+      - uv run mike set-default latest
+
+  deploy:v3:
+    desc: Deploy v3 documentation from tagged release
+    cmds:
+      - echo "Creating git worktree for v3 docs ({{.V3_TAG}})..."
+      - git worktree remove --force /tmp/kreuzberg-v3-build 2>/dev/null || true
+      - git worktree add /tmp/kreuzberg-v3-build {{.V3_TAG}}
+      - echo "Disabling social plugin (requires cairo)..."
+      - "sed -i.bak 's/^  - social$/  # - social/' /tmp/kreuzberg-v3-build/mkdocs.yaml"
+      - echo "Building and deploying v3 docs..."
+      - cd /tmp/kreuzberg-v3-build && uv sync --group docs --no-install-workspace && uv pip install mike
+      - cd /tmp/kreuzberg-v3-build && uv run mike deploy 3.0 v3
+      - echo "Cleaning up worktree..."
+      - git worktree remove --force /tmp/kreuzberg-v3-build || true
+
+  deploy:all:
+    desc: Deploy both v3 and v4 documentation
+    cmds:
+      - task: deploy:v4
+      - task: deploy:v3
+
+  publish:
+    desc: Publish documentation to GitHub Pages
+    cmds:
+      - uv run mike deploy --push 4.0 latest

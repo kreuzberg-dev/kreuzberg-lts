@@ -1,0 +1,23 @@
+version: "3"
+
+includes:
+  _cfg:
+    taskfile: config/vars.yml
+    internal: true
+  _plat:
+    taskfile: config/platforms.yml
+    internal: true
+
+tasks:
+  test:
+    desc: Test configuration variables
+    cmds:
+      - echo "VERSION={{.VERSION}}"
+      - echo "BUILD_PROFILE={{.BUILD_PROFILE}}"
+      - echo "OS={{.OS}}"
+      - echo "ARCH={{.ARCH}}"
+      - echo "EXE_EXT={{.EXE_EXT}}"
+      - echo "LIB_EXT={{.LIB_EXT}}"
+      - echo "NUM_CPUS={{.NUM_CPUS}}"
+      - echo "CARGO_PROFILE_DIR={{.CARGO_PROFILE_DIR}}"
+      - echo "PDFIUM_VERSION={{.PDFIUM_VERSION}}"

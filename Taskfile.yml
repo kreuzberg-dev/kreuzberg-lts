@@ -1,0 +1,237 @@
+version: "3"
+
+# Language bindings (namespaced)
+includes:
+  # Configuration
+  _cfg:
+    taskfile: .task/config/vars.yml
+    internal: true
+
+  # Languages (namespaced: rust, python, node/typescript, wasm, ruby, go, java, csharp, php)
+  rust:
+    taskfile: .task/languages/rust.yml
+  python:
+    taskfile: .task/languages/python.yml
+  node:
+    taskfile: .task/languages/node.yml
+  wasm:
+    taskfile: .task/languages/wasm.yml
+  ruby:
+    taskfile: .task/languages/ruby.yml
+  go:
+    taskfile: .task/languages/go.yml
+  java:
+    taskfile: .task/languages/java.yml
+  csharp:
+    taskfile: .task/languages/csharp.yml
+  php:
+    taskfile: .task/languages/php.yml
+
+  # Workflows (orchestration across languages - internal includes)
+  _build_wf:
+    taskfile: .task/workflows/build.yml
+    internal: true
+  _test_wf:
+    taskfile: .task/workflows/test.yml
+    internal: true
+  _lint_wf:
+    taskfile: .task/workflows/lint.yml
+    internal: true
+  _e2e_wf:
+    taskfile: .task/workflows/e2e.yml
+    internal: true
+
+  # Tools (version-sync and pdfium namespaced, general flattened)
+  version:
+    taskfile: .task/tools/version-sync.yml
+  pdfium:
+    taskfile: .task/tools/pdfium.yml
+  _tools:
+    taskfile: .task/tools/general.yml
+    flatten: true
+
+vars:
+  RUST_LOG: info
+
+# Note: TypeScript tasks are accessed via 'node:' namespace (e.g., task node:build)
+# For backwards compatibility, add aliases if needed in individual language files
+
+tasks:
+  # Setup and initialization
+  setup:
+    desc: "Install all dependencies and initialize project. Idempotent - safe to re-run anytime."
+    cmds:
+      - cmd: echo "Setting up sdkman..."
+        platforms: [linux, darwin]
+      - cmd: bash -c "source ~/.sdkman/bin/sdkman-init.sh && sdk env install"
+        platforms: [linux, darwin]
+        ignore_error: true
+      - cmd: echo "Setting up sdkman (skipped on Windows - use scoop or manual installation)..."
+        platforms: [windows]
+      - echo "Installing language tools..."
+      - task: rust:install
+      - task: python:install
+      - task: node:install
+      - task: ruby:install
+      - task: java:install
+      - task: go:install
+      - task: csharp:install
+      - task: php:install
+      - echo "Setup complete - safe to re-run anytime"
+
+  # Build (top-level convenience task)
+  build:
+    desc: Build core libraries and language bindings
+    cmds:
+      - task: rust:build
+      - task: python:build
+      - task: ruby:build
+      - task: node:build
+      - task: java:build
+      - task: csharp:build
+      - task: php:build
+
+  # Test (top-level convenience task)
+  test:
+    desc: Run test suites for all languages
+    cmds:
+      - task: rust:test
+      - task: python:test
+      - task: ruby:test
+      - task: node:test
+      - task: java:test
+      - task: go:test
+      - task: csharp:test
+      - task: php:test
+
+
+  # Format (top-level convenience task)
+  format:
+    desc: Format code for all languages (with modifications)
+    cmds:
+      - task: toml:format
+      - task: rust:format
+      - task: python:format
+      - task: ruby:format
+      - task: node:format
+      - task: java:format
+      - task: go:format
+      - task: csharp:format
+      - task: php:format
+
+  format:check:
+    desc: Check code formatting without modifications
+    cmds:
+      - task: toml:format:check
+      - task: rust:format:check
+      - task: python:format:check
+      - task: ruby:format:check
+      - task: node:format:check
+      - task: java:format:check
+      - task: go:format:check
+      - task: csharp:format:check
+      - task: php:format:check
+
+  # Convenience task combining lint:check and format:check
+  check:
+    desc: Run all checks without modifications (lint + format checks)
+    cmds:
+      - task: lint:check
+      - task: format:check
+
+  # Update dependencies
+  update:
+    desc: Update all dependencies to latest versions
+    cmds:
+      - echo "Updating Rust dependencies..."
+      - task: rust:update
+      - echo "Updating Python dependencies..."
+      - task: python:update
+      - echo "Updating TypeScript dependencies..."
+      - task: node:update
+      - echo "Updating Ruby dependencies..."
+      - task: ruby:update
+      - echo "Updating Java dependencies..."
+      - task: java:update
+      - echo "Updating Go dependencies..."
+      - task: go:update
+      - echo "Updating C# dependencies..."
+      - task: csharp:update
+      - echo "Updating PHP dependencies..."
+      - task: php:update
+      - echo "All dependencies updated"
+
+  # Clean build artifacts
+  clean:
+    desc: Clean all build artifacts
+    cmds:
+      - task: rust:clean
+      - task: python:clean
+      - task: ruby:clean
+      - task: node:clean
+      - task: java:clean
+      - task: go:clean
+      - task: csharp:clean
+      - task: php:clean
+      - task: wasm:clean
+
+  # Workflow namespaces - delegate to internal workflow includes
+  build:all:
+    desc: Build all bindings across all languages
+    cmds:
+      - task: _build_wf:all
+
+  build:all:dev:
+    desc: Build all bindings in debug mode
+    cmds:
+      - task: _build_wf:all:dev
+
+  build:all:release:
+    desc: Build all bindings in release mode (optimized)
+    cmds:
+      - task: _build_wf:all:release
+
+  build:all:ci:
+    desc: Build all bindings in CI mode
+    cmds:
+      - task: _build_wf:all:ci
+
+  test:all:
+    desc: Run all tests across all languages
+    cmds:
+      - task: _test_wf:all
+
+  test:all:parallel:
+    desc: Run all tests in parallel (using deps)
+    cmds:
+      - task: _test_wf:all:parallel
+
+  test:all:ci:
+    desc: Run all tests in CI mode (with extra diagnostics)
+    cmds:
+      - task: _test_wf:all:ci
+
+  lint:all:
+    desc: Run all linters with auto-fix across all languages
+    cmds:
+      - task: _lint_wf:all
+
+  lint:check:
+    desc: Run all linters in check-only mode (no modifications)
+    cmds:
+      - task: _lint_wf:check
+
+  e2e:generate:all:
+    desc: Generate all E2E tests from fixtures across all supported languages
+    cmds:
+      - task: _e2e_wf:generate:all
+
+  e2e:test:all:
+    desc: Run all E2E tests across all supported languages
+    cmds:
+      - task: _e2e_wf:test:all
+
+  e2e:lint:all:
+    desc: Lint all generated E2E test code
+    cmds:
+      - task: _e2e_wf:lint:all

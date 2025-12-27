@@ -1,0 +1,155 @@
+version: "3"
+
+tasks:
+  # All tests - runs all language test suites
+  all:
+    desc: Run all tests across all languages
+    cmds:
+      - task: rust:test
+      - task: python:test
+      - task: node:test
+      - task: go:test
+      - task: java:test
+      - task: csharp:test
+      - task: wasm:test
+      - task: ruby:test
+      - task: php:test
+
+  # Parallel test execution - same as all but explicit
+  all:parallel:
+    desc: Run all tests in parallel (using deps)
+    cmds:
+      - task: rust:test
+      - task: python:test
+      - task: node:test
+      - task: go:test
+      - task: java:test
+      - task: csharp:test
+      - task: wasm:test
+      - task: ruby:test
+      - task: php:test
+
+  # CI-specific testing
+  all:ci:
+    desc: Run all tests in CI mode (with extra diagnostics)
+    cmds:
+      - task: rust:test:ci
+      - task: python:test:ci
+      - task: node:test:ci
+      - task: go:test:ci
+      - task: java:test:ci
+      - task: csharp:test:ci
+      - task: wasm:test
+      - task: ruby:test
+      - task: php:test
+
+  # Quick subset - fastest running tests
+  quick:
+    desc: Run quick test subset (Rust + Python only)
+    cmds:
+      - task: rust:test:quick
+      - task: python:test
+
+  quick:ci:
+    desc: Run quick tests in CI mode
+    cmds:
+      - task: rust:test:quick
+      - task: python:test:ci
+
+  # Core tests (Rust only)
+  core:
+    desc: Run core Rust tests
+    cmds:
+      - task: rust:test
+
+  core:ci:
+    desc: Run core Rust tests in CI mode
+    cmds:
+      - task: rust:test:ci
+
+  # Data science stack (Python + Rust)
+  datascience:
+    desc: Test data science bindings (Rust + Python)
+    cmds:
+      - task: rust:test
+      - task: python:test
+
+  datascience:ci:
+    desc: Test data science stack in CI mode
+    cmds:
+      - task: rust:test:ci
+      - task: python:test:ci
+
+  # JS ecosystem (Node + WASM)
+  js-ecosystem:
+    desc: Test JavaScript ecosystem (Node.js + WASM)
+    cmds:
+      - task: node:test
+      - task: wasm:test
+
+  js-ecosystem:ci:
+    desc: Test JS ecosystem in CI mode
+    cmds:
+      - task: node:test:ci
+      - task: wasm:test
+
+  # Systems languages (Rust + Go + C#)
+  systems:
+    desc: Test systems languages (Rust, Go, C#)
+    cmds:
+      - task: rust:test
+      - task: go:test
+      - task: csharp:test
+
+  systems:ci:
+    desc: Test systems languages in CI mode
+    cmds:
+      - task: rust:test:ci
+      - task: go:test:ci
+      - task: csharp:test:ci
+
+  # JVM ecosystem (Java, C#, Ruby, PHP)
+  jvm-bindings:
+    desc: Test JVM-dependent bindings (Java, C#, Ruby, PHP)
+    cmds:
+      - task: java:test
+      - task: csharp:test
+      - task: ruby:test
+      - task: php:test
+
+  jvm-bindings:ci:
+    desc: Test JVM bindings in CI mode
+    cmds:
+      - task: java:test:ci
+      - task: csharp:test:ci
+      - task: ruby:test
+      - task: php:test
+
+  # Web-focused (Node + WASM + Python)
+  web:
+    desc: Test web-focused bindings (Node.js, WASM, Python)
+    cmds:
+      - task: node:test
+      - task: wasm:test
+      - task: python:test
+
+  web:ci:
+    desc: Test web stack in CI mode
+    cmds:
+      - task: node:test:ci
+      - task: wasm:test
+      - task: python:test:ci
+
+  # Verbose output for debugging
+  verbose:
+    desc: Run all tests with verbose output
+    cmds:
+      - task: rust:test
+      - task: python:test
+      - task: node:test
+      - task: go:test:verbose
+      - task: java:test:verbose
+      - task: csharp:test:verbose
+      - task: wasm:test
+      - task: ruby:test:verbose
+      - task: php:test

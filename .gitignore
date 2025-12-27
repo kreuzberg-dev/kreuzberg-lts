@@ -51,7 +51,6 @@
 .ropeproject
 .ruff_cache/
 .run/
-.task/
 .tmp/
 .tmp/
 .tox/

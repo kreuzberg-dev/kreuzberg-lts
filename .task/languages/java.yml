@@ -1,0 +1,151 @@
+version: "3"
+
+includes:
+  _cfg:
+    taskfile: ../config/vars.yml
+    internal: true
+  _platforms:
+    taskfile: ../config/platforms.yml
+    internal: true
+
+vars:
+  JAVA_VERSION: "17"
+
+tasks:
+  # Installation
+  install:
+    desc: Install Java dependencies
+    dir: packages/java
+    cmds:
+      - mvn clean install -DskipTests
+
+  setup:
+    desc: Setup Java environment (alias for install)
+    dir: packages/java
+    cmds:
+      - task: java:install
+
+  # Build Tasks
+  build:
+    desc: Build Java package (depends on Rust FFI)
+    dir: packages/java
+    cmds:
+      - mvn clean package -DskipTests
+
+  build:dev:
+    desc: Build Java package in debug mode
+    dir: packages/java
+    cmds:
+      - mvn clean package -DskipTests -DdebugMode=true
+
+  build:release:
+    desc: Build Java package in release mode (optimized)
+    dir: packages/java
+    cmds:
+      - mvn clean package -DskipTests -Pproduction
+
+  build:ci:
+    desc: Build Java package in CI mode
+    dir: packages/java
+    cmds:
+      - mvn clean package -DskipTests
+
+  # Test Tasks
+  test:
+    desc: Run Java tests
+    dir: packages/java
+    cmds:
+      - mvn test
+
+  test:ci:
+    desc: Run Java tests in CI mode
+    env:
+      MAVEN_OPTS: "-Xmx1024m"
+    dir: packages/java
+    cmds:
+      - mvn test -B
+
+  test:verbose:
+    desc: Run Java tests with verbose output
+    dir: packages/java
+    cmds:
+      - mvn test -X
+
+  # Linting Tasks
+  lint:
+    desc: Lint Java code for code quality issues (checkstyle + PMD static analysis)
+    dir: packages/java
+    cmds:
+      - mvn checkstyle:check
+      - mvn pmd:check pmd:cpd-check
+
+  lint:check:
+    desc: Check Java code quality without modifications (checkstyle + PMD analysis)
+    dir: packages/java
+    cmds:
+      - mvn checkstyle:check
+      - mvn pmd:check pmd:cpd-check
+
+  # Formatting Tasks
+  format:
+    desc: Format Java code with automatic style corrections (spotless)
+    dir: packages/java
+    cmds:
+      - mvn spotless:apply
+
+  format:check:
+    desc: Check Java code formatting without modifications (spotless)
+    dir: packages/java
+    cmds:
+      - mvn spotless:check
+
+  # Cleanup
+  clean:
+    desc: Clean Java build artifacts
+    dir: packages/java
+    cmds:
+      - mvn clean
+
+  # Dependency Management
+  update:
+    desc: Update Java dependencies and plugins (including linters)
+    dir: packages/java
+    cmds:
+      - echo "Updating Java dependencies and plugins..."
+      - mvn -DallowSnapshots=false versions:use-latest-releases -DprocessDependencies=true -DprocessParent=false
+      - echo "Updating plugin versions in properties..."
+      - mvn -DallowSnapshots=false versions:update-properties
+      - echo "Displaying final dependency updates..."
+      - mvn -DallowSnapshots=false versions:display-dependency-updates
+      - echo "Displaying final plugin updates..."
+      - mvn -DallowSnapshots=false versions:display-plugin-updates
+
+  # E2E Tests
+  e2e:generate:
+    desc: Generate Java E2E tests from fixtures
+    cmds:
+      - cmd: bash scripts/task/e2e-generate.sh java
+        platforms: [linux, darwin]
+      - cmd: echo "E2E generation not yet supported on Windows - use WSL or CI"
+        platforms: [windows]
+
+  e2e:lint:
+    desc: Lint Java E2E code
+    dir: e2e/java
+    cmds:
+      - mvn checkstyle:check
+      - mvn pmd:check pmd:cpd-check
+
+  e2e:test:
+    desc: Run Java E2E tests
+    dir: e2e/java
+    cmds:
+      - mvn -B -DtrimStackTrace=false -Dsurefire.useFile=false test
+
+  e2e:verify:
+    desc: Regenerate and validate Java E2E suite (build + generate + lint + test)
+    cmds:
+      - task: build
+      - task: e2e:generate
+      - task: e2e:lint
+      - task: e2e:test

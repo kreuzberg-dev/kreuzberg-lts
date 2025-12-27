@@ -1,0 +1,187 @@
+version: "3"
+
+includes:
+  _cfg:
+    taskfile: ../config/vars.yml
+    internal: true
+  _platforms:
+    taskfile: ../config/platforms.yml
+    internal: true
+
+vars:
+  RUST_LOG: info
+
+tasks:
+  # Installation
+  install:
+    desc: Install Rust toolchain and tools (rustup, taplo, cargo-deny)
+    cmds:
+      - echo "Rust toolchain is typically installed via rustup"
+      - rustc --version
+      - echo "Installing taplo for TOML formatting (brew install taplo on macOS, or cargo install taplo-cli --locked)..."
+      - cmd: taplo --version || cargo install taplo-cli --locked
+        ignore_error: true
+      - echo "Installing cargo-deny for license checking..."
+      - cmd: cargo-deny --version || cargo install cargo-deny
+        ignore_error: true
+
+  # Build Tasks
+  build:
+    desc: Build all Rust crates (uses {{.BUILD_PROFILE}})
+    cmds:
+      - task: build:{{.BUILD_PROFILE | default "release"}}
+
+  build:dev:
+    desc: Build all Rust crates in debug mode
+    cmds:
+      - cargo build --workspace --all-features
+
+  build:release:
+    desc: Build all Rust crates in release mode (optimized)
+    cmds:
+      - cargo build --release --workspace --all-features
+
+  build:ci:
+    desc: Build all Rust crates in CI mode (with debug info)
+    env:
+      RUSTFLAGS: '-C debuginfo=2'
+    cmds:
+      - cargo build --release --workspace --all-features
+
+  # CLI-specific builds
+  cli:build:
+    desc: Build CLI binary
+    cmds:
+      - cargo build --release --package kreuzberg-cli
+      # Binary available at: {{.TARGET_DIR}}/release/kreuzberg{{.EXE_EXT}}
+
+  cli:build:dev:
+    desc: Build CLI binary in debug mode
+    cmds:
+      - cargo build --package kreuzberg-cli
+      # Binary available at: {{.TARGET_DIR}}/debug/kreuzberg{{.EXE_EXT}}
+
+  cli:install:
+    desc: Install CLI binary
+    cmds:
+      - cargo install --path crates/kreuzberg-cli
+      # Installed binary: kreuzberg{{.EXE_EXT}}
+
+  # FFI builds (for Go/Java/C# bindings)
+  ffi:build:
+    desc: Build FFI library for language bindings
+    cmds:
+      - cargo build --release --package kreuzberg-ffi
+
+  ffi:build:dev:
+    desc: Build FFI library in debug mode
+    cmds:
+      - cargo build --package kreuzberg-ffi
+
+  # Test Tasks
+  test:
+    desc: Run all Rust tests
+    cmds:
+      - cmd: bash scripts/ci/rust/run-unit-tests.sh
+        platforms: [linux, darwin]
+
+  test:ci:
+    desc: Run Rust tests in CI mode with tessdata setup
+    env:
+      RUST_BACKTRACE: '1'
+      CARGO_TERM_COLOR: 'always'
+    cmds:
+      - cmd: bash scripts/ci/rust/run-unit-tests.sh
+        platforms: [linux, darwin]
+
+  test:quick:
+    desc: Run fast Rust tests (unit tests only)
+    cmds:
+      - cargo test --lib --workspace
+
+  # Linting Tasks
+  lint:
+    desc: Auto-fix Rust code linting (cargo fmt + clippy)
+    cmds:
+      - cargo fmt --all
+      - cargo clippy --workspace --fix --allow-dirty --allow-staged
+
+  lint:check:
+    desc: Check Rust code linting without modifications
+    cmds:
+      - cargo fmt --all -- --check
+      - cargo clippy --workspace -- -D warnings
+
+  # Formatting Tasks
+  format:
+    desc: Format Rust code with modifications (cargo fmt)
+    cmds:
+      - cargo fmt --all
+
+  format:check:
+    desc: Check Rust code formatting without modifications
+    cmds:
+      - cargo fmt --all -- --check
+
+  # License checking
+  licenses:
+    desc: Check Rust dependency licenses with cargo-deny
+    cmds:
+      - cargo deny check licenses
+
+  # Documentation
+  doc:
+    desc: Generate Rust documentation and open in browser
+    cmds:
+      - cargo doc --no-deps --open
+
+  doc:build:
+    desc: Build Rust documentation (without opening)
+    cmds:
+      - cargo doc --no-deps
+
+  # Cleanup
+  clean:
+    desc: Clean Rust build artifacts
+    cmds:
+      - cargo clean
+
+  # Dependency Management
+  update:
+    desc: Update Rust dependencies
+    cmds:
+      - echo "Updating Rust dependencies..."
+      - cargo upgrade --incompatible
+      - cargo update
+
+  # E2E Tests
+  e2e:generate:
+    desc: Generate Rust E2E tests from fixtures
+    cmds:
+      - cmd: bash scripts/task/e2e-generate.sh rust
+        platforms: [linux, darwin]
+      - cmd: echo "E2E generation not yet supported on Windows - use WSL or CI"
+        platforms: [windows]
+
+  e2e:format:
+    desc: Format generated Rust E2E sources
+    cmds:
+      - cargo fmt --manifest-path e2e/rust/Cargo.toml
+
+  e2e:lint:
+    desc: Lint Rust E2E crate with clippy
+    cmds:
+      - cargo clippy -p e2e-rust -- -D warnings
+
+  e2e:test:
+    desc: Run Rust E2E tests
+    cmds:
+      - cargo test -p e2e-rust --release
+
+  e2e:verify:
+    desc: Regenerate and validate Rust E2E suite (generate + format + lint + test)
+    cmds:
+      - task: e2e:generate
+      - task: e2e:format
+      - task: e2e:lint
+      - task: e2e:test
