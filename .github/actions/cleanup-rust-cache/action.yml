@@ -1,8 +1,11 @@
 name: Cleanup Rust Cache
-description: Remove large build artifacts to reduce cache size before saving
+description: Remove large build artifacts to reduce cache size before saving (uses 'task rust:cache:cleanup')
 runs:
   using: composite
   steps:
     - name: Cleanup build artifacts
       shell: bash
-      run: scripts/ci/actions/cleanup-rust-cache/cleanup.sh
+      run: |
+        # Use Taskfile command for cleanup
+        # This can also be run locally with: task rust:cache:cleanup
+        task rust:cache:cleanup

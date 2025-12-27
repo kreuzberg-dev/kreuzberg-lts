@@ -146,6 +146,26 @@ tasks:
     cmds:
       - cargo clean
 
+  cache:cleanup:
+    desc: Clean up large build artifacts to reduce cache size (for CI)
+    cmds:
+      - echo "Cleaning up large build artifacts to reduce cache size..."
+      - cmd: rm -rf target/*/build/kreuzberg-*/out/pdfium 2>/dev/null || true
+        ignore_error: true
+      - cmd: find target -type f -name "*.rlib" -size +10M -delete 2>/dev/null || true
+        ignore_error: true
+      - cmd: find target -type f -name "*.so" -size +10M -delete 2>/dev/null || true
+        ignore_error: true
+      - cmd: find target -type f -name "*.dylib" -size +10M -delete 2>/dev/null || true
+        ignore_error: true
+      - cmd: find target -type f -name "*.dll" -size +10M -delete 2>/dev/null || true
+        ignore_error: true
+      - cmd: rm -rf target/*/incremental 2>/dev/null || true
+        ignore_error: true
+      - echo "Cleanup completed successfully"
+      - cmd: du -sh target 2>/dev/null || echo "No target directory found"
+        ignore_error: true
+
   # Dependency Management
   update:
     desc: Update Rust dependencies

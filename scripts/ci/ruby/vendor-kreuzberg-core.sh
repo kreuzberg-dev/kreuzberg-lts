@@ -15,11 +15,8 @@ validate_repo_root "$REPO_ROOT" || exit 1
 
 echo "=== Vendoring kreuzberg core crate ==="
 
-# Remove and recreate vendor directory (force recursively, ignore errors)
-rm -rf "$REPO_ROOT/packages/ruby/vendor/kreuzberg" 2>/dev/null || true
-rm -rf "$REPO_ROOT/packages/ruby/vendor/kreuzberg-tesseract" 2>/dev/null || true
-rm -rf "$REPO_ROOT/packages/ruby/vendor/kreuzberg-ffi" 2>/dev/null || true
-rm -rf "$REPO_ROOT/packages/ruby/vendor/rb-sys" 2>/dev/null || true
+# Remove existing vendor directory completely for full cleanup
+rm -rf "$REPO_ROOT/packages/ruby/vendor"
 mkdir -p "$REPO_ROOT/packages/ruby/vendor"
 
 # Copy core crate and rb-sys (patched for Windows compatibility)

@@ -181,13 +181,10 @@ def main() -> None:
 
     vendor_base: Path = repo_root / "packages" / "ruby" / "vendor"
 
-    # Remove and recreate vendor directory
-    crate_names: list[str] = ["kreuzberg", "kreuzberg-ffi", "kreuzberg-tesseract", "rb-sys"]
-    for crate_dir in crate_names:
-        path = vendor_base / crate_dir
-        if path.exists():
-            shutil.rmtree(path)
-            print(f"Removed {crate_dir}")
+    # Remove existing vendor directory completely for full cleanup
+    if vendor_base.exists():
+        shutil.rmtree(vendor_base)
+        print("Removed entire vendor directory")
 
     vendor_base.mkdir(parents=True, exist_ok=True)
 
