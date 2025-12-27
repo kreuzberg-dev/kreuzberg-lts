@@ -421,6 +421,17 @@ def main():
         else:
             unchanged_files.append(str(rel_path))
 
+    root_composer = repo_root / "composer.json"
+    if root_composer.exists():
+        changed, old_ver, new_ver = update_composer_json(root_composer, version)
+        rel_path = root_composer.relative_to(repo_root)
+
+        if changed:
+            print(f"✓ {rel_path}: {old_ver} → {new_ver}")
+            updated_files.append(str(rel_path))
+        else:
+            unchanged_files.append(str(rel_path))
+
     text_targets = [
         (
             repo_root / "crates/kreuzberg-node/typescript/index.ts",

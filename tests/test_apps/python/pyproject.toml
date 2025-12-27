@@ -13,7 +13,7 @@ classifiers = [
   "Programming Language :: Python :: 3.14",
 ]
 dependencies = [
-  "kreuzberg==4.0.0rc20",
+  "kreuzberg==4.0.0rc21",
 ]
 
 [tool.mypy]
