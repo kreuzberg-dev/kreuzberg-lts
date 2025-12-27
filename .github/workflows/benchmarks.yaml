@@ -699,6 +699,22 @@ jobs:
         with:
           ort-version: ${{ env.ORT_VERSION }}
 
+      - name: Build or restore FFI from cache
+        id: ffi
+        uses: ./.github/actions/build-and-cache-ffi
+        with:
+          platform: linux-x64
+          ffi-crate: kreuzberg-ffi
+          cache-version: v1
+          pdfium-version: ${{ env.PDFIUM_VERSION }}
+          ort-version: ${{ env.ORT_VERSION }}
+
+      - name: Set library paths for FFI
+        shell: bash
+        run: |
+          echo "PKG_CONFIG_PATH=${{ github.workspace }}/crates/kreuzberg-ffi:$PKG_CONFIG_PATH" >> "$GITHUB_ENV"
+          echo "LD_LIBRARY_PATH=${{ github.workspace }}/target/release:$LD_LIBRARY_PATH" >> "$GITHUB_ENV"
+
       - name: Vendor kreuzberg core for Ruby
         run: scripts/ci/ruby/vendor-kreuzberg-core.sh
 
@@ -774,6 +790,22 @@ jobs:
         uses: ./.github/actions/setup-onnx-runtime
         with:
           ort-version: ${{ env.ORT_VERSION }}
+
+      - name: Build or restore FFI from cache
+        id: ffi
+        uses: ./.github/actions/build-and-cache-ffi
+        with:
+          platform: linux-x64
+          ffi-crate: kreuzberg-ffi
+          cache-version: v1
+          pdfium-version: ${{ env.PDFIUM_VERSION }}
+          ort-version: ${{ env.ORT_VERSION }}
+
+      - name: Set library paths for FFI
+        shell: bash
+        run: |
+          echo "PKG_CONFIG_PATH=${{ github.workspace }}/crates/kreuzberg-ffi:$PKG_CONFIG_PATH" >> "$GITHUB_ENV"
+          echo "LD_LIBRARY_PATH=${{ github.workspace }}/target/release:$LD_LIBRARY_PATH" >> "$GITHUB_ENV"
 
       - name: Vendor kreuzberg core for Ruby
         run: scripts/ci/ruby/vendor-kreuzberg-core.sh
@@ -852,6 +884,22 @@ jobs:
         with:
           ort-version: ${{ env.ORT_VERSION }}
 
+      - name: Build or restore FFI from cache
+        id: ffi
+        uses: ./.github/actions/build-and-cache-ffi
+        with:
+          platform: linux-x64
+          ffi-crate: kreuzberg-ffi
+          cache-version: v1
+          pdfium-version: ${{ env.PDFIUM_VERSION }}
+          ort-version: ${{ env.ORT_VERSION }}
+
+      - name: Set library paths for FFI
+        shell: bash
+        run: |
+          echo "PKG_CONFIG_PATH=${{ github.workspace }}/crates/kreuzberg-ffi:$PKG_CONFIG_PATH" >> "$GITHUB_ENV"
+          echo "LD_LIBRARY_PATH=${{ github.workspace }}/target/release:$LD_LIBRARY_PATH" >> "$GITHUB_ENV"
+
       - name: Prime Go modules
         working-directory: packages/go/v4
         run: go mod download
@@ -928,6 +976,22 @@ jobs:
         uses: ./.github/actions/setup-onnx-runtime
         with:
           ort-version: ${{ env.ORT_VERSION }}
+
+      - name: Build or restore FFI from cache
+        id: ffi
+        uses: ./.github/actions/build-and-cache-ffi
+        with:
+          platform: linux-x64
+          ffi-crate: kreuzberg-ffi
+          cache-version: v1
+          pdfium-version: ${{ env.PDFIUM_VERSION }}
+          ort-version: ${{ env.ORT_VERSION }}
+
+      - name: Set library paths for FFI
+        shell: bash
+        run: |
+          echo "PKG_CONFIG_PATH=${{ github.workspace }}/crates/kreuzberg-ffi:$PKG_CONFIG_PATH" >> "$GITHUB_ENV"
+          echo "LD_LIBRARY_PATH=${{ github.workspace }}/target/release:$LD_LIBRARY_PATH" >> "$GITHUB_ENV"
 
       - name: Prime Go modules
         working-directory: packages/go/v4
@@ -1006,6 +1070,22 @@ jobs:
         with:
           ort-version: ${{ env.ORT_VERSION }}
 
+      - name: Build or restore FFI from cache
+        id: ffi
+        uses: ./.github/actions/build-and-cache-ffi
+        with:
+          platform: linux-x64
+          ffi-crate: kreuzberg-ffi
+          cache-version: v1
+          pdfium-version: ${{ env.PDFIUM_VERSION }}
+          ort-version: ${{ env.ORT_VERSION }}
+
+      - name: Set library paths for FFI
+        shell: bash
+        run: |
+          echo "PKG_CONFIG_PATH=${{ github.workspace }}/crates/kreuzberg-ffi:$PKG_CONFIG_PATH" >> "$GITHUB_ENV"
+          echo "LD_LIBRARY_PATH=${{ github.workspace }}/target/release:$LD_LIBRARY_PATH" >> "$GITHUB_ENV"
+
       - name: Install Task
         uses: ./.github/actions/install-task
 
@@ -1076,6 +1156,22 @@ jobs:
         uses: ./.github/actions/setup-onnx-runtime
         with:
           ort-version: ${{ env.ORT_VERSION }}
+
+      - name: Build or restore FFI from cache
+        id: ffi
+        uses: ./.github/actions/build-and-cache-ffi
+        with:
+          platform: linux-x64
+          ffi-crate: kreuzberg-ffi
+          cache-version: v1
+          pdfium-version: ${{ env.PDFIUM_VERSION }}
+          ort-version: ${{ env.ORT_VERSION }}
+
+      - name: Set library paths for FFI
+        shell: bash
+        run: |
+          echo "PKG_CONFIG_PATH=${{ github.workspace }}/crates/kreuzberg-ffi:$PKG_CONFIG_PATH" >> "$GITHUB_ENV"
+          echo "LD_LIBRARY_PATH=${{ github.workspace }}/target/release:$LD_LIBRARY_PATH" >> "$GITHUB_ENV"
 
       - name: Install Task
         uses: ./.github/actions/install-task

@@ -1,0 +1,307 @@
+name: Cache Benchmark Harness Binary
+description: >
+  Build and cache the benchmark-harness binary with intelligent caching based on source hashes.
+  Generates cache keys based on harness source + kreuzberg dependency + Cargo files,
+  restores from cache if available, builds if needed, and saves to cache.
+  Validates artifacts after restore or build to ensure integrity.
+
+inputs:
+  cache-version:
+    description: 'Manual version for cache invalidation'
+    required: false
+    default: 'v1'
+
+  build-profile:
+    description: 'Build profile (release, debug)'
+    required: false
+    default: 'release'
+
+outputs:
+  cache-hit:
+    description: 'Boolean indicating exact cache hit'
+    value: ${{ steps.cache-restore.outputs.cache-hit }}
+
+  cache-key:
+    description: 'The cache key used'
+    value: ${{ steps.generate-cache-key.outputs.cache-key }}
+
+  binary-path:
+    description: 'Path to the built/cached benchmark-harness binary'
+    value: ${{ steps.validate-binary.outputs.binary-path }}
+
+runs:
+  using: composite
+  steps:
+    # Validate inputs
+    - name: Validate inputs
+      shell: bash
+      env:
+        BUILD_PROFILE: ${{ inputs.build-profile }}
+      run: |
+        set -euo pipefail
+
+        # Validate build profile
+        valid_profiles=("release" "debug")
+        if [[ ! " ${valid_profiles[@]} " =~ " ${BUILD_PROFILE} " ]]; then
+          echo "❌ Error: build-profile must be one of: ${valid_profiles[*]}"
+          exit 1
+        fi
+
+        echo "✓ Validation passed"
+        echo "  Build profile: $BUILD_PROFILE"
+        echo "  Cache version: ${{ inputs.cache-version }}"
+
+    # Compute hash for benchmark-harness sources
+    - name: Compute benchmark-harness source hash
+      id: harness-hash
+      shell: bash
+      run: |
+        set -euo pipefail
+
+        echo "=== Computing Benchmark Harness Source Hash ==="
+
+        # Compute hash for harness source files and Cargo.toml
+        HARNESS_HASH=$(scripts/ci/cache/compute-hash.sh \
+          "tools/benchmark-harness/src/**" \
+          "tools/benchmark-harness/Cargo.toml" \
+          2>&1 | grep "^[a-f0-9]*$")
+
+        if [[ -z "$HARNESS_HASH" ]]; then
+          echo "❌ Failed to compute harness source hash"
+          exit 1
+        fi
+
+        echo "harness-hash=$HARNESS_HASH" >> "$GITHUB_OUTPUT"
+        echo "✓ Harness source hash: $HARNESS_HASH"
+
+    # Compute hash for kreuzberg dependency
+    - name: Compute kreuzberg dependency hash
+      id: kreuzberg-hash
+      shell: bash
+      run: |
+        set -euo pipefail
+
+        echo "=== Computing Kreuzberg Dependency Hash ==="
+
+        # Compute hash for kreuzberg crate (dependency)
+        KREUZBERG_HASH=$(scripts/ci/cache/compute-hash.sh \
+          "crates/kreuzberg/**" \
+          2>&1 | grep "^[a-f0-9]*$")
+
+        if [[ -z "$KREUZBERG_HASH" ]]; then
+          echo "❌ Failed to compute kreuzberg dependency hash"
+          exit 1
+        fi
+
+        echo "kreuzberg-hash=$KREUZBERG_HASH" >> "$GITHUB_OUTPUT"
+        echo "✓ Kreuzberg dependency hash: $KREUZBERG_HASH"
+
+    # Compute hash for Cargo files
+    - name: Compute Cargo files hash
+      id: cargo-hash
+      shell: bash
+      run: |
+        set -euo pipefail
+
+        echo "=== Computing Cargo Files Hash ==="
+
+        # Compute hash for Cargo.lock
+        CARGO_HASH=$(scripts/ci/cache/compute-hash.sh --files Cargo.lock 2>&1 | grep "^[a-f0-9]*$")
+
+        if [[ -z "$CARGO_HASH" ]]; then
+          echo "❌ Failed to compute Cargo files hash"
+          exit 1
+        fi
+
+        echo "cargo-hash=$CARGO_HASH" >> "$GITHUB_OUTPUT"
+        echo "✓ Cargo files hash: $CARGO_HASH"
+
+    # Generate cache key
+    - name: Generate cache key
+      id: generate-cache-key
+      shell: bash
+      env:
+        BUILD_PROFILE: ${{ inputs.build-profile }}
+        HARNESS_HASH: ${{ steps.harness-hash.outputs.harness-hash }}
+        KREUZBERG_HASH: ${{ steps.kreuzberg-hash.outputs.kreuzberg-hash }}
+        CARGO_HASH: ${{ steps.cargo-hash.outputs.cargo-hash }}
+        CACHE_VERSION: ${{ inputs.cache-version }}
+      run: |
+        set -euo pipefail
+
+        echo "=== Cache Key Generated ==="
+
+        # Build cache key following format:
+        # harness-{profile}-{platform}-src-{harness-hash}-kreuzberg-{kreuzberg-hash}-cargo-{cargo-hash}-v{version}
+        CACHE_KEY="harness-${BUILD_PROFILE}-$(uname -m)-src-${HARNESS_HASH}-kreuzberg-${KREUZBERG_HASH}-cargo-${CARGO_HASH}-${CACHE_VERSION}"
+
+        echo "cache-key=$CACHE_KEY" >> "$GITHUB_OUTPUT"
+
+        echo "Full key: $CACHE_KEY"
+        echo ""
+        echo "Key components:"
+        echo "  Profile:         $BUILD_PROFILE"
+        echo "  Platform:        $(uname -m)"
+        echo "  Harness hash:    $HARNESS_HASH"
+        echo "  Kreuzberg hash:  $KREUZBERG_HASH"
+        echo "  Cargo hash:      $CARGO_HASH"
+        echo "  Cache version:   $CACHE_VERSION"
+
+    # Determine target path based on profile
+    - name: Determine target paths
+      id: target-paths
+      shell: bash
+      env:
+        BUILD_PROFILE: ${{ inputs.build-profile }}
+      run: |
+        set -euo pipefail
+
+        echo "=== Determining Target Paths ==="
+
+        case "$BUILD_PROFILE" in
+          release)
+            TARGET_DIR="target/release"
+            ;;
+          debug)
+            TARGET_DIR="target/debug"
+            ;;
+          *)
+            echo "❌ Invalid build profile: $BUILD_PROFILE"
+            exit 1
+            ;;
+        esac
+
+        echo "target-dir=$TARGET_DIR" >> "$GITHUB_OUTPUT"
+        echo "✓ Target directory: $TARGET_DIR"
+
+    # Restore from cache
+    - name: Restore benchmark-harness binary from cache
+      id: cache-restore
+      uses: ./.github/actions/cache-binding-artifact
+      with:
+        binding-name: benchmark-harness
+        cache-key: ${{ steps.generate-cache-key.outputs.cache-key }}
+        cache-restore-keys: |
+          harness-${{ inputs.build-profile }}-$(uname -m)-src-
+          harness-${{ inputs.build-profile }}-$(uname -m)-
+          harness-${{ inputs.build-profile }}-
+        cache-paths: |
+          ${{ steps.target-paths.outputs.target-dir }}/benchmark-harness
+        operation: restore
+
+    # Log cache hit status
+    - name: Log cache hit status
+      shell: bash
+      run: |
+        set -euo pipefail
+
+        if [[ "${{ steps.cache-restore.outputs.cache-hit }}" == "true" ]]; then
+          echo "✓ Cache HIT - benchmark-harness binary found in cache"
+        else
+          echo "✗ Cache MISS - Building benchmark-harness from source"
+        fi
+
+    # Build if cache miss
+    - name: Build benchmark-harness
+      id: build
+      if: steps.cache-restore.outputs.cache-hit != 'true'
+      shell: bash
+      env:
+        BUILD_PROFILE: ${{ inputs.build-profile }}
+      run: |
+        set -euo pipefail
+
+        echo "=== Building Benchmark Harness ==="
+        echo "Profile: $BUILD_PROFILE"
+
+        # Determine cargo build profile argument
+        case "$BUILD_PROFILE" in
+          release)
+            BUILD_ARG="--release"
+            ;;
+          debug)
+            # Debug is default, no flag needed
+            BUILD_ARG=""
+            ;;
+          *)
+            echo "❌ Invalid build profile: $BUILD_PROFILE"
+            exit 1
+            ;;
+        esac
+
+        # Build benchmark-harness
+        echo "Running: cargo build --manifest-path tools/benchmark-harness/Cargo.toml $BUILD_ARG"
+        if ! cargo build --manifest-path tools/benchmark-harness/Cargo.toml $BUILD_ARG; then
+          echo "❌ Build failed for benchmark-harness"
+          exit 1
+        fi
+
+        echo "✓ Build succeeded"
+
+    # Validate binary exists and is executable
+    - name: Validate benchmark-harness binary
+      id: validate-binary
+      shell: bash
+      env:
+        BUILD_PROFILE: ${{ inputs.build-profile }}
+        TARGET_DIR: ${{ steps.target-paths.outputs.target-dir }}
+      run: |
+        set -euo pipefail
+
+        echo "=== Validating Benchmark Harness Binary ==="
+
+        BINARY_PATH="${TARGET_DIR}/benchmark-harness"
+
+        # Check if binary exists
+        if [[ ! -f "$BINARY_PATH" ]]; then
+          echo "❌ Binary not found at: $BINARY_PATH"
+          exit 1
+        fi
+
+        # Check if binary is executable
+        if [[ ! -x "$BINARY_PATH" ]]; then
+          echo "❌ Binary is not executable: $BINARY_PATH"
+          exit 1
+        fi
+
+        # Get binary size and info
+        BINARY_SIZE=$(ls -lh "$BINARY_PATH" | awk '{print $5}')
+        BINARY_PERMS=$(ls -l "$BINARY_PATH" | awk '{print $1}')
+
+        echo "binary-path=$BINARY_PATH" >> "$GITHUB_OUTPUT"
+
+        echo "✓ Binary validation passed"
+        echo "  Path:        $BINARY_PATH"
+        echo "  Size:        $BINARY_SIZE"
+        echo "  Permissions: $BINARY_PERMS"
+
+    # Save to cache if build occurred
+    - name: Save benchmark-harness binary to cache
+      if: steps.cache-restore.outputs.cache-hit != 'true'
+      uses: ./.github/actions/cache-binding-artifact
+      with:
+        binding-name: benchmark-harness
+        cache-key: ${{ steps.generate-cache-key.outputs.cache-key }}
+        cache-paths: |
+          ${{ steps.target-paths.outputs.target-dir }}/benchmark-harness
+        operation: save
+
+    # Summary
+    - name: Summary
+      if: always()
+      shell: bash
+      run: |
+        set -euo pipefail
+
+        echo ""
+        echo "=== Build and Cache Summary ==="
+        echo "Build Profile:   ${{ inputs.build-profile }}"
+        echo "Platform:        $(uname -m)"
+        echo "Cache Hit:       ${{ steps.cache-restore.outputs.cache-hit == 'true' && 'Yes' || 'No' }}"
+        echo "Cache Key:       ${{ steps.generate-cache-key.outputs.cache-key }}"
+        echo "Binary Path:     ${{ steps.validate-binary.outputs.binary-path }}"
+        echo ""
+        echo "Hashes:"
+        echo "  Harness:       ${{ steps.harness-hash.outputs.harness-hash }}"
+        echo "  Kreuzberg:     ${{ steps.kreuzberg-hash.outputs.kreuzberg-hash }}"
+        echo "  Cargo:         ${{ steps.cargo-hash.outputs.cargo-hash }}"
