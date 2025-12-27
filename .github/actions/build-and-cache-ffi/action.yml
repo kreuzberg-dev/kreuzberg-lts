@@ -263,7 +263,7 @@ runs:
         cache-paths: |
           target/release/libkreuzberg_ffi.*
           target/release/kreuzberg_ffi.*
-          crates/kreuzberg-ffi/kreuzberg-ffi.pc
+          kreuzberg-ffi.pc
         operation: save
 
     # Summary
