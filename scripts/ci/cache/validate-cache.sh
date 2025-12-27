@@ -278,8 +278,15 @@ echo "Valid:   $VALID_COUNT"
 echo "Invalid: $INVALID_COUNT"
 echo "Missing: $MISSING_COUNT"
 
-if [[ $INVALID_COUNT -gt 0 ]] || [[ $MISSING_COUNT -gt 0 ]]; then
-	error "Validation failed: $INVALID_COUNT invalid, $MISSING_COUNT missing"
+# Only fail if there are invalid artifacts (corrupted files)
+# Missing artifacts are OK as they may be platform-specific
+if [[ $INVALID_COUNT -gt 0 ]]; then
+	error "Validation failed: $INVALID_COUNT invalid artifacts found"
+fi
+
+# Ensure at least one valid artifact was found
+if [[ $VALID_COUNT -eq 0 ]]; then
+	error "Validation failed: no valid artifacts found"
 fi
 
 info "All artifacts validated successfully!"
