@@ -24,7 +24,7 @@ thiserror = { workspace = true }
 image = { workspace = true }
 
 [build-dependencies]
-cc = { version = "^1.2.46", optional = true }
+cc = { version = "^1.2.51", optional = true }
 cmake = { version = "0.1.57", optional = true }
 reqwest = { workspace = true, default-features = false, features = [
     "blocking",

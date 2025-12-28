@@ -18,6 +18,7 @@ on:
       - 'uv.lock'
       - 'pyproject.toml'
       - 'scripts/ci/python/**'
+      - 'scripts/ci/cache/**'
       - '.github/workflows/ci-python.yaml'
       - '.cargo/config.toml'
   pull_request:
@@ -37,6 +38,7 @@ on:
       - 'uv.lock'
       - 'pyproject.toml'
       - 'scripts/ci/python/**'
+      - 'scripts/ci/cache/**'
       - '.github/workflows/ci-python.yaml'
       - '.cargo/config.toml'
 
@@ -84,6 +86,7 @@ jobs:
               - 'uv.lock'
               - 'pyproject.toml'
               - 'scripts/ci/python/**'
+              - 'scripts/ci/cache/**'
               - '.github/workflows/ci-python.yaml'
               - '.cargo/config.toml'
             python_unix:
@@ -101,6 +104,7 @@ jobs:
               - 'uv.lock'
               - 'pyproject.toml'
               - 'scripts/ci/python/**'
+              - 'scripts/ci/cache/**'
               - '.github/workflows/ci-python.yaml'
               - '.cargo/config.toml'
       - name: Build matrix

@@ -37,7 +37,6 @@
 .env
 .fastembed_cache/
 .gemini/
-.ai-rulez/
 .idea/
 .kreuzberg/
 .mcp.json

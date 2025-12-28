@@ -130,6 +130,25 @@ export interface TokenReductionConfig {
 }
 
 /**
+ * Hierarchy extraction configuration.
+ *
+ * Controls document hierarchy detection based on font size clustering.
+ */
+export interface HierarchyConfig {
+	/** Enable hierarchy extraction. Default: true. */
+	enabled?: boolean;
+
+	/** Number of font size clusters (2-10). Default: 6. */
+	kClusters?: number;
+
+	/** Include bounding box information. Default: true. */
+	includeBbox?: boolean;
+
+	/** OCR coverage threshold (0.0-1.0). Default: null. */
+	ocrCoverageThreshold?: number | null;
+}
+
+/**
  * PDF-specific extraction configuration.
  *
  * Controls how PDF documents are processed.
@@ -143,6 +162,9 @@ export interface PdfConfig {
 
 	/** Extract document metadata (title, author, creation date, etc.). Default: true. */
 	extractMetadata?: boolean;
+
+	/** Hierarchy extraction configuration. */
+	hierarchy?: HierarchyConfig;
 }
 
 /**

@@ -19,6 +19,7 @@ on:
       - 'pnpm-lock.yaml'
       - 'package.json'
       - 'scripts/ci/wasm/**'
+      - 'scripts/ci/cache/**'
       - '.github/workflows/ci-wasm.yaml'
   pull_request:
     branches: [main]
@@ -38,6 +39,7 @@ on:
       - 'pnpm-lock.yaml'
       - 'package.json'
       - 'scripts/ci/wasm/**'
+      - 'scripts/ci/cache/**'
       - '.github/workflows/ci-wasm.yaml'
   workflow_dispatch:
 

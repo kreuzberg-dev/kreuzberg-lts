@@ -149,14 +149,14 @@
 		"prepublishOnly": "npm run build"
 	},
 	"devDependencies": {
-		"@types/node": "^25.0.2",
-		"@vitest/coverage-v8": "^4.0.15",
-		"@vitest/ui": "^4.0.15",
-		"jsdom": "^27.3.0",
-		"oxlint": "^1.33.0",
+		"@types/node": "^25.0.3",
+		"@vitest/coverage-v8": "^4.0.16",
+		"@vitest/ui": "^4.0.16",
+		"jsdom": "^27.4.0",
+		"oxlint": "^1.35.0",
 		"tsup": "^8.5.1",
 		"typescript": "^5.9.3",
-		"vitest": "^4.0.15"
+		"vitest": "^4.0.16"
 	},
 	"optionalDependencies": {
 		"tesseract-wasm": "^0.11.0"

@@ -211,6 +211,36 @@ module Kreuzberg
       end
     end
 
+    # Hierarchy detection configuration
+    #
+    # @example
+    #   hierarchy = Hierarchy.new(enabled: true, k_clusters: 6, include_bbox: true)
+    #
+    class Hierarchy
+      attr_reader :enabled, :k_clusters, :include_bbox, :ocr_coverage_threshold
+
+      def initialize(
+        enabled: true,
+        k_clusters: 6,
+        include_bbox: true,
+        ocr_coverage_threshold: nil
+      )
+        @enabled = enabled ? true : false
+        @k_clusters = k_clusters&.to_i || 6
+        @include_bbox = include_bbox ? true : false
+        @ocr_coverage_threshold = ocr_coverage_threshold&.to_f
+      end
+
+      def to_h
+        {
+          enabled: @enabled,
+          k_clusters: @k_clusters,
+          include_bbox: @include_bbox,
+          ocr_coverage_threshold: @ocr_coverage_threshold
+        }.compact
+      end
+    end
+
     # PDF-specific options
     #
     # @example
@@ -220,14 +250,19 @@ module Kreuzberg
     #   font_config = FontConfig.new(enabled: true, custom_font_dirs: ["/usr/share/fonts"])
     #   pdf = PDF.new(extract_images: true, font_config: font_config)
     #
+    # @example With hierarchy configuration
+    #   hierarchy = Hierarchy.new(enabled: true, k_clusters: 6)
+    #   pdf = PDF.new(extract_images: true, hierarchy: hierarchy)
+    #
     class PDF
-      attr_reader :extract_images, :passwords, :extract_metadata, :font_config
+      attr_reader :extract_images, :passwords, :extract_metadata, :font_config, :hierarchy
 
       def initialize(
         extract_images: false,
         passwords: nil,
         extract_metadata: true,
-        font_config: nil
+        font_config: nil,
+        hierarchy: nil
       )
         @extract_images = extract_images ? true : false
         @passwords = if passwords.is_a?(Array)
@@ -237,6 +272,7 @@ module Kreuzberg
                      end
         @extract_metadata = extract_metadata ? true : false
         @font_config = normalize_font_config(font_config)
+        @hierarchy = normalize_hierarchy(hierarchy)
       end
 
       def to_h
@@ -244,7 +280,8 @@ module Kreuzberg
           extract_images: @extract_images,
           passwords: @passwords,
           extract_metadata: @extract_metadata,
-          font_config: @font_config&.to_h
+          font_config: @font_config&.to_h,
+          hierarchy: @hierarchy&.to_h
         }.compact
       end
 
@@ -256,6 +293,14 @@ module Kreuzberg
         return FontConfig.new(**value.transform_keys(&:to_sym)) if value.is_a?(Hash)
 
         raise ArgumentError, "Expected #{FontConfig}, Hash, or nil, got #{value.class}"
+      end
+
+      def normalize_hierarchy(value)
+        return nil if value.nil?
+        return value if value.is_a?(Hierarchy)
+        return Hierarchy.new(**value.transform_keys(&:to_sym)) if value.is_a?(Hash)
+
+        raise ArgumentError, "Expected #{Hierarchy}, Hash, or nil, got #{value.class}"
       end
     end
 

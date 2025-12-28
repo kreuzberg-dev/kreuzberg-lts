@@ -124,10 +124,26 @@ type FontConfig struct {
 
 // PdfConfig exposes PDF-specific options.
 type PdfConfig struct {
-	ExtractImages   *bool       `json:"extract_images,omitempty"`
-	Passwords       []string    `json:"passwords,omitempty"`
-	ExtractMetadata *bool       `json:"extract_metadata,omitempty"`
-	FontConfig      *FontConfig `json:"font_config,omitempty"`
+	ExtractImages   *bool            `json:"extract_images,omitempty"`
+	Passwords       []string         `json:"passwords,omitempty"`
+	ExtractMetadata *bool            `json:"extract_metadata,omitempty"`
+	FontConfig      *FontConfig      `json:"font_config,omitempty"`
+	Hierarchy       *HierarchyConfig `json:"hierarchy,omitempty"`
+}
+
+// HierarchyConfig controls PDF hierarchy extraction based on font sizes.
+type HierarchyConfig struct {
+	// Enable hierarchy extraction. Default: true.
+	Enabled *bool `json:"enabled,omitempty"`
+
+	// Number of font size clusters (2-10). Default: 6.
+	KClusters *int `json:"k_clusters,omitempty"`
+
+	// Include bounding box information. Default: true.
+	IncludeBbox *bool `json:"include_bbox,omitempty"`
+
+	// OCR coverage threshold (0.0-1.0). Default: null.
+	OcrCoverageThreshold *float64 `json:"ocr_coverage_threshold,omitempty"`
 }
 
 // TokenReductionConfig governs token pruning before embeddings.

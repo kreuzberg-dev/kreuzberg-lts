@@ -31,6 +31,8 @@ namespace Kreuzberg;
 [JsonSerializable(typeof(ImagePreprocessingConfig))]
 [JsonSerializable(typeof(ChunkingConfig))]
 [JsonSerializable(typeof(ImageExtractionConfig))]
+[JsonSerializable(typeof(FontConfig))]
+[JsonSerializable(typeof(HierarchyConfig))]
 [JsonSerializable(typeof(PdfConfig))]
 [JsonSerializable(typeof(TokenReductionConfig))]
 [JsonSerializable(typeof(LanguageDetectionConfig))]

@@ -17,6 +17,7 @@ on:
       - 'Cargo.lock'
       - 'packages/java/pom.xml'
       - 'scripts/ci/java/**'
+      - 'scripts/ci/cache/**'
       - '.github/workflows/ci-java.yaml'
       - '.cargo/config.toml'
   pull_request:
@@ -35,6 +36,7 @@ on:
       - 'Cargo.lock'
       - 'packages/java/pom.xml'
       - 'scripts/ci/java/**'
+      - 'scripts/ci/cache/**'
       - '.github/workflows/ci-java.yaml'
       - '.cargo/config.toml'
 
@@ -81,6 +83,7 @@ jobs:
               - 'Cargo.lock'
               - 'packages/java/pom.xml'
               - 'scripts/ci/java/**'
+              - 'scripts/ci/cache/**'
               - '.github/workflows/ci-java.yaml'
               - '.cargo/config.toml'
             java_unix:
@@ -97,6 +100,7 @@ jobs:
               - 'Cargo.lock'
               - 'packages/java/pom.xml'
               - 'scripts/ci/java/**'
+              - 'scripts/ci/cache/**'
               - '.github/workflows/ci-java.yaml'
               - '.cargo/config.toml'
       - name: Build matrix

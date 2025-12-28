@@ -18,6 +18,7 @@ on:
       - 'packages/csharp/**/*.csproj'
       - 'e2e/csharp/**/*.csproj'
       - 'scripts/ci/csharp/**'
+      - 'scripts/ci/cache/**'
       - '.github/workflows/ci-csharp.yaml'
       - '.cargo/config.toml'
   pull_request:
@@ -37,6 +38,7 @@ on:
       - 'packages/csharp/**/*.csproj'
       - 'e2e/csharp/**/*.csproj'
       - 'scripts/ci/csharp/**'
+      - 'scripts/ci/cache/**'
       - '.github/workflows/ci-csharp.yaml'
       - '.cargo/config.toml'
 
@@ -85,6 +87,7 @@ jobs:
               - 'packages/csharp/**/*.csproj'
               - 'e2e/csharp/**/*.csproj'
               - 'scripts/ci/csharp/**'
+              - 'scripts/ci/cache/**'
               - '.github/workflows/ci-csharp.yaml'
               - '.cargo/config.toml'
             csharp_unix:
@@ -102,6 +105,7 @@ jobs:
               - 'packages/csharp/**/*.csproj'
               - 'e2e/csharp/**/*.csproj'
               - 'scripts/ci/csharp/**'
+              - 'scripts/ci/cache/**'
               - '.github/workflows/ci-csharp.yaml'
               - '.cargo/config.toml'
       - name: Build matrix

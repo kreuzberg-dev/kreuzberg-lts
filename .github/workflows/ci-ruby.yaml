@@ -19,6 +19,7 @@ name: CI Ruby
       - 'Gemfile.lock'
       - 'packages/ruby/Rakefile'
       - 'scripts/ci/ruby/**'
+      - 'scripts/ci/cache/**'
       - '.github/workflows/ci-ruby.yaml'
       - '.cargo/config.toml'
   pull_request:
@@ -39,6 +40,7 @@ name: CI Ruby
       - 'Gemfile.lock'
       - 'packages/ruby/Rakefile'
       - 'scripts/ci/ruby/**'
+      - 'scripts/ci/cache/**'
       - '.github/workflows/ci-ruby.yaml'
       - '.cargo/config.toml'
 

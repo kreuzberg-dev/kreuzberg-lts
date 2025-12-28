@@ -1080,13 +1080,19 @@ pub struct PdfConfig {
 #[pymethods]
 impl PdfConfig {
     #[new]
-    #[pyo3(signature = (extract_images=None, passwords=None, extract_metadata=None))]
-    fn new(extract_images: Option<bool>, passwords: Option<Vec<String>>, extract_metadata: Option<bool>) -> Self {
+    #[pyo3(signature = (extract_images=None, passwords=None, extract_metadata=None, hierarchy=None))]
+    fn new(
+        extract_images: Option<bool>,
+        passwords: Option<Vec<String>>,
+        extract_metadata: Option<bool>,
+        hierarchy: Option<HierarchyConfig>,
+    ) -> Self {
         Self {
             inner: kreuzberg::PdfConfig {
                 extract_images: extract_images.unwrap_or(false),
                 passwords,
                 extract_metadata: extract_metadata.unwrap_or(true),
+                hierarchy: hierarchy.map(|h| h.inner),
             },
         }
     }
@@ -1119,6 +1125,16 @@ impl PdfConfig {
     #[setter]
     fn set_extract_metadata(&mut self, value: bool) {
         self.inner.extract_metadata = value;
+    }
+
+    #[getter]
+    fn hierarchy(&self) -> Option<HierarchyConfig> {
+        self.inner.hierarchy.clone().map(Into::into)
+    }
+
+    #[setter]
+    fn set_hierarchy(&mut self, value: Option<HierarchyConfig>) {
+        self.inner.hierarchy = value.map(|h| h.inner);
     }
 
     fn __repr__(&self) -> String {
@@ -2193,6 +2209,99 @@ impl From<PageConfig> for kreuzberg::core::config::PageConfig {
 
 impl From<kreuzberg::core::config::PageConfig> for PageConfig {
     fn from(config: kreuzberg::core::config::PageConfig) -> Self {
+        Self { inner: config }
+    }
+}
+
+/// Hierarchy extraction configuration.
+///
+/// Controls document hierarchy detection based on font size clustering.
+///
+/// Example:
+///     >>> from kreuzberg import HierarchyConfig
+///     >>> config = HierarchyConfig(enabled=True, k_clusters=6, include_bbox=True)
+#[pyclass(name = "HierarchyConfig", module = "kreuzberg")]
+#[derive(Clone)]
+pub struct HierarchyConfig {
+    inner: kreuzberg::core::config::HierarchyConfig,
+}
+
+#[pymethods]
+impl HierarchyConfig {
+    #[new]
+    #[pyo3(signature = (enabled=None, k_clusters=None, include_bbox=None, ocr_coverage_threshold=None))]
+    fn new(
+        enabled: Option<bool>,
+        k_clusters: Option<usize>,
+        include_bbox: Option<bool>,
+        ocr_coverage_threshold: Option<f32>,
+    ) -> Self {
+        Self {
+            inner: kreuzberg::core::config::HierarchyConfig {
+                enabled: enabled.unwrap_or(true),
+                k_clusters: k_clusters.unwrap_or(6),
+                include_bbox: include_bbox.unwrap_or(true),
+                ocr_coverage_threshold,
+            },
+        }
+    }
+
+    #[getter]
+    fn enabled(&self) -> bool {
+        self.inner.enabled
+    }
+
+    #[setter]
+    fn set_enabled(&mut self, value: bool) {
+        self.inner.enabled = value;
+    }
+
+    #[getter]
+    fn k_clusters(&self) -> usize {
+        self.inner.k_clusters
+    }
+
+    #[setter]
+    fn set_k_clusters(&mut self, value: usize) {
+        self.inner.k_clusters = value;
+    }
+
+    #[getter]
+    fn include_bbox(&self) -> bool {
+        self.inner.include_bbox
+    }
+
+    #[setter]
+    fn set_include_bbox(&mut self, value: bool) {
+        self.inner.include_bbox = value;
+    }
+
+    #[getter]
+    fn ocr_coverage_threshold(&self) -> Option<f32> {
+        self.inner.ocr_coverage_threshold
+    }
+
+    #[setter]
+    fn set_ocr_coverage_threshold(&mut self, value: Option<f32>) {
+        self.inner.ocr_coverage_threshold = value;
+    }
+
+    fn __repr__(&self) -> String {
+        format!(
+            "HierarchyConfig(enabled={}, k_clusters={}, include_bbox={}, ocr_coverage_threshold={:?})",
+            self.inner.enabled, self.inner.k_clusters, self.inner.include_bbox, self.inner.ocr_coverage_threshold
+        )
+    }
+}
+
+impl From<HierarchyConfig> for kreuzberg::core::config::HierarchyConfig {
+    fn from(config: HierarchyConfig) -> Self {
+        config.inner
+    }
+}
+
+impl From<kreuzberg::core::config::HierarchyConfig> for HierarchyConfig {
+    fn from(config: kreuzberg::core::config::HierarchyConfig) -> Self {
         Self { inner: config }
     }
 }

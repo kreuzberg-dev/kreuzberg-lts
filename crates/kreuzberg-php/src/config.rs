@@ -293,6 +293,7 @@ pub struct PdfConfig {
     pub extract_images: bool,
     pub passwords: Option<Vec<String>>,
     pub extract_metadata: bool,
+    pub hierarchy: Option<HierarchyConfig>,
 }
 
 #[php_impl]
@@ -302,6 +303,7 @@ impl PdfConfig {
             extract_images: false,
             passwords: None,
             extract_metadata: true,
+            hierarchy: None,
         }
     }
 }
@@ -312,6 +314,7 @@ impl PdfConfig {
             extract_images: self.extract_images,
             passwords: self.passwords.clone(),
             extract_metadata: self.extract_metadata,
+            hierarchy: self.hierarchy.as_ref().map(|c| c.to_rust()),
         }
     }
 
@@ -320,6 +323,53 @@ impl PdfConfig {
             extract_images: config.extract_images,
             passwords: config.passwords,
             extract_metadata: config.extract_metadata,
+            hierarchy: config.hierarchy.map(HierarchyConfig::from_rust),
+        }
+    }
+}
+
+/// Hierarchy extraction configuration for PDF text structure analysis.
+///
+/// Enables extraction of document hierarchy levels (H1-H6) based on font size
+/// clustering and semantic analysis. When enabled, hierarchical blocks are
+/// included in page content.
+#[php_class]
+#[derive(Clone, Default)]
+pub struct HierarchyConfig {
+    pub enabled: bool,
+    pub k_clusters: usize,
+    pub include_bbox: bool,
+    pub ocr_coverage_threshold: Option<f32>,
+}
+
+#[php_impl]
+impl HierarchyConfig {
+    pub fn __construct() -> Self {
+        Self {
+            enabled: true,
+            k_clusters: 6,
+            include_bbox: true,
+            ocr_coverage_threshold: None,
+        }
+    }
+}
+
+impl HierarchyConfig {
+    pub fn to_rust(&self) -> kreuzberg::HierarchyConfig {
+        kreuzberg::HierarchyConfig {
+            enabled: self.enabled,
+            k_clusters: self.k_clusters,
+            include_bbox: self.include_bbox,
+            ocr_coverage_threshold: self.ocr_coverage_threshold,
+        }
+    }
+
+    pub fn from_rust(config: kreuzberg::HierarchyConfig) -> Self {
+        Self {
+            enabled: config.enabled,
+            k_clusters: config.k_clusters,
+            include_bbox: config.include_bbox,
+            ocr_coverage_threshold: config.ocr_coverage_threshold,
         }
     }
 }

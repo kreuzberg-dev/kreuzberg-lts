@@ -18,6 +18,7 @@ on:
       - 'Cargo.toml'
       - 'Cargo.lock'
       - 'scripts/ci/php/**'
+      - 'scripts/ci/cache/**'
       - '.github/workflows/ci-php.yaml'
       - '.cargo/config.toml'
   pull_request:
@@ -37,6 +38,7 @@ on:
       - 'Cargo.toml'
       - 'Cargo.lock'
       - 'scripts/ci/php/**'
+      - 'scripts/ci/cache/**'
       - '.github/workflows/ci-php.yaml'
       - '.cargo/config.toml'
 
@@ -85,6 +87,7 @@ jobs:
               - 'Cargo.toml'
               - 'Cargo.lock'
               - 'scripts/ci/php/**'
+              - 'scripts/ci/cache/**'
               - '.github/workflows/ci-php.yaml'
               - '.cargo/config.toml'
       - name: Build matrix

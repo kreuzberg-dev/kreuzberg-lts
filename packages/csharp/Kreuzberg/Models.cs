@@ -1201,6 +1201,54 @@ public sealed class ImageExtractionConfig
 }
 
 /// <summary>
+/// Font configuration for PDF processing.
+/// </summary>
+public sealed class FontConfig
+{
+    /// <summary>
+    /// Whether font fallback is enabled for handling missing fonts.
+    /// </summary>
+    [JsonPropertyName("font_fallback_enabled")]
+    public bool? FontFallbackEnabled { get; set; }
+
+    /// <summary>
+    /// Directory path for custom fonts.
+    /// </summary>
+    [JsonPropertyName("font_dir")]
+    public string? FontDir { get; set; }
+}
+
+/// <summary>
+/// Hierarchy detection configuration for PDF document structure.
+/// </summary>
+public sealed class HierarchyConfig
+{
+    /// <summary>
+    /// Whether hierarchy detection is enabled.
+    /// </summary>
+    [JsonPropertyName("enabled")]
+    public bool? Enabled { get; set; }
+
+    /// <summary>
+    /// Number of k clusters for hierarchy detection.
+    /// </summary>
+    [JsonPropertyName("k_clusters")]
+    public int? KClusters { get; set; }
+
+    /// <summary>
+    /// Whether to include bounding box information in hierarchy output.
+    /// </summary>
+    [JsonPropertyName("include_bbox")]
+    public bool? IncludeBbox { get; set; }
+
+    /// <summary>
+    /// OCR coverage threshold for hierarchy detection (0.0-1.0).
+    /// </summary>
+    [JsonPropertyName("ocr_coverage_threshold")]
+    public float? OcrCoverageThreshold { get; set; }
+}
+
+/// <summary>
 /// PDF-specific extraction configuration.
 /// </summary>
 public sealed class PdfConfig
@@ -1222,6 +1270,18 @@ public sealed class PdfConfig
     /// </summary>
     [JsonPropertyName("extract_metadata")]
     public bool? ExtractMetadata { get; set; }
+
+    /// <summary>
+    /// Font configuration for PDF text extraction.
+    /// </summary>
+    [JsonPropertyName("font_config")]
+    public FontConfig? FontConfig { get; set; }
+
+    /// <summary>
+    /// Hierarchy detection configuration for document structure analysis.
+    /// </summary>
+    [JsonPropertyName("hierarchy")]
+    public HierarchyConfig? Hierarchy { get; set; }
 }
 
 /// <summary>

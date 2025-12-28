@@ -16,6 +16,7 @@ public final class PdfConfig {
   private final List<String> passwords;
   private final boolean extractMetadata;
   private final FontConfig fontConfig;
+  private final HierarchyConfig hierarchyConfig;
 
   private PdfConfig(Builder builder) {
     this.extractImages = builder.extractImages;
@@ -24,6 +25,7 @@ public final class PdfConfig {
             : null;
     this.extractMetadata = builder.extractMetadata;
     this.fontConfig = builder.fontConfig;
+    this.hierarchyConfig = builder.hierarchyConfig;
   }
 
   public static Builder builder() {
@@ -46,6 +48,10 @@ public final class PdfConfig {
     return fontConfig;
   }
 
+  public HierarchyConfig getHierarchyConfig() {
+    return hierarchyConfig;
+  }
+
   public Map<String, Object> toMap() {
     Map<String, Object> map = new HashMap<>();
     map.put("extract_images", extractImages);
@@ -56,6 +62,9 @@ public final class PdfConfig {
     if (fontConfig != null) {
       map.put("font_config", fontConfig.toMap());
     }
+    if (hierarchyConfig != null) {
+      map.put("hierarchy", hierarchyConfig.toMap());
+    }
     return map;
   }
 
@@ -64,6 +73,7 @@ public final class PdfConfig {
     private List<String> passwords;
     private boolean extractMetadata = true;
     private FontConfig fontConfig;
+    private HierarchyConfig hierarchyConfig;
 
     private Builder() {
     }
@@ -93,6 +103,11 @@ public final class PdfConfig {
 
     public Builder fontConfig(FontConfig fontConfig) {
       this.fontConfig = fontConfig;
+      return this;
+    }
+
+    public Builder hierarchyConfig(HierarchyConfig hierarchyConfig) {
+      this.hierarchyConfig = hierarchyConfig;
       return this;
     }
 
@@ -132,6 +147,13 @@ public final class PdfConfig {
         : null;
     if (fontConfigMap != null) {
       builder.fontConfig(FontConfig.fromMap(fontConfigMap));
+    }
+    @SuppressWarnings("unchecked")
+    Map<String, Object> hierarchyConfigMap = map.get("hierarchy") instanceof Map
+        ? (Map<String, Object>) map.get("hierarchy")
+        : null;
+    if (hierarchyConfigMap != null) {
+      builder.hierarchyConfig(HierarchyConfig.fromMap(hierarchyConfigMap));
     }
     return builder.build();
   }
