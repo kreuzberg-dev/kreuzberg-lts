@@ -87,10 +87,19 @@ jobs:
         with:
           cache-key-prefix: elixir-${{ matrix.os }}
 
-      - name: Setup Elixir
+      - name: Setup Elixir (Windows)
+        if: runner.os == 'Windows'
         uses: erlef/setup-elixir@v1
         env:
-          ImageOS: ${{ runner.os == 'Windows' && 'win22' || '' }}
+          ImageOS: win22
+        with:
+          elixir-version: "1.17"
+          otp-version: "27.2"
+          version-type: strict
+
+      - name: Setup Elixir (non-Windows)
+        if: runner.os != 'Windows'
+        uses: erlef/setup-elixir@v1
         with:
           elixir-version: "1.17"
           otp-version: "27.2"
