@@ -192,7 +192,7 @@ jobs:
 
       - name: Build AMD64 test image
         if: ${{ needs.prepare.outputs.force_republish == 'true' || (matrix.variant == 'core' && needs.check-docker.outputs.core_exists != 'true') || (matrix.variant == 'full' && needs.check-docker.outputs.full_exists != 'true') }}
-        run: docker build -f ${{ matrix.dockerfile }} --build-arg PDFIUM_VERSION=${{ env.PDFIUM_VERSION }} -t kreuzberg-publish:${{ matrix.variant }}-test .
+        run: docker build -f ${{ matrix.dockerfile }} --build-arg PDFIUM_VERSION=${{ env.PDFIUM_VERSION }} --build-arg ONNXRUNTIME_VERSION=${{ env.ORT_VERSION }} -t kreuzberg-publish:${{ matrix.variant }}-test .
 
       - name: Run Docker feature tests
         if: ${{ needs.prepare.outputs.force_republish == 'true' || (matrix.variant == 'core' && needs.check-docker.outputs.core_exists != 'true') || (matrix.variant == 'full' && needs.check-docker.outputs.full_exists != 'true') }}
@@ -224,6 +224,7 @@ jobs:
           push: true
           build-args: |
             PDFIUM_VERSION=${{ env.PDFIUM_VERSION }}
+            ONNXRUNTIME_VERSION=${{ env.ORT_VERSION }}
           tags: ${{ steps.docker_meta.outputs.tags }}
           labels: ${{ steps.docker_meta.outputs.labels }}
           platforms: linux/amd64,linux/arm64

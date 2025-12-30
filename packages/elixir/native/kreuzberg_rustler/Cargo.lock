@@ -1756,9 +1756,9 @@ dependencies = [
 
 [[package]]
 name = "html-to-markdown-rs"
-version = "2.19.1"
+version = "2.19.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0c6916714855979f7c703a34f2a76673d0266f81f967a3c25126f2f8048a8eaf"
+checksum = "ebd6b9b93c92ff3a191d06ba6c717d136981f42e2da4b459e78bf4d18572d0c6"
 dependencies = [
  "astral-tl",
  "base64 0.22.1",
@@ -2295,7 +2295,7 @@ dependencies = [
 
 [[package]]
 name = "kreuzberg"
-version = "4.0.0-rc.22"
+version = "4.0.0-rc.23"
 dependencies = [
  "ahash",
  "async-trait",
@@ -2416,7 +2416,7 @@ dependencies = [
 
 [[package]]
 name = "kreuzberg_rustler"
-version = "4.0.0-rc.22"
+version = "4.0.0-rc.23"
 dependencies = [
  "kreuzberg",
  "rustler",

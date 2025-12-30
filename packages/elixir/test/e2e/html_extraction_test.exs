@@ -32,7 +32,7 @@ defmodule KreuzbergTest.E2E.HTMLExtractionTest do
     content = result.content
     assert is_binary(content)
     # Verify markdown-like structure (basic check)
-    assert String.content() != []
+    assert content != ""
   end
 
   @tag :e2e

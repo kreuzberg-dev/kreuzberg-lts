@@ -44,6 +44,9 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  ORT_VERSION: "1.23.2"
+
 jobs:
   test-docker:
     name: Build and Test Docker Image (${{ matrix.variant }})
@@ -79,6 +82,8 @@ jobs:
           push: false
           load: true
           tags: kreuzberg:${{ matrix.variant }}
+          build-args: |
+            ONNXRUNTIME_VERSION=${{ env.ORT_VERSION }}
           cache-from: type=gha
           cache-to: type=gha,mode=max,scope=ci-docker-${{ matrix.variant }}
 

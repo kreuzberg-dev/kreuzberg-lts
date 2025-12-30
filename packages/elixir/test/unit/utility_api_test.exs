@@ -451,7 +451,7 @@ defmodule KreuzbergTest.Unit.UtilityAPITest do
 
       Enum.each(presets, fn preset ->
         assert is_binary(preset)
-        assert String.preset() != []
+        assert preset != ""
       end)
     end
   end
@@ -841,7 +841,7 @@ defmodule KreuzbergTest.Unit.UtilityAPITest do
     test "io_error description is string" do
       {:ok, details} = UtilityAPI.get_error_details()
       assert is_binary(details[:io_error]["description"])
-      assert String.details()[:io_error]["description"] != []
+      assert details[:io_error]["description"] != ""
     end
 
     @tag :unit
@@ -940,7 +940,7 @@ defmodule KreuzbergTest.Unit.UtilityAPITest do
 
       Enum.each(details, fn {_key, category} ->
         assert is_binary(category["description"])
-        assert String.category()["description"] != []
+        assert category["description"] != ""
       end)
     end
 

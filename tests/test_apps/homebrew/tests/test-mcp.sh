@@ -36,7 +36,7 @@ verbose() {
 	fi
 }
 
-# shellcheck disable=SC2329  # Function is invoked indirectly via trap
+# shellcheck disable=SC2329,SC2317  # Function is invoked indirectly via trap
 cleanup() {
 	log_info "Cleaning up..."
 

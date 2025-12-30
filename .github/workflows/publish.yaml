@@ -326,7 +326,7 @@ jobs:
       - name: Setup Elixir
         uses: erlef/setup-elixir@v1
         with:
-          elixir-version: "1.14.0"
+          elixir-version: "1.17"
           otp-version: "26"
 
       - name: Check Hex.pm for existing version
@@ -386,14 +386,6 @@ jobs:
             manylinux: auto
             python: "3.10"
             needs_qemu: false
-            extra_args: ""
-          - label: linux-aarch64
-            os: ubuntu-latest
-            artifact: python-wheels-linux-aarch64
-            rust_target: aarch64-unknown-linux-gnu
-            manylinux: auto
-            python: "3.10"
-            needs_qemu: true
             extra_args: ""
           - label: macos-arm64
             os: macos-latest
@@ -1113,7 +1105,7 @@ jobs:
         if: runner.os != 'Windows'
         shell: bash
         working-directory: packages/ruby
-        run: task ruby:build:release
+        run: bundle exec rake build
 
       - name: Verify gem was built
         if: runner.os != 'Windows'
@@ -1660,6 +1652,9 @@ jobs:
           ort-version: ${{ env.ORT_VERSION }}
           dest-dir: target/release
 
+      - name: Install Task
+        uses: ./.github/actions/install-task
+
       - name: Build PHP extension (kreuzberg-ffi)
         shell: bash
         run: task rust:ffi:build
@@ -1770,7 +1765,7 @@ jobs:
     permissions:
       contents: read
     strategy:
-      fail-fast: true
+      fail-fast: false
       matrix:
         include:
           - rid: linux-arm64
@@ -2072,7 +2067,7 @@ jobs:
       - name: Setup Elixir
         uses: erlef/setup-elixir@v1
         with:
-          elixir-version: "1.14.0"
+          elixir-version: "1.17"
           otp-version: "26"
 
       - name: Install Elixir dependencies
@@ -2374,6 +2369,9 @@ jobs:
       - name: Install cargo-audit
         run: cargo install cargo-audit --locked
 
+      - name: Install Task
+        uses: ./.github/actions/install-task
+
       - name: Build WASM for web target
         run: task wasm:build:web
         working-directory: crates/kreuzberg-wasm
@@ -2471,24 +2469,15 @@ jobs:
 
       - name: Setup Java
         if: ${{ needs.prepare.outputs.dry_run != 'true' && steps.maven_check.outputs.exists != 'true' }}
-        uses: sdkman/sdkman-action@v1-preview-2
-        id: sdkman
-        with:
-          candidate: java
-          version: 25.0.1-tem
-
-      - name: Setup Java with jdkfile
-        if: ${{ needs.prepare.outputs.dry_run != 'true' && steps.maven_check.outputs.exists != 'true' }}
         id: setup-java
         env:
           MAVEN_USERNAME: ${{ secrets.CENTRAL_USERNAME }}
           MAVEN_PASSWORD: ${{ secrets.CENTRAL_PASSWORD }}
           MAVEN_GPG_PASSPHRASE: ${{ secrets.GPP_PASSPHRASE }}
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v4
         with:
-          distribution: jdkfile
-          java-version: 25.0.1
-          jdkFile: ${{ steps.sdkman.outputs.file }}
+          distribution: temurin
+          java-version: 25
           cache: maven
           server-id: ossrh
           server-username: MAVEN_USERNAME

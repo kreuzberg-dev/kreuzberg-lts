@@ -389,8 +389,8 @@ defmodule KreuzbergTest.Unit.HelpersTest do
 
       assert length(result.tables) == 1
       table = List.first(result.tables)
-      assert table["headers"] == ["A", "B"]
-      assert length(table["rows"]) == 2
+      assert table.headers == ["A", "B"]
+      assert length(table.rows) == 2
     end
   end
 
@@ -482,7 +482,7 @@ defmodule KreuzbergTest.Unit.HelpersTest do
       native_response = %{
         content: "extracted text",
         mime_type: "application/pdf",
-        metadata: %{pages: 10}
+        metadata: %{page_count: 10}
       }
 
       # Normalize the response
@@ -493,7 +493,7 @@ defmodule KreuzbergTest.Unit.HelpersTest do
 
       assert result.content == "extracted text"
       assert result.mime_type == "application/pdf"
-      assert result.metadata["pages"] == 10
+      assert result.metadata.page_count == 10
     end
 
     test "handles complex extraction response with all field types" do
@@ -502,7 +502,7 @@ defmodule KreuzbergTest.Unit.HelpersTest do
         "mime_type" => "application/pdf",
         "metadata" => %{
           "author" => "John",
-          "nested" => %{"pages" => 100}
+          "page_count" => 100
         },
         "tables" => [%{"headers" => ["Col1", "Col2"]}],
         "detected_languages" => ["en", "de"],
@@ -514,8 +514,8 @@ defmodule KreuzbergTest.Unit.HelpersTest do
       {:ok, result} = Helpers.into_result(native_response)
 
       assert result.content == "document text"
-      assert result.metadata["author"] == "John"
-      assert result.metadata["nested"]["pages"] == 100
+      assert result.metadata.author == "John"
+      assert result.metadata.page_count == 100
       assert length(result.tables) == 1
       assert result.detected_languages == ["en", "de"]
     end

@@ -80,38 +80,28 @@ defmodule KreuzbergTest.Unit.ExtractionResultTest do
 
     test "handles nested metadata structures" do
       metadata = %{
-        "document_info" => %{
-          "title" => "Test Doc",
-          "nested" => %{"deep" => "value"}
-        },
-        "extraction_time" => 123.45
+        "title" => "Test Doc",
+        "author" => "Jane Doe"
       }
 
       result = ExtractionResult.new("content", "application/pdf", metadata)
 
-      assert result.metadata == metadata
-      assert result.metadata["document_info"]["title"] == "Test Doc"
-      assert result.metadata["document_info"]["nested"]["deep"] == "value"
+      assert result.metadata.title == "Test Doc"
+      assert result.metadata.author == "Jane Doe"
     end
 
     test "handles metadata with various value types" do
       metadata = %{
-        "string_val" => "text",
-        "int_val" => 42,
-        "float_val" => 3.14,
-        "bool_val" => true,
-        "list_val" => [1, 2, 3],
-        "null_val" => nil
+        "title" => "Sample Title",
+        "author" => "John Doe",
+        "page_count" => 42
       }
 
       result = ExtractionResult.new("content", "text/plain", metadata)
 
-      assert result.metadata["string_val"] == "text"
-      assert result.metadata["int_val"] == 42
-      assert result.metadata["float_val"] == 3.14
-      assert result.metadata["bool_val"] == true
-      assert result.metadata["list_val"] == [1, 2, 3]
-      assert result.metadata["null_val"] == nil
+      assert result.metadata.title == "Sample Title"
+      assert result.metadata.author == "John Doe"
+      assert result.metadata.page_count == 42
     end
   end
 
@@ -158,8 +148,8 @@ defmodule KreuzbergTest.Unit.ExtractionResultTest do
 
       assert length(result.tables) == 1
       table = List.first(result.tables)
-      assert table["headers"] == ["ID", "Data", "Details"]
-      assert length(table["rows"]) == 2
+      assert table.headers == ["ID", "Data", "Details"]
+      assert length(table.rows) == 2
     end
 
     test "handles large number of tables" do
@@ -356,18 +346,16 @@ defmodule KreuzbergTest.Unit.ExtractionResultTest do
       assert result.mime_type == mime_with_params
     end
 
-    test "handles metadata with empty nested structures" do
+    test "handles metadata with empty values" do
       metadata = %{
-        "empty_map" => %{},
-        "empty_list" => [],
-        "empty_string" => ""
+        "title" => "",
+        "author" => nil
       }
 
       result = ExtractionResult.new("content", "text/plain", metadata)
 
-      assert result.metadata["empty_map"] == %{}
-      assert result.metadata["empty_list"] == []
-      assert result.metadata["empty_string"] == ""
+      assert result.metadata.title == ""
+      assert result.metadata.author == nil
     end
 
     test "distinguishes between nil and missing fields" do
