@@ -164,4 +164,54 @@ final class ExtractionTest extends TestCase
         $this->assertSame(1, $constructor->getNumberOfParameters());
         $this->assertSame(0, $constructor->getNumberOfRequiredParameters());
     }
+
+    #[Test]
+    public function it_has_extract_file_sync_static_method(): void
+    {
+        $this->assertTrue(method_exists(Kreuzberg::class, 'extractFileSync'));
+    }
+
+    #[Test]
+    public function it_has_extract_bytes_sync_static_method(): void
+    {
+        $this->assertTrue(method_exists(Kreuzberg::class, 'extractBytesSync'));
+    }
+
+    #[Test]
+    public function it_has_batch_extract_files_sync_static_method(): void
+    {
+        $this->assertTrue(method_exists(Kreuzberg::class, 'batchExtractFilesSync'));
+    }
+
+    #[Test]
+    public function it_has_batch_extract_bytes_sync_static_method(): void
+    {
+        $this->assertTrue(method_exists(Kreuzberg::class, 'batchExtractBytesSync'));
+    }
+
+    #[Test]
+    public function it_validates_static_method_signatures(): void
+    {
+        $reflection = new \ReflectionClass(Kreuzberg::class);
+
+        $extractFileSync = $reflection->getMethod('extractFileSync');
+        $this->assertSame(3, $extractFileSync->getNumberOfParameters());
+        $this->assertSame(1, $extractFileSync->getNumberOfRequiredParameters());
+        $this->assertTrue($extractFileSync->isStatic());
+
+        $extractBytesSync = $reflection->getMethod('extractBytesSync');
+        $this->assertSame(3, $extractBytesSync->getNumberOfParameters());
+        $this->assertSame(2, $extractBytesSync->getNumberOfRequiredParameters());
+        $this->assertTrue($extractBytesSync->isStatic());
+
+        $batchExtractFilesSync = $reflection->getMethod('batchExtractFilesSync');
+        $this->assertSame(2, $batchExtractFilesSync->getNumberOfParameters());
+        $this->assertSame(1, $batchExtractFilesSync->getNumberOfRequiredParameters());
+        $this->assertTrue($batchExtractFilesSync->isStatic());
+
+        $batchExtractBytesSync = $reflection->getMethod('batchExtractBytesSync');
+        $this->assertSame(3, $batchExtractBytesSync->getNumberOfParameters());
+        $this->assertSame(2, $batchExtractBytesSync->getNumberOfRequiredParameters());
+        $this->assertTrue($batchExtractBytesSync->isStatic());
+    }
 }

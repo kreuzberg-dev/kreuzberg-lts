@@ -117,6 +117,80 @@ final readonly class Kreuzberg
     }
 
     /**
+     * Extract content from a file (static synchronous method).
+     *
+     * @param string $filePath Path to the file to extract
+     * @param string|null $mimeType Optional MIME type hint (auto-detected if null)
+     * @param ExtractionConfig|null $config Extraction configuration (uses defaults if null)
+     * @return ExtractionResult Extraction result with content, metadata, and tables
+     * @throws KreuzbergException If extraction fails
+     */
+    public static function extractFileSync(
+        string $filePath,
+        ?string $mimeType = null,
+        ?ExtractionConfig $config = null,
+    ): ExtractionResult {
+        $config ??= new ExtractionConfig();
+
+        return \Kreuzberg\extract_file($filePath, $mimeType, $config);
+    }
+
+    /**
+     * Extract content from bytes (static synchronous method).
+     *
+     * @param string $data File content as bytes
+     * @param string $mimeType MIME type of the data (required for format detection)
+     * @param ExtractionConfig|null $config Extraction configuration (uses defaults if null)
+     * @return ExtractionResult Extraction result with content, metadata, and tables
+     * @throws KreuzbergException If extraction fails
+     */
+    public static function extractBytesSync(
+        string $data,
+        string $mimeType,
+        ?ExtractionConfig $config = null,
+    ): ExtractionResult {
+        $config ??= new ExtractionConfig();
+
+        return \Kreuzberg\extract_bytes($data, $mimeType, $config);
+    }
+
+    /**
+     * Extract content from multiple files in parallel (static synchronous method).
+     *
+     * @param array<string> $paths List of file paths
+     * @param ExtractionConfig|null $config Extraction configuration (uses defaults if null)
+     * @return array<ExtractionResult> List of extraction results (one per file)
+     * @throws KreuzbergException If extraction fails
+     */
+    public static function batchExtractFilesSync(
+        array $paths,
+        ?ExtractionConfig $config = null,
+    ): array {
+        $config ??= new ExtractionConfig();
+
+        return \Kreuzberg\batch_extract_files($paths, $config);
+    }
+
+    /**
+     * Extract content from multiple byte arrays in parallel (static synchronous method).
+     *
+     * @param array<string> $dataList List of file contents as bytes
+     * @param array<string> $mimeTypes List of MIME types (one per data item)
+     * @param ExtractionConfig|null $config Extraction configuration (uses defaults if null)
+     * @return array<ExtractionResult> List of extraction results (one per data item)
+     * @throws KreuzbergException If extraction fails
+     */
+    public static function batchExtractBytesSync(
+        array $dataList,
+        array $mimeTypes,
+        ?ExtractionConfig $config = null,
+    ): array {
+        $config ??= new ExtractionConfig();
+
+        return \Kreuzberg\batch_extract_bytes($dataList, $mimeTypes, $config);
+    }
+
+    /**
      * Get the library version.
      */
     public static function version(): string

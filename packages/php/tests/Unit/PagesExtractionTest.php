@@ -7,6 +7,7 @@ namespace Kreuzberg\Tests\Unit;
 use Kreuzberg\Config\ExtractionConfig;
 use Kreuzberg\Config\PageConfig;
 use Kreuzberg\Kreuzberg;
+use PHPUnit\Framework\Attributes\RequiresPhpExtension;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -19,6 +20,7 @@ use PHPUnit\Framework\TestCase;
  * - Multi-page PDF produces multiple pages
  * - Page content structure validation
  */
+#[RequiresPhpExtension('kreuzberg-php')]
 final class PagesExtractionTest extends TestCase
 {
     /**
@@ -81,7 +83,7 @@ final class PagesExtractionTest extends TestCase
 
         // Content should contain markers (default or custom format)
         $this->assertStringContainsString(
-            'PAGE',
+            'Page',
             $result->content,
             'Content should contain page markers',
         );

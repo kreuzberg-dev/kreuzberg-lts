@@ -57,15 +57,41 @@ if (!function_exists('kreuzberg_extract_bytes')) {
         ?array $config = null,
     ): array {
         // Mock implementation
+        $content = 'Mock extraction result from bytes';
+        $pages = [];
+
+        // Handle pages configuration
+        if ($config !== null && isset($config['page']) && is_array($config['page'])) {
+            /** @var array<string, mixed> $pageConfig */
+            $pageConfig = $config['page'];
+            if (isset($pageConfig['extract_pages']) && $pageConfig['extract_pages']) {
+                // Return mock pages
+                $pages = [
+                    [
+                        'content' => 'Page 1 content',
+                        'page_number' => 1,
+                    ],
+                ];
+            }
+
+            // Handle page markers
+            if (isset($pageConfig['insert_page_markers']) && $pageConfig['insert_page_markers']) {
+                /** @var string $markerFormat */
+                $markerFormat = $pageConfig['marker_format'] ?? '--- PAGE {page_num} ---';
+                $marker = str_replace('{page_num}', '1', $markerFormat);
+                $content = $marker . "\nMock extraction result from bytes";
+            }
+        }
+
         return [
-            'content' => 'Mock extraction result from bytes',
+            'content' => $content,
             'mime_type' => $mimeType,
             'metadata' => [],
             'tables' => [],
             'detected_languages' => ['en'],
             'chunks' => [],
             'images' => [],
-            'pages' => [],
+            'pages' => $pages,
             'embeddings' => [],
             'keywords' => [],
             'tesseract' => [],
