@@ -67,7 +67,10 @@ tasks:
   test:ci:
     desc: Run Go tests in CI mode
     env:
-      RUST_BACKTRACE: "1"
+      RUST_BACKTRACE: "full"
+      RUST_LIB_BACKTRACE: "1"
+      CI: "true"
+      VERBOSE_MODE: "true"
     cmds:
       - scripts/go/test.sh
 
@@ -76,6 +79,11 @@ tasks:
     dir: packages/go/v4
     cmds:
       - go test -v ./...
+
+  test:debug:
+    desc: Run Go tests with enhanced debugging (use --help for options)
+    cmds:
+      - scripts/go/test-debug.sh
 
   lint:
     desc: Lint and format Go code with auto-fix (golangci-lint + gofmt)
