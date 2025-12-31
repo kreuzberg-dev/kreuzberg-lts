@@ -12,6 +12,27 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import which from "which";
 
+declare global {
+	var __filename: string | undefined;
+	var __dirname: string | undefined;
+}
+
+function getDirectory(): string {
+	// In CJS, __filename will be defined
+	if (typeof __filename !== "undefined") {
+		return dirname(__filename);
+	}
+	// Fallback for ESM
+	try {
+		// Use eval to avoid esbuild warnings about import.meta in CJS builds
+		// @ts-ignore - import.meta is only available in ESM
+		const url = eval("import.meta.url");
+		return dirname(fileURLToPath(url));
+	} catch {
+		return process.cwd();
+	}
+}
+
 function main(argv: string[]): number {
 	const args = argv.slice(2);
 
@@ -21,7 +42,7 @@ function main(argv: string[]): number {
 	} catch {}
 
 	if (!cliPath) {
-		const __dirname = typeof __filename !== "undefined" ? dirname(__filename) : dirname(fileURLToPath(import.meta.url));
+		const __dirname = getDirectory();
 		const devBinary = join(__dirname, "..", "..", "..", "target", "release", "kreuzberg");
 		if (existsSync(devBinary)) {
 			cliPath = devBinary;

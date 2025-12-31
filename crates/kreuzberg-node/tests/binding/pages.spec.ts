@@ -421,10 +421,14 @@ describe("Pages Extraction (Node.js Bindings)", () => {
 			const result = extractFileSync(samplePdfPath, config);
 
 			expect(result.pages).toBeDefined();
-			expect(result.metadata.page_count).toBeDefined();
+			// metadata.pages contains page information for PDF documents
+			expect(result.metadata.pages).toBeDefined();
 
-			if (result.metadata.page_count) {
-				expect(result.pages.length).toBeLessThanOrEqual(result.metadata.page_count);
+			if (result.metadata.pages && result.pages) {
+				// The pages metadata contains boundaries info
+				const pagesMeta = result.metadata.pages as { boundaries?: unknown[]; pages?: unknown[] };
+				const pageCount = pagesMeta.pages?.length || pagesMeta.boundaries?.length || 0;
+				expect(result.pages.length).toBeLessThanOrEqual(pageCount);
 			}
 		});
 

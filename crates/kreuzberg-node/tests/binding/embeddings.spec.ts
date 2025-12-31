@@ -491,14 +491,14 @@ describe("Embedding Vector Generation (Node.js Bindings)", () => {
 			expect(result.chunks).toBeDefined();
 
 			if (result.chunks && result.chunks.length > 0) {
-				let hasEmbeddings = false;
+				let hasEmbedding = false;
 				for (const chunk of result.chunks) {
-					if (chunk.embeddings && chunk.embeddings.length > 0) {
-						hasEmbeddings = true;
+					if (chunk.embedding && chunk.embedding.length > 0) {
+						hasEmbedding = true;
 						break;
 					}
 				}
-				expect(hasEmbeddings).toBe(true);
+				expect(hasEmbedding).toBe(true);
 			}
 		});
 
@@ -527,7 +527,7 @@ describe("Embedding Vector Generation (Node.js Bindings)", () => {
 
 			if (result.chunks && result.chunks.length > 0) {
 				const embeddingCount = result.chunks.filter(
-					(chunk) => chunk.embeddings && chunk.embeddings.length > 0
+					(chunk) => chunk.embedding && chunk.embedding.length > 0
 				).length;
 
 				// Most chunks should have embeddings

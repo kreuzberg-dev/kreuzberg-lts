@@ -244,8 +244,22 @@ export function __resetBindingForTests(): void {
 }
 
 function loadNativeBinding(): NativeBinding {
-	const localRequire: ((path: string) => unknown) | undefined =
-		typeof require !== "undefined" ? (require as (path: string) => unknown) : createRequire(import.meta.url);
+	let localRequire: ((path: string) => unknown) | undefined;
+
+	// In CJS, require is already available globally
+	if (typeof require !== "undefined") {
+		localRequire = require as (path: string) => unknown;
+	} else {
+		// In ESM, we need to create require from import.meta.url
+		try {
+			// Use eval to avoid esbuild warnings about import.meta in CJS builds
+			// @ts-ignore - import.meta is only available in ESM
+			const url = eval("import.meta.url");
+			localRequire = createRequire(url);
+		} catch {
+			localRequire = undefined;
+		}
+	}
 
 	if (!localRequire) {
 		throw new Error("Unable to resolve native binding loader (require not available).");
