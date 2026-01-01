@@ -5,7 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [4.0.0-rc.23] - Unreleased
+## [4.0.0-rc.24] - 2026-01-01
+
+### Fixed
+
+- **Go Windows CI**: Added explicit CGO directives to bypass pkg-config on Windows
+- **Ruby Windows Build**: Added Windows platform handling in build.rs, enabled embeddings feature on Windows GNU
+- **Node Windows Tests**: Fixed symlink resolution using realpathSync for Windows compatibility
+- **C# Tests**: Fixed null reference warnings in config tests
+- **WASM CI**: Fixed artifact download path to include pkg/ subdirectory
+- **Homebrew Formula**: Fixed bottle naming convention, added source sha256 fetching
+- **PHP PIE Build**: Corrected task name and extension filename
+- **C# NuGet Upload**: Added proper conditional check for artifact existence
+- **Python CI**: Fixed test failures and compatibility issues
+- **Elixir CI**: Fixed build and compilation warnings
+- **WASM Deno**: Fixed type definitions and Ruby Windows build
+
+## [4.0.0-rc.23] - 2026-01-01
 
 ### Added
 

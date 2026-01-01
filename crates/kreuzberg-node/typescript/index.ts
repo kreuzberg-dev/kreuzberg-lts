@@ -2359,4 +2359,4 @@ export async function closeWorkerPool(pool: WorkerPool): Promise<void> {
 	await binding.closeWorkerPool(pool as unknown as Record<string, unknown>);
 }
 
-export const __version__ = "4.0.0-rc.23";
+export const __version__ = "4.0.0-rc.24";
