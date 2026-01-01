@@ -160,15 +160,13 @@ jobs:
       - name: Install Task
         uses: ./.github/actions/install-task
 
-      - name: Build or restore FFI from cache
+      - name: Build FFI library
         id: ffi
-        uses: ./.github/actions/build-and-cache-ffi
-        with:
-          platform: ${{ matrix.os }}
-          ffi-crate: kreuzberg-php
-          cache-version: v1
-          pdfium-version: ${{ env.PDFIUM_VERSION }}
-          ort-version: ${{ env.ORT_VERSION }}
+        shell: bash
+        run: |
+          echo "=== Building FFI Library ==="
+          echo "Building kreuzberg-php from source (no caching)"
+          cargo build --release --package kreuzberg-php
 
       - name: Clean cargo cache to avoid fingerprint conflicts
         if: matrix.os == 'macos-latest'
@@ -238,15 +236,13 @@ jobs:
       - name: Install Task
         uses: ./.github/actions/install-task
 
-      - name: Build or restore FFI from cache
+      - name: Build FFI library
         id: ffi
-        uses: ./.github/actions/build-and-cache-ffi
-        with:
-          platform: ${{ matrix.os }}
-          ffi-crate: kreuzberg-php
-          cache-version: v1
-          pdfium-version: ${{ env.PDFIUM_VERSION }}
-          ort-version: ${{ env.ORT_VERSION }}
+        shell: bash
+        run: |
+          echo "=== Building FFI Library ==="
+          echo "Building kreuzberg-php from source (no caching)"
+          cargo build --release --package kreuzberg-php
 
       - name: Clean cargo cache to avoid fingerprint conflicts
         if: matrix.os == 'macos-latest'

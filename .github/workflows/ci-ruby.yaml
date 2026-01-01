@@ -251,15 +251,13 @@ jobs:
           find target -name ".fingerprint" -type d -exec rm -rf {} + 2>/dev/null || true
           echo "Done"
 
-      - name: Build or restore FFI from cache
+      - name: Build FFI library
         id: ffi
-        uses: ./.github/actions/build-and-cache-ffi
-        with:
-          platform: ${{ matrix.os }}
-          ffi-crate: kreuzberg-ffi
-          cache-version: v1
-          pdfium-version: ${{ env.PDFIUM_VERSION }}
-          ort-version: ${{ env.ORT_VERSION }}
+        shell: bash
+        run: |
+          echo "=== Building FFI Library ==="
+          echo "Building kreuzberg-ffi from source (no caching)"
+          cargo build --release --package kreuzberg-ffi
 
       - name: Print post-FFI build status (Windows)
         if: runner.os == 'Windows'
@@ -318,16 +316,13 @@ jobs:
           path: packages/ruby/pkg/*.gem
           retention-days: 7
 
-      - name: Report FFI cache statistics
+      - name: Verify FFI build artifacts
         if: always()
         shell: bash
         run: |
           echo ""
-          echo "=== FFI Cache Statistics ==="
+          echo "=== FFI Build Artifacts ==="
           echo "Platform: ${{ matrix.os }}"
-          echo "Cache hit: ${{ steps.ffi.outputs.cache-hit }}"
-          echo "Cache key: ${{ steps.ffi.outputs.cache-key }}"
-          echo "Rust hash: ${{ steps.ffi.outputs.rust-hash }}"
           echo ""
           echo "FFI artifacts:"
           echo "  target/release/:"

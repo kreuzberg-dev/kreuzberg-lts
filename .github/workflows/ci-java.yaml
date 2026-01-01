@@ -121,15 +121,13 @@ jobs:
       - name: Install Task
         uses: ./.github/actions/install-task
 
-      - name: Build or restore FFI from cache
+      - name: Build FFI library
         id: ffi
-        uses: ./.github/actions/build-and-cache-ffi
-        with:
-          platform: ${{ matrix.os }}
-          ffi-crate: kreuzberg-ffi
-          cache-version: v1
-          pdfium-version: ${{ env.PDFIUM_VERSION }}
-          ort-version: ${{ env.ORT_VERSION }}
+        shell: bash
+        run: |
+          echo "=== Building FFI Library ==="
+          echo "Building kreuzberg-ffi from source (no caching)"
+          cargo build --release --package kreuzberg-ffi
 
       - name: Set library paths for JNI
         shell: bash
@@ -261,15 +259,13 @@ jobs:
         shell: bash
         run: mkdir -p packages/java/target/jvm-crash
 
-      - name: Build or restore FFI from cache
+      - name: Build FFI library
         id: ffi
-        uses: ./.github/actions/build-and-cache-ffi
-        with:
-          platform: ${{ matrix.os }}
-          ffi-crate: kreuzberg-ffi
-          cache-version: v1
-          pdfium-version: ${{ env.PDFIUM_VERSION }}
-          ort-version: ${{ env.ORT_VERSION }}
+        shell: bash
+        run: |
+          echo "=== Building FFI Library ==="
+          echo "Building kreuzberg-ffi from source (no caching)"
+          cargo build --release --package kreuzberg-ffi
 
       - name: Set library paths for JNI
         shell: bash

@@ -614,16 +614,6 @@ jobs:
       fail-fast: false
       matrix:
         settings:
-          - os: macos-latest
-            target: aarch64-apple-darwin
-            rust_target: ""
-            use_cross: false
-            use_napi_cross: false
-          - os: ubuntu-24.04-arm
-            target: aarch64-unknown-linux-gnu
-            rust_target: ""
-            use_cross: false
-            use_napi_cross: false
           - os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
             rust_target: ""
@@ -2047,7 +2037,7 @@ jobs:
 
   publish-hex:
     name: Publish Elixir package to Hex.pm
-    needs: [prepare, validate-versions, check-hex]
+    needs: [prepare, validate-versions, check-hex, publish-crates]
     if: |
       always() &&
       needs.prepare.outputs.dry_run != 'true' &&
@@ -2203,6 +2193,9 @@ jobs:
       - name: Vendor kreuzberg core crate
         shell: bash
         run: scripts/ci/ruby/vendor-kreuzberg-core.sh
+
+      - name: Install Task
+        uses: ./.github/actions/install-task
 
       - name: Rebuild gems from source
         shell: bash

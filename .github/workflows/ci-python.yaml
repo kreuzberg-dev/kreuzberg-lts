@@ -137,37 +137,21 @@ jobs:
       - name: Install Task
         uses: ./.github/actions/install-task
 
-      - name: Build or restore FFI from cache
+      - name: Build FFI library
         id: ffi
-        uses: ./.github/actions/build-and-cache-ffi
-        with:
-          platform: ${{ matrix.platform }}
-          ffi-crate: kreuzberg-py
-          cache-version: v1
-          pdfium-version: ${{ env.PDFIUM_VERSION }}
-          ort-version: ${{ env.ORT_VERSION }}
+        shell: bash
+        run: |
+          echo "=== Building FFI Library ==="
+          echo "Building kreuzberg-py from source (no caching)"
+          cargo build --release --package kreuzberg-py
 
-      - name: Install Task
-        uses: ./.github/actions/install-task
-
-      - name: Build or restore Python wheels from cache
+      - name: Build Python wheels
         id: wheels
-        uses: ./.github/actions/build-and-cache-binding
-        with:
-          binding-name: python
-          platform: ${{ matrix.platform }}
-          task-command: python:build:ci
-          cache-paths: |
-            target/wheels/
-            packages/python/dist/
-          cache-version: v1
-          rust-hash: ${{ steps.ffi.outputs.rust-hash }}
-          binding-files: |
-            crates/kreuzberg-py/**
-            packages/python/**
-          dep-files: |
-            Cargo.lock
-            uv.lock
+        shell: bash
+        run: |
+          echo "=== Building Python Wheels ==="
+          echo "Building Python wheels from source (no caching)"
+          task python:build:ci
 
       - name: Report cache statistics
         if: always()
