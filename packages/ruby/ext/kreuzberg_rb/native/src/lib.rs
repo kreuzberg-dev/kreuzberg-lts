@@ -55,22 +55,12 @@ pub use kreuzberg_ffi::{
     kreuzberg_validate_dpi, kreuzberg_validate_chunking_params,
     kreuzberg_get_valid_binarization_methods, kreuzberg_get_valid_language_codes,
     kreuzberg_get_valid_ocr_backends, kreuzberg_get_valid_token_reduction_levels,
+    // Config functions (from config module, now re-exported through lib.rs)
+    kreuzberg_config_from_json, kreuzberg_config_free, kreuzberg_config_is_valid,
+    kreuzberg_config_to_json, kreuzberg_config_get_field, kreuzberg_config_merge,
 };
 
 use std::ffi::c_char;
-
-// Config functions are not exported from the vendored kreuzberg-ffi lib.rs,
-// so we need to keep them as extern declarations. They are defined with
-// #[unsafe(no_mangle)] in config.rs but not re-exported through lib.rs.
-// We declare them here for linking at compile time.
-unsafe extern "C" {
-    pub fn kreuzberg_config_from_json(json_config: *const c_char) -> *mut std::ffi::c_void;
-    pub fn kreuzberg_config_free(config: *mut std::ffi::c_void);
-    pub fn kreuzberg_config_is_valid(json_config: *const c_char) -> i32;
-    pub fn kreuzberg_config_to_json(config: *const std::ffi::c_void) -> *mut c_char;
-    pub fn kreuzberg_config_get_field(config: *const std::ffi::c_void, field_name: *const c_char) -> *mut c_char;
-    pub fn kreuzberg_config_merge(base: *mut std::ffi::c_void, override_config: *const std::ffi::c_void) -> i32;
-}
 
 /// Keeps Ruby values alive across plugin registrations by informing the GC.
 struct GcGuardedValue {
@@ -3298,7 +3288,7 @@ fn result_page_count(_ruby: &Ruby, result_ptr: i64) -> Result<i32, Error> {
         return Err(runtime_error("Invalid result pointer"));
     }
 
-    let page_count = unsafe { kreuzberg_result_get_page_count(result_ptr as *const std::ffi::c_void) };
+    let page_count = unsafe { kreuzberg_result_get_page_count(result_ptr as *const RustExtractionResult) };
 
     Ok(page_count)
 }
@@ -3311,7 +3301,7 @@ fn result_chunk_count(_ruby: &Ruby, result_ptr: i64) -> Result<i32, Error> {
         return Err(runtime_error("Invalid result pointer"));
     }
 
-    let chunk_count = unsafe { kreuzberg_result_get_chunk_count(result_ptr as *const std::ffi::c_void) };
+    let chunk_count = unsafe { kreuzberg_result_get_chunk_count(result_ptr as *const RustExtractionResult) };
 
     Ok(chunk_count)
 }
@@ -3324,7 +3314,7 @@ fn result_detected_language(_ruby: &Ruby, result_ptr: i64) -> Result<Value, Erro
         return Err(runtime_error("Invalid result pointer"));
     }
 
-    let lang_ptr = unsafe { kreuzberg_result_get_detected_language(result_ptr as *const std::ffi::c_void) };
+    let lang_ptr = unsafe { kreuzberg_result_get_detected_language(result_ptr as *const RustExtractionResult) };
 
     if lang_ptr.is_null() {
         return Ok(_ruby.qnil().as_value());
@@ -3355,7 +3345,7 @@ fn result_metadata_field(ruby: &Ruby, result_ptr: i64, field_name: String) -> Re
     let c_field =
         std::ffi::CString::new(field_name).map_err(|e| runtime_error(format!("Invalid field name: {}", e)))?;
 
-    let field = unsafe { kreuzberg_result_get_metadata_field(result_ptr as *const std::ffi::c_void, c_field.as_ptr()) };
+    let field = unsafe { kreuzberg_result_get_metadata_field(result_ptr as *const RustExtractionResult, c_field.as_ptr()) };
 
     if field.is_null != 0 {
         return Ok(ruby.qnil().as_value());
