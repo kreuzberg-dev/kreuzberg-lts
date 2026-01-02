@@ -135,3 +135,4 @@ libpdfium.a
 # Profiling artifacts
 profiling-results/
 profiling-results-*/
+.remote-cache/
