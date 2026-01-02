@@ -396,11 +396,8 @@ pub async fn batch_extract_file(
                 results[index] = Some(result);
             }
             Ok((index, Err(e))) => {
-                // OSError/RuntimeError must bubble up - system errors need user reports ~keep
-                if matches!(e, KreuzbergError::Io(_)) {
-                    return Err(e);
-                }
-
+                // All errors (including Io) should create error results
+                // instead of causing early return that abandons running tasks
                 use crate::types::{ErrorMetadata, Metadata};
                 let metadata = Metadata {
                     error: Some(ErrorMetadata {
@@ -502,11 +499,8 @@ pub async fn batch_extract_bytes(
                 results[index] = Some(result);
             }
             Ok((index, Err(e))) => {
-                // OSError/RuntimeError must bubble up - system errors need user reports ~keep
-                if matches!(e, KreuzbergError::Io(_)) {
-                    return Err(e);
-                }
-
+                // All errors (including Io) should create error results
+                // instead of causing early return that abandons running tasks
                 use crate::types::{ErrorMetadata, Metadata};
                 let metadata = Metadata {
                     error: Some(ErrorMetadata {
