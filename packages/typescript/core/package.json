@@ -60,10 +60,10 @@
     "@kreuzberg/node": "workspace:*"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.3.9",
-    "@types/node": "^25.0.2",
+    "@biomejs/biome": "^2.3.11",
+    "@types/node": "^25.0.3",
     "tsup": "^8.5.1",
     "typescript": "^5.9.3",
-    "vitest": "^4.0.15"
+    "vitest": "^4.0.16"
   }
 }

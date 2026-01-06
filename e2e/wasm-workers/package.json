@@ -8,13 +8,13 @@
     "test:ui": "vitest --ui"
   },
   "devDependencies": {
-    "@cloudflare/vitest-pool-workers": "^0.10.15",
-    "@cloudflare/workers-types": "^4.20251216.0",
+    "@cloudflare/vitest-pool-workers": "^0.11.1",
+    "@cloudflare/workers-types": "^4.20260103.0",
     "@kreuzberg/wasm": "workspace:*",
-    "@vitest/runner": "~3.2.0",
-    "@vitest/snapshot": "~3.2.0",
-    "@vitest/ui": "~3.2.0",
-    "vitest": "~3.2.0"
+    "@vitest/runner": "~4.0.16",
+    "@vitest/snapshot": "~4.0.16",
+    "@vitest/ui": "~4.0.16",
+    "vitest": "~4.0.16"
   },
   "version": "4.0.0-rc.27"
 }
