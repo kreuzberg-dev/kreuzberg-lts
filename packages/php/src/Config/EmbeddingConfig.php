@@ -11,24 +11,23 @@ readonly class EmbeddingConfig
 {
     public function __construct(
         /**
-         * Embedding model name or identifier.
+         * Embedding preset name.
          *
-         * Specifies which pre-trained embedding model to use for generating
-         * vector representations of text chunks. The model determines embedding
-         * dimension, quality, and processing speed.
+         * Specifies which pre-configured embedding preset to use for generating
+         * vector representations of text chunks. Each preset determines the embedding
+         * model, dimension, quality, and processing speed.
          *
-         * Common models:
-         * - 'all-MiniLM-L6-v2': Lightweight, fast (dimension: 384)
-         * - 'all-MiniLM-L12-v2': Balanced quality/speed (dimension: 384)
-         * - 'all-mpnet-base-v2': High quality (dimension: 768)
-         * - 'paraphrase-MiniLM-L6-v2': Good for semantic similarity (dimension: 384)
-         * - 'multi-qa-MiniLM-L6-cos-v1': Optimized for Q&A (dimension: 384)
+         * Available presets:
+         * - 'fast': AllMiniLML6V2Q (384 dims) - Quick prototyping, low-latency
+         * - 'balanced': BGEBaseENV15 (768 dims) - General-purpose RAG
+         * - 'quality': BGELargeENV15 (1024 dims) - High-quality embeddings
+         * - 'multilingual': MultilingualE5Base (768 dims) - Multi-language support
          *
          * @var string
-         * @default 'all-MiniLM-L6-v2'
-         * @example $config = new EmbeddingConfig(model: 'all-mpnet-base-v2');
+         * @default 'balanced'
+         * @example $config = new EmbeddingConfig(model: 'quality');
          */
-        public string $model = 'all-MiniLM-L6-v2',
+        public string $model = 'balanced',
 
         /**
          * Normalize embedding vectors to unit length.
@@ -70,7 +69,7 @@ readonly class EmbeddingConfig
     public static function fromArray(array $data): self
     {
         /** @var string $model */
-        $model = $data['model'] ?? 'all-MiniLM-L6-v2';
+        $model = $data['model'] ?? 'balanced';
         if (!is_string($model)) {
             /** @var string $model */
             $model = (string) $model;

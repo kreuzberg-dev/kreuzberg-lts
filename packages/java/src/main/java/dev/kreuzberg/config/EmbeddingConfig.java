@@ -17,7 +17,7 @@ import java.util.Map;
  * @since 4.0.0
  */
 public final class EmbeddingConfig {
-	private final String model;
+	private final Map<String, Object> model;
 	private final Boolean normalize;
 	private final Integer batchSize;
 	private final Integer dimensions;
@@ -40,11 +40,12 @@ public final class EmbeddingConfig {
 	}
 
 	/**
-	 * Get the embedding model name or path.
+	 * Get the embedding model configuration.
 	 *
-	 * @return the model name/path, or null if not set
+	 * @return the model configuration map (with 'type' and 'name' keys), or null if
+	 *         not set
 	 */
-	public String getModel() {
+	public Map<String, Object> getModel() {
 		return model;
 	}
 
@@ -137,7 +138,7 @@ public final class EmbeddingConfig {
 	 * Builder for constructing EmbeddingConfig instances.
 	 */
 	public static final class Builder {
-		private String model;
+		private Map<String, Object> model;
 		private Boolean normalize = true;
 		private Integer batchSize = 32;
 		private Integer dimensions;
@@ -146,27 +147,47 @@ public final class EmbeddingConfig {
 		private String cacheDir;
 
 		private Builder() {
+			// Default to balanced preset
+			this.model = new HashMap<>();
+			this.model.put("type", "preset");
+			this.model.put("name", "balanced");
 		}
 
 		/**
-		 * Set the embedding model name or path.
+		 * Set the embedding model using a preset name.
 		 *
 		 * <p>
-		 * Common models:
+		 * Available presets:
 		 * <ul>
-		 * <li>'all-MiniLM-L6-v2': Lightweight, fast (dimension: 384)</li>
-		 * <li>'all-MiniLM-L12-v2': Balanced quality/speed (dimension: 384)</li>
-		 * <li>'all-mpnet-base-v2': High quality (dimension: 768)</li>
-		 * <li>'paraphrase-MiniLM-L6-v2': Good for semantic similarity (dimension:
-		 * 384)</li>
-		 * <li>'multi-qa-MiniLM-L6-cos-v1': Optimized for Q&amp;A (dimension: 384)</li>
+		 * <li>'fast': AllMiniLML6V2Q (384 dims) - Quick prototyping, low-latency</li>
+		 * <li>'balanced': BGEBaseENV15 (768 dims) - General-purpose RAG</li>
+		 * <li>'quality': BGELargeENV15 (1024 dims) - High-quality embeddings</li>
+		 * <li>'multilingual': MultilingualE5Base (768 dims) - Multi-language
+		 * support</li>
 		 * </ul>
 		 *
-		 * @param model
-		 *            the model name/path
+		 * @param presetName
+		 *            the preset name
 		 * @return this builder
 		 */
-		public Builder model(String model) {
+		public Builder preset(String presetName) {
+			this.model = new HashMap<>();
+			this.model.put("type", "preset");
+			this.model.put("name", presetName);
+			return this;
+		}
+
+		/**
+		 * Set the embedding model configuration directly.
+		 *
+		 * <p>
+		 * For advanced use cases. Use preset() for common configurations.
+		 *
+		 * @param model
+		 *            the model configuration map
+		 * @return this builder
+		 */
+		public Builder model(Map<String, Object> model) {
 			this.model = model;
 			return this;
 		}
@@ -287,14 +308,18 @@ public final class EmbeddingConfig {
 	 *            the map containing configuration values
 	 * @return the parsed EmbeddingConfig, or null if map is null
 	 */
+	@SuppressWarnings("unchecked")
 	static EmbeddingConfig fromMap(Map<String, Object> map) {
 		if (map == null) {
 			return null;
 		}
 		Builder builder = builder();
 		Object modelValue = map.get("model");
-		if (modelValue instanceof String) {
-			builder.model((String) modelValue);
+		if (modelValue instanceof Map) {
+			builder.model((Map<String, Object>) modelValue);
+		} else if (modelValue instanceof String) {
+			// Legacy: treat string as preset name
+			builder.preset((String) modelValue);
 		}
 		Object normalizeValue = map.get("normalize");
 		if (normalizeValue instanceof Boolean) {

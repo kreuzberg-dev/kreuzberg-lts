@@ -23,7 +23,7 @@ $config = new ExtractionConfig(
         respectSentences: true
     ),
     embedding: new EmbeddingConfig(
-        model: 'all-MiniLM-L6-v2',
+        model: 'fast',
         normalize: true
     )
 );

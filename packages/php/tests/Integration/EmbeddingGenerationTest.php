@@ -121,10 +121,10 @@ final class EmbeddingGenerationTest extends TestCase
     public function it_creates_embedding_config_with_model(): void
     {
         $config = new EmbeddingConfig(
-            model: 'all-MiniLM-L6-v2',
+            model: 'quality',
         );
 
-        $this->assertSame('all-MiniLM-L6-v2', $config->model, 'Model should be set correctly');
+        $this->assertSame('quality', $config->model, 'Model should be set correctly');
     }
 
     /**
@@ -135,7 +135,7 @@ final class EmbeddingGenerationTest extends TestCase
     {
         $config = new EmbeddingConfig();
 
-        $this->assertSame('all-MiniLM-L6-v2', $config->model, 'Default model should be all-MiniLM-L6-v2');
+        $this->assertSame('balanced', $config->model, 'Default model should be balanced');
     }
 
     /**

@@ -38,7 +38,7 @@ final class EmbeddingConfigTest extends TestCase
     {
         $config = new EmbeddingConfig();
 
-        $this->assertSame('all-MiniLM-L6-v2', $config->model);
+        $this->assertSame('balanced', $config->model);
         $this->assertTrue($config->normalize);
         $this->assertNull($config->batchSize);
     }
@@ -88,7 +88,7 @@ final class EmbeddingConfigTest extends TestCase
     {
         $config = EmbeddingConfig::fromArray([]);
 
-        $this->assertSame('all-MiniLM-L6-v2', $config->model);
+        $this->assertSame('balanced', $config->model);
         $this->assertTrue($config->normalize);
         $this->assertNull($config->batchSize);
     }
@@ -264,11 +264,10 @@ final class EmbeddingConfigTest extends TestCase
     public function it_supports_various_model_names(): void
     {
         $models = [
-            'all-MiniLM-L6-v2',
-            'all-mpnet-base-v2',
-            'bert-base-uncased',
-            'sentence-transformers/all-roberta-large-v1',
-            'custom-local-model',
+            'fast',
+            'balanced',
+            'quality',
+            'multilingual',
         ];
 
         foreach ($models as $model) {

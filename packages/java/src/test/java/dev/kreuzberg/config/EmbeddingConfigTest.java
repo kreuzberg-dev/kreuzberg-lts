@@ -3,6 +3,7 @@ package dev.kreuzberg.config;
 import static org.assertj.core.api.Assertions.*;
 import static org.junit.jupiter.api.Assertions.*;
 
+import java.util.HashMap;
 import java.util.Map;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -22,7 +23,8 @@ final class EmbeddingConfigTest {
 	void shouldCreateWithDefaults() {
 		EmbeddingConfig config = EmbeddingConfig.builder().build();
 
-		assertNull(config.getModel());
+		Map<String, Object> model = config.getModel();
+		assertThat(model).containsEntry("type", "preset").containsEntry("name", "balanced");
 		assertThat(config.getNormalize()).isTrue();
 		assertThat(config.getBatchSize()).isEqualTo(32);
 		assertNull(config.getDimensions());
@@ -32,11 +34,12 @@ final class EmbeddingConfigTest {
 	}
 
 	@Test
-	@DisplayName("should set model name")
-	void shouldSetModel() {
-		EmbeddingConfig config = EmbeddingConfig.builder().model("all-MiniLM-L6-v2").build();
+	@DisplayName("should set model preset")
+	void shouldSetModelPreset() {
+		EmbeddingConfig config = EmbeddingConfig.builder().preset("fast").build();
 
-		assertThat(config.getModel()).isEqualTo("all-MiniLM-L6-v2");
+		Map<String, Object> model = config.getModel();
+		assertThat(model).containsEntry("type", "preset").containsEntry("name", "fast");
 	}
 
 	@Test
@@ -90,10 +93,11 @@ final class EmbeddingConfigTest {
 	@Test
 	@DisplayName("should create config with all parameters")
 	void shouldCreateWithAllParameters() {
-		EmbeddingConfig config = EmbeddingConfig.builder().model("all-mpnet-base-v2").normalize(true).batchSize(128)
+		EmbeddingConfig config = EmbeddingConfig.builder().preset("quality").normalize(true).batchSize(128)
 				.dimensions(768).useCache(true).showDownloadProgress(true).cacheDir("/tmp/embeddings").build();
 
-		assertThat(config.getModel()).isEqualTo("all-mpnet-base-v2");
+		Map<String, Object> model = config.getModel();
+		assertThat(model).containsEntry("type", "preset").containsEntry("name", "quality");
 		assertThat(config.getNormalize()).isTrue();
 		assertThat(config.getBatchSize()).isEqualTo(128);
 		assertThat(config.getDimensions()).isEqualTo(768);
@@ -105,22 +109,26 @@ final class EmbeddingConfigTest {
 	@Test
 	@DisplayName("should convert to map representation")
 	void shouldConvertToMap() {
-		EmbeddingConfig config = EmbeddingConfig.builder().model("test-model").normalize(true).batchSize(64)
+		EmbeddingConfig config = EmbeddingConfig.builder().preset("balanced").normalize(true).batchSize(64)
 				.dimensions(512).build();
 
 		Map<String, Object> map = config.toMap();
 
-		assertThat(map).containsEntry("model", "test-model").containsEntry("normalize", true)
-				.containsEntry("batch_size", 64).containsEntry("dimensions", 512).containsEntry("use_cache", true)
+		@SuppressWarnings("unchecked")
+		Map<String, Object> model = (Map<String, Object>) map.get("model");
+		assertThat(model).containsEntry("type", "preset").containsEntry("name", "balanced");
+		assertThat(map).containsEntry("normalize", true).containsEntry("batch_size", 64)
+				.containsEntry("dimensions", 512).containsEntry("use_cache", true)
 				.containsEntry("show_download_progress", false);
 	}
 
 	@Test
 	@DisplayName("should support builder method chaining")
 	void shouldSupportBuilderChaining() {
-		EmbeddingConfig config = EmbeddingConfig.builder().model("chain-model").batchSize(256).normalize(false).build();
+		EmbeddingConfig config = EmbeddingConfig.builder().preset("fast").batchSize(256).normalize(false).build();
 
-		assertThat(config.getModel()).isEqualTo("chain-model");
+		Map<String, Object> model = config.getModel();
+		assertThat(model).containsEntry("type", "preset").containsEntry("name", "fast");
 		assertThat(config.getBatchSize()).isEqualTo(256);
 		assertThat(config.getNormalize()).isFalse();
 	}
@@ -144,26 +152,24 @@ final class EmbeddingConfigTest {
 	@Test
 	@DisplayName("should create independent builder instances")
 	void shouldCreateIndependentBuilderInstances() {
-		EmbeddingConfig config1 = EmbeddingConfig.builder().model("model1").build();
-		EmbeddingConfig config2 = EmbeddingConfig.builder().model("model2").build();
+		EmbeddingConfig config1 = EmbeddingConfig.builder().preset("fast").build();
+		EmbeddingConfig config2 = EmbeddingConfig.builder().preset("quality").build();
 
-		assertThat(config1.getModel()).isNotEqualTo(config2.getModel());
+		assertThat(config1.getModel().get("name")).isNotEqualTo(config2.getModel().get("name"));
 	}
 
 	@Test
-	@DisplayName("should support common model names")
-	void shouldSupportCommonModelNames() {
-		EmbeddingConfig config1 = EmbeddingConfig.builder().model("all-MiniLM-L6-v2").dimensions(384).build();
-		EmbeddingConfig config2 = EmbeddingConfig.builder().model("all-MiniLM-L12-v2").dimensions(384).build();
-		EmbeddingConfig config3 = EmbeddingConfig.builder().model("all-mpnet-base-v2").dimensions(768).build();
-		EmbeddingConfig config4 = EmbeddingConfig.builder().model("paraphrase-MiniLM-L6-v2").dimensions(384).build();
-		EmbeddingConfig config5 = EmbeddingConfig.builder().model("multi-qa-MiniLM-L6-cos-v1").dimensions(384).build();
+	@DisplayName("should support all preset names")
+	void shouldSupportAllPresetNames() {
+		EmbeddingConfig config1 = EmbeddingConfig.builder().preset("fast").dimensions(384).build();
+		EmbeddingConfig config2 = EmbeddingConfig.builder().preset("balanced").dimensions(768).build();
+		EmbeddingConfig config3 = EmbeddingConfig.builder().preset("quality").dimensions(1024).build();
+		EmbeddingConfig config4 = EmbeddingConfig.builder().preset("multilingual").dimensions(768).build();
 
-		assertThat(config1.getModel()).isEqualTo("all-MiniLM-L6-v2");
-		assertThat(config2.getModel()).isEqualTo("all-MiniLM-L12-v2");
-		assertThat(config3.getModel()).isEqualTo("all-mpnet-base-v2");
-		assertThat(config4.getModel()).isEqualTo("paraphrase-MiniLM-L6-v2");
-		assertThat(config5.getModel()).isEqualTo("multi-qa-MiniLM-L6-cos-v1");
+		assertThat(config1.getModel().get("name")).isEqualTo("fast");
+		assertThat(config2.getModel().get("name")).isEqualTo("balanced");
+		assertThat(config3.getModel().get("name")).isEqualTo("quality");
+		assertThat(config4.getModel().get("name")).isEqualTo("multilingual");
 	}
 
 	@Test
@@ -199,14 +205,24 @@ final class EmbeddingConfigTest {
 	}
 
 	@Test
-	@DisplayName("should create from map with all fields")
-	void shouldCreateFromMapWithAllFields() {
-		Map<String, Object> map = Map.of("model", "test-model", "normalize", true, "batch_size", 64, "dimensions", 512,
-				"use_cache", false, "show_download_progress", true, "cache_dir", "/test/cache");
+	@DisplayName("should create from map with model as Map")
+	void shouldCreateFromMapWithModelAsMap() {
+		Map<String, Object> modelMap = new HashMap<>();
+		modelMap.put("type", "preset");
+		modelMap.put("name", "fast");
+
+		Map<String, Object> map = new HashMap<>();
+		map.put("model", modelMap);
+		map.put("normalize", true);
+		map.put("batch_size", 64);
+		map.put("dimensions", 512);
+		map.put("use_cache", false);
+		map.put("show_download_progress", true);
+		map.put("cache_dir", "/test/cache");
 
 		EmbeddingConfig config = EmbeddingConfig.fromMap(map);
 
-		assertThat(config.getModel()).isEqualTo("test-model");
+		assertThat(config.getModel()).containsEntry("type", "preset").containsEntry("name", "fast");
 		assertThat(config.getNormalize()).isTrue();
 		assertThat(config.getBatchSize()).isEqualTo(64);
 		assertThat(config.getDimensions()).isEqualTo(512);
@@ -216,13 +232,15 @@ final class EmbeddingConfigTest {
 	}
 
 	@Test
-	@DisplayName("should create from map with partial fields")
-	void shouldCreateFromMapWithPartialFields() {
-		Map<String, Object> map = Map.of("model", "partial-model", "batch_size", 32);
+	@DisplayName("should create from map with model as string (legacy)")
+	void shouldCreateFromMapWithModelAsString() {
+		Map<String, Object> map = new HashMap<>();
+		map.put("model", "balanced");
+		map.put("batch_size", 32);
 
 		EmbeddingConfig config = EmbeddingConfig.fromMap(map);
 
-		assertThat(config.getModel()).isEqualTo("partial-model");
+		assertThat(config.getModel()).containsEntry("type", "preset").containsEntry("name", "balanced");
 		assertThat(config.getBatchSize()).isEqualTo(32);
 		assertThat(config.getNormalize()).isTrue(); // default value
 	}
@@ -238,11 +256,12 @@ final class EmbeddingConfigTest {
 	@Test
 	@DisplayName("should handle missing fields in fromMap")
 	void shouldHandleMissingFieldsInFromMap() {
-		Map<String, Object> map = Map.of("model", "minimal-model");
+		Map<String, Object> map = new HashMap<>();
+		map.put("model", "fast");
 
 		EmbeddingConfig config = EmbeddingConfig.fromMap(map);
 
-		assertThat(config.getModel()).isEqualTo("minimal-model");
+		assertThat(config.getModel()).containsEntry("type", "preset").containsEntry("name", "fast");
 		assertThat(config.getNormalize()).isTrue();
 		assertThat(config.getBatchSize()).isEqualTo(32);
 	}
@@ -250,7 +269,7 @@ final class EmbeddingConfigTest {
 	@Test
 	@DisplayName("should only include non-null fields in toMap")
 	void shouldOnlyIncludeNonNullFieldsInToMap() {
-		EmbeddingConfig config = EmbeddingConfig.builder().model("test-model").normalize(true).build();
+		EmbeddingConfig config = EmbeddingConfig.builder().preset("balanced").normalize(true).build();
 
 		Map<String, Object> map = config.toMap();
 
@@ -261,59 +280,62 @@ final class EmbeddingConfigTest {
 	@Test
 	@DisplayName("should support integration with ExtractionConfig")
 	void shouldSupportIntegrationWithExtractionConfig() {
-		EmbeddingConfig embeddingConfig = EmbeddingConfig.builder().model("integration-model").batchSize(64)
-				.normalize(true).build();
+		EmbeddingConfig embeddingConfig = EmbeddingConfig.builder().preset("quality").batchSize(64).normalize(true)
+				.build();
 
 		ExtractionConfig extractionConfig = ExtractionConfig.builder().embedding(embeddingConfig).build();
 
 		assertNotNull(extractionConfig.getEmbedding());
-		assertThat(extractionConfig.getEmbedding().getModel()).isEqualTo("integration-model");
+		assertThat(extractionConfig.getEmbedding().getModel()).containsEntry("type", "preset").containsEntry("name",
+				"quality");
 		assertThat(extractionConfig.getEmbedding().getBatchSize()).isEqualTo(64);
 	}
 
 	@Test
-	@DisplayName("should handle boolean conversion from Number in fromMap")
-	void shouldHandleNumberToBoolean() {
-		Map<String, Object> map = Map.of("model", "bool-test", "batch_size", 64L); // Long instead of Integer
+	@DisplayName("should handle Number conversion in fromMap")
+	void shouldHandleNumberConversion() {
+		Map<String, Object> map = new HashMap<>();
+		map.put("model", "fast");
+		map.put("batch_size", 64L); // Long instead of Integer
 
 		EmbeddingConfig config = EmbeddingConfig.fromMap(map);
 
-		assertThat(config.getModel()).isEqualTo("bool-test");
+		assertThat(config.getModel()).containsEntry("name", "fast");
 		assertThat(config.getBatchSize()).isEqualTo(64);
 	}
 
 	@Test
-	@DisplayName("should configure for lightweight model")
-	void shouldConfigureForLightweightModel() {
-		EmbeddingConfig config = EmbeddingConfig.builder().model("all-MiniLM-L6-v2").dimensions(384).batchSize(64)
-				.normalize(true).useCache(true).build();
+	@DisplayName("should configure for fast preset")
+	void shouldConfigureForFastPreset() {
+		EmbeddingConfig config = EmbeddingConfig.builder().preset("fast").dimensions(384).batchSize(64).normalize(true)
+				.useCache(true).build();
 
-		assertThat(config.getModel()).isEqualTo("all-MiniLM-L6-v2");
+		assertThat(config.getModel()).containsEntry("name", "fast");
 		assertThat(config.getDimensions()).isEqualTo(384);
 		assertThat(config.getBatchSize()).isEqualTo(64);
 	}
 
 	@Test
-	@DisplayName("should configure for high-quality model")
-	void shouldConfigureForHighQualityModel() {
-		EmbeddingConfig config = EmbeddingConfig.builder().model("all-mpnet-base-v2").dimensions(768).batchSize(32)
+	@DisplayName("should configure for quality preset")
+	void shouldConfigureForQualityPreset() {
+		EmbeddingConfig config = EmbeddingConfig.builder().preset("quality").dimensions(1024).batchSize(32)
 				.normalize(true).showDownloadProgress(true).build();
 
-		assertThat(config.getModel()).isEqualTo("all-mpnet-base-v2");
-		assertThat(config.getDimensions()).isEqualTo(768);
+		assertThat(config.getModel()).containsEntry("name", "quality");
+		assertThat(config.getDimensions()).isEqualTo(1024);
 		assertThat(config.getBatchSize()).isEqualTo(32);
 		assertThat(config.getShowDownloadProgress()).isTrue();
 	}
 
 	@Test
-	@DisplayName("should configure for Q&A optimized model")
-	void shouldConfigureForQAModel() {
-		EmbeddingConfig config = EmbeddingConfig.builder().model("multi-qa-MiniLM-L6-cos-v1").dimensions(384)
-				.batchSize(128).normalize(true).useCache(true).cacheDir("/qa/cache").build();
+	@DisplayName("should configure for multilingual preset")
+	void shouldConfigureForMultilingualPreset() {
+		EmbeddingConfig config = EmbeddingConfig.builder().preset("multilingual").dimensions(768).batchSize(128)
+				.normalize(true).useCache(true).cacheDir("/multilingual/cache").build();
 
-		assertThat(config.getModel()).isEqualTo("multi-qa-MiniLM-L6-cos-v1");
-		assertThat(config.getDimensions()).isEqualTo(384);
+		assertThat(config.getModel()).containsEntry("name", "multilingual");
+		assertThat(config.getDimensions()).isEqualTo(768);
 		assertThat(config.getBatchSize()).isEqualTo(128);
-		assertThat(config.getCacheDir()).isEqualTo("/qa/cache");
+		assertThat(config.getCacheDir()).isEqualTo("/multilingual/cache");
 	}
 }
