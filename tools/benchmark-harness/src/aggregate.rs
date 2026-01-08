@@ -70,8 +70,8 @@ pub struct PerformancePercentiles {
     pub memory: Percentiles,
     /// Duration percentiles (p50, p95, p99) in ms
     pub duration: Percentiles,
-    /// Success rate (0.0-1.0)
-    pub success_rate: f64,
+    /// Success rate as percentage (0-100)
+    pub success_rate_percent: f64,
 }
 
 /// Percentile values for a metric
@@ -281,8 +281,8 @@ fn calculate_percentiles(results: &[&BenchmarkResult]) -> PerformancePercentiles
         p99: calculate_percentile_value(&memories, 0.99),
     };
 
-    let success_rate = if !results.is_empty() {
-        successful.len() as f64 / results.len() as f64
+    let success_rate_percent = if !results.is_empty() {
+        (successful.len() as f64 / results.len() as f64) * 100.0
     } else {
         0.0
     };
@@ -292,7 +292,7 @@ fn calculate_percentiles(results: &[&BenchmarkResult]) -> PerformancePercentiles
         throughput,
         memory,
         duration,
-        success_rate,
+        success_rate_percent,
     }
 }
 
@@ -480,7 +480,7 @@ mod tests {
         let percentiles = calculate_percentiles(&refs);
 
         assert_eq!(percentiles.sample_count, 3);
-        assert_eq!(percentiles.success_rate, 1.0);
+        assert_eq!(percentiles.success_rate_percent, 100.0);
         assert!(percentiles.duration.p50 > 0.0);
         assert!(percentiles.throughput.p50 > 0.0);
         assert!(percentiles.memory.p50 > 0.0);
@@ -607,8 +607,8 @@ mod tests {
 
         // sample_count should only count successful results
         assert_eq!(no_ocr.sample_count, 1);
-        // success_rate should account for all results
-        assert_eq!(no_ocr.success_rate, 0.5); // 1 success / 2 total
+        // success_rate_percent should account for all results
+        assert_eq!(no_ocr.success_rate_percent, 50.0); // 1 success / 2 total = 50%
         // Percentiles based on 1 successful result
         assert_eq!(no_ocr.duration.p50, 100.0);
     }
