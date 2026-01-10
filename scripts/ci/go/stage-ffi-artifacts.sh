@@ -8,14 +8,30 @@ echo "=== Staging FFI artifacts to ${STAGING_DIR} ==="
 
 shopt -s nullglob
 
-ffi_libs=(target/release/libkreuzberg_ffi.*)
-if [ ${#ffi_libs[@]} -eq 0 ]; then
-  echo "ERROR: No FFI library found in target/release/" >&2
+# Stage static library (.a) - required for Go static linking
+static_lib="target/release/libkreuzberg_ffi.a"
+if [ -f "$static_lib" ]; then
+  cp "$static_lib" "${STAGING_DIR}/lib/"
+  echo "✓ Staged static library: $static_lib ($(du -h "$static_lib" | cut -f1))"
+else
+  echo "ERROR: Static library not found: $static_lib" >&2
   exit 1
 fi
-cp "${ffi_libs[@]}" "${STAGING_DIR}/lib/"
-echo "✓ Staged FFI library: ${ffi_libs[*]}"
 
+# Stage dynamic libraries (.so, .dylib, .dll) - optional for runtime linking
+ffi_libs=(target/release/libkreuzberg_ffi.{so,dylib,dll} target/release/libkreuzberg_ffi.so.*)
+ffi_libs_found=()
+for lib in "${ffi_libs[@]}"; do
+  if [ -f "$lib" ]; then
+    cp "$lib" "${STAGING_DIR}/lib/"
+    ffi_libs_found+=("$lib")
+  fi
+done
+if [ ${#ffi_libs_found[@]} -gt 0 ]; then
+  echo "✓ Staged dynamic libraries: ${ffi_libs_found[*]}"
+fi
+
+# Stage PDFium libraries
 pdfium_libs=(target/release/libpdfium.*)
 if [ ${#pdfium_libs[@]} -gt 0 ]; then
   cp "${pdfium_libs[@]}" "${STAGING_DIR}/lib/"
@@ -24,8 +40,15 @@ fi
 
 shopt -u nullglob
 
+# Stage header file
 cp crates/kreuzberg-ffi/kreuzberg.h "${STAGING_DIR}/include/"
+echo "✓ Staged header: kreuzberg.h"
 
+# Stage pkg-config file
 cp crates/kreuzberg-ffi/kreuzberg-ffi-install.pc "${STAGING_DIR}/share/pkgconfig/kreuzberg-ffi.pc"
+echo "✓ Staged pkg-config: kreuzberg-ffi.pc"
 
-echo "✓ FFI artifacts staged successfully"
+echo ""
+echo "✓ FFI artifacts staged successfully to ${STAGING_DIR}"
+echo "  Contents:"
+ls -la "${STAGING_DIR}/lib/" 2>/dev/null || true

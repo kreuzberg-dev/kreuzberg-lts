@@ -79,7 +79,8 @@ languages:
 
   go:
     name: Go
-    template: language_package.md.jinja
+    template: go.md.jinja
+    output_path: packages/go/v4/README.md
     package_manager:
       - go get
     package_name: github.com/kreuzberg-dev/kreuzberg/packages/go/v4

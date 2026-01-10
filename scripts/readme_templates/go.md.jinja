@@ -1,268 +1,256 @@
-# Kreuzberg for Go
+# Kreuzberg
 
 {% include 'partials/badges.html.jinja' %}
 
-{{ description }}
+High-performance document intelligence for Go backed by the Rust core that powers every Kreuzberg binding.
 
-> **Version {{ version }} Release Candidate**
-> This binding targets the Kreuzberg {{ version }} APIs. Report issues at [github.com/kreuzberg-dev/kreuzberg](https://github.com/kreuzberg-dev/kreuzberg).
+> **Version {{ version }}**
+> Report issues at [github.com/kreuzberg-dev/kreuzberg](https://github.com/kreuzberg-dev/kreuzberg/issues).
 
 ## Install
 
+Kreuzberg Go binaries are **statically linked** — once built, they are self-contained and require no runtime library dependencies. Only the static library is needed at build time.
+
+### Quick Start (Monorepo Development)
+
+For development in the Kreuzberg monorepo:
+
 ```bash
-go get github.com/kreuzberg-dev/kreuzberg/packages/go/v4@latest
+# Build the static FFI library
+cargo build -p kreuzberg-ffi --release
+
+# Go build will automatically link against the static library
+# (from target/release/libkreuzberg_ffi.a)
+cd packages/go/v4
+go build -v
+
+# Run your binary (no library path needed - it's statically linked)
+./v4
 ```
 
-The Go binding uses cgo to link against the `kreuzberg-ffi` library.
+That's it! The resulting binary is self-contained and has no runtime dependencies on Kreuzberg libraries.
 
-## Quick Start
+### Using Go Modules
 
-### Basic Usage
+To use this package via `go get`:
+
+```bash
+# Get the latest release
+go get {{ package_name }}@latest
+
+# Or a specific version
+go get {{ package_name }}@v{{ version }}
+```
+
+You'll need to provide the static library at build time. See [Building with Static Libraries](#building-with-static-libraries) below.
+
+### Building with Static Libraries
+
+When building outside the Kreuzberg monorepo, you need to provide the static library (`.a` file on Unix, `.lib` on Windows).
+
+#### Option 1: Download Pre-built Static Library
+
+Download the static library for your platform from [GitHub Releases](https://github.com/kreuzberg-dev/kreuzberg/releases):
+
+```bash
+# Example: Linux x86_64
+curl -LO https://github.com/kreuzberg-dev/kreuzberg/releases/download/v{{ version }}/go-ffi-linux-x86_64.tar.gz
+tar -xzf go-ffi-linux-x86_64.tar.gz
+
+# Copy to a permanent location
+mkdir -p ~/kreuzberg/lib
+cp kreuzberg-ffi/lib/libkreuzberg_ffi.a ~/kreuzberg/lib/
+```
+
+Then build with `CGO_LDFLAGS`:
+
+```bash
+# Linux/macOS
+CGO_LDFLAGS="-L$HOME/kreuzberg/lib -lkreuzberg_ffi" go build
+
+# Windows (MSVC)
+set CGO_LDFLAGS=-L%USERPROFILE%\kreuzberg\lib -lkreuzberg_ffi
+go build
+```
+
+#### Option 2: Build Static Library Yourself
+
+If pre-built libraries aren't available for your platform:
+
+```bash
+# Clone the repository
+git clone https://github.com/kreuzberg-dev/kreuzberg.git
+cd kreuzberg
+
+# Build the static library
+cargo build -p kreuzberg-ffi --release
+
+# The static library is now at: target/release/libkreuzberg_ffi.a
+# Copy it to a permanent location
+mkdir -p ~/kreuzberg/lib
+cp target/release/libkreuzberg_ffi.a ~/kreuzberg/lib/
+
+# Now you can build Go projects
+cd ~/my-go-project
+CGO_LDFLAGS="-L$HOME/kreuzberg/lib -lkreuzberg_ffi" go build
+```
+
+### System Requirements
+
+#### ONNX Runtime (for embeddings)
+
+If using embeddings functionality, ONNX Runtime must be installed **at build time**:
+
+```bash
+# macOS
+brew install onnxruntime
+
+# Ubuntu/Debian
+sudo apt install libonnxruntime libonnxruntime-dev
+
+# Windows (MSVC)
+scoop install onnxruntime
+# OR download from https://github.com/microsoft/onnxruntime/releases
+```
+
+The resulting binary will have ONNX Runtime statically linked or dynamically linked depending on how the FFI library was built. Check the build configuration.
+
+**Note:** Windows MinGW builds do not support embeddings (ONNX Runtime requires MSVC). Use Windows MSVC for embeddings support.
+
+## Quickstart
 
 ```go
 package main
 
 import (
 	"fmt"
-	"github.com/kreuzberg-dev/kreuzberg/packages/go/pkg/kreuzberg"
+	"log"
+
+	"{{ package_name }}"
 )
 
 func main() {
-	result, err := kreuzberg.ExtractFile("document.pdf")
+	result, err := v4.ExtractFileSync("document.pdf", nil)
 	if err != nil {
-		panic(err)
+		log.Fatalf("extract failed: %v", err)
 	}
 
-	fmt.Println(result.Content)
+	fmt.Println("MIME:", result.MimeType)
+	fmt.Println("First 200 chars:")
+	fmt.Println(result.Content[:200])
 }
 ```
 
-### Async Extraction
+Build and run:
+
+```bash
+# Build (make sure you have the static library available - see Install)
+CGO_LDFLAGS="-L$HOME/kreuzberg/lib -lkreuzberg_ffi" go build
+
+# Run - no library paths needed!
+./myapp
+```
+
+The binary is self-contained and can be distributed without any Kreuzberg library dependencies.
+
+## Examples
+
+### Extract bytes
 
 ```go
-package main
+data, err := os.ReadFile("slides.pptx")
+if err != nil {
+	log.Fatal(err)
+}
+result, err := v4.ExtractBytesSync(data, "application/vnd.openxmlformats-officedocument.presentationml.presentation", nil)
+if err != nil {
+	log.Fatal(err)
+}
+fmt.Println(result.Metadata.FormatType())
+```
 
-import (
-	"context"
-	"fmt"
-	"github.com/kreuzberg-dev/kreuzberg/packages/go/pkg/kreuzberg"
-)
+### Use advanced configuration
 
-func main() {
-	ctx := context.Background()
-	result, err := kreuzberg.ExtractFileContext(ctx, "document.pdf")
-	if err != nil {
-		panic(err)
+```go
+lang := "eng"
+cfg := &v4.ExtractionConfig{
+	UseCache:        true,
+	ForceOCR:        false,
+	ImageExtraction: &v4.ImageExtractionConfig{Enabled: true},
+	OCR: &v4.OcrConfig{
+		Backend: "tesseract",
+		Language: &lang,
+	},
+}
+result, err := v4.ExtractFileSync("scanned.pdf", cfg)
+```
+
+### Async (context-aware) extraction
+
+```go
+ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+defer cancel()
+
+result, err := v4.ExtractFile(ctx, "large.pdf", nil)
+if err != nil {
+	log.Fatal(err)
+}
+fmt.Println("Content length:", len(result.Content))
+```
+
+### Batch extract
+
+```go
+paths := []string{"doc1.pdf", "doc2.docx", "report.xlsx"}
+results, err := v4.BatchExtractFilesSync(paths, nil)
+if err != nil {
+	log.Fatal(err)
+}
+for i, res := range results {
+	if res == nil {
+		continue
 	}
-
-	fmt.Println(result.Content)
+	fmt.Printf("[%d] %s => %d bytes\n", i, res.MimeType, len(res.Content))
 }
 ```
 
-### Batch Processing
+### Register a validator
 
 ```go
-package main
-
-import (
-	"fmt"
-	"github.com/kreuzberg-dev/kreuzberg/packages/go/pkg/kreuzberg"
-)
-
-func main() {
-	files := []string{"doc1.pdf", "doc2.docx", "doc3.xlsx"}
-
-	for _, file := range files {
-		result, err := kreuzberg.ExtractFile(file)
-		if err != nil {
-			fmt.Printf("Error processing %s: %v\n", file, err)
-			continue
-		}
-
-		fmt.Printf("%s: %d characters\n", file, len(result.Content))
-	}
+//export customValidator
+func customValidator(resultJSON *C.char) *C.char {
+	// Validate JSON payload and return an error string (or NULL if ok)
+	return nil
 }
-```
 
-## Configuration
-
-```go
-package main
-
-import (
-	"context"
-	"fmt"
-	"github.com/kreuzberg-dev/kreuzberg/packages/go/pkg/kreuzberg"
-)
-
-func main() {
-	ctx := context.Background()
-
-	config := &kreuzberg.ExtractionConfig{
-		UseCache: true,
-		EnableQualityProcessing: true,
-		OCR: &kreuzberg.OcrConfig{
-			Backend: "tesseract",
-			Language: "eng",
-		},
-	}
-
-	result, err := kreuzberg.ExtractFileWithConfig(ctx, "document.pdf", config)
-	if err != nil {
-		panic(err)
-	}
-
-	fmt.Println(result.Content)
-}
-```
-
-## OCR Support
-
-### Tesseract Configuration
-
-```go
-package main
-
-import (
-	"fmt"
-	"github.com/kreuzberg-dev/kreuzberg/packages/go/pkg/kreuzberg"
-)
-
-func main() {
-	config := &kreuzberg.ExtractionConfig{
-		OCR: &kreuzberg.OcrConfig{
-			Backend: "tesseract",
-			Language: "eng",
-			TesseractConfig: &kreuzberg.TesseractConfig{
-				PSM: 6,
-				EnableTableDetection: true,
-			},
-		},
-	}
-
-	result, err := kreuzberg.ExtractFileWithConfig(nil, "scanned.pdf", config)
-	if err != nil {
-		panic(err)
-	}
-
-	fmt.Println(result.Content)
-}
-```
-
-## Metadata Extraction
-
-```go
-package main
-
-import (
-	"fmt"
-	"github.com/kreuzberg-dev/kreuzberg/packages/go/pkg/kreuzberg"
-)
-
-func main() {
-	result, err := kreuzberg.ExtractFile("document.pdf")
-	if err != nil {
-		panic(err)
-	}
-
-	// Access metadata
-	if metadata, ok := result.Metadata["pdf"].(map[string]interface{}); ok {
-		if title, ok := metadata["title"].(string); ok {
-			fmt.Printf("Title: %s\n", title)
-		}
-	}
-
-	// Access tables
-	for i, table := range result.Tables {
-		fmt.Printf("Table %d:\n%s\n", i, table.Markdown)
+func init() {
+	if err := v4.RegisterValidator("go-validator", 50, (C.ValidatorCallback)(C.customValidator)); err != nil {
+		log.Fatalf("validator registration failed: %v", err)
 	}
 }
 ```
 
 ## API Reference
 
-### Main Functions
-
-- `ExtractFile(filePath string) (*ExtractionResult, error)` – Synchronous extraction
-- `ExtractFileContext(ctx context.Context, filePath string) (*ExtractionResult, error)` – Context-aware extraction
-- `ExtractFileWithConfig(ctx context.Context, filePath string, config *ExtractionConfig) (*ExtractionResult, error)` – With configuration
-- `ExtractBytes(ctx context.Context, data []byte, mimeType string) (*ExtractionResult, error)` – From bytes
-- `BatchExtractFiles(ctx context.Context, filePaths []string) ([]*ExtractionResult, error)` – Batch processing
-
-### Configuration
-
-- `ExtractionConfig` – Main configuration struct
-- `OcrConfig` – OCR settings
-- `TesseractConfig` – Tesseract-specific options
-- `ChunkingConfig` – Text chunking settings
-
-### Result Types
-
-- `ExtractionResult` – Result with `Content`, `Metadata`, `Tables`, `DetectedLanguages`
-- `ExtractedTable` – Table with `Cells`, `Markdown`, `PageNumber`
-
-## Platform-Specific Build Instructions
-
-### Linux/macOS
-
-1. Build the Rust FFI crate:
-   ```bash
-   cargo build -p kreuzberg-ffi --release
-   ```
-
-2. Ensure the library is discoverable:
-   ```bash
-   export LD_LIBRARY_PATH=$PWD/target/release
-   ```
-
-### Windows (MinGW)
-
-1. Build with core feature:
-   ```bash
-   cargo build -p kreuzberg-ffi --release --target x86_64-pc-windows-gnu --no-default-features --features core
-   ```
-
-2. Add to PATH:
-   ```bash
-   set PATH=%PATH%;target\x86_64-pc-windows-gnu\release
-   ```
+- **GoDoc**: [pkg.go.dev/{{ package_name }}](https://pkg.go.dev/{{ package_name }})
+- **Full documentation**: [kreuzberg.dev](https://kreuzberg.dev) (configuration, formats, OCR backends)
 
 ## Troubleshooting
 
-### cgo compilation errors
+| Issue | Fix |
+|-------|-----|
+| `ld returned 1 exit status` or `undefined reference to 'html_to_markdown_...'` | The static library wasn't found. Make sure `CGO_LDFLAGS` points to the directory containing `libkreuzberg_ffi.a`: `CGO_LDFLAGS="-L/path/to/lib -lkreuzberg_ffi" go build` |
+| `cannot find -lkreuzberg_ffi` | The static library file is missing or in the wrong location. Download it from [GitHub Releases](https://github.com/kreuzberg-dev/kreuzberg/releases) or build it yourself: `cargo build -p kreuzberg-ffi --release` |
+| `undefined: v4.ExtractFile` | This function was removed in v4.1.0. Use `ExtractFileSync` and wrap in goroutine if needed (see migration guide) |
+| `Missing dependency: tesseract` | Install the OCR backend and ensure it is on `PATH`. Errors bubble up as `*v4.MissingDependencyError`. |
+| `undefined: C.customValidator` during build | Export the callback with `//export` in a `*_cgo.go` file before using it in `Register*` helpers. |
+| `Missing dependency: onnxruntime` | Install ONNX Runtime at build time: `brew install onnxruntime` (macOS), `apt install libonnxruntime libonnxruntime-dev` (Linux), `scoop install onnxruntime` (Windows). Required for embeddings functionality. |
+| Embeddings not available on Windows MinGW | Windows MinGW builds cannot link ONNX Runtime (MSVC-only). Use Windows MSVC build for embeddings support, or build without embeddings feature. |
 
-Ensure you have the necessary build tools:
+## Testing / Tooling
 
-```bash
-# macOS
-xcode-select --install
+- `task go:lint` – runs `gofmt` and `golangci-lint` (`golangci-lint` pinned to v2.7.2).
+- `task go:test` – executes `go test ./...` (after building the static FFI library).
+- `task e2e:go:verify` – regenerates fixtures via the e2e generator and runs `go test ./...` inside `e2e/go`.
 
-# Ubuntu/Debian
-sudo apt-get install build-essential
-
-# Windows
-# Install GCC via mingw-w64 or use MSVC toolchain
-```
-
-### Library not found at runtime
-
-Set the appropriate library path:
-
-```bash
-# Linux
-export LD_LIBRARY_PATH=$PWD/target/release
-
-# macOS
-export DYLD_FALLBACK_LIBRARY_PATH=$PWD/target/release
-
-# Windows
-set PATH=%PATH%;target\release
-```
-
-## Documentation
-
-For comprehensive documentation, visit [https://kreuzberg.dev](https://kreuzberg.dev)
-
-## License
-
-{{ license }} License - see [LICENSE](../../LICENSE) for details.
+Need help? Join the [Discord](https://discord.gg/pXxagNK2zN) or open an issue with logs, platform info, and the steps you tried.

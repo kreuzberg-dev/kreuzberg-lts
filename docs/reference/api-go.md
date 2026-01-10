@@ -7,36 +7,57 @@ The Go binding exposes the same extraction capabilities as the other languages t
 ## Requirements
 
 - **Go 1.25+** (with cgo support)
-- **Rust toolchain** (builds `kreuzberg-ffi`)
 - **C compiler** (gcc/clang for cgo compilation)
-- **libkreuzberg_ffi** native library (staged in `target/release`)
-- **libpdfium** runtime (auto-discovered via `target/release`)
+- **libkreuzberg_ffi.a** static library (at build time only)
 - **Tesseract/EasyOCR/PaddleOCR** (optional, for OCR functionality)
 
 ## Installation
 
-Add the package to your `go.mod`:
+Kreuzberg Go binaries are **statically linked** — once built, they are self-contained and require no runtime library dependencies. Only the static library is needed at build time.
+
+### Add the package to your `go.mod`:
 
 ```bash title="Terminal"
 go get github.com/kreuzberg-dev/kreuzberg/packages/go/v4@latest
 ```
 
-Build the FFI library and set library paths:
+### Monorepo Development
+
+For development in the Kreuzberg monorepo:
 
 ```bash title="Terminal"
-# Build the FFI crate
+# Build the FFI crate (produces static library)
 cargo build -p kreuzberg-ffi --release
 
-# Configure library path for your platform
-# Linux
-export LD_LIBRARY_PATH=$PWD/target/release:$LD_LIBRARY_PATH
+# Go will automatically link against target/release/libkreuzberg_ffi.a
+cd packages/go/v4
+go build -v
 
-# macOS
-export DYLD_FALLBACK_LIBRARY_PATH=$PWD/target/release:$DYLD_FALLBACK_LIBRARY_PATH
+# Run your binary - no library paths needed, it's statically linked!
+./v4
+```
 
-# Windows
-# Add target\release to PATH environment variable
-set PATH=%CD%\target\release;%PATH%
+### External Projects
+
+When building outside the monorepo, provide the static library via `CGO_LDFLAGS`:
+
+```bash title="Terminal"
+# Option 1: Download pre-built from GitHub Releases
+curl -LO https://github.com/kreuzberg-dev/kreuzberg/releases/download/v4.0.0/go-ffi-linux-x86_64.tar.gz
+tar -xzf go-ffi-linux-x86_64.tar.gz
+mkdir -p ~/kreuzberg/lib
+cp kreuzberg-ffi/lib/libkreuzberg_ffi.a ~/kreuzberg/lib/
+
+# Option 2: Build static library yourself
+git clone https://github.com/kreuzberg-dev/kreuzberg.git
+cd kreuzberg && cargo build -p kreuzberg-ffi --release
+cp target/release/libkreuzberg_ffi.a ~/kreuzberg/lib/
+
+# Build your Go project with static linking
+CGO_LDFLAGS="-L$HOME/kreuzberg/lib -lkreuzberg_ffi" go build
+
+# Run - no library paths needed!
+./myapp
 ```
 
 ## Quickstart
@@ -1173,29 +1194,31 @@ result, err := kreuzberg.ExtractFileSync("doc.pdf", nil)
 result, err := kreuzberg.ExtractBytesSync(data, "application/pdf", nil)
 ```
 
-#### Library Path Configuration
+#### Static Linking Configuration
 
-Set library paths before running your program:
+Go binaries are statically linked against the FFI library, so **no runtime library paths are needed**. Configuration is done at build time:
 
-**Linux:**
-
-```bash title="Terminal"
-export LD_LIBRARY_PATH=$PWD/target/release:$LD_LIBRARY_PATH
-go run main.go
-```
-
-**macOS:**
+**Monorepo Development:**
 
 ```bash title="Terminal"
-export DYLD_FALLBACK_LIBRARY_PATH=$PWD/target/release:$DYLD_FALLBACK_LIBRARY_PATH
-go run main.go
+# Build FFI library first
+cargo build -p kreuzberg-ffi --release
+
+# Go automatically finds target/release/libkreuzberg_ffi.a
+go build -v ./...
+
+# Run directly - no environment variables needed
+./myapp
 ```
 
-**Windows:**
+**External Projects:**
 
-```cmd title="Terminal"
-set PATH=%CD%\target\release;%PATH%
-go run main.go
+```bash title="Terminal"
+# Set CGO_LDFLAGS to point to the static library
+CGO_LDFLAGS="-L$HOME/kreuzberg/lib -lkreuzberg_ffi" go build
+
+# Run directly - no runtime dependencies
+./myapp
 ```
 
 #### Configuration as JSON
@@ -1362,7 +1385,7 @@ if err := kreuzberg.UnregisterValidator("my-validator"); err != nil {
 1. **Batch Processing**: Use `BatchExtractFilesSync()` for multiple files to leverage internal optimizations
 2. **Context Timeouts**: Set realistic timeouts; OCR can be slow on large documents
 3. **Caching**: Enable `UseCache: boolPtr(true)` to cache frequently extracted documents
-4. **Library Paths**: Ensure `LD_LIBRARY_PATH`/`DYLD_FALLBACK_LIBRARY_PATH` is set before Go initialization
+4. **Static Linking**: Binaries are self-contained after build; no runtime library paths needed
 5. **Configuration Reuse**: Create and reuse ExtractionConfig objects across multiple calls
 6. **Goroutines**: Use `ExtractFile()` / `ExtractBytes()` variants in goroutines for concurrency
 
@@ -1370,22 +1393,24 @@ if err := kreuzberg.UnregisterValidator("my-validator"); err != nil {
 
 ## Troubleshooting
 
-### Library Loading Errors
+### Static Library Not Found
 
-**Error:** `cannot open shared object file: No such file or directory`
+**Error:** `cannot find -lkreuzberg_ffi` or `undefined reference to 'kreuzberg_...'`
 
 **Solution:**
 
 ```bash title="Terminal"
-# Verify library exists
-ls -la target/release/libkreuzberg_ffi.*
+# Verify static library exists
+ls -la target/release/libkreuzberg_ffi.a
 
-# Set library path
-export LD_LIBRARY_PATH=$PWD/target/release:$LD_LIBRARY_PATH
+# For monorepo development, just build the FFI crate:
+cargo build -p kreuzberg-ffi --release
 
-# Test with ldd (Linux)
-ldd target/release/libkreuzberg_ffi.so
+# For external projects, provide the path via CGO_LDFLAGS:
+CGO_LDFLAGS="-L$HOME/kreuzberg/lib -lkreuzberg_ffi" go build
 ```
+
+The binary will be statically linked and have no runtime dependencies on Kreuzberg libraries.
 
 ---
 
@@ -1459,8 +1484,8 @@ task go:lint
 # E2E tests (from e2e/go, auto-generated from fixtures)
 task e2e:go:verify
 
-# Manual test with library path
-export LD_LIBRARY_PATH=$PWD/target/release:$LD_LIBRARY_PATH
+# Manual test (build FFI library first)
+cargo build -p kreuzberg-ffi --release
 go test -v ./packages/go/v4
 ```
 

@@ -16,17 +16,24 @@ $TargetDir = "target\x86_64-pc-windows-gnu\release"
 
 Write-Host "=== Staging FFI artifacts to $StagingDir ==="
 
-# Verify required FFI library exists
-if (-not (Test-Path "$TargetDir\kreuzberg_ffi.dll")) {
-    Write-Error "ERROR: kreuzberg_ffi.dll not found in $TargetDir"
+# Stage static library (.a) - required for Go static linking
+$StaticLib = "$TargetDir\libkreuzberg_ffi.a"
+if (Test-Path $StaticLib) {
+    $StaticLibSize = (Get-Item $StaticLib).Length / 1MB
+    Copy-Item $StaticLib "$StagingDir\lib\"
+    Write-Host "✓ Staged static library: libkreuzberg_ffi.a ($([math]::Round($StaticLibSize, 1))MB)"
+} else {
+    Write-Error "ERROR: Static library not found: $StaticLib"
     exit 1
 }
 
-# Copy FFI library (required)
-Copy-Item "$TargetDir\kreuzberg_ffi.dll" "$StagingDir\lib\"
-Write-Host "✓ Staged FFI library: kreuzberg_ffi.dll"
+# Stage dynamic library (.dll) - optional for runtime linking
+if (Test-Path "$TargetDir\kreuzberg_ffi.dll") {
+    Copy-Item "$TargetDir\kreuzberg_ffi.dll" "$StagingDir\lib\"
+    Write-Host "✓ Staged FFI library: kreuzberg_ffi.dll"
+}
 
-# Copy import libraries (required for linking)
+# Copy import libraries (for dynamic linking)
 $ImportLibs = @(Get-ChildItem "$TargetDir\*.dll.a" -ErrorAction SilentlyContinue)
 if ($ImportLibs.Count -gt 0) {
     Copy-Item "$TargetDir\*.dll.a" "$StagingDir\lib\"
