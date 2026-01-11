@@ -110,6 +110,9 @@ jobs:
             find "$OPENSSL_DIR" -name "libssl*" 2>/dev/null | head -5 || echo "No libssl found"
           fi
 
+      - name: Install Task
+        uses: ./.github/actions/install-task
+
       - name: Setup Rust
         uses: ./.github/actions/setup-rust
         with:
@@ -215,9 +218,6 @@ jobs:
         uses: ./.github/actions/setup-onnx-runtime
         with:
           ort-version: ${{ env.ORT_VERSION }}
-
-      - name: Install Task
-        uses: ./.github/actions/install-task
 
       - name: Configure bindgen compatibility headers (Windows)
         if: matrix.os == 'windows-latest'
@@ -507,6 +507,9 @@ jobs:
       - name: Install system dependencies
         uses: ./.github/actions/install-system-deps
 
+      - name: Install Task
+        uses: ./.github/actions/install-task
+
       - name: Setup Rust
         uses: ./.github/actions/setup-rust
         with:
@@ -654,9 +657,6 @@ jobs:
             echo "=== mkmf.log (last 100 lines) ==="
             tail -100 mkmf.log
           fi
-
-      - name: Install Task
-        uses: ./.github/actions/install-task
 
       - name: Build kreuzberg CLI binary
         shell: bash
