@@ -1,4 +1,4 @@
-```typescript
+```typescript title="WASM"
 import { initWasm, batchExtractFiles } from '@kreuzberg/wasm';
 
 await initWasm();

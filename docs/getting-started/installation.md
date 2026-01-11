@@ -141,7 +141,7 @@ yarn add @kreuzberg/wasm
 
 ### Browser Usage
 
-```html
+```html title="index.html"
 <!DOCTYPE html>
 <html>
 <head>
@@ -167,7 +167,7 @@ yarn add @kreuzberg/wasm
 
 ### Deno
 
-```typescript
+```typescript title="main.ts"
 import { initWasm, extractFile } from 'npm:@kreuzberg/wasm';
 
 await initWasm();
@@ -177,7 +177,7 @@ console.log(result.content);
 
 ### Cloudflare Workers
 
-```typescript
+```typescript title="worker.ts"
 import { initWasm, extractBytes } from '@kreuzberg/wasm';
 
 export default {
@@ -197,7 +197,7 @@ export default {
 
 OCR support requires browser Web Workers and additional memory. Enable it selectively:
 
-```typescript
+```typescript title="ocr-example.ts"
 import { initWasm, enableOcr, extractFromFile } from '@kreuzberg/wasm';
 
 await initWasm();

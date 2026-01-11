@@ -1,4 +1,4 @@
-```typescript
+```typescript title="WASM"
 import { initWasm, extractFile } from '@kreuzberg/wasm';
 
 // Initialize WASM module once at app startup

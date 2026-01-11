@@ -333,7 +333,7 @@ config = ExtractionConfig(
 
 **Output Structure:**
 
-```python
+```python title="hierarchy_output.py"
 # Access hierarchy from extraction result
 result = extract_file("document.pdf", config=config)
 
@@ -715,7 +715,7 @@ Rust provides fine-grained control over included components via Cargo features:
 - `cli` - CLI features + common extractors
 
 **Example Cargo.toml:**
-```toml title="Add kreuzberg with specific features enabled"
+```toml title="Cargo.toml"
 [dependencies]
 kreuzberg = { version = "4.0", features = ["pdf", "ocr", "chunking"] }
 ```

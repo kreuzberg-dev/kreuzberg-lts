@@ -1,4 +1,4 @@
-```typescript
+```typescript title="WASM"
 import { enableOcr, extractFromFile, initWasm } from '@kreuzberg/wasm';
 
 await initWasm();

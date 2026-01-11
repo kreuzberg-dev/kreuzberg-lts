@@ -1,4 +1,4 @@
-```typescript
+```typescript title="WASM"
 import { extractBytes, initWasm } from '@kreuzberg/wasm';
 
 await initWasm();

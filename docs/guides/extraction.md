@@ -386,7 +386,7 @@ See [PageConfig documentation](../reference/configuration.md#pageconfig) for con
 
 Optionally insert page markers into the combined content string:
 
-```python
+```python title="Python"
 config = ExtractionConfig(
     pages=PageConfig(
         insert_page_markers=True,

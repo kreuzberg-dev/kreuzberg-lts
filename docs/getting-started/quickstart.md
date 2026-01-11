@@ -236,7 +236,7 @@ When you already have file content in memory:
 
         However, you can use CLI with pipes and temporary files:
 
-        ```bash
+        ```bash title="Terminal"
         # Create temporary file from stdin and extract
         cat data.pdf | kreuzberg extract /dev/stdin
 
@@ -289,7 +289,7 @@ Customize extraction behavior:
 
     Configure extraction behavior via command-line flags or config files:
 
-    ```bash
+    ```bash title="Terminal"
     # Using command-line flags
     kreuzberg extract document.pdf \
       --ocr \
@@ -303,7 +303,7 @@ Customize extraction behavior:
 
     **kreuzberg.toml:**
 
-    ```toml title="TOML"
+    ```toml title="kreuzberg.toml"
     [ocr]
     backend = "tesseract"
     language = "eng"
@@ -322,7 +322,7 @@ Customize extraction behavior:
 
     **kreuzberg.yaml:**
 
-    ```yaml
+    ```yaml title="kreuzberg.yaml"
     ocr:
       backend: tesseract
       language: eng
@@ -383,7 +383,7 @@ Access format-specific metadata from extracted documents:
 
     Extract and parse metadata using JSON output:
 
-    ```bash
+    ```bash title="Terminal"
     # Extract with metadata (JSON format includes metadata automatically)
     kreuzberg extract document.pdf --format json
 
@@ -406,7 +406,7 @@ Access format-specific metadata from extracted documents:
 
     **JSON Output Structure:**
 
-    ```json
+    ```json title="JSON"
     {
       "content": "Extracted text...",
       "metadata": {
@@ -488,7 +488,7 @@ Extract and process tables from documents:
 
     Extract and process tables from documents:
 
-    ```bash
+    ```bash title="Terminal"
     # Extract with JSON format (includes tables when detected)
     kreuzberg extract document.pdf --format json
 
@@ -509,7 +509,7 @@ Extract and process tables from documents:
 
     **JSON Table Structure:**
 
-    ```json
+    ```json title="JSON"
     {
       "content": "...",
       "tables": [
