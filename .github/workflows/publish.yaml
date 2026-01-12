@@ -929,17 +929,18 @@ jobs:
           VERSION: ${{ steps.version.outputs.version }}
           TAG: ${{ needs.prepare.outputs.tag }}
         run: |
-          # Prepare bottle directory structure
-          bottle_dir="/tmp/kreuzberg-bottle"
+          # Prepare bottle directory structure (Homebrew expects kreuzberg/VERSION/...)
+          bottle_root="/tmp/kreuzberg-bottle"
+          bottle_dir="${bottle_root}/kreuzberg/${VERSION}"
           mkdir -p "${bottle_dir}/bin"
 
           # Copy the built binary
           cp target/release/kreuzberg "${bottle_dir}/bin/"
 
-          # Create bottle tarball
-          cd "${bottle_dir}"
+          # Create bottle tarball from the root containing kreuzberg/VERSION/...
+          cd "${bottle_root}"
           bottle_filename="kreuzberg-${VERSION}.${{ matrix.bottle_tag }}.bottle.tar.gz"
-          tar -czf "${bottle_filename}" bin/
+          tar -czf "${bottle_filename}" kreuzberg/
 
           # Calculate SHA256
           sha256=$(shasum -a 256 "${bottle_filename}" | cut -d' ' -f1)

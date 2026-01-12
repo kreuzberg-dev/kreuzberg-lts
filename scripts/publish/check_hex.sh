@@ -16,7 +16,7 @@ attempt=1
 http_code=""
 
 while [ $attempt -le $max_attempts ]; do
-  echo "::debug::Checking Hex.pm for kreuzberg@${version} (attempt ${attempt}/${max_attempts})"
+  echo "Checking Hex.pm for kreuzberg@${version} (attempt ${attempt}/${max_attempts})" >&2
 
   http_code=$(curl \
     --silent \
@@ -35,7 +35,7 @@ while [ $attempt -le $max_attempts ]; do
 
   if [ $attempt -lt $max_attempts ]; then
     sleep_time=$((attempt * 5))
-    echo "::warning::Hex.pm check failed (HTTP $http_code), retrying in ${sleep_time}s..."
+    echo "Warning: Hex.pm check failed (HTTP $http_code), retrying in ${sleep_time}s..." >&2
     sleep "$sleep_time"
   fi
 
@@ -44,11 +44,11 @@ done
 
 if [ "$http_code" = "200" ]; then
   echo "exists=true"
-  echo "::notice::Elixir package kreuzberg@${version} already exists on Hex.pm"
+  echo "Elixir package kreuzberg@${version} already exists on Hex.pm" >&2
 elif [ "$http_code" = "404" ]; then
   echo "exists=false"
-  echo "::notice::Elixir package kreuzberg@${version} not found on Hex.pm, will build and publish"
+  echo "Elixir package kreuzberg@${version} not found on Hex.pm, will build and publish" >&2
 else
-  echo "::error::Failed to check Hex.pm after $max_attempts attempts (last HTTP code: $http_code)"
+  echo "Error: Failed to check Hex.pm after $max_attempts attempts (last HTTP code: $http_code)" >&2
   exit 1
 fi
