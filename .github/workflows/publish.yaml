@@ -2369,6 +2369,10 @@ jobs:
 
       - name: Generate checksums for precompiled NIFs
         working-directory: packages/elixir
+        env:
+          # Skip checksum validation during initial compilation to break circular dependency
+          # Mix compiles before running tasks, but compilation would fail due to empty checksum file
+          RUSTLER_PRECOMPILATION_EXAMPLE_BUILD: "true"
         run: mix rustler_precompiled.download Kreuzberg.Native --all --print
 
       - name: Build documentation
