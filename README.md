@@ -175,7 +175,7 @@ To use embeddings functionality:
 | Category | Formats | Features |
 |----------|---------|----------|
 | **Citations** | `.bib`, `.biblatex`, `.ris`, `.enw`, `.csl` | Bibliography parsing, citation extraction |
-| **Scientific** | `.tex`, `.latex`, `.typst`, `.jats`, `.ipynb`, `.docbook` | LaTeX, Jupyter notebooks, PubMed JATS |
+| **Scientific** | `.tex`, `.latex`, `.typ`, `.jats`, `.ipynb`, `.docbook` | LaTeX, Jupyter notebooks, PubMed JATS |
 | **Documentation** | `.opml`, `.pod`, `.mdoc`, `.troff` | Technical documentation formats |
 
 **[Complete Format Reference →](https://docs.kreuzberg.dev/reference/formats/)**
