@@ -10,6 +10,7 @@
     "@types/node": "^25.0.3"
   },
   "dependencies": {
-    "@kreuzberg/node": "workspace:*"
+    "@kreuzberg/node": "workspace:*",
+    "@kreuzberg/test-utils": "workspace:*"
   }
 }

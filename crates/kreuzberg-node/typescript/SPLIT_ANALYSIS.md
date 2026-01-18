@@ -738,4 +738,3 @@ index.ts (aggregates all above - no dependencies except module exports)
 ### 7. Worker Pool Opaque Handle
 - WorkerPool type is opaque (passed as Record<string, unknown>)
 - Cast only when calling native binding methods
-
