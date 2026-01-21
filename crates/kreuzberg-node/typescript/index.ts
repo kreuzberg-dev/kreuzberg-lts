@@ -103,7 +103,17 @@ export {
 	getLastPanicContext,
 } from "./errors/diagnostics.js";
 export type { PanicContext } from "./errors.js";
-export { ErrorCode, KreuzbergError } from "./errors.js";
+export {
+	CacheError,
+	ErrorCode,
+	ImageProcessingError,
+	KreuzbergError,
+	MissingDependencyError,
+	OcrError,
+	ParsingError,
+	PluginError,
+	ValidationError,
+} from "./errors.js";
 
 // ============================================================================
 // Core Extraction APIs

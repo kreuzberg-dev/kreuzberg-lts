@@ -25,7 +25,23 @@ use crate::kreuzberg_validate_tesseract_oem;
 use crate::kreuzberg_validate_tesseract_psm;
 use crate::kreuzberg_validate_token_reduction_level;
 
-#[allow(dead_code)]
+/// Validate that a MIME type is supported by Kreuzberg.
+///
+/// Checks if a MIME type is in the list of supported formats. Note that any
+/// `image/*` MIME type is automatically considered valid.
+///
+/// # Parameters
+///
+/// * `mime_type` - The MIME type to validate (string)
+///
+/// # Returns
+///
+/// The validated MIME type (may be normalized).
+///
+/// # Errors
+///
+/// Throws an error if the MIME type is not supported.
+#[napi]
 pub fn validate_mime_type(mime_type: String) -> Result<String> {
     kreuzberg::core::mime::validate_mime_type(&mime_type).map_err(convert_error)
 }

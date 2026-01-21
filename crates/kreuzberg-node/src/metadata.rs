@@ -82,3 +82,38 @@ pub fn clear_document_extractors() -> Result<()> {
 pub fn detect_mime_type_from_bytes(bytes: Buffer) -> Result<String> {
     kreuzberg::core::mime::detect_mime_type_from_bytes(bytes.as_ref()).map_err(convert_error)
 }
+
+/// Detect MIME type from a file path.
+///
+/// Determines the MIME type based on the file extension in the provided path.
+/// By default, checks if the file exists; can be disabled with check_exists parameter.
+///
+/// # Parameters
+///
+/// * `path` - The file path to detect MIME type from (e.g., 'document.pdf')
+/// * `check_exists` - Whether to verify the file exists (default: true)
+///
+/// # Returns
+///
+/// The detected MIME type as a string (e.g., 'application/pdf').
+///
+/// # Errors
+///
+/// Throws an error if MIME type cannot be determined from the file extension,
+/// or if check_exists is true and the file does not exist.
+///
+/// # Example
+///
+/// ```typescript
+/// import { detectMimeTypeFromPath } from 'kreuzberg';
+///
+/// // Detect MIME type from existing file
+/// const mimeType = detectMimeTypeFromPath('/path/to/document.pdf');
+///
+/// // Detect without checking file existence
+/// const mimeType2 = detectMimeTypeFromPath('document.docx', false);
+/// ```
+#[napi]
+pub fn detect_mime_type_from_path(path: String, check_exists: Option<bool>) -> Result<String> {
+    kreuzberg::core::mime::detect_mime_type(&path, check_exists.unwrap_or(true)).map_err(convert_error)
+}
