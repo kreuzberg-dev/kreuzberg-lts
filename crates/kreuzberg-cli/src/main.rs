@@ -18,7 +18,14 @@
 //! The CLI supports configuration files in TOML, YAML, or JSON formats:
 //! - Explicit: `--config path/to/config.toml`
 //! - Auto-discovery: Searches for `kreuzberg.{toml,yaml,json}` in current and parent directories
+//! - Inline JSON: `--config-json '{"ocr": {"backend": "tesseract"}}'`
 //! - Command-line flags override config file settings
+//!
+//! Configuration precedence (highest to lowest):
+//! 1. Individual CLI flags (--output-format, --ocr, etc.)
+//! 2. Inline JSON config (--config-json or --config-json-base64)
+//! 3. Config file (--config path.toml)
+//! 4. Default values
 //!
 //! # Exit Codes
 //!
@@ -34,8 +41,11 @@
 //! # Extract with OCR enabled
 //! kreuzberg extract scanned.pdf --ocr true
 //!
+//! # Extract with inline JSON config
+//! kreuzberg extract doc.pdf --config-json '{"ocr":{"backend":"tesseract"}}'
+//!
 //! # Batch processing
-//! kreuzberg batch *.pdf --format json
+//! kreuzberg batch *.pdf --output-format json
 //!
 //! # Detect MIME type
 //! kreuzberg detect unknown-file.bin
@@ -46,12 +56,16 @@
 mod commands;
 
 use anyhow::{Context, Result};
+use base64::{Engine as _, engine::general_purpose::STANDARD};
 use clap::{Parser, Subcommand};
 #[cfg(feature = "mcp")]
 use commands::mcp_command;
 #[cfg(feature = "api")]
 use commands::serve_command;
-use commands::{apply_extraction_overrides, batch_command, clear_command, extract_command, load_config, stats_command};
+use commands::{
+    apply_extraction_overrides, batch_command, clear_command, extract_command, load_config, load_config_from_json,
+    stats_command,
+};
 use kreuzberg::{OutputFormat as ContentOutputFormat, detect_mime_type};
 use serde_json::json;
 use std::path::{Path, PathBuf};
@@ -77,11 +91,25 @@ enum Commands {
         #[arg(short, long)]
         config: Option<PathBuf>,
 
+        /// Inline JSON configuration. Applied after config file but before individual flags.
+        ///
+        /// Example: --config-json '{"ocr":{"backend":"tesseract"},"chunking":{"max_chars":1000}}'
+        #[arg(long)]
+        config_json: Option<String>,
+
+        /// Base64-encoded JSON configuration. Useful for shell environments where quotes are problematic.
+        ///
+        /// Example: --config-json-base64 eyJvY3IiOnsiYmFja2VuZCI6InRlc3NlcmFjdCJ9fQ==
+        #[arg(long)]
+        config_json_base64: Option<String>,
+
         /// MIME type hint (auto-detected if not provided)
         #[arg(short, long)]
         mime_type: Option<String>,
 
-        /// Output format (text or json)
+        /// Output format for CLI results (text or json).
+        ///
+        /// Controls how the CLI displays results, not the extraction content format.
         #[arg(short, long, default_value = "text")]
         format: OutputFormat,
 
@@ -117,11 +145,17 @@ enum Commands {
         #[arg(long)]
         detect_language: Option<bool>,
 
-        /// Content output format (plain, markdown, djot, html)
+        /// Content output format (plain, markdown, djot, html). Canonical flag.
         ///
         /// Controls the format of the extracted content.
         /// Note: This is different from --format which controls CLI output (text/json).
         #[arg(long, value_enum)]
+        output_format: Option<ContentOutputFormatArg>,
+
+        /// Content output format (DEPRECATED: Use --output-format instead).
+        ///
+        /// This flag is maintained for backward compatibility. Use --output-format for new code.
+        #[arg(long, value_enum, hide = true)]
         content_format: Option<ContentOutputFormatArg>,
     },
 
@@ -134,7 +168,21 @@ enum Commands {
         #[arg(short, long)]
         config: Option<PathBuf>,
 
-        /// Output format (text or json)
+        /// Inline JSON configuration. Applied after config file but before individual flags.
+        ///
+        /// Example: --config-json '{"ocr":{"backend":"tesseract"},"chunking":{"max_chars":1000}}'
+        #[arg(long)]
+        config_json: Option<String>,
+
+        /// Base64-encoded JSON configuration. Useful for shell environments where quotes are problematic.
+        ///
+        /// Example: --config-json-base64 eyJvY3IiOnsiYmFja2VuZCI6InRlc3NlcmFjdCJ9fQ==
+        #[arg(long)]
+        config_json_base64: Option<String>,
+
+        /// Output format for CLI results (text or json).
+        ///
+        /// Controls how the CLI displays results, not the extraction content format.
         #[arg(short, long, default_value = "json")]
         format: OutputFormat,
 
@@ -154,11 +202,17 @@ enum Commands {
         #[arg(long)]
         quality: Option<bool>,
 
-        /// Content output format (plain, markdown, djot, html)
+        /// Content output format (plain, markdown, djot, html). Canonical flag.
         ///
         /// Controls the format of the extracted content.
         /// Note: This is different from --format which controls CLI output (text/json).
         #[arg(long, value_enum)]
+        output_format: Option<ContentOutputFormatArg>,
+
+        /// Content output format (DEPRECATED: Use --output-format instead).
+        ///
+        /// This flag is maintained for backward compatibility. Use --output-format for new code.
+        #[arg(long, value_enum, hide = true)]
         content_format: Option<ContentOutputFormatArg>,
     },
 
@@ -400,6 +454,8 @@ fn main() -> Result<()> {
         Commands::Extract {
             path,
             config: config_path,
+            config_json,
+            config_json_base64,
             mime_type,
             format,
             ocr,
@@ -410,12 +466,33 @@ fn main() -> Result<()> {
             chunk_overlap,
             quality,
             detect_language,
+            output_format,
             content_format,
         } => {
             validate_file_exists(&path)?;
             validate_chunk_params(chunk_size, chunk_overlap)?;
 
             let mut config = load_config(config_path)?;
+
+            // Apply inline JSON config if provided
+            if let Some(json_str) = config_json {
+                config = load_config_from_json(&json_str).context("Failed to parse --config-json")?;
+            } else if let Some(base64_str) = config_json_base64 {
+                let json_bytes = STANDARD
+                    .decode(&base64_str)
+                    .context("Failed to decode base64 in --config-json-base64")?;
+                let json_str = String::from_utf8(json_bytes).context("Base64-decoded content is not valid UTF-8")?;
+                config = load_config_from_json(&json_str).context("Failed to parse decoded --config-json-base64")?;
+            }
+
+            // Handle --content-format deprecation (prefer --output-format)
+            let final_output_format = output_format.or_else(|| {
+                if content_format.is_some() {
+                    eprintln!("Warning: --content-format is deprecated, use --output-format instead");
+                }
+                content_format
+            });
+
             apply_extraction_overrides(
                 &mut config,
                 ocr,
@@ -426,7 +503,7 @@ fn main() -> Result<()> {
                 chunk_overlap,
                 quality,
                 detect_language,
-                content_format,
+                final_output_format,
             );
 
             extract_command(path, config, mime_type, format)?;
@@ -435,16 +512,39 @@ fn main() -> Result<()> {
         Commands::Batch {
             paths,
             config: config_path,
+            config_json,
+            config_json_base64,
             format,
             ocr,
             force_ocr,
             no_cache,
             quality,
+            output_format,
             content_format,
         } => {
             validate_batch_paths(&paths)?;
 
             let mut config = load_config(config_path)?;
+
+            // Apply inline JSON config if provided
+            if let Some(json_str) = config_json {
+                config = load_config_from_json(&json_str).context("Failed to parse --config-json")?;
+            } else if let Some(base64_str) = config_json_base64 {
+                let json_bytes = STANDARD
+                    .decode(&base64_str)
+                    .context("Failed to decode base64 in --config-json-base64")?;
+                let json_str = String::from_utf8(json_bytes).context("Base64-decoded content is not valid UTF-8")?;
+                config = load_config_from_json(&json_str).context("Failed to parse decoded --config-json-base64")?;
+            }
+
+            // Handle --content-format deprecation (prefer --output-format)
+            let final_output_format = output_format.or_else(|| {
+                if content_format.is_some() {
+                    eprintln!("Warning: --content-format is deprecated, use --output-format instead");
+                }
+                content_format
+            });
+
             apply_extraction_overrides(
                 &mut config,
                 ocr,
@@ -455,7 +555,7 @@ fn main() -> Result<()> {
                 None,
                 quality,
                 None,
-                content_format,
+                final_output_format,
             );
 
             batch_command(paths, config, format)?;

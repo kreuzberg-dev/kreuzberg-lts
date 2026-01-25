@@ -30,7 +30,8 @@ pub(in crate::mcp) trait ExtractionTool {
         &self,
         Parameters(params): Parameters<ExtractFileParams>,
     ) -> Result<CallToolResult, McpError> {
-        let config = build_config(self.default_config(), params.enable_ocr, params.force_ocr);
+        let config = build_config(self.default_config(), params.config)
+            .map_err(|e| McpError::invalid_params(e, None))?;
 
         let result = if params.r#async {
             extract_file(&params.path, params.mime_type.as_deref(), &config)
@@ -59,7 +60,8 @@ pub(in crate::mcp) trait ExtractionTool {
             .decode(&params.data)
             .map_err(|e| McpError::invalid_params(format!("Invalid base64: {}", e), None))?;
 
-        let config = build_config(self.default_config(), params.enable_ocr, params.force_ocr);
+        let config = build_config(self.default_config(), params.config)
+            .map_err(|e| McpError::invalid_params(e, None))?;
 
         let mime_type = params.mime_type.as_deref().unwrap_or("");
 
@@ -86,7 +88,8 @@ pub(in crate::mcp) trait ExtractionTool {
         &self,
         Parameters(params): Parameters<BatchExtractFilesParams>,
     ) -> Result<CallToolResult, McpError> {
-        let config = build_config(self.default_config(), params.enable_ocr, params.force_ocr);
+        let config = build_config(self.default_config(), params.config)
+            .map_err(|e| McpError::invalid_params(e, None))?;
 
         let results = if params.r#async {
             batch_extract_file(params.paths.clone(), &config)
@@ -153,8 +156,7 @@ mod tests {
         let params = ExtractFileParams {
             path: get_test_path("pdfs_with_tables/tiny.pdf").to_string(),
             mime_type: None,
-            enable_ocr: false,
-            force_ocr: false,
+            config: None,
             r#async: true,
         };
 
@@ -181,8 +183,7 @@ mod tests {
         let params = ExtractFileParams {
             path: get_test_path("pdfs_with_tables/tiny.pdf").to_string(),
             mime_type: None,
-            enable_ocr: false,
-            force_ocr: false,
+            config: None,
             r#async: true,
         };
 
@@ -208,8 +209,7 @@ mod tests {
         let params = ExtractFileParams {
             path: "/nonexistent/file.pdf".to_string(),
             mime_type: None,
-            enable_ocr: false,
-            force_ocr: false,
+            config: None,
             r#async: true,
         };
 
@@ -226,8 +226,7 @@ mod tests {
         let params = ExtractFileParams {
             path: get_test_path("pdfs_with_tables/tiny.pdf").to_string(),
             mime_type: Some("application/pdf".to_string()),
-            enable_ocr: false,
-            force_ocr: false,
+            config: None,
             r#async: true,
         };
 
@@ -246,8 +245,7 @@ mod tests {
         let params = ExtractBytesParams {
             data: encoded,
             mime_type: Some("text/plain".to_string()),
-            enable_ocr: false,
-            force_ocr: false,
+            config: None,
             r#async: true,
         };
 
@@ -274,8 +272,7 @@ mod tests {
         let params = ExtractBytesParams {
             data: "not-valid-base64!!!".to_string(),
             mime_type: None,
-            enable_ocr: false,
-            force_ocr: false,
+            config: None,
             r#async: true,
         };
 
@@ -292,8 +289,7 @@ mod tests {
         let server = TestMcpServer::new();
         let params = BatchExtractFilesParams {
             paths: vec![get_test_path("pdfs_with_tables/tiny.pdf").to_string()],
-            enable_ocr: false,
-            force_ocr: false,
+            config: None,
             r#async: true,
         };
 
@@ -319,8 +315,7 @@ mod tests {
         let server = TestMcpServer::new();
         let params = BatchExtractFilesParams {
             paths: vec![],
-            enable_ocr: false,
-            force_ocr: false,
+            config: None,
             r#async: true,
         };
 
@@ -350,8 +345,7 @@ mod tests {
             let params = ExtractFileParams {
                 path: test_file.to_string(),
                 mime_type: None,
-                enable_ocr: false,
-                force_ocr: false,
+                config: None,
                 r#async: true,
             };
 
@@ -378,8 +372,7 @@ mod tests {
         if std::path::Path::new(&file1).exists() && std::path::Path::new(&file2).exists() {
             let params = BatchExtractFilesParams {
                 paths: vec![file1.to_string(), file2.to_string()],
-                enable_ocr: false,
-                force_ocr: false,
+                config: None,
                 r#async: true,
             };
 

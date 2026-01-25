@@ -80,7 +80,8 @@ impl KreuzbergMcp {
         use super::format::{build_config, format_extraction_result};
         use crate::{extract_file, extract_file_sync};
 
-        let config = build_config(&self.default_config, params.enable_ocr, params.force_ocr);
+        let config =
+            build_config(&self.default_config, params.config).map_err(|e| rmcp::ErrorData::invalid_params(e, None))?;
 
         let result = if params.r#async {
             extract_file(&params.path, params.mime_type.as_deref(), &config)
@@ -114,7 +115,8 @@ impl KreuzbergMcp {
             .decode(&params.data)
             .map_err(|e| rmcp::ErrorData::invalid_params(format!("Invalid base64: {}", e), None))?;
 
-        let config = build_config(&self.default_config, params.enable_ocr, params.force_ocr);
+        let config =
+            build_config(&self.default_config, params.config).map_err(|e| rmcp::ErrorData::invalid_params(e, None))?;
 
         let mime_type = params.mime_type.as_deref().unwrap_or("");
 
@@ -145,7 +147,8 @@ impl KreuzbergMcp {
         use super::format::{build_config, format_extraction_result};
         use crate::{batch_extract_file, batch_extract_file_sync};
 
-        let config = build_config(&self.default_config, params.enable_ocr, params.force_ocr);
+        let config =
+            build_config(&self.default_config, params.config).map_err(|e| rmcp::ErrorData::invalid_params(e, None))?;
 
         let results = if params.r#async {
             batch_extract_file(params.paths.clone(), &config)

@@ -6,23 +6,27 @@ use crate::{ExtractionConfig, ExtractionResult as KreuzbergResult};
 
 /// Build extraction config from MCP parameters.
 ///
-/// Starts with the default config and overlays OCR settings from request parameters.
-pub(super) fn build_config(default_config: &ExtractionConfig, enable_ocr: bool, force_ocr: bool) -> ExtractionConfig {
+/// Merges the provided config JSON (if any) with the default config.
+pub(super) fn build_config(
+    default_config: &ExtractionConfig,
+    config_json: Option<serde_json::Value>,
+) -> Result<ExtractionConfig, String> {
     let mut config = default_config.clone();
 
-    config.ocr = if enable_ocr {
-        Some(crate::OcrConfig {
-            backend: "tesseract".to_string(),
-            language: "eng".to_string(),
-            tesseract_config: None,
-            output_format: None,
-        })
-    } else {
-        None
-    };
-    config.force_ocr = force_ocr;
+    if let Some(json) = config_json {
+        // Attempt to merge the provided config JSON with the default
+        match serde_json::from_value::<ExtractionConfig>(json) {
+            Ok(provided_config) => {
+                // Merge: override default settings with provided config
+                config = provided_config;
+            }
+            Err(e) => {
+                return Err(format!("Invalid extraction config: {}", e));
+            }
+        }
+    }
 
-    config
+    Ok(config)
 }
 
 /// Format extraction result as human-readable text.
@@ -54,20 +58,33 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_build_config() {
+    fn test_build_config_with_no_config() {
         let default_config = ExtractionConfig::default();
 
-        let config = build_config(&default_config, false, false);
-        assert!(config.ocr.is_none());
-        assert!(!config.force_ocr);
+        let config = build_config(&default_config, None).unwrap();
+        assert_eq!(config.use_cache, default_config.use_cache);
+    }
 
-        let config = build_config(&default_config, true, false);
-        assert!(config.ocr.is_some());
-        assert!(!config.force_ocr);
+    #[test]
+    fn test_build_config_with_config_json() {
+        let default_config = ExtractionConfig::default();
+        let config_json = serde_json::json!({
+            "use_cache": false
+        });
 
-        let config = build_config(&default_config, true, true);
-        assert!(config.ocr.is_some());
-        assert!(config.force_ocr);
+        let config = build_config(&default_config, Some(config_json)).unwrap();
+        assert!(!config.use_cache);
+    }
+
+    #[test]
+    fn test_build_config_with_invalid_config_json() {
+        let default_config = ExtractionConfig::default();
+        let config_json = serde_json::json!({
+            "invalid_field": "value"
+        });
+
+        let result = build_config(&default_config, Some(config_json));
+        assert!(result.is_err());
     }
 
     #[test]
@@ -77,31 +94,24 @@ mod tests {
             ..Default::default()
         };
 
-        let config = build_config(&default_config, false, false);
+        let config = build_config(&default_config, None).unwrap();
 
         assert!(!config.use_cache);
     }
 
     #[test]
-    fn test_build_config_ocr_disabled_by_default() {
-        let default_config = ExtractionConfig::default();
+    fn test_build_config_overrides_default_settings() {
+        let default_config = ExtractionConfig {
+            use_cache: true,
+            ..Default::default()
+        };
 
-        let config = build_config(&default_config, false, false);
+        let config_json = serde_json::json!({
+            "use_cache": false
+        });
 
-        assert!(config.ocr.is_none());
-        assert!(!config.force_ocr);
-    }
-
-    #[test]
-    fn test_build_config_ocr_enabled_creates_tesseract_config() {
-        let default_config = ExtractionConfig::default();
-
-        let config = build_config(&default_config, true, false);
-
-        assert!(config.ocr.is_some());
-        let ocr_config = config.ocr.unwrap();
-        assert_eq!(ocr_config.backend, "tesseract");
-        assert_eq!(ocr_config.language, "eng");
+        let config = build_config(&default_config, Some(config_json)).unwrap();
+        assert!(!config.use_cache);
     }
 
     #[test]

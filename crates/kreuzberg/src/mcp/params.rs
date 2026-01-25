@@ -12,12 +12,9 @@ pub struct ExtractFileParams {
     /// Optional MIME type hint (auto-detected if not provided)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub mime_type: Option<String>,
-    /// Enable OCR for scanned documents
-    #[serde(default)]
-    pub enable_ocr: bool,
-    /// Force OCR even if text extraction succeeds
-    #[serde(default)]
-    pub force_ocr: bool,
+    /// Extraction configuration (JSON object)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub config: Option<serde_json::Value>,
     /// Use async extraction (default: false for sync)
     #[serde(default)]
     pub r#async: bool,
@@ -31,12 +28,9 @@ pub struct ExtractBytesParams {
     /// Optional MIME type hint (auto-detected if not provided)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub mime_type: Option<String>,
-    /// Enable OCR for scanned documents
-    #[serde(default)]
-    pub enable_ocr: bool,
-    /// Force OCR even if text extraction succeeds
-    #[serde(default)]
-    pub force_ocr: bool,
+    /// Extraction configuration (JSON object)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub config: Option<serde_json::Value>,
     /// Use async extraction (default: false for sync)
     #[serde(default)]
     pub r#async: bool,
@@ -47,12 +41,9 @@ pub struct ExtractBytesParams {
 pub struct BatchExtractFilesParams {
     /// Paths to files to extract
     pub paths: Vec<String>,
-    /// Enable OCR for scanned documents
-    #[serde(default)]
-    pub enable_ocr: bool,
-    /// Force OCR even if text extraction succeeds
-    #[serde(default)]
-    pub force_ocr: bool,
+    /// Extraction configuration (JSON object)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub config: Option<serde_json::Value>,
     /// Use async extraction (default: false for sync)
     #[serde(default)]
     pub r#async: bool,
@@ -83,8 +74,7 @@ mod tests {
 
         assert_eq!(params.path, "/test.pdf");
         assert_eq!(params.mime_type, None);
-        assert!(!params.enable_ocr);
-        assert!(!params.force_ocr);
+        assert_eq!(params.config, None);
         assert!(!params.r#async);
     }
 
@@ -95,8 +85,7 @@ mod tests {
 
         assert_eq!(params.data, "SGVsbG8=");
         assert_eq!(params.mime_type, None);
-        assert!(!params.enable_ocr);
-        assert!(!params.force_ocr);
+        assert_eq!(params.config, None);
         assert!(!params.r#async);
     }
 
@@ -106,8 +95,7 @@ mod tests {
         let params: BatchExtractFilesParams = serde_json::from_str(json).unwrap();
 
         assert_eq!(params.paths.len(), 2);
-        assert!(!params.enable_ocr);
-        assert!(!params.force_ocr);
+        assert_eq!(params.config, None);
         assert!(!params.r#async);
     }
 
@@ -129,12 +117,20 @@ mod tests {
     }
 
     #[test]
+    fn test_extract_file_params_with_config() {
+        let json = r#"{"path": "/test.pdf", "config": {"use_cache": false}}"#;
+        let params: ExtractFileParams = serde_json::from_str(json).unwrap();
+
+        assert_eq!(params.path, "/test.pdf");
+        assert!(params.config.is_some());
+    }
+
+    #[test]
     fn test_extract_file_params_serialization() {
         let params = ExtractFileParams {
             path: "/test.pdf".to_string(),
             mime_type: Some("application/pdf".to_string()),
-            enable_ocr: true,
-            force_ocr: false,
+            config: Some(serde_json::json!({"use_cache": false})),
             r#async: true,
         };
 
@@ -143,8 +139,7 @@ mod tests {
 
         assert_eq!(params.path, deserialized.path);
         assert_eq!(params.mime_type, deserialized.mime_type);
-        assert_eq!(params.enable_ocr, deserialized.enable_ocr);
-        assert_eq!(params.force_ocr, deserialized.force_ocr);
+        assert_eq!(params.config, deserialized.config);
         assert_eq!(params.r#async, deserialized.r#async);
     }
 
@@ -153,8 +148,7 @@ mod tests {
         let params = ExtractBytesParams {
             data: "SGVsbG8=".to_string(),
             mime_type: None,
-            enable_ocr: false,
-            force_ocr: false,
+            config: None,
             r#async: false,
         };
 
@@ -168,8 +162,7 @@ mod tests {
     fn test_batch_extract_params_serialization() {
         let params = BatchExtractFilesParams {
             paths: vec!["/a.pdf".to_string(), "/b.pdf".to_string()],
-            enable_ocr: true,
-            force_ocr: true,
+            config: Some(serde_json::json!({"use_cache": true})),
             r#async: true,
         };
 
@@ -177,7 +170,7 @@ mod tests {
         let deserialized: BatchExtractFilesParams = serde_json::from_str(&json).unwrap();
 
         assert_eq!(params.paths, deserialized.paths);
-        assert_eq!(params.enable_ocr, deserialized.enable_ocr);
+        assert_eq!(params.config, deserialized.config);
     }
 
     #[test]

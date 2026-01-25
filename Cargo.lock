@@ -3170,6 +3170,7 @@ name = "kreuzberg-cli"
 version = "4.1.2"
 dependencies = [
  "anyhow",
+ "base64 0.22.1",
  "clap",
  "kreuzberg",
  "serde_json",

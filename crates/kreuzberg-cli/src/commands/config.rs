@@ -49,3 +49,32 @@ pub fn load_config(config_path: Option<PathBuf>) -> Result<ExtractionConfig> {
         }
     }
 }
+
+/// Loads extraction configuration from a JSON string.
+///
+/// This function parses a JSON string into an ExtractionConfig struct.
+/// It's useful for command-line inline configuration via --config-json flag.
+///
+/// # Errors
+///
+/// Returns an error if:
+/// - The JSON string is malformed
+/// - The JSON structure doesn't match ExtractionConfig schema
+/// - Required fields are missing or have invalid types
+///
+/// # Example
+///
+/// ```no_run
+/// # use anyhow::Result;
+/// # fn main() -> Result<()> {
+/// use kreuzberg_cli::load_config_from_json;
+///
+/// let config = load_config_from_json(r#"{"ocr":{"backend":"tesseract"}}"#)?;
+/// # Ok(())
+/// # }
+/// ```
+pub fn load_config_from_json(json_str: &str) -> Result<ExtractionConfig> {
+    let config: ExtractionConfig = serde_json::from_str(json_str)
+        .context("Invalid JSON configuration. Ensure the JSON is valid and matches the ExtractionConfig schema.")?;
+    Ok(config)
+}
