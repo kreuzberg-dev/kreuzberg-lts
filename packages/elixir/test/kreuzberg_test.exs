@@ -157,7 +157,7 @@ defmodule KreuzbergTest do
       def initialize, do: :ok
       def shutdown, do: :ok
       def should_validate?(_), do: true
-      def validate(_), do: raise("Validator exception")
+      def validate(_), do: raise RuntimeError, "Validator exception"
     end
 
     defmodule PostProcessorThatFails do
@@ -179,7 +179,7 @@ defmodule KreuzbergTest do
       def processing_stage, do: :middle
       def initialize, do: :ok
       def shutdown, do: :ok
-      def process(_result, _config), do: raise("Processor exception")
+      def process(_result, _config), do: raise RuntimeError, "Processor exception"
     end
 
     defmodule FinalValidatorThatFails do
@@ -203,7 +203,7 @@ defmodule KreuzbergTest do
       def initialize, do: :ok
       def shutdown, do: :ok
       def should_validate?(_), do: true
-      def validate(_), do: raise("Final validator exception")
+      def validate(_), do: raise RuntimeError, "Final validator exception"
     end
 
     test "validator failure aborts extraction" do
