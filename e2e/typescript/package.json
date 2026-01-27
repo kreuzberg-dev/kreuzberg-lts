@@ -9,7 +9,7 @@
     "test:ui": "vitest --ui"
   },
   "dependencies": {
-    "@kreuzberg/node": "4.2.1"
+    "@kreuzberg/node": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^25.0.10",

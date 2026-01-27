@@ -110,8 +110,8 @@ importers:
   e2e/typescript:
     dependencies:
       '@kreuzberg/node':
-        specifier: 4.1.2
-        version: 4.1.2
+        specifier: workspace:*
+        version: link:../../crates/kreuzberg-node
     devDependencies:
       '@types/node':
         specifier: ^25.0.10
@@ -1067,37 +1067,6 @@ packages:
 
   '@jridgewell/trace-mapping@0.3.9':
     resolution: {integrity: sha512-3Belt6tdc8bPgAtbcmdtNJlirVoTmEb5e2gC94PnkwEW9jI6CAHUeoG85tjWP5WquqfavoMtMwiG4P926ZKKuQ==}
-
-  '@kreuzberg/node-darwin-arm64@4.1.2':
-    resolution: {integrity: sha512-eiuz8Z4fh5b/aFxxqThkQI3RdTd5y66WeD3bzR+UQJv0evuKmPfiAtviDrVUBqQpmdxp8m/9u2dqbOz4VkYm6g==}
-    engines: {node: '>= 22'}
-    cpu: [arm64]
-    os: [darwin]
-
-  '@kreuzberg/node-linux-arm64-gnu@4.1.2':
-    resolution: {integrity: sha512-EXoZdqy1zVSPwk+tOJOguv70w8y2j/39DaPAse/eu8/dxmGomh2n4DjPPaG5Y8dfkt2hsJ/0YWisVwxVFgmdLQ==}
-    engines: {node: '>= 22'}
-    cpu: [arm64]
-    os: [linux]
-    libc: [glibc]
-
-  '@kreuzberg/node-linux-x64-gnu@4.1.2':
-    resolution: {integrity: sha512-n/Eg2vsct995mwzY0FxqdgwVtRBEbCqRtKwnCbNvWtimf52CXyycPOoU5yXzfbKJbFHA9ivKPbexhJrqLjdZMA==}
-    engines: {node: '>= 22'}
-    cpu: [x64]
-    os: [linux]
-    libc: [glibc]
-
-  '@kreuzberg/node-win32-x64-msvc@4.1.2':
-    resolution: {integrity: sha512-G3o07owzTs/AEDzFil+WyphDjy7i25CmDjnxw0mGNTN5GcRpSQ3ETZwFKR5I9qHuuIDoW9ac6sxQG60xb2x0iA==}
-    engines: {node: '>= 22'}
-    cpu: [x64]
-    os: [win32]
-
-  '@kreuzberg/node@4.1.2':
-    resolution: {integrity: sha512-sXm+6hLpm33l1iwL9Se89DnWJFr2dH+Vc9X2W/dVaZ/nrecVQ08yITzBfDRYcECsbrbcpNMIfeJI8uHq7Thr6Q==}
-    engines: {node: '>= 22'}
-    hasBin: true
 
   '@napi-rs/cli@3.5.1':
     resolution: {integrity: sha512-XBfLQRDcB3qhu6bazdMJsecWW55kR85l5/k0af9BIBELXQSsCFU0fzug7PX8eQp6vVdm7W/U3z6uP5WmITB2Gw==}
@@ -3914,28 +3883,6 @@ snapshots:
     dependencies:
       '@jridgewell/resolve-uri': 3.1.2
       '@jridgewell/sourcemap-codec': 1.5.5
-
-  '@kreuzberg/node-darwin-arm64@4.1.2':
-    optional: true
-
-  '@kreuzberg/node-linux-arm64-gnu@4.1.2':
-    optional: true
-
-  '@kreuzberg/node-linux-x64-gnu@4.1.2':
-    optional: true
-
-  '@kreuzberg/node-win32-x64-msvc@4.1.2':
-    optional: true
-
-  '@kreuzberg/node@4.1.2':
-    dependencies:
-      '@emnapi/runtime': 1.8.1
-      which: 6.0.0
-    optionalDependencies:
-      '@kreuzberg/node-darwin-arm64': 4.1.2
-      '@kreuzberg/node-linux-arm64-gnu': 4.1.2
-      '@kreuzberg/node-linux-x64-gnu': 4.1.2
-      '@kreuzberg/node-win32-x64-msvc': 4.1.2
 
   '@napi-rs/cli@3.5.1(@emnapi/runtime@1.8.1)(@types/node@25.0.10)':
     dependencies:
