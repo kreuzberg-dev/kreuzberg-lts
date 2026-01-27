@@ -3,9 +3,10 @@
 use e2e_rust::{assertions, resolve_document};
 use kreuzberg::KreuzbergError;
 use kreuzberg::core::config::ExtractionConfig;
-
 #[test]
 fn test_ocr_image_hello_world() {
+    // PNG image with visible English text for OCR validation.
+
     let document_path = resolve_document("images/test_hello_world.png");
     if !document_path.exists() {
         println!(
@@ -48,6 +49,8 @@ fn test_ocr_image_hello_world() {
 
 #[test]
 fn test_ocr_image_no_text() {
+    // Image with no text to ensure OCR handles empty results gracefully.
+
     let document_path = resolve_document("images/flower_no_text.jpg");
     if !document_path.exists() {
         println!(
@@ -89,6 +92,8 @@ fn test_ocr_image_no_text() {
 
 #[test]
 fn test_ocr_pdf_image_only_german() {
+    // Image-only German PDF requiring OCR to extract text.
+
     let document_path = resolve_document("pdfs/image_only_german_pdf.pdf");
     if !document_path.exists() {
         println!(
@@ -134,6 +139,8 @@ fn test_ocr_pdf_image_only_german() {
 
 #[test]
 fn test_ocr_pdf_rotated_90() {
+    // Rotated page PDF requiring OCR to verify orientation handling.
+
     let document_path = resolve_document("pdfs/ocr_test_rotated_90.pdf");
     if !document_path.exists() {
         println!(
@@ -175,6 +182,8 @@ fn test_ocr_pdf_rotated_90() {
 
 #[test]
 fn test_ocr_pdf_tesseract() {
+    // Scanned PDF requires OCR to extract text.
+
     let document_path = resolve_document("pdfs/ocr_test.pdf");
     if !document_path.exists() {
         println!(

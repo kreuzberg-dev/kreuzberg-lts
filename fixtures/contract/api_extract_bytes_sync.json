@@ -1,0 +1,18 @@
+{
+	"id": "api_extract_bytes_sync",
+	"description": "Tests sync bytes extraction API (extract_bytes_sync)",
+	"tags": ["contract", "api"],
+	"document": {
+		"path": "pdfs/fake_memo.pdf"
+	},
+	"extraction": {
+		"method": "sync",
+		"input_type": "bytes",
+		"config": {}
+	},
+	"assertions": {
+		"expected_mime": "application/pdf",
+		"min_content_length": 10,
+		"content_contains_any": ["May 5, 2023", "Mallori"]
+	}
+}

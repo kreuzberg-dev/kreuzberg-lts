@@ -1,0 +1,22 @@
+{
+	"id": "result_format_element_based",
+	"description": "Tests ElementBased result format with element assertions",
+	"tags": ["contract", "result_format"],
+	"document": {
+		"path": "pdfs/fake_memo.pdf"
+	},
+	"extraction": {
+		"method": "sync",
+		"input_type": "file",
+		"config": {
+			"result_format": "element_based"
+		}
+	},
+	"assertions": {
+		"expected_mime": "application/pdf",
+		"result_format_is": "element_based",
+		"elements": {
+			"min_count": 1
+		}
+	}
+}

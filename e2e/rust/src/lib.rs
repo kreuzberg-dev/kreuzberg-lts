@@ -225,6 +225,113 @@ pub mod assertions {
         }
     }
 
+    /// Assert chunk count and properties.
+    pub fn assert_chunks(
+        result: &ExtractionResult,
+        min_count: Option<usize>,
+        max_count: Option<usize>,
+        each_has_content: Option<bool>,
+        each_has_embedding: Option<bool>,
+    ) {
+        let chunks = result.chunks.as_ref().expect("Expected chunks in result");
+        let count = chunks.len();
+
+        if let Some(min) = min_count {
+            assert!(count >= min, "Expected at least {min} chunks, found {count}");
+        }
+
+        if let Some(max) = max_count {
+            assert!(count <= max, "Expected at most {max} chunks, found {count}");
+        }
+
+        if each_has_content == Some(true) {
+            for (i, chunk) in chunks.iter().enumerate() {
+                assert!(!chunk.content.is_empty(), "Expected chunk {i} to have content");
+            }
+        }
+
+        if each_has_embedding == Some(true) {
+            for (i, chunk) in chunks.iter().enumerate() {
+                assert!(
+                    chunk.embedding.is_some() && !chunk.embedding.as_ref().unwrap().is_empty(),
+                    "Expected chunk {i} to have embedding"
+                );
+            }
+        }
+    }
+
+    /// Assert image count and formats.
+    pub fn assert_images(
+        result: &ExtractionResult,
+        min_count: Option<usize>,
+        max_count: Option<usize>,
+        formats_include: Option<&[&str]>,
+    ) {
+        let images = result.images.as_ref().expect("Expected images in result");
+        let count = images.len();
+
+        if let Some(min) = min_count {
+            assert!(count >= min, "Expected at least {min} images, found {count}");
+        }
+
+        if let Some(max) = max_count {
+            assert!(count <= max, "Expected at most {max} images, found {count}");
+        }
+
+        if let Some(formats) = formats_include {
+            for format in formats {
+                let found = images.iter().any(|img| img.format.contains(format));
+                assert!(
+                    found,
+                    "Expected images to include format {format}, found {:?}",
+                    images.iter().map(|img| &img.format).collect::<Vec<_>>()
+                );
+            }
+        }
+    }
+
+    /// Assert page count boundaries.
+    pub fn assert_pages(result: &ExtractionResult, min_count: Option<usize>, exact_count: Option<usize>) {
+        let pages = result.pages.as_ref().expect("Expected pages in result");
+        let count = pages.len();
+
+        if let Some(min) = min_count {
+            assert!(count >= min, "Expected at least {min} pages, found {count}");
+        }
+
+        if let Some(exact) = exact_count {
+            assert!(count == exact, "Expected exactly {exact} pages, found {count}");
+        }
+    }
+
+    /// Assert element count and types.
+    pub fn assert_elements(result: &ExtractionResult, min_count: Option<usize>, types_include: Option<&[&str]>) {
+        let elements = result.elements.as_ref().expect("Expected elements in result");
+        let count = elements.len();
+
+        if let Some(min) = min_count {
+            assert!(count >= min, "Expected at least {min} elements, found {count}");
+        }
+
+        if let Some(types) = types_include {
+            for element_type in types {
+                let found = elements.iter().any(|el| {
+                    format!("{:?}", el.element_type)
+                        .to_lowercase()
+                        .contains(&element_type.to_lowercase())
+                });
+                assert!(
+                    found,
+                    "Expected elements to include type {element_type}, found {:?}",
+                    elements
+                        .iter()
+                        .map(|el| format!("{:?}", el.element_type))
+                        .collect::<Vec<_>>()
+                );
+            }
+        }
+    }
+
     fn lookup_path<'a>(value: &'a Value, path: &str) -> Option<&'a Value> {
         if let Some(found) = lookup_path_inner(value, path) {
             return Some(found);

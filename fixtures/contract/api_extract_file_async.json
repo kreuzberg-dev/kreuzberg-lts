@@ -1,0 +1,18 @@
+{
+	"id": "api_extract_file_async",
+	"description": "Tests async file extraction API (extract_file)",
+	"tags": ["contract", "api"],
+	"document": {
+		"path": "pdfs/fake_memo.pdf"
+	},
+	"extraction": {
+		"method": "async",
+		"input_type": "file",
+		"config": {}
+	},
+	"assertions": {
+		"expected_mime": "application/pdf",
+		"min_content_length": 10,
+		"content_contains_any": ["May 5, 2023", "Mallori"]
+	}
+}

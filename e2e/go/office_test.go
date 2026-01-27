@@ -55,6 +55,12 @@ func TestOfficeOfficeDocxTables(t *testing.T) {
 	assertTableCount(t, result, intPtr(1), nil)
 }
 
+func TestOfficeOfficePpsxSlideshow(t *testing.T) {
+	result := runExtraction(t, "presentations/sample.ppsx", nil)
+	assertExpectedMime(t, result, []string{"application/vnd.openxmlformats-officedocument.presentationml.slideshow"})
+	assertMinContentLength(t, result, 10)
+}
+
 func TestOfficeOfficePptLegacy(t *testing.T) {
 	result := runExtraction(t, "legacy_office/simple.ppt", nil)
 	assertExpectedMime(t, result, []string{"application/vnd.ms-powerpoint"})

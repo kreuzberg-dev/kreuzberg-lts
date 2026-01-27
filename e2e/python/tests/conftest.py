@@ -34,11 +34,15 @@ def pytest_collection_modifyitems(config: pytest.Config, items: list[pytest.Item
         if "test_office" in item.nodeid:
             item.add_marker(pytest.mark.windows_slow)
             # Skip office tests on Windows as they timeout due to LibreOffice conversion issues
-            item.add_marker(pytest.mark.skip(reason="Office tests timeout on Windows due to LibreOffice conversion delays"))
+            item.add_marker(
+                pytest.mark.skip(reason="Office tests timeout on Windows due to LibreOffice conversion delays")
+            )
 
         if "test_ocr" in item.nodeid:
             # Skip OCR tests on Windows due to Tesseract training data not being available
-            item.add_marker(pytest.mark.skip(reason="OCR tests skipped on Windows due to Tesseract training data unavailability"))
+            item.add_marker(
+                pytest.mark.skip(reason="OCR tests skipped on Windows due to Tesseract training data unavailability")
+            )
 
 
 @pytest.fixture(autouse=True)

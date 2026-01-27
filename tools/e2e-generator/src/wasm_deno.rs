@@ -6,7 +6,7 @@ use std::collections::BTreeSet;
 use std::fmt::Write as _;
 use std::fs;
 
-use crate::fixtures::{Assertions, Fixture, WasmTarget};
+use crate::fixtures::{Assertions, ExtractionMethod, Fixture, InputType, WasmTarget};
 
 const DENO_HELPERS_TEMPLATE: &str = r#"import { assertEquals, assertExists } from "@std/assert";
 // @deno-types="../../crates/kreuzberg-wasm/dist/index.d.ts"
@@ -364,6 +364,100 @@ export const assertions = {
             }
         }
     },
+
+    assertChunks(
+        result: ExtractionResult,
+        minCount?: number | null,
+        maxCount?: number | null,
+        eachHasContent?: boolean | null,
+        eachHasEmbedding?: boolean | null,
+    ): void {
+        const chunks = (result as unknown as PlainRecord).chunks as unknown[] | undefined;
+        assertExists(chunks, "Expected chunks to be defined");
+        if (!Array.isArray(chunks)) {
+            throw new Error("Expected chunks to be an array");
+        }
+        if (typeof minCount === "number") {
+            assertEquals(chunks.length >= minCount, true, `Expected at least ${minCount} chunks, got ${chunks.length}`);
+        }
+        if (typeof maxCount === "number") {
+            assertEquals(chunks.length <= maxCount, true, `Expected at most ${maxCount} chunks, got ${chunks.length}`);
+        }
+        if (eachHasContent) {
+            for (const chunk of chunks) {
+                assertExists((chunk as PlainRecord).content, "Chunk missing content");
+            }
+        }
+        if (eachHasEmbedding) {
+            for (const chunk of chunks) {
+                assertExists((chunk as PlainRecord).embedding, "Chunk missing embedding");
+            }
+        }
+    },
+
+    assertImages(
+        result: ExtractionResult,
+        minCount?: number | null,
+        maxCount?: number | null,
+        formatsInclude?: string[] | null,
+    ): void {
+        const images = (result as unknown as PlainRecord).images as unknown[] | undefined;
+        assertExists(images, "Expected images to be defined");
+        if (!Array.isArray(images)) {
+            throw new Error("Expected images to be an array");
+        }
+        if (typeof minCount === "number") {
+            assertEquals(images.length >= minCount, true, `Expected at least ${minCount} images, got ${images.length}`);
+        }
+        if (typeof maxCount === "number") {
+            assertEquals(images.length <= maxCount, true, `Expected at most ${maxCount} images, got ${images.length}`);
+        }
+        if (formatsInclude && formatsInclude.length > 0) {
+            const foundFormats = new Set(images.map((img) => (img as PlainRecord).format));
+            for (const fmt of formatsInclude) {
+                assertEquals(foundFormats.has(fmt), true, `Expected image format ${fmt} not found`);
+            }
+        }
+    },
+
+    assertPages(
+        result: ExtractionResult,
+        minCount?: number | null,
+        exactCount?: number | null,
+    ): void {
+        const pages = (result as unknown as PlainRecord).pages as unknown[] | undefined;
+        assertExists(pages, "Expected pages to be defined");
+        if (!Array.isArray(pages)) {
+            throw new Error("Expected pages to be an array");
+        }
+        if (typeof exactCount === "number") {
+            assertEquals(pages.length, exactCount, `Expected exactly ${exactCount} pages, got ${pages.length}`);
+        }
+        if (typeof minCount === "number") {
+            assertEquals(pages.length >= minCount, true, `Expected at least ${minCount} pages, got ${pages.length}`);
+        }
+    },
+
+    assertElements(
+        result: ExtractionResult,
+        minCount?: number | null,
+        typesInclude?: string[] | null,
+    ): void {
+        const elements = (result as unknown as PlainRecord).elements as unknown[] | undefined;
+        assertExists(elements, "Expected elements to be defined");
+        if (!Array.isArray(elements)) {
+            throw new Error("Expected elements to be an array");
+        }
+        if (typeof minCount === "number") {
+            assertEquals(elements.length >= minCount, true, `Expected at least ${minCount} elements, got ${elements.length}`);
+        }
+        if (typesInclude && typesInclude.length > 0) {
+            const foundTypes = new Set(elements.map((el) => (el as PlainRecord).type));
+            for (const elType of typesInclude) {
+                assertEquals(foundTypes.has(elType), true, `Expected element type ${elType} not found`);
+            }
+        }
+    },
 };
 
 function lookupMetadataPath(metadata: PlainRecord, path: string): unknown {
@@ -496,20 +590,26 @@ fn render_category(category: &str, fixtures: &[&Fixture]) -> Result<String> {
 
 fn render_test(fixture: &Fixture) -> Result<String> {
     let mut body = String::new();
+    let extraction = fixture.extraction();
+    let method = extraction.method;
+    let input_type = extraction.input_type;
 
+    // WASM only supports async extractBytes - all tests are async
+    // We adapt the test pattern based on method and input_type for consistency
     let test_name = &fixture.id;
     writeln!(
         body,
         "Deno.test(\"{test_name}\", {{ permissions: {{ read: true }} }}, async () => {{"
     )?;
 
+    // Read document bytes - Deno always reads as Uint8Array
     writeln!(
         body,
         "    const documentBytes = await resolveDocument(\"{}\");",
         escape_ts_string(&fixture.document().path)
     )?;
 
-    match render_config_expression(&fixture.extraction().config)? {
+    match render_config_expression(&extraction.config)? {
         None => writeln!(body, "    const config = buildConfig(undefined);")?,
         Some(config_expr) => writeln!(body, "    const config = buildConfig({config_expr});")?,
     }
@@ -522,11 +622,80 @@ fn render_test(fixture: &Fixture) -> Result<String> {
         .unwrap_or("application/octet-stream");
     writeln!(body, "    let result: ExtractionResult | null = null;")?;
     writeln!(body, "    try {{")?;
-    writeln!(
-        body,
-        "      result = await extractBytes(documentBytes, \"{}\", config);",
-        escape_ts_string(mime_type)
-    )?;
+
+    // Generate extraction call based on method and input_type
+    // Note: WASM only has extractBytes available, but we document the intent
+    match (method, input_type) {
+        (ExtractionMethod::Sync, InputType::File) => {
+            // Sync file: In WASM, we read the file and use extractBytes (which is async)
+            writeln!(
+                body,
+                "      // Sync file extraction - WASM uses extractBytes with pre-read bytes"
+            )?;
+            writeln!(
+                body,
+                "      result = await extractBytes(documentBytes, \"{}\", config);",
+                escape_ts_string(mime_type)
+            )?;
+        }
+        (ExtractionMethod::Sync, InputType::Bytes) => {
+            // Sync bytes: Read file as Uint8Array and use bytes extraction
+            writeln!(
+                body,
+                "      // Sync bytes extraction - WASM uses extractBytes with Uint8Array"
+            )?;
+            writeln!(
+                body,
+                "      result = await extractBytes(documentBytes, \"{}\", config);",
+                escape_ts_string(mime_type)
+            )?;
+        }
+        (ExtractionMethod::Async, InputType::File) => {
+            // Async file: Use async/await pattern
+            writeln!(body, "      // Async file extraction - native WASM pattern")?;
+            writeln!(
+                body,
+                "      result = await extractBytes(documentBytes, \"{}\", config);",
+                escape_ts_string(mime_type)
+            )?;
+        }
+        (ExtractionMethod::Async, InputType::Bytes) => {
+            // Async bytes: Use async/await with bytes
+            writeln!(body, "      // Async bytes extraction - native WASM pattern")?;
+            writeln!(
+                body,
+                "      result = await extractBytes(documentBytes, \"{}\", config);",
+                escape_ts_string(mime_type)
+            )?;
+        }
+        (ExtractionMethod::BatchSync, InputType::File) | (ExtractionMethod::BatchSync, InputType::Bytes) => {
+            // Batch sync: WASM doesn't have batch methods, simulate with single extraction
+            writeln!(
+                body,
+                "      // Batch sync extraction - WASM simulates with single extraction"
+            )?;
+            writeln!(
+                body,
+                "      const results = [await extractBytes(documentBytes, \"{}\", config)];",
+                escape_ts_string(mime_type)
+            )?;
+            writeln!(body, "      result = results[0];")?;
+        }
+        (ExtractionMethod::BatchAsync, InputType::File) | (ExtractionMethod::BatchAsync, InputType::Bytes) => {
+            // Batch async: WASM doesn't have batch methods, simulate with single extraction
+            writeln!(
+                body,
+                "      // Batch async extraction - WASM simulates with single extraction"
+            )?;
+            writeln!(
+                body,
+                "      const results = [await extractBytes(documentBytes, \"{}\", config)];",
+                escape_ts_string(mime_type)
+            )?;
+            writeln!(body, "      result = results[0];")?;
+        }
+    }
+
     writeln!(body, "    }} catch (error) {{")?;
     if !requirements.is_empty()
         || fixture.skip().notes.is_some()
@@ -630,6 +799,57 @@ fn render_assertions(assertions: &Assertions) -> String {
         }
     }
 
+    if let Some(chunks) = assertions.chunks.as_ref() {
+        let min = chunks.min_count.map(|v| v.to_string()).unwrap_or_else(|| "null".into());
+        let max = chunks.max_count.map(|v| v.to_string()).unwrap_or_else(|| "null".into());
+        let has_content = chunks
+            .each_has_content
+            .map(|v| v.to_string())
+            .unwrap_or_else(|| "null".into());
+        let has_embedding = chunks
+            .each_has_embedding
+            .map(|v| v.to_string())
+            .unwrap_or_else(|| "null".into());
+        buffer.push_str(&format!(
+            "    assertions.assertChunks(result, {min}, {max}, {has_content}, {has_embedding});\n"
+        ));
+    }
+
+    if let Some(images) = assertions.images.as_ref() {
+        let min = images.min_count.map(|v| v.to_string()).unwrap_or_else(|| "null".into());
+        let max = images.max_count.map(|v| v.to_string()).unwrap_or_else(|| "null".into());
+        let formats = images
+            .formats_include
+            .as_ref()
+            .map(|f| render_string_array(f))
+            .unwrap_or_else(|| "null".into());
+        buffer.push_str(&format!(
+            "    assertions.assertImages(result, {min}, {max}, {formats});\n"
+        ));
+    }
+
+    if let Some(pages) = assertions.pages.as_ref() {
+        let min = pages.min_count.map(|v| v.to_string()).unwrap_or_else(|| "null".into());
+        let exact = pages
+            .exact_count
+            .map(|v| v.to_string())
+            .unwrap_or_else(|| "null".into());
+        buffer.push_str(&format!("    assertions.assertPages(result, {min}, {exact});\n"));
+    }
+
+    if let Some(elements) = assertions.elements.as_ref() {
+        let min = elements
+            .min_count
+            .map(|v| v.to_string())
+            .unwrap_or_else(|| "null".into());
+        let types = elements
+            .types_include
+            .as_ref()
+            .map(|t| render_string_array(t))
+            .unwrap_or_else(|| "null".into());
+        buffer.push_str(&format!("    assertions.assertElements(result, {min}, {types});\n"));
+    }
+
     buffer
 }
 
@@ -713,11 +933,8 @@ fn generate_plugin_api_tests(fixtures: &[&Fixture], output_dir: &Utf8Path) -> Re
     )?;
     writeln!(buffer, " */")?;
     writeln!(buffer)?;
-    writeln!(
-        buffer,
-        "import {{ assertEquals, assertExists }} from \"https://deno.land/std@0.224.0/assert/mod.ts\";"
-    )?;
-    writeln!(buffer)?;
+    // Note: We don't import assertions here since plugin API tests are stub implementations.
+    // Once implemented, they should use helpers.ts like the extraction tests.
 
     let mut grouped = fixtures
         .iter()

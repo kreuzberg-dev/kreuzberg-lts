@@ -1,0 +1,566 @@
+// Auto-generated tests for contract fixtures.
+#![allow(clippy::too_many_lines)]
+use e2e_rust::{assertions, resolve_document};
+use kreuzberg::KreuzbergError;
+use kreuzberg::core::config::ExtractionConfig;
+
+#[tokio::test]
+async fn test_api_batch_bytes_async() {
+    // Tests async batch bytes extraction API (batch_extract_bytes)
+
+    let document_path = resolve_document("pdfs/fake_memo.pdf");
+    if !document_path.exists() {
+        println!(
+            "Skipping api_batch_bytes_async: missing document at {}",
+            document_path.display()
+        );
+        return;
+    }
+    let config = ExtractionConfig::default();
+
+    let file_bytes = std::fs::read(&document_path).expect("Failed to read document file");
+    let mime_type = kreuzberg::detect_mime_type(&document_path, true).expect("Failed to detect MIME type");
+
+    let result = match kreuzberg::batch_extract_bytes(vec![(file_bytes.clone(), mime_type.clone())], &config).await {
+        Err(err) => panic!("Extraction failed for api_batch_bytes_async: {err:?}"),
+        Ok(results) => results.into_iter().next().expect("Expected at least one result"),
+    };
+
+    assertions::assert_expected_mime(&result, &["application/pdf"]);
+    assertions::assert_min_content_length(&result, 10);
+    assertions::assert_content_contains_any(&result, &["May 5, 2023", "Mallori"]);
+}
+
+#[test]
+fn test_api_batch_bytes_sync() {
+    // Tests sync batch bytes extraction API (batch_extract_bytes_sync)
+
+    let document_path = resolve_document("pdfs/fake_memo.pdf");
+    if !document_path.exists() {
+        println!(
+            "Skipping api_batch_bytes_sync: missing document at {}",
+            document_path.display()
+        );
+        return;
+    }
+    let config = ExtractionConfig::default();
+
+    let file_bytes = std::fs::read(&document_path).expect("Failed to read document file");
+    let mime_type = kreuzberg::detect_mime_type(&document_path, true).expect("Failed to detect MIME type");
+
+    let result = match kreuzberg::batch_extract_bytes_sync(vec![(file_bytes.clone(), mime_type.clone())], &config) {
+        Err(err) => panic!("Extraction failed for api_batch_bytes_sync: {err:?}"),
+        Ok(results) => results.into_iter().next().expect("Expected at least one result"),
+    };
+
+    assertions::assert_expected_mime(&result, &["application/pdf"]);
+    assertions::assert_min_content_length(&result, 10);
+    assertions::assert_content_contains_any(&result, &["May 5, 2023", "Mallori"]);
+}
+
+#[tokio::test]
+async fn test_api_batch_file_async() {
+    // Tests async batch file extraction API (batch_extract_file)
+
+    let document_path = resolve_document("pdfs/fake_memo.pdf");
+    if !document_path.exists() {
+        println!(
+            "Skipping api_batch_file_async: missing document at {}",
+            document_path.display()
+        );
+        return;
+    }
+    let config = ExtractionConfig::default();
+
+    let result = match kreuzberg::batch_extract_file(vec![document_path.clone()], &config).await {
+        Err(err) => panic!("Extraction failed for api_batch_file_async: {err:?}"),
+        Ok(results) => results.into_iter().next().expect("Expected at least one result"),
+    };
+
+    assertions::assert_expected_mime(&result, &["application/pdf"]);
+    assertions::assert_min_content_length(&result, 10);
+    assertions::assert_content_contains_any(&result, &["May 5, 2023", "Mallori"]);
+}
+
+#[test]
+fn test_api_batch_file_sync() {
+    // Tests sync batch file extraction API (batch_extract_file_sync)
+
+    let document_path = resolve_document("pdfs/fake_memo.pdf");
+    if !document_path.exists() {
+        println!(
+            "Skipping api_batch_file_sync: missing document at {}",
+            document_path.display()
+        );
+        return;
+    }
+    let config = ExtractionConfig::default();
+
+    let result = match kreuzberg::batch_extract_file_sync(vec![document_path.clone()], &config) {
+        Err(err) => panic!("Extraction failed for api_batch_file_sync: {err:?}"),
+        Ok(results) => results.into_iter().next().expect("Expected at least one result"),
+    };
+
+    assertions::assert_expected_mime(&result, &["application/pdf"]);
+    assertions::assert_min_content_length(&result, 10);
+    assertions::assert_content_contains_any(&result, &["May 5, 2023", "Mallori"]);
+}
+
+#[tokio::test]
+async fn test_api_extract_bytes_async() {
+    // Tests async bytes extraction API (extract_bytes)
+
+    let document_path = resolve_document("pdfs/fake_memo.pdf");
+    if !document_path.exists() {
+        println!(
+            "Skipping api_extract_bytes_async: missing document at {}",
+            document_path.display()
+        );
+        return;
+    }
+    let config = ExtractionConfig::default();
+
+    let file_bytes = std::fs::read(&document_path).expect("Failed to read document file");
+    let mime_type = kreuzberg::detect_mime_type(&document_path, true).expect("Failed to detect MIME type");
+
+    let result = match kreuzberg::extract_bytes(&file_bytes, &mime_type, &config).await {
+        Err(err) => panic!("Extraction failed for api_extract_bytes_async: {err:?}"),
+        Ok(result) => result,
+    };
+
+    assertions::assert_expected_mime(&result, &["application/pdf"]);
+    assertions::assert_min_content_length(&result, 10);
+    assertions::assert_content_contains_any(&result, &["May 5, 2023", "Mallori"]);
+}
+
+#[test]
+fn test_api_extract_bytes_sync() {
+    // Tests sync bytes extraction API (extract_bytes_sync)
+
+    let document_path = resolve_document("pdfs/fake_memo.pdf");
+    if !document_path.exists() {
+        println!(
+            "Skipping api_extract_bytes_sync: missing document at {}",
+            document_path.display()
+        );
+        return;
+    }
+    let config = ExtractionConfig::default();
+
+    let file_bytes = std::fs::read(&document_path).expect("Failed to read document file");
+    let mime_type = kreuzberg::detect_mime_type(&document_path, true).expect("Failed to detect MIME type");
+
+    let result = match kreuzberg::extract_bytes_sync(&file_bytes, &mime_type, &config) {
+        Err(err) => panic!("Extraction failed for api_extract_bytes_sync: {err:?}"),
+        Ok(result) => result,
+    };
+
+    assertions::assert_expected_mime(&result, &["application/pdf"]);
+    assertions::assert_min_content_length(&result, 10);
+    assertions::assert_content_contains_any(&result, &["May 5, 2023", "Mallori"]);
+}
+
+#[tokio::test]
+async fn test_api_extract_file_async() {
+    // Tests async file extraction API (extract_file)
+
+    let document_path = resolve_document("pdfs/fake_memo.pdf");
+    if !document_path.exists() {
+        println!(
+            "Skipping api_extract_file_async: missing document at {}",
+            document_path.display()
+        );
+        return;
+    }
+    let config = ExtractionConfig::default();
+
+    let result = match kreuzberg::extract_file(&document_path, None, &config).await {
+        Err(err) => panic!("Extraction failed for api_extract_file_async: {err:?}"),
+        Ok(result) => result,
+    };
+
+    assertions::assert_expected_mime(&result, &["application/pdf"]);
+    assertions::assert_min_content_length(&result, 10);
+    assertions::assert_content_contains_any(&result, &["May 5, 2023", "Mallori"]);
+}
+
+#[test]
+fn test_api_extract_file_sync() {
+    // Tests sync file extraction API (extract_file_sync)
+
+    let document_path = resolve_document("pdfs/fake_memo.pdf");
+    if !document_path.exists() {
+        println!(
+            "Skipping api_extract_file_sync: missing document at {}",
+            document_path.display()
+        );
+        return;
+    }
+    let config = ExtractionConfig::default();
+
+    let result = match kreuzberg::extract_file_sync(&document_path, None, &config) {
+        Err(err) => panic!("Extraction failed for api_extract_file_sync: {err:?}"),
+        Ok(result) => result,
+    };
+
+    assertions::assert_expected_mime(&result, &["application/pdf"]);
+    assertions::assert_min_content_length(&result, 10);
+    assertions::assert_content_contains_any(&result, &["May 5, 2023", "Mallori"]);
+}
+
+#[test]
+fn test_config_chunking() {
+    // Tests chunking configuration with chunk assertions
+
+    let document_path = resolve_document("pdfs/fake_memo.pdf");
+    if !document_path.exists() {
+        println!(
+            "Skipping config_chunking: missing document at {}",
+            document_path.display()
+        );
+        return;
+    }
+    let config: ExtractionConfig = serde_json::from_str(
+        r#"{
+  "chunking": {
+    "max_chars": 500,
+    "overlap": 50
+  }
+}"#,
+    )
+    .expect("Fixture config should deserialize");
+
+    let result = match kreuzberg::extract_file_sync(&document_path, None, &config) {
+        Err(err) => panic!("Extraction failed for config_chunking: {err:?}"),
+        Ok(result) => result,
+    };
+
+    assertions::assert_expected_mime(&result, &["application/pdf"]);
+    assertions::assert_min_content_length(&result, 10);
+    assertions::assert_chunks(&result, Some(1), None, Some(true), None);
+}
+
+#[test]
+fn test_config_force_ocr() {
+    // Tests force_ocr configuration option
+
+    let document_path = resolve_document("pdfs/fake_memo.pdf");
+    if !document_path.exists() {
+        println!(
+            "Skipping config_force_ocr: missing document at {}",
+            document_path.display()
+        );
+        return;
+    }
+    let config: ExtractionConfig = serde_json::from_str(
+        r#"{
+  "force_ocr": true
+}"#,
+    )
+    .expect("Fixture config should deserialize");
+
+    let result = match kreuzberg::extract_file_sync(&document_path, None, &config) {
+        Err(KreuzbergError::MissingDependency(dep)) => {
+            println!("Skipping config_force_ocr: missing dependency {dep}", dep = dep);
+            return;
+        }
+        Err(KreuzbergError::UnsupportedFormat(fmt)) => {
+            println!(
+                "Skipping config_force_ocr: unsupported format {fmt} (requires optional tool)",
+                fmt = fmt
+            );
+            return;
+        }
+        Err(err) => panic!("Extraction failed for config_force_ocr: {err:?}"),
+        Ok(result) => result,
+    };
+
+    assertions::assert_expected_mime(&result, &["application/pdf"]);
+    assertions::assert_min_content_length(&result, 5);
+}
+
+#[test]
+fn test_config_images() {
+    // Tests image extraction configuration with image assertions
+
+    let document_path = resolve_document("pdfs/embedded_images_tables.pdf");
+    if !document_path.exists() {
+        println!(
+            "Skipping config_images: missing document at {}",
+            document_path.display()
+        );
+        return;
+    }
+    let config: ExtractionConfig = serde_json::from_str(
+        r#"{
+  "images": {
+    "extract": true,
+    "format": "png"
+  }
+}"#,
+    )
+    .expect("Fixture config should deserialize");
+
+    let result = match kreuzberg::extract_file_sync(&document_path, None, &config) {
+        Err(err) => panic!("Extraction failed for config_images: {err:?}"),
+        Ok(result) => result,
+    };
+
+    assertions::assert_expected_mime(&result, &["application/pdf"]);
+    assertions::assert_images(&result, Some(1), None, None);
+}
+
+#[test]
+fn test_config_language_detection() {
+    // Tests language detection configuration
+
+    let document_path = resolve_document("pdfs/fake_memo.pdf");
+    if !document_path.exists() {
+        println!(
+            "Skipping config_language_detection: missing document at {}",
+            document_path.display()
+        );
+        return;
+    }
+    let config: ExtractionConfig = serde_json::from_str(
+        r#"{
+  "language_detection": {
+    "enabled": true
+  }
+}"#,
+    )
+    .expect("Fixture config should deserialize");
+
+    let result = match kreuzberg::extract_file_sync(&document_path, None, &config) {
+        Err(err) => panic!("Extraction failed for config_language_detection: {err:?}"),
+        Ok(result) => result,
+    };
+
+    assertions::assert_expected_mime(&result, &["application/pdf"]);
+    assertions::assert_min_content_length(&result, 10);
+    assertions::assert_detected_languages(&result, &["eng"], Some(0.5));
+}
+
+#[test]
+fn test_config_pages() {
+    // Tests page configuration with page assertions
+
+    let document_path = resolve_document("pdfs/multi_page.pdf");
+    if !document_path.exists() {
+        println!("Skipping config_pages: missing document at {}", document_path.display());
+        return;
+    }
+    let config: ExtractionConfig = serde_json::from_str(
+        r#"{
+  "pages": {
+    "end": 3,
+    "start": 1
+  }
+}"#,
+    )
+    .expect("Fixture config should deserialize");
+
+    let result = match kreuzberg::extract_file_sync(&document_path, None, &config) {
+        Err(err) => panic!("Extraction failed for config_pages: {err:?}"),
+        Ok(result) => result,
+    };
+
+    assertions::assert_expected_mime(&result, &["application/pdf"]);
+    assertions::assert_min_content_length(&result, 10);
+}
+
+#[test]
+fn test_config_use_cache_false() {
+    // Tests use_cache=false configuration option
+
+    let document_path = resolve_document("pdfs/fake_memo.pdf");
+    if !document_path.exists() {
+        println!(
+            "Skipping config_use_cache_false: missing document at {}",
+            document_path.display()
+        );
+        return;
+    }
+    let config: ExtractionConfig = serde_json::from_str(
+        r#"{
+  "use_cache": false
+}"#,
+    )
+    .expect("Fixture config should deserialize");
+
+    let result = match kreuzberg::extract_file_sync(&document_path, None, &config) {
+        Err(err) => panic!("Extraction failed for config_use_cache_false: {err:?}"),
+        Ok(result) => result,
+    };
+
+    assertions::assert_expected_mime(&result, &["application/pdf"]);
+    assertions::assert_min_content_length(&result, 10);
+}
+
+#[test]
+fn test_output_format_djot() {
+    // Tests Djot output format
+
+    let document_path = resolve_document("pdfs/fake_memo.pdf");
+    if !document_path.exists() {
+        println!(
+            "Skipping output_format_djot: missing document at {}",
+            document_path.display()
+        );
+        return;
+    }
+    let config: ExtractionConfig = serde_json::from_str(
+        r#"{
+  "output_format": "djot"
+}"#,
+    )
+    .expect("Fixture config should deserialize");
+
+    let result = match kreuzberg::extract_file_sync(&document_path, None, &config) {
+        Err(err) => panic!("Extraction failed for output_format_djot: {err:?}"),
+        Ok(result) => result,
+    };
+
+    assertions::assert_expected_mime(&result, &["application/pdf"]);
+    assertions::assert_min_content_length(&result, 10);
+}
+
+#[test]
+fn test_output_format_html() {
+    // Tests HTML output format
+
+    let document_path = resolve_document("pdfs/fake_memo.pdf");
+    if !document_path.exists() {
+        println!(
+            "Skipping output_format_html: missing document at {}",
+            document_path.display()
+        );
+        return;
+    }
+    let config: ExtractionConfig = serde_json::from_str(
+        r#"{
+  "output_format": "html"
+}"#,
+    )
+    .expect("Fixture config should deserialize");
+
+    let result = match kreuzberg::extract_file_sync(&document_path, None, &config) {
+        Err(err) => panic!("Extraction failed for output_format_html: {err:?}"),
+        Ok(result) => result,
+    };
+
+    assertions::assert_expected_mime(&result, &["application/pdf"]);
+    assertions::assert_min_content_length(&result, 10);
+}
+
+#[test]
+fn test_output_format_markdown() {
+    // Tests Markdown output format
+
+    let document_path = resolve_document("pdfs/fake_memo.pdf");
+    if !document_path.exists() {
+        println!(
+            "Skipping output_format_markdown: missing document at {}",
+            document_path.display()
+        );
+        return;
+    }
+    let config: ExtractionConfig = serde_json::from_str(
+        r#"{
+  "output_format": "markdown"
+}"#,
+    )
+    .expect("Fixture config should deserialize");
+
+    let result = match kreuzberg::extract_file_sync(&document_path, None, &config) {
+        Err(err) => panic!("Extraction failed for output_format_markdown: {err:?}"),
+        Ok(result) => result,
+    };
+
+    assertions::assert_expected_mime(&result, &["application/pdf"]);
+    assertions::assert_min_content_length(&result, 10);
+}
+
+#[test]
+fn test_output_format_plain() {
+    // Tests Plain output format
+
+    let document_path = resolve_document("pdfs/fake_memo.pdf");
+    if !document_path.exists() {
+        println!(
+            "Skipping output_format_plain: missing document at {}",
+            document_path.display()
+        );
+        return;
+    }
+    let config: ExtractionConfig = serde_json::from_str(
+        r#"{
+  "output_format": "plain"
+}"#,
+    )
+    .expect("Fixture config should deserialize");
+
+    let result = match kreuzberg::extract_file_sync(&document_path, None, &config) {
+        Err(err) => panic!("Extraction failed for output_format_plain: {err:?}"),
+        Ok(result) => result,
+    };
+
+    assertions::assert_expected_mime(&result, &["application/pdf"]);
+    assertions::assert_min_content_length(&result, 10);
+}
+
+#[test]
+fn test_result_format_element_based() {
+    // Tests ElementBased result format with element assertions
+
+    let document_path = resolve_document("pdfs/fake_memo.pdf");
+    if !document_path.exists() {
+        println!(
+            "Skipping result_format_element_based: missing document at {}",
+            document_path.display()
+        );
+        return;
+    }
+    let config: ExtractionConfig = serde_json::from_str(
+        r#"{
+  "result_format": "element_based"
+}"#,
+    )
+    .expect("Fixture config should deserialize");
+
+    let result = match kreuzberg::extract_file_sync(&document_path, None, &config) {
+        Err(err) => panic!("Extraction failed for result_format_element_based: {err:?}"),
+        Ok(result) => result,
+    };
+
+    assertions::assert_expected_mime(&result, &["application/pdf"]);
+    assertions::assert_elements(&result, Some(1), None);
+}
+
+#[test]
+fn test_result_format_unified() {
+    // Tests Unified result format (default)
+
+    let document_path = resolve_document("pdfs/fake_memo.pdf");
+    if !document_path.exists() {
+        println!(
+            "Skipping result_format_unified: missing document at {}",
+            document_path.display()
+        );
+        return;
+    }
+    let config: ExtractionConfig = serde_json::from_str(
+        r#"{
+  "result_format": "unified"
+}"#,
+    )
+    .expect("Fixture config should deserialize");
+
+    let result = match kreuzberg::extract_file_sync(&document_path, None, &config) {
+        Err(err) => panic!("Extraction failed for result_format_unified: {err:?}"),
+        Ok(result) => result,
+    };
+
+    assertions::assert_expected_mime(&result, &["application/pdf"]);
+    assertions::assert_min_content_length(&result, 10);
+}

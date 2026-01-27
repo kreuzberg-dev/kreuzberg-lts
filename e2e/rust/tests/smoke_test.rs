@@ -5,6 +5,8 @@ use kreuzberg::core::config::ExtractionConfig;
 
 #[test]
 fn test_smoke_docx_basic() {
+    // Smoke test: DOCX with formatted text
+
     let document_path = resolve_document("documents/fake.docx");
     if !document_path.exists() {
         println!(
@@ -30,6 +32,8 @@ fn test_smoke_docx_basic() {
 
 #[test]
 fn test_smoke_html_basic() {
+    // Smoke test: HTML converted to Markdown
+
     let document_path = resolve_document("web/simple_table.html");
     if !document_path.exists() {
         println!(
@@ -52,6 +56,8 @@ fn test_smoke_html_basic() {
 
 #[test]
 fn test_smoke_image_png() {
+    // Smoke test: PNG image (without OCR, metadata only)
+
     let document_path = resolve_document("images/sample.png");
     if !document_path.exists() {
         println!(
@@ -73,6 +79,8 @@ fn test_smoke_image_png() {
 
 #[test]
 fn test_smoke_json_basic() {
+    // Smoke test: JSON file extraction
+
     let document_path = resolve_document("data_formats/simple.json");
     if !document_path.exists() {
         println!(
@@ -94,6 +102,8 @@ fn test_smoke_json_basic() {
 
 #[test]
 fn test_smoke_pdf_basic() {
+    // Smoke test: PDF with simple text extraction
+
     let document_path = resolve_document("pdfs/fake_memo.pdf");
     if !document_path.exists() {
         println!(
@@ -116,6 +126,8 @@ fn test_smoke_pdf_basic() {
 
 #[test]
 fn test_smoke_txt_basic() {
+    // Smoke test: Plain text file
+
     let document_path = resolve_document("text/report.txt");
     if !document_path.exists() {
         println!(
@@ -137,6 +149,8 @@ fn test_smoke_txt_basic() {
 
 #[test]
 fn test_smoke_xlsx_basic() {
+    // Smoke test: XLSX with basic spreadsheet data including tables
+
     let document_path = resolve_document("spreadsheets/stanley_cups.xlsx");
     if !document_path.exists() {
         println!(

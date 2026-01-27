@@ -1,13 +1,25 @@
 package com.kreuzberg.e2e;
 
+// CHECKSTYLE.OFF: UnusedImports - generated code
+// CHECKSTYLE.OFF: LineLength - generated code
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import dev.kreuzberg.BytesWithMime;
+import dev.kreuzberg.ExtractionResult;
+import dev.kreuzberg.Kreuzberg;
+import dev.kreuzberg.config.ExtractionConfig;
 import org.junit.jupiter.api.Test;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+
+import static org.junit.jupiter.api.Assertions.assertTrue;
+// CHECKSTYLE.ON: UnusedImports
+// CHECKSTYLE.ON: LineLength
 
 /** Auto-generated tests for office fixtures. */
 public class OfficeTest {
@@ -147,6 +159,23 @@ public class OfficeTest {
                 E2EHelpers.Assertions.assertMinContentLength(result, 50);
                 E2EHelpers.Assertions.assertContentContainsAll(result, Arrays.asList("Simple uniform table", "Nested Table", "merged cells", "Header Col"));
                 E2EHelpers.Assertions.assertTableCount(result, 1, null);
+            }
+        );
+    }
+
+    @Test
+    public void officePpsxSlideshow() throws Exception {
+        JsonNode config = null;
+        E2EHelpers.runFixture(
+            "office_ppsx_slideshow",
+            "presentations/sample.ppsx",
+            config,
+            Collections.emptyList(),
+            null,
+            true,
+            result -> {
+                E2EHelpers.Assertions.assertExpectedMime(result, Arrays.asList("application/vnd.openxmlformats-officedocument.presentationml.slideshow"));
+                E2EHelpers.Assertions.assertMinContentLength(result, 10);
             }
         );
     }

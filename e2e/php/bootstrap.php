@@ -51,7 +51,8 @@ spl_autoload_register(function ($class): bool {
 require_once __DIR__ . '/tests/Helpers.php';
 
 // Load the mock extension if the real extension is not available
-if (!extension_loaded('kreuzberg')) {
+// The extension can be named 'kreuzberg' or 'kreuzberg-php' depending on build configuration
+if (!extension_loaded('kreuzberg') && !extension_loaded('kreuzberg-php')) {
     require_once __DIR__ . '/../../packages/php/src/KreuzbergExtensionMock.php';
 }
 

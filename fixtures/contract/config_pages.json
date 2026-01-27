@@ -1,0 +1,22 @@
+{
+	"id": "config_pages",
+	"description": "Tests page configuration with page assertions",
+	"tags": ["contract", "config"],
+	"document": {
+		"path": "pdfs/multi_page.pdf"
+	},
+	"extraction": {
+		"method": "sync",
+		"input_type": "file",
+		"config": {
+			"pages": {
+				"start": 1,
+				"end": 3
+			}
+		}
+	},
+	"assertions": {
+		"expected_mime": "application/pdf",
+		"min_content_length": 10
+	}
+}

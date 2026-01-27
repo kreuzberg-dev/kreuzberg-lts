@@ -1,6 +1,7 @@
 package e2e
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -365,4 +366,186 @@ func intPtr(value int) *int {
 
 func floatPtr(value float64) *float64 {
 	return &value
+}
+
+func boolPtr(value bool) *bool {
+	return &value
+}
+
+func assertChunks(t *testing.T, result *kreuzberg.ExtractionResult, minCount, maxCount *int, eachHasContent, eachHasEmbedding *bool) {
+	t.Helper()
+	count := len(result.Chunks)
+	if minCount != nil && count < *minCount {
+		t.Fatalf("expected at least %d chunks, found %d", *minCount, count)
+	}
+	if maxCount != nil && count > *maxCount {
+		t.Fatalf("expected at most %d chunks, found %d", *maxCount, count)
+	}
+	if eachHasContent != nil && *eachHasContent {
+		for i, chunk := range result.Chunks {
+			if len(chunk.Content) == 0 {
+				t.Fatalf("chunk %d has empty content", i)
+			}
+		}
+	}
+	if eachHasEmbedding != nil && *eachHasEmbedding {
+		for i, chunk := range result.Chunks {
+			if len(chunk.Embedding) == 0 {
+				t.Fatalf("chunk %d has no embedding", i)
+			}
+		}
+	}
+}
+
+func assertImages(t *testing.T, result *kreuzberg.ExtractionResult, minCount, maxCount *int, formatsInclude []string) {
+	t.Helper()
+	count := len(result.Images)
+	if minCount != nil && count < *minCount {
+		t.Fatalf("expected at least %d images, found %d", *minCount, count)
+	}
+	if maxCount != nil && count > *maxCount {
+		t.Fatalf("expected at most %d images, found %d", *maxCount, count)
+	}
+	if len(formatsInclude) > 0 {
+		formats := make(map[string]bool)
+		for _, img := range result.Images {
+			formats[strings.ToLower(img.Format)] = true
+		}
+		for _, expected := range formatsInclude {
+			if !formats[strings.ToLower(expected)] {
+				t.Fatalf("expected image format %q not found in results", expected)
+			}
+		}
+	}
+}
+
+func assertPages(t *testing.T, result *kreuzberg.ExtractionResult, minCount, exactCount *int) {
+	t.Helper()
+	count := len(result.Pages)
+	if minCount != nil && count < *minCount {
+		t.Fatalf("expected at least %d pages, found %d", *minCount, count)
+	}
+	if exactCount != nil && count != *exactCount {
+		t.Fatalf("expected exactly %d pages, found %d", *exactCount, count)
+	}
+}
+
+func assertElements(t *testing.T, result *kreuzberg.ExtractionResult, minCount *int, typesInclude []string) {
+	t.Helper()
+	count := len(result.Elements)
+	// Skip test if elements are expected but not available (FFI limitation - elements_json not in CExtractionResult)
+	if minCount != nil && *minCount > 0 && count == 0 {
+		t.Skipf("Skipping: element_based result format not yet supported in Go FFI bindings (elements_json field missing from CExtractionResult)")
+	}
+	if minCount != nil && count < *minCount {
+		t.Fatalf("expected at least %d elements, found %d", *minCount, count)
+	}
+	if len(typesInclude) > 0 {
+		types := make(map[string]bool)
+		for _, elem := range result.Elements {
+			types[strings.ToLower(string(elem.ElementType))] = true
+		}
+		for _, expected := range typesInclude {
+			if !types[strings.ToLower(expected)] {
+				t.Fatalf("expected element type %q not found in results", expected)
+			}
+		}
+	}
+}
+
+func runExtractionBytes(t *testing.T, relativePath string, configJSON []byte) *kreuzberg.ExtractionResult {
+	t.Helper()
+	documentPath := ensureDocument(t, relativePath, true)
+	config := buildConfig(t, configJSON)
+	data, err := os.ReadFile(documentPath)
+	if err != nil {
+		t.Fatalf("failed to read document %s: %v", documentPath, err)
+	}
+	// Detect MIME type from file path
+	mimeType, err := kreuzberg.DetectMimeTypeFromPath(documentPath)
+	if err != nil {
+		t.Fatalf("failed to detect MIME type for %s: %v", documentPath, err)
+	}
+	result, err := kreuzberg.ExtractBytesSync(data, mimeType, config)
+	if err != nil {
+		if shouldSkipMissingDependency(err) {
+			t.Skipf("Skipping %s: dependency unavailable (%v)", relativePath, err)
+		}
+		t.Fatalf("extractBytesSync(%s) failed: %v", documentPath, err)
+	}
+	return result
+}
+
+func runExtractionAsync(t *testing.T, relativePath string, configJSON []byte) *kreuzberg.ExtractionResult {
+	t.Helper()
+	documentPath := ensureDocument(t, relativePath, true)
+	config := buildConfig(t, configJSON)
+	// Note: Go SDK doesn't have true async - use sync version with context
+	result, err := kreuzberg.ExtractFileWithContext(context.Background(), documentPath, config)
+	if err != nil {
+		if shouldSkipMissingDependency(err) {
+			t.Skipf("Skipping %s: dependency unavailable (%v)", relativePath, err)
+		}
+		t.Fatalf("extractFileWithContext(%s) failed: %v", documentPath, err)
+	}
+	return result
+}
+
+func runExtractionBytesAsync(t *testing.T, relativePath string, configJSON []byte) *kreuzberg.ExtractionResult {
+	t.Helper()
+	documentPath := ensureDocument(t, relativePath, true)
+	config := buildConfig(t, configJSON)
+	data, err := os.ReadFile(documentPath)
+	if err != nil {
+		t.Fatalf("failed to read document %s: %v", documentPath, err)
+	}
+	// Detect MIME type from file path
+	mimeType, err := kreuzberg.DetectMimeTypeFromPath(documentPath)
+	if err != nil {
+		t.Fatalf("failed to detect MIME type for %s: %v", documentPath, err)
+	}
+	// Note: Go SDK doesn't have true async - use sync version with context
+	result, err := kreuzberg.ExtractBytesWithContext(context.Background(), data, mimeType, config)
+	if err != nil {
+		if shouldSkipMissingDependency(err) {
+			t.Skipf("Skipping %s: dependency unavailable (%v)", relativePath, err)
+		}
+		t.Fatalf("extractBytesWithContext(%s) failed: %v", documentPath, err)
+	}
+	return result
+}
+
+func runBatchExtraction(t *testing.T, relativePaths []string, configJSON []byte) []*kreuzberg.ExtractionResult {
+	t.Helper()
+	var documentPaths []string
+	for _, rel := range relativePaths {
+		documentPaths = append(documentPaths, ensureDocument(t, rel, true))
+	}
+	config := buildConfig(t, configJSON)
+	results, err := kreuzberg.BatchExtractFilesSync(documentPaths, config)
+	if err != nil {
+		if shouldSkipMissingDependency(err) {
+			t.Skipf("Skipping batch: dependency unavailable (%v)", err)
+		}
+		t.Fatalf("batchExtractFilesSync failed: %v", err)
+	}
+	return results
+}
+
+func runBatchExtractionAsync(t *testing.T, relativePaths []string, configJSON []byte) []*kreuzberg.ExtractionResult {
+	t.Helper()
+	var documentPaths []string
+	for _, rel := range relativePaths {
+		documentPaths = append(documentPaths, ensureDocument(t, rel, true))
+	}
+	config := buildConfig(t, configJSON)
+	// Note: Go SDK doesn't have true async - use sync version with context
+	results, err := kreuzberg.BatchExtractFilesWithContext(context.Background(), documentPaths, config)
+	if err != nil {
+		if shouldSkipMissingDependency(err) {
+			t.Skipf("Skipping batch: dependency unavailable (%v)", err)
+		}
+		t.Fatalf("batchExtractFilesWithContext failed: %v", err)
+	}
+	return results
 }

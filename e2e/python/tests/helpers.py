@@ -12,8 +12,10 @@ from kreuzberg import (
     ImageExtractionConfig,
     LanguageDetectionConfig,
     OcrConfig,
+    OutputFormat,
     PdfConfig,
     PostProcessorConfig,
+    ResultFormat,
     TokenReductionConfig,
 )
 
@@ -59,6 +61,12 @@ def build_config(config: dict[str, Any] | None) -> ExtractionConfig:
 
     if (postprocessor := config.get("postprocessor")) is not None:
         kwargs["postprocessor"] = PostProcessorConfig(**postprocessor)
+
+    if (output_format := config.get("output_format")) is not None:
+        kwargs["output_format"] = OutputFormat(output_format)
+
+    if (result_format := config.get("result_format")) is not None:
+        kwargs["result_format"] = ResultFormat(result_format)
 
     return ExtractionConfig(**kwargs)
 
@@ -194,27 +202,21 @@ def _lookup_path(metadata: Mapping[str, Any] | None, path: str) -> Any:
     if not isinstance(metadata, Mapping):
         return None
 
-    def _lookup(source: Mapping[str, Any], lookup_path: str) -> Any:
+    def _lookup(source: Mapping[str, Any]) -> Any:
         current: Any = source
-        for segment in lookup_path.split("."):
+        for segment in path.split("."):
             if not isinstance(current, Mapping) or segment not in current:
                 return None
             current = current[segment]
         return current
 
-    direct = _lookup(metadata, path)
+    direct = _lookup(metadata)
     if direct is not None:
         return direct
 
-    # If the path starts with a key that exists in metadata and is a Mapping,
-    # try looking up the same path within that nested structure
-    first_segment = path.split(".")[0]
-    format_metadata = metadata.get(first_segment)
+    format_metadata = metadata.get("format")
     if isinstance(format_metadata, Mapping):
-        # Try to look up the full path within the nested metadata
-        result = _lookup(format_metadata, path)
-        if result is not None:
-            return result
+        return _lookup(format_metadata)
     return None
 
 
@@ -226,3 +228,100 @@ def _values_equal(lhs: Any, rhs: Any) -> bool:
     if isinstance(lhs, bool) and isinstance(rhs, bool):
         return lhs is rhs
     return bool(lhs == rhs)
+
+
+def assert_chunks(
+    result: Any,
+    min_count: int | None = None,
+    max_count: int | None = None,
+    each_has_content: bool | None = None,
+    each_has_embedding: bool | None = None,
+) -> None:
+    chunks = getattr(result, "chunks", None)
+    if chunks is None:
+        pytest.fail("Expected chunks but got None")
+    count = len(chunks)
+    if min_count is not None and count < min_count:
+        pytest.fail(f"Expected at least {min_count} chunks, found {count}")
+    if max_count is not None and count > max_count:
+        pytest.fail(f"Expected at most {max_count} chunks, found {count}")
+    if each_has_content:
+        for i, chunk in enumerate(chunks):
+            if not getattr(chunk, "content", None):
+                pytest.fail(f"Chunk {i} has no content")
+    if each_has_embedding:
+        for i, chunk in enumerate(chunks):
+            if not getattr(chunk, "embedding", None):
+                pytest.fail(f"Chunk {i} has no embedding")
+
+
+def assert_images(
+    result: Any,
+    min_count: int | None = None,
+    max_count: int | None = None,
+    formats_include: list[str] | None = None,
+) -> None:
+    images = getattr(result, "images", None)
+    if images is None:
+        pytest.fail("Expected images but got None")
+    count = len(images)
+    if min_count is not None and count < min_count:
+        pytest.fail(f"Expected at least {min_count} images, found {count}")
+    if max_count is not None and count > max_count:
+        pytest.fail(f"Expected at most {max_count} images, found {count}")
+    if formats_include:
+        found_formats = {getattr(img, "format", None) for img in images}
+        for fmt in formats_include:
+            if fmt not in found_formats:
+                pytest.fail(f"Expected image format {fmt!r} not found in {found_formats}")
+
+
+def assert_pages(
+    result: Any,
+    min_count: int | None = None,
+    exact_count: int | None = None,
+) -> None:
+    pages = getattr(result, "pages", None)
+    if pages is None:
+        pytest.fail("Expected pages but got None")
+    count = len(pages)
+    if exact_count is not None and count != exact_count:
+        pytest.fail(f"Expected exactly {exact_count} pages, found {count}")
+    if min_count is not None and count < min_count:
+        pytest.fail(f"Expected at least {min_count} pages, found {count}")
+
+
+def assert_elements(
+    result: Any,
+    min_count: int | None = None,
+    types_include: list[str] | None = None,
+) -> None:
+    elements = getattr(result, "elements", None)
+    if elements is None:
+        pytest.fail("Expected elements but got None")
+    count = len(elements)
+    if min_count is not None and count < min_count:
+        pytest.fail(f"Expected at least {min_count} elements, found {count}")
+    if types_include:
+        found_types = {getattr(el, "type", None) for el in elements}
+        for el_type in types_include:
+            if el_type not in found_types:
+                pytest.fail(f"Expected element type {el_type!r} not found in {found_types}")
+
+
+def assert_output_format(result: Any, expected: str) -> None:
+    actual = getattr(result, "output_format", None)
+    if actual is None:
+        pytest.fail("Expected output_format but field is None")
+    actual_value = actual.value if hasattr(actual, "value") else str(actual)
+    if actual_value.lower() != expected.lower():
+        pytest.fail(f"Expected output_format {expected!r}, got {actual_value!r}")
+
+
+def assert_result_format(result: Any, expected: str) -> None:
+    actual = getattr(result, "result_format", None)
+    if actual is None:
+        pytest.fail("Expected result_format but field is None")
+    actual_value = actual.value if hasattr(actual, "value") else str(actual)
+    if actual_value.lower() != expected.lower():
+        pytest.fail(f"Expected result_format {expected!r}, got {actual_value!r}")

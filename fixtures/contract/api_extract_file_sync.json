@@ -1,0 +1,18 @@
+{
+	"id": "api_extract_file_sync",
+	"description": "Tests sync file extraction API (extract_file_sync)",
+	"tags": ["contract", "api"],
+	"document": {
+		"path": "pdfs/fake_memo.pdf"
+	},
+	"extraction": {
+		"method": "sync",
+		"input_type": "file",
+		"config": {}
+	},
+	"assertions": {
+		"expected_mime": "application/pdf",
+		"min_content_length": 10,
+		"content_contains_any": ["May 5, 2023", "Mallori"]
+	}
+}

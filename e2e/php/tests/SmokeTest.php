@@ -68,7 +68,7 @@ class SmokeTest extends TestCase
         $result = $kreuzberg->extractFile($documentPath);
 
         Helpers::assertExpectedMime($result, ['image/png']);
-        Helpers::assertMetadataExpectation($result, 'format.format', ['eq' => 'PNG']);
+        Helpers::assertMetadataExpectation($result, 'format', ['eq' => 'PNG']);
     }
 
     /**

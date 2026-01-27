@@ -1,34 +1,29 @@
 // Auto-generated tests for html fixtures.
+// Run with: deno test --allow-read
 
-import type { ExtractionResult } from "./helpers.ts";
 import { assertions, buildConfig, extractBytes, initWasm, resolveDocument, shouldSkipFixture } from "./helpers.ts";
+import type { ExtractionResult } from "./helpers.ts";
 
+// Initialize WASM module once at module load time
 await initWasm();
 
 Deno.test("html_simple_table", { permissions: { read: true } }, async () => {
-	const documentBytes = await resolveDocument("web/simple_table.html");
-	const config = buildConfig(undefined);
-	let result: ExtractionResult | null = null;
-	try {
-		result = await extractBytes(documentBytes, "text/html", config);
-	} catch (error) {
-		if (shouldSkipFixture(error, "html_simple_table", [], undefined)) {
-			return;
-		}
-		throw error;
-	}
-	if (result === null) {
-		return;
-	}
-	assertions.assertExpectedMime(result, ["text/html"]);
-	assertions.assertMinContentLength(result, 100);
-	assertions.assertContentContainsAll(result, [
-		"Product",
-		"Category",
-		"Price",
-		"Stock",
-		"Laptop",
-		"Electronics",
-		"Sample Data Table",
-	]);
+    const documentBytes = await resolveDocument("web/simple_table.html");
+    const config = buildConfig(undefined);
+    let result: ExtractionResult | null = null;
+    try {
+      // Sync file extraction - WASM uses extractBytes with pre-read bytes
+      result = await extractBytes(documentBytes, "text/html", config);
+    } catch (error) {
+      if (shouldSkipFixture(error, "html_simple_table", [], undefined)) {
+        return;
+      }
+      throw error;
+    }
+    if (result === null) {
+      return;
+    }
+    assertions.assertExpectedMime(result, ["text/html"]);
+    assertions.assertMinContentLength(result, 100);
+    assertions.assertContentContainsAll(result, ["Product", "Category", "Price", "Stock", "Laptop", "Electronics", "Sample Data Table"]);
 });

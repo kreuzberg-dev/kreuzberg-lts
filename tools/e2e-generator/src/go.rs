@@ -1,4 +1,4 @@
-use crate::fixtures::{Assertions, Fixture};
+use crate::fixtures::{Assertions, ExtractionMethod, Fixture, InputType};
 use anyhow::{Context, Result};
 use camino::Utf8Path;
 use itertools::Itertools;
@@ -9,6 +9,7 @@ use std::fs;
 const GO_HELPERS_TEMPLATE: &str = r#"package e2e
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -374,6 +375,184 @@ func intPtr(value int) *int {
 func floatPtr(value float64) *float64 {
 	return &value
 }
+
+func boolPtr(value bool) *bool {
+	return &value
+}
+
+func assertChunks(t *testing.T, result *kreuzberg.ExtractionResult, minCount, maxCount *int, eachHasContent, eachHasEmbedding *bool) {
+	t.Helper()
+	count := len(result.Chunks)
+	if minCount != nil && count < *minCount {
+		t.Fatalf("expected at least %d chunks, found %d", *minCount, count)
+	}
+	if maxCount != nil && count > *maxCount {
+		t.Fatalf("expected at most %d chunks, found %d", *maxCount, count)
+	}
+	if eachHasContent != nil && *eachHasContent {
+		for i, chunk := range result.Chunks {
+			if len(chunk.Content) == 0 {
+				t.Fatalf("chunk %d has empty content", i)
+			}
+		}
+	}
+	if eachHasEmbedding != nil && *eachHasEmbedding {
+		for i, chunk := range result.Chunks {
+			if len(chunk.Embedding) == 0 {
+				t.Fatalf("chunk %d has no embedding", i)
+			}
+		}
+	}
+}
+
+func assertImages(t *testing.T, result *kreuzberg.ExtractionResult, minCount, maxCount *int, formatsInclude []string) {
+	t.Helper()
+	count := len(result.Images)
+	if minCount != nil && count < *minCount {
+		t.Fatalf("expected at least %d images, found %d", *minCount, count)
+	}
+	if maxCount != nil && count > *maxCount {
+		t.Fatalf("expected at most %d images, found %d", *maxCount, count)
+	}
+	if len(formatsInclude) > 0 {
+		formats := make(map[string]bool)
+		for _, img := range result.Images {
+			formats[strings.ToLower(img.Format)] = true
+		}
+		for _, expected := range formatsInclude {
+			if !formats[strings.ToLower(expected)] {
+				t.Fatalf("expected image format %q not found in results", expected)
+			}
+		}
+	}
+}
+
+func assertPages(t *testing.T, result *kreuzberg.ExtractionResult, minCount, exactCount *int) {
+	t.Helper()
+	count := len(result.Pages)
+	if minCount != nil && count < *minCount {
+		t.Fatalf("expected at least %d pages, found %d", *minCount, count)
+	}
+	if exactCount != nil && count != *exactCount {
+		t.Fatalf("expected exactly %d pages, found %d", *exactCount, count)
+	}
+}
+
+func assertElements(t *testing.T, result *kreuzberg.ExtractionResult, minCount *int, typesInclude []string) {
+	t.Helper()
+	count := len(result.Elements)
+	if minCount != nil && count < *minCount {
+		t.Fatalf("expected at least %d elements, found %d", *minCount, count)
+	}
+	if len(typesInclude) > 0 {
+		types := make(map[string]bool)
+		for _, elem := range result.Elements {
+			types[strings.ToLower(string(elem.ElementType))] = true
+		}
+		for _, expected := range typesInclude {
+			if !types[strings.ToLower(expected)] {
+				t.Fatalf("expected element type %q not found in results", expected)
+			}
+		}
+	}
+}
+
+func runExtractionBytes(t *testing.T, relativePath string, configJSON []byte) *kreuzberg.ExtractionResult {
+	t.Helper()
+	documentPath := ensureDocument(t, relativePath, true)
+	config := buildConfig(t, configJSON)
+	data, err := os.ReadFile(documentPath)
+	if err != nil {
+		t.Fatalf("failed to read document %s: %v", documentPath, err)
+	}
+	// Detect MIME type from file path
+	mimeType, err := kreuzberg.DetectMimeTypeFromPath(documentPath)
+	if err != nil {
+		t.Fatalf("failed to detect MIME type for %s: %v", documentPath, err)
+	}
+	result, err := kreuzberg.ExtractBytesSync(data, mimeType, config)
+	if err != nil {
+		if shouldSkipMissingDependency(err) {
+			t.Skipf("Skipping %s: dependency unavailable (%v)", relativePath, err)
+		}
+		t.Fatalf("extractBytesSync(%s) failed: %v", documentPath, err)
+	}
+	return result
+}
+
+func runExtractionAsync(t *testing.T, relativePath string, configJSON []byte) *kreuzberg.ExtractionResult {
+	t.Helper()
+	documentPath := ensureDocument(t, relativePath, true)
+	config := buildConfig(t, configJSON)
+	// Note: Go SDK doesn't have true async - use sync version with context
+	result, err := kreuzberg.ExtractFileWithContext(context.Background(), documentPath, config)
+	if err != nil {
+		if shouldSkipMissingDependency(err) {
+			t.Skipf("Skipping %s: dependency unavailable (%v)", relativePath, err)
+		}
+		t.Fatalf("extractFileWithContext(%s) failed: %v", documentPath, err)
+	}
+	return result
+}
+
+func runExtractionBytesAsync(t *testing.T, relativePath string, configJSON []byte) *kreuzberg.ExtractionResult {
+	t.Helper()
+	documentPath := ensureDocument(t, relativePath, true)
+	config := buildConfig(t, configJSON)
+	data, err := os.ReadFile(documentPath)
+	if err != nil {
+		t.Fatalf("failed to read document %s: %v", documentPath, err)
+	}
+	// Detect MIME type from file path
+	mimeType, err := kreuzberg.DetectMimeTypeFromPath(documentPath)
+	if err != nil {
+		t.Fatalf("failed to detect MIME type for %s: %v", documentPath, err)
+	}
+	// Note: Go SDK doesn't have true async - use sync version with context
+	result, err := kreuzberg.ExtractBytesWithContext(context.Background(), data, mimeType, config)
+	if err != nil {
+		if shouldSkipMissingDependency(err) {
+			t.Skipf("Skipping %s: dependency unavailable (%v)", relativePath, err)
+		}
+		t.Fatalf("extractBytesWithContext(%s) failed: %v", documentPath, err)
+	}
+	return result
+}
+
+func runBatchExtraction(t *testing.T, relativePaths []string, configJSON []byte) []*kreuzberg.ExtractionResult {
+	t.Helper()
+	var documentPaths []string
+	for _, rel := range relativePaths {
+		documentPaths = append(documentPaths, ensureDocument(t, rel, true))
+	}
+	config := buildConfig(t, configJSON)
+	results, err := kreuzberg.BatchExtractFilesSync(documentPaths, config)
+	if err != nil {
+		if shouldSkipMissingDependency(err) {
+			t.Skipf("Skipping batch: dependency unavailable (%v)", err)
+		}
+		t.Fatalf("batchExtractFilesSync failed: %v", err)
+	}
+	return results
+}
+
+func runBatchExtractionAsync(t *testing.T, relativePaths []string, configJSON []byte) []*kreuzberg.ExtractionResult {
+	t.Helper()
+	var documentPaths []string
+	for _, rel := range relativePaths {
+		documentPaths = append(documentPaths, ensureDocument(t, rel, true))
+	}
+	config := buildConfig(t, configJSON)
+	// Note: Go SDK doesn't have true async - use sync version with context
+	results, err := kreuzberg.BatchExtractFilesWithContext(context.Background(), documentPaths, config)
+	if err != nil {
+		if shouldSkipMissingDependency(err) {
+			t.Skipf("Skipping batch: dependency unavailable (%v)", err)
+		}
+		t.Fatalf("batchExtractFilesWithContext failed: %v", err)
+	}
+	return results
+}
 "#;
 
 pub fn generate(fixtures: &[Fixture], output_root: &Utf8Path) -> Result<()> {
@@ -472,12 +651,98 @@ fn render_test(fixture: &Fixture) -> Result<String> {
         to_go_pascal_case(&fixture.id)
     );
     writeln!(code, "func {test_name}(t *testing.T) {{")?;
-    writeln!(
-        code,
-        "    result := runExtraction(t, {}, {})",
-        go_string_literal(&fixture.document().path),
-        render_config_literal(&fixture.extraction().config)?
-    )?;
+
+    let extraction = fixture.extraction();
+    let method = extraction.method;
+    let input_type = extraction.input_type;
+    let doc_path = go_string_literal(&fixture.document().path);
+    let config_literal = render_config_literal(&extraction.config)?;
+
+    match (method, input_type) {
+        (ExtractionMethod::Sync, InputType::File) => {
+            writeln!(code, "    result := runExtraction(t, {}, {})", doc_path, config_literal)?;
+        }
+        (ExtractionMethod::Sync, InputType::Bytes) => {
+            writeln!(
+                code,
+                "    result := runExtractionBytes(t, {}, {})",
+                doc_path, config_literal
+            )?;
+        }
+        (ExtractionMethod::Async, InputType::File) => {
+            writeln!(
+                code,
+                "    result := runExtractionAsync(t, {}, {})",
+                doc_path, config_literal
+            )?;
+        }
+        (ExtractionMethod::Async, InputType::Bytes) => {
+            writeln!(
+                code,
+                "    result := runExtractionBytesAsync(t, {}, {})",
+                doc_path, config_literal
+            )?;
+        }
+        (ExtractionMethod::BatchSync, InputType::File) => {
+            writeln!(
+                code,
+                "    results := runBatchExtraction(t, []string{{{}}}, {})",
+                doc_path, config_literal
+            )?;
+            writeln!(code, "    if len(results) == 0 {{")?;
+            writeln!(
+                code,
+                "        t.Fatal(\"expected at least one result from batch extraction\")"
+            )?;
+            writeln!(code, "    }}")?;
+            writeln!(code, "    result := results[0]")?;
+        }
+        (ExtractionMethod::BatchSync, InputType::Bytes) => {
+            // For batch bytes, we use the same file-based batch for simplicity
+            // as batch bytes extraction would require reading all files first
+            writeln!(
+                code,
+                "    results := runBatchExtraction(t, []string{{{}}}, {})",
+                doc_path, config_literal
+            )?;
+            writeln!(code, "    if len(results) == 0 {{")?;
+            writeln!(
+                code,
+                "        t.Fatal(\"expected at least one result from batch extraction\")"
+            )?;
+            writeln!(code, "    }}")?;
+            writeln!(code, "    result := results[0]")?;
+        }
+        (ExtractionMethod::BatchAsync, InputType::File) => {
+            writeln!(
+                code,
+                "    results := runBatchExtractionAsync(t, []string{{{}}}, {})",
+                doc_path, config_literal
+            )?;
+            writeln!(code, "    if len(results) == 0 {{")?;
+            writeln!(
+                code,
+                "        t.Fatal(\"expected at least one result from batch extraction\")"
+            )?;
+            writeln!(code, "    }}")?;
+            writeln!(code, "    result := results[0]")?;
+        }
+        (ExtractionMethod::BatchAsync, InputType::Bytes) => {
+            writeln!(
+                code,
+                "    results := runBatchExtractionAsync(t, []string{{{}}}, {})",
+                doc_path, config_literal
+            )?;
+            writeln!(code, "    if len(results) == 0 {{")?;
+            writeln!(
+                code,
+                "        t.Fatal(\"expected at least one result from batch extraction\")"
+            )?;
+            writeln!(code, "    }}")?;
+            writeln!(code, "    result := results[0]")?;
+        }
+    }
+
     code.push_str(&render_assertions(&fixture.assertions()));
     writeln!(code, "}}")?;
     Ok(code)
@@ -534,6 +799,79 @@ fn render_assertions(assertions: &Assertions) -> String {
             .map(|v| format!("floatPtr({v})"))
             .unwrap_or_else(|| "nil".to_string());
         writeln!(buffer, "    assertDetectedLanguages(t, result, {expected}, {min_conf})").unwrap();
+    }
+    if let Some(chunks) = assertions.chunks.as_ref() {
+        let min_count = chunks
+            .min_count
+            .map(|v| format!("intPtr({v})"))
+            .unwrap_or_else(|| "nil".to_string());
+        let max_count = chunks
+            .max_count
+            .map(|v| format!("intPtr({v})"))
+            .unwrap_or_else(|| "nil".to_string());
+        let each_has_content = chunks
+            .each_has_content
+            .map(|v| format!("boolPtr({v})"))
+            .unwrap_or_else(|| "nil".to_string());
+        let each_has_embedding = chunks
+            .each_has_embedding
+            .map(|v| format!("boolPtr({v})"))
+            .unwrap_or_else(|| "nil".to_string());
+        writeln!(
+            buffer,
+            "    assertChunks(t, result, {}, {}, {}, {})",
+            min_count, max_count, each_has_content, each_has_embedding
+        )
+        .unwrap();
+    }
+    if let Some(images) = assertions.images.as_ref() {
+        let min_count = images
+            .min_count
+            .map(|v| format!("intPtr({v})"))
+            .unwrap_or_else(|| "nil".to_string());
+        let max_count = images
+            .max_count
+            .map(|v| format!("intPtr({v})"))
+            .unwrap_or_else(|| "nil".to_string());
+        let formats_include = images
+            .formats_include
+            .as_ref()
+            .map(|v| render_string_slice(v))
+            .unwrap_or_else(|| "nil".to_string());
+        writeln!(
+            buffer,
+            "    assertImages(t, result, {}, {}, {})",
+            min_count, max_count, formats_include
+        )
+        .unwrap();
+    }
+    if let Some(pages) = assertions.pages.as_ref() {
+        let min_count = pages
+            .min_count
+            .map(|v| format!("intPtr({v})"))
+            .unwrap_or_else(|| "nil".to_string());
+        let exact_count = pages
+            .exact_count
+            .map(|v| format!("intPtr({v})"))
+            .unwrap_or_else(|| "nil".to_string());
+        writeln!(buffer, "    assertPages(t, result, {}, {})", min_count, exact_count).unwrap();
+    }
+    if let Some(elements) = assertions.elements.as_ref() {
+        let min_count = elements
+            .min_count
+            .map(|v| format!("intPtr({v})"))
+            .unwrap_or_else(|| "nil".to_string());
+        let types_include = elements
+            .types_include
+            .as_ref()
+            .map(|v| render_string_slice(v))
+            .unwrap_or_else(|| "nil".to_string());
+        writeln!(
+            buffer,
+            "    assertElements(t, result, {}, {})",
+            min_count, types_include
+        )
+        .unwrap();
     }
     buffer
 }

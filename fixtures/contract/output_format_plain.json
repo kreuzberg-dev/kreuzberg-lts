@@ -1,0 +1,20 @@
+{
+	"id": "output_format_plain",
+	"description": "Tests Plain output format",
+	"tags": ["contract", "output_format"],
+	"document": {
+		"path": "pdfs/fake_memo.pdf"
+	},
+	"extraction": {
+		"method": "sync",
+		"input_type": "file",
+		"config": {
+			"output_format": "plain"
+		}
+	},
+	"assertions": {
+		"expected_mime": "application/pdf",
+		"min_content_length": 10,
+		"output_format_is": "plain"
+	}
+}

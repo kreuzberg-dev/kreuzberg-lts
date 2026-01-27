@@ -1,13 +1,25 @@
 package com.kreuzberg.e2e;
 
+// CHECKSTYLE.OFF: UnusedImports - generated code
+// CHECKSTYLE.OFF: LineLength - generated code
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import dev.kreuzberg.BytesWithMime;
+import dev.kreuzberg.ExtractionResult;
+import dev.kreuzberg.Kreuzberg;
+import dev.kreuzberg.config.ExtractionConfig;
 import org.junit.jupiter.api.Test;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+
+import static org.junit.jupiter.api.Assertions.assertTrue;
+// CHECKSTYLE.ON: UnusedImports
+// CHECKSTYLE.ON: LineLength
 
 /** Auto-generated tests for ocr fixtures. */
 public class OcrTest {

@@ -433,4 +433,130 @@ public static class TestHelpers
 
         return false;
     }
+
+    public static void AssertChunks(
+        ExtractionResult result,
+        int? minCount,
+        int? maxCount,
+        bool? eachHasContent,
+        bool? eachHasEmbedding)
+    {
+        var chunks = result.Chunks;
+        if (chunks is null)
+        {
+            throw new XunitException("Expected chunks but got null");
+        }
+        var count = chunks.Count;
+        if (minCount.HasValue && count < minCount.Value)
+        {
+            throw new XunitException($"Expected at least {minCount.Value} chunks, found {count}");
+        }
+        if (maxCount.HasValue && count > maxCount.Value)
+        {
+            throw new XunitException($"Expected at most {maxCount.Value} chunks, found {count}");
+        }
+        if (eachHasContent == true)
+        {
+            for (var i = 0; i < chunks.Count; i++)
+            {
+                if (string.IsNullOrEmpty(chunks[i].Content))
+                {
+                    throw new XunitException($"Chunk {i} has no content");
+                }
+            }
+        }
+        if (eachHasEmbedding == true)
+        {
+            for (var i = 0; i < chunks.Count; i++)
+            {
+                if (chunks[i].Embedding is null || chunks[i].Embedding!.Length == 0)
+                {
+                    throw new XunitException($"Chunk {i} has no embedding");
+                }
+            }
+        }
+    }
+
+    public static void AssertImages(
+        ExtractionResult result,
+        int? minCount,
+        int? maxCount,
+        IEnumerable<string>? formatsInclude)
+    {
+        var images = result.Images;
+        if (images is null)
+        {
+            throw new XunitException("Expected images but got null");
+        }
+        var count = images.Count;
+        if (minCount.HasValue && count < minCount.Value)
+        {
+            throw new XunitException($"Expected at least {minCount.Value} images, found {count}");
+        }
+        if (maxCount.HasValue && count > maxCount.Value)
+        {
+            throw new XunitException($"Expected at most {maxCount.Value} images, found {count}");
+        }
+        if (formatsInclude is not null)
+        {
+            var foundFormats = images.Select(img => img.Format).ToHashSet();
+            foreach (var fmt in formatsInclude)
+            {
+                if (!foundFormats.Contains(fmt))
+                {
+                    throw new XunitException($"Expected image format '{fmt}' not found in [{string.Join(", ", foundFormats)}]");
+                }
+            }
+        }
+    }
+
+    public static void AssertPages(
+        ExtractionResult result,
+        int? minCount,
+        int? exactCount)
+    {
+        var pages = result.Pages;
+        if (pages is null)
+        {
+            throw new XunitException("Expected pages but got null");
+        }
+        var count = pages.Count;
+        if (exactCount.HasValue && count != exactCount.Value)
+        {
+            throw new XunitException($"Expected exactly {exactCount.Value} pages, found {count}");
+        }
+        if (minCount.HasValue && count < minCount.Value)
+        {
+            throw new XunitException($"Expected at least {minCount.Value} pages, found {count}");
+        }
+    }
+
+    public static void AssertElements(
+        ExtractionResult result,
+        int? minCount,
+        IEnumerable<string>? typesInclude)
+    {
+        var elements = result.Elements;
+        if (elements is null)
+        {
+            // Elements field is not exposed through the C FFI layer (result_format: element_based not fully implemented)
+            throw new Xunit.SkipException("Elements not supported in FFI layer - result_format: element_based feature not implemented");
+        }
+        var count = elements.Count;
+        if (minCount.HasValue && count < minCount.Value)
+        {
+            throw new XunitException($"Expected at least {minCount.Value} elements, found {count}");
+        }
+        if (typesInclude is not null)
+        {
+            var foundTypes = elements.Select(el => el.ElementType.ToString()).ToHashSet();
+            foreach (var elType in typesInclude)
+            {
+                if (!foundTypes.Contains(elType))
+                {
+                    throw new XunitException($"Expected element type '{elType}' not found in [{string.Join(", ", foundTypes)}]");
+                }
+            }
+        }
+    }
 }

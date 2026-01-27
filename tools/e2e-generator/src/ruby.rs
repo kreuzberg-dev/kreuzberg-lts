@@ -1,4 +1,4 @@
-use crate::fixtures::{Assertions, Fixture};
+use crate::fixtures::{Assertions, ExtractionMethod, Fixture, InputType};
 use anyhow::{Context, Result, bail};
 use camino::Utf8Path;
 use itertools::Itertools;
@@ -77,7 +77,12 @@ module E2ERuby
     details
   end
 
-  def run_fixture(fixture_id, relative_path, config_hash, requirements:, notes:, skip_if_missing: true)
+  def run_fixture(fixture_id, relative_path, config_hash, requirements:, notes:, skip_if_missing: true, &block)
+    run_fixture_with_method(fixture_id, relative_path, config_hash, :sync, :file,
+                            requirements: requirements, notes: notes, skip_if_missing: skip_if_missing, &block)
+  end
+
+  def run_fixture_with_method(fixture_id, relative_path, config_hash, method, input_type, requirements:, notes:, skip_if_missing: true)
     document_path = resolve_document(relative_path)
 
     if skip_if_missing && !document_path.exist?
@@ -88,7 +93,7 @@ module E2ERuby
     config = build_config(config_hash)
     result = nil
     begin
-      result = Kreuzberg.extract_file_sync(document_path.to_s, config: config)
+      result = perform_extraction(document_path, config, method, input_type)
     rescue StandardError => e
       if (reason = skip_reason_for(e, fixture_id, requirements, notes))
         raise RSpec::Core::Pending::SkipDeclaredInExample, reason
@@ -97,6 +102,42 @@ module E2ERuby
     end
 
     yield result
+  end
+
+  def perform_extraction(document_path, config, method, input_type)
+    mime_type = detect_mime_type(document_path)
+    case [method, input_type]
+    when [:sync, :file]
+      Kreuzberg.extract_file_sync(path: document_path.to_s, config: config)
+    when [:sync, :bytes]
+      bytes = File.binread(document_path.to_s)
+      Kreuzberg.extract_bytes_sync(data: bytes, mime_type: mime_type, config: config)
+    when [:async, :file]
+      Kreuzberg.extract_file(path: document_path.to_s, config: config)
+    when [:async, :bytes]
+      bytes = File.binread(document_path.to_s)
+      Kreuzberg.extract_bytes(data: bytes, mime_type: mime_type, config: config)
+    when [:batch_sync, :file]
+      results = Kreuzberg.batch_extract_files_sync(paths: [document_path.to_s], config: config)
+      results.first
+    when [:batch_sync, :bytes]
+      bytes = File.binread(document_path.to_s)
+      results = Kreuzberg.batch_extract_bytes_sync(data_array: [bytes], mime_types: [mime_type], config: config)
+      results.first
+    when [:batch_async, :file]
+      results = Kreuzberg.batch_extract_files(paths: [document_path.to_s], config: config)
+      results.first
+    when [:batch_async, :bytes]
+      bytes = File.binread(document_path.to_s)
+      results = Kreuzberg.batch_extract_bytes(data_array: [bytes], mime_types: [mime_type], config: config)
+      results.first
+    else
+      raise ArgumentError, "Unknown extraction method/input_type combo: #{method}/#{input_type}"
+    end
+  end
+
+  def detect_mime_type(document_path)
+    Kreuzberg.detect_mime_type_from_path(document_path.to_s)
   end
 
   module Assertions
@@ -155,6 +196,12 @@ module E2ERuby
       value = fetch_metadata_value(metadata, path)
       raise "Metadata path '#{path}' missing in #{metadata.inspect}" if value.nil?
 
+      # Handle simple values as implicit equality checks
+      unless expectation.is_a?(Hash)
+        expect(values_equal?(value, expectation)).to be(true)
+        return
+      end
+
       if expectation.key?(:eq)
         expect(values_equal?(value, expectation[:eq])).to be(true)
       end
@@ -178,6 +225,47 @@ module E2ERuby
         expect(contains.all? { |item| value.include?(item) }).to be(true)
       else
         raise "Unsupported contains expectation for path '#{path}'"
+      end
+    end
+
+    def self.assert_chunks(result, min_count: nil, max_count: nil, each_has_content: nil, each_has_embedding: nil)
+      chunks = Array(result.chunks)
+      expect(chunks.length).to be >= min_count if min_count
+      expect(chunks.length).to be <= max_count if max_count
+      if each_has_content
+        chunks.each { |chunk| expect(chunk.content).not_to be_nil }
+      end
+      if each_has_embedding
+        chunks.each { |chunk| expect(chunk.embedding).not_to be_nil }
+      end
+    end
+
+    def self.assert_images(result, min_count: nil, max_count: nil, formats_include: nil)
+      images = Array(result.images)
+      expect(images.length).to be >= min_count if min_count
+      expect(images.length).to be <= max_count if max_count
+      if formats_include
+        found_formats = images.map(&:format).compact.uniq
+        formats_include.each do |fmt|
+          expect(found_formats).to include(fmt)
+        end
+      end
+    end
+
+    def self.assert_pages(result, min_count: nil, exact_count: nil)
+      pages = Array(result.pages)
+      expect(pages.length).to be >= min_count if min_count
+      expect(pages.length).to eq(exact_count) if exact_count
+    end
+
+    def self.assert_elements(result, min_count: nil, types_include: nil)
+      elements = Array(result.elements)
+      expect(elements.length).to be >= min_count if min_count
+      if types_include
+        found_types = elements.map(&:type).compact.uniq
+        types_include.each do |t|
+          expect(found_types).to include(t)
+        end
       end
     end
 
@@ -338,29 +426,75 @@ fn render_category(category: &str, fixtures: &[&Fixture]) -> Result<String> {
 
 fn render_example(fixture: &Fixture, is_last: bool) -> Result<String> {
     let mut body = String::new();
+    let extraction = fixture.extraction();
+    let method = extraction.method;
+    let input_type = extraction.input_type;
+
+    // Determine the Ruby symbols for method and input_type
+    let method_sym = match method {
+        ExtractionMethod::Sync => ":sync",
+        ExtractionMethod::Async => ":async",
+        ExtractionMethod::BatchSync => ":batch_sync",
+        ExtractionMethod::BatchAsync => ":batch_async",
+    };
+    let input_type_sym = match input_type {
+        InputType::File => ":file",
+        InputType::Bytes => ":bytes",
+    };
+
+    // Use the simple run_fixture for sync/file (default), otherwise use run_fixture_with_method
+    let use_simple_runner = method == ExtractionMethod::Sync && input_type == InputType::File;
 
     writeln!(body, "  it {} do", render_ruby_string(&fixture.id))?;
-    writeln!(body, "    E2ERuby.run_fixture(")?;
-    writeln!(body, "      {},", render_ruby_string(&fixture.id))?;
-    writeln!(body, "      {},", render_ruby_string(&fixture.document().path))?;
 
-    let config_expr = render_config_expression(&fixture.extraction().config)?;
-    match config_expr {
-        None => writeln!(body, "      nil,")?,
-        Some(expr) => writeln!(body, "      {expr},")?,
-    }
+    if use_simple_runner {
+        writeln!(body, "    E2ERuby.run_fixture(")?;
+        writeln!(body, "      {},", render_ruby_string(&fixture.id))?;
+        writeln!(body, "      {},", render_ruby_string(&fixture.document().path))?;
 
-    let requirements = render_string_array(&collect_requirements(fixture));
-    let notes_literal = render_optional_string(fixture.skip().notes.as_ref());
-    writeln!(body, "      requirements: {},", requirements)?;
-    writeln!(body, "      notes: {},", notes_literal)?;
-    let skip_flag = if fixture.skip().if_document_missing {
-        "true"
+        let config_expr = render_config_expression(&extraction.config)?;
+        match config_expr {
+            None => writeln!(body, "      nil,")?,
+            Some(expr) => writeln!(body, "      {expr},")?,
+        }
+
+        let requirements = render_string_array(&collect_requirements(fixture));
+        let notes_literal = render_optional_string(fixture.skip().notes.as_ref());
+        writeln!(body, "      requirements: {},", requirements)?;
+        writeln!(body, "      notes: {},", notes_literal)?;
+        let skip_flag = if fixture.skip().if_document_missing {
+            "true"
+        } else {
+            "false"
+        };
+        writeln!(body, "      skip_if_missing: {}", skip_flag)?;
+        writeln!(body, "    ) do |result|")?;
     } else {
-        "false"
-    };
-    writeln!(body, "      skip_if_missing: {}", skip_flag)?;
-    writeln!(body, "    ) do |result|")?;
+        writeln!(body, "    E2ERuby.run_fixture_with_method(")?;
+        writeln!(body, "      {},", render_ruby_string(&fixture.id))?;
+        writeln!(body, "      {},", render_ruby_string(&fixture.document().path))?;
+
+        let config_expr = render_config_expression(&extraction.config)?;
+        match config_expr {
+            None => writeln!(body, "      nil,")?,
+            Some(expr) => writeln!(body, "      {expr},")?,
+        }
+
+        writeln!(body, "      {},", method_sym)?;
+        writeln!(body, "      {},", input_type_sym)?;
+
+        let requirements = render_string_array(&collect_requirements(fixture));
+        let notes_literal = render_optional_string(fixture.skip().notes.as_ref());
+        writeln!(body, "      requirements: {},", requirements)?;
+        writeln!(body, "      notes: {},", notes_literal)?;
+        let skip_flag = if fixture.skip().if_document_missing {
+            "true"
+        } else {
+            "false"
+        };
+        writeln!(body, "      skip_if_missing: {}", skip_flag)?;
+        writeln!(body, "    ) do |result|")?;
+    }
 
     let assertions = render_assertions(&fixture.assertions());
     if !assertions.is_empty() {
@@ -447,6 +581,79 @@ fn render_assertions(assertions: &Assertions) -> String {
                 "      E2ERuby::Assertions.assert_metadata_expectation(result, {}, {})\n",
                 render_ruby_string(path),
                 render_ruby_value(expectation)
+            ));
+        }
+    }
+
+    if let Some(chunks) = assertions.chunks.as_ref() {
+        let mut args = Vec::new();
+        if let Some(min) = chunks.min_count {
+            args.push(format!("min_count: {}", render_numeric_literal(min as u64)));
+        }
+        if let Some(max) = chunks.max_count {
+            args.push(format!("max_count: {}", render_numeric_literal(max as u64)));
+        }
+        if let Some(has_content) = chunks.each_has_content {
+            args.push(format!("each_has_content: {}", has_content));
+        }
+        if let Some(has_embedding) = chunks.each_has_embedding {
+            args.push(format!("each_has_embedding: {}", has_embedding));
+        }
+        if !args.is_empty() {
+            buffer.push_str(&format!(
+                "      E2ERuby::Assertions.assert_chunks(result, {})\n",
+                args.join(", ")
+            ));
+        }
+    }
+
+    if let Some(images) = assertions.images.as_ref() {
+        let mut args = Vec::new();
+        if let Some(min) = images.min_count {
+            args.push(format!("min_count: {}", render_numeric_literal(min as u64)));
+        }
+        if let Some(max) = images.max_count {
+            args.push(format!("max_count: {}", render_numeric_literal(max as u64)));
+        }
+        if let Some(formats) = images.formats_include.as_ref() {
+            args.push(format!("formats_include: {}", render_string_array(formats)));
+        }
+        if !args.is_empty() {
+            buffer.push_str(&format!(
+                "      E2ERuby::Assertions.assert_images(result, {})\n",
+                args.join(", ")
+            ));
+        }
+    }
+
+    if let Some(pages) = assertions.pages.as_ref() {
+        let mut args = Vec::new();
+        if let Some(min) = pages.min_count {
+            args.push(format!("min_count: {}", render_numeric_literal(min as u64)));
+        }
+        if let Some(exact) = pages.exact_count {
+            args.push(format!("exact_count: {}", render_numeric_literal(exact as u64)));
+        }
+        if !args.is_empty() {
+            buffer.push_str(&format!(
+                "      E2ERuby::Assertions.assert_pages(result, {})\n",
+                args.join(", ")
+            ));
+        }
+    }
+
+    if let Some(elements) = assertions.elements.as_ref() {
+        let mut args = Vec::new();
+        if let Some(min) = elements.min_count {
+            args.push(format!("min_count: {}", render_numeric_literal(min as u64)));
+        }
+        if let Some(types) = elements.types_include.as_ref() {
+            args.push(format!("types_include: {}", render_string_array(types)));
+        }
+        if !args.is_empty() {
+            buffer.push_str(&format!(
+                "      E2ERuby::Assertions.assert_elements(result, {})\n",
+                args.join(", ")
             ));
         }
     }
@@ -641,7 +848,10 @@ fn generate_plugin_api_tests(fixtures: &[&Fixture], spec_dir: &Utf8Path) -> Resu
         "# To regenerate: cargo run -p kreuzberg-e2e-generator -- generate --lang ruby"
     )?;
     writeln!(buffer)?;
-    writeln!(buffer, "# rubocop:disable Metrics/BlockLength")?;
+    writeln!(
+        buffer,
+        "# rubocop:disable RSpec/DescribeClass, RSpec/ExampleLength, Metrics/BlockLength"
+    )?;
     writeln!(buffer)?;
     writeln!(buffer, "require 'spec_helper'")?;
     writeln!(buffer, "require 'tmpdir'")?;

@@ -2,8 +2,12 @@
 
 # Auto-generated from fixtures/plugin_api/ - DO NOT EDIT
 
+# E2E tests for plugin/config/utility APIs.
+#
+# Generated from plugin API fixtures.
+# To regenerate: cargo run -p kreuzberg-e2e-generator -- generate --lang ruby
 
-# rubocop:disable Metrics/BlockLength
+# rubocop:disable RSpec/DescribeClass, RSpec/ExampleLength, Metrics/BlockLength
 
 require 'spec_helper'
 require 'tmpdir'

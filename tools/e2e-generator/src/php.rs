@@ -1,4 +1,4 @@
-use crate::fixtures::{Assertions, Fixture, PluginAssertions, PluginTestSpec};
+use crate::fixtures::{Assertions, ExtractionMethod, Fixture, InputType, PluginAssertions, PluginTestSpec};
 use anyhow::{Context, Result};
 use camino::Utf8Path;
 use itertools::Itertools;
@@ -59,9 +59,7 @@ class Helpers
 
         $params = [];
 
-        // Note: PHP ExtractionConfig doesn't support use_cache, enable_quality_processing, or force_ocr
-        // These are handled by the Rust core but not exposed in the PHP API
-
+        // Handle nested config objects
         if (isset($config['ocr']) && is_array($config['ocr'])) {
             $ocrParams = [];
             if (isset($config['ocr']['backend'])) {
@@ -85,6 +83,23 @@ class Helpers
         }
         if (isset($config['language_detection']) && is_array($config['language_detection'])) {
             $params['languageDetection'] = new LanguageDetectionConfig(...$config['language_detection']);
+        }
+
+        // Handle scalar config options
+        if (isset($config['use_cache'])) {
+            $params['useCache'] = (bool)$config['use_cache'];
+        }
+        if (isset($config['force_ocr'])) {
+            $params['forceOcr'] = (bool)$config['force_ocr'];
+        }
+        if (isset($config['enable_quality_processing'])) {
+            $params['enableQualityProcessing'] = (bool)$config['enable_quality_processing'];
+        }
+        if (isset($config['output_format'])) {
+            $params['outputFormat'] = $config['output_format'];
+        }
+        if (isset($config['result_format'])) {
+            $params['resultFormat'] = $config['result_format'];
         }
 
         return new ExtractionConfig(...$params);
@@ -232,6 +247,153 @@ class Helpers
                 $confidence,
                 sprintf("Expected confidence >= %f, got %f", $minConfidence, $confidence)
             );
+        }
+    }
+
+    public static function assertChunks(
+        ExtractionResult $result,
+        ?int $minCount,
+        ?int $maxCount,
+        ?bool $eachHasContent,
+        ?bool $eachHasEmbedding
+    ): void {
+        $chunks = $result->chunks ?? [];
+        $count = count($chunks);
+
+        if ($minCount !== null) {
+            Assert::assertGreaterThanOrEqual(
+                $minCount,
+                $count,
+                sprintf("Expected at least %d chunks, found %d", $minCount, $count)
+            );
+        }
+
+        if ($maxCount !== null) {
+            Assert::assertLessThanOrEqual(
+                $maxCount,
+                $count,
+                sprintf("Expected at most %d chunks, found %d", $maxCount, $count)
+            );
+        }
+
+        if ($eachHasContent === true) {
+            foreach ($chunks as $i => $chunk) {
+                Assert::assertNotEmpty(
+                    $chunk->content ?? '',
+                    sprintf("Chunk %d should have content", $i)
+                );
+            }
+        }
+
+        if ($eachHasEmbedding === true) {
+            foreach ($chunks as $i => $chunk) {
+                Assert::assertNotNull(
+                    $chunk->embedding ?? null,
+                    sprintf("Chunk %d should have embedding", $i)
+                );
+            }
+        }
+    }
+
+    public static function assertImages(
+        ExtractionResult $result,
+        ?int $minCount,
+        ?int $maxCount,
+        ?array $formatsInclude
+    ): void {
+        $images = $result->images ?? [];
+        $count = count($images);
+
+        if ($minCount !== null) {
+            Assert::assertGreaterThanOrEqual(
+                $minCount,
+                $count,
+                sprintf("Expected at least %d images, found %d", $minCount, $count)
+            );
+        }
+
+        if ($maxCount !== null) {
+            Assert::assertLessThanOrEqual(
+                $maxCount,
+                $count,
+                sprintf("Expected at most %d images, found %d", $maxCount, $count)
+            );
+        }
+
+        if ($formatsInclude !== null && !empty($formatsInclude)) {
+            $foundFormats = [];
+            foreach ($images as $image) {
+                if (isset($image->format)) {
+                    $foundFormats[] = strtolower($image->format);
+                }
+            }
+
+            foreach ($formatsInclude as $format) {
+                Assert::assertContains(
+                    strtolower($format),
+                    $foundFormats,
+                    sprintf("Expected image format '%s' not found in %s", $format, json_encode($foundFormats))
+                );
+            }
+        }
+    }
+
+    public static function assertPages(
+        ExtractionResult $result,
+        ?int $minCount,
+        ?int $exactCount
+    ): void {
+        $pages = $result->pages ?? [];
+        $count = count($pages);
+
+        if ($exactCount !== null) {
+            Assert::assertEquals(
+                $exactCount,
+                $count,
+                sprintf("Expected exactly %d pages, found %d", $exactCount, $count)
+            );
+        }
+
+        if ($minCount !== null) {
+            Assert::assertGreaterThanOrEqual(
+                $minCount,
+                $count,
+                sprintf("Expected at least %d pages, found %d", $minCount, $count)
+            );
+        }
+    }
+
+    public static function assertElements(
+        ExtractionResult $result,
+        ?int $minCount,
+        ?array $typesInclude
+    ): void {
+        $elements = $result->elements ?? [];
+        $count = count($elements);
+
+        if ($minCount !== null) {
+            Assert::assertGreaterThanOrEqual(
+                $minCount,
+                $count,
+                sprintf("Expected at least %d elements, found %d", $minCount, $count)
+            );
+        }
+
+        if ($typesInclude !== null && !empty($typesInclude)) {
+            $foundTypes = [];
+            foreach ($elements as $element) {
+                if (isset($element->type)) {
+                    $foundTypes[] = strtolower($element->type);
+                }
+            }
+
+            foreach ($typesInclude as $type) {
+                Assert::assertContains(
+                    strtolower($type),
+                    $foundTypes,
+                    sprintf("Expected element type '%s' not found in %s", $type, json_encode($foundTypes))
+                );
+            }
         }
     }
 
@@ -492,6 +654,9 @@ fn render_category(category: &str, fixtures: &[&Fixture]) -> Result<String> {
 fn render_test(fixture: &Fixture) -> Result<String> {
     let mut code = String::new();
     let test_name = format!("test_{}", sanitize_identifier(&fixture.id));
+    let extraction = fixture.extraction();
+    let method = extraction.method;
+    let input_type = extraction.input_type;
 
     writeln!(code, "    /**")?;
     writeln!(code, "     * {}", escape_doc_comment(&fixture.description))?;
@@ -512,12 +677,41 @@ fn render_test(fixture: &Fixture) -> Result<String> {
     writeln!(code, "        }}")?;
     writeln!(code)?;
 
-    let config_literal = render_config_literal(&fixture.extraction().config);
+    let config_literal = render_config_literal(&extraction.config);
     writeln!(code, "        $config = Helpers::buildConfig({});", config_literal)?;
     writeln!(code)?;
 
     writeln!(code, "        $kreuzberg = new Kreuzberg($config);")?;
-    writeln!(code, "        $result = $kreuzberg->extractFile($documentPath);")?;
+
+    // Generate extraction call based on method and input_type
+    // Note: PHP SDK does not have async methods - all operations are synchronous.
+    // Async/BatchAsync methods map to their sync equivalents.
+    match (method, input_type) {
+        (ExtractionMethod::Sync, InputType::File) | (ExtractionMethod::Async, InputType::File) => {
+            writeln!(code, "        $result = $kreuzberg->extractFile($documentPath);")?;
+        }
+        (ExtractionMethod::Sync, InputType::Bytes) | (ExtractionMethod::Async, InputType::Bytes) => {
+            writeln!(code, "        $bytes = file_get_contents($documentPath);")?;
+            writeln!(code, "        $mimeType = Kreuzberg::detectMimeType($bytes);")?;
+            writeln!(code, "        $result = $kreuzberg->extractBytes($bytes, $mimeType);")?;
+        }
+        (ExtractionMethod::BatchSync, InputType::File) | (ExtractionMethod::BatchAsync, InputType::File) => {
+            writeln!(
+                code,
+                "        $results = $kreuzberg->batchExtractFiles([$documentPath]);"
+            )?;
+            writeln!(code, "        $result = $results[0];")?;
+        }
+        (ExtractionMethod::BatchSync, InputType::Bytes) | (ExtractionMethod::BatchAsync, InputType::Bytes) => {
+            writeln!(code, "        $bytes = file_get_contents($documentPath);")?;
+            writeln!(code, "        $mimeType = Kreuzberg::detectMimeType($bytes);")?;
+            writeln!(
+                code,
+                "        $results = $kreuzberg->batchExtractBytes([$bytes], [$mimeType]);"
+            )?;
+            writeln!(code, "        $result = $results[0];")?;
+        }
+    }
     writeln!(code)?;
 
     code.push_str(&render_assertions(&fixture.assertions()));
@@ -590,6 +784,84 @@ fn render_assertions(assertions: &Assertions) -> String {
             "        Helpers::assertMetadataExpectation($result, {}, {});",
             php_string_literal(path),
             render_php_metadata_expectation(expectation)
+        )
+        .unwrap();
+    }
+    if let Some(chunks) = assertions.chunks.as_ref() {
+        let min_count = chunks
+            .min_count
+            .map(|v| v.to_string())
+            .unwrap_or_else(|| "null".to_string());
+        let max_count = chunks
+            .max_count
+            .map(|v| v.to_string())
+            .unwrap_or_else(|| "null".to_string());
+        let each_has_content = chunks
+            .each_has_content
+            .map(|v| if v { "true" } else { "false" }.to_string())
+            .unwrap_or_else(|| "null".to_string());
+        let each_has_embedding = chunks
+            .each_has_embedding
+            .map(|v| if v { "true" } else { "false" }.to_string())
+            .unwrap_or_else(|| "null".to_string());
+        writeln!(
+            buffer,
+            "        Helpers::assertChunks($result, {}, {}, {}, {});",
+            min_count, max_count, each_has_content, each_has_embedding
+        )
+        .unwrap();
+    }
+    if let Some(images) = assertions.images.as_ref() {
+        let min_count = images
+            .min_count
+            .map(|v| v.to_string())
+            .unwrap_or_else(|| "null".to_string());
+        let max_count = images
+            .max_count
+            .map(|v| v.to_string())
+            .unwrap_or_else(|| "null".to_string());
+        let formats_include = images
+            .formats_include
+            .as_ref()
+            .map(|v| render_string_array(v))
+            .unwrap_or_else(|| "null".to_string());
+        writeln!(
+            buffer,
+            "        Helpers::assertImages($result, {}, {}, {});",
+            min_count, max_count, formats_include
+        )
+        .unwrap();
+    }
+    if let Some(pages) = assertions.pages.as_ref() {
+        let min_count = pages
+            .min_count
+            .map(|v| v.to_string())
+            .unwrap_or_else(|| "null".to_string());
+        let exact_count = pages
+            .exact_count
+            .map(|v| v.to_string())
+            .unwrap_or_else(|| "null".to_string());
+        writeln!(
+            buffer,
+            "        Helpers::assertPages($result, {}, {});",
+            min_count, exact_count
+        )
+        .unwrap();
+    }
+    if let Some(elements) = assertions.elements.as_ref() {
+        let min_count = elements
+            .min_count
+            .map(|v| v.to_string())
+            .unwrap_or_else(|| "null".to_string());
+        let types_include = elements
+            .types_include
+            .as_ref()
+            .map(|v| render_string_array(v))
+            .unwrap_or_else(|| "null".to_string());
+        writeln!(
+            buffer,
+            "        Helpers::assertElements($result, {}, {});",
+            min_count, types_include
         )
         .unwrap();
     }

@@ -101,6 +101,26 @@ pub struct DocumentSpec {
     pub requires_external_tool: Vec<String>,
 }
 
+/// Extraction method (sync/async, single/batch)
+#[derive(Debug, Clone, Copy, Deserialize, Default, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum ExtractionMethod {
+    #[default]
+    Sync,
+    Async,
+    BatchSync,
+    BatchAsync,
+}
+
+/// Input type for extraction (file path or bytes)
+#[derive(Debug, Clone, Copy, Deserialize, Default, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum InputType {
+    #[default]
+    File,
+    Bytes,
+}
+
 #[allow(dead_code)]
 #[derive(Debug, Clone, Deserialize, Default)]
 pub struct ExtractionSpec {
@@ -110,6 +130,10 @@ pub struct ExtractionSpec {
     pub force_async: bool,
     #[serde(default)]
     pub chunking: Option<Value>,
+    #[serde(default)]
+    pub method: ExtractionMethod,
+    #[serde(default)]
+    pub input_type: InputType,
 }
 
 #[derive(Debug, Clone, Deserialize, Default)]
@@ -130,6 +154,18 @@ pub struct Assertions {
     pub detected_languages: Option<DetectedLanguageAssertion>,
     #[serde(default)]
     pub metadata: BTreeMap<String, Value>,
+    #[serde(default)]
+    pub chunks: Option<ChunkAssertion>,
+    #[serde(default)]
+    pub images: Option<ImageAssertion>,
+    #[serde(default)]
+    pub pages: Option<PageAssertion>,
+    #[serde(default)]
+    pub elements: Option<ElementAssertion>,
+    #[serde(default)]
+    pub output_format_is: Option<String>,
+    #[serde(default)]
+    pub result_format_is: Option<String>,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -145,6 +181,44 @@ pub struct DetectedLanguageAssertion {
     pub expects: Vec<String>,
     #[serde(default)]
     pub min_confidence: Option<f32>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct ChunkAssertion {
+    #[serde(default)]
+    pub min_count: Option<usize>,
+    #[serde(default)]
+    pub max_count: Option<usize>,
+    #[serde(default)]
+    pub each_has_content: Option<bool>,
+    #[serde(default)]
+    pub each_has_embedding: Option<bool>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct ImageAssertion {
+    #[serde(default)]
+    pub min_count: Option<usize>,
+    #[serde(default)]
+    pub max_count: Option<usize>,
+    #[serde(default)]
+    pub formats_include: Option<Vec<String>>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct PageAssertion {
+    #[serde(default)]
+    pub min_count: Option<usize>,
+    #[serde(default)]
+    pub exact_count: Option<usize>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct ElementAssertion {
+    #[serde(default)]
+    pub min_count: Option<usize>,
+    #[serde(default)]
+    pub types_include: Option<Vec<String>>,
 }
 
 #[allow(dead_code)]

@@ -167,6 +167,25 @@ class OfficeTest extends TestCase
     }
 
     /**
+     * PPSX (PowerPoint Show) files should extract slides content identical to PPTX. GitHub Issue #321 Bug 2.
+     */
+    public function test_office_ppsx_slideshow(): void
+    {
+        $documentPath = Helpers::resolveDocument('presentations/sample.ppsx');
+        if (!file_exists($documentPath)) {
+            $this->markTestSkipped('Skipping office_ppsx_slideshow: missing document at ' . $documentPath);
+        }
+
+        $config = Helpers::buildConfig(null);
+
+        $kreuzberg = new Kreuzberg($config);
+        $result = $kreuzberg->extractFile($documentPath);
+
+        Helpers::assertExpectedMime($result, ['application/vnd.openxmlformats-officedocument.presentationml.slideshow']);
+        Helpers::assertMinContentLength($result, 10);
+    }
+
+    /**
      * Legacy PowerPoint .ppt file requiring LibreOffice conversion.
      */
     public function test_office_ppt_legacy(): void

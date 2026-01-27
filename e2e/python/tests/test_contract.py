@@ -1,0 +1,330 @@
+# Auto-generated tests for contract fixtures.
+from __future__ import annotations
+
+import pytest
+
+from kreuzberg import (
+    batch_extract_bytes,
+    batch_extract_bytes_sync,
+    batch_extract_file,
+    batch_extract_file_sync,
+    extract_bytes,
+    extract_bytes_sync,
+    extract_file,
+    extract_file_sync,
+)
+
+from . import helpers
+
+
+@pytest.mark.asyncio
+async def test_api_batch_bytes_async() -> None:
+    """Tests async batch bytes extraction API (batch_extract_bytes)"""
+
+    document_path = helpers.resolve_document("pdfs/fake_memo.pdf")
+    if not document_path.exists():
+        pytest.skip(f"Skipping api_batch_bytes_async: missing document at {document_path}")
+
+    config = helpers.build_config(None)
+
+    file_bytes = document_path.read_bytes()
+
+    results = await batch_extract_bytes([file_bytes], config=config)
+    result = results[0]
+
+    helpers.assert_expected_mime(result, ["application/pdf"])
+    helpers.assert_min_content_length(result, 10)
+    helpers.assert_content_contains_any(result, ["May 5, 2023", "Mallori"])
+
+def test_api_batch_bytes_sync() -> None:
+    """Tests sync batch bytes extraction API (batch_extract_bytes_sync)"""
+
+    document_path = helpers.resolve_document("pdfs/fake_memo.pdf")
+    if not document_path.exists():
+        pytest.skip(f"Skipping api_batch_bytes_sync: missing document at {document_path}")
+
+    config = helpers.build_config(None)
+
+    file_bytes = document_path.read_bytes()
+
+    results = batch_extract_bytes_sync([file_bytes], config=config)
+    result = results[0]
+
+    helpers.assert_expected_mime(result, ["application/pdf"])
+    helpers.assert_min_content_length(result, 10)
+    helpers.assert_content_contains_any(result, ["May 5, 2023", "Mallori"])
+
+@pytest.mark.asyncio
+async def test_api_batch_file_async() -> None:
+    """Tests async batch file extraction API (batch_extract_file)"""
+
+    document_path = helpers.resolve_document("pdfs/fake_memo.pdf")
+    if not document_path.exists():
+        pytest.skip(f"Skipping api_batch_file_async: missing document at {document_path}")
+
+    config = helpers.build_config(None)
+
+    results = await batch_extract_file([document_path], config=config)
+    result = results[0]
+
+    helpers.assert_expected_mime(result, ["application/pdf"])
+    helpers.assert_min_content_length(result, 10)
+    helpers.assert_content_contains_any(result, ["May 5, 2023", "Mallori"])
+
+def test_api_batch_file_sync() -> None:
+    """Tests sync batch file extraction API (batch_extract_file_sync)"""
+
+    document_path = helpers.resolve_document("pdfs/fake_memo.pdf")
+    if not document_path.exists():
+        pytest.skip(f"Skipping api_batch_file_sync: missing document at {document_path}")
+
+    config = helpers.build_config(None)
+
+    results = batch_extract_file_sync([document_path], config=config)
+    result = results[0]
+
+    helpers.assert_expected_mime(result, ["application/pdf"])
+    helpers.assert_min_content_length(result, 10)
+    helpers.assert_content_contains_any(result, ["May 5, 2023", "Mallori"])
+
+@pytest.mark.asyncio
+async def test_api_extract_bytes_async() -> None:
+    """Tests async bytes extraction API (extract_bytes)"""
+
+    document_path = helpers.resolve_document("pdfs/fake_memo.pdf")
+    if not document_path.exists():
+        pytest.skip(f"Skipping api_extract_bytes_async: missing document at {document_path}")
+
+    config = helpers.build_config(None)
+
+    file_bytes = document_path.read_bytes()
+
+    result = await extract_bytes(file_bytes, config=config)
+
+    helpers.assert_expected_mime(result, ["application/pdf"])
+    helpers.assert_min_content_length(result, 10)
+    helpers.assert_content_contains_any(result, ["May 5, 2023", "Mallori"])
+
+def test_api_extract_bytes_sync() -> None:
+    """Tests sync bytes extraction API (extract_bytes_sync)"""
+
+    document_path = helpers.resolve_document("pdfs/fake_memo.pdf")
+    if not document_path.exists():
+        pytest.skip(f"Skipping api_extract_bytes_sync: missing document at {document_path}")
+
+    config = helpers.build_config(None)
+
+    file_bytes = document_path.read_bytes()
+
+    result = extract_bytes_sync(file_bytes, config=config)
+
+    helpers.assert_expected_mime(result, ["application/pdf"])
+    helpers.assert_min_content_length(result, 10)
+    helpers.assert_content_contains_any(result, ["May 5, 2023", "Mallori"])
+
+@pytest.mark.asyncio
+async def test_api_extract_file_async() -> None:
+    """Tests async file extraction API (extract_file)"""
+
+    document_path = helpers.resolve_document("pdfs/fake_memo.pdf")
+    if not document_path.exists():
+        pytest.skip(f"Skipping api_extract_file_async: missing document at {document_path}")
+
+    config = helpers.build_config(None)
+
+    result = await extract_file(document_path, None, config)
+
+    helpers.assert_expected_mime(result, ["application/pdf"])
+    helpers.assert_min_content_length(result, 10)
+    helpers.assert_content_contains_any(result, ["May 5, 2023", "Mallori"])
+
+def test_api_extract_file_sync() -> None:
+    """Tests sync file extraction API (extract_file_sync)"""
+
+    document_path = helpers.resolve_document("pdfs/fake_memo.pdf")
+    if not document_path.exists():
+        pytest.skip(f"Skipping api_extract_file_sync: missing document at {document_path}")
+
+    config = helpers.build_config(None)
+
+    result = extract_file_sync(document_path, None, config)
+
+    helpers.assert_expected_mime(result, ["application/pdf"])
+    helpers.assert_min_content_length(result, 10)
+    helpers.assert_content_contains_any(result, ["May 5, 2023", "Mallori"])
+
+def test_config_chunking() -> None:
+    """Tests chunking configuration with chunk assertions"""
+
+    document_path = helpers.resolve_document("pdfs/fake_memo.pdf")
+    if not document_path.exists():
+        pytest.skip(f"Skipping config_chunking: missing document at {document_path}")
+
+    config = helpers.build_config({"chunking": {"max_chars": 500, "overlap": 50}})
+
+    result = extract_file_sync(document_path, None, config)
+
+    helpers.assert_expected_mime(result, ["application/pdf"])
+    helpers.assert_min_content_length(result, 10)
+    helpers.assert_chunks(result, min_count=1, each_has_content=True)
+
+def test_config_force_ocr() -> None:
+    """Tests force_ocr configuration option"""
+
+    document_path = helpers.resolve_document("pdfs/fake_memo.pdf")
+    if not document_path.exists():
+        pytest.skip(f"Skipping config_force_ocr: missing document at {document_path}")
+
+    config = helpers.build_config({"force_ocr": True})
+
+    result = extract_file_sync(document_path, None, config)
+
+    helpers.assert_expected_mime(result, ["application/pdf"])
+    helpers.assert_min_content_length(result, 5)
+
+def test_config_images() -> None:
+    """Tests image extraction configuration with image assertions"""
+
+    document_path = helpers.resolve_document("pdfs/embedded_images_tables.pdf")
+    if not document_path.exists():
+        pytest.skip(f"Skipping config_images: missing document at {document_path}")
+
+    config = helpers.build_config({"images": {"extract": True, "format": "png"}})
+
+    result = extract_file_sync(document_path, None, config)
+
+    helpers.assert_expected_mime(result, ["application/pdf"])
+    helpers.assert_images(result, min_count=1)
+
+def test_config_language_detection() -> None:
+    """Tests language detection configuration"""
+
+    document_path = helpers.resolve_document("pdfs/fake_memo.pdf")
+    if not document_path.exists():
+        pytest.skip(f"Skipping config_language_detection: missing document at {document_path}")
+
+    config = helpers.build_config({"language_detection": {"enabled": True}})
+
+    result = extract_file_sync(document_path, None, config)
+
+    helpers.assert_expected_mime(result, ["application/pdf"])
+    helpers.assert_min_content_length(result, 10)
+    helpers.assert_detected_languages(result, ["eng"], 0.5)
+
+def test_config_pages() -> None:
+    """Tests page configuration with page assertions"""
+
+    document_path = helpers.resolve_document("pdfs/multi_page.pdf")
+    if not document_path.exists():
+        pytest.skip(f"Skipping config_pages: missing document at {document_path}")
+
+    config = helpers.build_config({"pages": {"end": 3, "start": 1}})
+
+    result = extract_file_sync(document_path, None, config)
+
+    helpers.assert_expected_mime(result, ["application/pdf"])
+    helpers.assert_min_content_length(result, 10)
+
+def test_config_use_cache_false() -> None:
+    """Tests use_cache=false configuration option"""
+
+    document_path = helpers.resolve_document("pdfs/fake_memo.pdf")
+    if not document_path.exists():
+        pytest.skip(f"Skipping config_use_cache_false: missing document at {document_path}")
+
+    config = helpers.build_config({"use_cache": False})
+
+    result = extract_file_sync(document_path, None, config)
+
+    helpers.assert_expected_mime(result, ["application/pdf"])
+    helpers.assert_min_content_length(result, 10)
+
+def test_output_format_djot() -> None:
+    """Tests Djot output format"""
+
+    document_path = helpers.resolve_document("pdfs/fake_memo.pdf")
+    if not document_path.exists():
+        pytest.skip(f"Skipping output_format_djot: missing document at {document_path}")
+
+    config = helpers.build_config({"output_format": "djot"})
+
+    result = extract_file_sync(document_path, None, config)
+
+    helpers.assert_expected_mime(result, ["application/pdf"])
+    helpers.assert_min_content_length(result, 10)
+    helpers.assert_output_format(result, "djot")
+
+def test_output_format_html() -> None:
+    """Tests HTML output format"""
+
+    document_path = helpers.resolve_document("pdfs/fake_memo.pdf")
+    if not document_path.exists():
+        pytest.skip(f"Skipping output_format_html: missing document at {document_path}")
+
+    config = helpers.build_config({"output_format": "html"})
+
+    result = extract_file_sync(document_path, None, config)
+
+    helpers.assert_expected_mime(result, ["application/pdf"])
+    helpers.assert_min_content_length(result, 10)
+    helpers.assert_output_format(result, "html")
+
+def test_output_format_markdown() -> None:
+    """Tests Markdown output format"""
+
+    document_path = helpers.resolve_document("pdfs/fake_memo.pdf")
+    if not document_path.exists():
+        pytest.skip(f"Skipping output_format_markdown: missing document at {document_path}")
+
+    config = helpers.build_config({"output_format": "markdown"})
+
+    result = extract_file_sync(document_path, None, config)
+
+    helpers.assert_expected_mime(result, ["application/pdf"])
+    helpers.assert_min_content_length(result, 10)
+    helpers.assert_output_format(result, "markdown")
+
+def test_output_format_plain() -> None:
+    """Tests Plain output format"""
+
+    document_path = helpers.resolve_document("pdfs/fake_memo.pdf")
+    if not document_path.exists():
+        pytest.skip(f"Skipping output_format_plain: missing document at {document_path}")
+
+    config = helpers.build_config({"output_format": "plain"})
+
+    result = extract_file_sync(document_path, None, config)
+
+    helpers.assert_expected_mime(result, ["application/pdf"])
+    helpers.assert_min_content_length(result, 10)
+    helpers.assert_output_format(result, "plain")
+
+def test_result_format_element_based() -> None:
+    """Tests ElementBased result format with element assertions"""
+
+    document_path = helpers.resolve_document("pdfs/fake_memo.pdf")
+    if not document_path.exists():
+        pytest.skip(f"Skipping result_format_element_based: missing document at {document_path}")
+
+    config = helpers.build_config({"result_format": "element_based"})
+
+    result = extract_file_sync(document_path, None, config)
+
+    helpers.assert_expected_mime(result, ["application/pdf"])
+    helpers.assert_elements(result, min_count=1)
+    helpers.assert_result_format(result, "element_based")
+
+def test_result_format_unified() -> None:
+    """Tests Unified result format (default)"""
+
+    document_path = helpers.resolve_document("pdfs/fake_memo.pdf")
+    if not document_path.exists():
+        pytest.skip(f"Skipping result_format_unified: missing document at {document_path}")
+
+    config = helpers.build_config({"result_format": "unified"})
+
+    result = extract_file_sync(document_path, None, config)
+
+    helpers.assert_expected_mime(result, ["application/pdf"])
+    helpers.assert_min_content_length(result, 10)
+    helpers.assert_result_format(result, "unified")

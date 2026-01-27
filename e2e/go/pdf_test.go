@@ -3,46 +3,7 @@
 
 package e2e
 
-import (
-	"os"
-	"sync"
-	"testing"
-)
-
-// pdfiumOnce ensures Pdfium is initialized only once across all PDF tests
-var pdfiumOnce sync.Once
-
-// init() runs before any tests in this file and initializes Pdfium
-func init() {
-	// Initialize Pdfium early to avoid "already initialized" errors
-	_ = initializePdfium()
-}
-
-// TestMain is called before all tests in this file run.
-func TestMain(m *testing.M) {
-	// Initialize Pdfium by doing a dummy extraction
-	_ = initializePdfium()
-
-	// Run all tests
-	code := m.Run()
-	os.Exit(code)
-}
-
-// initializePdfium triggers Pdfium initialization by performing a simple extraction
-func initializePdfium() error {
-	var err error
-	pdfiumOnce.Do(func() {
-		// Create a minimal PDF to initialize the library
-		defer func() {
-			if r := recover(); r != nil {
-				// If initialization fails, we'll handle it in individual tests
-				err = nil
-			}
-		}()
-		_ = runExtraction(&testing.T{}, "pdfs/fake_memo.pdf", nil)
-	})
-	return err
-}
+import "testing"
 
 func TestPdfPdfAssemblyTechnical(t *testing.T) {
 	result := runExtraction(t, "pdfs/assembly_language_for_beginners_al4_b_en.pdf", nil)

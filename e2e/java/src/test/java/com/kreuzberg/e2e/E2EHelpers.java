@@ -67,6 +67,7 @@ public final class E2EHelpers {
         String reason;
         if (missingDependency) {
             if (error instanceof MissingDependencyException) {
+                // Extract dependency from exception message if available
                 String msg = error.getMessage();
                 reason = msg != null && !msg.isEmpty()
                         ? "missing dependency: " + msg
@@ -270,6 +271,7 @@ public final class E2EHelpers {
                     assertTrue(((String) value).contains((String) contains),
                             String.format("Expected '%s' to contain '%s'", value, contains));
                 } else if (value instanceof List && contains instanceof String) {
+                    // List contains a string
                     @SuppressWarnings("unchecked")
                     List<Object> valueList = (List<Object>) value;
                     boolean found = valueList.stream()
@@ -346,6 +348,110 @@ public final class E2EHelpers {
                 return ((Number) value).doubleValue();
             }
             throw new IllegalArgumentException("Cannot convert to numeric: " + value);
+        }
+
+        public static void assertChunks(
+                ExtractionResult result,
+                Integer minCount,
+                Integer maxCount,
+                Boolean eachHasContent,
+                Boolean eachHasEmbedding
+        ) {
+            var chunks = result.getChunks();
+            int count = chunks != null ? chunks.size() : 0;
+            if (minCount != null) {
+                assertTrue(count >= minCount,
+                        String.format("Expected chunk count >= %d, got %d", minCount, count));
+            }
+            if (maxCount != null) {
+                assertTrue(count <= maxCount,
+                        String.format("Expected chunk count <= %d, got %d", maxCount, count));
+            }
+            if (chunks != null && eachHasContent != null && eachHasContent) {
+                for (var chunk : chunks) {
+                    String content = chunk.getContent();
+                    assertTrue(content != null && !content.isEmpty(),
+                            "Expected each chunk to have content");
+                }
+            }
+            if (chunks != null && eachHasEmbedding != null && eachHasEmbedding) {
+                for (var chunk : chunks) {
+                    assertNotNull(chunk.getEmbedding(),
+                            "Expected each chunk to have an embedding");
+                }
+            }
+        }
+
+        public static void assertImages(
+                ExtractionResult result,
+                Integer minCount,
+                Integer maxCount,
+                List<String> formatsInclude
+        ) {
+            var images = result.getImages();
+            int count = images != null ? images.size() : 0;
+            if (minCount != null) {
+                assertTrue(count >= minCount,
+                        String.format("Expected image count >= %d, got %d", minCount, count));
+            }
+            if (maxCount != null) {
+                assertTrue(count <= maxCount,
+                        String.format("Expected image count <= %d, got %d", maxCount, count));
+            }
+            if (images != null && formatsInclude != null && !formatsInclude.isEmpty()) {
+                var formats = images.stream()
+                        .map(img -> img.getFormat())
+                        .filter(f -> f != null)
+                        .toList();
+                for (String expected : formatsInclude) {
+                    boolean found = formats.stream()
+                            .anyMatch(f -> f.toLowerCase().contains(expected.toLowerCase()));
+                    assertTrue(found,
+                            String.format("Expected image formats to include '%s', got %s", expected, formats));
+                }
+            }
+        }
+
+        public static void assertPages(
+                ExtractionResult result,
+                Integer minCount,
+                Integer exactCount
+        ) {
+            int count = result.getPageCount();
+            if (minCount != null) {
+                assertTrue(count >= minCount,
+                        String.format("Expected page count >= %d, got %d", minCount, count));
+            }
+            if (exactCount != null) {
+                assertTrue(count == exactCount,
+                        String.format("Expected exactly %d pages, got %d", exactCount, count));
+            }
+        }
+
+        public static void assertElements(
+                ExtractionResult result,
+                Integer minCount,
+                List<String> typesInclude
+        ) {
+            var elements = result.getElements();
+            int count = elements != null ? elements.size() : 0;
+            if (minCount != null) {
+                assertTrue(count >= minCount,
+                        String.format("Expected element count >= %d, got %d", minCount, count));
+            }
+            if (elements != null && typesInclude != null && !typesInclude.isEmpty()) {
+                var types = elements.stream()
+                        .map(el -> el.getElementType())
+                        .filter(t -> t != null)
+                        .map(t -> t.wireValue())
+                        .toList();
+                for (String expected : typesInclude) {
+                    boolean found = types.stream()
+                            .anyMatch(t -> t.toLowerCase().contains(expected.toLowerCase()));
+                    assertTrue(found,
+                            String.format("Expected element types to include '%s', got %s", expected, types));
+                }
+            }
         }
     }
 }

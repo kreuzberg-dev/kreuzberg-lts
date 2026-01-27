@@ -55,7 +55,7 @@ RSpec.describe 'smoke fixtures' do
         result,
         ['image/png']
       )
-      E2ERuby::Assertions.assert_metadata_expectation(result, 'format', { eq: 'PNG' })
+      E2ERuby::Assertions.assert_metadata_expectation(result, 'format', 'PNG')
     end
   end
 

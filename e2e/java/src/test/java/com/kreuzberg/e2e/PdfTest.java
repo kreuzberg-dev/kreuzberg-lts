@@ -1,38 +1,29 @@
 package com.kreuzberg.e2e;
 
+// CHECKSTYLE.OFF: UnusedImports - generated code
+// CHECKSTYLE.OFF: LineLength - generated code
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.jupiter.api.BeforeAll;
+import dev.kreuzberg.BytesWithMime;
+import dev.kreuzberg.ExtractionResult;
+import dev.kreuzberg.Kreuzberg;
+import dev.kreuzberg.config.ExtractionConfig;
 import org.junit.jupiter.api.Test;
 
-import dev.kreuzberg.Kreuzberg;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
+// CHECKSTYLE.ON: UnusedImports
+// CHECKSTYLE.ON: LineLength
+
 /** Auto-generated tests for pdf fixtures. */
 public class PdfTest {
     private static final ObjectMapper MAPPER = new ObjectMapper();
-
-    /**
-     * Initialize Pdfium once before all PDF tests.
-     * Pdfium can only be initialized once per process.
-     */
-    @BeforeAll
-    static void initializePdfium() {
-        try {
-            // Trigger Pdfium initialization by extracting a simple PDF
-            Path testDoc = E2EHelpers.resolveDocument("pdfs/fake_memo.pdf");
-            if (java.nio.file.Files.exists(testDoc)) {
-                Kreuzberg.extractFile(testDoc, null);
-            }
-        } catch (Exception e) {
-            // Initialization failure will be handled in individual tests
-            System.err.println("Warning: Pdfium initialization failed: " + e.getMessage());
-        }
-    }
 
     @Test
     public void pdfAssemblyTechnical() throws Exception {

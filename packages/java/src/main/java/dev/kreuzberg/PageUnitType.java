@@ -9,13 +9,13 @@ import com.fasterxml.jackson.annotation.JsonValue;
  */
 public enum PageUnitType {
 	/** Standard document pages (PDF, DOCX, images). */
-	PAGE("Page"),
+	PAGE("page"),
 
 	/** Presentation slides (PPTX, ODP). */
-	SLIDE("Slide"),
+	SLIDE("slide"),
 
 	/** Spreadsheet sheets (XLSX, ODS). */
-	SHEET("Sheet");
+	SHEET("sheet");
 
 	private final String wireValue;
 

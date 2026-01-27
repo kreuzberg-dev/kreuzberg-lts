@@ -1,16 +1,16 @@
 import { defineWorkersConfig } from "@cloudflare/vitest-pool-workers/config";
 
 export default defineWorkersConfig({
-	test: {
-		globals: true,
-		testTimeout: 60000,
-	},
-	// Cloudflare Workers pool configuration (Vitest 4.x format)
-	poolOptions: {
-		workers: {
-			wrangler: {
-				configPath: "./wrangler.toml",
-			},
-		},
-	},
+    test: {
+        globals: true,
+        poolOptions: {
+            workers: {
+                main: "./tests/index.ts",
+                wrangler: {
+                    configPath: "./wrangler.toml",
+                },
+            },
+        },
+        testTimeout: 60000,
+    },
 });

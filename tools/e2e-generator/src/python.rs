@@ -1,9 +1,9 @@
-use crate::fixtures::{Assertions, Fixture, PluginAssertions, PluginTestSpec};
+use crate::fixtures::{Assertions, ExtractionMethod, Fixture, InputType, PluginAssertions, PluginTestSpec};
 use anyhow::{Context, Result};
 use camino::Utf8Path;
 use itertools::Itertools;
 use serde_json::{Map, Value};
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashSet};
 use std::fmt::Write as _;
 use std::fs;
 
@@ -21,8 +21,10 @@ from kreuzberg import (
     ImageExtractionConfig,
     LanguageDetectionConfig,
     OcrConfig,
+    OutputFormat,
     PdfConfig,
     PostProcessorConfig,
+    ResultFormat,
     TokenReductionConfig,
 )
 
@@ -68,6 +70,12 @@ def build_config(config: dict[str, Any] | None) -> ExtractionConfig:
 
     if (postprocessor := config.get("postprocessor")) is not None:
         kwargs["postprocessor"] = PostProcessorConfig(**postprocessor)
+
+    if (output_format := config.get("output_format")) is not None:
+        kwargs["output_format"] = OutputFormat(output_format)
+
+    if (result_format := config.get("result_format")) is not None:
+        kwargs["result_format"] = ResultFormat(result_format)
 
     return ExtractionConfig(**kwargs)
 
@@ -229,6 +237,103 @@ def _values_equal(lhs: Any, rhs: Any) -> bool:
     if isinstance(lhs, bool) and isinstance(rhs, bool):
         return lhs is rhs
     return bool(lhs == rhs)
+
+
+def assert_chunks(
+    result: Any,
+    min_count: int | None = None,
+    max_count: int | None = None,
+    each_has_content: bool | None = None,
+    each_has_embedding: bool | None = None,
+) -> None:
+    chunks = getattr(result, "chunks", None)
+    if chunks is None:
+        pytest.fail("Expected chunks but got None")
+    count = len(chunks)
+    if min_count is not None and count < min_count:
+        pytest.fail(f"Expected at least {min_count} chunks, found {count}")
+    if max_count is not None and count > max_count:
+        pytest.fail(f"Expected at most {max_count} chunks, found {count}")
+    if each_has_content:
+        for i, chunk in enumerate(chunks):
+            if not getattr(chunk, "content", None):
+                pytest.fail(f"Chunk {i} has no content")
+    if each_has_embedding:
+        for i, chunk in enumerate(chunks):
+            if not getattr(chunk, "embedding", None):
+                pytest.fail(f"Chunk {i} has no embedding")
+
+
+def assert_images(
+    result: Any,
+    min_count: int | None = None,
+    max_count: int | None = None,
+    formats_include: list[str] | None = None,
+) -> None:
+    images = getattr(result, "images", None)
+    if images is None:
+        pytest.fail("Expected images but got None")
+    count = len(images)
+    if min_count is not None and count < min_count:
+        pytest.fail(f"Expected at least {min_count} images, found {count}")
+    if max_count is not None and count > max_count:
+        pytest.fail(f"Expected at most {max_count} images, found {count}")
+    if formats_include:
+        found_formats = {getattr(img, "format", None) for img in images}
+        for fmt in formats_include:
+            if fmt not in found_formats:
+                pytest.fail(f"Expected image format {fmt!r} not found in {found_formats}")
+
+
+def assert_pages(
+    result: Any,
+    min_count: int | None = None,
+    exact_count: int | None = None,
+) -> None:
+    pages = getattr(result, "pages", None)
+    if pages is None:
+        pytest.fail("Expected pages but got None")
+    count = len(pages)
+    if exact_count is not None and count != exact_count:
+        pytest.fail(f"Expected exactly {exact_count} pages, found {count}")
+    if min_count is not None and count < min_count:
+        pytest.fail(f"Expected at least {min_count} pages, found {count}")
+
+
+def assert_elements(
+    result: Any,
+    min_count: int | None = None,
+    types_include: list[str] | None = None,
+) -> None:
+    elements = getattr(result, "elements", None)
+    if elements is None:
+        pytest.fail("Expected elements but got None")
+    count = len(elements)
+    if min_count is not None and count < min_count:
+        pytest.fail(f"Expected at least {min_count} elements, found {count}")
+    if types_include:
+        found_types = {getattr(el, "type", None) for el in elements}
+        for el_type in types_include:
+            if el_type not in found_types:
+                pytest.fail(f"Expected element type {el_type!r} not found in {found_types}")
+
+
+def assert_output_format(result: Any, expected: str) -> None:
+    actual = getattr(result, "output_format", None)
+    if actual is None:
+        pytest.fail("Expected output_format but field is None")
+    actual_value = actual.value if hasattr(actual, "value") else str(actual)
+    if actual_value.lower() != expected.lower():
+        pytest.fail(f"Expected output_format {expected!r}, got {actual_value!r}")
+
+
+def assert_result_format(result: Any, expected: str) -> None:
+    actual = getattr(result, "result_format", None)
+    if actual is None:
+        pytest.fail("Expected result_format but field is None")
+    actual_value = actual.value if hasattr(actual, "value") else str(actual)
+    if actual_value.lower() != expected.lower():
+        pytest.fail(f"Expected result_format {expected!r}, got {actual_value!r}")
 "#;
 
 pub fn generate(fixtures: &[Fixture], output_root: &Utf8Path) -> Result<()> {
@@ -309,7 +414,13 @@ fn render_category(category: &str, fixtures: &[&Fixture]) -> Result<String> {
     writeln!(buffer, "from __future__ import annotations\n")?;
     writeln!(buffer, "import pytest")?;
     writeln!(buffer)?;
-    writeln!(buffer, "from kreuzberg import extract_file_sync")?;
+
+    let imports = collect_imports(fixtures);
+    writeln!(buffer, "from kreuzberg import (")?;
+    for import_name in &imports {
+        writeln!(buffer, "    {},", import_name)?;
+    }
+    writeln!(buffer, ")")?;
     writeln!(buffer)?;
     writeln!(buffer, "from . import helpers\n")?;
     buffer.push('\n');
@@ -322,10 +433,52 @@ fn render_category(category: &str, fixtures: &[&Fixture]) -> Result<String> {
     Ok(buffer)
 }
 
+fn collect_imports(fixtures: &[&Fixture]) -> Vec<String> {
+    let mut imports = HashSet::new();
+    for fixture in fixtures {
+        let extraction = fixture.extraction();
+        let func_name = get_extraction_function_name(extraction.method, extraction.input_type);
+        imports.insert(func_name);
+    }
+    let mut imports: Vec<_> = imports.into_iter().collect();
+    imports.sort();
+    imports
+}
+
+fn get_extraction_function_name(method: ExtractionMethod, input_type: InputType) -> String {
+    match (method, input_type) {
+        (ExtractionMethod::Sync, InputType::File) => "extract_file_sync".to_string(),
+        (ExtractionMethod::Sync, InputType::Bytes) => "extract_bytes_sync".to_string(),
+        (ExtractionMethod::Async, InputType::File) => "extract_file".to_string(),
+        (ExtractionMethod::Async, InputType::Bytes) => "extract_bytes".to_string(),
+        (ExtractionMethod::BatchSync, InputType::File) => "batch_extract_file_sync".to_string(),
+        (ExtractionMethod::BatchSync, InputType::Bytes) => "batch_extract_bytes_sync".to_string(),
+        (ExtractionMethod::BatchAsync, InputType::File) => "batch_extract_file".to_string(),
+        (ExtractionMethod::BatchAsync, InputType::Bytes) => "batch_extract_bytes".to_string(),
+    }
+}
+
 fn render_test(fixture: &Fixture) -> Result<String> {
     let mut code = String::new();
+    let extraction = fixture.extraction();
+    let is_async = matches!(
+        extraction.method,
+        ExtractionMethod::Async | ExtractionMethod::BatchAsync
+    );
+    let is_batch = matches!(
+        extraction.method,
+        ExtractionMethod::BatchSync | ExtractionMethod::BatchAsync
+    );
+    let is_bytes = matches!(extraction.input_type, InputType::Bytes);
+
     let test_name = format!("test_{}", sanitize_identifier(&fixture.id));
-    writeln!(code, "def {test_name}() -> None:")?;
+
+    if is_async {
+        writeln!(code, "@pytest.mark.asyncio")?;
+        writeln!(code, "async def {test_name}() -> None:")?;
+    } else {
+        writeln!(code, "def {test_name}() -> None:")?;
+    }
     writeln!(code, "    \"\"\"{}\"\"\"", escape_python_string(&fixture.description))?;
     writeln!(code)?;
     writeln!(
@@ -341,11 +494,40 @@ fn render_test(fixture: &Fixture) -> Result<String> {
     )?;
     writeln!(code)?;
 
-    let config_literal = render_config_literal(&fixture.extraction().config);
+    let config_literal = render_config_literal(&extraction.config);
     writeln!(code, "    config = helpers.build_config({})", config_literal)?;
     writeln!(code)?;
 
-    writeln!(code, "    result = extract_file_sync(document_path, None, config)")?;
+    let func_name = get_extraction_function_name(extraction.method, extraction.input_type);
+    let await_prefix = if is_async { "await " } else { "" };
+
+    if is_bytes {
+        writeln!(code, "    file_bytes = document_path.read_bytes()")?;
+        writeln!(code)?;
+        if is_batch {
+            writeln!(
+                code,
+                "    results = {await_prefix}{func_name}([file_bytes], config=config)"
+            )?;
+            writeln!(code, "    result = results[0]")?;
+        } else {
+            writeln!(
+                code,
+                "    result = {await_prefix}{func_name}(file_bytes, config=config)"
+            )?;
+        }
+    } else if is_batch {
+        writeln!(
+            code,
+            "    results = {await_prefix}{func_name}([document_path], config=config)"
+        )?;
+        writeln!(code, "    result = results[0]")?;
+    } else {
+        writeln!(
+            code,
+            "    result = {await_prefix}{func_name}(document_path, None, config)"
+        )?;
+    }
     writeln!(code)?;
 
     code.push_str(&render_assertions(&fixture.assertions()));
@@ -419,6 +601,83 @@ fn render_assertions(assertions: &Assertions) -> String {
             "    helpers.assert_metadata_expectation(result, {}, {})",
             python_string_literal(path),
             render_python_metadata_expectation(expectation)
+        )
+        .unwrap();
+    }
+
+    if let Some(chunks) = assertions.chunks.as_ref() {
+        let mut args = Vec::new();
+        if let Some(min) = chunks.min_count {
+            args.push(format!("min_count={min}"));
+        }
+        if let Some(max) = chunks.max_count {
+            args.push(format!("max_count={max}"));
+        }
+        if let Some(has_content) = chunks.each_has_content {
+            args.push(format!(
+                "each_has_content={}",
+                if has_content { "True" } else { "False" }
+            ));
+        }
+        if let Some(has_embedding) = chunks.each_has_embedding {
+            args.push(format!(
+                "each_has_embedding={}",
+                if has_embedding { "True" } else { "False" }
+            ));
+        }
+        writeln!(buffer, "    helpers.assert_chunks(result, {})", args.join(", ")).unwrap();
+    }
+
+    if let Some(images) = assertions.images.as_ref() {
+        let mut args = Vec::new();
+        if let Some(min) = images.min_count {
+            args.push(format!("min_count={min}"));
+        }
+        if let Some(max) = images.max_count {
+            args.push(format!("max_count={max}"));
+        }
+        if let Some(formats) = images.formats_include.as_ref() {
+            args.push(format!("formats_include={}", render_string_list(formats)));
+        }
+        writeln!(buffer, "    helpers.assert_images(result, {})", args.join(", ")).unwrap();
+    }
+
+    if let Some(pages) = assertions.pages.as_ref() {
+        let mut args = Vec::new();
+        if let Some(min) = pages.min_count {
+            args.push(format!("min_count={min}"));
+        }
+        if let Some(exact) = pages.exact_count {
+            args.push(format!("exact_count={exact}"));
+        }
+        writeln!(buffer, "    helpers.assert_pages(result, {})", args.join(", ")).unwrap();
+    }
+
+    if let Some(elements) = assertions.elements.as_ref() {
+        let mut args = Vec::new();
+        if let Some(min) = elements.min_count {
+            args.push(format!("min_count={min}"));
+        }
+        if let Some(types) = elements.types_include.as_ref() {
+            args.push(format!("types_include={}", render_string_list(types)));
+        }
+        writeln!(buffer, "    helpers.assert_elements(result, {})", args.join(", ")).unwrap();
+    }
+
+    if let Some(output_format) = assertions.output_format_is.as_ref() {
+        writeln!(
+            buffer,
+            "    helpers.assert_output_format(result, {})",
+            python_string_literal(output_format)
+        )
+        .unwrap();
+    }
+
+    if let Some(result_format) = assertions.result_format_is.as_ref() {
+        writeln!(
+            buffer,
+            "    helpers.assert_result_format(result, {})",
+            python_string_literal(result_format)
         )
         .unwrap();
     }

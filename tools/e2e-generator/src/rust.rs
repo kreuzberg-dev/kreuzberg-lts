@@ -1,4 +1,4 @@
-use crate::fixtures::{Assertions, Fixture, PluginTestSpec};
+use crate::fixtures::{Assertions, ExtractionMethod, Fixture, InputType, PluginTestSpec};
 use anyhow::{Context, Result};
 use camino::Utf8Path;
 use itertools::Itertools;
@@ -68,9 +68,16 @@ fn render_category(category: &str, fixtures: &[&Fixture]) -> Result<String> {
         !fixture.skip().requires_feature.is_empty() || !fixture.document().requires_external_tool.is_empty()
     });
 
+    let needs_tokio = fixtures.iter().any(|fixture| {
+        let method = fixture.extraction().method;
+        matches!(method, ExtractionMethod::Async | ExtractionMethod::BatchAsync)
+    });
+
     if needs_error_import {
-        writeln!(buffer, "use kreuzberg::KreuzbergError;\n")?;
-    } else {
+        writeln!(buffer, "use kreuzberg::KreuzbergError;")?;
+    }
+
+    if needs_tokio || !needs_error_import {
         writeln!(buffer)?;
     }
 
@@ -84,12 +91,25 @@ fn render_category(category: &str, fixtures: &[&Fixture]) -> Result<String> {
 fn render_test(fixture: &Fixture) -> Result<String> {
     let mut test_body = String::new();
 
+    let extraction = fixture.extraction();
+    let method = extraction.method;
+    let input_type = extraction.input_type;
+    let is_async = matches!(method, ExtractionMethod::Async | ExtractionMethod::BatchAsync);
+    let is_batch = matches!(method, ExtractionMethod::BatchSync | ExtractionMethod::BatchAsync);
+
     let test_name = format!("test_{}", sanitize_identifier(&fixture.id));
-    writeln!(
-        test_body,
-        "#[test]\nfn {test_name}() {{\n    // {}\n",
-        fixture.description
-    )?;
+
+    // Write test attribute
+    if is_async {
+        writeln!(test_body, "#[tokio::test]")?;
+        writeln!(test_body, "async fn {test_name}() {{\n    // {}\n", fixture.description)?;
+    } else {
+        writeln!(
+            test_body,
+            "#[test]\nfn {test_name}() {{\n    // {}\n",
+            fixture.description
+        )?;
+    }
 
     let doc_path = &fixture.document().path;
     writeln!(
@@ -106,7 +126,7 @@ fn render_test(fixture: &Fixture) -> Result<String> {
         )?;
     }
 
-    let config_literal = render_config_literal(&fixture.extraction().config)?;
+    let config_literal = render_config_literal(&extraction.config)?;
     if config_literal.trim().is_empty() || config_literal.trim() == "{}" {
         writeln!(test_body, "    let config = ExtractionConfig::default();\n")?;
     } else {
@@ -117,10 +137,51 @@ fn render_test(fixture: &Fixture) -> Result<String> {
         )?;
     }
 
-    writeln!(
-        test_body,
-        "    let result = match kreuzberg::extract_file_sync(&document_path, None, &config) {{"
-    )?;
+    // For bytes input, read file contents and detect MIME type
+    if input_type == InputType::Bytes {
+        writeln!(
+            test_body,
+            "    let file_bytes = std::fs::read(&document_path)\n        .expect(\"Failed to read document file\");"
+        )?;
+        writeln!(
+            test_body,
+            "    let mime_type = kreuzberg::detect_mime_type(&document_path, true)\n        .expect(\"Failed to detect MIME type\");\n"
+        )?;
+    }
+
+    // Generate extraction call based on method and input type
+    // Note: extract_bytes/extract_bytes_sync require &str for mime_type, not Option
+    // Note: batch functions are batch_extract_file, batch_extract_bytes with different signatures
+    let extract_call = match (method, input_type, is_batch) {
+        (ExtractionMethod::Sync, InputType::File, false) => {
+            "kreuzberg::extract_file_sync(&document_path, None, &config)".to_string()
+        }
+        (ExtractionMethod::Sync, InputType::Bytes, false) => {
+            "kreuzberg::extract_bytes_sync(&file_bytes, &mime_type, &config)".to_string()
+        }
+        (ExtractionMethod::Async, InputType::File, false) => {
+            "kreuzberg::extract_file(&document_path, None, &config).await".to_string()
+        }
+        (ExtractionMethod::Async, InputType::Bytes, false) => {
+            "kreuzberg::extract_bytes(&file_bytes, &mime_type, &config).await".to_string()
+        }
+        (ExtractionMethod::BatchSync, InputType::File, true) => {
+            "kreuzberg::batch_extract_file_sync(vec![document_path.clone()], &config)".to_string()
+        }
+        (ExtractionMethod::BatchSync, InputType::Bytes, true) => {
+            "kreuzberg::batch_extract_bytes_sync(vec![(file_bytes.clone(), mime_type.clone())], &config)".to_string()
+        }
+        (ExtractionMethod::BatchAsync, InputType::File, true) => {
+            "kreuzberg::batch_extract_file(vec![document_path.clone()], &config).await".to_string()
+        }
+        (ExtractionMethod::BatchAsync, InputType::Bytes, true) => {
+            "kreuzberg::batch_extract_bytes(vec![(file_bytes.clone(), mime_type.clone())], &config).await".to_string()
+        }
+        _ => "kreuzberg::extract_file_sync(&document_path, None, &config)".to_string(),
+    };
+
+    writeln!(test_body, "    let result = match {} {{", extract_call)?;
+
     if !fixture.skip().requires_feature.is_empty() || !fixture.document().requires_external_tool.is_empty() {
         writeln!(
             test_body,
@@ -133,11 +194,20 @@ fn render_test(fixture: &Fixture) -> Result<String> {
             id = fixture.id
         )?;
     }
-    writeln!(
-        test_body,
-        "        Err(err) => panic!(\"Extraction failed for {id}: {{err:?}}\"),\n        Ok(result) => result,\n    }};\n",
-        id = fixture.id
-    )?;
+
+    if is_batch {
+        writeln!(
+            test_body,
+            "        Err(err) => panic!(\"Extraction failed for {id}: {{err:?}}\"),\n        Ok(results) => results.into_iter().next().expect(\"Expected at least one result\"),\n    }};\n",
+            id = fixture.id
+        )?;
+    } else {
+        writeln!(
+            test_body,
+            "        Err(err) => panic!(\"Extraction failed for {id}: {{err:?}}\"),\n        Ok(result) => result,\n    }};\n",
+            id = fixture.id
+        )?;
+    }
 
     test_body.push_str(&render_assertions(&fixture.assertions()));
 
@@ -218,6 +288,76 @@ fn render_assertions(assertions: &Assertions) -> String {
                 render_json_expression(expectation)
             ));
         }
+    }
+
+    if let Some(chunks) = assertions.chunks.as_ref() {
+        let min_count = chunks
+            .min_count
+            .map(|v| format!("Some({v})"))
+            .unwrap_or_else(|| "None".into());
+        let max_count = chunks
+            .max_count
+            .map(|v| format!("Some({v})"))
+            .unwrap_or_else(|| "None".into());
+        let each_has_content = chunks
+            .each_has_content
+            .map(|v| format!("Some({v})"))
+            .unwrap_or_else(|| "None".into());
+        let each_has_embedding = chunks
+            .each_has_embedding
+            .map(|v| format!("Some({v})"))
+            .unwrap_or_else(|| "None".into());
+        buffer.push_str(&format!(
+            "    assertions::assert_chunks(&result, {min_count}, {max_count}, {each_has_content}, {each_has_embedding});\n"
+        ));
+    }
+
+    if let Some(images) = assertions.images.as_ref() {
+        let min_count = images
+            .min_count
+            .map(|v| format!("Some({v})"))
+            .unwrap_or_else(|| "None".into());
+        let max_count = images
+            .max_count
+            .map(|v| format!("Some({v})"))
+            .unwrap_or_else(|| "None".into());
+        let formats_include = images
+            .formats_include
+            .as_ref()
+            .map(|v| format!("Some(&{})", render_string_slice(v)))
+            .unwrap_or_else(|| "None".into());
+        buffer.push_str(&format!(
+            "    assertions::assert_images(&result, {min_count}, {max_count}, {formats_include});\n"
+        ));
+    }
+
+    if let Some(pages) = assertions.pages.as_ref() {
+        let min_count = pages
+            .min_count
+            .map(|v| format!("Some({v})"))
+            .unwrap_or_else(|| "None".into());
+        let exact_count = pages
+            .exact_count
+            .map(|v| format!("Some({v})"))
+            .unwrap_or_else(|| "None".into());
+        buffer.push_str(&format!(
+            "    assertions::assert_pages(&result, {min_count}, {exact_count});\n"
+        ));
+    }
+
+    if let Some(elements) = assertions.elements.as_ref() {
+        let min_count = elements
+            .min_count
+            .map(|v| format!("Some({v})"))
+            .unwrap_or_else(|| "None".into());
+        let types_include = elements
+            .types_include
+            .as_ref()
+            .map(|v| format!("Some(&{})", render_string_slice(v)))
+            .unwrap_or_else(|| "None".into());
+        buffer.push_str(&format!(
+            "    assertions::assert_elements(&result, {min_count}, {types_include});\n"
+        ));
     }
 
     buffer

@@ -1,0 +1,20 @@
+{
+	"id": "result_format_unified",
+	"description": "Tests Unified result format (default)",
+	"tags": ["contract", "result_format"],
+	"document": {
+		"path": "pdfs/fake_memo.pdf"
+	},
+	"extraction": {
+		"method": "sync",
+		"input_type": "file",
+		"config": {
+			"result_format": "unified"
+		}
+	},
+	"assertions": {
+		"expected_mime": "application/pdf",
+		"min_content_length": 10,
+		"result_format_is": "unified"
+	}
+}

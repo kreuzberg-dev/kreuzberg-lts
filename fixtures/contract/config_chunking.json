@@ -1,0 +1,26 @@
+{
+	"id": "config_chunking",
+	"description": "Tests chunking configuration with chunk assertions",
+	"tags": ["contract", "config"],
+	"document": {
+		"path": "pdfs/fake_memo.pdf"
+	},
+	"extraction": {
+		"method": "sync",
+		"input_type": "file",
+		"config": {
+			"chunking": {
+				"max_chars": 500,
+				"overlap": 50
+			}
+		}
+	},
+	"assertions": {
+		"expected_mime": "application/pdf",
+		"min_content_length": 10,
+		"chunks": {
+			"min_count": 1,
+			"each_has_content": true
+		}
+	}
+}

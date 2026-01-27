@@ -3,7 +3,9 @@ from __future__ import annotations
 
 import pytest
 
-from kreuzberg import extract_file_sync
+from kreuzberg import (
+    extract_file_sync,
+)
 
 from . import helpers
 
@@ -121,6 +123,20 @@ def test_office_docx_tables() -> None:
     helpers.assert_min_content_length(result, 50)
     helpers.assert_content_contains_all(result, ["Simple uniform table", "Nested Table", "merged cells", "Header Col"])
     helpers.assert_table_count(result, 1, None)
+
+def test_office_ppsx_slideshow() -> None:
+    """PPSX (PowerPoint Show) files should extract slides content identical to PPTX. GitHub Issue #321 Bug 2."""
+
+    document_path = helpers.resolve_document("presentations/sample.ppsx")
+    if not document_path.exists():
+        pytest.skip(f"Skipping office_ppsx_slideshow: missing document at {document_path}")
+
+    config = helpers.build_config(None)
+
+    result = extract_file_sync(document_path, None, config)
+
+    helpers.assert_expected_mime(result, ["application/vnd.openxmlformats-officedocument.presentationml.slideshow"])
+    helpers.assert_min_content_length(result, 10)
 
 def test_office_ppt_legacy() -> None:
     """Legacy PowerPoint .ppt file requiring LibreOffice conversion."""

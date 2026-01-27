@@ -3,7 +3,9 @@ from __future__ import annotations
 
 import pytest
 
-from kreuzberg import extract_file_sync
+from kreuzberg import (
+    extract_file_sync,
+)
 
 from . import helpers
 

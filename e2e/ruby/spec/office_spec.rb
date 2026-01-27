@@ -144,6 +144,23 @@ RSpec.describe 'office fixtures' do
     end
   end
 
+  it 'office_ppsx_slideshow' do
+    E2ERuby.run_fixture(
+      'office_ppsx_slideshow',
+      'presentations/sample.ppsx',
+      nil,
+      requirements: [],
+      notes: nil,
+      skip_if_missing: true
+    ) do |result|
+      E2ERuby::Assertions.assert_expected_mime(
+        result,
+        ['application/vnd.openxmlformats-officedocument.presentationml.slideshow']
+      )
+      E2ERuby::Assertions.assert_min_content_length(result, 10)
+    end
+  end
+
   it 'office_ppt_legacy' do
     E2ERuby.run_fixture(
       'office_ppt_legacy',

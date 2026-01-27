@@ -50,9 +50,7 @@ class Helpers
 
         $params = [];
 
-        // Note: PHP ExtractionConfig doesn't support use_cache, enable_quality_processing, or force_ocr
-        // These are handled by the Rust core but not exposed in the PHP API
-
+        // Handle nested config objects
         if (isset($config['ocr']) && is_array($config['ocr'])) {
             $ocrParams = [];
             if (isset($config['ocr']['backend'])) {
@@ -66,16 +64,33 @@ class Helpers
             }
         }
         if (isset($config['chunking']) && is_array($config['chunking'])) {
-            $params['chunking'] = new ChunkingConfig(...$config['chunking']);
+            $params['chunking'] = ChunkingConfig::fromArray($config['chunking']);
         }
         if (isset($config['images']) && is_array($config['images'])) {
-            $params['imageExtraction'] = new ImageExtractionConfig(...$config['images']);
+            $params['imageExtraction'] = ImageExtractionConfig::fromArray($config['images']);
         }
         if (isset($config['pdf_options']) && is_array($config['pdf_options'])) {
-            $params['pdf'] = new PdfConfig(...$config['pdf_options']);
+            $params['pdf'] = PdfConfig::fromArray($config['pdf_options']);
         }
         if (isset($config['language_detection']) && is_array($config['language_detection'])) {
-            $params['languageDetection'] = new LanguageDetectionConfig(...$config['language_detection']);
+            $params['languageDetection'] = LanguageDetectionConfig::fromArray($config['language_detection']);
+        }
+
+        // Handle scalar config options
+        if (isset($config['use_cache'])) {
+            $params['useCache'] = (bool)$config['use_cache'];
+        }
+        if (isset($config['force_ocr'])) {
+            $params['forceOcr'] = (bool)$config['force_ocr'];
+        }
+        if (isset($config['enable_quality_processing'])) {
+            $params['enableQualityProcessing'] = (bool)$config['enable_quality_processing'];
+        }
+        if (isset($config['output_format'])) {
+            $params['outputFormat'] = $config['output_format'];
+        }
+        if (isset($config['result_format'])) {
+            $params['resultFormat'] = $config['result_format'];
         }
 
         return new ExtractionConfig(...$params);
@@ -174,7 +189,7 @@ class Helpers
 
     public static function assertTableCount(ExtractionResult $result, ?int $minimum, ?int $maximum): void
     {
-        $count = count($result->getTables());
+        $count = count($result->tables ?? []);
 
         if ($minimum !== null) {
             Assert::assertGreaterThanOrEqual(
@@ -216,13 +231,160 @@ class Helpers
             sprintf("Expected languages %s, missing %s", json_encode($expected), json_encode($missing))
         );
 
-        if ($minConfidence !== null && isset($result->metadata['confidence'])) {
-            $confidence = $result->metadata['confidence'];
+        if ($minConfidence !== null && $result->metadata->hasCustom('confidence')) {
+            $confidence = $result->metadata->getCustom('confidence');
             Assert::assertGreaterThanOrEqual(
                 $minConfidence,
                 $confidence,
                 sprintf("Expected confidence >= %f, got %f", $minConfidence, $confidence)
             );
+        }
+    }
+
+    public static function assertChunks(
+        ExtractionResult $result,
+        ?int $minCount,
+        ?int $maxCount,
+        ?bool $eachHasContent,
+        ?bool $eachHasEmbedding
+    ): void {
+        $chunks = $result->chunks ?? [];
+        $count = count($chunks);
+
+        if ($minCount !== null) {
+            Assert::assertGreaterThanOrEqual(
+                $minCount,
+                $count,
+                sprintf("Expected at least %d chunks, found %d", $minCount, $count)
+            );
+        }
+
+        if ($maxCount !== null) {
+            Assert::assertLessThanOrEqual(
+                $maxCount,
+                $count,
+                sprintf("Expected at most %d chunks, found %d", $maxCount, $count)
+            );
+        }
+
+        if ($eachHasContent === true) {
+            foreach ($chunks as $i => $chunk) {
+                Assert::assertNotEmpty(
+                    $chunk->content ?? '',
+                    sprintf("Chunk %d should have content", $i)
+                );
+            }
+        }
+
+        if ($eachHasEmbedding === true) {
+            foreach ($chunks as $i => $chunk) {
+                Assert::assertNotNull(
+                    $chunk->embedding ?? null,
+                    sprintf("Chunk %d should have embedding", $i)
+                );
+            }
+        }
+    }
+
+    public static function assertImages(
+        ExtractionResult $result,
+        ?int $minCount,
+        ?int $maxCount,
+        ?array $formatsInclude
+    ): void {
+        $images = $result->images ?? [];
+        $count = count($images);
+
+        if ($minCount !== null) {
+            Assert::assertGreaterThanOrEqual(
+                $minCount,
+                $count,
+                sprintf("Expected at least %d images, found %d", $minCount, $count)
+            );
+        }
+
+        if ($maxCount !== null) {
+            Assert::assertLessThanOrEqual(
+                $maxCount,
+                $count,
+                sprintf("Expected at most %d images, found %d", $maxCount, $count)
+            );
+        }
+
+        if ($formatsInclude !== null && !empty($formatsInclude)) {
+            $foundFormats = [];
+            foreach ($images as $image) {
+                if (isset($image->format)) {
+                    $foundFormats[] = strtolower($image->format);
+                }
+            }
+
+            foreach ($formatsInclude as $format) {
+                Assert::assertContains(
+                    strtolower($format),
+                    $foundFormats,
+                    sprintf("Expected image format '%s' not found in %s", $format, json_encode($foundFormats))
+                );
+            }
+        }
+    }
+
+    public static function assertPages(
+        ExtractionResult $result,
+        ?int $minCount,
+        ?int $exactCount
+    ): void {
+        $pages = $result->pages ?? [];
+        $count = count($pages);
+
+        if ($exactCount !== null) {
+            Assert::assertEquals(
+                $exactCount,
+                $count,
+                sprintf("Expected exactly %d pages, found %d", $exactCount, $count)
+            );
+        }
+
+        if ($minCount !== null) {
+            Assert::assertGreaterThanOrEqual(
+                $minCount,
+                $count,
+                sprintf("Expected at least %d pages, found %d", $minCount, $count)
+            );
+        }
+    }
+
+    public static function assertElements(
+        ExtractionResult $result,
+        ?int $minCount,
+        ?array $typesInclude
+    ): void {
+        $elements = $result->elements ?? [];
+        $count = count($elements);
+
+        if ($minCount !== null) {
+            Assert::assertGreaterThanOrEqual(
+                $minCount,
+                $count,
+                sprintf("Expected at least %d elements, found %d", $minCount, $count)
+            );
+        }
+
+        if ($typesInclude !== null && !empty($typesInclude)) {
+            $foundTypes = [];
+            foreach ($elements as $element) {
+                if (isset($element->type)) {
+                    $foundTypes[] = strtolower($element->type);
+                }
+            }
+
+            foreach ($typesInclude as $type) {
+                Assert::assertContains(
+                    strtolower($type),
+                    $foundTypes,
+                    sprintf("Expected element type '%s' not found in %s", $type, json_encode($foundTypes))
+                );
+            }
         }
     }
 
@@ -305,7 +467,16 @@ class Helpers
             return $metadata;
         }
 
-        // Convert Metadata object to array
+        // If the metadata object has a to_array() method (PHP extension Metadata class),
+        // use it to get all metadata including format-specific fields
+        if (method_exists($metadata, 'to_array')) {
+            return $metadata->to_array();
+        }
+
+        // Convert Metadata object to array manually for pure PHP SDK
+        // Note: The PHP extension uses snake_case properties (format_type, created_at, etc.)
+        // while the pure PHP SDK uses camelCase (formatType, createdAt, etc.)
+        // We check for both to support either implementation
         $result = [];
         if (isset($metadata->language)) {
             $result['language'] = $metadata->language;
@@ -316,7 +487,10 @@ class Helpers
         if (isset($metadata->subject)) {
             $result['subject'] = $metadata->subject;
         }
-        if (isset($metadata->formatType)) {
+        // Check both snake_case (extension) and camelCase (pure PHP SDK)
+        if (isset($metadata->format_type)) {
+            $result['format_type'] = $metadata->format_type;
+        } elseif (isset($metadata->formatType)) {
             $result['format_type'] = $metadata->formatType;
         }
         if (isset($metadata->title)) {
@@ -328,20 +502,38 @@ class Helpers
         if (isset($metadata->keywords)) {
             $result['keywords'] = $metadata->keywords;
         }
-        if (isset($metadata->createdAt)) {
+        // Check both snake_case (extension) and camelCase (pure PHP SDK)
+        if (isset($metadata->created_at)) {
+            $result['created_at'] = $metadata->created_at;
+        } elseif (isset($metadata->createdAt)) {
             $result['created_at'] = $metadata->createdAt;
         }
-        if (isset($metadata->modifiedAt)) {
+        if (isset($metadata->modified_at)) {
+            $result['modified_at'] = $metadata->modified_at;
+        } elseif (isset($metadata->modifiedAt)) {
             $result['modified_at'] = $metadata->modifiedAt;
         }
-        if (isset($metadata->createdBy)) {
+        if (isset($metadata->created_by)) {
+            $result['created_by'] = $metadata->created_by;
+        } elseif (isset($metadata->createdBy)) {
             $result['created_by'] = $metadata->createdBy;
         }
         if (isset($metadata->producer)) {
             $result['producer'] = $metadata->producer;
         }
-        if (isset($metadata->pageCount)) {
+        if (isset($metadata->page_count)) {
+            $result['page_count'] = $metadata->page_count;
+        } elseif (isset($metadata->pageCount)) {
             $result['page_count'] = $metadata->pageCount;
+        }
+        // Format-specific fields (snake_case from extension)
+        if (isset($metadata->sheet_count)) {
+            $result['sheet_count'] = $metadata->sheet_count;
+        } elseif (isset($metadata->sheetCount)) {
+            $result['sheet_count'] = $metadata->sheetCount;
+        }
+        if (isset($metadata->format)) {
+            $result['format'] = $metadata->format;
         }
         if (isset($metadata->custom) && is_array($metadata->custom)) {
             foreach ($metadata->custom as $key => $value) {

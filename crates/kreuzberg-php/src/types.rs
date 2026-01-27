@@ -340,8 +340,9 @@ impl ExtractionResult {
                 }
             }
 
-            // Also add the full format object as a nested "format" key for paths like "format.format"
-            metadata_obj.insert("format".to_string(), format_json);
+            // Also add the full format object as a nested "format_nested" key for paths like "format_nested.format"
+            // (renamed from "format" to avoid conflicts with ImageMetadata.format)
+            metadata_obj.insert("format_nested".to_string(), format_json);
         }
 
         // Extract keywords from additional metadata before adding all additional fields
@@ -756,6 +757,18 @@ pub struct Metadata {
     #[php(prop)]
     pub page_count: Option<usize>,
 
+    /// Format type discriminator (e.g., "pdf", "excel", "image")
+    #[php(prop)]
+    pub format_type: Option<String>,
+
+    /// Sheet count for Excel/spreadsheet documents
+    #[php(prop)]
+    pub sheet_count: Option<usize>,
+
+    /// Image format (e.g., "PNG", "JPEG") for image documents
+    #[php(prop)]
+    pub format: Option<String>,
+
     /// Additional metadata fields (stored as JSON for now)
     additional_json: String,
 }
@@ -786,6 +799,9 @@ impl Metadata {
             created_by: obj.get("created_by").and_then(|v| v.as_str()).map(String::from),
             modified_by: obj.get("modified_by").and_then(|v| v.as_str()).map(String::from),
             page_count: obj.get("page_count").and_then(|v| v.as_u64()).map(|n| n as usize),
+            format_type: obj.get("format_type").and_then(|v| v.as_str()).map(String::from),
+            sheet_count: obj.get("sheet_count").and_then(|v| v.as_u64()).map(|n| n as usize),
+            format: obj.get("format").and_then(|v| v.as_str()).map(String::from),
             additional_json: json.to_string(),
         })
     }
@@ -809,6 +825,9 @@ impl Metadata {
                 "created_by",
                 "modified_by",
                 "page_count",
+                "format_type",
+                "sheet_count",
+                "format",
             ];
             for (k, v) in obj {
                 if !excluded.contains(&k.as_str()) {
@@ -822,6 +841,7 @@ impl Metadata {
     }
 
     /// Get all metadata as associative array (for backwards compatibility).
+    #[php(name = "to_array")]
     pub fn to_array(&self) -> PhpResult<HashMap<String, Zval>> {
         let value: serde_json::Value =
             serde_json::from_str(&self.additional_json).map_err(|e| format!("Failed to parse JSON: {}", e))?;

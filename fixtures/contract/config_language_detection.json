@@ -1,0 +1,25 @@
+{
+	"id": "config_language_detection",
+	"description": "Tests language detection configuration",
+	"tags": ["contract", "config"],
+	"document": {
+		"path": "pdfs/fake_memo.pdf"
+	},
+	"extraction": {
+		"method": "sync",
+		"input_type": "file",
+		"config": {
+			"language_detection": {
+				"enabled": true
+			}
+		}
+	},
+	"assertions": {
+		"expected_mime": "application/pdf",
+		"min_content_length": 10,
+		"detected_languages": {
+			"expects": ["eng"],
+			"min_confidence": 0.5
+		}
+	}
+}

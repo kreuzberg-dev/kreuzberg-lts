@@ -1,9 +1,9 @@
-use crate::fixtures::{Assertions, Fixture};
+use crate::fixtures::{Assertions, ExtractionMethod, Fixture, InputType};
 use anyhow::{Context, Result};
 use camino::Utf8Path;
 use itertools::Itertools;
 use serde_json::{Map, Value};
-use std::collections::BTreeSet;
+use std::collections::{BTreeSet, HashSet};
 use std::fmt::Write as _;
 use std::fs;
 
@@ -199,6 +199,14 @@ export function buildConfig(raw: unknown): ExtractionConfig {
         result.postprocessor = mapPostProcessorConfig(source.postprocessor as PlainRecord);
     }
 
+    if (typeof source.output_format === "string") {
+        result.outputFormat = source.output_format as string;
+    }
+
+    if (typeof source.result_format === "string") {
+        result.resultFormat = source.result_format as string;
+    }
+
     return result;
 }
 
@@ -377,6 +385,102 @@ function valuesEqual(lhs: unknown, rhs: unknown): boolean {
     }
     return JSON.stringify(lhs) === JSON.stringify(rhs);
 }
+
+export const chunkAssertions = {
+    assertChunks(
+        result: ExtractionResult,
+        minCount?: number | null,
+        maxCount?: number | null,
+        eachHasContent?: boolean | null,
+        eachHasEmbedding?: boolean | null,
+    ): void {
+        const chunks = (result as unknown as PlainRecord).chunks as unknown[] | undefined;
+        expect(chunks).toBeDefined();
+        if (!Array.isArray(chunks)) {
+            throw new Error("Expected chunks to be an array");
+        }
+        if (typeof minCount === "number") {
+            expect(chunks.length).toBeGreaterThanOrEqual(minCount);
+        }
+        if (typeof maxCount === "number") {
+            expect(chunks.length).toBeLessThanOrEqual(maxCount);
+        }
+        if (eachHasContent) {
+            for (const chunk of chunks) {
+                expect((chunk as PlainRecord).content).toBeDefined();
+            }
+        }
+        if (eachHasEmbedding) {
+            for (const chunk of chunks) {
+                expect((chunk as PlainRecord).embedding).toBeDefined();
+            }
+        }
+    },
+
+    assertImages(
+        result: ExtractionResult,
+        minCount?: number | null,
+        maxCount?: number | null,
+        formatsInclude?: string[] | null,
+    ): void {
+        const images = (result as unknown as PlainRecord).images as unknown[] | undefined;
+        expect(images).toBeDefined();
+        if (!Array.isArray(images)) {
+            throw new Error("Expected images to be an array");
+        }
+        if (typeof minCount === "number") {
+            expect(images.length).toBeGreaterThanOrEqual(minCount);
+        }
+        if (typeof maxCount === "number") {
+            expect(images.length).toBeLessThanOrEqual(maxCount);
+        }
+        if (formatsInclude && formatsInclude.length > 0) {
+            const foundFormats = new Set(images.map((img) => (img as PlainRecord).format));
+            for (const fmt of formatsInclude) {
+                expect(foundFormats.has(fmt)).toBe(true);
+            }
+        }
+    },
+
+    assertPages(
+        result: ExtractionResult,
+        minCount?: number | null,
+        exactCount?: number | null,
+    ): void {
+        const pages = (result as unknown as PlainRecord).pages as unknown[] | undefined;
+        expect(pages).toBeDefined();
+        if (!Array.isArray(pages)) {
+            throw new Error("Expected pages to be an array");
+        }
+        if (typeof exactCount === "number") {
+            expect(pages.length).toBe(exactCount);
+        }
+        if (typeof minCount === "number") {
+            expect(pages.length).toBeGreaterThanOrEqual(minCount);
+        }
+    },
+
+    assertElements(
+        result: ExtractionResult,
+        minCount?: number | null,
+        typesInclude?: string[] | null,
+    ): void {
+        const elements = (result as unknown as PlainRecord).elements as unknown[] | undefined;
+        expect(elements).toBeDefined();
+        if (!Array.isArray(elements)) {
+            throw new Error("Expected elements to be an array");
+        }
+        if (typeof minCount === "number") {
+            expect(elements.length).toBeGreaterThanOrEqual(minCount);
+        }
+        if (typesInclude && typesInclude.length > 0) {
+            const foundTypes = new Set(elements.map((el) => (el as PlainRecord).type));
+            for (const elType of typesInclude) {
+                expect(foundTypes.has(elType)).toBe(true);
+            }
+        }
+    },
+};
 "#;
 
 pub fn generate(fixtures: &[Fixture], output_root: &Utf8Path) -> Result<()> {
@@ -452,13 +556,29 @@ fn write_helpers(src_dir: &Utf8Path) -> Result<()> {
 fn render_category(category: &str, fixtures: &[&Fixture]) -> Result<String> {
     let mut buffer = String::new();
     writeln!(buffer, "// Auto-generated tests for {category} fixtures.\n")?;
-    writeln!(buffer, "import {{ existsSync }} from \"node:fs\";")?;
+    writeln!(buffer, "import {{ existsSync, readFileSync }} from \"node:fs\";")?;
     writeln!(buffer, "import {{ describe, it }} from \"vitest\";")?;
-    writeln!(
-        buffer,
-        "import {{ assertions, buildConfig, resolveDocument, shouldSkipFixture }} from \"./helpers.js\";"
-    )?;
-    writeln!(buffer, "import {{ extractFileSync }} from \"@kreuzberg/node\";")?;
+
+    let needs_chunk_assertions = fixtures.iter().any(|f| {
+        f.assertions().chunks.is_some()
+            || f.assertions().images.is_some()
+            || f.assertions().pages.is_some()
+            || f.assertions().elements.is_some()
+    });
+    if needs_chunk_assertions {
+        writeln!(
+            buffer,
+            "import {{ assertions, buildConfig, chunkAssertions, resolveDocument, shouldSkipFixture }} from \"./helpers.js\";"
+        )?;
+    } else {
+        writeln!(
+            buffer,
+            "import {{ assertions, buildConfig, resolveDocument, shouldSkipFixture }} from \"./helpers.js\";"
+        )?;
+    }
+
+    let imports = collect_ts_imports(fixtures);
+    writeln!(buffer, "import {{ {} }} from \"@kreuzberg/node\";", imports.join(", "))?;
     writeln!(buffer, "import type {{ ExtractionResult }} from \"@kreuzberg/node\";\n")?;
     writeln!(buffer, "const TEST_TIMEOUT_MS = 60_000;\n")?;
 
@@ -472,11 +592,50 @@ fn render_category(category: &str, fixtures: &[&Fixture]) -> Result<String> {
     Ok(buffer)
 }
 
+fn collect_ts_imports(fixtures: &[&Fixture]) -> Vec<String> {
+    let mut imports = HashSet::new();
+    for fixture in fixtures {
+        let extraction = fixture.extraction();
+        let func_name = get_ts_extraction_function_name(extraction.method, extraction.input_type);
+        imports.insert(func_name);
+    }
+    let mut imports: Vec<_> = imports.into_iter().collect();
+    imports.sort();
+    imports
+}
+
+fn get_ts_extraction_function_name(method: ExtractionMethod, input_type: InputType) -> String {
+    match (method, input_type) {
+        (ExtractionMethod::Sync, InputType::File) => "extractFileSync".to_string(),
+        (ExtractionMethod::Sync, InputType::Bytes) => "extractBytesSync".to_string(),
+        (ExtractionMethod::Async, InputType::File) => "extractFile".to_string(),
+        (ExtractionMethod::Async, InputType::Bytes) => "extractBytes".to_string(),
+        (ExtractionMethod::BatchSync, InputType::File) => "batchExtractFileSync".to_string(),
+        (ExtractionMethod::BatchSync, InputType::Bytes) => "batchExtractBytesSync".to_string(),
+        (ExtractionMethod::BatchAsync, InputType::File) => "batchExtractFile".to_string(),
+        (ExtractionMethod::BatchAsync, InputType::Bytes) => "batchExtractBytes".to_string(),
+    }
+}
+
 fn render_test(fixture: &Fixture) -> Result<String> {
     let mut body = String::new();
+    let extraction = fixture.extraction();
+    let is_async = matches!(
+        extraction.method,
+        ExtractionMethod::Async | ExtractionMethod::BatchAsync
+    );
+    let is_batch = matches!(
+        extraction.method,
+        ExtractionMethod::BatchSync | ExtractionMethod::BatchAsync
+    );
+    let is_bytes = matches!(extraction.input_type, InputType::Bytes);
 
     let test_name = fixture.id.clone();
-    writeln!(body, "  it(\"{test_name}\", () => {{")?;
+    if is_async {
+        writeln!(body, "  it(\"{test_name}\", async () => {{")?;
+    } else {
+        writeln!(body, "  it(\"{test_name}\", () => {{")?;
+    }
 
     writeln!(
         body,
@@ -497,15 +656,42 @@ fn render_test(fixture: &Fixture) -> Result<String> {
         writeln!(body, "      return;\n    }}")?;
     }
 
-    match render_config_expression(&fixture.extraction().config)? {
+    match render_config_expression(&extraction.config)? {
         None => writeln!(body, "    const config = buildConfig(undefined);")?,
         Some(config_expr) => writeln!(body, "    const config = buildConfig({config_expr});")?,
     }
 
     let requirements = collect_requirements(fixture);
+    let func_name = get_ts_extraction_function_name(extraction.method, extraction.input_type);
+    let await_prefix = if is_async { "await " } else { "" };
+
     writeln!(body, "    let result: ExtractionResult | null = null;")?;
     writeln!(body, "    try {{")?;
-    writeln!(body, "      result = extractFileSync(documentPath, null, config);")?;
+
+    if is_bytes {
+        writeln!(body, "      const fileBytes = readFileSync(documentPath);")?;
+        if is_batch {
+            writeln!(
+                body,
+                "      const results = {await_prefix}{func_name}([fileBytes], config);"
+            )?;
+            writeln!(body, "      result = results[0];")?;
+        } else {
+            writeln!(body, "      result = {await_prefix}{func_name}(fileBytes, config);")?;
+        }
+    } else if is_batch {
+        writeln!(
+            body,
+            "      const results = {await_prefix}{func_name}([documentPath], config);"
+        )?;
+        writeln!(body, "      result = results[0];")?;
+    } else {
+        writeln!(
+            body,
+            "      result = {await_prefix}{func_name}(documentPath, null, config);"
+        )?;
+    }
+
     writeln!(body, "    }} catch (error) {{")?;
     if !requirements.is_empty()
         || fixture.skip().notes.is_some()
@@ -607,6 +793,59 @@ fn render_assertions(assertions: &Assertions) -> String {
                 render_json_literal(expectation)
             ));
         }
+    }
+
+    if let Some(chunks) = assertions.chunks.as_ref() {
+        let min = chunks.min_count.map(|v| v.to_string()).unwrap_or_else(|| "null".into());
+        let max = chunks.max_count.map(|v| v.to_string()).unwrap_or_else(|| "null".into());
+        let has_content = chunks
+            .each_has_content
+            .map(|v| v.to_string())
+            .unwrap_or_else(|| "null".into());
+        let has_embedding = chunks
+            .each_has_embedding
+            .map(|v| v.to_string())
+            .unwrap_or_else(|| "null".into());
+        buffer.push_str(&format!(
+            "    chunkAssertions.assertChunks(result, {min}, {max}, {has_content}, {has_embedding});\n"
+        ));
+    }
+
+    if let Some(images) = assertions.images.as_ref() {
+        let min = images.min_count.map(|v| v.to_string()).unwrap_or_else(|| "null".into());
+        let max = images.max_count.map(|v| v.to_string()).unwrap_or_else(|| "null".into());
+        let formats = images
+            .formats_include
+            .as_ref()
+            .map(|f| render_string_array(f))
+            .unwrap_or_else(|| "null".into());
+        buffer.push_str(&format!(
+            "    chunkAssertions.assertImages(result, {min}, {max}, {formats});\n"
+        ));
+    }
+
+    if let Some(pages) = assertions.pages.as_ref() {
+        let min = pages.min_count.map(|v| v.to_string()).unwrap_or_else(|| "null".into());
+        let exact = pages
+            .exact_count
+            .map(|v| v.to_string())
+            .unwrap_or_else(|| "null".into());
+        buffer.push_str(&format!("    chunkAssertions.assertPages(result, {min}, {exact});\n"));
+    }
+
+    if let Some(elements) = assertions.elements.as_ref() {
+        let min = elements
+            .min_count
+            .map(|v| v.to_string())
+            .unwrap_or_else(|| "null".into());
+        let types = elements
+            .types_include
+            .as_ref()
+            .map(|t| render_string_array(t))
+            .unwrap_or_else(|| "null".into());
+        buffer.push_str(&format!(
+            "    chunkAssertions.assertElements(result, {min}, {types});\n"
+        ));
     }
 
     buffer

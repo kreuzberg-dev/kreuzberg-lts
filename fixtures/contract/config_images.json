@@ -1,0 +1,24 @@
+{
+	"id": "config_images",
+	"description": "Tests image extraction configuration with image assertions",
+	"tags": ["contract", "config"],
+	"document": {
+		"path": "pdfs/embedded_images_tables.pdf"
+	},
+	"extraction": {
+		"method": "sync",
+		"input_type": "file",
+		"config": {
+			"images": {
+				"extract": true,
+				"format": "png"
+			}
+		}
+	},
+	"assertions": {
+		"expected_mime": "application/pdf",
+		"images": {
+			"min_count": 1
+		}
+	}
+}

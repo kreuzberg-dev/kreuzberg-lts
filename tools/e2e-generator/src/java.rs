@@ -1,4 +1,4 @@
-use crate::fixtures::{Assertions, Fixture, PluginAssertions, PluginTestSpec};
+use crate::fixtures::{Assertions, ExtractionMethod, Fixture, InputType, PluginAssertions, PluginTestSpec};
 use anyhow::{Context, Result};
 use camino::Utf8Path;
 use itertools::Itertools;
@@ -358,6 +358,110 @@ public final class E2EHelpers {
             }
             throw new IllegalArgumentException("Cannot convert to numeric: " + value);
         }
+
+        public static void assertChunks(
+                ExtractionResult result,
+                Integer minCount,
+                Integer maxCount,
+                Boolean eachHasContent,
+                Boolean eachHasEmbedding
+        ) {
+            var chunks = result.getChunks();
+            int count = chunks != null ? chunks.size() : 0;
+            if (minCount != null) {
+                assertTrue(count >= minCount,
+                        String.format("Expected chunk count >= %d, got %d", minCount, count));
+            }
+            if (maxCount != null) {
+                assertTrue(count <= maxCount,
+                        String.format("Expected chunk count <= %d, got %d", maxCount, count));
+            }
+            if (chunks != null && eachHasContent != null && eachHasContent) {
+                for (var chunk : chunks) {
+                    String content = chunk.getContent();
+                    assertTrue(content != null && !content.isEmpty(),
+                            "Expected each chunk to have content");
+                }
+            }
+            if (chunks != null && eachHasEmbedding != null && eachHasEmbedding) {
+                for (var chunk : chunks) {
+                    assertNotNull(chunk.getEmbedding(),
+                            "Expected each chunk to have an embedding");
+                }
+            }
+        }
+
+        public static void assertImages(
+                ExtractionResult result,
+                Integer minCount,
+                Integer maxCount,
+                List<String> formatsInclude
+        ) {
+            var images = result.getImages();
+            int count = images != null ? images.size() : 0;
+            if (minCount != null) {
+                assertTrue(count >= minCount,
+                        String.format("Expected image count >= %d, got %d", minCount, count));
+            }
+            if (maxCount != null) {
+                assertTrue(count <= maxCount,
+                        String.format("Expected image count <= %d, got %d", maxCount, count));
+            }
+            if (images != null && formatsInclude != null && !formatsInclude.isEmpty()) {
+                var formats = images.stream()
+                        .map(img -> img.getFormat())
+                        .filter(f -> f != null)
+                        .toList();
+                for (String expected : formatsInclude) {
+                    boolean found = formats.stream()
+                            .anyMatch(f -> f.toLowerCase().contains(expected.toLowerCase()));
+                    assertTrue(found,
+                            String.format("Expected image formats to include '%s', got %s", expected, formats));
+                }
+            }
+        }
+
+        public static void assertPages(
+                ExtractionResult result,
+                Integer minCount,
+                Integer exactCount
+        ) {
+            var pages = result.getPages();
+            int count = pages != null ? pages.size() : 0;
+            if (minCount != null) {
+                assertTrue(count >= minCount,
+                        String.format("Expected page count >= %d, got %d", minCount, count));
+            }
+            if (exactCount != null) {
+                assertTrue(count == exactCount,
+                        String.format("Expected exactly %d pages, got %d", exactCount, count));
+            }
+        }
+
+        public static void assertElements(
+                ExtractionResult result,
+                Integer minCount,
+                List<String> typesInclude
+        ) {
+            var elements = result.getElements();
+            int count = elements != null ? elements.size() : 0;
+            if (minCount != null) {
+                assertTrue(count >= minCount,
+                        String.format("Expected element count >= %d, got %d", minCount, count));
+            }
+            if (elements != null && typesInclude != null && !typesInclude.isEmpty()) {
+                var types = elements.stream()
+                        .map(el -> el.getType())
+                        .filter(t -> t != null)
+                        .toList();
+                for (String expected : typesInclude) {
+                    boolean found = types.stream()
+                            .anyMatch(t -> t.toLowerCase().contains(expected.toLowerCase()));
+                    assertTrue(found,
+                            String.format("Expected element types to include '%s', got %s", expected, types));
+                }
+            }
+        }
     }
 }
 "#;
@@ -527,12 +631,20 @@ fn render_category(category: &str, class_name: &str, fixtures: &[&Fixture]) -> R
     writeln!(buffer, "// CHECKSTYLE.OFF: LineLength - generated code")?;
     writeln!(buffer, "import com.fasterxml.jackson.databind.JsonNode;")?;
     writeln!(buffer, "import com.fasterxml.jackson.databind.ObjectMapper;")?;
+    writeln!(buffer, "import dev.kreuzberg.BytesWithMime;")?;
+    writeln!(buffer, "import dev.kreuzberg.ExtractionResult;")?;
+    writeln!(buffer, "import dev.kreuzberg.Kreuzberg;")?;
+    writeln!(buffer, "import dev.kreuzberg.config.ExtractionConfig;")?;
     writeln!(buffer, "import org.junit.jupiter.api.Test;")?;
     writeln!(buffer)?;
+    writeln!(buffer, "import java.nio.file.Files;")?;
+    writeln!(buffer, "import java.nio.file.Path;")?;
     writeln!(buffer, "import java.util.Arrays;")?;
     writeln!(buffer, "import java.util.Collections;")?;
     writeln!(buffer, "import java.util.List;")?;
     writeln!(buffer, "import java.util.Map;")?;
+    writeln!(buffer)?;
+    writeln!(buffer, "import static org.junit.jupiter.api.Assertions.assertTrue;")?;
     writeln!(buffer, "// CHECKSTYLE.ON: UnusedImports")?;
     writeln!(buffer, "// CHECKSTYLE.ON: LineLength")?;
     writeln!(buffer)?;
@@ -555,6 +667,9 @@ fn render_category(category: &str, class_name: &str, fixtures: &[&Fixture]) -> R
 
 fn render_test(fixture: &Fixture) -> Result<String> {
     let mut body = String::new();
+    let extraction = fixture.extraction();
+    let method = extraction.method;
+    let input_type = extraction.input_type;
 
     writeln!(body, "    @Test")?;
     writeln!(
@@ -563,7 +678,7 @@ fn render_test(fixture: &Fixture) -> Result<String> {
         to_java_method_name(&fixture.id)
     )?;
 
-    let config_expr = render_config_expression(&fixture.extraction().config)?;
+    let config_expr = render_config_expression(&extraction.config)?;
     let config_var = match config_expr {
         Some(json) => {
             writeln!(
@@ -588,22 +703,558 @@ fn render_test(fixture: &Fixture) -> Result<String> {
         "false"
     };
 
-    writeln!(body, "        E2EHelpers.runFixture(")?;
-    writeln!(body, "            {},", render_java_string(&fixture.id))?;
-    writeln!(body, "            {},", render_java_string(&fixture.document().path))?;
-    writeln!(body, "            {},", config_var)?;
-    writeln!(body, "            {},", requirements_expr)?;
-    writeln!(body, "            {},", notes_expr)?;
-    writeln!(body, "            {},", skip_flag)?;
-    writeln!(body, "            result -> {{")?;
+    // Generate different code based on extraction method and input type
+    match (method, input_type) {
+        (ExtractionMethod::Sync, InputType::File) => {
+            // Existing pattern: sync file extraction via runFixture helper
+            writeln!(body, "        E2EHelpers.runFixture(")?;
+            writeln!(body, "            {},", render_java_string(&fixture.id))?;
+            writeln!(body, "            {},", render_java_string(&fixture.document().path))?;
+            writeln!(body, "            {},", config_var)?;
+            writeln!(body, "            {},", requirements_expr)?;
+            writeln!(body, "            {},", notes_expr)?;
+            writeln!(body, "            {},", skip_flag)?;
+            writeln!(body, "            result -> {{")?;
 
-    let assertions = render_assertions(&fixture.assertions());
-    if !assertions.is_empty() {
-        body.push_str(&assertions);
+            let assertions = render_assertions(&fixture.assertions());
+            if !assertions.is_empty() {
+                body.push_str(&assertions);
+            }
+
+            writeln!(body, "            }}")?;
+            writeln!(body, "        );")?;
+        }
+        (ExtractionMethod::Sync, InputType::Bytes) => {
+            // Sync bytes extraction: read file as bytes and call extractBytes
+            // Note: extractBytes requires mimeType, so we detect it from the file bytes
+            writeln!(
+                body,
+                "        Path documentPath = E2EHelpers.resolveDocument({});",
+                render_java_string(&fixture.document().path)
+            )?;
+            writeln!(body)?;
+            writeln!(body, "        if ({} && !Files.exists(documentPath)) {{", skip_flag)?;
+            writeln!(
+                body,
+                "            String msg = String.format(\"Skipping {}: missing document at %s\", documentPath);",
+                fixture.id
+            )?;
+            writeln!(body, "            System.err.println(msg);")?;
+            writeln!(
+                body,
+                "            org.junit.jupiter.api.Assumptions.assumeTrue(false, msg);"
+            )?;
+            writeln!(body, "            return;")?;
+            writeln!(body, "        }}")?;
+            writeln!(body)?;
+            writeln!(body, "        byte[] documentBytes = Files.readAllBytes(documentPath);")?;
+            writeln!(
+                body,
+                "        String mimeType = Kreuzberg.detectMimeType(documentBytes);"
+            )?;
+            writeln!(
+                body,
+                "        ExtractionConfig extractionConfig = E2EHelpers.buildConfig({});",
+                config_var
+            )?;
+            writeln!(body, "        ExtractionResult result;")?;
+            writeln!(body, "        try {{")?;
+            writeln!(
+                body,
+                "            result = Kreuzberg.extractBytes(documentBytes, mimeType, extractionConfig);"
+            )?;
+            writeln!(body, "        }} catch (Exception e) {{")?;
+            writeln!(
+                body,
+                "            String skipReason = E2EHelpers.skipReasonFor(e, {}, {}, {});",
+                render_java_string(&fixture.id),
+                requirements_expr,
+                notes_expr
+            )?;
+            writeln!(body, "            if (skipReason != null) {{")?;
+            writeln!(
+                body,
+                "                org.junit.jupiter.api.Assumptions.assumeTrue(false, skipReason);"
+            )?;
+            writeln!(body, "                return;")?;
+            writeln!(body, "            }}")?;
+            writeln!(body, "            throw e;")?;
+            writeln!(body, "        }}")?;
+            writeln!(body)?;
+
+            let assertions = render_assertions(&fixture.assertions());
+            if !assertions.is_empty() {
+                // Remove the leading indentation since we're not inside a callback
+                for line in assertions.lines() {
+                    let trimmed = line.trim_start();
+                    if !trimmed.is_empty() {
+                        writeln!(body, "        {}", trimmed)?;
+                    }
+                }
+            }
+        }
+        (ExtractionMethod::Async, InputType::File) => {
+            // Async file extraction using CompletableFuture
+            writeln!(
+                body,
+                "        Path documentPath = E2EHelpers.resolveDocument({});",
+                render_java_string(&fixture.document().path)
+            )?;
+            writeln!(body)?;
+            writeln!(body, "        if ({} && !Files.exists(documentPath)) {{", skip_flag)?;
+            writeln!(
+                body,
+                "            String msg = String.format(\"Skipping {}: missing document at %s\", documentPath);",
+                fixture.id
+            )?;
+            writeln!(body, "            System.err.println(msg);")?;
+            writeln!(
+                body,
+                "            org.junit.jupiter.api.Assumptions.assumeTrue(false, msg);"
+            )?;
+            writeln!(body, "            return;")?;
+            writeln!(body, "        }}")?;
+            writeln!(body)?;
+            writeln!(
+                body,
+                "        ExtractionConfig extractionConfig = E2EHelpers.buildConfig({});",
+                config_var
+            )?;
+            writeln!(
+                body,
+                "        java.util.concurrent.CompletableFuture<ExtractionResult> future = Kreuzberg.extractFileAsync(documentPath, extractionConfig);"
+            )?;
+            writeln!(body, "        ExtractionResult result;")?;
+            writeln!(body, "        try {{")?;
+            writeln!(body, "            result = future.get();")?;
+            writeln!(body, "        }} catch (java.util.concurrent.ExecutionException e) {{")?;
+            writeln!(
+                body,
+                "            Throwable cause = e.getCause() != null ? e.getCause() : e;"
+            )?;
+            writeln!(body, "            if (cause instanceof Exception) {{")?;
+            writeln!(
+                body,
+                "                String skipReason = E2EHelpers.skipReasonFor((Exception) cause, {}, {}, {});",
+                render_java_string(&fixture.id),
+                requirements_expr,
+                notes_expr
+            )?;
+            writeln!(body, "                if (skipReason != null) {{")?;
+            writeln!(
+                body,
+                "                    org.junit.jupiter.api.Assumptions.assumeTrue(false, skipReason);"
+            )?;
+            writeln!(body, "                    return;")?;
+            writeln!(body, "                }}")?;
+            writeln!(body, "            }}")?;
+            writeln!(body, "            throw e;")?;
+            writeln!(body, "        }}")?;
+            writeln!(body)?;
+
+            let assertions = render_assertions(&fixture.assertions());
+            if !assertions.is_empty() {
+                for line in assertions.lines() {
+                    let trimmed = line.trim_start();
+                    if !trimmed.is_empty() {
+                        writeln!(body, "        {}", trimmed)?;
+                    }
+                }
+            }
+        }
+        (ExtractionMethod::Async, InputType::Bytes) => {
+            // Async bytes extraction using CompletableFuture
+            // Note: extractBytesAsync requires mimeType, so we detect it from the file first
+            writeln!(
+                body,
+                "        Path documentPath = E2EHelpers.resolveDocument({});",
+                render_java_string(&fixture.document().path)
+            )?;
+            writeln!(body)?;
+            writeln!(body, "        if ({} && !Files.exists(documentPath)) {{", skip_flag)?;
+            writeln!(
+                body,
+                "            String msg = String.format(\"Skipping {}: missing document at %s\", documentPath);",
+                fixture.id
+            )?;
+            writeln!(body, "            System.err.println(msg);")?;
+            writeln!(
+                body,
+                "            org.junit.jupiter.api.Assumptions.assumeTrue(false, msg);"
+            )?;
+            writeln!(body, "            return;")?;
+            writeln!(body, "        }}")?;
+            writeln!(body)?;
+            writeln!(body, "        byte[] documentBytes = Files.readAllBytes(documentPath);")?;
+            writeln!(
+                body,
+                "        String mimeType = Kreuzberg.detectMimeType(documentBytes);"
+            )?;
+            writeln!(
+                body,
+                "        ExtractionConfig extractionConfig = E2EHelpers.buildConfig({});",
+                config_var
+            )?;
+            writeln!(
+                body,
+                "        java.util.concurrent.CompletableFuture<ExtractionResult> future = Kreuzberg.extractBytesAsync(documentBytes, mimeType, extractionConfig);"
+            )?;
+            writeln!(body, "        ExtractionResult result;")?;
+            writeln!(body, "        try {{")?;
+            writeln!(body, "            result = future.get();")?;
+            writeln!(body, "        }} catch (java.util.concurrent.ExecutionException e) {{")?;
+            writeln!(
+                body,
+                "            Throwable cause = e.getCause() != null ? e.getCause() : e;"
+            )?;
+            writeln!(body, "            if (cause instanceof Exception) {{")?;
+            writeln!(
+                body,
+                "                String skipReason = E2EHelpers.skipReasonFor((Exception) cause, {}, {}, {});",
+                render_java_string(&fixture.id),
+                requirements_expr,
+                notes_expr
+            )?;
+            writeln!(body, "                if (skipReason != null) {{")?;
+            writeln!(
+                body,
+                "                    org.junit.jupiter.api.Assumptions.assumeTrue(false, skipReason);"
+            )?;
+            writeln!(body, "                    return;")?;
+            writeln!(body, "                }}")?;
+            writeln!(body, "            }}")?;
+            writeln!(body, "            throw e;")?;
+            writeln!(body, "        }}")?;
+            writeln!(body)?;
+
+            let assertions = render_assertions(&fixture.assertions());
+            if !assertions.is_empty() {
+                for line in assertions.lines() {
+                    let trimmed = line.trim_start();
+                    if !trimmed.is_empty() {
+                        writeln!(body, "        {}", trimmed)?;
+                    }
+                }
+            }
+        }
+        (ExtractionMethod::BatchSync, InputType::File) => {
+            // Batch sync file extraction
+            // Note: batchExtractFiles takes List<String> (paths as strings), not List<Path>
+            writeln!(
+                body,
+                "        Path documentPath = E2EHelpers.resolveDocument({});",
+                render_java_string(&fixture.document().path)
+            )?;
+            writeln!(body)?;
+            writeln!(body, "        if ({} && !Files.exists(documentPath)) {{", skip_flag)?;
+            writeln!(
+                body,
+                "            String msg = String.format(\"Skipping {}: missing document at %s\", documentPath);",
+                fixture.id
+            )?;
+            writeln!(body, "            System.err.println(msg);")?;
+            writeln!(
+                body,
+                "            org.junit.jupiter.api.Assumptions.assumeTrue(false, msg);"
+            )?;
+            writeln!(body, "            return;")?;
+            writeln!(body, "        }}")?;
+            writeln!(body)?;
+            writeln!(
+                body,
+                "        ExtractionConfig extractionConfig = E2EHelpers.buildConfig({});",
+                config_var
+            )?;
+            writeln!(
+                body,
+                "        List<String> paths = Arrays.asList(documentPath.toString());"
+            )?;
+            writeln!(body, "        List<ExtractionResult> results;")?;
+            writeln!(body, "        try {{")?;
+            writeln!(
+                body,
+                "            results = Kreuzberg.batchExtractFiles(paths, extractionConfig);"
+            )?;
+            writeln!(body, "        }} catch (Exception e) {{")?;
+            writeln!(
+                body,
+                "            String skipReason = E2EHelpers.skipReasonFor(e, {}, {}, {});",
+                render_java_string(&fixture.id),
+                requirements_expr,
+                notes_expr
+            )?;
+            writeln!(body, "            if (skipReason != null) {{")?;
+            writeln!(
+                body,
+                "                org.junit.jupiter.api.Assumptions.assumeTrue(false, skipReason);"
+            )?;
+            writeln!(body, "                return;")?;
+            writeln!(body, "            }}")?;
+            writeln!(body, "            throw e;")?;
+            writeln!(body, "        }}")?;
+            writeln!(body)?;
+            writeln!(
+                body,
+                "        assertTrue(results.size() == 1, \"Expected exactly 1 result from batch extraction\");"
+            )?;
+            writeln!(body, "        ExtractionResult result = results.get(0);")?;
+            writeln!(body)?;
+
+            let assertions = render_assertions(&fixture.assertions());
+            if !assertions.is_empty() {
+                for line in assertions.lines() {
+                    let trimmed = line.trim_start();
+                    if !trimmed.is_empty() {
+                        writeln!(body, "        {}", trimmed)?;
+                    }
+                }
+            }
+        }
+        (ExtractionMethod::BatchSync, InputType::Bytes) => {
+            // Batch sync bytes extraction
+            // Note: batchExtractBytes takes List<BytesWithMime>, so we detect mimeType
+            writeln!(
+                body,
+                "        Path documentPath = E2EHelpers.resolveDocument({});",
+                render_java_string(&fixture.document().path)
+            )?;
+            writeln!(body)?;
+            writeln!(body, "        if ({} && !Files.exists(documentPath)) {{", skip_flag)?;
+            writeln!(
+                body,
+                "            String msg = String.format(\"Skipping {}: missing document at %s\", documentPath);",
+                fixture.id
+            )?;
+            writeln!(body, "            System.err.println(msg);")?;
+            writeln!(
+                body,
+                "            org.junit.jupiter.api.Assumptions.assumeTrue(false, msg);"
+            )?;
+            writeln!(body, "            return;")?;
+            writeln!(body, "        }}")?;
+            writeln!(body)?;
+            writeln!(body, "        byte[] documentBytes = Files.readAllBytes(documentPath);")?;
+            writeln!(
+                body,
+                "        String mimeType = Kreuzberg.detectMimeType(documentBytes);"
+            )?;
+            writeln!(
+                body,
+                "        ExtractionConfig extractionConfig = E2EHelpers.buildConfig({});",
+                config_var
+            )?;
+            writeln!(
+                body,
+                "        List<BytesWithMime> items = Arrays.asList(new BytesWithMime(documentBytes, mimeType));"
+            )?;
+            writeln!(body, "        List<ExtractionResult> results;")?;
+            writeln!(body, "        try {{")?;
+            writeln!(
+                body,
+                "            results = Kreuzberg.batchExtractBytes(items, extractionConfig);"
+            )?;
+            writeln!(body, "        }} catch (Exception e) {{")?;
+            writeln!(
+                body,
+                "            String skipReason = E2EHelpers.skipReasonFor(e, {}, {}, {});",
+                render_java_string(&fixture.id),
+                requirements_expr,
+                notes_expr
+            )?;
+            writeln!(body, "            if (skipReason != null) {{")?;
+            writeln!(
+                body,
+                "                org.junit.jupiter.api.Assumptions.assumeTrue(false, skipReason);"
+            )?;
+            writeln!(body, "                return;")?;
+            writeln!(body, "            }}")?;
+            writeln!(body, "            throw e;")?;
+            writeln!(body, "        }}")?;
+            writeln!(body)?;
+            writeln!(
+                body,
+                "        assertTrue(results.size() == 1, \"Expected exactly 1 result from batch extraction\");"
+            )?;
+            writeln!(body, "        ExtractionResult result = results.get(0);")?;
+            writeln!(body)?;
+
+            let assertions = render_assertions(&fixture.assertions());
+            if !assertions.is_empty() {
+                for line in assertions.lines() {
+                    let trimmed = line.trim_start();
+                    if !trimmed.is_empty() {
+                        writeln!(body, "        {}", trimmed)?;
+                    }
+                }
+            }
+        }
+        (ExtractionMethod::BatchAsync, InputType::File) => {
+            // Batch async file extraction
+            // Note: batchExtractFilesAsync takes List<String> (paths as strings), not List<Path>
+            writeln!(
+                body,
+                "        Path documentPath = E2EHelpers.resolveDocument({});",
+                render_java_string(&fixture.document().path)
+            )?;
+            writeln!(body)?;
+            writeln!(body, "        if ({} && !Files.exists(documentPath)) {{", skip_flag)?;
+            writeln!(
+                body,
+                "            String msg = String.format(\"Skipping {}: missing document at %s\", documentPath);",
+                fixture.id
+            )?;
+            writeln!(body, "            System.err.println(msg);")?;
+            writeln!(
+                body,
+                "            org.junit.jupiter.api.Assumptions.assumeTrue(false, msg);"
+            )?;
+            writeln!(body, "            return;")?;
+            writeln!(body, "        }}")?;
+            writeln!(body)?;
+            writeln!(
+                body,
+                "        ExtractionConfig extractionConfig = E2EHelpers.buildConfig({});",
+                config_var
+            )?;
+            writeln!(
+                body,
+                "        List<String> paths = Arrays.asList(documentPath.toString());"
+            )?;
+            writeln!(
+                body,
+                "        java.util.concurrent.CompletableFuture<List<ExtractionResult>> future = Kreuzberg.batchExtractFilesAsync(paths, extractionConfig);"
+            )?;
+            writeln!(body, "        List<ExtractionResult> results;")?;
+            writeln!(body, "        try {{")?;
+            writeln!(body, "            results = future.get();")?;
+            writeln!(body, "        }} catch (java.util.concurrent.ExecutionException e) {{")?;
+            writeln!(
+                body,
+                "            Throwable cause = e.getCause() != null ? e.getCause() : e;"
+            )?;
+            writeln!(body, "            if (cause instanceof Exception) {{")?;
+            writeln!(
+                body,
+                "                String skipReason = E2EHelpers.skipReasonFor((Exception) cause, {}, {}, {});",
+                render_java_string(&fixture.id),
+                requirements_expr,
+                notes_expr
+            )?;
+            writeln!(body, "                if (skipReason != null) {{")?;
+            writeln!(
+                body,
+                "                    org.junit.jupiter.api.Assumptions.assumeTrue(false, skipReason);"
+            )?;
+            writeln!(body, "                    return;")?;
+            writeln!(body, "                }}")?;
+            writeln!(body, "            }}")?;
+            writeln!(body, "            throw e;")?;
+            writeln!(body, "        }}")?;
+            writeln!(body)?;
+            writeln!(
+                body,
+                "        assertTrue(results.size() == 1, \"Expected exactly 1 result from batch extraction\");"
+            )?;
+            writeln!(body, "        ExtractionResult result = results.get(0);")?;
+            writeln!(body)?;
+
+            let assertions = render_assertions(&fixture.assertions());
+            if !assertions.is_empty() {
+                for line in assertions.lines() {
+                    let trimmed = line.trim_start();
+                    if !trimmed.is_empty() {
+                        writeln!(body, "        {}", trimmed)?;
+                    }
+                }
+            }
+        }
+        (ExtractionMethod::BatchAsync, InputType::Bytes) => {
+            // Batch async bytes extraction
+            // Note: batchExtractBytesAsync takes List<BytesWithMime>, so we detect mimeType
+            writeln!(
+                body,
+                "        Path documentPath = E2EHelpers.resolveDocument({});",
+                render_java_string(&fixture.document().path)
+            )?;
+            writeln!(body)?;
+            writeln!(body, "        if ({} && !Files.exists(documentPath)) {{", skip_flag)?;
+            writeln!(
+                body,
+                "            String msg = String.format(\"Skipping {}: missing document at %s\", documentPath);",
+                fixture.id
+            )?;
+            writeln!(body, "            System.err.println(msg);")?;
+            writeln!(
+                body,
+                "            org.junit.jupiter.api.Assumptions.assumeTrue(false, msg);"
+            )?;
+            writeln!(body, "            return;")?;
+            writeln!(body, "        }}")?;
+            writeln!(body)?;
+            writeln!(body, "        byte[] documentBytes = Files.readAllBytes(documentPath);")?;
+            writeln!(
+                body,
+                "        String mimeType = Kreuzberg.detectMimeType(documentBytes);"
+            )?;
+            writeln!(
+                body,
+                "        ExtractionConfig extractionConfig = E2EHelpers.buildConfig({});",
+                config_var
+            )?;
+            writeln!(
+                body,
+                "        List<BytesWithMime> items = Arrays.asList(new BytesWithMime(documentBytes, mimeType));"
+            )?;
+            writeln!(
+                body,
+                "        java.util.concurrent.CompletableFuture<List<ExtractionResult>> future = Kreuzberg.batchExtractBytesAsync(items, extractionConfig);"
+            )?;
+            writeln!(body, "        List<ExtractionResult> results;")?;
+            writeln!(body, "        try {{")?;
+            writeln!(body, "            results = future.get();")?;
+            writeln!(body, "        }} catch (java.util.concurrent.ExecutionException e) {{")?;
+            writeln!(
+                body,
+                "            Throwable cause = e.getCause() != null ? e.getCause() : e;"
+            )?;
+            writeln!(body, "            if (cause instanceof Exception) {{")?;
+            writeln!(
+                body,
+                "                String skipReason = E2EHelpers.skipReasonFor((Exception) cause, {}, {}, {});",
+                render_java_string(&fixture.id),
+                requirements_expr,
+                notes_expr
+            )?;
+            writeln!(body, "                if (skipReason != null) {{")?;
+            writeln!(
+                body,
+                "                    org.junit.jupiter.api.Assumptions.assumeTrue(false, skipReason);"
+            )?;
+            writeln!(body, "                    return;")?;
+            writeln!(body, "                }}")?;
+            writeln!(body, "            }}")?;
+            writeln!(body, "            throw e;")?;
+            writeln!(body, "        }}")?;
+            writeln!(body)?;
+            writeln!(
+                body,
+                "        assertTrue(results.size() == 1, \"Expected exactly 1 result from batch extraction\");"
+            )?;
+            writeln!(body, "        ExtractionResult result = results.get(0);")?;
+            writeln!(body)?;
+
+            let assertions = render_assertions(&fixture.assertions());
+            if !assertions.is_empty() {
+                for line in assertions.lines() {
+                    let trimmed = line.trim_start();
+                    if !trimmed.is_empty() {
+                        writeln!(body, "        {}", trimmed)?;
+                    }
+                }
+            }
+        }
     }
 
-    writeln!(body, "            }}")?;
-    writeln!(body, "        );")?;
     writeln!(body, "    }}")?;
 
     Ok(body)
@@ -676,6 +1327,80 @@ fn render_assertions(assertions: &Assertions) -> String {
                 render_java_map(expectation)
             ));
         }
+    }
+
+    if let Some(chunks) = assertions.chunks.as_ref() {
+        let min_literal = chunks
+            .min_count
+            .map(|v| v.to_string())
+            .unwrap_or_else(|| "null".to_string());
+        let max_literal = chunks
+            .max_count
+            .map(|v| v.to_string())
+            .unwrap_or_else(|| "null".to_string());
+        let has_content = chunks
+            .each_has_content
+            .map(|v| v.to_string())
+            .unwrap_or_else(|| "null".to_string());
+        let has_embedding = chunks
+            .each_has_embedding
+            .map(|v| v.to_string())
+            .unwrap_or_else(|| "null".to_string());
+        buffer.push_str(&format!(
+            "                E2EHelpers.Assertions.assertChunks(result, {}, {}, {}, {});\n",
+            min_literal, max_literal, has_content, has_embedding
+        ));
+    }
+
+    if let Some(images) = assertions.images.as_ref() {
+        let min_literal = images
+            .min_count
+            .map(|v| v.to_string())
+            .unwrap_or_else(|| "null".to_string());
+        let max_literal = images
+            .max_count
+            .map(|v| v.to_string())
+            .unwrap_or_else(|| "null".to_string());
+        let formats_expr = images
+            .formats_include
+            .as_ref()
+            .map(|f| render_string_list(f))
+            .unwrap_or_else(|| "null".to_string());
+        buffer.push_str(&format!(
+            "                E2EHelpers.Assertions.assertImages(result, {}, {}, {});\n",
+            min_literal, max_literal, formats_expr
+        ));
+    }
+
+    if let Some(pages) = assertions.pages.as_ref() {
+        let min_literal = pages
+            .min_count
+            .map(|v| v.to_string())
+            .unwrap_or_else(|| "null".to_string());
+        let exact_literal = pages
+            .exact_count
+            .map(|v| v.to_string())
+            .unwrap_or_else(|| "null".to_string());
+        buffer.push_str(&format!(
+            "                E2EHelpers.Assertions.assertPages(result, {}, {});\n",
+            min_literal, exact_literal
+        ));
+    }
+
+    if let Some(elements) = assertions.elements.as_ref() {
+        let min_literal = elements
+            .min_count
+            .map(|v| v.to_string())
+            .unwrap_or_else(|| "null".to_string());
+        let types_expr = elements
+            .types_include
+            .as_ref()
+            .map(|t| render_string_list(t))
+            .unwrap_or_else(|| "null".to_string());
+        buffer.push_str(&format!(
+            "                E2EHelpers.Assertions.assertElements(result, {}, {});\n",
+            min_literal, types_expr
+        ));
     }
 
     buffer
