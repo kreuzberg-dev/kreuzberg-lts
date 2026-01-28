@@ -15,6 +15,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+#### Elixir Bindings
+- **Hex package compilation**: Fixed `force_build: true` causing production installs to fail ([#333](https://github.com/kreuzberg-dev/kreuzberg/issues/333))
+  - Changed to `force_build: Mix.env() in [:test, :dev]` to only build from source in development
+  - Production installs now correctly use precompiled NIF binaries from GitHub releases
+  - Hex package doesn't include `crates/kreuzberg/` path dependency required for source builds
+  - Fixes "Unable to update crates/kreuzberg: No such file or directory" error
+
 #### Docker Images
 - **Tesseract OCR plugin initialization**: Fixed "OCR backend 'tesseract' not registered" error in published Docker images
   - Removed hardcoded TESSDATA_PREFIX=/usr/share/tesseract-ocr/5/tessdata
