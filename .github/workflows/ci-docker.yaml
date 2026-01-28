@@ -102,6 +102,20 @@ jobs:
         if: ${{ !inputs.skip_tests }}
         run: scripts/ci/docker/run-config-tests.sh "${{ matrix.variant }}"
 
+      - name: Run API contract tests with schemathesis
+        if: ${{ !inputs.skip_tests }}
+        run: |
+          pip3 install schemathesis
+          container_id=$(docker run -d -p 8000:8000 kreuzberg:${{ matrix.variant }})
+          sleep 5
+          FAILED=0
+          schemathesis run http://localhost:8000/openapi.json \
+            --checks all \
+            --hypothesis-max-examples=10 \
+            --validate-schema=true || FAILED=1
+          docker stop "$container_id"
+          exit "$FAILED"
+
       - name: Save Docker image as artifact
         if: success()
         shell: bash

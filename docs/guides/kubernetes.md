@@ -104,9 +104,16 @@ env:
   value: "/usr/share/tesseract-ocr/4.00/tessdata"
 - name: KREUZBERG_OCR_LANGUAGE
   value: "eng"
+- name: KREUZBERG_CACHE_DIR
+  value: "/app/.kreuzberg"
+- name: HF_HOME
+  value: "/app/.kreuzberg/huggingface"
 ```
 
 **Pre-installed languages:** `eng`, `spa`, `fra`, `deu`, `ita`, `por`, `chi_sim`, `chi_tra`, `jpn`, `ara`, `rus`, `hin`
+
+!!! note "Model Persistence"
+    Embedding models are downloaded on first use (~90MB-1.2GB depending on preset). For production deployments with embeddings features, use a PersistentVolumeClaim for `/app/.kreuzberg` to avoid re-downloading models on pod restart.
 
 ### Custom Tessdata via ConfigMap
 
@@ -493,6 +500,10 @@ spec:
           value: "info"
         - name: TESSDATA_PREFIX
           value: "/usr/share/tesseract-ocr/4.00/tessdata"
+        - name: KREUZBERG_CACHE_DIR
+          value: "/app/.kreuzberg"
+        - name: HF_HOME
+          value: "/app/.kreuzberg/huggingface"
         - name: KREUZBERG_CORS_ORIGINS
           value: "https://app.example.com"
         - name: KREUZBERG_MAX_UPLOAD_SIZE_MB
@@ -645,6 +656,10 @@ spec:
           value: "info"
         - name: TESSDATA_PREFIX
           value: "/usr/share/tesseract-ocr/4.00/tessdata"
+        - name: KREUZBERG_CACHE_DIR
+          value: "/app/.kreuzberg"
+        - name: HF_HOME
+          value: "/app/.kreuzberg/huggingface"
         - name: KREUZBERG_CORS_ORIGINS
           value: "https://app.example.com,https://api.example.com"
         - name: KREUZBERG_MAX_UPLOAD_SIZE_MB

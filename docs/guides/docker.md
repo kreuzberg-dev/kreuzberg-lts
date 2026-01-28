@@ -385,6 +385,23 @@ KREUZBERG_CORS_ORIGINS="https://app.example.com,https://api.example.com"
 RUST_LOG=info                    # Logging level (error, warn, info, debug, trace)
 ```
 
+**Cache Configuration:**
+```bash title="Terminal"
+KREUZBERG_CACHE_DIR=/app/.kreuzberg    # Main cache directory
+HF_HOME=/app/.kreuzberg/huggingface    # HuggingFace/ONNX model cache
+```
+
+**Cache Directory Structure:**
+```
+/app/.kreuzberg/
+├── huggingface/     # Embedding models (downloaded on first use, ~90MB-1.2GB)
+├── embeddings/      # ONNX runtime cache
+└── ocr/             # OCR result cache
+```
+
+!!! note "Model Downloads"
+    Embedding models are downloaded on first use when embeddings features are enabled. The download size varies by preset (~90MB for small models, ~1.2GB for large models). For production deployments, consider using a persistent volume for the cache directory.
+
 **Note:** Server host and port are configured via CLI arguments (`serve --host 0.0.0.0 --port 8000`), not environment variables.
 
 ### Volume Mounts

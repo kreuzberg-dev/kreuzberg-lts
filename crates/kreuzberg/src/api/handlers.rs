@@ -15,6 +15,53 @@ use super::{
     },
 };
 
+/// Health check endpoint handler.
+///
+/// GET /health
+#[utoipa::path(
+    get,
+    path = "/health",
+    tag = "health",
+    responses(
+        (status = 200, description = "Service is healthy", body = HealthResponse),
+    )
+)]
+#[cfg_attr(feature = "otel", tracing::instrument(name = "api.health"))]
+pub async fn health_handler() -> Json<HealthResponse> {
+    // Get plugin status
+    let plugin_status = crate::plugins::startup_validation::PluginHealthStatus::check();
+
+    Json(HealthResponse {
+        status: "healthy".to_string(),
+        version: env!("CARGO_PKG_VERSION").to_string(),
+        plugins: Some(super::types::PluginStatus {
+            ocr_backends_count: plugin_status.ocr_backends_count,
+            ocr_backends: plugin_status.ocr_backends,
+            extractors_count: plugin_status.extractors_count,
+            post_processors_count: plugin_status.post_processors_count,
+        }),
+    })
+}
+
+/// Server info endpoint handler.
+///
+/// GET /info
+#[utoipa::path(
+    get,
+    path = "/info",
+    tag = "health",
+    responses(
+        (status = 200, description = "Server information", body = InfoResponse),
+    )
+)]
+#[cfg_attr(feature = "otel", tracing::instrument(name = "api.info"))]
+pub async fn info_handler() -> Json<InfoResponse> {
+    Json(InfoResponse {
+        version: env!("CARGO_PKG_VERSION").to_string(),
+        rust_backend: true,
+    })
+}
+
 /// Extract endpoint handler.
 ///
 /// POST /extract
@@ -37,6 +84,19 @@ use super::{
 ///
 /// The server's default config (loaded from kreuzberg.toml/yaml/json via discovery)
 /// is used as the base, and any per-request config overrides those defaults.
+// TODO: Add utoipa::path annotation once ExtractionResult implements ToSchema
+// #[utoipa::path(
+//     post,
+//     path = "/extract",
+//     tag = "extraction",
+//     request_body(content_type = "multipart/form-data"),
+//     responses(
+//         (status = 200, description = "Extraction successful", body = ExtractResponse),
+//         (status = 400, description = "Bad request", body = crate::api::types::ErrorResponse),
+//         (status = 413, description = "Payload too large", body = crate::api::types::ErrorResponse),
+//         (status = 500, description = "Internal server error", body = crate::api::types::ErrorResponse),
+//     )
+// )]
 #[cfg_attr(
     feature = "otel",
     tracing::instrument(
@@ -132,28 +192,6 @@ pub async fn extract_handler(
     Ok(Json(results))
 }
 
-/// Health check endpoint handler.
-///
-/// GET /health
-#[cfg_attr(feature = "otel", tracing::instrument(name = "api.health"))]
-pub async fn health_handler() -> Json<HealthResponse> {
-    Json(HealthResponse {
-        status: "healthy".to_string(),
-        version: env!("CARGO_PKG_VERSION").to_string(),
-    })
-}
-
-/// Server info endpoint handler.
-///
-/// GET /info
-#[cfg_attr(feature = "otel", tracing::instrument(name = "api.info"))]
-pub async fn info_handler() -> Json<InfoResponse> {
-    Json(InfoResponse {
-        version: env!("CARGO_PKG_VERSION").to_string(),
-        rust_backend: true,
-    })
-}
-
 /// Cache stats endpoint handler.
 ///
 /// GET /cache/stats
@@ -164,6 +202,15 @@ pub async fn info_handler() -> Json<InfoResponse> {
 /// - Current directory cannot be determined
 /// - Cache directory path contains non-UTF8 characters
 /// - Cache metadata retrieval fails
+#[utoipa::path(
+    get,
+    path = "/cache/stats",
+    tag = "cache",
+    responses(
+        (status = 200, description = "Cache statistics", body = CacheStatsResponse),
+        (status = 500, description = "Internal server error", body = crate::api::types::ErrorResponse),
+    )
+)]
 #[cfg_attr(feature = "otel", tracing::instrument(name = "api.cache_stats"))]
 pub async fn cache_stats_handler() -> Result<Json<CacheStatsResponse>, ApiError> {
     let cache_dir = std::env::current_dir()
@@ -204,6 +251,15 @@ pub async fn cache_stats_handler() -> Result<Json<CacheStatsResponse>, ApiError>
 /// - Current directory cannot be determined
 /// - Cache directory path contains non-UTF8 characters
 /// - Cache clearing operation fails
+#[utoipa::path(
+    delete,
+    path = "/cache/clear",
+    tag = "cache",
+    responses(
+        (status = 200, description = "Cache cleared", body = CacheClearResponse),
+        (status = 500, description = "Internal server error", body = crate::api::types::ErrorResponse),
+    )
+)]
 #[cfg_attr(feature = "otel", tracing::instrument(name = "api.cache_clear"))]
 pub async fn cache_clear_handler() -> Result<Json<CacheClearResponse>, ApiError> {
     let cache_dir = std::env::current_dir()
@@ -248,6 +304,17 @@ pub async fn cache_clear_handler() -> Result<Json<CacheClearResponse>, ApiError>
 /// - ONNX Runtime is not available
 /// - Model initialization fails
 /// - Embedding generation fails
+#[utoipa::path(
+    post,
+    path = "/embed",
+    tag = "embeddings",
+    request_body = EmbedRequest,
+    responses(
+        (status = 200, description = "Embeddings generated", body = EmbedResponse),
+        (status = 400, description = "Bad request", body = crate::api::types::ErrorResponse),
+        (status = 500, description = "Internal server error", body = crate::api::types::ErrorResponse),
+    )
+)]
 #[cfg(feature = "embeddings")]
 #[cfg_attr(
     feature = "otel",
@@ -331,6 +398,17 @@ pub async fn embed_handler(Json(request): Json<EmbedRequest>) -> Result<Json<Emb
 /// Embedding endpoint handler (when embeddings feature is disabled).
 ///
 /// Returns an error indicating embeddings feature is not enabled.
+#[utoipa::path(
+    post,
+    path = "/embed",
+    tag = "embeddings",
+    request_body = EmbedRequest,
+    responses(
+        (status = 200, description = "Embeddings generated", body = EmbedResponse),
+        (status = 400, description = "Bad request", body = crate::api::types::ErrorResponse),
+        (status = 500, description = "Internal server error", body = crate::api::types::ErrorResponse),
+    )
+)]
 #[cfg(not(feature = "embeddings"))]
 pub async fn embed_handler(Json(_request): Json<EmbedRequest>) -> Result<Json<EmbedResponse>, ApiError> {
     Err(ApiError::internal(crate::error::KreuzbergError::MissingDependency(
@@ -344,6 +422,17 @@ pub async fn embed_handler(Json(_request): Json<EmbedRequest>) -> Result<Json<Em
 ///
 /// Accepts JSON body with text and optional configuration.
 /// Returns chunks with metadata.
+#[utoipa::path(
+    post,
+    path = "/chunk",
+    tag = "chunking",
+    request_body = ChunkRequest,
+    responses(
+        (status = 200, description = "Text chunked successfully", body = ChunkResponse),
+        (status = 400, description = "Bad request", body = crate::api::types::ErrorResponse),
+        (status = 500, description = "Internal server error", body = crate::api::types::ErrorResponse),
+    )
+)]
 #[cfg_attr(
     feature = "otel",
     tracing::instrument(

@@ -117,8 +117,8 @@ public final class KreuzbergFFI {
 			ValueLayout.ADDRESS.withName("detected_languages_json"), ValueLayout.ADDRESS.withName("metadata_json"),
 			ValueLayout.ADDRESS.withName("chunks_json"), ValueLayout.ADDRESS.withName("images_json"),
 			ValueLayout.ADDRESS.withName("page_structure_json"), ValueLayout.ADDRESS.withName("pages_json"),
-			ValueLayout.ADDRESS.withName("elements_json"),
-			ValueLayout.JAVA_BOOLEAN.withName("success"), MemoryLayout.paddingLayout(7));
+			ValueLayout.ADDRESS.withName("elements_json"), ValueLayout.JAVA_BOOLEAN.withName("success"),
+			MemoryLayout.paddingLayout(7));
 
 	public static final long CONTENT_OFFSET = C_EXTRACTION_RESULT_LAYOUT
 			.byteOffset(MemoryLayout.PathElement.groupElement("content"));

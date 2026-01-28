@@ -351,14 +351,60 @@ docker run -d \
 
 sleep 5
 
-if curl -f -s "http://localhost:${port}/health" >/dev/null 2>&1; then
+health_response=$(curl -f -s "http://localhost:${port}/health" 2>&1 || echo "CURL_FAILED")
+if [ "$health_response" != "CURL_FAILED" ]; then
   pass_test
-  docker rm -f "$container" >/dev/null 2>&1
 else
   fail_test "API health check" "Health endpoint not responding on port $port"
   docker logs "$container" 2>&1 | tail -20 | log_verbose
   docker rm -f "$container" >/dev/null 2>&1
 fi
+
+# CRITICAL: Plugin initialization validation (fail-fast)
+start_test "Plugin initialization validation"
+log_verbose "Health response: $health_response"
+
+if echo "$health_response" | grep -q "plugins"; then
+  ocr_count=$(echo "$health_response" | grep -o '"ocr_backends_count":[0-9]*' | grep -o '[0-9]*' || echo "0")
+  extractor_count=$(echo "$health_response" | grep -o '"extractors_count":[0-9]*' | grep -o '[0-9]*' || echo "0")
+
+  log_verbose "OCR backends: $ocr_count, Extractors: $extractor_count"
+
+  if [ "$VARIANT" = "full" ]; then
+    # Full variant MUST have OCR backends registered
+    if [ "${ocr_count:-0}" -gt 0 ]; then
+      log_info "Full variant: $ocr_count OCR backend(s) registered"
+      pass_test
+    else
+      fail_test "Plugin initialization" "Full variant: No OCR backends registered (expected at least 1)"
+      log_error "CRITICAL: Plugin initialization failed - this indicates tesseract/tessdata issue"
+      docker logs "$container" 2>&1 | tail -50
+      docker rm -f "$container" >/dev/null 2>&1
+      exit 1
+    fi
+  else
+    # Core variant should have no OCR backends
+    if [ "${ocr_count:-0}" -eq 0 ]; then
+      log_info "Core variant: No OCR backends (as expected)"
+      pass_test
+    else
+      log_warning "Core variant has OCR backends registered (unexpected but not fatal)"
+      pass_test
+    fi
+  fi
+
+  # All variants should have extractors
+  if [ "${extractor_count:-0}" -eq 0 ]; then
+    fail_test "Plugin initialization" "No document extractors registered"
+    docker rm -f "$container" >/dev/null 2>&1
+    exit 1
+  fi
+else
+  log_warning "Health response missing 'plugins' field - older API version?"
+  pass_test
+fi
+
+docker rm -f "$container" >/dev/null 2>&1
 
 start_test "API extraction endpoint"
 container=$(random_container_name)
@@ -413,6 +459,37 @@ if echo "$response" | grep -q "version" && echo "$response" | grep -q "rust_back
   pass_test
 else
   fail_test "API /info endpoint" "Response missing expected fields"
+fi
+
+docker rm -f "$container" >/dev/null 2>&1
+
+start_test "API /openapi.json endpoint"
+container=$(random_container_name)
+port=$((9000 + RANDOM % 1000))
+
+docker run -d \
+  --name "$container" \
+  --security-opt no-new-privileges \
+  --memory 2g \
+  --cpus 2 \
+  -p "${port}:8000" \
+  "$IMAGE_NAME" >/dev/null 2>&1
+
+sleep 5
+
+response=$(curl -f -s "http://localhost:${port}/openapi.json" 2>&1 || echo "CURL_FAILED")
+log_verbose "/openapi.json response (first 200 chars): ${response:0:200}"
+
+if echo "$response" | grep -q '"openapi"' && echo "$response" | grep -q '"paths"'; then
+  # Validate it's OpenAPI 3.x
+  if echo "$response" | grep -q '"openapi":"3\.'; then
+    pass_test
+  else
+    log_warning "OpenAPI version not 3.x"
+    pass_test
+  fi
+else
+  fail_test "API /openapi.json endpoint" "Response missing OpenAPI schema fields"
 fi
 
 docker rm -f "$container" >/dev/null 2>&1

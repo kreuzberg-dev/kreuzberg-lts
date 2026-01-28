@@ -220,7 +220,7 @@ pub struct EmbedRequest {
     pub texts: Vec<String>,
     /// Optional embedding configuration (model, batch size, etc.)
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[cfg_attr(feature = "api", schema(skip))]
+    #[cfg_attr(feature = "api", schema(value_type = Option<Object>))]
     pub config: Option<crate::core::config::EmbeddingConfig>,
 }
 

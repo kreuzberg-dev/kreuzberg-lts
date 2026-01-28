@@ -87,6 +87,8 @@
 mod config;
 mod error;
 mod handlers;
+#[cfg(feature = "api")]
+pub mod openapi;
 mod router;
 mod startup;
 mod types;

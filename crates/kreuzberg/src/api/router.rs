@@ -153,19 +153,41 @@ pub fn create_router_with_limits_and_server_config(
         }
     };
 
-    Router::new()
+    let mut router = Router::new()
         .route("/extract", post(extract_handler))
         .route("/embed", post(embed_handler))
         .route("/chunk", post(chunk_handler))
         .route("/health", get(health_handler))
         .route("/info", get(info_handler))
         .route("/cache/stats", get(cache_stats_handler))
-        .route("/cache/clear", delete(cache_clear_handler))
+        .route("/cache/clear", delete(cache_clear_handler));
+
+    // Add OpenAPI schema endpoint if API feature is enabled
+    #[cfg(feature = "api")]
+    {
+        router = router.route("/openapi.json", get(openapi_schema_handler));
+    }
+
+    router
         .layer(DefaultBodyLimit::max(limits.max_request_body_bytes))
         .layer(RequestBodyLimitLayer::new(limits.max_request_body_bytes))
         .layer(cors_layer)
         .layer(TraceLayer::new_for_http())
         .with_state(state)
+}
+
+/// OpenAPI schema handler.
+///
+/// Returns the OpenAPI 3.1 JSON schema for all documented endpoints.
+#[cfg(feature = "api")]
+async fn openapi_schema_handler() -> axum::Json<serde_json::Value> {
+    use crate::api::openapi::openapi_json;
+
+    let schema_str = openapi_json();
+    let schema: serde_json::Value = serde_json::from_str(&schema_str)
+        .unwrap_or_else(|_| serde_json::json!({"error": "Failed to generate OpenAPI schema"}));
+
+    axum::Json(schema)
 }
 
 #[cfg(test)]
