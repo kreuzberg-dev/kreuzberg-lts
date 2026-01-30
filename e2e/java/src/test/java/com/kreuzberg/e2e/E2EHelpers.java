@@ -417,7 +417,8 @@ public final class E2EHelpers {
                 Integer minCount,
                 Integer exactCount
         ) {
-            int count = result.getPageCount();
+            var pages = result.getPages();
+            int count = pages != null ? pages.size() : 0;
             if (minCount != null) {
                 assertTrue(count >= minCount,
                         String.format("Expected page count >= %d, got %d", minCount, count));
@@ -441,9 +442,8 @@ public final class E2EHelpers {
             }
             if (elements != null && typesInclude != null && !typesInclude.isEmpty()) {
                 var types = elements.stream()
-                        .map(el -> el.getElementType())
+                        .map(el -> el.getType())
                         .filter(t -> t != null)
-                        .map(t -> t.wireValue())
                         .toList();
                 for (String expected : typesInclude) {
                     boolean found = types.stream()

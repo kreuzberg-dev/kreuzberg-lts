@@ -1,3 +1,9 @@
+# /// script
+# requires-python = ">=3.10"
+# dependencies = [
+#     "pymupdf4llm>=0.0.17",
+# ]
+# ///
 """PyMuPDF4LLM extraction wrapper for benchmark harness."""
 
 from __future__ import annotations

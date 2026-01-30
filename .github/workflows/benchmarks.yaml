@@ -1321,9 +1321,6 @@ jobs:
           python-version: "3.11"
           cache-prefix: benchmark-python
 
-      - name: Sync benchmark dependencies
-        run: uv sync --group benchmark --no-install-workspace
-
       - name: Run benchmark
         env:
           FRAMEWORK: docling
@@ -1374,8 +1371,6 @@ jobs:
           python-version: "3.11"
           cache-prefix: benchmark-python
 
-      - name: Sync benchmark dependencies
-        run: uv sync --group benchmark --no-install-workspace
 
       - name: Run benchmark
         env:
@@ -1427,8 +1422,6 @@ jobs:
           python-version: "3.11"
           cache-prefix: benchmark-python
 
-      - name: Sync benchmark dependencies
-        run: uv sync --group benchmark --no-install-workspace
 
       - name: Run benchmark
         env:
@@ -1480,8 +1473,6 @@ jobs:
           python-version: "3.11"
           cache-prefix: benchmark-python
 
-      - name: Sync benchmark dependencies
-        run: uv sync --group benchmark --no-install-workspace
 
       - name: Install pandoc
         run: |
@@ -1539,8 +1530,6 @@ jobs:
           python-version: "3.11"
           cache-prefix: benchmark-python
 
-      - name: Sync benchmark dependencies
-        run: uv sync --group benchmark --no-install-workspace
 
       - name: Run benchmark
         env:
@@ -1694,8 +1683,6 @@ jobs:
           python-version: "3.11"
           cache-prefix: benchmark-python
 
-      - name: Sync benchmark dependencies
-        run: uv sync --group benchmark --no-install-workspace
 
       - name: Run benchmark
         env:
@@ -1747,8 +1734,6 @@ jobs:
           python-version: "3.11"
           cache-prefix: benchmark-python
 
-      - name: Sync benchmark dependencies
-        run: uv sync --group benchmark --no-install-workspace
 
       - name: Run benchmark
         env:
@@ -1800,8 +1785,6 @@ jobs:
           python-version: "3.11"
           cache-prefix: benchmark-python
 
-      - name: Sync benchmark dependencies
-        run: uv sync --group benchmark --no-install-workspace
 
       - name: Run benchmark
         env:
@@ -1853,8 +1836,6 @@ jobs:
           python-version: "3.11"
           cache-prefix: benchmark-python
 
-      - name: Sync benchmark dependencies
-        run: uv sync --group benchmark --no-install-workspace
 
       - name: Run benchmark
         env:
@@ -1906,8 +1887,6 @@ jobs:
           python-version: "3.11"
           cache-prefix: benchmark-python
 
-      - name: Sync benchmark dependencies
-        run: uv sync --group benchmark --no-install-workspace
 
       - name: Run benchmark
         env:

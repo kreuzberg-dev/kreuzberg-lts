@@ -433,10 +433,6 @@ func assertPages(t *testing.T, result *kreuzberg.ExtractionResult, minCount, exa
 func assertElements(t *testing.T, result *kreuzberg.ExtractionResult, minCount *int, typesInclude []string) {
 	t.Helper()
 	count := len(result.Elements)
-	// Skip test if elements are expected but not available (FFI limitation - elements_json not in CExtractionResult)
-	if minCount != nil && *minCount > 0 && count == 0 {
-		t.Skipf("Skipping: element_based result format not yet supported in Go FFI bindings (elements_json field missing from CExtractionResult)")
-	}
 	if minCount != nil && count < *minCount {
 		t.Fatalf("expected at least %d elements, found %d", *minCount, count)
 	}

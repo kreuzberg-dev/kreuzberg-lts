@@ -27,7 +27,7 @@ class PluginApisTest extends TestCase
         $tmpDir = sys_get_temp_dir() . '/config_discover_' . uniqid();
         mkdir($tmpDir);
         $configPath = $tmpDir . '/' . 'kreuzberg.toml';
-        file_put_contents($configPath, "[chunking]\nmax_chars = 50\n");
+        file_put_contents($configPath, '[chunking]\nmax_chars = 50\n');
 
         $subdir = $tmpDir . '/' . 'subdir';
         mkdir($subdir);
@@ -52,7 +52,7 @@ class PluginApisTest extends TestCase
     {
         $tmpDir = sys_get_temp_dir();
         $configPath = $tmpDir . '/' . 'test_config.toml';
-        file_put_contents($configPath, "[chunking]\nmax_chars = 100\nmax_overlap = 20\n\n[language_detection]\nenabled = false\n");
+        file_put_contents($configPath, '[chunking]\nmax_chars = 100\nmax_overlap = 20\n\n[language_detection]\nenabled = false\n');
 
         $config = ExtractionConfig::fromFile($configPath);
 

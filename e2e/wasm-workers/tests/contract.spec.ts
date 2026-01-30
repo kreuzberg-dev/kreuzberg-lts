@@ -218,7 +218,7 @@ describe("contract", () => {
             return;
         }
 
-        const config = buildConfig({"chunking":{"max_chars":500,"overlap":50}});
+        const config = buildConfig({"chunking":{"max_chars":500,"max_overlap":50}});
         let result: ExtractionResult | null = null;
         try {
             result = await extractBytes(documentBytes, "application/octet-stream", config);
@@ -267,7 +267,7 @@ describe("contract", () => {
             return;
         }
 
-        const config = buildConfig({"images":{"extract":true,"format":"png"}});
+        const config = buildConfig({"images":{"extract_images":true}});
         let result: ExtractionResult | null = null;
         try {
             result = await extractBytes(documentBytes, "application/octet-stream", config);

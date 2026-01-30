@@ -1,3 +1,9 @@
+# /// script
+# requires-python = ">=3.10"
+# dependencies = [
+#     "pdfplumber>=0.11.4",
+# ]
+# ///
 """pdfplumber extraction wrapper for benchmark harness.
 
 Supports three modes:

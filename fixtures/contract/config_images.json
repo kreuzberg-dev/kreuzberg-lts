@@ -10,8 +10,7 @@
 		"input_type": "file",
 		"config": {
 			"images": {
-				"extract": true,
-				"format": "png"
+				"extract_images": true
 			}
 		}
 	},

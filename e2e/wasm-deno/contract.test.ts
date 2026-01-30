@@ -181,7 +181,7 @@ Deno.test("api_extract_file_sync", { permissions: { read: true } }, async () => 
 
 Deno.test("config_chunking", { permissions: { read: true } }, async () => {
     const documentBytes = await resolveDocument("pdfs/fake_memo.pdf");
-    const config = buildConfig({"chunking":{"max_chars":500,"overlap":50}});
+    const config = buildConfig({"chunking":{"max_chars":500,"max_overlap":50}});
     let result: ExtractionResult | null = null;
     try {
       // Sync file extraction - WASM uses extractBytes with pre-read bytes
@@ -222,7 +222,7 @@ Deno.test("config_force_ocr", { permissions: { read: true } }, async () => {
 
 Deno.test("config_images", { permissions: { read: true } }, async () => {
     const documentBytes = await resolveDocument("pdfs/embedded_images_tables.pdf");
-    const config = buildConfig({"images":{"extract":true,"format":"png"}});
+    const config = buildConfig({"images":{"extract_images":true}});
     let result: ExtractionResult | null = null;
     try {
       // Sync file extraction - WASM uses extractBytes with pre-read bytes

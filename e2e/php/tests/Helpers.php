@@ -13,7 +13,7 @@ use Kreuzberg\Config\LanguageDetectionConfig;
 use Kreuzberg\Config\PdfConfig;
 use Kreuzberg\Config\PostProcessorConfig;
 use Kreuzberg\Config\TokenReductionConfig;
-use Kreuzberg\Types\ExtractionResult;
+use Kreuzberg\ExtractionResult;
 use PHPUnit\Framework\Assert;
 
 class Helpers
@@ -64,16 +64,16 @@ class Helpers
             }
         }
         if (isset($config['chunking']) && is_array($config['chunking'])) {
-            $params['chunking'] = ChunkingConfig::fromArray($config['chunking']);
+            $params['chunking'] = new ChunkingConfig(...$config['chunking']);
         }
         if (isset($config['images']) && is_array($config['images'])) {
-            $params['imageExtraction'] = ImageExtractionConfig::fromArray($config['images']);
+            $params['imageExtraction'] = new ImageExtractionConfig(...$config['images']);
         }
         if (isset($config['pdf_options']) && is_array($config['pdf_options'])) {
-            $params['pdf'] = PdfConfig::fromArray($config['pdf_options']);
+            $params['pdf'] = new PdfConfig(...$config['pdf_options']);
         }
         if (isset($config['language_detection']) && is_array($config['language_detection'])) {
-            $params['languageDetection'] = LanguageDetectionConfig::fromArray($config['language_detection']);
+            $params['languageDetection'] = new LanguageDetectionConfig(...$config['language_detection']);
         }
 
         // Handle scalar config options
@@ -231,8 +231,8 @@ class Helpers
             sprintf("Expected languages %s, missing %s", json_encode($expected), json_encode($missing))
         );
 
-        if ($minConfidence !== null && $result->metadata->hasCustom('confidence')) {
-            $confidence = $result->metadata->getCustom('confidence');
+        if ($minConfidence !== null && isset($result->metadata['confidence'])) {
+            $confidence = $result->metadata['confidence'];
             Assert::assertGreaterThanOrEqual(
                 $minConfidence,
                 $confidence,
@@ -467,16 +467,7 @@ class Helpers
             return $metadata;
         }
 
-        // If the metadata object has a to_array() method (PHP extension Metadata class),
-        // use it to get all metadata including format-specific fields
-        if (method_exists($metadata, 'to_array')) {
-            return $metadata->to_array();
-        }
-
-        // Convert Metadata object to array manually for pure PHP SDK
-        // Note: The PHP extension uses snake_case properties (format_type, created_at, etc.)
-        // while the pure PHP SDK uses camelCase (formatType, createdAt, etc.)
-        // We check for both to support either implementation
+        // Convert Metadata object to array
         $result = [];
         if (isset($metadata->language)) {
             $result['language'] = $metadata->language;
@@ -487,10 +478,7 @@ class Helpers
         if (isset($metadata->subject)) {
             $result['subject'] = $metadata->subject;
         }
-        // Check both snake_case (extension) and camelCase (pure PHP SDK)
-        if (isset($metadata->format_type)) {
-            $result['format_type'] = $metadata->format_type;
-        } elseif (isset($metadata->formatType)) {
+        if (isset($metadata->formatType)) {
             $result['format_type'] = $metadata->formatType;
         }
         if (isset($metadata->title)) {
@@ -502,38 +490,20 @@ class Helpers
         if (isset($metadata->keywords)) {
             $result['keywords'] = $metadata->keywords;
         }
-        // Check both snake_case (extension) and camelCase (pure PHP SDK)
-        if (isset($metadata->created_at)) {
-            $result['created_at'] = $metadata->created_at;
-        } elseif (isset($metadata->createdAt)) {
+        if (isset($metadata->createdAt)) {
             $result['created_at'] = $metadata->createdAt;
         }
-        if (isset($metadata->modified_at)) {
-            $result['modified_at'] = $metadata->modified_at;
-        } elseif (isset($metadata->modifiedAt)) {
+        if (isset($metadata->modifiedAt)) {
             $result['modified_at'] = $metadata->modifiedAt;
         }
-        if (isset($metadata->created_by)) {
-            $result['created_by'] = $metadata->created_by;
-        } elseif (isset($metadata->createdBy)) {
+        if (isset($metadata->createdBy)) {
             $result['created_by'] = $metadata->createdBy;
         }
         if (isset($metadata->producer)) {
             $result['producer'] = $metadata->producer;
         }
-        if (isset($metadata->page_count)) {
-            $result['page_count'] = $metadata->page_count;
-        } elseif (isset($metadata->pageCount)) {
+        if (isset($metadata->pageCount)) {
             $result['page_count'] = $metadata->pageCount;
-        }
-        // Format-specific fields (snake_case from extension)
-        if (isset($metadata->sheet_count)) {
-            $result['sheet_count'] = $metadata->sheet_count;
-        } elseif (isset($metadata->sheetCount)) {
-            $result['sheet_count'] = $metadata->sheetCount;
-        }
-        if (isset($metadata->format)) {
-            $result['format'] = $metadata->format;
         }
         if (isset($metadata->custom) && is_array($metadata->custom)) {
             foreach ($metadata->custom as $key => $value) {

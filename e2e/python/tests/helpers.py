@@ -12,8 +12,10 @@ from kreuzberg import (
     ImageExtractionConfig,
     LanguageDetectionConfig,
     OcrConfig,
+    OutputFormat,
     PdfConfig,
     PostProcessorConfig,
+    ResultFormat,
     TokenReductionConfig,
 )
 
@@ -61,10 +63,10 @@ def build_config(config: dict[str, Any] | None) -> ExtractionConfig:
         kwargs["postprocessor"] = PostProcessorConfig(**postprocessor)
 
     if (output_format := config.get("output_format")) is not None:
-        kwargs["output_format"] = output_format
+        kwargs["output_format"] = OutputFormat(output_format)
 
     if (result_format := config.get("result_format")) is not None:
-        kwargs["result_format"] = result_format
+        kwargs["result_format"] = ResultFormat(result_format)
 
     return ExtractionConfig(**kwargs)
 

@@ -539,8 +539,7 @@ public static class TestHelpers
         var elements = result.Elements;
         if (elements is null)
         {
-            // Elements field is not exposed through the C FFI layer (result_format: element_based not fully implemented)
-            throw new Xunit.SkipException("Elements not supported in FFI layer - result_format: element_based feature not implemented");
+            throw new XunitException("Expected elements but got null");
         }
         var count = elements.Count;
         if (minCount.HasValue && count < minCount.Value)

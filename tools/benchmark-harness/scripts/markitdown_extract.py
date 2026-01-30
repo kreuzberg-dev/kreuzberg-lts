@@ -1,3 +1,9 @@
+# /// script
+# requires-python = ">=3.10"
+# dependencies = [
+#     "markitdown>=0.1.4",
+# ]
+# ///
 """MarkItDown extraction wrapper for benchmark harness."""
 
 from __future__ import annotations

@@ -1,3 +1,9 @@
+# /// script
+# requires-python = ">=3.10"
+# dependencies = [
+#     "mineru>=2.6.7",
+# ]
+# ///
 """MinerU extraction wrapper for benchmark harness.
 
 Supports three modes:

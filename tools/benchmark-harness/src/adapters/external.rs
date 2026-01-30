@@ -177,7 +177,9 @@ fn get_script_path(script_name: &str) -> Result<PathBuf> {
 /// Returns (command, args) where command is the executable and args are the base arguments
 fn find_python_with_framework(framework: &str) -> Result<(PathBuf, Vec<String>)> {
     if which::which("uv").is_ok() {
-        return Ok((PathBuf::from("uv"), vec!["run".to_string(), "python".to_string()]));
+        // Use `uv run <script>` (without `python`) so uv reads PEP 723 inline
+        // script metadata and resolves dependencies in an isolated environment.
+        return Ok((PathBuf::from("uv"), vec!["run".to_string()]));
     }
 
     let python_candidates = vec!["python3", "python"];

@@ -140,7 +140,7 @@ namespace Kreuzberg.E2E.Contract {
             TestHelpers.SkipIfLegacyOfficeDisabled("pdfs/fake_memo.pdf");
             TestHelpers.SkipIfOfficeTestOnWindows("pdfs/fake_memo.pdf");
             var documentPath = TestHelpers.EnsureDocument("pdfs/fake_memo.pdf", true);
-            var config = TestHelpers.BuildConfig("{\"chunking\":{\"max_chars\":500,\"overlap\":50}}");
+            var config = TestHelpers.BuildConfig("{\"chunking\":{\"max_chars\":500,\"max_overlap\":50}}");
 
             var result = KreuzbergClient.ExtractFileSync(documentPath, config);
             TestHelpers.AssertExpectedMime(result, new[] { "application/pdf" });
@@ -167,7 +167,7 @@ namespace Kreuzberg.E2E.Contract {
             TestHelpers.SkipIfLegacyOfficeDisabled("pdfs/embedded_images_tables.pdf");
             TestHelpers.SkipIfOfficeTestOnWindows("pdfs/embedded_images_tables.pdf");
             var documentPath = TestHelpers.EnsureDocument("pdfs/embedded_images_tables.pdf", true);
-            var config = TestHelpers.BuildConfig("{\"images\":{\"extract\":true,\"format\":\"png\"}}");
+            var config = TestHelpers.BuildConfig("{\"images\":{\"extract_images\":true}}");
 
             var result = KreuzbergClient.ExtractFileSync(documentPath, config);
             TestHelpers.AssertExpectedMime(result, new[] { "application/pdf" });

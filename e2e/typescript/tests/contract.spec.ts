@@ -215,7 +215,7 @@ describe("contract fixtures", () => {
       console.warn("Skipping config_chunking: missing document at", documentPath);
       return;
     }
-    const config = buildConfig({"chunking":{"max_chars":500,"overlap":50}});
+    const config = buildConfig({"chunking":{"max_chars":500,"max_overlap":50}});
     let result: ExtractionResult | null = null;
     try {
       result = extractFileSync(documentPath, null, config);
@@ -262,7 +262,7 @@ describe("contract fixtures", () => {
       console.warn("Skipping config_images: missing document at", documentPath);
       return;
     }
-    const config = buildConfig({"images":{"extract":true,"format":"png"}});
+    const config = buildConfig({"images":{"extract_images":true}});
     let result: ExtractionResult | null = null;
     try {
       result = extractFileSync(documentPath, null, config);

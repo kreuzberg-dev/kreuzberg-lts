@@ -1,3 +1,9 @@
+# /// script
+# requires-python = ">=3.10"
+# dependencies = [
+#     "docling>=2.64.1",
+# ]
+# ///
 """Docling extraction wrapper for benchmark harness.
 
 Supports two modes:

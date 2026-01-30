@@ -295,7 +295,7 @@ public class ContractTest {
 
     @Test
     public void configChunking() throws Exception {
-        JsonNode config = MAPPER.readTree("{\"chunking\":{\"max_chars\":500,\"overlap\":50}}");
+        JsonNode config = MAPPER.readTree("{\"chunking\":{\"max_chars\":500,\"max_overlap\":50}}");
         E2EHelpers.runFixture(
             "config_chunking",
             "pdfs/fake_memo.pdf",
@@ -330,7 +330,7 @@ public class ContractTest {
 
     @Test
     public void configImages() throws Exception {
-        JsonNode config = MAPPER.readTree("{\"images\":{\"extract\":true,\"format\":\"png\"}}");
+        JsonNode config = MAPPER.readTree("{\"images\":{\"extract_images\":true}}");
         E2EHelpers.runFixture(
             "config_images",
             "pdfs/embedded_images_tables.pdf",
@@ -467,14 +467,6 @@ public class ContractTest {
 
     @Test
     public void resultFormatElementBased() throws Exception {
-        // Note: The C FFI doesn't expose elements_json field yet.
-        // This test is skipped until the FFI is updated to support element-based extraction.
-        // See CExtractionResult in kreuzberg-ffi/src/types.rs - needs elements_json field.
-        org.junit.jupiter.api.Assumptions.assumeTrue(
-            false,
-            "Skipping result_format_element_based: C FFI does not expose elements_json field yet"
-        );
-
         JsonNode config = MAPPER.readTree("{\"result_format\":\"element_based\"}");
         E2EHelpers.runFixture(
             "result_format_element_based",

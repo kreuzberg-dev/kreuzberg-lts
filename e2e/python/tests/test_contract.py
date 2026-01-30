@@ -6,8 +6,8 @@ import pytest
 from kreuzberg import (
     batch_extract_bytes,
     batch_extract_bytes_sync,
-    batch_extract_files,
-    batch_extract_files_sync,
+    batch_extract_file,
+    batch_extract_file_sync,
     extract_bytes,
     extract_bytes_sync,
     extract_file,
@@ -64,7 +64,7 @@ async def test_api_batch_file_async() -> None:
 
     config = helpers.build_config(None)
 
-    results = await batch_extract_files([document_path], config=config)
+    results = await batch_extract_file([document_path], config=config)
     result = results[0]
 
     helpers.assert_expected_mime(result, ["application/pdf"])
@@ -80,7 +80,7 @@ def test_api_batch_file_sync() -> None:
 
     config = helpers.build_config(None)
 
-    results = batch_extract_files_sync([document_path], config=config)
+    results = batch_extract_file_sync([document_path], config=config)
     result = results[0]
 
     helpers.assert_expected_mime(result, ["application/pdf"])
@@ -160,7 +160,7 @@ def test_config_chunking() -> None:
     if not document_path.exists():
         pytest.skip(f"Skipping config_chunking: missing document at {document_path}")
 
-    config = helpers.build_config({"chunking": {"max_chars": 500, "overlap": 50}})
+    config = helpers.build_config({"chunking": {"max_chars": 500, "max_overlap": 50}})
 
     result = extract_file_sync(document_path, None, config)
 
@@ -189,7 +189,7 @@ def test_config_images() -> None:
     if not document_path.exists():
         pytest.skip(f"Skipping config_images: missing document at {document_path}")
 
-    config = helpers.build_config({"images": {"extract": True, "format": "png"}})
+    config = helpers.build_config({"images": {"extract_images": True}})
 
     result = extract_file_sync(document_path, None, config)
 

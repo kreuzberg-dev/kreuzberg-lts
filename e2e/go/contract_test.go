@@ -81,7 +81,7 @@ func TestContractConfigChunking(t *testing.T) {
 	result := runExtraction(t, "pdfs/fake_memo.pdf", []byte(`{
 "chunking": {
 	"max_chars": 500,
-	"overlap": 50
+	"max_overlap": 50
 }
 }`))
 	assertExpectedMime(t, result, []string{"application/pdf"})
@@ -100,8 +100,7 @@ func TestContractConfigForceOcr(t *testing.T) {
 func TestContractConfigImages(t *testing.T) {
 	result := runExtraction(t, "pdfs/embedded_images_tables.pdf", []byte(`{
 "images": {
-	"extract": true,
-	"format": "png"
+	"extract_images": true
 }
 }`))
 	assertExpectedMime(t, result, []string{"application/pdf"})

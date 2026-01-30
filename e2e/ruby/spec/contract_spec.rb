@@ -168,7 +168,7 @@ RSpec.describe 'contract fixtures' do
     E2ERuby.run_fixture(
       'config_chunking',
       'pdfs/fake_memo.pdf',
-      { chunking: { max_chars: 500, overlap: 50 } },
+      { chunking: { max_chars: 500, max_overlap: 50 } },
       requirements: [],
       notes: nil,
       skip_if_missing: true
@@ -203,7 +203,7 @@ RSpec.describe 'contract fixtures' do
     E2ERuby.run_fixture(
       'config_images',
       'pdfs/embedded_images_tables.pdf',
-      { images: { extract: true, format: 'png' } },
+      { images: { extract_images: true } },
       requirements: [],
       notes: nil,
       skip_if_missing: true

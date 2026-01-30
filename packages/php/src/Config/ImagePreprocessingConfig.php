@@ -8,8 +8,8 @@ namespace Kreuzberg\Config;
  * Image preprocessing configuration for OCR.
  *
  * Configuration class for controlling how images are preprocessed before
- * OCR processing. Provides settings for resolution scaling, quality, color
- * mode, and various image enhancement techniques.
+ * OCR processing. Provides settings for resolution scaling, rotation,
+ * skew correction, and various image enhancement techniques.
  */
 readonly class ImagePreprocessingConfig
 {
@@ -22,11 +22,6 @@ readonly class ImagePreprocessingConfig
          * Standard DPI for OCR is 300.
          *
          * Valid range: 50-600 DPI
-         * Recommended values:
-         * - 150: Fast processing, lower quality
-         * - 300: Standard, good balance (DEFAULT)
-         * - 400: Better for small text
-         * - 600: Maximum quality, slower
          *
          * @var int
          * @default 300
@@ -34,46 +29,15 @@ readonly class ImagePreprocessingConfig
         public int $targetDpi = 300,
 
         /**
-         * JPEG compression quality for processed images.
+         * Auto-detect and correct image rotation.
          *
-         * Controls the compression level when saving processed images.
-         * Higher values preserve more detail but result in larger files.
-         * Lower values reduce file size but may lose image quality.
-         *
-         * Valid range: 1-100
-         * Recommended values:
-         * - 70-80: Good balance
-         * - 90: High quality (DEFAULT)
-         * - 95+: Maximum quality, larger files
-         *
-         * @var int
-         * @default 90
-         */
-        public int $quality = 90,
-
-        /**
-         * Convert images to grayscale before processing.
-         *
-         * When enabled, converts color images to grayscale (single channel).
-         * Reduces file size and can improve OCR performance for text-heavy
-         * documents. May reduce quality for documents requiring color information.
+         * When enabled, automatically detects and corrects image rotation
+         * to ensure text is properly oriented for OCR processing.
          *
          * @var bool
-         * @default false
+         * @default true
          */
-        public bool $grayscale = false,
-
-        /**
-         * Apply noise reduction/denoising to images.
-         *
-         * When enabled, reduces visual noise in images which can improve
-         * OCR accuracy for low-quality scans, faxes, or damaged documents.
-         * May slightly blur sharp edges.
-         *
-         * @var bool
-         * @default false
-         */
-        public bool $denoise = false,
+        public bool $autoRotate = true,
 
         /**
          * Correct image skew (perspective distortion).
@@ -83,21 +47,53 @@ readonly class ImagePreprocessingConfig
          * imperfectly scanned or photographed documents.
          *
          * @var bool
-         * @default false
+         * @default true
          */
-        public bool $deskew = false,
+        public bool $deskew = true,
 
         /**
-         * Remove background from images.
+         * Apply noise reduction/denoising to images.
          *
-         * When enabled, attempts to detect and remove backgrounds from images,
-         * keeping only the foreground content (text/objects). Useful for
-         * documents with complex or colored backgrounds.
+         * When enabled, reduces visual noise in images which can improve
+         * OCR accuracy for low-quality scans, faxes, or damaged documents.
          *
          * @var bool
          * @default false
          */
-        public bool $removeBackground = false,
+        public bool $denoise = false,
+
+        /**
+         * Enhance contrast for better text visibility.
+         *
+         * When enabled, applies contrast enhancement to improve text
+         * legibility, especially for faded or low-contrast documents.
+         *
+         * @var bool
+         * @default false
+         */
+        public bool $contrastEnhance = false,
+
+        /**
+         * Binarization method for converting to black and white.
+         *
+         * Controls how grayscale images are converted to binary (black/white)
+         * for OCR processing. Common values: "otsu", "sauvola", "adaptive".
+         *
+         * @var string
+         * @default "otsu"
+         */
+        public string $binarizationMethod = 'otsu',
+
+        /**
+         * Invert colors (white text on black → black on white).
+         *
+         * When enabled, inverts the image colors. Useful for documents
+         * with light text on dark backgrounds.
+         *
+         * @var bool
+         * @default false
+         */
+        public bool $invertColors = false,
     ) {
     }
 
@@ -115,18 +111,18 @@ readonly class ImagePreprocessingConfig
             $targetDpi = (int) $targetDpi;
         }
 
-        /** @var int $quality */
-        $quality = $data['quality'] ?? 90;
-        if (!is_int($quality)) {
-            /** @var int $quality */
-            $quality = (int) $quality;
+        /** @var bool $autoRotate */
+        $autoRotate = $data['auto_rotate'] ?? true;
+        if (!is_bool($autoRotate)) {
+            /** @var bool $autoRotate */
+            $autoRotate = (bool) $autoRotate;
         }
 
-        /** @var bool $grayscale */
-        $grayscale = $data['grayscale'] ?? false;
-        if (!is_bool($grayscale)) {
-            /** @var bool $grayscale */
-            $grayscale = (bool) $grayscale;
+        /** @var bool $deskew */
+        $deskew = $data['deskew'] ?? true;
+        if (!is_bool($deskew)) {
+            /** @var bool $deskew */
+            $deskew = (bool) $deskew;
         }
 
         /** @var bool $denoise */
@@ -136,27 +132,35 @@ readonly class ImagePreprocessingConfig
             $denoise = (bool) $denoise;
         }
 
-        /** @var bool $deskew */
-        $deskew = $data['deskew'] ?? false;
-        if (!is_bool($deskew)) {
-            /** @var bool $deskew */
-            $deskew = (bool) $deskew;
+        /** @var bool $contrastEnhance */
+        $contrastEnhance = $data['contrast_enhance'] ?? false;
+        if (!is_bool($contrastEnhance)) {
+            /** @var bool $contrastEnhance */
+            $contrastEnhance = (bool) $contrastEnhance;
         }
 
-        /** @var bool $removeBackground */
-        $removeBackground = $data['remove_background'] ?? false;
-        if (!is_bool($removeBackground)) {
-            /** @var bool $removeBackground */
-            $removeBackground = (bool) $removeBackground;
+        /** @var string $binarizationMethod */
+        $binarizationMethod = $data['binarization_method'] ?? 'otsu';
+        if (!is_string($binarizationMethod)) {
+            /** @var string $binarizationMethod */
+            $binarizationMethod = (string) $binarizationMethod;
+        }
+
+        /** @var bool $invertColors */
+        $invertColors = $data['invert_colors'] ?? false;
+        if (!is_bool($invertColors)) {
+            /** @var bool $invertColors */
+            $invertColors = (bool) $invertColors;
         }
 
         return new self(
             targetDpi: $targetDpi,
-            quality: $quality,
-            grayscale: $grayscale,
-            denoise: $denoise,
+            autoRotate: $autoRotate,
             deskew: $deskew,
-            removeBackground: $removeBackground,
+            denoise: $denoise,
+            contrastEnhance: $contrastEnhance,
+            binarizationMethod: $binarizationMethod,
+            invertColors: $invertColors,
         );
     }
 
@@ -198,11 +202,12 @@ readonly class ImagePreprocessingConfig
     {
         return [
             'target_dpi' => $this->targetDpi,
-            'quality' => $this->quality,
-            'grayscale' => $this->grayscale,
-            'denoise' => $this->denoise,
+            'auto_rotate' => $this->autoRotate,
             'deskew' => $this->deskew,
-            'remove_background' => $this->removeBackground,
+            'denoise' => $this->denoise,
+            'contrast_enhance' => $this->contrastEnhance,
+            'binarization_method' => $this->binarizationMethod,
+            'invert_colors' => $this->invertColors,
         ];
     }
 

@@ -194,7 +194,7 @@ class ContractTest extends TestCase
             $this->markTestSkipped('Skipping config_chunking: missing document at ' . $documentPath);
         }
 
-        $config = Helpers::buildConfig(['chunking' => ['max_chars' => 500, 'overlap' => 50]]);
+        $config = Helpers::buildConfig(['chunking' => ['max_chars' => 500, 'max_overlap' => 50]]);
 
         $kreuzberg = new Kreuzberg($config);
         $result = $kreuzberg->extractFile($documentPath);
@@ -233,7 +233,7 @@ class ContractTest extends TestCase
             $this->markTestSkipped('Skipping config_images: missing document at ' . $documentPath);
         }
 
-        $config = Helpers::buildConfig(['images' => ['extract' => true, 'format' => 'png']]);
+        $config = Helpers::buildConfig(['images' => ['extract_images' => true]]);
 
         $kreuzberg = new Kreuzberg($config);
         $result = $kreuzberg->extractFile($documentPath);
