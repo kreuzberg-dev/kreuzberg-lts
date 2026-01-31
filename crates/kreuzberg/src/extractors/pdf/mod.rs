@@ -238,7 +238,12 @@ impl DocumentExtractor for PdfExtractor {
                         .into_iter()
                         .enumerate()
                         .map(|(idx, img)| {
-                            let format = img.filters.first().cloned().unwrap_or_else(|| "unknown".to_string());
+                            let format = img
+                                .filters
+                                .first()
+                                .cloned()
+                                .map(std::borrow::Cow::Owned)
+                                .unwrap_or(std::borrow::Cow::Borrowed("unknown"));
                             crate::types::ExtractedImage {
                                 data: Bytes::from(img.data),
                                 format,

@@ -201,15 +201,18 @@ impl Plugin for MetadataOcrBackend {
 impl OcrBackend for MetadataOcrBackend {
     async fn process_image(&self, image_bytes: &[u8], config: &OcrConfig) -> Result<ExtractionResult> {
         let mut metadata = Metadata::default();
-        metadata
-            .additional
-            .insert("ocr_backend".to_string(), serde_json::json!(self.name()));
-        metadata
-            .additional
-            .insert("image_size".to_string(), serde_json::json!(image_bytes.len()));
-        metadata
-            .additional
-            .insert("ocr_language".to_string(), serde_json::json!(config.language));
+        metadata.additional.insert(
+            std::borrow::Cow::Borrowed("ocr_backend"),
+            serde_json::json!(self.name()),
+        );
+        metadata.additional.insert(
+            std::borrow::Cow::Borrowed("image_size"),
+            serde_json::json!(image_bytes.len()),
+        );
+        metadata.additional.insert(
+            std::borrow::Cow::Borrowed("ocr_language"),
+            serde_json::json!(config.language),
+        );
 
         Ok(ExtractionResult {
             content: "OCR processed text".to_string(),

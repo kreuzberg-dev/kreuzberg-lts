@@ -120,7 +120,7 @@ pub fn extract_pptx_from_path(
 
                 extracted_images.push(ExtractedImage {
                     data: Bytes::from(data),
-                    format,
+                    format, // Already a Cow<'static, str> from detect_image_format
                     image_index,
                     page_number: Some(slide.slide_number as usize),
                     width: None,

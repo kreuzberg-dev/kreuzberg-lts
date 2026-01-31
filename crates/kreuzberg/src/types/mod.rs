@@ -165,7 +165,7 @@ mod tests {
     fn test_page_content_arc_images_roundtrip() {
         let image1 = Arc::new(ExtractedImage {
             data: Bytes::from_static(&[0xFF, 0xD8, 0xFF]),
-            format: "jpeg".to_string(),
+            format: Cow::Borrowed("jpeg"),
             image_index: 0,
             page_number: Some(1),
             width: Some(100),
@@ -179,7 +179,7 @@ mod tests {
 
         let image2 = Arc::new(ExtractedImage {
             data: Bytes::from_static(&[0x89, 0x50, 0x4E]),
-            format: "png".to_string(),
+            format: Cow::Borrowed("png"),
             image_index: 1,
             page_number: Some(1),
             width: Some(300),

@@ -2,6 +2,7 @@
 
 use bytes::Bytes;
 use serde::{Deserialize, Serialize};
+use std::borrow::Cow;
 use std::collections::HashMap;
 
 use super::djot::DjotContent;
@@ -137,7 +138,8 @@ pub struct ExtractedImage {
     pub data: Bytes,
 
     /// Image format (e.g., "jpeg", "png", "webp")
-    pub format: String,
+    /// Uses Cow<'static, str> to avoid allocation for static literals.
+    pub format: Cow<'static, str>,
 
     /// Zero-indexed position of this image in the document/page
     pub image_index: usize,

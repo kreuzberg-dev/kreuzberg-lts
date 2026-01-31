@@ -167,7 +167,7 @@ pub(super) fn process_images(
                 element_index: Some(elements.len()),
                 additional: {
                     let mut m = HashMap::new();
-                    m.insert("format".to_string(), image.format.clone());
+                    m.insert("format".to_string(), image.format.to_string());
                     if let Some(width) = image.width {
                         m.insert("width".to_string(), width.to_string());
                     }

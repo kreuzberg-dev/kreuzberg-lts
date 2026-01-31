@@ -3,6 +3,8 @@
 //! This module handles image-related parsing from slide XML and
 //! detection of image formats from file data.
 
+use std::borrow::Cow;
+
 pub(super) fn html_escape(text: &str) -> String {
     text.replace('&', "&amp;")
         .replace('<', "&lt;")
@@ -11,21 +13,21 @@ pub(super) fn html_escape(text: &str) -> String {
         .replace('\'', "&#x27;")
 }
 
-pub(super) fn detect_image_format(data: &[u8]) -> String {
+pub(super) fn detect_image_format(data: &[u8]) -> Cow<'static, str> {
     if data.starts_with(&[0xFF, 0xD8, 0xFF]) {
-        "jpeg".to_string()
+        Cow::Borrowed("jpeg")
     } else if data.starts_with(&[0x89, 0x50, 0x4E, 0x47]) {
-        "png".to_string()
+        Cow::Borrowed("png")
     } else if data.starts_with(b"GIF") {
-        "gif".to_string()
+        Cow::Borrowed("gif")
     } else if data.starts_with(b"BM") {
-        "bmp".to_string()
+        Cow::Borrowed("bmp")
     } else if data.starts_with(b"<svg") || data.starts_with(b"<?xml") {
-        "svg".to_string()
+        Cow::Borrowed("svg")
     } else if data.starts_with(b"II\x2A\x00") || data.starts_with(b"MM\x00\x2A") {
-        "tiff".to_string()
+        Cow::Borrowed("tiff")
     } else {
-        "unknown".to_string()
+        Cow::Borrowed("unknown")
     }
 }
 

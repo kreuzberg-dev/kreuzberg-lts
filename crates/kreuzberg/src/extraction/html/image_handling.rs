@@ -51,6 +51,9 @@ pub fn inline_image_format_to_str(format: &InlineImageFormat) -> String {
     }
 }
 
+// Note: This function returns String because ExtractedInlineImage.format is String (internal to HTML extraction).
+// For external ExtractedImage, use detect_image_format from pptx which returns Cow<'static, str>.
+
 /// Convert a library InlineImage to an ExtractedInlineImage.
 ///
 /// Maps the library's image representation to the extraction API's format,

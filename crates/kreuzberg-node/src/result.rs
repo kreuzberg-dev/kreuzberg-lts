@@ -167,7 +167,7 @@ impl TryFrom<RustExtractionResult> for JsExtractionResult {
 
                 js_images.push(JsExtractedImage {
                     data: img.data.to_vec().into(),
-                    format: img.format,
+                    format: img.format.into_owned(),
                     image_index: img.image_index as u32,
                     page_number: img.page_number.map(|p| p as u32),
                     width: img.width,
@@ -218,7 +218,7 @@ impl TryFrom<RustExtractionResult> for JsExtractionResult {
 
                         JsExtractedImage {
                             data: img.data.to_vec().into(),
-                            format: img.format.clone(),
+                            format: img.format.to_string(),
                             image_index: img.image_index as u32,
                             page_number: img.page_number.map(|p| p as u32),
                             width: img.width,
@@ -426,7 +426,7 @@ impl TryFrom<JsExtractionResult> for RustExtractionResult {
 
                 rust_images.push(kreuzberg::ExtractedImage {
                     data: bytes::Bytes::from(img.data.to_vec()),
-                    format: img.format,
+                    format: std::borrow::Cow::Owned(img.format),
                     image_index: img.image_index as usize,
                     page_number: img.page_number.map(|p| p as usize),
                     width: img.width,

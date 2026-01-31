@@ -117,7 +117,7 @@ pub fn transform_extraction_result_to_elements(result: &ExtractionResult) -> Vec
                         element_index: Some(elements.len()),
                         additional: {
                             let mut m = std::collections::HashMap::new();
-                            m.insert("format".to_string(), image.format.clone());
+                            m.insert("format".to_string(), image.format.to_string());
                             if let Some(width) = image.width {
                                 m.insert("width".to_string(), width.to_string());
                             }
@@ -360,7 +360,7 @@ mod tests {
 
         let image = ExtractedImage {
             data: Bytes::from_static(&[1, 2, 3, 4]),
-            format: "jpeg".to_string(),
+            format: std::borrow::Cow::Borrowed("jpeg"),
             image_index: 0,
             page_number: Some(1),
             width: Some(640),

@@ -547,7 +547,7 @@ impl ExtractedImage {
     pub fn from_rust(img: kreuzberg::ExtractedImage) -> PhpResult<Self> {
         Ok(Self {
             data: img.data.to_vec(),
-            format: img.format,
+            format: img.format.into_owned(),
             image_index: img.image_index,
             page_number: img.page_number,
             width: img.width.map(|w| w as i32),
