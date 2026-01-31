@@ -42,10 +42,12 @@ from typing import TYPE_CHECKING, Any
 from kreuzberg import _setup_lib_path  # noqa: F401
 from kreuzberg._deprecation import deprecated
 from kreuzberg._internal_bindings import (
+    Chunk,
     ChunkingConfig,
     EmbeddingConfig,
     EmbeddingModelType,
     EmbeddingPreset,
+    ExtractedImage,
     ExtractedTable,
     ExtractionConfig,
     ExtractionResult,
@@ -55,11 +57,14 @@ from kreuzberg._internal_bindings import (
     KeywordAlgorithm,
     KeywordConfig,
     LanguageDetectionConfig,
+    Metadata,
     OcrConfig,
+    OutputFormat,
     PageConfig,
     PdfConfig,
     PostProcessorConfig,
     RakeParams,
+    ResultFormat,
     TesseractConfig,
     TokenReductionConfig,
     YakeParams,
@@ -162,7 +167,6 @@ from kreuzberg.exceptions import (
     ValidationError,
 )
 from kreuzberg.postprocessors.protocol import PostProcessorProtocol
-from kreuzberg.types import Chunk, ChunkMetadata, ExtractedImage, Metadata, OutputFormat, ResultFormat
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -175,7 +179,6 @@ __version__ = version("kreuzberg")
 __all__ = [
     "CacheError",
     "Chunk",
-    "ChunkMetadata",
     "ChunkingConfig",
     "EmbeddingConfig",
     "EmbeddingModelType",
@@ -881,7 +884,7 @@ def get_error_details() -> dict[str, Any]:
         >>> if details["source_file"]:
         ...     print(f"  at {details['source_file']}:{details['source_line']}")
     """
-    return _get_error_details_impl()
+    return _get_error_details_impl()  # type: ignore[return-value]
 
 
 def classify_error(message: str) -> int:

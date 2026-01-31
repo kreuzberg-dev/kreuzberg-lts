@@ -15,20 +15,11 @@ import traceback
 import tracemalloc
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import Any
 
 import pytest
 
 from kreuzberg import ExtractionResult, extract_bytes_sync
-
-if TYPE_CHECKING:
-    from kreuzberg.types import (
-        HeaderMetadata,
-        HtmlMetadata,
-        ImageMetadata,
-        LinkMetadata,
-        StructuredData,
-    )
 
 
 class TestHtmlMetadataStructure:
@@ -36,7 +27,7 @@ class TestHtmlMetadataStructure:
 
     def test_html_metadata_has_required_fields(self) -> None:
         """Verify HtmlMetadata has all documented fields."""
-        sample: HtmlMetadata = {
+        sample: dict[str, Any] = {
             "title": "Test Title",
             "description": "Test Description",
             "keywords": ["test", "metadata"],
@@ -72,7 +63,7 @@ class TestHtmlMetadataStructure:
 
     def test_keywords_is_list(self) -> None:
         """Verify keywords is list[str], not str."""
-        sample: HtmlMetadata = {
+        sample: dict[str, Any] = {
             "keywords": ["python", "web", "extraction"],
         }
 
@@ -82,7 +73,7 @@ class TestHtmlMetadataStructure:
 
     def test_keywords_is_not_string(self) -> None:
         """Verify keywords is NOT a single string."""
-        sample: HtmlMetadata = {
+        sample: dict[str, Any] = {
             "keywords": ["keyword1", "keyword2"],
         }
         keywords = sample["keywords"]
@@ -90,7 +81,7 @@ class TestHtmlMetadataStructure:
 
     def test_canonical_url_renamed_from_canonical(self) -> None:
         """Verify canonical_url field exists (not canonical)."""
-        sample: HtmlMetadata = {
+        sample: dict[str, Any] = {
             "canonical_url": "https://example.com/page",
         }
 
@@ -99,7 +90,7 @@ class TestHtmlMetadataStructure:
 
     def test_open_graph_is_dict(self) -> None:
         """Verify open_graph is dict[str, str]."""
-        sample: HtmlMetadata = {
+        sample: dict[str, Any] = {
             "open_graph": {
                 "og:title": "My Page",
                 "og:description": "Page description",
@@ -115,7 +106,7 @@ class TestHtmlMetadataStructure:
 
     def test_twitter_card_is_dict(self) -> None:
         """Verify twitter_card is dict[str, str]."""
-        sample: HtmlMetadata = {
+        sample: dict[str, Any] = {
             "twitter_card": {
                 "twitter:card": "summary_large_image",
                 "twitter:title": "My Title",
@@ -131,12 +122,12 @@ class TestHtmlMetadataStructure:
 
     def test_html_metadata_partial_fields(self) -> None:
         """HtmlMetadata should support partial field population (total=False)."""
-        minimal: HtmlMetadata = {
+        minimal: dict[str, Any] = {
             "title": "Just Title",
         }
         assert minimal["title"] == "Just Title"
 
-        partial: HtmlMetadata = {
+        partial: dict[str, Any] = {
             "title": "Title",
             "keywords": ["test"],
             "open_graph": {},
@@ -151,7 +142,7 @@ class TestHeaderMetadataFields:
 
     def test_header_metadata_structure(self) -> None:
         """Verify HeaderMetadata has all required fields."""
-        header: HeaderMetadata = {
+        header: dict[str, Any] = {
             "level": 1,
             "text": "Main Heading",
             "id": "main-heading",
@@ -167,7 +158,7 @@ class TestHeaderMetadataFields:
 
     def test_header_metadata_fields_present(self) -> None:
         """Verify all HeaderMetadata fields are accessible."""
-        header: HeaderMetadata = {
+        header: dict[str, Any] = {
             "level": 2,
             "text": "Subheading",
             "id": None,
@@ -183,7 +174,7 @@ class TestHeaderMetadataFields:
 
     def test_header_metadata_optional_id(self) -> None:
         """Verify HeaderMetadata id field can be None."""
-        header_with_id: HeaderMetadata = {
+        header_with_id: dict[str, Any] = {
             "level": 1,
             "text": "Heading",
             "id": "heading-id",
@@ -191,7 +182,7 @@ class TestHeaderMetadataFields:
             "html_offset": 0,
         }
 
-        header_without_id: HeaderMetadata = {
+        header_without_id: dict[str, Any] = {
             "level": 1,
             "text": "Heading",
             "id": None,
@@ -205,7 +196,7 @@ class TestHeaderMetadataFields:
     def test_header_metadata_level_range(self) -> None:
         """Test HeaderMetadata with various heading levels (1-6)."""
         for level in range(1, 7):
-            header: HeaderMetadata = {
+            header: dict[str, Any] = {
                 "level": level,
                 "text": f"Heading Level {level}",
                 "id": None,
@@ -220,7 +211,7 @@ class TestLinkMetadataFields:
 
     def test_link_metadata_structure(self) -> None:
         """Verify LinkMetadata has all required fields."""
-        link: LinkMetadata = {
+        link: dict[str, Any] = {
             "href": "https://example.com",
             "text": "Example Link",
             "title": "Example Site",
@@ -241,11 +232,11 @@ class TestLinkMetadataFields:
         link_types: list[str] = ["anchor", "internal", "external", "email", "phone", "other"]
 
         for link_type in link_types:
-            link: LinkMetadata = {
+            link: dict[str, Any] = {
                 "href": "https://example.com",
                 "text": "Link",
                 "title": None,
-                "link_type": link_type,  # type: ignore[typeddict-item]
+                "link_type": link_type,
                 "rel": [],
                 "attributes": {},
             }
@@ -253,7 +244,7 @@ class TestLinkMetadataFields:
 
     def test_link_metadata_optional_title(self) -> None:
         """Verify LinkMetadata title can be None."""
-        link_with_title: LinkMetadata = {
+        link_with_title: dict[str, Any] = {
             "href": "#",
             "text": "Link",
             "title": "Link Title",
@@ -262,7 +253,7 @@ class TestLinkMetadataFields:
             "attributes": {},
         }
 
-        link_without_title: LinkMetadata = {
+        link_without_title: dict[str, Any] = {
             "href": "#",
             "text": "Link",
             "title": None,
@@ -276,7 +267,7 @@ class TestLinkMetadataFields:
 
     def test_link_metadata_rel_is_list(self) -> None:
         """Verify LinkMetadata rel field is a list of strings."""
-        link: LinkMetadata = {
+        link: dict[str, Any] = {
             "href": "https://example.com",
             "text": "Link",
             "title": None,
@@ -290,7 +281,7 @@ class TestLinkMetadataFields:
 
     def test_link_metadata_attributes_is_dict(self) -> None:
         """Verify LinkMetadata attributes field is dict[str, str]."""
-        link: LinkMetadata = {
+        link: dict[str, Any] = {
             "href": "https://example.com",
             "text": "Link",
             "title": None,
@@ -308,7 +299,7 @@ class TestImageMetadataFields:
 
     def test_image_metadata_structure(self) -> None:
         """Verify ImageMetadata has all required fields."""
-        image: ImageMetadata = {  # type: ignore[typeddict-unknown-key]
+        image: dict[str, Any] = {
             "src": "https://example.com/image.jpg",
             "alt": "Image description",
             "title": "Image Title",
@@ -329,7 +320,7 @@ class TestImageMetadataFields:
         image_types: list[str] = ["data_uri", "inline_svg", "external", "relative"]
 
         for image_type in image_types:
-            image: ImageMetadata = {  # type: ignore[typeddict-unknown-key]
+            image: dict[str, Any] = {
                 "src": "https://example.com/image.jpg",
                 "alt": None,
                 "title": None,
@@ -341,7 +332,7 @@ class TestImageMetadataFields:
 
     def test_image_metadata_optional_fields(self) -> None:
         """Verify ImageMetadata optional fields can be None."""
-        image: ImageMetadata = {  # type: ignore[typeddict-unknown-key]
+        image: dict[str, Any] = {
             "src": "image.png",
             "alt": None,
             "title": None,
@@ -356,7 +347,7 @@ class TestImageMetadataFields:
 
     def test_image_metadata_dimensions_tuple(self) -> None:
         """Verify dimensions is tuple[int, int] or None."""
-        image_with_dims: ImageMetadata = {  # type: ignore[typeddict-unknown-key]
+        image_with_dims: dict[str, Any] = {
             "src": "image.jpg",
             "alt": None,
             "title": None,
@@ -365,7 +356,7 @@ class TestImageMetadataFields:
             "attributes": {},
         }
 
-        image_without_dims: ImageMetadata = {  # type: ignore[typeddict-unknown-key]
+        image_without_dims: dict[str, Any] = {
             "src": "image.jpg",
             "alt": None,
             "title": None,
@@ -381,7 +372,7 @@ class TestImageMetadataFields:
 
     def test_image_metadata_attributes_is_dict(self) -> None:
         """Verify ImageMetadata attributes field is dict[str, str]."""
-        image: ImageMetadata = {  # type: ignore[typeddict-unknown-key]
+        image: dict[str, Any] = {
             "src": "image.jpg",
             "alt": None,
             "title": None,
@@ -400,7 +391,7 @@ class TestStructuredDataFields:
 
     def test_structured_data_structure(self) -> None:
         """Verify StructuredData has all required fields."""
-        structured: StructuredData = {
+        structured: dict[str, Any] = {
             "data_type": "json_ld",
             "raw_json": '{"@context": "https://schema.org", "@type": "Article"}',
             "schema_type": "Article",
@@ -415,8 +406,8 @@ class TestStructuredDataFields:
         data_types: list[str] = ["json_ld", "microdata", "rdfa"]
 
         for data_type in data_types:
-            structured: StructuredData = {
-                "data_type": data_type,  # type: ignore[typeddict-item]
+            structured: dict[str, Any] = {
+                "data_type": data_type,
                 "raw_json": "{}",
                 "schema_type": "Type",
             }
@@ -424,13 +415,13 @@ class TestStructuredDataFields:
 
     def test_structured_data_optional_schema_type(self) -> None:
         """Verify StructuredData schema_type can be None."""
-        with_schema: StructuredData = {
+        with_schema: dict[str, Any] = {
             "data_type": "json_ld",
             "raw_json": "{}",
             "schema_type": "Organization",
         }
 
-        without_schema: StructuredData = {
+        without_schema: dict[str, Any] = {
             "data_type": "json_ld",
             "raw_json": "{}",
             "schema_type": None,
@@ -442,7 +433,7 @@ class TestStructuredDataFields:
     def test_structured_data_raw_json_format(self) -> None:
         """Verify raw_json is valid JSON string."""
         json_data = {"@context": "https://schema.org", "@type": "Product", "name": "Widget"}
-        structured: StructuredData = {
+        structured: dict[str, Any] = {
             "data_type": "json_ld",
             "raw_json": json.dumps(json_data),
             "schema_type": "Product",
@@ -884,7 +875,7 @@ class TestMetadataJsonSerialization:
 
     def test_metadata_json_serializable(self) -> None:
         """Metadata should be JSON serializable."""
-        header: HeaderMetadata = {
+        header: dict[str, Any] = {
             "level": 1,
             "text": "Heading",
             "id": "heading-id",
@@ -901,7 +892,7 @@ class TestMetadataJsonSerialization:
 
     def test_rich_metadata_round_trip(self) -> None:
         """Rich metadata should survive JSON serialization round trip."""
-        original: HtmlMetadata = {
+        original: dict[str, Any] = {
             "title": "Test Page",
             "keywords": ["a", "b", "c"],
             "open_graph": {"og:title": "OG Title"},

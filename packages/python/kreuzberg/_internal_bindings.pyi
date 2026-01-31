@@ -14,30 +14,65 @@ class ResultFormat(StrEnum):
     ELEMENT_BASED = "element_based"
 
 __all__ = [
+    "Attributes",
+    "BoundingBox",
+    "Chunk",
+    "ChunkMetadata",
     "ChunkingConfig",
+    "DjotContent",
+    "DjotImage",
+    "DjotLink",
+    "DjotTable",
+    "Element",
+    "ElementMetadata",
+    "ElementType",
     "EmbeddingConfig",
     "EmbeddingModelType",
     "EmbeddingPreset",
+    "ErrorDetails",
+    "ErrorMetadata",
+    "ExtractedImage",
     "ExtractedTable",
     "ExtractionConfig",
     "ExtractionResult",
+    "Footnote",
+    "FormattedBlock",
+    "HeaderMetadata",
     "HierarchyConfig",
+    "HtmlConversionOptions",
+    "HtmlImageMetadata",
+    "HtmlMetadata",
+    "HtmlPreprocessingOptions",
     "ImageExtractionConfig",
     "ImagePreprocessingConfig",
+    "ImagePreprocessingMetadata",
+    "InlineElement",
     "KeywordAlgorithm",
     "KeywordConfig",
     "LanguageDetectionConfig",
+    "LinkMetadata",
+    "Metadata",
+    "OCRError",
     "OcrBackendProtocol",
     "OcrConfig",
     "OcrResult",
+    "OcrResultTable",
+    "OutputFormat",
+    "PageBoundary",
     "PageConfig",
     "PageContent",
+    "PageInfo",
+    "PageStructure",
+    "ParsingError",
     "PdfConfig",
     "PostProcessorConfig",
     "PostProcessorProtocol",
     "RakeParams",
+    "ResultFormat",
+    "StructuredData",
     "TesseractConfig",
     "TokenReductionConfig",
+    "ValidationError",
     "ValidatorProtocol",
     "YakeParams",
     "_discover_extraction_config_impl",
@@ -70,6 +105,7 @@ __all__ = [
     "get_valid_language_codes",
     "get_valid_ocr_backends",
     "get_valid_token_reduction_levels",
+    "init_async_runtime",
     "list_document_extractors",
     "list_embedding_presets",
     "list_ocr_backends",
@@ -94,6 +130,61 @@ __all__ = [
     "validate_tesseract_psm",
     "validate_token_reduction_level",
 ]
+
+class ValidationError(Exception): ...
+class ParsingError(Exception): ...
+class OCRError(Exception): ...
+
+def init_async_runtime() -> None: ...
+
+class ErrorDetails(TypedDict):
+    message: str
+    error_code: int
+    error_type: str
+    source_file: str | None
+    source_function: str | None
+    source_line: int
+    context_info: str | None
+    is_panic: bool
+
+class HtmlPreprocessingOptions(TypedDict, total=False):
+    enabled: bool
+    preset: str
+    remove_navigation: bool
+    remove_forms: bool
+
+class HtmlConversionOptions(TypedDict, total=False):
+    heading_style: str
+    list_indent_type: str
+    list_indent_width: int
+    bullets: str
+    strong_em_symbol: str
+    escape_asterisks: bool
+    escape_underscores: bool
+    escape_misc: bool
+    escape_ascii: bool
+    code_language: str
+    autolinks: bool
+    default_title: bool
+    br_in_tables: bool
+    hocr_spatial_tables: bool
+    highlight_style: str
+    extract_metadata: bool
+    whitespace_mode: str
+    strip_newlines: bool
+    wrap: bool
+    wrap_width: int
+    convert_as_inline: bool
+    sub_symbol: str
+    sup_symbol: str
+    newline_style: str
+    code_block_style: str
+    keep_inline_images_in: str
+    encoding: str
+    debug: bool
+    strip_tags: bool
+    preserve_tags: bool
+    preprocessing: HtmlPreprocessingOptions
 
 class OcrResultTable(TypedDict):
     cells: list[list[str]]
@@ -177,7 +268,7 @@ class ExtractionConfig:
         max_concurrent_extractions (int | None): Maximum concurrent extractions
             in batch operations. None = num_cpus * 2. Default: None
 
-        html_options (dict[str, Any] | None): HTML conversion options for
+        html_options (HtmlConversionOptions | None): HTML conversion options for
             converting documents to markdown. Default: None
 
         result_format (str): Result format for extraction output.
@@ -216,7 +307,7 @@ class ExtractionConfig:
     keywords: KeywordConfig | None
     postprocessor: PostProcessorConfig | None
     max_concurrent_extractions: int | None
-    html_options: dict[str, Any] | None
+    html_options: HtmlConversionOptions | None
     pages: PageConfig | None
     result_format: str
     output_format: str
@@ -236,7 +327,7 @@ class ExtractionConfig:
         keywords: KeywordConfig | None = None,
         postprocessor: PostProcessorConfig | None = None,
         max_concurrent_extractions: int | None = None,
-        html_options: dict[str, Any] | None = None,
+        html_options: HtmlConversionOptions | None = None,
         pages: PageConfig | None = None,
         result_format: str | None = None,
         output_format: str | None = None,
@@ -757,7 +848,7 @@ class TokenReductionConfig:
     def __init__(
         self,
         *,
-        mode: Literal["off", "moderate", "aggressive"] | None = None,
+        mode: Literal["off", "light", "moderate", "aggressive", "maximum"] | None = None,
         preserve_important_words: bool | None = None,
     ) -> None: ...
 
@@ -1074,20 +1165,12 @@ class TesseractConfig:
     ) -> None: ...
 
 class PdfMetadata(TypedDict, total=False):
-    title: str
-    subject: str
-    authors: list[str]
-    keywords: list[str]
-    created_at: str
-    modified_at: str
-    created_by: str
-    producer: str
-    page_count: int
     pdf_version: str
+    producer: str
     is_encrypted: bool
     width: int
     height: int
-    summary: str
+    page_count: int
 
 class ExcelMetadata(TypedDict, total=False):
     sheet_count: int
@@ -1103,11 +1186,8 @@ class EmailMetadata(TypedDict, total=False):
     attachments: list[str]
 
 class PptxMetadata(TypedDict, total=False):
-    title: str
-    author: str
-    description: str
-    summary: str
-    fonts: list[str]
+    slide_count: int
+    slide_names: list[str]
 
 class ArchiveMetadata(TypedDict, total=False):
     format: str
@@ -1130,40 +1210,62 @@ class TextMetadata(TypedDict, total=False):
     line_count: int
     word_count: int
     character_count: int
-    headers: list[str]
-    links: list[tuple[str, str]]
-    code_blocks: list[tuple[str, str]]
+    headers: list[str] | None
+    links: list[tuple[str, str]] | None
+    code_blocks: list[tuple[str, str]] | None
+
+class HeaderMetadata(TypedDict):
+    level: int
+    text: str
+    id: str | None
+    depth: int
+    html_offset: int
+
+class LinkMetadata(TypedDict):
+    href: str
+    text: str
+    title: str | None
+    link_type: Literal["anchor", "internal", "external", "email", "phone", "other"]
+    rel: list[str]
+    attributes: dict[str, str]
+
+class HtmlImageMetadata(TypedDict):
+    src: str
+    alt: str | None
+    title: str | None
+    dimensions: tuple[int, int] | None
+    image_type: Literal["data-uri", "inline-svg", "external", "relative"]
+    attributes: dict[str, str]
+
+class StructuredData(TypedDict):
+    data_type: Literal["json-ld", "microdata", "rdfa"]
+    raw_json: str
+    schema_type: str | None
 
 class HtmlMetadata(TypedDict, total=False):
-    title: str
-    description: str
-    keywords: str
-    author: str
-    canonical: str
-    base_href: str
-    og_title: str
-    og_description: str
-    og_image: str
-    og_url: str
-    og_type: str
-    og_site_name: str
-    twitter_card: str
-    twitter_title: str
-    twitter_description: str
-    twitter_image: str
-    twitter_site: str
-    twitter_creator: str
-    link_author: str
-    link_license: str
-    link_alternate: str
+    title: str | None
+    description: str | None
+    keywords: list[str]
+    author: str | None
+    canonical_url: str | None
+    base_href: str | None
+    language: str | None
+    text_direction: Literal["ltr", "rtl", "auto"] | None
+    open_graph: dict[str, str]
+    twitter_card: dict[str, str]
+    meta_tags: dict[str, str]
+    headers: list[HeaderMetadata]
+    links: list[LinkMetadata]
+    images: list[HtmlImageMetadata]
+    structured_data: list[StructuredData]
 
 class OcrMetadata(TypedDict, total=False):
     language: str
     psm: int
     output_format: str
     table_count: int
-    table_rows: int
-    table_cols: int
+    table_rows: int | None
+    table_cols: int | None
 
 class ImagePreprocessingMetadata(TypedDict, total=False):
     original_dimensions: tuple[int, int]
@@ -1183,86 +1285,114 @@ class ErrorMetadata(TypedDict, total=False):
     error_type: str
     message: str
 
+class PageBoundary(TypedDict):
+    byte_start: int
+    byte_end: int
+    page_number: int
+
+class PageInfo(TypedDict, total=False):
+    number: int
+    title: str | None
+    dimensions: tuple[float, float] | None
+    image_count: int | None
+    table_count: int | None
+    hidden: bool | None
+
+class PageStructure(TypedDict, total=False):
+    total_count: int
+    unit_type: Literal["page", "slide", "sheet"]
+    boundaries: list[PageBoundary] | None
+    pages: list[PageInfo] | None
+
 class Metadata(TypedDict, total=False):
-    language: str
-    date: str
-    subject: str
-
-    format_type: Literal["pdf", "excel", "email", "pptx", "archive", "image", "xml", "text", "html", "ocr"]
-
+    # Common fields (set directly on all extractions)
     title: str
+    subject: str
     authors: list[str]
     keywords: list[str]
+    language: str
     created_at: str
     modified_at: str
     created_by: str
-    producer: str
-    page_count: int
-    pdf_version: str
-    is_encrypted: bool
-    width: int
-    height: int
-    summary: str
+    modified_by: str
+    pages: PageStructure
 
+    # Format discriminator (from serde tag)
+    format_type: Literal["pdf", "excel", "email", "pptx", "archive", "image", "xml", "text", "html", "ocr"]
+
+    # PDF-specific (flattened from PdfMetadata)
+    pdf_version: str | None
+    producer: str | None
+    is_encrypted: bool | None
+    width: int | None
+    height: int | None
+    page_count: int | None
+
+    # Excel-specific (flattened from ExcelMetadata)
     sheet_count: int
     sheet_names: list[str]
 
-    from_email: str
-    from_name: str
+    # Email-specific (flattened from EmailMetadata)
+    from_email: str | None
+    from_name: str | None
     to_emails: list[str]
     cc_emails: list[str]
     bcc_emails: list[str]
-    message_id: str
+    message_id: str | None
     attachments: list[str]
 
-    author: str
-    description: str
-    fonts: list[str]
+    # PPTX-specific (flattened from PptxMetadata)
+    slide_count: int
+    slide_names: list[str]
 
+    # Archive-specific (flattened from ArchiveMetadata)
     format: str
     file_count: int
     file_list: list[str]
     total_size: int
-    compressed_size: int
+    compressed_size: int | None
 
+    # Image-specific (flattened from ImageMetadata)
+    # Note: 'width', 'height', 'format' overlap with other fields
     exif: dict[str, str]
 
+    # XML-specific (flattened from XmlMetadata)
     element_count: int
     unique_elements: list[str]
 
+    # Text-specific (flattened from TextMetadata)
     line_count: int
     word_count: int
     character_count: int
-    headers: list[str]
-    links: list[tuple[str, str]]
-    code_blocks: list[tuple[str, str]]
+    # Note: 'headers' is list[str] for text, list[HeaderMetadata] for html
+    headers: list[str] | list[HeaderMetadata] | None
+    # Note: 'links' is list[tuple[str, str]] for text, list[LinkMetadata] for html
+    links: list[tuple[str, str]] | list[LinkMetadata] | None
+    code_blocks: list[tuple[str, str]] | None
 
-    canonical: str
-    base_href: str
-    og_title: str
-    og_description: str
-    og_image: str
-    og_url: str
-    og_type: str
-    og_site_name: str
-    twitter_card: str
-    twitter_title: str
-    twitter_description: str
-    twitter_image: str
-    twitter_site: str
-    twitter_creator: str
-    link_author: str
-    link_license: str
-    link_alternate: str
+    # HTML-specific (flattened from HtmlMetadata)
+    # Note: 'title', 'description', 'keywords', 'author', 'language' overlap with common fields
+    description: str | None
+    canonical_url: str | None
+    base_href: str | None
+    text_direction: str | None
+    open_graph: dict[str, str]
+    twitter_card: dict[str, str]
+    meta_tags: dict[str, str]
+    images: list[HtmlImageMetadata]
+    structured_data: list[StructuredData]
 
+    # OCR-specific (flattened from OcrMetadata)
+    # Note: 'language' overlaps with common field above
     psm: int
     output_format: str
     table_count: int
-    table_rows: int
-    table_cols: int
+    table_rows: int | None
+    table_cols: int | None
 
+    # Processing metadata
     image_preprocessing: ImagePreprocessingMetadata
-    json_schema: dict[str, Any]
+    json_schema: Any
     error: ErrorMetadata
 
 class ExtractedImage(TypedDict, total=False):
@@ -1278,43 +1408,70 @@ class ExtractedImage(TypedDict, total=False):
     description: str
     ocr_result: ExtractionResult
 
-class Chunk(TypedDict, total=False):
+class ChunkMetadata(TypedDict, total=False):
+    byte_start: int
+    byte_end: int
+    chunk_index: int
+    total_chunks: int
+    token_count: int | None
+    first_page: int
+    last_page: int
+
+class Chunk:
     content: str
     embedding: list[float] | None
-    metadata: dict[str, Any]
+    metadata: ChunkMetadata
+
+class DjotTable(TypedDict, total=False):
+    cells: list[list[str]]
+    markdown: str
+    page_number: int
 
 class DjotContent(TypedDict, total=False):
     plain_text: str
     blocks: list[FormattedBlock]
     metadata: Metadata
-    tables: list[ExtractedTable]
+    tables: list[DjotTable]
     images: list[DjotImage]
     links: list[DjotLink]
     footnotes: list[Footnote]
-    attributes: dict[str, Any]
+    attributes: dict[str, Attributes]
+
+class InlineElement(TypedDict, total=False):
+    element_type: str
+    content: str
+    attributes: Attributes | None
+    metadata: dict[str, str] | None
+
+class Attributes(TypedDict, total=False):
+    id: str | None
+    classes: list[str]
+    key_values: dict[str, str]
 
 class FormattedBlock(TypedDict, total=False):
     block_type: str
     level: int | None
-    content: str | None
-    children: list[FormattedBlock] | None
-    attributes: dict[str, Any] | None
+    inline_content: list[InlineElement]
+    attributes: Attributes | None
+    language: str | None
+    code: str | None
+    children: list[FormattedBlock]
 
 class DjotImage(TypedDict, total=False):
-    url: str
-    alt: str | None
+    src: str
+    alt: str
     title: str | None
-    attributes: dict[str, Any] | None
+    attributes: Attributes | None
 
 class DjotLink(TypedDict, total=False):
     url: str
     text: str
     title: str | None
-    link_type: str | None
+    attributes: Attributes | None
 
 class Footnote(TypedDict, total=False):
     label: str
-    content: str
+    content: list[FormattedBlock]
 
 class BoundingBox(TypedDict):
     x0: float
@@ -1349,16 +1506,6 @@ class Element(TypedDict):
     text: str
     metadata: ElementMetadata
 
-class HierarchicalBlock(TypedDict, total=False):
-    text: str
-    font_size: float
-    level: str
-    bbox: tuple[float, float, float, float] | None
-
-class PageHierarchy(TypedDict, total=False):
-    block_count: int
-    blocks: list[HierarchicalBlock]
-
 class ExtractionResult:
     content: str
     mime_type: str
@@ -1370,6 +1517,8 @@ class ExtractionResult:
     pages: list[PageContent] | None
     elements: list[Element] | None
     djot_content: DjotContent | None
+    output_format: str | None
+    result_format: str | None
     def get_page_count(self) -> int: ...
     def get_chunk_count(self) -> int: ...
     def get_detected_language(self) -> str | None: ...
@@ -1380,7 +1529,6 @@ class PageContent(TypedDict):
     content: str
     tables: list[ExtractedTable]
     images: list[ExtractedImage]
-    hierarchy: PageHierarchy | None
 
 class ExtractedTable:
     cells: list[list[str]]
@@ -1460,7 +1608,7 @@ def list_post_processors() -> list[str]: ...
 def list_validators() -> list[str]: ...
 def unregister_document_extractor(name: str) -> None: ...
 def unregister_ocr_backend(name: str) -> None: ...
-def get_last_error_code() -> int | None: ...
+def get_last_error_code() -> int: ...
 def get_last_panic_context() -> str | None: ...
 def validate_binarization_method(method: str) -> bool: ...
 def validate_ocr_backend(backend: str) -> bool: ...
@@ -1479,7 +1627,7 @@ def get_valid_token_reduction_levels() -> list[str]: ...
 def config_to_json(config: ExtractionConfig) -> str: ...
 def config_get_field(config: ExtractionConfig, field_name: str) -> Any | None: ...
 def config_merge(base: ExtractionConfig, override: ExtractionConfig) -> None: ...
-def get_error_details() -> dict[str, Any]: ...
+def get_error_details() -> ErrorDetails: ...
 def classify_error(message: str) -> int: ...
 def error_code_name(code: int) -> str: ...
 def _discover_extraction_config_impl() -> ExtractionConfig | None: ...

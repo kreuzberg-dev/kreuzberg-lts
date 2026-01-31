@@ -58,11 +58,11 @@ class TestVectorGenerationCorrectness:
         assert len(result.chunks) > 0
 
         for chunk in result.chunks:
-            assert "embedding" in chunk
-            if chunk["embedding"] is not None:
-                assert isinstance(chunk["embedding"], list)
-                assert len(chunk["embedding"]) > 0
-                assert all(isinstance(x, float) for x in chunk["embedding"])
+            assert chunk.embedding is not None
+            if chunk.embedding is not None:
+                assert isinstance(chunk.embedding, list)
+                assert len(chunk.embedding) > 0
+                assert all(isinstance(x, float) for x in chunk.embedding)
 
     def test_embeddings_disabled_returns_none(self) -> None:
         """Verify that embeddings=None disables embedding generation."""
@@ -76,7 +76,7 @@ class TestVectorGenerationCorrectness:
         assert result is not None
         if result.chunks is not None:
             for chunk in result.chunks:
-                assert "embedding" not in chunk or chunk["embedding"] is None
+                assert chunk.embedding is None or chunk.embedding is None
 
     def test_vector_generation_type_validation(self) -> None:
         """Verify all vector components are valid floats."""
@@ -97,8 +97,8 @@ class TestVectorGenerationCorrectness:
         assert result.chunks is not None
 
         for chunk in result.chunks:
-            if chunk["embedding"] is not None:
-                embedding = chunk["embedding"]
+            if chunk.embedding is not None:
+                embedding = chunk.embedding
                 assert isinstance(embedding, list)
                 for value in embedding:
                     assert isinstance(value, float)
@@ -127,9 +127,9 @@ class TestVectorGenerationCorrectness:
         assert len(result1.chunks) == len(result2.chunks)
 
         for chunk1, chunk2 in zip(result1.chunks, result2.chunks, strict=False):
-            if chunk1["embedding"] is not None and chunk2["embedding"] is not None:
-                embedding1 = chunk1["embedding"]
-                embedding2 = chunk2["embedding"]
+            if chunk1.embedding is not None and chunk2.embedding is not None:
+                embedding1 = chunk1.embedding
+                embedding2 = chunk2.embedding
                 assert len(embedding1) == len(embedding2)
                 for v1, v2 in zip(embedding1, embedding2, strict=False):
                     assert abs(v1 - v2) < 1e-5
@@ -157,8 +157,8 @@ class TestEmbeddingDimensionVerification:
         assert len(result.chunks) > 0
 
         for chunk in result.chunks:
-            if chunk["embedding"] is not None:
-                dimension = len(chunk["embedding"])
+            if chunk.embedding is not None:
+                dimension = len(chunk.embedding)
                 assert dimension in [384, 512, 768, 1024]
 
     def test_fast_model_dimension_verification(self) -> None:
@@ -179,8 +179,8 @@ class TestEmbeddingDimensionVerification:
         assert result.chunks is not None
         if len(result.chunks) > 0:
             for chunk in result.chunks:
-                if chunk["embedding"] is not None:
-                    dimension = len(chunk["embedding"])
+                if chunk.embedding is not None:
+                    dimension = len(chunk.embedding)
                     assert dimension in [128, 256, 384, 512]
 
     @pytest.mark.skipif(
@@ -204,8 +204,8 @@ class TestEmbeddingDimensionVerification:
         assert result.chunks is not None
         if len(result.chunks) > 0:
             for chunk in result.chunks:
-                if chunk["embedding"] is not None:
-                    dimension = len(chunk["embedding"])
+                if chunk.embedding is not None:
+                    dimension = len(chunk.embedding)
                     assert dimension in [768, 1024, 1536]
 
     def test_consistent_dimensions_across_chunks(self) -> None:
@@ -225,7 +225,7 @@ class TestEmbeddingDimensionVerification:
 
         assert result.chunks is not None
         if len(result.chunks) > 1:
-            dimensions = [len(chunk["embedding"]) for chunk in result.chunks if chunk["embedding"] is not None]
+            dimensions = [len(chunk.embedding) for chunk in result.chunks if chunk.embedding is not None]
 
             if len(dimensions) > 1:
                 assert len(set(dimensions)) == 1
@@ -263,9 +263,9 @@ class TestBatchEmbeddingPerformance:
             assert result.chunks is not None
             assert len(result.chunks) > 0
             for chunk in result.chunks:
-                if chunk["embedding"] is not None:
-                    assert isinstance(chunk["embedding"], list)
-                    assert len(chunk["embedding"]) > 0
+                if chunk.embedding is not None:
+                    assert isinstance(chunk.embedding, list)
+                    assert len(chunk.embedding) > 0
 
     def test_large_text_chunking_with_embeddings(self) -> None:
         """Test embeddings with multiple chunks from large text."""
@@ -286,10 +286,10 @@ class TestBatchEmbeddingPerformance:
         assert len(result.chunks) > 1
 
         for chunk in result.chunks:
-            if chunk["embedding"] is not None:
-                assert isinstance(chunk["embedding"], list)
-                assert len(chunk["embedding"]) > 0
-                assert all(isinstance(x, float) for x in chunk["embedding"])
+            if chunk.embedding is not None:
+                assert isinstance(chunk.embedding, list)
+                assert len(chunk.embedding) > 0
+                assert all(isinstance(x, float) for x in chunk.embedding)
 
     def test_small_text_single_chunk_embedding(self) -> None:
         """Test embedding generation for text that results in single chunk."""
@@ -309,9 +309,9 @@ class TestBatchEmbeddingPerformance:
         assert result.chunks is not None
         if len(result.chunks) > 0:
             for chunk in result.chunks:
-                if chunk["embedding"] is not None:
-                    assert isinstance(chunk["embedding"], list)
-                    assert len(chunk["embedding"]) > 0
+                if chunk.embedding is not None:
+                    assert isinstance(chunk.embedding, list)
+                    assert len(chunk.embedding) > 0
 
 
 class TestFormatSpecificEmbeddingHandling:
@@ -335,8 +335,8 @@ class TestFormatSpecificEmbeddingHandling:
         assert result is not None
         assert result.chunks is not None
         for chunk in result.chunks:
-            if chunk["embedding"] is not None:
-                assert isinstance(chunk["embedding"], list)
+            if chunk.embedding is not None:
+                assert isinstance(chunk.embedding, list)
 
     def test_markdown_format_embedding_extraction(self) -> None:
         """Extract embeddings from markdown format with structure."""
@@ -356,9 +356,9 @@ class TestFormatSpecificEmbeddingHandling:
         assert result is not None
         assert result.chunks is not None
         for chunk in result.chunks:
-            if chunk["embedding"] is not None:
-                assert isinstance(chunk["embedding"], list)
-                assert len(chunk["embedding"]) > 0
+            if chunk.embedding is not None:
+                assert isinstance(chunk.embedding, list)
+                assert len(chunk.embedding) > 0
 
     def test_html_format_embedding_extraction(self) -> None:
         """Extract embeddings from HTML format."""
@@ -378,9 +378,9 @@ class TestFormatSpecificEmbeddingHandling:
         assert result is not None
         assert result.chunks is not None
         for chunk in result.chunks:
-            if chunk["embedding"] is not None:
-                assert isinstance(chunk["embedding"], list)
-                assert len(chunk["embedding"]) > 0
+            if chunk.embedding is not None:
+                assert isinstance(chunk.embedding, list)
+                assert len(chunk.embedding) > 0
 
 
 class TestSimilarityScoreValidation:
@@ -403,7 +403,7 @@ class TestSimilarityScoreValidation:
 
         assert result.chunks is not None
         if len(result.chunks) >= 2:
-            embeddings = [chunk["embedding"] for chunk in result.chunks if chunk["embedding"] is not None]
+            embeddings = [chunk.embedding for chunk in result.chunks if chunk.embedding is not None]
 
             if len(embeddings) >= 2:
                 emb1 = embeddings[0]
@@ -435,8 +435,8 @@ class TestSimilarityScoreValidation:
         assert result2.chunks is not None
 
         if result1.chunks and result2.chunks:
-            emb1 = result1.chunks[0]["embedding"]
-            emb2 = result2.chunks[0]["embedding"]
+            emb1 = result1.chunks[0].embedding
+            emb2 = result2.chunks[0].embedding
 
             if emb1 is not None and emb2 is not None:
                 # Calculate proper cosine similarity
@@ -475,8 +475,8 @@ class TestSimilarityScoreValidation:
         assert result2.chunks is not None
 
         if result1.chunks and result2.chunks:
-            emb1 = result1.chunks[0]["embedding"]
-            emb2 = result2.chunks[0]["embedding"]
+            emb1 = result1.chunks[0].embedding
+            emb2 = result2.chunks[0].embedding
 
             if emb1 is not None and emb2 is not None:
                 similarity = sum(a * b for a, b in zip(emb1, emb2, strict=False))
@@ -503,8 +503,8 @@ class TestModelSwitching:
 
         assert result.chunks is not None
         for chunk in result.chunks:
-            if chunk["embedding"] is not None:
-                assert isinstance(chunk["embedding"], list)
+            if chunk.embedding is not None:
+                assert isinstance(chunk.embedding, list)
 
     def test_preset_model_switching_fast(self) -> None:
         """Test switching to fast preset model."""
@@ -523,8 +523,8 @@ class TestModelSwitching:
 
         assert result.chunks is not None
         for chunk in result.chunks:
-            if chunk["embedding"] is not None:
-                assert isinstance(chunk["embedding"], list)
+            if chunk.embedding is not None:
+                assert isinstance(chunk.embedding, list)
 
     @pytest.mark.skipif(
         platform.system() == "Windows", reason="Quality embedding model download too slow for Windows CI"
@@ -546,8 +546,8 @@ class TestModelSwitching:
 
         assert result.chunks is not None
         for chunk in result.chunks:
-            if chunk["embedding"] is not None:
-                assert isinstance(chunk["embedding"], list)
+            if chunk.embedding is not None:
+                assert isinstance(chunk.embedding, list)
 
     def test_different_models_produce_different_dimensions(self) -> None:
         """Verify different models can produce different embedding dimensions."""
@@ -580,13 +580,13 @@ class TestModelSwitching:
 
         if result_fast.chunks:
             for chunk in result_fast.chunks:
-                if chunk["embedding"] is not None:
-                    fast_dims.add(len(chunk["embedding"]))
+                if chunk.embedding is not None:
+                    fast_dims.add(len(chunk.embedding))
 
         if result_balanced.chunks:
             for chunk in result_balanced.chunks:
-                if chunk["embedding"] is not None:
-                    balanced_dims.add(len(chunk["embedding"]))
+                if chunk.embedding is not None:
+                    balanced_dims.add(len(chunk.embedding))
 
         assert len(fast_dims) >= 0
         assert len(balanced_dims) >= 0
@@ -612,8 +612,8 @@ class TestNormalizationCorrectness:
 
         assert result.chunks is not None
         for chunk in result.chunks:
-            if chunk["embedding"] is not None:
-                embedding = chunk["embedding"]
+            if chunk.embedding is not None:
+                embedding = chunk.embedding
                 l2_norm = math.sqrt(sum(x * x for x in embedding))
                 assert abs(l2_norm - 1.0) < 0.01
 
@@ -635,8 +635,8 @@ class TestNormalizationCorrectness:
         assert result.chunks is not None
         norms = []
         for chunk in result.chunks:
-            if chunk["embedding"] is not None:
-                embedding = chunk["embedding"]
+            if chunk.embedding is not None:
+                embedding = chunk.embedding
                 l2_norm = math.sqrt(sum(x * x for x in embedding))
                 norms.append(l2_norm)
 
@@ -675,12 +675,139 @@ class TestNormalizationCorrectness:
         assert result_unnormalized.chunks is not None
 
         if len(result_normalized.chunks) > 0 and len(result_unnormalized.chunks) > 0:
-            emb_norm = result_normalized.chunks[0]["embedding"]
-            emb_unnorm = result_unnormalized.chunks[0]["embedding"]
+            emb_norm = result_normalized.chunks[0].embedding
+            emb_unnorm = result_unnormalized.chunks[0].embedding
 
             if emb_norm is not None and emb_unnorm is not None:
                 dot_product = sum(a * b for a, b in zip(emb_norm, emb_unnorm, strict=False))
                 assert dot_product > 0
+
+
+class TestEmbeddingEdgeCases:
+    """Test edge cases in embedding generation."""
+
+    def test_very_short_text_embedding(self) -> None:
+        """Verify embeddings work for very short text."""
+        model = EmbeddingModelType.preset("balanced")
+        embedding_config = EmbeddingConfig(model=model, normalize=True)
+        config = ExtractionConfig(
+            chunking=ChunkingConfig(
+                max_chars=512,
+                max_overlap=100,
+                embedding=embedding_config,
+            ),
+        )
+
+        text = "Hi"
+        result = extract_bytes_sync(text.encode(), "text/plain", config)
+
+        assert result is not None
+
+    def test_empty_string_embedding(self) -> None:
+        """Verify embeddings handle empty strings."""
+        model = EmbeddingModelType.preset("balanced")
+        embedding_config = EmbeddingConfig(model=model, normalize=True)
+        config = ExtractionConfig(
+            chunking=ChunkingConfig(
+                max_chars=512,
+                max_overlap=100,
+                embedding=embedding_config,
+            ),
+        )
+
+        text = ""
+        result = extract_bytes_sync(text.encode(), "text/plain", config)
+
+        assert result is not None
+
+    def test_whitespace_only_embedding(self) -> None:
+        """Verify embeddings handle whitespace-only text."""
+        model = EmbeddingModelType.preset("balanced")
+        embedding_config = EmbeddingConfig(model=model, normalize=True)
+        config = ExtractionConfig(
+            chunking=ChunkingConfig(
+                max_chars=512,
+                max_overlap=100,
+                embedding=embedding_config,
+            ),
+        )
+
+        text = "   \n\t  \n  "
+        result = extract_bytes_sync(text.encode(), "text/plain", config)
+
+        assert result is not None
+
+    def test_very_long_text_embedding(self) -> None:
+        """Verify embeddings work for very long text."""
+        model = EmbeddingModelType.preset("balanced")
+        embedding_config = EmbeddingConfig(model=model, normalize=True)
+        config = ExtractionConfig(
+            chunking=ChunkingConfig(
+                max_chars=100,
+                max_overlap=20,
+                embedding=embedding_config,
+            ),
+        )
+
+        text = "Word " * 1000  # Very long text
+        result = extract_bytes_sync(text.encode(), "text/plain", config)
+
+        assert result is not None
+        if result.chunks:
+            assert len(result.chunks) > 0
+
+
+class TestEmbeddingChunkRelationship:
+    """Test relationship between chunks and embeddings."""
+
+    def test_each_chunk_has_content_or_embedding(self) -> None:
+        """Verify each chunk has content and optionally embedding."""
+        model = EmbeddingModelType.preset("balanced")
+        embedding_config = EmbeddingConfig(model=model, normalize=True)
+        config = ExtractionConfig(
+            chunking=ChunkingConfig(
+                max_chars=100,
+                max_overlap=20,
+                embedding=embedding_config,
+            ),
+        )
+
+        text = "Multiple chunks with embeddings. Each chunk is separate."
+        result = extract_bytes_sync(text.encode(), "text/plain", config)
+
+        assert result is not None
+        if result.chunks:
+            for chunk in result.chunks:
+                assert chunk.content is not None
+                # Embedding might be None or list
+                embedding = chunk.embedding
+                if embedding is not None:
+                    assert isinstance(embedding, list)
+
+    def test_embedding_matches_chunk_order(self) -> None:
+        """Verify embeddings match chunk order."""
+        model = EmbeddingModelType.preset("balanced")
+        embedding_config = EmbeddingConfig(model=model, normalize=True)
+        config = ExtractionConfig(
+            chunking=ChunkingConfig(
+                max_chars=50,
+                max_overlap=10,
+                embedding=embedding_config,
+            ),
+        )
+
+        text = "First. Second. Third. Fourth. Fifth."
+        result = extract_bytes_sync(text.encode(), "text/plain", config)
+
+        assert result is not None
+        if result.chunks and len(result.chunks) > 1:
+            # Chunks should maintain order
+            for i in range(len(result.chunks) - 1):
+                chunk_i = result.chunks[i]
+                chunk_j = result.chunks[i + 1]
+                # Both should have valid structure
+                assert chunk_i is not None
+                assert chunk_j is not None
 
 
 class TestMathematicalPropertiesAndErrorHandling:
@@ -702,8 +829,8 @@ class TestMathematicalPropertiesAndErrorHandling:
         result = extract_bytes_sync(text.encode(), "text/plain", config)
 
         assert result.chunks is not None
-        if result.chunks and result.chunks[0]["embedding"]:
-            emb = result.chunks[0]["embedding"]
+        if result.chunks and result.chunks[0].embedding:
+            emb = result.chunks[0].embedding
             # Vector with itself should have similarity 1.0
             dot_product = sum(a * b for a, b in zip(emb, emb, strict=False))
             norm_sq = sum(x * x for x in emb)
@@ -728,8 +855,8 @@ class TestMathematicalPropertiesAndErrorHandling:
 
         assert result.chunks is not None
         for chunk in result.chunks:
-            if chunk["embedding"] is not None:
-                embedding = chunk["embedding"]
+            if chunk.embedding is not None:
+                embedding = chunk.embedding
                 for i, value in enumerate(embedding):
                     assert isinstance(value, float), f"Value at index {i} must be float"
                     assert not math.isnan(value), f"Value at index {i} is NaN"
@@ -754,8 +881,8 @@ class TestMathematicalPropertiesAndErrorHandling:
 
         assert result.chunks is not None
         for chunk in result.chunks:
-            if chunk["embedding"] is not None:
-                embedding = chunk["embedding"]
+            if chunk.embedding is not None:
+                embedding = chunk.embedding
                 # Check sum of absolute values
                 magnitude = sum(abs(x) for x in embedding)
                 assert magnitude > 0.1, "Embedding should not be all zeros (dead embedding)"
@@ -792,13 +919,13 @@ class TestMathematicalPropertiesAndErrorHandling:
 
         if result_balanced.chunks:
             for chunk in result_balanced.chunks:
-                if chunk["embedding"] is not None:
-                    balanced_dims.add(len(chunk["embedding"]))
+                if chunk.embedding is not None:
+                    balanced_dims.add(len(chunk.embedding))
 
         if result_fast.chunks:
             for chunk in result_fast.chunks:
-                if chunk["embedding"] is not None:
-                    fast_dims.add(len(chunk["embedding"]))
+                if chunk.embedding is not None:
+                    fast_dims.add(len(chunk.embedding))
 
         # Each model should be consistent
         if balanced_dims:

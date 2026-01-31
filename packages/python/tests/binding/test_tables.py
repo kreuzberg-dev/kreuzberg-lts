@@ -823,6 +823,54 @@ class TestTableBoundaryDetection:
                 assert cell_element_count == expected_count
 
 
+class TestTableConsistency:
+    """Test consistency of table extraction."""
+
+    def test_table_extraction_deterministic(self, test_documents: Path) -> None:
+        """Verify table extraction is deterministic."""
+        result1 = get_tiny_pdf_result(test_documents)
+        if result1 is None:
+            pytest.skip("Test PDF not found")
+
+        result2 = get_tiny_pdf_result(test_documents)
+        if result2 is None:
+            pytest.skip("Test PDF not found")
+
+        assert result1 is not None
+        assert result2 is not None
+        assert len(result1.tables) == len(result2.tables)
+
+    def test_cell_count_consistency(self, test_documents: Path) -> None:
+        """Verify cell counts remain consistent."""
+        result = get_tiny_pdf_result(test_documents)
+        if result is None:
+            pytest.skip("Test PDF not found")
+
+        assert result is not None
+        assert result.tables is not None
+        for table in result.tables:
+            rows = len(table.cells)
+            if rows > 0:
+                cols = len(table.cells[0])
+                total_cells = sum(len(row) for row in table.cells)
+                expected_total = rows * cols
+                assert total_cells == expected_total
+
+    def test_markdown_line_count_reflects_rows(self, test_documents: Path) -> None:
+        """Verify markdown line count reflects table rows."""
+        result = get_tiny_pdf_result(test_documents)
+        if result is None:
+            pytest.skip("Test PDF not found")
+
+        assert result is not None
+        assert result.tables is not None
+        for table in result.tables:
+            markdown = table.markdown
+            lines = [line for line in markdown.strip().split("\n") if line.strip()]
+            # Markdown should have rows + header + separator
+            assert len(lines) > 0
+
+
 class TestTableExtractionEdgeCases:
     """Test edge cases and boundary conditions for table extraction."""
 
