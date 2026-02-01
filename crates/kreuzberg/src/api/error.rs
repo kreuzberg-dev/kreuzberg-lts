@@ -3,7 +3,7 @@
 use axum::{
     Json,
     body::to_bytes,
-    extract::{FromRequest, Request, rejection::JsonRejection},
+    extract::{FromRequest, Multipart, Request, rejection::JsonRejection},
     http::StatusCode,
     response::{IntoResponse, Response},
 };
@@ -59,6 +59,34 @@ where
         match Json::<T>::from_request(req, state).await {
             Ok(Json(value)) => Ok(JsonApi(value)),
             Err(rejection) => Err(ApiError::from(rejection)),
+        }
+    }
+}
+
+/// Custom Multipart extractor that returns JSON error responses instead of plain text.
+///
+/// This wraps axum's `Multipart` extractor but uses `ApiError` as the rejection type,
+/// ensuring that multipart parsing errors are returned as JSON with proper content type.
+pub struct MultipartApi(pub Multipart);
+
+impl<S> FromRequest<S> for MultipartApi
+where
+    S: Send + Sync,
+{
+    type Rejection = ApiError;
+
+    async fn from_request(req: Request, state: &S) -> Result<Self, Self::Rejection> {
+        match Multipart::from_request(req, state).await {
+            Ok(multipart) => Ok(MultipartApi(multipart)),
+            Err(rejection) => Err(ApiError {
+                status: StatusCode::BAD_REQUEST,
+                body: ErrorResponse {
+                    error_type: "MultipartError".to_string(),
+                    message: rejection.body_text(),
+                    traceback: None,
+                    status_code: StatusCode::BAD_REQUEST.as_u16(),
+                },
+            }),
         }
     }
 }

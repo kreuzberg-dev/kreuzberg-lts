@@ -1,14 +1,11 @@
 //! API request handlers.
 
-use axum::{
-    Json,
-    extract::{Multipart, State},
-};
+use axum::{Json, extract::State};
 
 use crate::{batch_extract_bytes, cache, extract_bytes};
 
 use super::{
-    error::{ApiError, JsonApi},
+    error::{ApiError, JsonApi, MultipartApi},
     types::{
         ApiState, CacheClearResponse, CacheStatsResponse, ChunkRequest, ChunkResponse, EmbedRequest, EmbedResponse,
         ExtractResponse, HealthResponse, InfoResponse,
@@ -106,7 +103,7 @@ pub async fn info_handler() -> Json<InfoResponse> {
 )]
 pub async fn extract_handler(
     State(state): State<ApiState>,
-    mut multipart: Multipart,
+    MultipartApi(mut multipart): MultipartApi,
 ) -> Result<Json<ExtractResponse>, ApiError> {
     let mut files = Vec::new();
     let mut config: Option<crate::core::config::ExtractionConfig> = None;

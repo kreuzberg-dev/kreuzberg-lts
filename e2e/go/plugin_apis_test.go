@@ -54,7 +54,9 @@ max_chars = 50
 	if config.Chunking == nil {
 		t.Fatal("Config should have chunking property")
 	}
-	if config.Chunking.MaxChars == nil || *config.Chunking.MaxChars != 50 {
+	if config.Chunking.MaxChars == nil {
+		t.Errorf("Expected chunking.max_chars=50, got nil")
+	} else if *config.Chunking.MaxChars != 50 {
 		t.Errorf("Expected chunking.max_chars=50, got %v", *config.Chunking.MaxChars)
 	}
 }
@@ -82,16 +84,22 @@ enabled = false
 	if config.Chunking == nil {
 		t.Fatal("Config should have chunking property")
 	}
-	if config.Chunking.MaxChars == nil || *config.Chunking.MaxChars != 100 {
+	if config.Chunking.MaxChars == nil {
+		t.Errorf("Expected chunking.max_chars=100, got nil")
+	} else if *config.Chunking.MaxChars != 100 {
 		t.Errorf("Expected chunking.max_chars=100, got %v", *config.Chunking.MaxChars)
 	}
-	if config.Chunking.MaxOverlap == nil || *config.Chunking.MaxOverlap != 20 {
+	if config.Chunking.MaxOverlap == nil {
+		t.Errorf("Expected chunking.max_overlap=20, got nil")
+	} else if *config.Chunking.MaxOverlap != 20 {
 		t.Errorf("Expected chunking.max_overlap=20, got %v", *config.Chunking.MaxOverlap)
 	}
 	if config.LanguageDetection == nil {
 		t.Fatal("Config should have language_detection property")
 	}
-	if config.LanguageDetection.Enabled == nil || *config.LanguageDetection.Enabled != false {
+	if config.LanguageDetection.Enabled == nil {
+		t.Errorf("Expected language_detection.enabled=false, got nil")
+	} else if *config.LanguageDetection.Enabled != false {
 		t.Errorf("Expected language_detection.enabled=false, got %v", *config.LanguageDetection.Enabled)
 	}
 }

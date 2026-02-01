@@ -439,7 +439,7 @@ async fn main() -> Result<()> {
             std::fs::create_dir_all(&output).map_err(benchmark_harness::Error::Io)?;
 
             // Single unified output file
-            let output_file = output.join("results.json");
+            let output_file = output.join("aggregated.json");
             let json = serde_json::to_string_pretty(&aggregated)
                 .map_err(|e| benchmark_harness::Error::Benchmark(format!("Failed to serialize results: {}", e)))?;
             std::fs::write(&output_file, json).map_err(benchmark_harness::Error::Io)?;

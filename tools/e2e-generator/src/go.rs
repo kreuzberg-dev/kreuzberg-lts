@@ -1452,11 +1452,13 @@ fn render_property_assertion(prop: &crate::fixtures::ObjectPropertyAssertion, co
         if let Some(value) = &prop.value {
             match value {
                 Value::Number(n) => {
+                    writeln!(code, "    if config.{}.{} == nil {{", parent, child)?;
                     writeln!(
                         code,
-                        "    if config.{}.{} == nil || *config.{}.{} != {} {{",
-                        parent, child, parent, child, n
+                        "        t.Errorf(\"Expected {}.{}={}, got nil\")",
+                        parts[0], parts[1], n
                     )?;
+                    writeln!(code, "    }} else if *config.{}.{} != {} {{", parent, child, n)?;
                     writeln!(
                         code,
                         "        t.Errorf(\"Expected {}.{}={}, got %v\", *config.{}.{})",
@@ -1465,11 +1467,13 @@ fn render_property_assertion(prop: &crate::fixtures::ObjectPropertyAssertion, co
                     writeln!(code, "    }}")?;
                 }
                 Value::Bool(b) => {
+                    writeln!(code, "    if config.{}.{} == nil {{", parent, child)?;
                     writeln!(
                         code,
-                        "    if config.{}.{} == nil || *config.{}.{} != {} {{",
-                        parent, child, parent, child, b
+                        "        t.Errorf(\"Expected {}.{}={}, got nil\")",
+                        parts[0], parts[1], b
                     )?;
+                    writeln!(code, "    }} else if *config.{}.{} != {} {{", parent, child, b)?;
                     writeln!(
                         code,
                         "        t.Errorf(\"Expected {}.{}={}, got %v\", *config.{}.{})",
@@ -1478,11 +1482,13 @@ fn render_property_assertion(prop: &crate::fixtures::ObjectPropertyAssertion, co
                     writeln!(code, "    }}")?;
                 }
                 Value::String(s) => {
+                    writeln!(code, "    if config.{}.{} == nil {{", parent, child)?;
                     writeln!(
                         code,
-                        "    if config.{}.{} == nil || *config.{}.{} != \"{}\" {{",
-                        parent, child, parent, child, s
+                        "        t.Errorf(\"Expected {}.{}={}, got nil\")",
+                        parts[0], parts[1], s
                     )?;
+                    writeln!(code, "    }} else if *config.{}.{} != \"{}\" {{", parent, child, s)?;
                     writeln!(
                         code,
                         "        t.Errorf(\"Expected {}.{}={}, got %v\", *config.{}.{})",

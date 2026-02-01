@@ -93,8 +93,10 @@ pub fn parse_chunking_config(ruby: &Ruby, hash: RHash) -> Result<ChunkingConfig,
     };
 
     let config = ChunkingConfig {
-        max_chars,
-        max_overlap,
+        max_characters: max_chars,
+        overlap: max_overlap,
+        trim: true,
+        chunker_type: kreuzberg::ChunkerType::Text,
         embedding,
         preset,
     };
