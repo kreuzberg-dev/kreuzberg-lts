@@ -4,7 +4,7 @@
 
 use crate::Result;
 use crate::core::config::ExtractionConfig;
-use crate::types::PageContent;
+use crate::types::{PageBoundary, PageContent};
 
 #[cfg(feature = "pdf")]
 use crate::types::Table;
@@ -17,6 +17,7 @@ pub(crate) type PdfExtractionPhaseResult = (
     String,
     Vec<Table>,
     Option<Vec<PageContent>>,
+    Option<Vec<PageBoundary>>,
 );
 
 /// Extract text, metadata, and tables from a PDF document using a single shared instance.
@@ -41,17 +42,18 @@ pub(crate) type PdfExtractionPhaseResult = (
 /// - Native extracted text (or empty if using OCR)
 /// - Extracted tables (if OCR feature enabled)
 /// - Per-page content (if page extraction configured)
+/// - Page boundaries for per-page OCR evaluation
 #[cfg(feature = "pdf")]
 pub(crate) fn extract_all_from_document(
     document: &PdfDocument,
     config: &ExtractionConfig,
 ) -> Result<PdfExtractionPhaseResult> {
-    let (native_text, _boundaries, page_contents, pdf_metadata) =
+    let (native_text, boundaries, page_contents, pdf_metadata) =
         crate::pdf::text::extract_text_and_metadata_from_pdf_document(document, Some(config))?;
 
     let tables = extract_tables_from_document(document, &pdf_metadata)?;
 
-    Ok((pdf_metadata, native_text, tables, page_contents))
+    Ok((pdf_metadata, native_text, tables, page_contents, boundaries))
 }
 
 /// Extract tables from PDF document using native text positions.

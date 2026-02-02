@@ -139,6 +139,33 @@ pub fn evaluate_native_text_for_ocr(native_text: &str, page_count: Option<usize>
     }
 }
 
+#[cfg(feature = "ocr")]
+pub fn evaluate_per_page_ocr(
+    native_text: &str,
+    boundaries: Option<&[crate::types::PageBoundary]>,
+    page_count: Option<usize>,
+) -> OcrFallbackDecision {
+    let boundaries = match boundaries {
+        Some(b) if !b.is_empty() => b,
+        _ => return evaluate_native_text_for_ocr(native_text, page_count),
+    };
+
+    let mut document_decision = evaluate_native_text_for_ocr(native_text, page_count);
+
+    for boundary in boundaries {
+        if boundary.byte_end > native_text.len() || boundary.byte_start > boundary.byte_end {
+            continue;
+        }
+        let page_text = &native_text[boundary.byte_start..boundary.byte_end];
+        if evaluate_native_text_for_ocr(page_text, Some(1)).fallback {
+            document_decision.fallback = true;
+            return document_decision;
+        }
+    }
+
+    document_decision
+}
+
 /// Extract text from PDF using OCR.
 ///
 /// Renders all pages to images and processes them with OCR backend.

@@ -22,7 +22,7 @@ use crate::pdf::error::PdfError;
 
 // Re-export for backward compatibility
 #[cfg(feature = "ocr")]
-pub use ocr::{NativeTextStats, OcrFallbackDecision, evaluate_native_text_for_ocr};
+pub use ocr::{NativeTextStats, OcrFallbackDecision, evaluate_native_text_for_ocr, evaluate_per_page_ocr};
 
 use extraction::extract_all_from_document;
 #[cfg(feature = "ocr")]
@@ -78,7 +78,7 @@ impl DocumentExtractor for PdfExtractor {
         config: &ExtractionConfig,
     ) -> Result<ExtractionResult> {
         #[cfg(feature = "pdf")]
-        let (pdf_metadata, native_text, tables, page_contents) = {
+        let (pdf_metadata, native_text, tables, page_contents, _boundaries) = {
             #[cfg(target_arch = "wasm32")]
             {
                 let pdfium = crate::pdf::bindings::bind_pdfium(PdfError::MetadataExtractionFailed, "initialize Pdfium")
@@ -128,7 +128,7 @@ impl DocumentExtractor for PdfExtractor {
                             }
                         })?;
 
-                        let (pdf_metadata, native_text, tables, page_contents) =
+                        let (pdf_metadata, native_text, tables, page_contents, _boundaries) =
                             extract_all_from_document(&document, &config_owned)?;
 
                         if let Some(page_cfg) = config_owned.pages.as_ref()
@@ -142,7 +142,13 @@ impl DocumentExtractor for PdfExtractor {
                             .into());
                         }
 
-                        Ok::<_, crate::error::KreuzbergError>((pdf_metadata, native_text, tables, page_contents))
+                        Ok::<_, crate::error::KreuzbergError>((
+                            pdf_metadata,
+                            native_text,
+                            tables,
+                            page_contents,
+                            _boundaries,
+                        ))
                     })
                     .await
                     .map_err(|e| crate::error::KreuzbergError::Other(format!("PDF extraction task failed: {}", e)))??
@@ -188,7 +194,11 @@ impl DocumentExtractor for PdfExtractor {
                 native_text
             }
         } else if config.ocr.is_some() {
-            let decision = ocr::evaluate_native_text_for_ocr(&native_text, None);
+            let decision = ocr::evaluate_per_page_ocr(
+                &native_text,
+                _boundaries.as_deref(),
+                pdf_metadata.pdf_specific.page_count,
+            );
 
             if std::env::var("KREUZBERG_DEBUG_OCR").is_ok() {
                 eprintln!(
