@@ -9,6 +9,7 @@ It also ensures that the sdist includes all necessary workspace crates.
 
 from __future__ import annotations
 
+import platform
 import shutil
 import subprocess
 import tarfile
@@ -61,12 +62,19 @@ def build_cli_binary() -> None:
             capture_output=True,
         )
 
-        source_binary = workspace_root / "target" / "release" / "kreuzberg"
-        dest_binary = package_dir / "kreuzberg-cli"
+        # Handle platform-specific binary names
+        is_windows = platform.system() == "Windows"
+        source_name = "kreuzberg.exe" if is_windows else "kreuzberg"
+        dest_name = "kreuzberg-cli.exe" if is_windows else "kreuzberg-cli"
+
+        source_binary = workspace_root / "target" / "release" / source_name
+        dest_binary = package_dir / dest_name
 
         if source_binary.exists():
             shutil.copy2(source_binary, dest_binary)
-            dest_binary.chmod(0o755)
+            # chmod is a no-op on Windows, but doesn't hurt
+            if not is_windows:
+                dest_binary.chmod(0o755)
 
     except subprocess.CalledProcessError:
         pass

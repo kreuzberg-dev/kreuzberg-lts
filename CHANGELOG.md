@@ -9,10 +9,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+---
+
+## [4.2.9] - 2026-02-03
+
 ### Fixed
 
-#### OCR Heuristic
+#### MCP Server
+- **Nested runtime panic in Docker/MCP context**: Fixed "Cannot start a runtime from within a runtime" panic when using `extract_file` tool via MCP server in Docker. The MCP extraction tools were calling sync wrappers which use `GLOBAL_RUNTIME.block_on()` from within the already-running Tokio runtime. Now always uses async extraction in MCP context. (#348)
+- **Removed unused `async` parameter from MCP tools**: The `async` parameter on `extract_file`, `extract_bytes`, and `batch_extract_files` MCP tools has been removed since MCP always runs in an async context.
 
+#### Python Bindings
+- **Windows CLI binary not found**: Fixed "embedded binary not found" error on Windows. The build script now correctly handles Windows `.exe` extension when copying the CLI binary into the wheel. (#349)
+
+#### OCR Heuristic
 - **Pass actual page count to OCR fallback evaluator**: `evaluate_native_text_for_ocr` was called with `None` for page count, defaulting to 1. This inflated per-page averages for multi-page documents, causing scanned PDFs to skip OCR.
 - **Per-page OCR evaluation for mixed-content PDFs**: Added `evaluate_per_page_ocr` which evaluates each page independently using page boundaries. If any single page triggers OCR fallback, the entire document is OCR'd. Previously, good pages masked scanned pages in the aggregate evaluation.
 

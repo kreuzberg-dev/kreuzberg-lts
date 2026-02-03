@@ -1,6 +1,6 @@
 {
   "name": "@kreuzberg/examples-typescript",
-  "version": "4.2.8",
+  "version": "4.2.9",
   "private": true,
   "description": "Kreuzberg Node.js binding examples",
   "type": "module",

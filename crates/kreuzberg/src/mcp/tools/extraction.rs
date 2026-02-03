@@ -3,8 +3,8 @@
 use base64::prelude::*;
 use std::borrow::Cow;
 use crate::{
-    ExtractionConfig, batch_extract_file, batch_extract_file_sync, extract_bytes, extract_bytes_sync, extract_file,
-    extract_file_sync, mcp::errors::map_kreuzberg_error_to_mcp, mcp::format::{build_config, format_extraction_result},
+    ExtractionConfig, batch_extract_file, extract_bytes, extract_file,
+    mcp::errors::map_kreuzberg_error_to_mcp, mcp::format::{build_config, format_extraction_result},
     mcp::params::{BatchExtractFilesParams, ExtractBytesParams, ExtractFileParams},
 };
 use rmcp::{
@@ -34,13 +34,9 @@ pub(in crate::mcp) trait ExtractionTool {
         let config = build_config(self.default_config(), params.config)
             .map_err(|e| McpError::invalid_params(e, None))?;
 
-        let result = if params.r#async {
-            extract_file(&params.path, params.mime_type.as_deref(), &config)
-                .await
-                .map_err(map_kreuzberg_error_to_mcp)?
-        } else {
-            extract_file_sync(&params.path, params.mime_type.as_deref(), &config).map_err(map_kreuzberg_error_to_mcp)?
-        };
+        let result = extract_file(&params.path, params.mime_type.as_deref(), &config)
+            .await
+            .map_err(map_kreuzberg_error_to_mcp)?;
 
         let response = format_extraction_result(&result);
         Ok(CallToolResult::success(vec![Content::text(response)]))
@@ -66,13 +62,9 @@ pub(in crate::mcp) trait ExtractionTool {
 
         let mime_type = params.mime_type.as_deref().unwrap_or("");
 
-        let result = if params.r#async {
-            extract_bytes(&bytes, mime_type, &config)
-                .await
-                .map_err(map_kreuzberg_error_to_mcp)?
-        } else {
-            extract_bytes_sync(&bytes, mime_type, &config).map_err(map_kreuzberg_error_to_mcp)?
-        };
+        let result = extract_bytes(&bytes, mime_type, &config)
+            .await
+            .map_err(map_kreuzberg_error_to_mcp)?;
 
         let response = format_extraction_result(&result);
         Ok(CallToolResult::success(vec![Content::text(response)]))
@@ -92,13 +84,9 @@ pub(in crate::mcp) trait ExtractionTool {
         let config = build_config(self.default_config(), params.config)
             .map_err(|e| McpError::invalid_params(e, None))?;
 
-        let results = if params.r#async {
-            batch_extract_file(params.paths.clone(), &config)
-                .await
-                .map_err(map_kreuzberg_error_to_mcp)?
-        } else {
-            batch_extract_file_sync(params.paths.clone(), &config).map_err(map_kreuzberg_error_to_mcp)?
-        };
+        let results = batch_extract_file(params.paths.clone(), &config)
+            .await
+            .map_err(map_kreuzberg_error_to_mcp)?;
 
         let response = serde_json::to_string_pretty(&results).unwrap_or_default();
         Ok(CallToolResult::success(vec![Content::text(response)]))
@@ -152,8 +140,7 @@ mod tests {
             path: get_test_path("pdfs_with_tables/tiny.pdf").to_string(),
             mime_type: None,
             config: None,
-            r#async: true,
-        };
+                    };
 
         let result = server.extract_file(Parameters(params)).await;
 
@@ -179,8 +166,7 @@ mod tests {
             path: get_test_path("pdfs_with_tables/tiny.pdf").to_string(),
             mime_type: None,
             config: None,
-            r#async: true,
-        };
+                    };
 
         let result = server.extract_file(Parameters(params)).await;
 
@@ -205,8 +191,7 @@ mod tests {
             path: "/nonexistent/file.pdf".to_string(),
             mime_type: None,
             config: None,
-            r#async: true,
-        };
+                    };
 
         let result = server.extract_file(Parameters(params)).await;
 
@@ -222,8 +207,7 @@ mod tests {
             path: get_test_path("pdfs_with_tables/tiny.pdf").to_string(),
             mime_type: Some(Cow::Borrowed("application/pdf")),
             config: None,
-            r#async: true,
-        };
+                    };
 
         let result = server.extract_file(Parameters(params)).await;
 
@@ -241,8 +225,7 @@ mod tests {
             data: encoded,
             mime_type: Some(Cow::Borrowed("text/plain")),
             config: None,
-            r#async: true,
-        };
+                    };
 
         let result = server.extract_bytes(Parameters(params)).await;
 
@@ -268,8 +251,7 @@ mod tests {
             data: "not-valid-base64!!!".to_string(),
             mime_type: None,
             config: None,
-            r#async: true,
-        };
+                    };
 
         let result = server.extract_bytes(Parameters(params)).await;
 
@@ -285,8 +267,7 @@ mod tests {
         let params = BatchExtractFilesParams {
             paths: vec![get_test_path("pdfs_with_tables/tiny.pdf").to_string()],
             config: None,
-            r#async: true,
-        };
+                    };
 
         let result = server.batch_extract_files(Parameters(params)).await;
 
@@ -311,8 +292,7 @@ mod tests {
         let params = BatchExtractFilesParams {
             paths: vec![],
             config: None,
-            r#async: true,
-        };
+                    };
 
         let result = server.batch_extract_files(Parameters(params)).await;
 
@@ -341,8 +321,7 @@ mod tests {
                 path: test_file.to_string(),
                 mime_type: None,
                 config: None,
-                r#async: true,
-            };
+                            };
 
             let result = server.extract_file(Parameters(params)).await;
 
@@ -368,8 +347,7 @@ mod tests {
             let params = BatchExtractFilesParams {
                 paths: vec![file1.to_string(), file2.to_string()],
                 config: None,
-                r#async: true,
-            };
+                            };
 
             let result = server.batch_extract_files(Parameters(params)).await;
 

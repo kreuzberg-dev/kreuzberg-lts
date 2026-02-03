@@ -68,6 +68,10 @@ impl KreuzbergMcp {
     ///
     /// This tool extracts text, metadata, and tables from documents in various formats
     /// including PDFs, Word documents, Excel spreadsheets, images (with OCR), and more.
+    ///
+    /// Note: The `async` parameter is accepted for API compatibility but ignored.
+    /// Extraction always runs asynchronously since the MCP server operates within
+    /// a Tokio runtime. Using sync wrappers would cause a nested runtime panic.
     #[tool(
         description = "Extract content from a file by path. Supports PDFs, Word, Excel, images (with OCR), HTML, and more.",
         annotations(title = "Extract File", read_only_hint = true, idempotent_hint = true)
@@ -78,18 +82,17 @@ impl KreuzbergMcp {
     ) -> Result<CallToolResult, rmcp::ErrorData> {
         use super::errors::map_kreuzberg_error_to_mcp;
         use super::format::{build_config, format_extraction_result};
-        use crate::{extract_file, extract_file_sync};
+        use crate::extract_file;
 
         let config =
             build_config(&self.default_config, params.config).map_err(|e| rmcp::ErrorData::invalid_params(e, None))?;
 
-        let result = if params.r#async {
-            extract_file(&params.path, params.mime_type.as_deref(), &config)
-                .await
-                .map_err(map_kreuzberg_error_to_mcp)?
-        } else {
-            extract_file_sync(&params.path, params.mime_type.as_deref(), &config).map_err(map_kreuzberg_error_to_mcp)?
-        };
+        // Always use async extraction - we're already in a Tokio runtime context.
+        // Calling sync wrappers (which use GLOBAL_RUNTIME.block_on()) from within
+        // an async context causes "Cannot start a runtime from within a runtime" panic.
+        let result = extract_file(&params.path, params.mime_type.as_deref(), &config)
+            .await
+            .map_err(map_kreuzberg_error_to_mcp)?;
 
         let response = format_extraction_result(&result);
         Ok(CallToolResult::success(vec![Content::text(response)]))
@@ -98,6 +101,10 @@ impl KreuzbergMcp {
     /// Extract content from base64-encoded bytes.
     ///
     /// This tool extracts text, metadata, and tables from base64-encoded document data.
+    ///
+    /// Note: The `async` parameter is accepted for API compatibility but ignored.
+    /// Extraction always runs asynchronously since the MCP server operates within
+    /// a Tokio runtime. Using sync wrappers would cause a nested runtime panic.
     #[tool(
         description = "Extract content from base64-encoded file data. Returns extracted text, metadata, and tables.",
         annotations(title = "Extract Bytes", read_only_hint = true, idempotent_hint = true)
@@ -108,7 +115,7 @@ impl KreuzbergMcp {
     ) -> Result<CallToolResult, rmcp::ErrorData> {
         use super::errors::map_kreuzberg_error_to_mcp;
         use super::format::{build_config, format_extraction_result};
-        use crate::{extract_bytes, extract_bytes_sync};
+        use crate::extract_bytes;
         use base64::prelude::*;
 
         let bytes = BASE64_STANDARD
@@ -120,13 +127,10 @@ impl KreuzbergMcp {
 
         let mime_type = params.mime_type.as_deref().unwrap_or("");
 
-        let result = if params.r#async {
-            extract_bytes(&bytes, mime_type, &config)
-                .await
-                .map_err(map_kreuzberg_error_to_mcp)?
-        } else {
-            extract_bytes_sync(&bytes, mime_type, &config).map_err(map_kreuzberg_error_to_mcp)?
-        };
+        // Always use async extraction - we're already in a Tokio runtime context.
+        let result = extract_bytes(&bytes, mime_type, &config)
+            .await
+            .map_err(map_kreuzberg_error_to_mcp)?;
 
         let response = format_extraction_result(&result);
         Ok(CallToolResult::success(vec![Content::text(response)]))
@@ -135,6 +139,10 @@ impl KreuzbergMcp {
     /// Extract content from multiple files in parallel.
     ///
     /// This tool efficiently processes multiple documents simultaneously, useful for batch operations.
+    ///
+    /// Note: The `async` parameter is accepted for API compatibility but ignored.
+    /// Extraction always runs asynchronously since the MCP server operates within
+    /// a Tokio runtime. Using sync wrappers would cause a nested runtime panic.
     #[tool(
         description = "Extract content from multiple files in parallel. Returns results for all files.",
         annotations(title = "Batch Extract Files", read_only_hint = true, idempotent_hint = true)
@@ -145,18 +153,15 @@ impl KreuzbergMcp {
     ) -> Result<CallToolResult, rmcp::ErrorData> {
         use super::errors::map_kreuzberg_error_to_mcp;
         use super::format::build_config;
-        use crate::{batch_extract_file, batch_extract_file_sync};
+        use crate::batch_extract_file;
 
         let config =
             build_config(&self.default_config, params.config).map_err(|e| rmcp::ErrorData::invalid_params(e, None))?;
 
-        let results = if params.r#async {
-            batch_extract_file(params.paths.clone(), &config)
-                .await
-                .map_err(map_kreuzberg_error_to_mcp)?
-        } else {
-            batch_extract_file_sync(params.paths.clone(), &config).map_err(map_kreuzberg_error_to_mcp)?
-        };
+        // Always use async extraction - we're already in a Tokio runtime context.
+        let results = batch_extract_file(params.paths.clone(), &config)
+            .await
+            .map_err(map_kreuzberg_error_to_mcp)?;
 
         let response = serde_json::to_string_pretty(&results).unwrap_or_default();
         Ok(CallToolResult::success(vec![Content::text(response)]))

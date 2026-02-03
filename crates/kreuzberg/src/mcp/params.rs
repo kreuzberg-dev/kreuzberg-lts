@@ -15,9 +15,6 @@ pub struct ExtractFileParams {
     /// Extraction configuration (JSON object)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub config: Option<serde_json::Value>,
-    /// Use async extraction (default: false for sync)
-    #[serde(default)]
-    pub r#async: bool,
 }
 
 /// Request parameters for bytes extraction.
@@ -31,9 +28,6 @@ pub struct ExtractBytesParams {
     /// Extraction configuration (JSON object)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub config: Option<serde_json::Value>,
-    /// Use async extraction (default: false for sync)
-    #[serde(default)]
-    pub r#async: bool,
 }
 
 /// Request parameters for batch file extraction.
@@ -44,9 +38,6 @@ pub struct BatchExtractFilesParams {
     /// Extraction configuration (JSON object)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub config: Option<serde_json::Value>,
-    /// Use async extraction (default: false for sync)
-    #[serde(default)]
-    pub r#async: bool,
 }
 
 /// Request parameters for MIME type detection.
@@ -75,7 +66,6 @@ mod tests {
         assert_eq!(params.path, "/test.pdf");
         assert_eq!(params.mime_type, None);
         assert_eq!(params.config, None);
-        assert!(!params.r#async);
     }
 
     #[test]
@@ -86,7 +76,6 @@ mod tests {
         assert_eq!(params.data, "SGVsbG8=");
         assert_eq!(params.mime_type, None);
         assert_eq!(params.config, None);
-        assert!(!params.r#async);
     }
 
     #[test]
@@ -96,7 +85,6 @@ mod tests {
 
         assert_eq!(params.paths.len(), 2);
         assert_eq!(params.config, None);
-        assert!(!params.r#async);
     }
 
     #[test]
@@ -131,7 +119,6 @@ mod tests {
             path: "/test.pdf".to_string(),
             mime_type: Some("application/pdf".to_string()),
             config: Some(serde_json::json!({"use_cache": false})),
-            r#async: true,
         };
 
         let json = serde_json::to_string(&params).unwrap();
@@ -140,7 +127,6 @@ mod tests {
         assert_eq!(params.path, deserialized.path);
         assert_eq!(params.mime_type, deserialized.mime_type);
         assert_eq!(params.config, deserialized.config);
-        assert_eq!(params.r#async, deserialized.r#async);
     }
 
     #[test]
@@ -149,7 +135,6 @@ mod tests {
             data: "SGVsbG8=".to_string(),
             mime_type: None,
             config: None,
-            r#async: false,
         };
 
         let json = serde_json::to_string(&params).unwrap();
@@ -163,7 +148,6 @@ mod tests {
         let params = BatchExtractFilesParams {
             paths: vec!["/a.pdf".to_string(), "/b.pdf".to_string()],
             config: Some(serde_json::json!({"use_cache": true})),
-            r#async: true,
         };
 
         let json = serde_json::to_string(&params).unwrap();
