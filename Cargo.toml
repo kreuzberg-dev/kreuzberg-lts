@@ -72,6 +72,7 @@ tempfile = "3.25.0"
 criterion = { version = "0.8", features = ["html_reports"] }
 lzma-rust2 = { version = "0.15.7" }
 getrandom = { version = "0.3.4", features = ["wasm_js"] }
+pdfium-render = { package = "kreuzberg-pdfium-render", path = "crates/kreuzberg-pdfium-render" }
 
 [profile.release]
 lto = "thin"

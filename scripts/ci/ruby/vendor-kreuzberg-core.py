@@ -58,10 +58,16 @@ def format_dependency(name: str, dep_spec: object) -> str:
         return f'{name} = "{dep_spec}"'
     elif isinstance(dep_spec, dict):
         version: str = dep_spec.get("version", "")
+        package: str | None = dep_spec.get("package")
         features: list[str] = dep_spec.get("features", [])
         default_features: bool | None = dep_spec.get("default-features")
 
-        parts: list[str] = [f'version = "{version}"']
+        parts: list[str] = []
+
+        if package:
+            parts.append(f'package = "{package}"')
+
+        parts.append(f'version = "{version}"')
 
         if features:
             features_str = ', '.join(f'"{f}"' for f in features)
@@ -264,6 +270,13 @@ def main() -> None:
                 content = re.sub(
                     r'kreuzberg-paddle-ocr = \{ version = "[^"]*", optional = true \}',
                     'kreuzberg-paddle-ocr = { path = "../kreuzberg-paddle-ocr", optional = true }',
+                    content
+                )
+            # Only update pdfium-render path if it was actually copied
+            if "kreuzberg-pdfium-render" in copied_crates:
+                content = re.sub(
+                    r'pdfium-render = \{ package = "kreuzberg-pdfium-render", version = "[^"]*"',
+                    'pdfium-render = { package = "kreuzberg-pdfium-render", path = "../kreuzberg-pdfium-render"',
                     content
                 )
 

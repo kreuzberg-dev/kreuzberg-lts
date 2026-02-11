@@ -1,8 +1,8 @@
 [workspace]
-members = ["kreuzberg", "kreuzberg-ffi", "kreuzberg-tesseract", "kreuzberg-paddle-ocr"]
+members = ["kreuzberg", "kreuzberg-ffi", "kreuzberg-tesseract", "kreuzberg-paddle-ocr", "kreuzberg-pdfium-render"]
 
 [workspace.package]
-version = "4.2.15"
+version = "4.3.0"
 edition = "2024"
 rust-version = "1.91"
 authors = ["Na'aman Hirschfeld <nhirschfeld@gmail.com>"]
@@ -27,11 +27,12 @@ lzma-rust2 = { version = "0.15.7" }
 num_cpus = "1.17.0"
 once_cell = "1.21.3"
 parking_lot = "0.12.5"
+pdfium-render = { package = "kreuzberg-pdfium-render", version = "" }
 reqwest = { version = "0.13.2", default-features = false }
 serde = { version = "1.0.228", features = ["derive"] }
 serde_json = { version = "1.0.149" }
 tempfile = "3.25.0"
 thiserror = "2.0.18"
 tokio = { version = "1.49.0", features = ["rt", "rt-multi-thread", "macros", "sync", "process", "fs", "time", "io-util"] }
-toml = "0.9.11"
+toml = "1.0.0"
 tracing = "0.1"
