@@ -59,9 +59,18 @@ async fn test_model_download_from_huggingface() {
     assert!(paths.rec_model.exists(), "Recognition model dir not found");
 
     // Verify ONNX model files exist within directories
-    assert!(paths.det_model.join("model.onnx").exists(), "Detection ONNX file not found");
-    assert!(paths.cls_model.join("model.onnx").exists(), "Classification ONNX file not found");
-    assert!(paths.rec_model.join("model.onnx").exists(), "Recognition ONNX file not found");
+    assert!(
+        paths.det_model.join("model.onnx").exists(),
+        "Detection ONNX file not found"
+    );
+    assert!(
+        paths.cls_model.join("model.onnx").exists(),
+        "Classification ONNX file not found"
+    );
+    assert!(
+        paths.rec_model.join("model.onnx").exists(),
+        "Recognition ONNX file not found"
+    );
 
     // Verify dictionary file exists
     assert!(paths.dict_file.exists(), "Dictionary file not found");
@@ -72,7 +81,11 @@ async fn test_model_download_from_huggingface() {
     // Check cache stats
     let stats = manager.cache_stats().unwrap();
     // 3 model dirs, each containing model.onnx (rec/ also has dict.txt)
-    assert!(stats.model_count >= 3, "Expected at least 3 cached items, got {}", stats.model_count);
+    assert!(
+        stats.model_count >= 3,
+        "Expected at least 3 cached items, got {}",
+        stats.model_count
+    );
     // Models should be > 1MB each
     assert!(stats.total_size_bytes > 1_000_000);
 

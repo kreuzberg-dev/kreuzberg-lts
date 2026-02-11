@@ -385,10 +385,10 @@ fn extract_msg_from_cfb<F: std::io::Read + std::io::Seek>(
     if let Some(ref from) = from_email {
         metadata.insert("email_from".to_string(), from.to_string());
     }
-    if let Some(ref name) = sender_name {
-        if !name.is_empty() {
-            metadata.insert("from_name".to_string(), name.to_string());
-        }
+    if let Some(ref name) = sender_name
+        && !name.is_empty()
+    {
+        metadata.insert("from_name".to_string(), name.to_string());
     }
     if !to_emails.is_empty() {
         metadata.insert("email_to".to_string(), to_emails.join(", "));

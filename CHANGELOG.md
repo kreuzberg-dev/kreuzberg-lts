@@ -50,6 +50,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 #### WASM Table Extraction
 - Fixed WASM adapter not recognizing `page_number` field (snake_case) from Rust FFI, causing table data to be silently dropped in Deno and Cloudflare Workers tests.
 
+#### DOCX Formatting Output (#376)
+- Fixed DOCX extraction producing plain text instead of formatted markdown. Bold, italic, underline, strikethrough, and hyperlinks are now rendered with proper markdown markers (`**bold**`, `*italic*`, `~~strikethrough~~`, `[text](url)`).
+- Fixed heading hierarchy: Title style maps to `#`, Heading1 to `##`, through Heading5+ clamped at `######`.
+- Fixed bullet lists (`- `), numbered lists (`1. `), and nested list indentation (2-space per level).
+- Fixed tables missing from markdown output. Tables are now interleaved with paragraphs in document order and rendered as markdown pipe tables.
+- Fixed table cell formatting being stripped — bold/italic inside table cells is now preserved.
+- Added 16 integration tests covering formatting, headings, lists, tables, and document structure.
+
+#### Typst Table Content Extraction
+- Fixed Typst `extract_table_content` double-counting opening parenthesis, which caused the table parser to consume all remaining document content after a `#table()` call.
+
 #### PaddleOCR Recognition Model
 - Fixed PaddleOCR recognition model (`en_PP-OCRv4_rec_infer.onnx`) failing to load with `ShapeInferenceError` on ONNX Runtime 1.23.x.
 - Fixed incorrect detection model filename in Docker and CI action (`en_PP-OCRv4_det_infer.onnx` → `ch_PP-OCRv4_det_infer.onnx`).

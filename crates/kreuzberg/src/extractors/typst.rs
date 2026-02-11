@@ -337,7 +337,7 @@ impl TypstParser {
         let mut table_content = String::new();
         let mut content = first_line.to_string();
         let mut bracket_depth = 0;
-        let mut paren_depth = if first_line.contains('(') { 1 } else { 0 };
+        let mut paren_depth = 0;
 
         for ch in first_line.chars() {
             match ch {

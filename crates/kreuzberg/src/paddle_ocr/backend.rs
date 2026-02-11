@@ -116,10 +116,13 @@ impl PaddleOcrBackend {
             // Initialize models with default number of threads (uses all available cores)
             let num_threads = num_cpus::get().min(4); // Cap at 4 threads for OCR
 
-            let dict_path = model_paths.dict_file.to_str().ok_or_else(|| crate::KreuzbergError::Ocr {
-                message: "Invalid dictionary file path".to_string(),
-                source: None,
-            })?;
+            let dict_path = model_paths
+                .dict_file
+                .to_str()
+                .ok_or_else(|| crate::KreuzbergError::Ocr {
+                    message: "Invalid dictionary file path".to_string(),
+                    source: None,
+                })?;
 
             // Use init_models_with_dict to load character dictionary from file.
             // The ort crate cannot read custom metadata from PaddlePaddle PIR-mode ONNX models,

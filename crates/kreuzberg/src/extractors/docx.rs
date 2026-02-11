@@ -80,7 +80,7 @@ fn convert_docx_table_to_table(docx_table: &crate::extraction::docx::parser::Tab
                 .map(|cell| {
                     cell.paragraphs
                         .iter()
-                        .map(|para| para.to_text())
+                        .map(|para| para.runs_to_markdown())
                         .collect::<Vec<_>>()
                         .join(" ")
                         .trim()
@@ -111,7 +111,7 @@ impl DocumentExtractor for DocxExtractor {
     async fn extract_bytes(
         &self,
         content: &[u8],
-        mime_type: &str,
+        _mime_type: &str,
         _config: &ExtractionConfig,
     ) -> Result<ExtractionResult> {
         let (text, tables, page_boundaries) = {
@@ -124,7 +124,7 @@ impl DocumentExtractor for DocxExtractor {
                         let _guard = span.entered();
                         let doc = crate::extraction::docx::parser::parse_document(&content_owned)?;
 
-                        let text = doc.extract_text();
+                        let text = doc.to_markdown();
 
                         let tables: Vec<Table> = doc
                             .tables
@@ -143,7 +143,7 @@ impl DocumentExtractor for DocxExtractor {
             } else {
                 let doc = crate::extraction::docx::parser::parse_document(content)?;
 
-                let text = doc.extract_text();
+                let text = doc.to_markdown();
 
                 let tables: Vec<Table> = doc
                     .tables
@@ -161,7 +161,7 @@ impl DocumentExtractor for DocxExtractor {
             {
                 let doc = crate::extraction::docx::parser::parse_document(content)?;
 
-                let text = doc.extract_text();
+                let text = doc.to_markdown();
 
                 let tables: Vec<Table> = doc
                     .tables
@@ -332,7 +332,7 @@ impl DocumentExtractor for DocxExtractor {
 
         Ok(ExtractionResult {
             content: text,
-            mime_type: mime_type.to_string().into(),
+            mime_type: "text/markdown".to_string().into(),
             metadata: Metadata {
                 pages: page_structure,
                 keywords: parsed_keywords,
