@@ -35,6 +35,9 @@ pub struct ComparisonData {
     pub throughput_ranking: Vec<RankedFramework>,
     /// Frameworks ranked by median memory usage (lowest first)
     pub memory_ranking: Vec<RankedFramework>,
+    /// Frameworks ranked by median CPU usage (lowest first = most efficient)
+    #[serde(default)]
+    pub cpu_ranking: Vec<RankedFramework>,
     /// Frameworks ranked by quality score (highest first)
     pub quality_ranking: Vec<RankedFramework>,
     /// Performance deltas relative to the fastest framework
@@ -69,6 +72,12 @@ pub struct DeltaMetrics {
     pub memory_delta_mb: f64,
     /// Memory delta as percentage
     pub memory_delta_percent: f64,
+    /// CPU delta in percentage points (positive = higher CPU usage)
+    #[serde(default)]
+    pub cpu_delta_pp: f64,
+    /// CPU delta as percentage relative to baseline
+    #[serde(default)]
+    pub cpu_delta_percent: f64,
 }
 
 /// Metadata about the consolidation process
@@ -132,6 +141,9 @@ pub struct PerformancePercentiles {
     pub memory: Percentiles,
     /// Duration percentiles (p50, p95, p99) in ms
     pub duration: Percentiles,
+    /// CPU usage percentiles (p50, p95, p99) as percentage (0-100, normalized across cores)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub cpu: Option<Percentiles>,
     /// Success rate as percentage (0-100)
     pub success_rate_percent: f64,
     /// Extraction duration percentiles (p50, p95, p99) in ms
@@ -189,13 +201,14 @@ pub fn aggregate_new_format(results: &[BenchmarkResult]) -> NewConsolidatedResul
     // Validate input - HIGH PRIORITY FIX
     if results.is_empty() {
         return NewConsolidatedResults {
-            schema_version: "2.0.0".to_string(),
+            schema_version: "2.1.0".to_string(),
             by_framework_mode: HashMap::new(),
             disk_sizes: HashMap::new(),
             comparison: ComparisonData {
                 performance_ranking: Vec::new(),
                 throughput_ranking: Vec::new(),
                 memory_ranking: Vec::new(),
+                cpu_ranking: Vec::new(),
                 quality_ranking: Vec::new(),
                 deltas_vs_baseline: HashMap::new(),
             },
@@ -279,7 +292,7 @@ pub fn aggregate_new_format(results: &[BenchmarkResult]) -> NewConsolidatedResul
     let comparison = build_comparison(&aggregated_by_framework_mode);
 
     NewConsolidatedResults {
-        schema_version: "2.0.0".to_string(),
+        schema_version: "2.1.0".to_string(),
         by_framework_mode: aggregated_by_framework_mode,
         disk_sizes,
         comparison,
@@ -358,11 +371,18 @@ fn calculate_percentiles(results: &[&BenchmarkResult]) -> PerformancePercentiles
         .filter(|&v| !v.is_nan() && v.is_finite())
         .collect();
 
+    let mut cpus: Vec<f64> = successful
+        .iter()
+        .map(|r| r.metrics.avg_cpu_percent)
+        .filter(|&v| v > 0.0 && v.is_finite())
+        .collect();
+
     // Sort for percentile calculation (NaN-safe)
     durations.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
     throughputs.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
     memories.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
     extraction_durations.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
+    cpus.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
 
     // Build percentiles with NaN/Inf validation
     let duration = Percentiles {
@@ -388,6 +408,16 @@ fn calculate_percentiles(results: &[&BenchmarkResult]) -> PerformancePercentiles
             p50: sanitize_f64(calculate_percentile_value(&extraction_durations, 0.50)),
             p95: sanitize_f64(calculate_percentile_value(&extraction_durations, 0.95)),
             p99: sanitize_f64(calculate_percentile_value(&extraction_durations, 0.99)),
+        })
+    } else {
+        None
+    };
+
+    let cpu = if !cpus.is_empty() {
+        Some(Percentiles {
+            p50: sanitize_f64(calculate_percentile_value(&cpus, 0.50)),
+            p95: sanitize_f64(calculate_percentile_value(&cpus, 0.95)),
+            p99: sanitize_f64(calculate_percentile_value(&cpus, 0.99)),
         })
     } else {
         None
@@ -464,6 +494,7 @@ fn calculate_percentiles(results: &[&BenchmarkResult]) -> PerformancePercentiles
         throughput,
         memory,
         duration,
+        cpu,
         success_rate_percent,
         extraction_duration,
         quality,
@@ -530,13 +561,15 @@ fn extract_framework_and_mode(framework_name: &str) -> (&str, &str) {
 /// Build cross-framework comparison rankings from aggregated data
 fn build_comparison(by_framework_mode: &HashMap<String, FrameworkModeAggregation>) -> ComparisonData {
     // Collect median metrics per framework:mode by averaging across file types
-    let mut metrics: Vec<(String, f64, f64, f64, f64)> = Vec::new(); // (key, duration_p50, throughput_p50, memory_p50, quality_p50)
+    // (key, duration_p50, throughput_p50, memory_p50, quality_p50, cpu_p50)
+    let mut metrics: Vec<(String, f64, f64, f64, f64, f64)> = Vec::new();
 
     for (key, agg) in by_framework_mode {
         let mut durations = Vec::new();
         let mut throughputs = Vec::new();
         let mut memories = Vec::new();
         let mut qualities = Vec::new();
+        let mut cpus = Vec::new();
 
         for ft in agg.by_file_type.values() {
             for perf in [&ft.no_ocr, &ft.with_ocr].into_iter().flatten() {
@@ -545,6 +578,9 @@ fn build_comparison(by_framework_mode: &HashMap<String, FrameworkModeAggregation
                 memories.push(perf.memory.p50);
                 if let Some(q) = &perf.quality {
                     qualities.push(q.quality_score_p50);
+                }
+                if let Some(c) = &perf.cpu {
+                    cpus.push(c.p50);
                 }
             }
         }
@@ -568,12 +604,13 @@ fn build_comparison(by_framework_mode: &HashMap<String, FrameworkModeAggregation
             avg(&throughputs),
             avg(&memories),
             avg(&qualities),
+            avg(&cpus),
         ));
     }
 
     // Performance ranking (lower duration = better, rank 1)
     let mut perf = metrics.clone();
-    perf.retain(|m| m.1.is_finite()); // Filter out NaN quality scores
+    perf.retain(|m| m.1.is_finite());
     perf.sort_by(|a, b| a.1.partial_cmp(&b.1).unwrap_or(std::cmp::Ordering::Equal));
     let baseline_dur = perf.first().map(|r| r.1).unwrap_or(1.0);
     let performance_ranking: Vec<RankedFramework> = perf
@@ -589,7 +626,7 @@ fn build_comparison(by_framework_mode: &HashMap<String, FrameworkModeAggregation
 
     // Throughput ranking (higher = better)
     let mut thr = metrics.clone();
-    thr.retain(|m| m.2.is_finite()); // Filter out NaN throughput values
+    thr.retain(|m| m.2.is_finite());
     thr.sort_by(|a, b| b.2.partial_cmp(&a.2).unwrap_or(std::cmp::Ordering::Equal));
     let baseline_thr = thr.first().map(|r| r.2).unwrap_or(1.0);
     let throughput_ranking: Vec<RankedFramework> = thr
@@ -605,13 +642,13 @@ fn build_comparison(by_framework_mode: &HashMap<String, FrameworkModeAggregation
 
     // Memory ranking (lower = better)
     let mut mem = metrics.clone();
-    mem.retain(|m| m.3.is_finite()); // Filter out NaN memory values
+    mem.retain(|m| m.3.is_finite());
     mem.sort_by(|a, b| a.3.partial_cmp(&b.3).unwrap_or(std::cmp::Ordering::Equal));
     let baseline_mem = mem.first().map(|r| r.3).unwrap_or(1.0);
     let memory_ranking: Vec<RankedFramework> = mem
         .iter()
         .enumerate()
-        .map(|(i, (k, _, _, v, _))| RankedFramework {
+        .map(|(i, (k, _, _, v, ..))| RankedFramework {
             framework_mode: k.clone(),
             rank: i + 1,
             value: *v,
@@ -619,15 +656,31 @@ fn build_comparison(by_framework_mode: &HashMap<String, FrameworkModeAggregation
         })
         .collect();
 
+    // CPU ranking (lower = more efficient, rank 1)
+    let mut cpu = metrics.clone();
+    cpu.retain(|m| m.5.is_finite());
+    cpu.sort_by(|a, b| a.5.partial_cmp(&b.5).unwrap_or(std::cmp::Ordering::Equal));
+    let baseline_cpu = cpu.first().map(|r| r.5).unwrap_or(1.0);
+    let cpu_ranking: Vec<RankedFramework> = cpu
+        .iter()
+        .enumerate()
+        .map(|(i, (k, _, _, _, _, v))| RankedFramework {
+            framework_mode: k.clone(),
+            rank: i + 1,
+            value: *v,
+            relative: if baseline_cpu > 0.0 { *v / baseline_cpu } else { 1.0 },
+        })
+        .collect();
+
     // Quality ranking (higher = better)
     let mut qual = metrics.clone();
-    qual.retain(|m| m.4.is_finite()); // Filter out NaN quality scores
+    qual.retain(|m| m.4.is_finite());
     qual.sort_by(|a, b| b.4.partial_cmp(&a.4).unwrap_or(std::cmp::Ordering::Equal));
     let baseline_qual = qual.first().map(|r| r.4).unwrap_or(1.0);
     let quality_ranking: Vec<RankedFramework> = qual
         .iter()
         .enumerate()
-        .map(|(i, (k, _, _, _, v))| RankedFramework {
+        .map(|(i, (k, _, _, _, v, _))| RankedFramework {
             framework_mode: k.clone(),
             rank: i + 1,
             value: *v,
@@ -639,10 +692,10 @@ fn build_comparison(by_framework_mode: &HashMap<String, FrameworkModeAggregation
     let mut deltas_vs_baseline = HashMap::new();
     if let Some(baseline) = metrics
         .iter()
-        .filter(|(_, dur, _, _, _)| dur.is_finite())
+        .filter(|(_, dur, _, _, _, _)| dur.is_finite())
         .min_by(|a, b| a.1.partial_cmp(&b.1).unwrap_or(std::cmp::Ordering::Equal))
     {
-        for (k, dur, thr, mem_val, _) in &metrics {
+        for (k, dur, thr, mem_val, _, cpu_val) in &metrics {
             if k != &baseline.0 {
                 deltas_vs_baseline.insert(
                     k.clone(),
@@ -665,6 +718,12 @@ fn build_comparison(by_framework_mode: &HashMap<String, FrameworkModeAggregation
                         } else {
                             0.0
                         },
+                        cpu_delta_pp: cpu_val - baseline.5,
+                        cpu_delta_percent: if baseline.5 > 0.0 {
+                            ((cpu_val - baseline.5) / baseline.5) * 100.0
+                        } else {
+                            0.0
+                        },
                     },
                 );
             }
@@ -675,6 +734,7 @@ fn build_comparison(by_framework_mode: &HashMap<String, FrameworkModeAggregation
         performance_ranking,
         throughput_ranking,
         memory_ranking,
+        cpu_ranking,
         quality_ranking,
         deltas_vs_baseline,
     }
@@ -1257,5 +1317,128 @@ mod tests {
 
         assert!(percentiles.extraction_duration.is_none());
         assert_eq!(percentiles.success_rate_percent, 50.0);
+    }
+
+    // ============================================================================
+    // Tests for CPU aggregation
+    // ============================================================================
+
+    #[test]
+    fn test_calculate_percentiles_cpu_populated() {
+        // Test: Results with avg_cpu_percent > 0 produce CPU percentiles
+        let mut r1 = create_test_result("framework1", "pdf", OcrStatus::NotUsed, 100, 1_000_000.0, 10_000_000);
+        r1.metrics.avg_cpu_percent = 25.0;
+
+        let mut r2 = create_test_result("framework1", "pdf", OcrStatus::NotUsed, 150, 1_000_000.0, 10_000_000);
+        r2.metrics.avg_cpu_percent = 75.0;
+
+        let mut r3 = create_test_result("framework1", "pdf", OcrStatus::NotUsed, 200, 1_000_000.0, 10_000_000);
+        r3.metrics.avg_cpu_percent = 50.0;
+
+        let refs = vec![&r1, &r2, &r3];
+        let percentiles = calculate_percentiles(&refs);
+
+        assert!(percentiles.cpu.is_some());
+        let cpu = percentiles.cpu.as_ref().unwrap();
+        assert_eq!(cpu.p50, 50.0); // median of [25, 50, 75]
+        assert!(cpu.p95 > cpu.p50);
+        assert!(cpu.p99 >= cpu.p95);
+    }
+
+    #[test]
+    fn test_calculate_percentiles_cpu_zero_excluded() {
+        // Test: avg_cpu_percent = 0.0 is filtered out (fallback snapshot path)
+        let mut r1 = create_test_result("framework1", "pdf", OcrStatus::NotUsed, 100, 1_000_000.0, 10_000_000);
+        r1.metrics.avg_cpu_percent = 0.0;
+
+        let refs = vec![&r1];
+        let percentiles = calculate_percentiles(&refs);
+
+        // 0.0 is filtered, so cpu should be None
+        assert!(percentiles.cpu.is_none());
+    }
+
+    #[test]
+    fn test_calculate_percentiles_cpu_mixed_zero_and_nonzero() {
+        // Test: Mix of 0.0 and valid CPU values — only valid values used
+        let mut r1 = create_test_result("framework1", "pdf", OcrStatus::NotUsed, 100, 1_000_000.0, 10_000_000);
+        r1.metrics.avg_cpu_percent = 0.0; // filtered out
+
+        let mut r2 = create_test_result("framework1", "pdf", OcrStatus::NotUsed, 150, 1_000_000.0, 10_000_000);
+        r2.metrics.avg_cpu_percent = 40.0;
+
+        let mut r3 = create_test_result("framework1", "pdf", OcrStatus::NotUsed, 200, 1_000_000.0, 10_000_000);
+        r3.metrics.avg_cpu_percent = 60.0;
+
+        let refs = vec![&r1, &r2, &r3];
+        let percentiles = calculate_percentiles(&refs);
+
+        assert!(percentiles.cpu.is_some());
+        let cpu = percentiles.cpu.as_ref().unwrap();
+        // Only 40 and 60 → median = 50
+        assert_eq!(cpu.p50, 50.0);
+    }
+
+    #[test]
+    fn test_calculate_percentiles_cpu_failed_results_excluded() {
+        // Test: Failed results' CPU values are excluded
+        let mut r1 = create_test_result("framework1", "pdf", OcrStatus::NotUsed, 100, 1_000_000.0, 10_000_000);
+        r1.metrics.avg_cpu_percent = 30.0;
+
+        let mut r2_failed = create_test_result("framework1", "pdf", OcrStatus::NotUsed, 0, 0.0, 0);
+        r2_failed.success = false;
+        r2_failed.error_message = Some("Failed".to_string());
+        r2_failed.metrics.avg_cpu_percent = 90.0; // Should be ignored
+
+        let refs = vec![&r1, &r2_failed];
+        let percentiles = calculate_percentiles(&refs);
+
+        assert!(percentiles.cpu.is_some());
+        let cpu = percentiles.cpu.as_ref().unwrap();
+        assert_eq!(cpu.p50, 30.0); // Only successful result's CPU used
+    }
+
+    #[test]
+    fn test_comparison_cpu_ranking() {
+        // Test: CPU ranking in comparison data — lower CPU = rank 1
+        let mut r1 = create_test_result("fast-framework", "pdf", OcrStatus::NotUsed, 50, 2_000_000.0, 5_000_000);
+        r1.metrics.avg_cpu_percent = 80.0; // high CPU
+
+        let mut r2 = create_test_result("slow-framework", "pdf", OcrStatus::NotUsed, 200, 500_000.0, 20_000_000);
+        r2.metrics.avg_cpu_percent = 20.0; // low CPU
+
+        let results = vec![r1, r2];
+        let aggregated = aggregate_new_format(&results);
+
+        assert!(!aggregated.comparison.cpu_ranking.is_empty());
+        // slow-framework has lower CPU, should be rank 1
+        assert_eq!(
+            aggregated.comparison.cpu_ranking[0].framework_mode,
+            "slow-framework:single"
+        );
+        assert_eq!(aggregated.comparison.cpu_ranking[0].rank, 1);
+        assert_eq!(
+            aggregated.comparison.cpu_ranking[1].framework_mode,
+            "fast-framework:single"
+        );
+        assert_eq!(aggregated.comparison.cpu_ranking[1].rank, 2);
+    }
+
+    #[test]
+    fn test_deltas_include_cpu() {
+        // Test: Deltas vs baseline include CPU delta fields
+        let mut r1 = create_test_result("baseline-fw", "pdf", OcrStatus::NotUsed, 50, 2_000_000.0, 5_000_000);
+        r1.metrics.avg_cpu_percent = 30.0;
+
+        let mut r2 = create_test_result("other-fw", "pdf", OcrStatus::NotUsed, 200, 500_000.0, 20_000_000);
+        r2.metrics.avg_cpu_percent = 60.0;
+
+        let results = vec![r1, r2];
+        let aggregated = aggregate_new_format(&results);
+
+        // baseline-fw is fastest (50ms), so other-fw has deltas vs it
+        let delta = aggregated.comparison.deltas_vs_baseline.get("other-fw:single").unwrap();
+        assert_eq!(delta.cpu_delta_pp, 30.0); // 60 - 30 = 30 percentage points
+        assert!((delta.cpu_delta_percent - 100.0).abs() < 0.1); // (60-30)/30 * 100 = 100%
     }
 }
