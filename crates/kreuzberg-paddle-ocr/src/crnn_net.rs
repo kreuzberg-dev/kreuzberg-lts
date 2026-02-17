@@ -86,19 +86,11 @@ impl CrnnNet {
             ))
         })?;
 
-        // Estimate capacity (safe division by using checked arithmetic)
-        let capacity = if !model_charater_list.is_empty() {
-            (model_charater_list.len() as f32 / 3.9) as usize
-        } else {
-            10 // default capacity if list is empty
-        };
-        let mut keys = Vec::with_capacity(capacity);
-
-        keys.push("#".to_string());
-
-        keys.extend(model_charater_list.split('\n').map(|s: &str| s.to_string()));
-
-        keys.push(" ".to_string());
+        // PP-OCRv5 model metadata already includes the CTC blank token ("#") at
+        // index 0 and the space token (" ") at the end.  Do NOT prepend/append
+        // extra tokens — doing so shifts every character index by one and
+        // produces garbled output.
+        let keys: Vec<String> = model_charater_list.split('\n').map(|s: &str| s.to_string()).collect();
 
         Ok(keys)
     }
