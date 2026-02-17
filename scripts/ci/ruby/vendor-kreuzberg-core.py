@@ -186,9 +186,18 @@ def main() -> None:
 
     vendor_base: Path = repo_root / "packages" / "ruby" / "vendor"
 
-    if vendor_base.exists():
-        shutil.rmtree(vendor_base)
-        print("Removed entire vendor directory")
+    # Clean only crate directories, preserving vendor/bundle/ (Bundler gems)
+    crate_names = ["kreuzberg", "kreuzberg-ffi", "kreuzberg-tesseract",
+                   "kreuzberg-paddle-ocr", "kreuzberg-pdfium-render", "rb-sys"]
+    for name in crate_names:
+        crate_path = vendor_base / name
+        if crate_path.exists():
+            shutil.rmtree(crate_path)
+    # Also clean the vendor Cargo.toml (will be regenerated)
+    vendor_cargo = vendor_base / "Cargo.toml"
+    if vendor_cargo.exists():
+        vendor_cargo.unlink()
+    print("Cleaned vendor crate directories")
 
     vendor_base.mkdir(parents=True, exist_ok=True)
 
