@@ -184,7 +184,7 @@ pub(super) fn objects_to_page_data(
             for fragment in &line.fragments {
                 match fragment {
                     PdfParagraphFragment::StyledString(styled) => {
-                        let text = styled.text().to_string();
+                        let text = normalize_text_encoding(styled.text());
                         if text.trim().is_empty() {
                             continue;
                         }
@@ -228,6 +228,43 @@ pub(super) fn objects_to_page_data(
     }
 
     (segments, images)
+}
+
+/// Normalize text encoding: handle soft hyphens and strip control characters.
+///
+/// - `\u{00AD}` (soft hyphen) at end of text → replaced with `-` so downstream
+///   hyphen-rejoining logic can merge word fragments.
+/// - `\u{00AD}` mid-text → removed (invisible break hint).
+/// - C0 control characters (U+0000–U+001F except `\t`, `\n`, `\r`) → removed.
+fn normalize_text_encoding(text: &str) -> String {
+    // Fast path: no special characters present
+    if !text.contains('\u{00AD}') && !text.bytes().any(|b| b < 0x20 && b != b'\t' && b != b'\n' && b != b'\r') {
+        return text.to_string();
+    }
+
+    let chars: Vec<char> = text.chars().collect();
+    let mut result = String::with_capacity(text.len());
+
+    for (i, &ch) in chars.iter().enumerate() {
+        match ch {
+            '\u{00AD}' => {
+                // Soft hyphen at end of text (or before whitespace): convert to regular
+                // hyphen so rendering code can rejoin word fragments.
+                let at_end = i == chars.len() - 1
+                    || chars.get(i + 1).is_some_and(|c| c.is_whitespace());
+                if at_end {
+                    result.push('-');
+                }
+                // Mid-word soft hyphen: drop (invisible break hint)
+            }
+            c if c.is_control() && c != '\n' && c != '\r' && c != '\t' => {
+                // Strip other control characters
+            }
+            _ => result.push(ch),
+        }
+    }
+
+    result
 }
 
 #[cfg(test)]
@@ -313,6 +350,36 @@ mod tests {
         // Check that the label is prepended
         let first_seg_text = &paragraphs[0].lines[0].segments[0].text;
         assert_eq!(first_seg_text, "1.");
+    }
+
+    #[test]
+    fn test_normalize_plain_text_unchanged() {
+        assert_eq!(normalize_text_encoding("hello world"), "hello world");
+    }
+
+    #[test]
+    fn test_normalize_trailing_soft_hyphen() {
+        assert_eq!(normalize_text_encoding("soft\u{00AD}"), "soft-");
+    }
+
+    #[test]
+    fn test_normalize_mid_word_soft_hyphen_removed() {
+        assert_eq!(normalize_text_encoding("soft\u{00AD}ware"), "software");
+    }
+
+    #[test]
+    fn test_normalize_soft_hyphen_before_space() {
+        assert_eq!(normalize_text_encoding("soft\u{00AD} ware"), "soft- ware");
+    }
+
+    #[test]
+    fn test_normalize_strips_control_chars() {
+        assert_eq!(normalize_text_encoding("he\x01llo\x02"), "hello");
+    }
+
+    #[test]
+    fn test_normalize_preserves_tabs_newlines() {
+        assert_eq!(normalize_text_encoding("a\tb\nc\r"), "a\tb\nc\r");
     }
 
     #[test]
