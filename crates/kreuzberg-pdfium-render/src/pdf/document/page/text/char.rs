@@ -569,4 +569,20 @@ impl<'a> PdfPageTextChar<'a> {
             _ => Err(PdfiumError::PdfiumLibraryInternalError(PdfiumInternalError::Unknown)),
         }
     }
+
+    /// Returns `true` if this character has an invalid unicode mapping in the PDF font.
+    ///
+    /// This indicates the font's ToUnicode CMap is broken or missing for this glyph,
+    /// meaning the extracted text for this character is unreliable (tofu/garbage).
+    #[inline]
+    pub fn has_unicode_map_error(&self) -> Result<bool, PdfiumError> {
+        match self
+            .bindings()
+            .FPDFText_HasUnicodeMapError(self.text_page_handle(), self.index)
+        {
+            1 => Ok(true),
+            0 => Ok(false),
+            _ => Err(PdfiumError::PdfiumLibraryInternalError(PdfiumInternalError::Unknown)),
+        }
+    }
 }

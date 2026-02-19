@@ -86,7 +86,15 @@ impl DocumentExtractor for PdfExtractor {
 
         #[cfg(feature = "pdf")]
         #[allow(unused_variables)]
-        let (mut pdf_metadata, native_text, tables, page_contents, boundaries, pre_rendered_markdown) = {
+        let (
+            mut pdf_metadata,
+            native_text,
+            tables,
+            page_contents,
+            boundaries,
+            pre_rendered_markdown,
+            has_font_encoding_issues,
+        ) = {
             #[cfg(target_arch = "wasm32")]
             {
                 let pdfium = crate::pdf::bindings::bind_pdfium(PdfError::MetadataExtractionFailed, "initialize Pdfium")
@@ -139,9 +147,16 @@ impl DocumentExtractor for PdfExtractor {
                             }
                         };
 
-                        let (pdf_metadata, native_text, tables, page_contents, boundaries, pre_rendered_markdown) =
-                            extract_all_from_document(&document, &config_owned)
-                                .map_err(|e| PdfError::ExtractionFailed(e.to_string()))?;
+                        let (
+                            pdf_metadata,
+                            native_text,
+                            tables,
+                            page_contents,
+                            boundaries,
+                            pre_rendered_markdown,
+                            has_font_encoding_issues,
+                        ) = extract_all_from_document(&document, &config_owned)
+                            .map_err(|e| PdfError::ExtractionFailed(e.to_string()))?;
 
                         if let Some(page_cfg) = config_owned.pages.as_ref()
                             && page_cfg.extract_pages
@@ -160,6 +175,7 @@ impl DocumentExtractor for PdfExtractor {
                             page_contents,
                             boundaries,
                             pre_rendered_markdown,
+                            has_font_encoding_issues,
                         ))
                     })
                     .await
@@ -219,9 +235,10 @@ impl DocumentExtractor for PdfExtractor {
 
             if std::env::var("KREUZBERG_DEBUG_OCR").is_ok() {
                 eprintln!(
-                    "[kreuzberg::pdf::ocr] fallback={} non_whitespace={} alnum={} meaningful_words={} \
+                    "[kreuzberg::pdf::ocr] fallback={} font_encoding_issues={} non_whitespace={} alnum={} meaningful_words={} \
                      avg_non_whitespace={:.2} avg_alnum={:.2} alnum_ratio={:.3}",
                     decision.fallback,
+                    has_font_encoding_issues,
                     decision.stats.non_whitespace,
                     decision.stats.alnum,
                     decision.stats.meaningful_words,
@@ -231,7 +248,7 @@ impl DocumentExtractor for PdfExtractor {
                 );
             }
 
-            if decision.fallback {
+            if decision.fallback || has_font_encoding_issues {
                 (extract_with_ocr(content, config).await?, true)
             } else {
                 (native_text, false)

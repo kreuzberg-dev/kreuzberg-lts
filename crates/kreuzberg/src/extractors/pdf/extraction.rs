@@ -19,6 +19,7 @@ pub(crate) type PdfExtractionPhaseResult = (
     Option<Vec<PageContent>>,
     Option<Vec<PageBoundary>>,
     Option<String>, // pre-rendered markdown (when output_format == Markdown)
+    bool,           // has_font_encoding_issues (unicode map errors detected)
 );
 
 /// Extract text, metadata, and tables from a PDF document using a single shared instance.
@@ -80,6 +81,8 @@ pub(crate) fn extract_all_from_document(
         None
     };
 
+    let has_font_encoding_issues = sample_unicode_map_errors(document);
+
     Ok((
         pdf_metadata,
         native_text,
@@ -87,7 +90,60 @@ pub(crate) fn extract_all_from_document(
         page_contents,
         boundaries,
         pre_rendered_markdown,
+        has_font_encoding_issues,
     ))
+}
+
+/// Sample characters from each page to detect broken unicode mappings.
+///
+/// Returns `true` if any page has >30% of sampled characters with unicode map errors,
+/// indicating the font's ToUnicode CMap is broken and OCR should be used instead.
+///
+/// Samples up to 50 non-generated characters per page for efficiency.
+#[cfg(feature = "pdf")]
+fn sample_unicode_map_errors(document: &PdfDocument) -> bool {
+    const MAX_SAMPLES_PER_PAGE: usize = 50;
+    const ERROR_RATIO_THRESHOLD: f32 = 0.3;
+
+    for page in document.pages().iter() {
+        let text = match page.text() {
+            Ok(t) => t,
+            Err(_) => continue,
+        };
+
+        let char_count = text.chars().len();
+        if char_count == 0 {
+            continue;
+        }
+
+        let mut sampled = 0usize;
+        let mut errors = 0usize;
+        let chars = text.chars();
+
+        // Sample characters evenly across the page
+        let step = (char_count / MAX_SAMPLES_PER_PAGE).max(1);
+        for i in (0..char_count).step_by(step) {
+            if let Ok(ch) = chars.get(i) {
+                // Skip generated characters (spacing/justification inserted by pdfium)
+                if ch.is_generated().unwrap_or(false) {
+                    continue;
+                }
+                sampled += 1;
+                if ch.has_unicode_map_error().unwrap_or(false) {
+                    errors += 1;
+                }
+            }
+            if sampled >= MAX_SAMPLES_PER_PAGE {
+                break;
+            }
+        }
+
+        if sampled >= 5 && (errors as f32 / sampled as f32) > ERROR_RATIO_THRESHOLD {
+            return true;
+        }
+    }
+
+    false
 }
 
 /// Extract tables from PDF document using native text positions.

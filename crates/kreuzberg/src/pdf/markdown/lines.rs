@@ -25,22 +25,22 @@ pub(super) fn segments_to_lines(segments: Vec<SegmentData>) -> Vec<PdfLine> {
     });
 
     let mut lines: Vec<PdfLine> = Vec::new();
-    let mut current_segments: Vec<SegmentData> = vec![sorted.remove(0)];
+    let first = sorted.remove(0);
+    // Fix tolerance to the first segment's font size so it doesn't shrink
+    // as smaller segments (subscripts, superscripts) are added to the line.
+    let mut line_tolerance_fs = first.font_size.max(1.0);
+    let mut current_segments: Vec<SegmentData> = vec![first];
 
     for seg in sorted {
         let current_baseline =
             current_segments.iter().map(|s| s.baseline_y).sum::<f32>() / current_segments.len() as f32;
-        let min_fs = current_segments
-            .iter()
-            .map(|s| s.font_size)
-            .fold(f32::INFINITY, f32::min)
-            .min(seg.font_size)
-            .max(1.0);
 
-        if (seg.baseline_y - current_baseline).abs() < BASELINE_Y_TOLERANCE_FRACTION * min_fs {
+        if (seg.baseline_y - current_baseline).abs() < BASELINE_Y_TOLERANCE_FRACTION * line_tolerance_fs {
             current_segments.push(seg);
         } else {
             lines.push(finalize_line(current_segments));
+            // Reset tolerance to the new line's first segment
+            line_tolerance_fs = seg.font_size.max(1.0);
             current_segments = vec![seg];
         }
     }

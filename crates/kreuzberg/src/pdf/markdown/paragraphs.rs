@@ -30,7 +30,10 @@ pub(super) fn lines_to_paragraphs(lines: Vec<PdfLine>) -> Vec<PdfParagraph> {
         avg_font_size
     } else {
         spacings.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
-        spacings[0]
+        // Use 25th percentile (Q1) for robustness against outlier-tight spacings
+        // from superscripts/subscripts, while staying conservative enough to work
+        // with small sample sizes (unlike median which can pick a gap spacing).
+        spacings[spacings.len() / 4]
     };
 
     let paragraph_gap_threshold = base_spacing * PARAGRAPH_GAP_MULTIPLIER;
@@ -175,19 +178,46 @@ fn ends_with_sentence_terminator(para: &PdfParagraph) -> bool {
 /// Check if text looks like a list item prefix.
 fn is_list_prefix(text: &str) -> bool {
     let trimmed = text.trim();
-    if trimmed == "-" || trimmed == "*" || trimmed == "\u{2022}" {
+    // Bullet characters: hyphen, asterisk, bullet, en dash, em dash
+    if matches!(trimmed, "-" | "*" | "\u{2022}" | "\u{2013}" | "\u{2014}") {
         return true;
     }
     let bytes = trimmed.as_bytes();
     if bytes.is_empty() {
         return false;
     }
+    // Numbered: 1. 2) etc.
     let digit_end = bytes.iter().position(|&b| !b.is_ascii_digit()).unwrap_or(bytes.len());
     if digit_end > 0 && digit_end < bytes.len() {
         let suffix = bytes[digit_end];
-        return suffix == b'.' || suffix == b')';
+        if suffix == b'.' || suffix == b')' {
+            return true;
+        }
+    }
+    // Alphabetic: a. b) A. B) (single letter + period/paren)
+    if bytes.len() == 2 && bytes[0].is_ascii_alphabetic() && (bytes[1] == b'.' || bytes[1] == b')') {
+        return true;
+    }
+    // Roman numerals: i. ii. iii. iv. v. vi. I. II. III. IV. V. VI. etc.
+    if trimmed.ends_with('.') || trimmed.ends_with(')') {
+        let prefix = &trimmed[..trimmed.len() - 1];
+        if is_roman_numeral(prefix) {
+            return true;
+        }
     }
     false
+}
+
+/// Check if text is a roman numeral (i-xii or I-XII range).
+fn is_roman_numeral(s: &str) -> bool {
+    if s.is_empty() {
+        return false;
+    }
+    let lower = s.to_ascii_lowercase();
+    matches!(
+        lower.as_str(),
+        "i" | "ii" | "iii" | "iv" | "v" | "vi" | "vii" | "viii" | "ix" | "x" | "xi" | "xii"
+    )
 }
 
 #[cfg(test)]

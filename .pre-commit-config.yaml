@@ -57,7 +57,18 @@ repos:
     hooks:
       - id: clippy
         files: ^(crates|tools|e2e/rust)/.*\.rs$|^(Cargo\.toml|Cargo\.lock|crates/.*/Cargo\.toml|tools/.*/Cargo\.toml|e2e/rust/Cargo\.toml|packages/ruby/ext/kreuzberg_rb/native/Cargo\.toml)$
-        args: ["--fix", "--allow-staged", "--workspace", "--all-features", "--all-targets", "--", "-D", "warnings"]
+        args:
+          [
+            "--fix",
+            "--allow-dirty",
+            "--allow-staged",
+            "--workspace",
+            "--all-features",
+            "--all-targets",
+            "--",
+            "-D",
+            "warnings",
+          ]
 
   - repo: https://github.com/EmbarkStudios/cargo-deny
     rev: 0.19.0
