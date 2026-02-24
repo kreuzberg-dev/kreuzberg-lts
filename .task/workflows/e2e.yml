@@ -15,6 +15,7 @@ tasks:
       - task: ruby:e2e:generate
       - task: php:e2e:generate
       - task: elixir:e2e:generate
+      - task: r:e2e:generate
 
   test:all:
     desc: Run all E2E tests across all supported languages
@@ -29,6 +30,7 @@ tasks:
       - task: wasm:e2e:workers:test
       - task: ruby:e2e:test
       - task: php:e2e:test
+      - task: r:e2e:test
 
   verify:all:
     desc: Full E2E pipeline - generate, lint, and test all suites
@@ -50,6 +52,7 @@ tasks:
       - task: wasm:e2e:workers:lint
       - task: ruby:e2e:lint
       - task: php:e2e:lint
+      - task: r:e2e:lint
 
   rust:generate:
     desc: Generate Rust E2E tests from fixtures
@@ -305,3 +308,25 @@ tasks:
       - task: ruby:e2e:generate
       - task: ruby:e2e:lint
       - task: ruby:e2e:test
+
+  r:generate:
+    desc: Generate R E2E tests from fixtures
+    cmds:
+      - task: r:e2e:generate
+
+  r:lint:
+    desc: Lint R E2E code
+    cmds:
+      - task: r:e2e:lint
+
+  r:test:
+    desc: Run R E2E tests
+    cmds:
+      - task: r:e2e:test
+
+  r:verify:
+    desc: Full R E2E pipeline (generate + lint + test)
+    cmds:
+      - task: r:e2e:generate
+      - task: r:e2e:lint
+      - task: r:e2e:test

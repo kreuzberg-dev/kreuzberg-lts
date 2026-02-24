@@ -15,6 +15,7 @@ tasks:
       - task: ruby:build
       - task: php:build
       - task: elixir:build
+      - task: r:build
 
   all:dev:
     desc: Build all bindings in debug mode
@@ -30,6 +31,7 @@ tasks:
       - task: ruby:build:dev
       - task: php:build:dev
       - task: elixir:build:dev
+      - task: r:build:dev
 
   all:release:
     desc: Build all bindings in release mode (optimized)
@@ -45,6 +47,7 @@ tasks:
       - task: ruby:build:release
       - task: php:build:release
       - task: elixir:build:release
+      - task: r:build:release
 
   all:ci:
     desc: Build all bindings in CI mode
@@ -60,6 +63,7 @@ tasks:
       - task: ruby:build:ci
       - task: php:build:ci
       - task: elixir:build:ci
+      - task: r:build:ci
 
   cli-only:
     desc: Build Rust CLI only

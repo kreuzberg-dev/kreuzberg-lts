@@ -14,6 +14,7 @@ tasks:
       - task: ruby:test
       - task: php:test
       - task: elixir:test
+      - task: r:test
 
   all:parallel:
     desc: Run all tests in parallel (using deps)
@@ -28,6 +29,7 @@ tasks:
       - task: ruby:test
       - task: php:test
       - task: elixir:test
+      - task: r:test
 
   all:ci:
     desc: Run all tests in CI mode (with extra diagnostics)
@@ -42,6 +44,7 @@ tasks:
       - task: ruby:test
       - task: php:test
       - task: elixir:test:ci
+      - task: r:test:ci
 
   quick:
     desc: Run quick test subset (Rust + Python only)

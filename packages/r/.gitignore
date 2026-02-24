@@ -1,0 +1,9 @@
+src/Makevars
+src/*.o
+src/*.so
+src/*.dll
+src/rust/target
+src/rust/vendor
+vendor/
+*.Rproj
+.Rproj.user

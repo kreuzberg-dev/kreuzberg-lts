@@ -56,7 +56,7 @@ repos:
     rev: v1.0
     hooks:
       - id: clippy
-        files: ^(crates|tools|e2e/rust)/.*\.rs$|^(Cargo\.toml|Cargo\.lock|crates/.*/Cargo\.toml|tools/.*/Cargo\.toml|e2e/rust/Cargo\.toml|packages/ruby/ext/kreuzberg_rb/native/Cargo\.toml)$
+        files: ^(crates|tools|e2e/rust)/.*\.rs$|^(Cargo\.toml|Cargo\.lock|crates/.*/Cargo\.toml|tools/.*/Cargo\.toml|e2e/rust/Cargo\.toml|packages/ruby/ext/kreuzberg_rb/native/Cargo\.toml|packages/r/src/rust/Cargo\.toml)$
         args:
           [
             "--fix",
@@ -84,7 +84,7 @@ repos:
     hooks:
       - id: cargo-deny
         args: ["check"]
-        files: ^(Cargo\.toml|Cargo\.lock|crates/.*/Cargo\.toml|tools/.*/Cargo\.toml|e2e/rust/Cargo\.toml|packages/ruby/ext/kreuzberg_rb/native/Cargo\.toml|deny\.toml)$
+        files: ^(Cargo\.toml|Cargo\.lock|crates/.*/Cargo\.toml|tools/.*/Cargo\.toml|e2e/rust/Cargo\.toml|packages/ruby/ext/kreuzberg_rb/native/Cargo\.toml|packages/r/src/rust/Cargo\.toml|deny\.toml)$
 
   # JavaScript/TypeScript/JSON/CSS: biome (formatting + linting with autofixes)
   - repo: https://github.com/biomejs/pre-commit
@@ -218,6 +218,25 @@ repos:
         entry: task php:lint:check
         language: system
         files: ^packages/php/.*\.php$
+        pass_filenames: false
+        require_serial: true
+        stages: [commit]
+
+      # R - prek doesn't support R yet
+      - id: r-format-check
+        name: Check R formatting (styler)
+        entry: task r:format:check
+        language: system
+        files: ^packages/r/R/.*\.R$
+        pass_filenames: false
+        require_serial: true
+        stages: [commit]
+
+      - id: r-lint-check
+        name: Check R linting (lintr)
+        entry: task r:lint:check
+        language: system
+        files: ^packages/r/R/.*\.R$
         pass_filenames: false
         require_serial: true
         stages: [commit]

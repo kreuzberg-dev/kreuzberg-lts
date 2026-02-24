@@ -14,6 +14,7 @@ tasks:
       - task: ruby:lint
       - task: php:lint
       - task: elixir:lint
+      - task: r:lint
       - task: typescript:typecheck
 
   check:
@@ -29,6 +30,7 @@ tasks:
       - task: ruby:lint:check
       - task: php:lint:check
       - task: elixir:lint:check
+      - task: r:lint:check
       - task: typescript:typecheck:check
 
   core:
@@ -202,6 +204,16 @@ tasks:
     desc: Check PHP code linting without modifications
     cmds:
       - task: php:lint:check
+
+  r:
+    desc: Lint R code with auto-fix
+    cmds:
+      - task: r:lint
+
+  r:check:
+    desc: Check R code linting without modifications
+    cmds:
+      - task: r:lint:check
 
   typescript:
     desc: Run TypeScript type checking

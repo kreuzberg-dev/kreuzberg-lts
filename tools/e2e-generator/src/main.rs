@@ -5,6 +5,7 @@ mod go;
 mod java;
 mod php;
 mod python;
+mod r;
 mod ruby;
 mod rust;
 mod typescript;
@@ -56,6 +57,7 @@ enum Language {
     Csharp,
     Php,
     Elixir,
+    R,
     WasmDeno,
     WasmWorkers,
 }
@@ -102,6 +104,10 @@ fn main() -> Result<()> {
                 Language::Elixir => {
                     elixir::generate(&fixtures, output.as_path())?;
                     run_mix_format(&output.join("elixir"));
+                }
+                Language::R => {
+                    r::generate(&fixtures, output.as_path())?;
+                    run_styler_format(&output.join("r"));
                 }
                 Language::WasmDeno => {
                     wasm_deno::generate(&fixtures, output.as_path())?;
@@ -263,6 +269,17 @@ fn run_mix_format(dir: &Utf8Path) {
         Ok(s) if s.success() => {}
         Ok(_) => eprintln!("Warning: mix format returned non-zero for {dir}"),
         Err(e) => eprintln!("Warning: failed to run mix format: {e}"),
+    }
+}
+
+fn run_styler_format(dir: &Utf8Path) {
+    let status = std::process::Command::new("Rscript")
+        .args(["-e", &format!("styler::style_dir('{}')", dir.as_str())])
+        .status();
+    match status {
+        Ok(s) if s.success() => {}
+        Ok(_) => eprintln!("Warning: styler::style_dir returned non-zero for {dir}"),
+        Err(e) => eprintln!("Warning: failed to run Rscript styler: {e}"),
     }
 }
 

@@ -1,0 +1,72 @@
+[workspace]
+
+[workspace.dependencies]
+bytes = { version = "1", features = ["serde"] }
+serde = { version = "1.0.228", features = ["derive"] }
+serde_json = { version = "1.0.149" }
+tokio = { version = "1.49.0", features = [
+    "rt",
+    "rt-multi-thread",
+    "macros",
+    "sync",
+    "process",
+    "fs",
+    "time",
+    "io-util",
+] }
+thiserror = "2.0.18"
+anyhow = "1.0"
+
+[workspace.lints.clippy]
+collapsible_if = "allow"
+
+[package]
+name = "kreuzberg-r"
+version = "4.3.8"
+edition = "2024"
+rust-version = "1.91"
+authors = ["Na'aman Hirschfeld <nhirschfeld@gmail.com>"]
+license = "MIT"
+repository = "https://github.com/kreuzberg-dev/kreuzberg"
+homepage = "https://kreuzberg.dev"
+description = "R bindings (extendr) for Kreuzberg - high-performance document intelligence framework"
+
+[lints]
+workspace = true
+
+[lib]
+name = "kreuzberg_r"
+crate-type = ["staticlib", "lib"]
+
+[features]
+default = ["embeddings"]
+embeddings = ["kreuzberg/embeddings"]
+
+[dependencies]
+kreuzberg = { path = "../../../../crates/kreuzberg", default-features = false, features = [
+    "pdf",
+    "excel",
+    "office",
+    "email",
+    "html",
+    "xml",
+    "archives",
+    "ocr",
+    "language-detection",
+    "chunking",
+    "embeddings",
+    "quality",
+    "keywords",
+    "api",
+    "mcp",
+    "otel",
+    "bundled-pdfium",
+    "tokio-runtime",
+] }
+kreuzberg-ffi = { path = "../../../../crates/kreuzberg-ffi" }
+extendr-api = "0.8"
+serde_json = { workspace = true }
+tokio = { workspace = true }
+
+[dev-dependencies]
+pretty_assertions = "1.4"
