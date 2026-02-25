@@ -33,6 +33,9 @@
   <a href="https://rubygems.org/gems/kreuzberg">
     <img src="https://img.shields.io/gem/v/kreuzberg?label=Ruby&color=007ec6" alt="Ruby">
   </a>
+  <a href="https://kreuzberg-dev.r-universe.dev/kreuzberg">
+    <img src="https://img.shields.io/badge/R-kreuzberg-007ec6" alt="R">
+  </a>
   <a href="https://github.com/kreuzberg-dev/kreuzberg/pkgs/container/kreuzberg">
     <img src="https://img.shields.io/badge/Docker-007ec6?logo=docker&logoColor=white" alt="Docker">
   </a>
@@ -77,6 +80,7 @@ Each language binding provides comprehensive documentation with examples and bes
 - **[Ruby](https://github.com/kreuzberg-dev/kreuzberg/tree/main/packages/ruby)** – RubyGems package, idiomatic Ruby API, native bindings
 - **[PHP](https://github.com/kreuzberg-dev/kreuzberg/tree/main/packages/php)** – Composer package, modern PHP 8.4+ support, type-safe API, async extraction
 - **[Elixir](https://github.com/kreuzberg-dev/kreuzberg/tree/main/packages/elixir)** – Hex package, OTP integration, concurrent processing
+- **[R](https://github.com/kreuzberg-dev/kreuzberg/tree/main/packages/r)** – r-universe package, idiomatic R API, extendr bindings
 
 **JavaScript/TypeScript:**
 - **[@kreuzberg/node](https://github.com/kreuzberg-dev/kreuzberg/tree/main/crates/kreuzberg-node)** – Native NAPI-RS bindings for Node.js/Bun, fastest performance
@@ -108,6 +112,7 @@ Complete architecture coverage across all language bindings:
 | Node.js | ✅ | ✅ | ✅ | ✅ |
 | WASM | ✅ | ✅ | ✅ | ✅ |
 | Ruby | ✅ | ✅ | ✅ | - |
+| R | ✅ | ✅ | ✅ | ✅ |
 | Elixir | ✅ | ✅ | ✅ | ✅ |
 | Go | ✅ | ✅ | ✅ | ✅ |
 | Java | ✅ | ✅ | ✅ | ✅ |

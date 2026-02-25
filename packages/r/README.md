@@ -1,28 +1,66 @@
-<div align="center">
-
 # kreuzberg
 
-[![Docs](https://img.shields.io/badge/docs-kreuzberg.dev-blue)](https://kreuzberg.dev)
-[![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
-[![R](https://img.shields.io/badge/R-%3E%3D%204.2-blue)](https://cran.r-project.org/)
+<div align="center" style="display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin: 20px 0;">
+  <!-- Language Bindings -->
+  <a href="https://crates.io/crates/kreuzberg">
+    <img src="https://img.shields.io/crates/v/kreuzberg?label=Rust&color=007ec6" alt="Rust">
+  </a>
+  <a href="https://hex.pm/packages/kreuzberg">
+    <img src="https://img.shields.io/hexpm/v/kreuzberg?label=Elixir&color=007ec6" alt="Elixir">
+  </a>
+  <a href="https://pypi.org/project/kreuzberg/">
+    <img src="https://img.shields.io/pypi/v/kreuzberg?label=Python&color=007ec6" alt="Python">
+  </a>
+  <a href="https://www.npmjs.com/package/@kreuzberg/node">
+    <img src="https://img.shields.io/npm/v/@kreuzberg/node?label=Node.js&color=007ec6" alt="Node.js">
+  </a>
+  <a href="https://www.npmjs.com/package/@kreuzberg/wasm">
+    <img src="https://img.shields.io/npm/v/@kreuzberg/wasm?label=WASM&color=007ec6" alt="WASM">
+  </a>
 
-**Extract text, tables, images, and metadata from 75+ file formats including PDF, Office documents, and images. R bindings with idiomatic R API and native performance via extendr.**
+  <a href="https://central.sonatype.com/artifact/dev.kreuzberg/kreuzberg">
+    <img src="https://img.shields.io/maven-central/v/dev.kreuzberg/kreuzberg?label=Java&color=007ec6" alt="Java">
+  </a>
+  <a href="https://www.nuget.org/packages/Kreuzberg/">
+    <img src="https://img.shields.io/nuget/v/Kreuzberg?label=C%23&color=007ec6" alt="C#">
+  </a>
+  <a href="https://packagist.org/packages/kreuzberg/kreuzberg">
+    <img src="https://img.shields.io/packagist/v/kreuzberg/kreuzberg?label=PHP&color=007ec6" alt="PHP">
+  </a>
+  <a href="https://rubygems.org/gems/kreuzberg">
+    <img src="https://img.shields.io/gem/v/kreuzberg?label=Ruby&color=007ec6" alt="Ruby">
+  </a>
+  <a href="https://kreuzberg-dev.r-universe.dev/kreuzberg">
+    <img src="https://img.shields.io/badge/R-kreuzberg-007ec6" alt="R">
+  </a>
 
-[Documentation](https://kreuzberg.dev) · [API Reference](https://kreuzberg.dev/reference/api-r/) · [Discord](https://discord.gg/kreuzberg)
-
+  <!-- Project Info -->
+  <a href="https://github.com/kreuzberg-dev/kreuzberg/blob/main/LICENSE">
+    <img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License">
+  </a>
+  <a href="https://docs.kreuzberg.dev">
+    <img src="https://img.shields.io/badge/docs-kreuzberg.dev-blue" alt="Documentation">
+  </a>
 </div>
+
+<img width="3384" height="573" alt="Linkedin- Banner" src="https://github.com/user-attachments/assets/1b6c6ad7-3b6d-4171-b1c9-f2026cc9deb8" />
+
+<div align="center" style="margin-top: 20px;">
+  <a href="https://discord.gg/xt9WY3GnKR">
+      <img height="22" src="https://img.shields.io/badge/Discord-Join%20our%20community-7289da?logo=discord&logoColor=white" alt="Discord">
+  </a>
+</div>
+
+Extract text, tables, images, and metadata from 75+ file formats including PDF, Office documents, and images. R bindings with idiomatic R API and native performance via extendr.
 
 ## Installation
 
 ```r
-# Install from source (requires Rust toolchain)
-# install.packages("kreuzberg")
+# Install from r-universe (recommended)
+install.packages("kreuzberg", repos = "https://kreuzberg-dev.r-universe.dev")
 
 # Or install from GitHub
 # remotes::install_github("kreuzberg-dev/kreuzberg", subdir = "packages/r")
-
-# Or install from r-universe
-# install.packages("kreuzberg", repos = "https://kreuzberg-dev.r-universe.dev")
 ```
 
 ### System Requirements
