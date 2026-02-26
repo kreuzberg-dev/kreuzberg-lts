@@ -26,7 +26,10 @@ on:
       - 'packages/wasm/**'
       - 'tools/benchmark-harness/**'
       - 'tools/e2e-generator/**'
+      - 'tools/snippet-runner/**'
       - 'scripts/**'
+      - 'docs/snippets/**'
+      - 'docs/reference/**'
       - '.github/actions/**'
       - '.cargo/config.toml'
       - '.pre-commit-config.yaml'
@@ -58,7 +61,10 @@ on:
       - 'packages/wasm/**'
       - 'tools/benchmark-harness/**'
       - 'tools/e2e-generator/**'
+      - 'tools/snippet-runner/**'
       - 'scripts/**'
+      - 'docs/snippets/**'
+      - 'docs/reference/**'
       - '.github/actions/**'
       - '.cargo/config.toml'
       - '.pre-commit-config.yaml'
@@ -219,6 +225,12 @@ jobs:
         uses: j178/prek-action@v1.1.1
         with:
           extra-args: --all-files
+
+      - name: Build snippet-runner
+        run: cargo build --release -p snippet-runner
+
+      - name: Validate documentation snippets
+        run: ./target/release/snippet-runner validate --snippets docs/snippets --reference docs/reference --level syntax
 
       - name: Verify API Parity
         run: python scripts/verify_api_parity.py
