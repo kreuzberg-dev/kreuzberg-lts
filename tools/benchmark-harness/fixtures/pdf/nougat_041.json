@@ -1,0 +1,17 @@
+{
+	"document": "../../../../../quality-benchmarks/data/nougat/nougat_041.pdf",
+	"file_type": "pdf",
+	"file_size": 733602,
+	"expected_frameworks": [
+		"kreuzberg"
+	],
+	"metadata": {
+		"description": "Document from quality-benchmarks nougat dataset",
+		"source": "quality-benchmarks/nougat",
+		"size_category": "medium"
+	},
+	"ground_truth": {
+		"text_file": "../../../../test_documents/ground_truth/pdf/nougat_041.txt",
+		"source": "pixparse"
+	}
+}
