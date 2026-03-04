@@ -35,6 +35,8 @@ module Kreuzberg
   autoload :DocumentAnnotation, 'kreuzberg/types'
   autoload :DocumentNode, 'kreuzberg/types'
   autoload :DocumentStructure, 'kreuzberg/types'
+  autoload :PdfAnnotation, 'kreuzberg/types'
+  autoload :PdfAnnotationBoundingBox, 'kreuzberg/types'
 
   ExtractionConfig = Config::Extraction
   PageConfig = Config::PageConfig

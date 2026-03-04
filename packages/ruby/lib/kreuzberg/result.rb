@@ -728,10 +728,10 @@ module Kreuzberg
       return nil if bbox_data.nil?
 
       PdfAnnotationBoundingBox.new(
-        left: bbox_data['left']&.to_f,
-        top: bbox_data['top']&.to_f,
-        right: bbox_data['right']&.to_f,
-        bottom: bbox_data['bottom']&.to_f
+        left: (bbox_data['left'] || bbox_data['x0'])&.to_f,
+        top: (bbox_data['top'] || bbox_data['y0'])&.to_f,
+        right: (bbox_data['right'] || bbox_data['x1'])&.to_f,
+        bottom: (bbox_data['bottom'] || bbox_data['y1'])&.to_f
       )
     end
   end
