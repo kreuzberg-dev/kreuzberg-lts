@@ -899,6 +899,11 @@ pub struct ExtractionResult {
     pub djot_content: Option<DjotContent>,
     pub ocr_elements: Option<Vec<OcrElement>>,
     pub document: Option<DocumentStructure>,
+    #[cfg(any(feature = "keywords-yake", feature = "keywords-rake"))]
+    pub extracted_keywords: Option<Vec<kreuzberg::keywords::Keyword>>,
+    pub quality_score: Option<f64>,
+    pub processing_warnings: Vec<ProcessingWarning>,
+    pub annotations: Option<Vec<PdfAnnotation>>,
 }
 ```
 
@@ -916,6 +921,10 @@ pub struct ExtractionResult {
 - `djot_content` (Option<DjotContent>): Rich Djot structure when extracting Djot documents
 - `ocr_elements` (Option<Vec<OcrElement>>): OCR elements with bounding geometry and confidence (when element extraction enabled)
 - `document` (Option<DocumentStructure>): Hierarchical document tree when `include_document_structure` is true
+- `extracted_keywords` (Option<Vec<kreuzberg::keywords::Keyword>>): Extracted keywords (requires `keywords-yake` or `keywords-rake` feature)
+- `quality_score` (Option<f64>): Document quality score (0.0 to 1.0) indicating text quality
+- `processing_warnings` (Vec<ProcessingWarning>): Non-fatal pipeline warnings
+- `annotations` (Option<Vec<PdfAnnotation>>): PDF annotations (highlights, stamps, text notes)
 
 **Example:**
 
@@ -983,6 +992,7 @@ pub struct ExtractedImage {
     pub is_mask: bool,
     pub description: Option<String>,
     pub ocr_result: Option<Box<ExtractionResult>>,
+    pub bounding_box: Option<BoundingBox>,
 }
 ```
 
@@ -998,6 +1008,7 @@ pub struct ExtractedImage {
 - `is_mask` (bool): Whether this image is a mask. Default: false
 - `description` (Option<String>): Optional description
 - `ocr_result` (Option<Box<ExtractionResult>>): Nested OCR result if image was OCRed
+- `bounding_box` (Option<BoundingBox>): Bounding box of the image on the page (from PDF coordinates)
 
 #### pages
 
@@ -1113,6 +1124,14 @@ pub struct Metadata {
     pub json_schema: Option<serde_json::Value>,
     pub error: Option<ErrorMetadata>,
     pub extraction_duration_ms: Option<u64>,
+    pub category: Option<String>,
+    pub tags: Option<Vec<String>>,
+    pub document_version: Option<String>,
+    pub abstract_text: Option<String>,
+    pub output_format: Option<String>,
+    
+    /// Deprecated: Prefer using typed fields instead of dynamic access. 
+    /// This index signature may be removed in a future version.
     pub additional: HashMap<String, serde_json::Value>,
 }
 ```
@@ -1142,6 +1161,11 @@ if let Some(title) = &metadata.title {
 - `modified_at`: Document modification date
 - `created_by`: Document creator
 - `modified_by`: Document modifier
+- `category`: Document category (from frontmatter or classification)
+- `tags`: Document tags (from frontmatter)
+- `document_version`: Document version string (from frontmatter)
+- `abstract_text`: Abstract or summary text (from frontmatter)
+- `output_format`: Output format identifier (e.g., "markdown", "html", "text")
 
 See the Types Reference for complete metadata field documentation.
 
