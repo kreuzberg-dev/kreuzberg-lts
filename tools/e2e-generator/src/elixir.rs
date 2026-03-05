@@ -469,8 +469,16 @@ defmodule E2E.Helpers do
       if is_boolean(opts[:has_groups]) do
         has_group_nodes =
           Enum.any?(nodes, fn node ->
-            content = node[:content] || node["content"]
-            node_type = if content, do: content[:node_type] || content["node_type"], else: node[:node_type] || node["node_type"]
+            content = Map.get(node, :content) || Map.get(node, "content")
+
+            node_type =
+              if content do
+                (if is_struct(content), do: Map.get(content, :node_type), else: nil) ||
+                  Map.get(content, :node_type) || Map.get(content, "node_type")
+              else
+                Map.get(node, :node_type) || Map.get(node, "node_type")
+              end
+
             node_type == "group"
           end)
 

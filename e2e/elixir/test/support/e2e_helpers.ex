@@ -485,7 +485,7 @@ defmodule E2E.Helpers do
 
             node_type =
               if content do
-                (if is_struct(content), do: Map.get(content, :node_type), else: nil) ||
+                if(is_struct(content), do: Map.get(content, :node_type), else: nil) ||
                   Map.get(content, :node_type) || Map.get(content, "node_type")
               else
                 Map.get(node, :node_type) || Map.get(node, "node_type")
