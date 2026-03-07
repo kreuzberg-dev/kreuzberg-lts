@@ -39,4 +39,6 @@ presets:
     - claude
     - gemini
     - codex
+compression:
+  level: moderate
 version: "3.0"
