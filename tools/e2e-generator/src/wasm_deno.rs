@@ -541,7 +541,7 @@ export const assertions = {
                 assertEquals(nodes.length >= minNodeCount, true, `Expected at least ${minNodeCount} nodes, got ${nodes.length}`);
             }
             if (nodeTypesInclude && nodeTypesInclude.length > 0) {
-                const foundTypes = new Set(nodes.map((n) => ((n as PlainRecord).content as PlainRecord)?.node_type ?? (n as PlainRecord).node_type));
+                const foundTypes = new Set(nodes.map((n) => ((n as PlainRecord).content as PlainRecord)?.nodeType ?? (n as PlainRecord).nodeType));
                 for (const expected of nodeTypesInclude) {
                     assertEquals(
                         [...foundTypes].some((t) => typeof t === "string" && t.toLowerCase() === expected.toLowerCase()),
@@ -551,7 +551,7 @@ export const assertions = {
                 }
             }
             if (typeof hasGroups === "boolean") {
-                const hasGroupNodes = nodes.some((n) => ((n as PlainRecord).content as PlainRecord)?.node_type === "group" || (n as PlainRecord).node_type === "group");
+                const hasGroupNodes = nodes.some((n) => ((n as PlainRecord).content as PlainRecord)?.nodeType === "group" || (n as PlainRecord).nodeType === "group");
                 assertEquals(hasGroupNodes, hasGroups, `Expected hasGroups=${hasGroups} but got ${hasGroupNodes}`);
             }
         } else {
