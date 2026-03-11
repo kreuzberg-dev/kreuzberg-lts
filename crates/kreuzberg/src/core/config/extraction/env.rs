@@ -205,6 +205,25 @@ impl ExtractionConfig {
             }
         }
 
+        // KREUZBERG_CHUNKING_TOKENIZER override
+        #[cfg(feature = "chunking-tokenizers")]
+        if let Ok(model) = std::env::var("KREUZBERG_CHUNKING_TOKENIZER") {
+            if model.is_empty() {
+                return Err(KreuzbergError::Validation {
+                    message: "KREUZBERG_CHUNKING_TOKENIZER must not be empty".to_string(),
+                    source: None,
+                });
+            }
+
+            if self.chunking.is_none() {
+                self.chunking = Some(ChunkingConfig::default());
+            }
+
+            if let Some(ref mut chunking) = self.chunking {
+                chunking.sizing = crate::core::config::processing::ChunkSizing::Tokenizer { model, cache_dir: None };
+            }
+        }
+
         Ok(())
     }
 }
