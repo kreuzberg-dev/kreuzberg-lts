@@ -676,6 +676,7 @@ pub struct ChunkingConfig {
 impl ChunkingConfig {
     #[new]
     #[pyo3(signature = (max_chars=None, max_overlap=None, embedding=None, preset=None, chunker_type=None, sizing_type=None, sizing_model=None, sizing_cache_dir=None))]
+    #[allow(clippy::too_many_arguments)]
     fn new(
         max_chars: Option<usize>,
         max_overlap: Option<usize>,
