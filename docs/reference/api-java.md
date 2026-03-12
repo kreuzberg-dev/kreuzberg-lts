@@ -364,20 +364,24 @@ Main extraction configuration using builder pattern.
 ```java title="ExtractionConfig.java"
 // Build extraction configuration with all available options
 ExtractionConfig config = ExtractionConfig.builder()
-    .useCache(true)                                    // Enable caching (default: true)
+    .chunking(ChunkingConfig)                          // Text chunking configuration
     .enableQualityProcessing(false)                    // Enable quality processing (default: false)
     .forceOcr(false)                                   // Force OCR on all pages (default: false)
-    .ocr(OcrConfig)                                    // OCR configuration
-    .chunking(ChunkingConfig)                          // Text chunking configuration
-    .languageDetection(LanguageDetectionConfig)        // Language detection settings
-    .pdfOptions(PdfConfig)                             // PDF-specific options
+    .htmlOptions(HtmlOptions)                          // HTML conversion options
     .imageExtraction(ImageExtractionConfig)            // Image extraction settings
     .imagePreprocessing(ImagePreprocessingConfig)      // Image preprocessing
-    .postprocessor(PostProcessorConfig)                // Post-processor settings
-    .tokenReduction(TokenReductionConfig)              // Token reduction configuration
-    .htmlOptions(HtmlOptions)                          // HTML conversion options
+    .includeDocumentStructure(false)                   // Include document structure (default: false)
     .keywords(KeywordConfig)                           // Keyword extraction settings
+    .languageDetection(LanguageDetectionConfig)        // Language detection settings
     .maxConcurrentExtractions(4)                       // Max concurrent extractions
+    .ocr(OcrConfig)                                    // OCR configuration
+    .outputFormat("plain")                             // Content format: "plain", "markdown", "djot", "html"
+    .pdfOptions(PdfConfig)                             // PDF-specific options
+    .postprocessor(PostProcessorConfig)                // Post-processor settings
+    .resultFormat("unified")                           // Result format: "unified", "element_based"
+    .securityLimits(SecurityLimitsConfig)              // Security limits configuration
+    .tokenReduction(TokenReductionConfig)              // Token reduction configuration
+    .useCache(true)                                    // Enable caching (default: true)
     .build();
 ```
 
@@ -633,21 +637,24 @@ Result of a document extraction operation.
 **Accessors:**
 
 ```java title="ResultAccess.java"
-// Access extracted content and metadata
-String content = result.getContent();                    // Extracted text content
-String mimeType = result.getMimeType();                  // Detected MIME type
-Map<String, Object> metadata = result.getMetadata();    // Document metadata
-List<Table> tables = result.getTables();                // Extracted tables
-List<String> languages = result.getDetectedLanguages(); // Detected languages
-List<Chunk> chunks = result.getChunks();                // Text chunks
-List<ExtractedImage> images = result.getImages();       // Extracted images
-List<PageContent> pages = result.getPages();            // Per-page content (if enabled)
-boolean success = result.isSuccess();                    // Extraction success flag
-
-// Access common metadata fields
-Optional<String> language = result.getLanguage();       // Primary language
-Optional<String> date = result.getDate();               // Document date
-Optional<String> subject = result.getSubject();         // Document subject
+// Access extracted content and metadata (alphabetically sorted)
+Optional<List<PdfAnnotation>> annotations = result.getAnnotations();  // PDF annotations
+List<Chunk> chunks = result.getChunks();                              // Text chunks
+String content = result.getContent();                                // Extracted text content
+List<String> languages = result.getDetectedLanguages();               // Detected languages
+Optional<DjotContent> djotContent = result.getDjotContent();         // Djot content structure
+Optional<DocumentStructure> docStructure = result.getDocumentStructure(); // Document structure
+List<Element> elements = result.getElements();                       // Semantic elements
+Optional<List<ExtractedKeyword>> keywords = result.getExtractedKeywords(); // Extracted keywords
+List<ExtractedImage> images = result.getImages();                    // Extracted images
+Metadata metadata = result.getMetadata();                            // Document metadata (typed)
+String mimeType = result.getMimeType();                              // Detected MIME type
+List<OcrElement> ocrElements = result.getOcrElements();              // OCR elements with geometry
+List<PageContent> pages = result.getPages();                         // Per-page content
+Optional<PageStructure> pageStructure = result.getPageStructure();   // Page structure info
+Optional<List<ProcessingWarning>> warnings = result.getProcessingWarnings(); // Processing warnings
+Optional<Double> qualityScore = result.getQualityScore();            // Quality score (0.0–1.0)
+List<Table> tables = result.getTables();                              // Extracted tables
 ```
 
 **Example - Accessing results:**
@@ -757,15 +764,13 @@ Represents a table extracted from a document.
 
 ```java title="TableAccess.java"
 // Access table data in various formats
+String cell = table.getCell(row, col);                // Get cell value
 List<List<String>> cells = table.getCells();           // 2D list of cell values
+int cols = table.getColumnCount();                     // Number of columns
 String markdown = table.getMarkdown();                 // Markdown representation
 int pageNumber = table.getPageNumber();                // Page number (1-indexed)
-
-// Helper methods for table navigation
-int rows = table.getRowCount();                        // Number of rows
-int cols = table.getColumnCount();                     // Number of columns
-String cell = table.getCell(row, col);                // Get cell value
 List<String> row = table.getRow(rowIndex);            // Get row
+int rows = table.getRowCount();                        // Number of rows
 ```
 
 **Example:**
@@ -833,24 +838,24 @@ Metadata for a single text chunk.
 
 ```java title="ChunkMetadataAccess.java"
 // Access chunk metadata for page tracking and boundaries
-int byteStart = metadata.getByteStart();              // UTF-8 byte offset (inclusive)
-int byteEnd = metadata.getByteEnd();                  // UTF-8 byte offset (exclusive)
-int charCount = metadata.getCharCount();              // Number of characters
-Optional<Integer> tokenCount = metadata.getTokenCount(); // Estimated token count
-Optional<Integer> firstPage = metadata.getFirstPage();   // First page (1-indexed)
-Optional<Integer> lastPage = metadata.getLastPage();     // Last page (1-indexed)
-Optional<HeadingContext> headingContext = metadata.getHeadingContext(); // Heading hierarchy (markdown chunker)
+int byteEnd = metadata.getByteEnd();                                             // UTF-8 byte offset (exclusive)
+int byteStart = metadata.getByteStart();                                         // UTF-8 byte offset (inclusive)
+int charCount = metadata.getCharCount();                                         // Number of characters
+Optional<Integer> firstPage = metadata.getFirstPage();                           // First page (1-indexed)
+Optional<HeadingContext> headingContext = metadata.getHeadingContext();           // Heading hierarchy
+Optional<Integer> lastPage = metadata.getLastPage();                             // Last page (1-indexed)
+Optional<Integer> tokenCount = metadata.getTokenCount();                         // Estimated token count
 ```
 
 **Fields:**
 
-- `byteStart` (int): UTF-8 byte offset in content (inclusive)
-- `byteEnd` (int): UTF-8 byte offset in content (exclusive)
-- `charCount` (int): Number of characters in chunk
-- `tokenCount` (Optional<Integer>): Estimated token count (if configured)
-- `firstPage` (Optional<Integer>): First page this chunk appears on (1-indexed, only when page boundaries available)
-- `lastPage` (Optional<Integer>): Last page this chunk appears on (1-indexed, only when page boundaries available)
-- `headingContext` (Optional<HeadingContext>): Heading hierarchy when using Markdown chunker. Only populated when chunker_type is set to markdown.
+- `byteEnd` (int): UTF-8 byte offset in content (exclusive).
+- `byteStart` (int): UTF-8 byte offset in content (inclusive).
+- `charCount` (int): Number of characters in chunk.
+- `firstPage` (Optional\<Integer\>): First page this chunk appears on (1-indexed, only when page boundaries available).
+- `headingContext` (Optional\<HeadingContext\>): Heading hierarchy when using Markdown chunker. Only populated when chunker_type is set to markdown.
+- `lastPage` (Optional\<Integer\>): Last page this chunk appears on (1-indexed, only when page boundaries available).
+- `tokenCount` (Optional\<Integer\>): Estimated token count (if configured).
 
 **Page tracking:** When `PageStructure.boundaries` is available and chunking is enabled, `firstPage` and `lastPage` are automatically calculated based on byte offsets.
 
@@ -908,11 +913,11 @@ Represents an image extracted from a document.
 
 ```java title="ImageAccess.java"
 // Access extracted image data and metadata
+Optional<String> caption = image.getCaption();         // Image caption
 byte[] data = image.getData();                         // Image binary data
 String format = image.getFormat();                     // Image format (png, jpg, etc.)
 String mimeType = image.getMimeType();                 // MIME type
 int pageNumber = image.getPageNumber();                // Page number
-Optional<String> caption = image.getCaption();         // Image caption
 ```
 
 ---
