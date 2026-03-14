@@ -117,6 +117,7 @@ pub(super) fn finalize_paragraph(lines: Vec<PdfLine>) -> PdfParagraph {
         is_page_furniture: false,
         layout_class: None,
         caption_for: None,
+        block_bbox: None,
         lines,
     }
 }
@@ -140,11 +141,15 @@ pub(super) fn merge_continuation_paragraphs(paragraphs: &mut Vec<PdfParagraph>) 
 
     for next in iter {
         let should_merge =
-            // Both must be body text
+            // Both must be body text (no heading, list, code, or formula)
             current.heading_level.is_none()
                 && next.heading_level.is_none()
                 && !current.is_list_item
                 && !next.is_list_item
+                && !current.is_code_block
+                && !next.is_code_block
+                && !current.is_formula
+                && !next.is_formula
                 // Font sizes close enough
                 && (current.dominant_font_size - next.dominant_font_size).abs() < 2.0
                 // Current paragraph doesn't end with sentence-ending punctuation
@@ -262,6 +267,7 @@ fn text_to_paragraph(text: &str, font_size: f32, is_bold: bool, is_list_item: bo
         is_page_furniture: false,
         layout_class: None,
         caption_for: None,
+        block_bbox: None,
     }
 }
 

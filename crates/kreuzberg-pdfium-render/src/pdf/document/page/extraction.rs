@@ -63,6 +63,8 @@ pub struct ExtractedBlock {
     pub is_bold: bool,
     /// Whether the text is italic.
     pub is_italic: bool,
+    /// Whether the font is monospace (fixed-pitch).
+    pub is_monospace: bool,
     /// Child blocks (e.g., cells within a table row).
     pub children: Vec<ExtractedBlock>,
 }
@@ -144,6 +146,7 @@ struct TextStyle {
     font_size: f32,
     is_bold: bool,
     is_italic: bool,
+    is_monospace: bool,
     bounds: Option<PdfRect>,
 }
 
@@ -186,12 +189,14 @@ fn build_mcid_maps(page: &PdfPage<'_>) -> Result<McidMaps, PdfiumError> {
                 }) || font.is_bold_reenforced()
                     || font.name().to_ascii_lowercase().contains("bold");
                 let is_italic = font.is_italic();
+                let is_monospace = font.is_fixed_pitch();
                 let font_size = text_obj.scaled_font_size().value;
                 let bounds = object.bounds().ok().map(|qp| qp.to_rect());
                 TextStyle {
                     font_size,
                     is_bold,
                     is_italic,
+                    is_monospace,
                     bounds,
                 }
             });
@@ -257,6 +262,7 @@ fn extract_element_block(
         font_size: style.map(|s| s.font_size),
         is_bold: style.is_some_and(|s| s.is_bold),
         is_italic: style.is_some_and(|s| s.is_italic),
+        is_monospace: style.is_some_and(|s| s.is_monospace),
         children,
     })
 }
@@ -392,6 +398,7 @@ fn extract_via_heuristics(page: &PdfPage<'_>) -> Result<PageExtraction, PdfiumEr
             }) || font.is_bold_reenforced()
                 || font.name().to_ascii_lowercase().contains("bold");
             let is_italic = font.is_italic();
+            let is_monospace = font.is_fixed_pitch();
 
             let bounds = object.bounds().ok().map(|qp| qp.to_rect());
 
@@ -400,6 +407,7 @@ fn extract_via_heuristics(page: &PdfPage<'_>) -> Result<PageExtraction, PdfiumEr
                 font_size,
                 is_bold,
                 is_italic,
+                is_monospace,
                 bounds,
             });
         }
@@ -430,6 +438,7 @@ struct TextEntry {
     font_size: f32,
     is_bold: bool,
     is_italic: bool,
+    is_monospace: bool,
     bounds: Option<PdfRect>,
 }
 
@@ -526,6 +535,7 @@ fn finalize_block(group: Vec<TextEntry>, body_font_size: f32) -> ExtractedBlock 
     let font_size = first.font_size;
     let is_bold = first.is_bold;
     let is_italic = first.is_italic;
+    let is_monospace = first.is_monospace;
 
     // Determine role based on font size relative to body.
     let role = if font_size > body_font_size * 1.3 {
@@ -552,6 +562,7 @@ fn finalize_block(group: Vec<TextEntry>, body_font_size: f32) -> ExtractedBlock 
         font_size: Some(font_size),
         is_bold,
         is_italic,
+        is_monospace,
         children: Vec::new(),
     }
 }
@@ -590,6 +601,7 @@ mod tests {
             font_size,
             is_bold: false,
             is_italic: false,
+            is_monospace: false,
             bounds: Some(PdfRect::new(
                 PdfPoints::new(y_bottom),
                 PdfPoints::new(0.0),
@@ -607,6 +619,7 @@ mod tests {
             font_size: Some(12.0),
             is_bold: false,
             is_italic: false,
+            is_monospace: false,
             children,
         }
     }
@@ -778,6 +791,7 @@ mod tests {
             font_size: 12.0,
             is_bold: false,
             is_italic: false,
+            is_monospace: false,
             bounds: None,
         }];
         assert!(compute_union_bounds(&group).is_none());

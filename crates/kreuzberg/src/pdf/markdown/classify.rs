@@ -143,9 +143,29 @@ pub(super) fn precompute_gap_info(heading_map: &[(f32, Option<u8>)]) -> GapInfo 
 
 /// Refine heading levels across the entire document.
 ///
-/// 1. Merges consecutive H1 headings at the same font size into one title (any page).
-/// 2. Demotes numbered section headings from H1 to H2 when a non-numbered title H1 exists.
+/// 1. Promotes the first heading to H1 when no H1 exists (title inference).
+/// 2. Merges consecutive H1 headings at the same font size into one title (any page).
+/// 3. Demotes numbered section headings from H1 to H2 when a non-numbered title H1 exists.
 pub(super) fn refine_heading_hierarchy(all_pages: &mut [Vec<PdfParagraph>]) {
+    // Step 0: If no H1 exists but H2+ headings do, promote the first heading
+    // on page 0 (or the largest font heading) to H1. Many docs have a title
+    // that gets classified as H2 by bold promotion or font clustering.
+    let h1_count: usize = all_pages
+        .iter()
+        .flat_map(|page| page.iter())
+        .filter(|p| p.heading_level == Some(1))
+        .count();
+
+    if h1_count == 0 {
+        let has_any_heading = all_pages
+            .iter()
+            .flat_map(|page| page.iter())
+            .any(|p| p.heading_level.is_some());
+        if has_any_heading {
+            promote_title_heading(all_pages);
+        }
+    }
+
     let h1_count: usize = all_pages
         .iter()
         .flat_map(|page| page.iter())
@@ -343,6 +363,61 @@ fn paragraph_plain_text(para: &PdfParagraph) -> String {
         .join(" ")
 }
 
+/// Promote the most likely title heading to H1 when no H1 exists.
+///
+/// Strategy:
+/// 1. If any heading has layout_class == Title, promote it to H1.
+/// 2. Otherwise, on the first page only, promote the heading with the largest
+///    font size IF it's clearly larger than other headings (at least 1.5pt gap).
+fn promote_title_heading(all_pages: &mut [Vec<PdfParagraph>]) {
+    // First check for layout-confirmed Title
+    for page in all_pages.iter_mut() {
+        for para in page.iter_mut() {
+            if para.heading_level.is_some() && para.layout_class == Some(super::types::LayoutHintClass::Title) {
+                para.heading_level = Some(1);
+                return;
+            }
+        }
+    }
+
+    // Only promote on the first page, and only if one heading is clearly
+    // larger than others (to avoid false promotion when all headings are same size)
+    if all_pages.is_empty() {
+        return;
+    }
+    let page = &all_pages[0];
+    let headings: Vec<(usize, f32)> = page
+        .iter()
+        .enumerate()
+        .filter(|(_, p)| p.heading_level.is_some())
+        .map(|(i, p)| (i, p.dominant_font_size))
+        .collect();
+
+    if headings.is_empty() {
+        return;
+    }
+
+    // If there's exactly one heading on page 0, promote it
+    if headings.len() == 1 {
+        all_pages[0][headings[0].0].heading_level = Some(1);
+        return;
+    }
+
+    // If multiple headings, only promote if the largest is clearly bigger (1.5pt gap)
+    let max_size = headings.iter().map(|(_, s)| *s).fold(0.0f32, f32::max);
+    let second_max = headings
+        .iter()
+        .map(|(_, s)| *s)
+        .filter(|s| *s < max_size)
+        .fold(0.0f32, f32::max);
+
+    if max_size - second_max >= 1.5
+        && let Some(&(idx, _)) = headings.iter().find(|(_, s)| *s == max_size)
+    {
+        all_pages[0][idx].heading_level = Some(1);
+    }
+}
+
 /// Merge consecutive H1 paragraphs at the same font size into a single heading.
 ///
 /// Split titles (e.g., "KAISUN HOLDINGS" on one line, "LIMITED" on the next)
@@ -472,6 +547,7 @@ mod tests {
             is_page_furniture: false,
             layout_class: None,
             caption_for: None,
+            block_bbox: None,
         }
     }
 
@@ -594,6 +670,7 @@ mod tests {
             is_page_furniture: false,
             layout_class: None,
             caption_for: None,
+            block_bbox: None,
         }];
         // 3 segments × 6 words = 18 words > MAX_HEADING_WORD_COUNT
         let heading_map = vec![(18.0, Some(1)), (12.0, None)];

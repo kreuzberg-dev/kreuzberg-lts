@@ -26,6 +26,10 @@ pub(super) struct PdfParagraph {
     pub layout_class: Option<LayoutHintClass>,
     /// Index of the parent element this caption is associated with (tables/pictures).
     pub caption_for: Option<usize>,
+    /// Block-level bounding box from structure tree extraction.
+    /// Used for spatial matching when per-segment positions aren't available.
+    /// Format: (left, bottom, right, top) in PDF coordinate space.
+    pub block_bbox: Option<(f32, f32, f32, f32)>,
 }
 
 /// Simplified layout class for the markdown pipeline.

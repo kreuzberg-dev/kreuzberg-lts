@@ -340,6 +340,20 @@ struct ParaBBox {
 /// - top = baseline + height (covers ascenders)
 /// - bottom = baseline (descent is small and usually within the layout hint's margin)
 fn compute_paragraph_bbox(para: &PdfParagraph) -> Option<ParaBBox> {
+    // Prefer block-level bbox from structure tree (accurate block bounds).
+    if let Some((left, bottom, right, top)) = para.block_bbox
+        && right > left
+        && top > bottom
+    {
+        return Some(ParaBBox {
+            left,
+            bottom,
+            right,
+            top,
+        });
+    }
+
+    // Fall back to computing bbox from segment positions (heuristic path).
     let mut left = f32::MAX;
     let mut right = f32::MIN;
     let mut bottom = f32::MAX;
@@ -348,7 +362,7 @@ fn compute_paragraph_bbox(para: &PdfParagraph) -> Option<ParaBBox> {
 
     for line in &para.lines {
         for seg in &line.segments {
-            // Skip segments with no positional data (structure tree path)
+            // Skip segments with no positional data
             if seg.x == 0.0 && seg.width == 0.0 && seg.y == 0.0 && seg.height == 0.0 {
                 continue;
             }
@@ -439,6 +453,7 @@ mod tests {
             is_page_furniture: false,
             layout_class: None,
             caption_for: None,
+            block_bbox: None,
         }
     }
 
@@ -635,6 +650,7 @@ mod tests {
             is_page_furniture: false,
             layout_class: None,
             caption_for: None,
+            block_bbox: None,
         }];
 
         // Title hint IS applied via proportional matching (heading level inferred)

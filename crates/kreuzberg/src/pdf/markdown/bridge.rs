@@ -169,9 +169,10 @@ fn convert_blocks(blocks: &[ExtractedBlock], _body_font_size: f32, paragraphs: &
         let font_size = block.font_size.unwrap_or(12.0);
         let word_count = full_text.split_whitespace().count();
 
-        // Extract semantic flags from the structure tree role.
+        // Extract semantic flags from the structure tree role and font properties.
         let is_code_block = matches!(&block.role, ContentRole::Code);
         let is_formula = matches!(&block.role, ContentRole::Other(s) if s == "Formula");
+        let is_monospace = block.is_monospace || is_code_block;
 
         // Trust structure tree heading tags — they are author-intent metadata.
         // Only guard against degenerate cases (body text tagged as heading).
@@ -186,48 +187,33 @@ fn convert_blocks(blocks: &[ExtractedBlock], _body_font_size: f32, paragraphs: &
             _ => None,
         };
 
-        // Extract positional data from the block's bounding box (if available).
-        // Structure tree blocks carry bounds from pdfium's page objects; using
-        // them enables spatial matching with layout detection hints.
-        let (block_x, block_y, block_width, block_height, block_baseline) = if let Some(ref bounds) = block.bounds {
-            let x = bounds.left().value;
-            let y = bounds.bottom().value;
-            let w = (bounds.right().value - bounds.left().value).max(0.0);
-            let h = (bounds.top().value - bounds.bottom().value).max(0.0);
-            (x, y, w, h, y)
-        } else {
-            (0.0, 0.0, 0.0, 0.0, 0.0)
-        };
+        // Extract block-level bounding box for spatial matching with layout hints.
+        // We store the bbox on the paragraph rather than distributing it across
+        // word segments — proportional distribution gives inaccurate per-word
+        // positions that confuse spatial matching.
+        let block_bbox = block.bounds.as_ref().map(|bounds| {
+            let left = bounds.left().value;
+            let bottom = bounds.bottom().value;
+            let right = bounds.right().value;
+            let top = bounds.top().value;
+            (left, bottom, right, top)
+        });
 
         // Create segments from the block text (one per whitespace-delimited word).
-        // Distribute the block's bounding box across words proportionally by
-        // character count so that spatial matching can locate each word.
-        let words: Vec<&str> = full_text.split_whitespace().collect();
-        let total_chars: usize = words.iter().map(|w| w.len()).sum();
-        let mut cursor_x = block_x;
-        let segments: Vec<SegmentData> = words
-            .iter()
-            .map(|w| {
-                let frac = if total_chars > 0 {
-                    w.len() as f32 / total_chars as f32
-                } else {
-                    0.0
-                };
-                let seg_width = block_width * frac;
-                let seg = SegmentData {
-                    text: w.to_string(),
-                    x: cursor_x,
-                    y: block_y,
-                    width: seg_width,
-                    height: block_height,
-                    font_size,
-                    is_bold: block.is_bold,
-                    is_italic: block.is_italic,
-                    is_monospace: is_code_block,
-                    baseline_y: block_baseline,
-                };
-                cursor_x += seg_width;
-                seg
+        // Segments have zero positions — spatial matching uses block_bbox instead.
+        let segments: Vec<SegmentData> = full_text
+            .split_whitespace()
+            .map(|w| SegmentData {
+                text: w.to_string(),
+                x: 0.0,
+                y: 0.0,
+                width: 0.0,
+                height: 0.0,
+                font_size,
+                is_bold: block.is_bold,
+                is_italic: block.is_italic,
+                is_monospace,
+                baseline_y: 0.0,
             })
             .collect();
 
@@ -237,10 +223,10 @@ fn convert_blocks(blocks: &[ExtractedBlock], _body_font_size: f32, paragraphs: &
 
         let line = PdfLine {
             segments,
-            baseline_y: block_baseline,
+            baseline_y: 0.0,
             dominant_font_size: font_size,
             is_bold: block.is_bold,
-            is_monospace: is_code_block,
+            is_monospace,
         };
 
         paragraphs.push(PdfParagraph {
@@ -254,6 +240,7 @@ fn convert_blocks(blocks: &[ExtractedBlock], _body_font_size: f32, paragraphs: &
             is_page_furniture: false,
             layout_class: None,
             caption_for: None,
+            block_bbox,
         });
     }
 }
@@ -1296,6 +1283,7 @@ mod tests {
             font_size: Some(12.0),
             is_bold: false,
             is_italic: false,
+            is_monospace: false,
             children: Vec::new(),
         }
     }
@@ -1308,6 +1296,7 @@ mod tests {
             font_size: Some(font_size),
             is_bold: false,
             is_italic: false,
+            is_monospace: false,
             children: Vec::new(),
         }
     }
@@ -1360,6 +1349,7 @@ mod tests {
             font_size: Some(12.0),
             is_bold: false,
             is_italic: false,
+            is_monospace: false,
             children: Vec::new(),
         }];
         let paragraphs = extracted_blocks_to_paragraphs(&blocks);
@@ -1423,6 +1413,7 @@ mod tests {
             font_size: None,
             is_bold: false,
             is_italic: false,
+            is_monospace: false,
             children: vec![
                 make_block(ContentRole::Paragraph, "Cell 1"),
                 make_block(ContentRole::Paragraph, "Cell 2"),

@@ -300,6 +300,7 @@ mod tests {
             is_page_furniture: false,
             layout_class: None,
             caption_for: None,
+            block_bbox: None,
         };
         let mut output = String::new();
         render_paragraph_to_output(&para, &mut output);
@@ -319,6 +320,7 @@ mod tests {
             is_page_furniture: false,
             layout_class: None,
             caption_for: None,
+            block_bbox: None,
         };
         let mut output = String::new();
         render_paragraph_to_output(&para, &mut output);
@@ -341,6 +343,7 @@ mod tests {
             is_page_furniture: false,
             layout_class: None,
             caption_for: None,
+            block_bbox: None,
         };
         let mut output = String::new();
         render_paragraph_to_output(&para, &mut output);
@@ -360,6 +363,7 @@ mod tests {
             is_page_furniture: false,
             layout_class: None,
             caption_for: None,
+            block_bbox: None,
         };
         let mut output = String::new();
         render_paragraph_to_output(&para, &mut output);
@@ -379,6 +383,7 @@ mod tests {
             is_page_furniture: false,
             layout_class: None,
             caption_for: None,
+            block_bbox: None,
         };
         let mut output = String::new();
         render_paragraph_to_output(&para, &mut output);
@@ -402,6 +407,7 @@ mod tests {
             is_page_furniture: false,
             layout_class: None,
             caption_for: None,
+            block_bbox: None,
         };
         let mut output = String::new();
         render_paragraph_to_output(&para, &mut output);
@@ -431,6 +437,7 @@ mod tests {
             is_page_furniture: false,
             layout_class: None,
             caption_for: None,
+            block_bbox: None,
         };
         let mut output = String::new();
         render_paragraph_to_output(&para, &mut output);
@@ -455,6 +462,7 @@ mod tests {
             is_page_furniture: false,
             layout_class: None,
             caption_for: None,
+            block_bbox: None,
         };
         let mut output = String::new();
         render_paragraph_to_output(&para, &mut output);
@@ -485,6 +493,7 @@ mod tests {
             is_page_furniture: false,
             layout_class: None,
             caption_for: None,
+            block_bbox: None,
         };
         let mut output = String::new();
         render_paragraph_to_output(&para, &mut output);
@@ -529,6 +538,7 @@ mod tests {
             is_page_furniture: false,
             layout_class: None,
             caption_for: None,
+            block_bbox: None,
         };
         let mut output = String::new();
         render_paragraph_to_output(&para, &mut output);
@@ -578,6 +588,7 @@ mod tests {
             is_page_furniture: false,
             layout_class: None,
             caption_for: None,
+            block_bbox: None,
         };
         let mut output = String::new();
         render_paragraph_to_output(&para, &mut output);
@@ -598,6 +609,7 @@ mod tests {
             is_page_furniture: false,
             layout_class: None,
             caption_for: None,
+            block_bbox: None,
         };
         let mut output = String::new();
         render_paragraph_to_output(&para, &mut output);
@@ -618,6 +630,7 @@ mod tests {
             is_page_furniture: false,
             layout_class: None,
             caption_for: None,
+            block_bbox: None,
         };
         let mut output = String::new();
         render_paragraph_to_output(&para, &mut output);
@@ -668,6 +681,7 @@ mod tests {
             is_page_furniture: false,
             layout_class: None,
             caption_for: None,
+            block_bbox: None,
         };
         let mut output = String::new();
         render_paragraph_to_output(&para, &mut output);

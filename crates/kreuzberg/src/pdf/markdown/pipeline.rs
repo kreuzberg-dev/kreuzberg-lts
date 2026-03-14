@@ -149,9 +149,14 @@ pub fn render_document_as_markdown_with_tables(
                         }
                     }
                 }
-                // Dehyphenate: structure tree path has no positional data,
-                // so only rejoin explicit trailing hyphens.
-                dehyphenate_paragraphs(&mut paragraphs, false);
+                // Dehyphenate: rejoin trailing hyphens. Use positional
+                // data for full-line checks when bounds are available.
+                let has_positions = paragraphs.iter().any(|p| {
+                    p.lines
+                        .iter()
+                        .any(|l| l.segments.iter().any(|s| s.width > 0.0 || s.x > 0.0))
+                });
+                dehyphenate_paragraphs(&mut paragraphs, has_positions);
                 // Split paragraphs with embedded bullet characters (•) into
                 // separate list item paragraphs (common in structure tree PDFs).
                 split_embedded_list_items(&mut paragraphs);
@@ -493,8 +498,10 @@ pub fn render_document_as_markdown_with_tables(
                     "PDF markdown pipeline: classifying struct tree page via font-size clustering"
                 );
                 classify_paragraphs(&mut paragraphs, &heading_map);
-                merge_continuation_paragraphs(&mut paragraphs);
             }
+            // Merge consecutive body-text paragraphs from structure tree.
+            // Many PDFs tag each visual line as a separate <P>, causing over-splitting.
+            merge_continuation_paragraphs(&mut paragraphs);
             // Apply layout detection overrides when available.
             if let Some(hints) = layout_hints.and_then(|h| h.get(i)) {
                 super::layout_classify::apply_layout_overrides(&mut paragraphs, hints, 0.5, 0.2);
@@ -1107,6 +1114,7 @@ mod tests {
             is_page_furniture: false,
             layout_class: None,
             caption_for: None,
+            block_bbox: None,
         }
     }
 
@@ -1288,6 +1296,7 @@ mod tests {
             is_page_furniture: false,
             layout_class: None,
             caption_for: None,
+            block_bbox: None,
         }
     }
 
