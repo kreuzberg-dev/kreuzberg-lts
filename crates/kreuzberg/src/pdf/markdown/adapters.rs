@@ -77,7 +77,7 @@ fn map_content_role(role: &ContentRole) -> (SemanticRole, Option<String>) {
         ContentRole::Code => (SemanticRole::Code, None),
         ContentRole::BlockQuote => (SemanticRole::BlockQuote, None),
         ContentRole::Link { .. } => (SemanticRole::Paragraph, None),
-        ContentRole::Other(s) if s == "Formula" => (SemanticRole::Other, None),
+        ContentRole::Other(s) if s == "Formula" => (SemanticRole::Formula, None),
         ContentRole::Other(_) => (SemanticRole::Other, None),
     }
 }

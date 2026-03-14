@@ -49,7 +49,7 @@ fn element_to_paragraph(elem: &ContentElement) -> Option<PdfParagraph> {
     // Determine structural properties from semantic role.
     let mut is_list_item = matches!(elem.semantic_role, Some(SemanticRole::ListItem));
     let is_code_block = matches!(elem.semantic_role, Some(SemanticRole::Code));
-    let is_formula = matches!(elem.semantic_role, Some(SemanticRole::Other));
+    let is_formula = matches!(elem.semantic_role, Some(SemanticRole::Formula));
     let is_monospace = elem.is_monospace || is_code_block;
 
     // Detect list items from text content when not tagged.
