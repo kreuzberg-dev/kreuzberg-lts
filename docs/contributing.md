@@ -25,9 +25,7 @@ This runs language-specific installers (Python `uv sync`, `pnpm install`, `bundl
 
 ### Build-Time Dependencies
 
-Kreuzberg uses pure Rust dependencies and requires no system libraries beyond standard build tools.
-
-**Fastembed Fork**: We maintain a fork at `kreuzberg-dev/fastembed-rs` that uses `rustls` (pure Rust TLS) instead of `native-tls` (OpenSSL). This eliminates OpenSSL as a build dependency and simplifies cross-platform builds. The fork will be retired once upstream `ort` publishes rustls support to crates.io.
+Kreuzberg uses pure Rust dependencies and requires no system libraries beyond standard build tools (the embeddings feature requires ONNX Runtime, which is optional).
 
 ### Platform-Specific Requirements
 

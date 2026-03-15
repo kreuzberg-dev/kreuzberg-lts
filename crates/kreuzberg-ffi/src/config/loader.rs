@@ -108,7 +108,7 @@ pub fn get_embedding_preset(preset_name: &str) -> Result<String, String> {
         }
     };
 
-    let model_name = format!("{:?}", preset.model);
+    let model_name = preset.model_repo.to_string();
     let serializable = super::serialize::SerializableEmbeddingPreset {
         name: preset.name,
         chunk_size: preset.chunk_size,

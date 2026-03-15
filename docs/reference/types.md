@@ -2884,7 +2884,6 @@ export interface EmbeddingConfig {
 
 export type EmbeddingModelType =
   | { type: "preset"; name: string }
-  | { type: "fastembed"; model: string; dimensions: number }
   | { type: "custom"; modelId: string; dimensions: number };
 ```
 

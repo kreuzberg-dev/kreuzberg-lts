@@ -100,7 +100,7 @@ pub fn kreuzberg_list_embedding_presets() -> Vec<String> {
 pub fn kreuzberg_get_embedding_preset(name: String) -> Option<EmbeddingPreset> {
     let preset = kreuzberg::embeddings::get_preset(&name)?;
 
-    let model_name = format!("{:?}", preset.model);
+    let model_name = preset.model_repo.to_string();
 
     Some(EmbeddingPreset {
         name: preset.name.to_string(),

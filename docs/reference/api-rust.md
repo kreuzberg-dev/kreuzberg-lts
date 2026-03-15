@@ -28,7 +28,7 @@ kreuzberg = { version = "4.0", features = ["pdf", "ocr", "chunking", "api"] }
 - `ocr` - OCR support with Tesseract
 - `paddle-ocr` - PaddleOCR backend (requires `ocr`; not available on WASM)
 - `chunking` - Text chunking algorithms
-- `embeddings` - Chunk embedding generation (e.g. fastembed)
+- `embeddings` - Chunk embedding generation via ONNX models
 - `language-detection` - Language detection
 - `keywords-yake` - YAKE keyword extraction
 - `keywords-rake` - RAKE keyword extraction

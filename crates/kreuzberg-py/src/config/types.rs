@@ -542,8 +542,6 @@ impl OcrConfig {
 ///     >>> from kreuzberg import EmbeddingModelType
 ///     >>> # Use a preset
 ///     >>> model = EmbeddingModelType.preset("balanced")
-///     >>> # Use a specific FastEmbed model
-///     >>> model = EmbeddingModelType.fastembed("BGEBaseENV15", 768)
 ///     >>> # Use a custom model
 ///     >>> model = EmbeddingModelType.custom("my-model", 512)
 #[pyclass(name = "EmbeddingModelType", module = "kreuzberg")]
@@ -562,14 +560,6 @@ impl EmbeddingModelType {
         }
     }
 
-    /// Create a model type from a FastEmbed model name.
-    #[staticmethod]
-    fn fastembed(model: String, dimensions: usize) -> Self {
-        Self {
-            inner: kreuzberg::EmbeddingModelType::FastEmbed { model, dimensions },
-        }
-    }
-
     /// Create a custom ONNX model type.
     #[staticmethod]
     fn custom(model_id: String, dimensions: usize) -> Self {
@@ -581,9 +571,6 @@ impl EmbeddingModelType {
     fn __repr__(&self) -> String {
         match &self.inner {
             kreuzberg::EmbeddingModelType::Preset { name } => format!("EmbeddingModelType.preset('{}')", name),
-            kreuzberg::EmbeddingModelType::FastEmbed { model, dimensions } => {
-                format!("EmbeddingModelType.fastembed('{}', {})", model, dimensions)
-            }
             kreuzberg::EmbeddingModelType::Custom { model_id, dimensions } => {
                 format!("EmbeddingModelType.custom('{}', {})", model_id, dimensions)
             }

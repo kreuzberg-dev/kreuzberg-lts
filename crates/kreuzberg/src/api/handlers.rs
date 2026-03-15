@@ -424,9 +424,7 @@ pub async fn embed_handler(JsonApi(request): JsonApi<EmbedRequest>) -> Result<Js
     // Get model name from config
     let model_name = match &config.model {
         crate::core::config::EmbeddingModelType::Preset { name } => name.clone(),
-        #[cfg(feature = "embeddings")]
-        crate::core::config::EmbeddingModelType::FastEmbed { model, .. } => model.clone(),
-        crate::core::config::EmbeddingModelType::Custom { .. } => "custom".to_string(),
+        crate::core::config::EmbeddingModelType::Custom { model_id, .. } => model_id.clone(),
     };
 
     #[cfg(feature = "otel")]

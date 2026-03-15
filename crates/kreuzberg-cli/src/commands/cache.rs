@@ -230,8 +230,13 @@ pub fn warm_command(
 
         for preset in &presets_to_warm {
             let label = format!("embedding ({})", preset.name);
-            kreuzberg::warm_model(preset.model.clone(), Some(embeddings_dir.clone()))
-                .map_err(|e| anyhow::anyhow!("Failed to download embedding model '{}': {}", preset.name, e))?;
+            kreuzberg::warm_model(
+                &kreuzberg::core::config::EmbeddingModelType::Preset {
+                    name: preset.name.to_string(),
+                },
+                Some(embeddings_dir.clone()),
+            )
+            .map_err(|e| anyhow::anyhow!("Failed to download embedding model '{}': {}", preset.name, e))?;
             downloaded.push(label);
         }
     }

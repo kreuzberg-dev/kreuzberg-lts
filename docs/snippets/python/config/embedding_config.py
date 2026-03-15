@@ -17,11 +17,11 @@ embedding_config = EmbeddingConfig(
 # - "multilingual" (768 dims): International documents, 100+ languages
 
 
-# Example 2: FastEmbed model (requires embeddings feature)
-# Direct access to specific fastembed models with custom dimensions.
+# Example 2: Custom ONNX model (requires embeddings feature)
+# Direct access to specific ONNX embedding models from HuggingFace with custom dimensions.
 embedding_config = EmbeddingConfig(
-    model=EmbeddingModelType.fastembed(
-        model="BAAI/bge-small-en-v1.5",
+    model=EmbeddingModelType.custom(
+        model_id="BAAI/bge-small-en-v1.5",
         dimensions=384,
     ),
     batch_size=32,
@@ -30,15 +30,15 @@ embedding_config = EmbeddingConfig(
     cache_dir=None,  # Uses default: .kreuzberg/embeddings/
 )
 
-# Supported FastEmbed models:
-# - "AllMiniLML6V2Q" (384 dims): Quantized, fastest
-# - "BGEBaseENV15" (768 dims): Balanced quality/speed
-# - "BGELargeENV15" (1024 dims): High quality, slower
-# - "MultilingualE5Base" (768 dims): Multilingual support
+# Popular ONNX-compatible models:
+# - "BAAI/bge-small-en-v1.5" (384 dims): Fast, efficient
+# - "BAAI/bge-base-en-v1.5" (768 dims): Balanced quality/speed
+# - "BAAI/bge-large-en-v1.5" (1024 dims): High quality, slower
+# - "sentence-transformers/paraphrase-multilingual-mpnet-base-v2" (768 dims): Multilingual support
 
 
-# Example 3: Custom HuggingFace model
-# For advanced users wanting specific HuggingFace embedding models.
+# Example 3: Alternative Custom Model
+# For advanced users wanting alternative ONNX embedding models.
 embedding_config = EmbeddingConfig(
     model=EmbeddingModelType.custom(
         model_id="sentence-transformers/all-mpnet-base-v2",

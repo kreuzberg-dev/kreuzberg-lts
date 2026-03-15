@@ -185,15 +185,14 @@ impl From<JsTesseractConfig> for RustTesseractConfig {
 ///
 /// This struct represents different embedding model sources:
 /// - `preset`: Use a named preset (e.g., "balanced", "fast", "quality", "multilingual")
-/// - `fastembed`: Use a FastEmbed model with custom dimensions
-/// - `custom`: Use a custom ONNX model
+/// - `custom`: Use a custom ONNX model from HuggingFace
 #[napi(object)]
 pub struct JsEmbeddingModelType {
-    /// Type of model: "preset", "fastembed", or "custom"
+    /// Type of model: "preset" or "custom"
     pub model_type: String,
-    /// For preset: preset name; for fastembed/custom: model ID
+    /// For preset: preset name; for custom: HuggingFace model ID
     pub value: String,
-    /// Number of dimensions (only for fastembed/custom)
+    /// Number of dimensions (only for custom)
     pub dimensions: Option<u32>,
 }
 
@@ -201,10 +200,6 @@ impl From<JsEmbeddingModelType> for RustEmbeddingModelType {
     fn from(val: JsEmbeddingModelType) -> Self {
         match val.model_type.as_str() {
             "preset" => RustEmbeddingModelType::Preset { name: val.value },
-            "fastembed" => RustEmbeddingModelType::FastEmbed {
-                model: val.value,
-                dimensions: val.dimensions.unwrap_or(768) as usize,
-            },
             "custom" => RustEmbeddingModelType::Custom {
                 model_id: val.value,
                 dimensions: val.dimensions.unwrap_or(512) as usize,
@@ -1156,16 +1151,13 @@ impl TryFrom<ExtractionConfig> for JsExtractionConfig {
                     model: Some(JsEmbeddingModelType {
                         model_type: match emb.model {
                             RustEmbeddingModelType::Preset { .. } => "preset".to_string(),
-                            RustEmbeddingModelType::FastEmbed { .. } => "fastembed".to_string(),
                             RustEmbeddingModelType::Custom { .. } => "custom".to_string(),
                         },
                         value: match &emb.model {
                             RustEmbeddingModelType::Preset { name } => name.clone(),
-                            RustEmbeddingModelType::FastEmbed { model, .. } => model.clone(),
                             RustEmbeddingModelType::Custom { model_id, .. } => model_id.clone(),
                         },
                         dimensions: match emb.model {
-                            RustEmbeddingModelType::FastEmbed { dimensions, .. } => Some(dimensions as u32),
                             RustEmbeddingModelType::Custom { dimensions, .. } => Some(dimensions as u32),
                             _ => None,
                         },

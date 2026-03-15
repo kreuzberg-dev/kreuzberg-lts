@@ -25,6 +25,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **`ModelManifestEntry` type**: New public type for model cache manifest entries with `relative_path`, `sha256`, `size_bytes`, and `source_url` fields.
 - **`ModelManager::manifest()` / `LayoutModelManager::manifest()`**: Static methods returning the full manifest of expected model files for each model manager.
 - **`ModelManager::ensure_all_models()` / `LayoutModelManager::ensure_all_models()`**: Eagerly download all models (all 11 PaddleOCR script families + layout models), unlike the lazy per-use defaults.
+- **`AccelerationConfig` for explicit GPU/execution provider control**: New config type enabling fine-grained control over ONNX execution providers (CPU, CoreML, CUDA, TensorRT). Allows users to pin specific acceleration backends for layout detection and table recognition.
+- **Acceleration config support across all 10 language bindings**: `AccelerationConfig` fully typed and tested across Python, TypeScript, Ruby, Go, Java, PHP, C#, Elixir, Node, and C FFI.
+- **Embedding benchmark subcommand in benchmark harness**: New `embed-benchmark` CLI command for performance profiling of the embedding pipeline (`tools/benchmark-harness/src/embed_benchmark.rs`).
+- **E2E test fixture for acceleration config**: Comprehensive test coverage for `AccelerationConfig` serialization and cross-language binding parity.
 
 ### Fixed
 
@@ -42,6 +46,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Layout pipeline no longer forces heuristic extraction**: When layout detection is enabled, structure tree extraction proceeds normally instead of being forced into the heuristic path. Proportional matching applies layout hints to structure tree paragraphs, preserving text quality.
 - **Global ONNX model caching**: Layout detection engine and SLANet table recognition model are now cached globally and reused across document extractions, avoiding expensive ONNX session recreation in batch processing scenarios.
 - **Docker model pre-download uses `cache warm`**: The `Dockerfile.full` now uses `kreuzberg cache warm` instead of manual curl-based download scripts, simplifying the build and ensuring consistency with the CLI's model management.
+- **Vendored text embedding pipeline from fastembed-rs**: Replaced external `fastembed` dependency with vendored engine using `ort` + `tokenizers` + `hf-hub` directly for tighter integration and control.
+- **Embedding `embed()` now takes `&self` instead of `&mut self`**: Enables parallel embedding generation without mutable reference constraints. Internal engine uses `Arc<EmbeddingEngine>` for thread-safe concurrent inference.
+- **Reverted `LeakedModel` workaround removal**: ort rc.12 has a compilation error with VitisAI; staying on rc.11 with the `LeakedModel` safety workaround.
+- **Embedding model cache uses `Arc<EmbeddingEngine>`**: No Mutex contention on concurrent embed calls; lock-free concurrent inference.
+- **L2 normalization parallelized with rayon**: Embedding batches ≥ 64 vectors now use multi-threaded normalization for improved throughput.
+
+### Removed
+
+- **`fastembed` dependency**: Replaced by vendored embedding engine using ONNX Runtime directly.
+- **`EmbeddingModelType::FastEmbed` variant**: Use `Preset` or `Custom` variants instead for explicit control over embedding model selection.
+
+### Fixed
+
+- **Go `MarshalJSON` cyclomatic complexity lint**: Extracted helper functions to reduce cyclomatic complexity and pass linter checks.
+- **Unused doc comment warning on `thread_local!` macro**: Suppressed incorrect rustdoc warnings on Rust macro definitions.
 
 ---
 

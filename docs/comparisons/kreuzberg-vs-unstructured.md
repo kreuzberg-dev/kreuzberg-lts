@@ -118,7 +118,7 @@ A comprehensive comparison of Kreuzberg and Unstructured.io for document intelli
 | **Text Chunking** | ✅ Basic (fixed-size) | ✅ Advanced (by_title) | Unstructured has smarter strategies |
 | **Chunk Overlap** | ✅ Configurable | ✅ Configurable | Both support overlap |
 | **Embedding Generation** | ✅ Built-in (ONNX) | ⚠️ External API | Kreuzberg: local ONNX models |
-| **Embedding Models** | ✅ fastembed presets | ✅ OpenAI, Cohere, etc. | Kreuzberg: offline, Unstructured: API-based |
+| **Embedding Models** | ✅ ONNX-based presets | ✅ OpenAI, Cohere, etc. | Kreuzberg: offline ONNX, Unstructured: API-based |
 | **Page Range Tracking** | ✅ Native | ✅ Via metadata | Kreuzberg tracks first_page/last_page |
 
 ### Language Bindings & Integrations

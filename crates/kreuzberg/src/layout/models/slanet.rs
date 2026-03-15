@@ -149,11 +149,11 @@ impl SlaNetModel {
     fn build_cpu_session(path: &str) -> Result<ort::session::Session, LayoutError> {
         use ort::session::builder::GraphOptimizationLevel;
         let num_cores = num_cpus::get();
-        Ok(ort::session::Session::builder()?
+        let builder = ort::session::Session::builder()?
             .with_optimization_level(GraphOptimizationLevel::Level3)?
             .with_intra_threads(num_cores)?
-            .with_inter_threads(1)?
-            .commit_from_file(path)?)
+            .with_inter_threads(1)?;
+        Ok(builder.commit_from_file(path)?)
     }
 
     /// Recognize table structure from a cropped table image.

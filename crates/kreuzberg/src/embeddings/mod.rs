@@ -1,0 +1,664 @@
+//! Embedding generation support for RAG (Retrieval-Augmented Generation) systems.
+//!
+//! This module provides text embedding generation using ONNX models via a vendored
+//! text embedding inference engine. Embeddings can be generated for text chunks to
+//! enable semantic search and RAG pipelines.
+//!
+//! # Features
+//!
+//! - Multiple pre-configured models optimized for different use cases
+//! - Preset configurations for common RAG scenarios
+//! - Full customization of model location and parameters
+//! - Batch processing for efficient embedding generation
+//! - Thread-safe inference without mutex contention
+//! - Optional GPU acceleration via ONNX Runtime execution providers
+//!
+//! # ONNX Runtime Requirement
+//!
+//! **CRITICAL**: This module requires ONNX Runtime to be installed on the system.
+//! The `embeddings` feature uses dynamic loading (`ort-load-dynamic`), which detects
+//! the ONNX Runtime library at runtime.
+//!
+//! ## Installation Instructions
+//!
+//! - **macOS**: `brew install onnxruntime`
+//! - **Linux (Ubuntu/Debian)**: `apt install libonnxruntime libonnxruntime-dev`
+//! - **Linux (Fedora)**: `dnf install onnxruntime onnxruntime-devel`
+//! - **Linux (Arch)**: `pacman -S onnxruntime`
+//! - **Windows (MSVC)**: Download from https://github.com/microsoft/onnxruntime/releases and add to PATH
+//!
+//! Alternatively, set the `ORT_DYLIB_PATH` environment variable to the ONNX Runtime library path.
+//!
+//! For Docker/containers, install via package manager in your base image.
+//! Verified packages: Ubuntu 22.04+, Fedora 38+, Arch Linux.
+//!
+//! ## Platform Limitations
+//!
+//! **Windows MinGW builds are not supported**. ONNX Runtime requires the MSVC toolchain on Windows.
+//! Please use Windows MSVC builds or disable the embeddings feature.
+//!
+//! # Example
+//!
+//! ```rust,ignore
+//! use kreuzberg::{extract_file, ExtractionConfig, ChunkingConfig, EmbeddingConfig};
+//!
+//! let config = ExtractionConfig {
+//!     chunking: Some(ChunkingConfig {
+//!         preset: Some("balanced".to_string()),
+//!         embedding: Some(EmbeddingConfig::default()),
+//!         ..Default::default()
+//!     }),
+//!     ..Default::default()
+//! };
+//!
+//! let result = extract_file("document.pdf", None, &config).await?;
+//! for chunk in result.chunks.unwrap() {
+//!     if let Some(embedding) = chunk.embedding {
+//!         println!("Chunk has {} dimension embedding", embedding.len());
+//!     }
+//! }
+//! ```
+
+pub mod engine;
+
+use std::collections::HashMap;
+use std::sync::{Arc, RwLock};
+
+use once_cell::sync::Lazy;
+
+use engine::EmbeddingEngine;
+
+type CachedEngine = Arc<EmbeddingEngine>;
+
+static ENGINE_CACHE: Lazy<RwLock<HashMap<String, CachedEngine>>> = Lazy::new(|| RwLock::new(HashMap::new()));
+
+/// Preset configurations for common RAG use cases.
+///
+/// Each preset combines chunk size, overlap, and embedding model
+/// to provide an optimized configuration for specific scenarios.
+#[derive(Debug, Clone)]
+pub struct EmbeddingPreset {
+    pub name: &'static str,
+    pub chunk_size: usize,
+    pub overlap: usize,
+    /// HuggingFace repository name for the model.
+    pub model_repo: &'static str,
+    /// Pooling strategy: "cls" or "mean".
+    pub pooling: &'static str,
+    /// Path to the ONNX model file within the repo.
+    pub model_file: &'static str,
+    pub dimensions: usize,
+    pub description: &'static str,
+}
+
+/// All available embedding presets.
+pub const EMBEDDING_PRESETS: &[EmbeddingPreset] = &[
+    EmbeddingPreset {
+        name: "fast",
+        chunk_size: 512,
+        overlap: 50,
+        model_repo: "Xenova/all-MiniLM-L6-v2",
+        pooling: "mean",
+        model_file: "onnx/model_quantized.onnx",
+        dimensions: 384,
+        description: "Fast embedding with quantized model (384 dims, ~22M params). Best for: Quick prototyping, development, resource-constrained environments.",
+    },
+    EmbeddingPreset {
+        name: "balanced",
+        chunk_size: 1024,
+        overlap: 100,
+        model_repo: "Xenova/bge-base-en-v1.5",
+        pooling: "cls",
+        model_file: "onnx/model.onnx",
+        dimensions: 768,
+        description: "Balanced quality and speed (768 dims, ~109M params). Best for: General-purpose RAG, production deployments, English documents.",
+    },
+    EmbeddingPreset {
+        name: "quality",
+        chunk_size: 2000,
+        overlap: 200,
+        model_repo: "Xenova/bge-large-en-v1.5",
+        pooling: "cls",
+        model_file: "onnx/model.onnx",
+        dimensions: 1024,
+        description: "High quality with larger context (1024 dims, ~335M params). Best for: Complex documents, maximum accuracy, sufficient compute resources.",
+    },
+    EmbeddingPreset {
+        name: "multilingual",
+        chunk_size: 1024,
+        overlap: 100,
+        model_repo: "intfloat/multilingual-e5-base",
+        pooling: "mean",
+        model_file: "onnx/model.onnx",
+        dimensions: 768,
+        description: "Multilingual support (768 dims, 100+ languages). Best for: International documents, mixed-language content, global applications.",
+    },
+];
+
+/// Get a preset by name.
+pub fn get_preset(name: &str) -> Option<&'static EmbeddingPreset> {
+    EMBEDDING_PRESETS.iter().find(|p| p.name == name)
+}
+
+/// List all available preset names.
+pub fn list_presets() -> Vec<&'static str> {
+    EMBEDDING_PRESETS.iter().map(|p| p.name).collect()
+}
+
+/// Returns installation instructions for ONNX Runtime.
+fn onnx_runtime_install_message() -> String {
+    #[cfg(all(windows, target_env = "gnu"))]
+    {
+        return "ONNX Runtime embeddings are not supported on Windows MinGW builds. \
+        ONNX Runtime requires MSVC toolchain. \
+        Please use Windows MSVC builds or disable embeddings feature."
+            .to_string();
+    }
+
+    #[cfg(not(all(windows, target_env = "gnu")))]
+    {
+        "ONNX Runtime is required for embeddings functionality. \
+        Install: \
+        macOS: 'brew install onnxruntime', \
+        Linux (Ubuntu/Debian): 'apt install libonnxruntime libonnxruntime-dev', \
+        Linux (Fedora): 'dnf install onnxruntime onnxruntime-devel', \
+        Linux (Arch): 'pacman -S onnxruntime', \
+        Windows (MSVC): Download from https://github.com/microsoft/onnxruntime/releases and add to PATH. \
+        \
+        Alternatively, set ORT_DYLIB_PATH environment variable to the ONNX Runtime library path. \
+        \
+        For Docker/containers: Install via package manager in your base image. \
+        Verified packages: Ubuntu 22.04+, Fedora 38+, Arch Linux."
+            .to_string()
+    }
+}
+
+/// Create a `KreuzbergError::Plugin` for the embeddings plugin.
+fn embedding_error(message: String) -> crate::KreuzbergError {
+    crate::KreuzbergError::Plugin {
+        message,
+        plugin_name: "embeddings".to_string(),
+    }
+}
+
+/// Resolve the cache directory for embedding models.
+fn resolve_cache_dir(cache_dir: Option<std::path::PathBuf>) -> std::path::PathBuf {
+    cache_dir.unwrap_or_else(|| {
+        if let Ok(env_path) = std::env::var("KREUZBERG_CACHE_DIR") {
+            return std::path::PathBuf::from(env_path).join("embeddings");
+        }
+        let mut path = std::env::current_dir().unwrap_or_else(|_| std::path::PathBuf::from("."));
+        path.push(".kreuzberg");
+        path.push("embeddings");
+        path
+    })
+}
+
+/// Resolve model info (repo, model file, pooling) from an EmbeddingModelType config.
+fn resolve_model_info(
+    model_type: &crate::core::config::EmbeddingModelType,
+) -> crate::Result<(&str, &str, engine::Pooling)> {
+    match model_type {
+        crate::core::config::EmbeddingModelType::Preset { name } => {
+            let preset =
+                get_preset(name).ok_or_else(|| embedding_error(format!("Unknown embedding preset: {name}")))?;
+            let pooling = match preset.pooling {
+                "cls" => engine::Pooling::Cls,
+                _ => engine::Pooling::Mean,
+            };
+            Ok((preset.model_repo, preset.model_file, pooling))
+        }
+        crate::core::config::EmbeddingModelType::Custom { model_id, .. } => {
+            // For custom models, default to mean pooling and standard model path.
+            // Users providing custom HF models should ensure the repo has the expected layout.
+            Ok((model_id.as_str(), "onnx/model.onnx", engine::Pooling::Mean))
+        }
+    }
+}
+
+/// Load a tokenizer from HuggingFace model files.
+///
+/// Adapted from the vendored embedding engine's tokenizer initialization.
+fn load_tokenizer(
+    tokenizer_path: &std::path::Path,
+    config_path: &std::path::Path,
+    special_tokens_path: &std::path::Path,
+    tokenizer_config_path: &std::path::Path,
+    max_length: usize,
+) -> crate::Result<tokenizers::Tokenizer> {
+    use tokenizers::{AddedToken, PaddingParams, PaddingStrategy, TruncationParams};
+
+    let config: serde_json::Value = serde_json::from_slice(
+        &std::fs::read(config_path).map_err(|e| embedding_error(format!("Failed to read config.json: {e}")))?,
+    )
+    .map_err(|e| embedding_error(format!("Failed to parse config.json: {e}")))?;
+
+    let tokenizer_config: serde_json::Value = serde_json::from_slice(
+        &std::fs::read(tokenizer_config_path)
+            .map_err(|e| embedding_error(format!("Failed to read tokenizer_config.json: {e}")))?,
+    )
+    .map_err(|e| embedding_error(format!("Failed to parse tokenizer_config.json: {e}")))?;
+
+    let mut tokenizer = tokenizers::Tokenizer::from_file(tokenizer_path)
+        .map_err(|e| embedding_error(format!("Failed to load tokenizer: {e}")))?;
+
+    let model_max_length = tokenizer_config["model_max_length"].as_f64().unwrap_or(512.0) as usize;
+    let max_length = max_length.min(model_max_length);
+    let pad_id = config["pad_token_id"].as_u64().unwrap_or(0) as u32;
+    let pad_token = tokenizer_config["pad_token"].as_str().unwrap_or("[PAD]").to_string();
+
+    tokenizer
+        .with_padding(Some(PaddingParams {
+            strategy: PaddingStrategy::BatchLongest,
+            pad_token,
+            pad_id,
+            ..Default::default()
+        }))
+        .with_truncation(Some(TruncationParams {
+            max_length,
+            ..Default::default()
+        }))
+        .map_err(|e| embedding_error(format!("Failed to configure tokenizer: {e}")))?;
+
+    // Add special tokens from special_tokens_map.json
+    if let Ok(special_tokens_data) = std::fs::read(special_tokens_path)
+        && let Ok(serde_json::Value::Object(map)) = serde_json::from_slice(&special_tokens_data)
+    {
+        for (_, value) in &map {
+            if let Some(content) = value.as_str() {
+                tokenizer.add_special_tokens(&[AddedToken {
+                    content: content.to_string(),
+                    special: true,
+                    ..Default::default()
+                }]);
+            } else if value.is_object()
+                && let (Some(content), Some(single_word), Some(lstrip), Some(rstrip), Some(normalized)) = (
+                    value["content"].as_str(),
+                    value["single_word"].as_bool(),
+                    value["lstrip"].as_bool(),
+                    value["rstrip"].as_bool(),
+                    value["normalized"].as_bool(),
+                )
+            {
+                tokenizer.add_special_tokens(&[AddedToken {
+                    content: content.to_string(),
+                    special: true,
+                    single_word,
+                    lstrip,
+                    rstrip,
+                    normalized,
+                }]);
+            }
+        }
+    }
+
+    Ok(tokenizer)
+}
+
+/// Download model files from HuggingFace and return their local paths.
+///
+/// Returns `(model_path, tokenizer_path, config_path, special_tokens_path, tokenizer_config_path)`.
+fn download_model_files(
+    repo_name: &str,
+    model_file: &str,
+    cache_directory: &std::path::Path,
+) -> crate::Result<(
+    std::path::PathBuf,
+    std::path::PathBuf,
+    std::path::PathBuf,
+    std::path::PathBuf,
+    std::path::PathBuf,
+)> {
+    let api = hf_hub::api::sync::ApiBuilder::new()
+        .with_cache_dir(cache_directory.to_path_buf())
+        .with_progress(true)
+        .build()
+        .map_err(|e| embedding_error(format!("Failed to create HF API client: {e}")))?;
+
+    let repo = api.model(repo_name.to_string());
+
+    let model_path = repo
+        .get(model_file)
+        .map_err(|e| embedding_error(format!("Failed to download {model_file}: {e}")))?;
+
+    let tokenizer_path = repo
+        .get("tokenizer.json")
+        .map_err(|e| embedding_error(format!("Failed to download tokenizer.json: {e}")))?;
+
+    let config_path = repo
+        .get("config.json")
+        .map_err(|e| embedding_error(format!("Failed to download config.json: {e}")))?;
+
+    // These are optional — fall back to empty paths that load_tokenizer handles gracefully
+    let special_tokens_path = repo
+        .get("special_tokens_map.json")
+        .unwrap_or_else(|_| std::path::PathBuf::new());
+
+    let tokenizer_config_path = repo
+        .get("tokenizer_config.json")
+        .unwrap_or_else(|_| std::path::PathBuf::new());
+
+    Ok((
+        model_path,
+        tokenizer_path,
+        config_path,
+        special_tokens_path,
+        tokenizer_config_path,
+    ))
+}
+
+/// Get or initialize an embedding engine from cache.
+///
+/// Downloads model files from HuggingFace if needed, loads the tokenizer,
+/// creates an ORT session, and caches the engine for reuse.
+fn get_or_init_engine(
+    repo_name: &str,
+    model_file: &str,
+    pooling: engine::Pooling,
+    cache_dir: Option<std::path::PathBuf>,
+) -> crate::Result<Arc<EmbeddingEngine>> {
+    let cache_directory = resolve_cache_dir(cache_dir);
+    let engine_key = format!(
+        "{repo_name}_{model_file}_{cache_directory}",
+        cache_directory = cache_directory.display()
+    );
+
+    // Fast path: read lock
+    {
+        match ENGINE_CACHE.read() {
+            Ok(cache) => {
+                if let Some(cached) = cache.get(&engine_key) {
+                    return Ok(Arc::clone(cached));
+                }
+            }
+            Err(poison_error) => {
+                let cache = poison_error.get_ref();
+                if let Some(cached) = cache.get(&engine_key) {
+                    return Ok(Arc::clone(cached));
+                }
+            }
+        }
+    }
+
+    // Slow path: write lock + initialization
+    {
+        let mut cache = match ENGINE_CACHE.write() {
+            Ok(guard) => guard,
+            Err(poison_error) => poison_error.into_inner(),
+        };
+
+        // Double-check after acquiring write lock
+        if let Some(cached) = cache.get(&engine_key) {
+            return Ok(Arc::clone(cached));
+        }
+
+        crate::ort_discovery::ensure_ort_available();
+
+        // Download model files
+        let (model_path, tokenizer_path, config_path, special_tokens_path, tokenizer_config_path) =
+            std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                download_model_files(repo_name, model_file, &cache_directory)
+            }))
+            .map_err(|panic_payload| {
+                let panic_msg = panic_to_string(panic_payload);
+                if looks_like_ort_error(&panic_msg) {
+                    crate::KreuzbergError::MissingDependency(format!(
+                        "ONNX Runtime - {}",
+                        onnx_runtime_install_message()
+                    ))
+                } else {
+                    embedding_error(format!("Model download panicked: {panic_msg}"))
+                }
+            })??;
+
+        // Load tokenizer
+        let tokenizer = load_tokenizer(
+            &tokenizer_path,
+            &config_path,
+            &special_tokens_path,
+            &tokenizer_config_path,
+            512, // default max_length
+        )?;
+
+        // Create ORT session
+        let session = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            ort::session::Session::builder().and_then(|builder| builder.commit_from_file(&model_path))
+        }))
+        .map_err(|panic_payload| {
+            let panic_msg = panic_to_string(panic_payload);
+            if looks_like_ort_error(&panic_msg) {
+                crate::KreuzbergError::MissingDependency(format!("ONNX Runtime - {}", onnx_runtime_install_message()))
+            } else {
+                embedding_error(format!("ONNX Runtime initialization panicked: {panic_msg}"))
+            }
+        })?
+        .map_err(|e| {
+            let error_msg = e.to_string();
+            if looks_like_ort_error(&error_msg) {
+                crate::KreuzbergError::MissingDependency(format!("ONNX Runtime - {}", onnx_runtime_install_message()))
+            } else {
+                embedding_error(format!("Failed to create ONNX session: {e}"))
+            }
+        })?;
+
+        let new_engine = Arc::new(EmbeddingEngine::new(tokenizer, session, pooling));
+        cache.insert(engine_key, Arc::clone(&new_engine));
+
+        Ok(new_engine)
+    }
+}
+
+/// Check if an error message looks like an ONNX Runtime missing dependency.
+fn looks_like_ort_error(msg: &str) -> bool {
+    msg.contains("onnxruntime")
+        || msg.contains("ORT")
+        || msg.contains("libonnxruntime")
+        || msg.contains("onnxruntime.dll")
+        || msg.contains("Unable to load")
+        || msg.contains("library load failed")
+        || msg.contains("attempting to load")
+        || msg.contains("An error occurred while")
+}
+
+/// Convert a panic payload to a string message.
+fn panic_to_string(payload: Box<dyn std::any::Any + Send>) -> String {
+    if let Some(s) = payload.downcast_ref::<&str>() {
+        s.to_string()
+    } else if let Some(s) = payload.downcast_ref::<String>() {
+        s.clone()
+    } else {
+        "Unknown panic".to_string()
+    }
+}
+
+/// Eagerly download and cache an embedding model without returning the handle.
+///
+/// This triggers the same download and initialization as `get_or_init_engine`
+/// but discards the result, making it suitable for cache-warming scenarios
+/// where the caller doesn't need to use the model immediately.
+///
+/// **Note**: This function downloads AND initializes the ONNX model, which
+/// requires ONNX Runtime and uses significant memory. For download-only
+/// scenarios (e.g., init containers), use [`download_model`] instead.
+pub fn warm_model(
+    model_type: &crate::core::config::EmbeddingModelType,
+    cache_dir: Option<std::path::PathBuf>,
+) -> crate::Result<()> {
+    let (repo, model_file, pooling) = resolve_model_info(model_type)?;
+    get_or_init_engine(repo, model_file, pooling, cache_dir).map(|_| ())
+}
+
+/// Download an embedding model's files without initializing ONNX Runtime.
+///
+/// Downloads the model files (ONNX model, tokenizer, config) from HuggingFace
+/// to the cache directory. Subsequent calls to `warm_model` or
+/// `get_or_init_engine` will find the files cached and skip the download step.
+///
+/// This is ideal for init containers or CI environments where you want to
+/// pre-populate the cache without loading models into memory.
+pub fn download_model(
+    model_type: &crate::core::config::EmbeddingModelType,
+    cache_dir: Option<std::path::PathBuf>,
+) -> crate::Result<()> {
+    let (repo_name, model_file, _pooling) = resolve_model_info(model_type)?;
+    let cache_directory = resolve_cache_dir(cache_dir);
+
+    let files = &[
+        model_file,
+        "tokenizer.json",
+        "config.json",
+        "special_tokens_map.json",
+        "tokenizer_config.json",
+    ];
+
+    tracing::info!(repo = %repo_name, "Downloading embedding model files (no ONNX init)");
+
+    let api = hf_hub::api::sync::ApiBuilder::new()
+        .with_cache_dir(cache_directory)
+        .with_progress(true)
+        .build()
+        .map_err(|e| embedding_error(format!("Failed to create HF API client: {e}")))?;
+
+    let repo = api.model(repo_name.to_string());
+
+    for file in files {
+        match repo.get(file) {
+            Ok(path) => tracing::debug!(file = %file, path = ?path, "Downloaded"),
+            Err(e) => {
+                // Model and tokenizer are required; others are optional
+                if *file == model_file || *file == "tokenizer.json" {
+                    return Err(embedding_error(format!("Failed to download {file}: {e}")));
+                }
+                tracing::debug!(file = %file, error = %e, "Optional file not found, skipping");
+            }
+        }
+    }
+
+    tracing::info!(repo = %repo_name, "Embedding model files downloaded successfully");
+    Ok(())
+}
+
+/// Generate embeddings for text chunks using the specified configuration.
+///
+/// This function modifies chunks in-place, populating their `embedding` field
+/// with generated embedding vectors. It uses batch processing for efficiency.
+///
+/// # Arguments
+///
+/// * `chunks` - Mutable reference to vector of chunks to generate embeddings for
+/// * `config` - Embedding configuration specifying model and parameters
+///
+/// # Returns
+///
+/// Returns `Ok(())` if embeddings were generated successfully, or an error if
+/// model initialization or embedding generation fails.
+pub fn generate_embeddings_for_chunks(
+    chunks: &mut [crate::types::Chunk],
+    config: &crate::core::config::EmbeddingConfig,
+) -> crate::Result<()> {
+    if chunks.is_empty() {
+        return Ok(());
+    }
+
+    let chunk_count = chunks.len();
+
+    let (repo, model_file, pooling) = resolve_model_info(&config.model)?;
+    let engine = get_or_init_engine(repo, model_file, pooling, config.cache_dir.clone())?;
+
+    let texts: Vec<&str> = chunks.iter().map(|c| c.content.as_str()).collect();
+    let mut embeddings_result = engine.embed(&texts, config.batch_size).map_err(|e| {
+        embedding_error(format!(
+            "Failed to generate embeddings for {chunk_count} chunks (model={:?}, batch_size={}): {e}",
+            config.model, config.batch_size
+        ))
+    })?;
+
+    // For large batches, normalize in parallel via rayon.
+    if config.normalize {
+        const PARALLEL_THRESHOLD: usize = 64;
+        if embeddings_result.len() >= PARALLEL_THRESHOLD {
+            use rayon::prelude::*;
+            embeddings_result.par_iter_mut().for_each(|embedding| {
+                let magnitude: f32 = embedding.iter().map(|x| x * x).sum::<f32>().sqrt();
+                if magnitude > f32::EPSILON {
+                    let inv_mag = 1.0 / magnitude;
+                    embedding.iter_mut().for_each(|x| *x *= inv_mag);
+                }
+            });
+        } else {
+            for embedding in &mut embeddings_result {
+                let magnitude: f32 = embedding.iter().map(|x| x * x).sum::<f32>().sqrt();
+                if magnitude > f32::EPSILON {
+                    let inv_mag = 1.0 / magnitude;
+                    embedding.iter_mut().for_each(|x| *x *= inv_mag);
+                }
+            }
+        }
+    }
+
+    // Assign embeddings to chunks.
+    for (chunk, embedding) in chunks.iter_mut().zip(embeddings_result) {
+        chunk.embedding = Some(embedding);
+    }
+
+    Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_get_preset() {
+        assert!(get_preset("balanced").is_some());
+        assert!(get_preset("fast").is_some());
+        assert!(get_preset("quality").is_some());
+        assert!(get_preset("multilingual").is_some());
+        assert!(get_preset("nonexistent").is_none());
+    }
+
+    #[test]
+    fn test_list_presets() {
+        let presets = list_presets();
+        assert_eq!(presets.len(), 4);
+        assert!(presets.contains(&"fast"));
+        assert!(presets.contains(&"balanced"));
+        assert!(presets.contains(&"quality"));
+        assert!(presets.contains(&"multilingual"));
+    }
+
+    #[test]
+    fn test_preset_dimensions() {
+        let balanced = get_preset("balanced").unwrap();
+        assert_eq!(balanced.dimensions, 768);
+
+        let fast = get_preset("fast").unwrap();
+        assert_eq!(fast.dimensions, 384);
+
+        let quality = get_preset("quality").unwrap();
+        assert_eq!(quality.dimensions, 1024);
+    }
+
+    #[test]
+    fn test_preset_chunk_sizes() {
+        let fast = get_preset("fast").unwrap();
+        assert_eq!(fast.chunk_size, 512);
+        assert_eq!(fast.overlap, 50);
+
+        let quality = get_preset("quality").unwrap();
+        assert_eq!(quality.chunk_size, 2000);
+        assert_eq!(quality.overlap, 200);
+    }
+
+    #[test]
+    fn test_preset_model_repos() {
+        let fast = get_preset("fast").unwrap();
+        assert_eq!(fast.model_repo, "Xenova/all-MiniLM-L6-v2");
+        assert_eq!(fast.pooling, "mean");
+        assert_eq!(fast.model_file, "onnx/model_quantized.onnx");
+
+        let balanced = get_preset("balanced").unwrap();
+        assert_eq!(balanced.model_repo, "Xenova/bge-base-en-v1.5");
+        assert_eq!(balanced.pooling, "cls");
+    }
+}

@@ -61,5 +61,6 @@ pub fn build_session(path: &str, accel: Option<&AccelerationConfig>) -> Result<S
     };
 
     let session = builder.commit_from_file(path)?;
+
     Ok(session)
 }

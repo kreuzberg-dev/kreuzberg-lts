@@ -194,26 +194,36 @@ func (m *Metadata) UnmarshalJSON(data []byte) error {
 func (m Metadata) MarshalJSON() ([]byte, error) {
 	out := make(map[string]any)
 
+	m.marshalStringFields(out)
+	m.marshalSliceFields(out)
+	m.marshalDateFields(out)
+	m.marshalSpecialFields(out)
+
+	formatFields, err := m.encodeFormat()
+	if err != nil {
+		return nil, err
+	}
+	for key, value := range formatFields {
+		out[key] = value
+	}
+
+	for key, value := range m.Additional {
+		out[key] = json.RawMessage(value)
+	}
+
+	return json.Marshal(out)
+}
+
+// marshalStringFields marshals all string pointer fields.
+func (m Metadata) marshalStringFields(out map[string]any) {
 	if m.Title != nil {
 		out["title"] = *m.Title
 	}
 	if m.Subject != nil {
 		out["subject"] = *m.Subject
 	}
-	if len(m.Authors) > 0 {
-		out["authors"] = m.Authors
-	}
-	if len(m.Keywords) > 0 {
-		out["keywords"] = m.Keywords
-	}
 	if m.Language != nil {
 		out["language"] = *m.Language
-	}
-	if m.CreatedAt != nil {
-		out["created_at"] = *m.CreatedAt
-	}
-	if m.ModifiedAt != nil {
-		out["modified_at"] = *m.ModifiedAt
 	}
 	if m.CreatedBy != nil {
 		out["created_by"] = *m.CreatedBy
@@ -221,12 +231,51 @@ func (m Metadata) MarshalJSON() ([]byte, error) {
 	if m.ModifiedBy != nil {
 		out["modified_by"] = *m.ModifiedBy
 	}
-	if m.Date != nil {
-		out["date"] = *m.Date
-	}
 	if m.Producer != nil {
 		out["producer"] = *m.Producer
 	}
+	if m.Category != nil {
+		out["category"] = *m.Category
+	}
+	if m.DocumentVersion != nil {
+		out["document_version"] = *m.DocumentVersion
+	}
+	if m.AbstractText != nil {
+		out["abstract_text"] = *m.AbstractText
+	}
+	if m.OutputFormat != nil {
+		out["output_format"] = *m.OutputFormat
+	}
+}
+
+// marshalSliceFields marshals all slice fields.
+func (m Metadata) marshalSliceFields(out map[string]any) {
+	if len(m.Authors) > 0 {
+		out["authors"] = m.Authors
+	}
+	if len(m.Keywords) > 0 {
+		out["keywords"] = m.Keywords
+	}
+	if len(m.Tags) > 0 {
+		out["tags"] = m.Tags
+	}
+}
+
+// marshalDateFields marshals all date/timestamp fields.
+func (m Metadata) marshalDateFields(out map[string]any) {
+	if m.CreatedAt != nil {
+		out["created_at"] = *m.CreatedAt
+	}
+	if m.ModifiedAt != nil {
+		out["modified_at"] = *m.ModifiedAt
+	}
+	if m.Date != nil {
+		out["date"] = *m.Date
+	}
+}
+
+// marshalSpecialFields marshals fields requiring special handling.
+func (m Metadata) marshalSpecialFields(out map[string]any) {
 	if m.PageCount != nil {
 		out["page_count"] = *m.PageCount
 	}
@@ -242,38 +291,9 @@ func (m Metadata) MarshalJSON() ([]byte, error) {
 	if m.Error != nil {
 		out["error"] = m.Error
 	}
-	if m.Category != nil {
-		out["category"] = *m.Category
-	}
-	if len(m.Tags) > 0 {
-		out["tags"] = m.Tags
-	}
-	if m.DocumentVersion != nil {
-		out["document_version"] = *m.DocumentVersion
-	}
-	if m.AbstractText != nil {
-		out["abstract_text"] = *m.AbstractText
-	}
-	if m.OutputFormat != nil {
-		out["output_format"] = *m.OutputFormat
-	}
 	if m.ExtractionDurationMs != nil {
 		out["extraction_duration_ms"] = *m.ExtractionDurationMs
 	}
-
-	formatFields, err := m.encodeFormat()
-	if err != nil {
-		return nil, err
-	}
-	for key, value := range formatFields {
-		out[key] = value
-	}
-
-	for key, value := range m.Additional {
-		out[key] = json.RawMessage(value)
-	}
-
-	return json.Marshal(out)
 }
 
 // UnmarshalJSON implements lenient JSON unmarshaling for PdfMetadata.

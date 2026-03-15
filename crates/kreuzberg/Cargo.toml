@@ -94,7 +94,15 @@ layout-detection = [
 language-detection = ["dep:whatlang"]
 chunking = ["dep:text-splitter", "dep:pulldown-cmark"]
 chunking-tokenizers = ["chunking", "dep:tokenizers", "text-splitter/tokenizers"]
-embeddings = ["dep:fastembed", "dep:reqwest", "dep:hf-hub", "chunking", "tokio-runtime"]
+embeddings = [
+    "dep:hf-hub",
+    "dep:ort",
+    "dep:ndarray",
+    "dep:tokenizers",
+    "chunking",
+    "tokio-runtime",
+    "ort-bundled",
+]
 stopwords = []
 quality = ["dep:unicode-normalization", "dep:chardetng", "stopwords"]
 
@@ -246,7 +254,10 @@ hayro-jpeg2000 = { version = "0.3", default-features = false, features = [
 hayro-jbig2 = { version = "0.1", default-features = false, features = ["std"], optional = true }
 whatlang = { version = "0.18.0", optional = true }
 text-splitter = { version = "0.29.3", features = ["markdown"], optional = true }
-tokenizers = { version = "0.22", optional = true, default-features = false, features = ["http"] }
+tokenizers = { version = "0.22", optional = true, default-features = false, features = [
+    "http",
+    "fancy-regex",
+] }
 unicode-normalization = { version = "0.1.25", optional = true }
 chardetng = { version = "0.1.17", optional = true }
 encoding_rs = { version = "0.8.35" }
@@ -270,6 +281,7 @@ tracing-opentelemetry = { version = "0.32", optional = true }
 infer = "0.19.0"
 sha2 = { version = "0.10", optional = true }
 ort = { version = "=2.0.0-rc.11", default-features = false, features = [
+    "std",
     "ndarray",
 ], optional = true }
 ndarray = { version = "0.17", optional = true }
@@ -291,17 +303,6 @@ image = { workspace = true, default-features = false, features = ["png"] }
 pprof = { version = "0.15.0", features = ["flamegraph"], optional = true }
 # PaddleOCR via ONNX Runtime - not available on WASM (vendored from paddle-ocr-rs)
 kreuzberg-paddle-ocr = { path = "../kreuzberg-paddle-ocr", version = "4.4.6", optional = true }
-# Use rustls on non-Windows platforms (Linux, macOS)
-# Blocking feature needed for model downloads
-reqwest = { workspace = true, default-features = false, features = [
-    "json",
-    "rustls",
-    "blocking",
-], optional = true }
-# Use rustls-tls for fastembed on non-Windows platforms
-fastembed = { version = "5.12", default-features = false, features = [
-    "hf-hub-rustls-tls",
-], optional = true }
 hf-hub = { version = "0.5", default-features = false, features = ["ureq"], optional = true }
 # Force ureq (transitive dep via hf-hub) to use rustls on non-Windows
 ureq = { version = "3.2", default-features = false, features = ["rustls", "json"], optional = true }
@@ -310,16 +311,6 @@ ureq = { version = "3.2", default-features = false, features = ["rustls", "json"
 [target.'cfg(all(target_os = "windows", not(target_arch = "wasm32")))'.dependencies]
 # PaddleOCR via ONNX Runtime - not available on WASM (vendored from paddle-ocr-rs)
 kreuzberg-paddle-ocr = { path = "../kreuzberg-paddle-ocr", version = "4.4.6", optional = true }
-# Blocking feature needed for model downloads
-reqwest = { workspace = true, default-features = false, features = [
-    "json",
-    "native-tls",
-    "blocking",
-], optional = true }
-# Use native-tls for fastembed on Windows
-fastembed = { version = "5.12", default-features = false, features = [
-    "hf-hub-native-tls",
-], optional = true }
 hf-hub = { version = "0.5", default-features = false, features = ["ureq"], optional = true }
 # Force ureq (transitive dep via hf-hub) to use native-tls on Windows
 ureq = { version = "3.2", default-features = false, features = [

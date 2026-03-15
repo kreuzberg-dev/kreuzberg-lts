@@ -41,9 +41,8 @@ pub trait BaseNet {
         num_thread: usize,
         builder_fn: Option<fn(SessionBuilder) -> Result<SessionBuilder, ort::Error>>,
     ) -> Result<(), OcrError> {
-        let session = self
-            .get_session_builder(num_thread, builder_fn)?
-            .commit_from_file(path)?;
+        let builder = self.get_session_builder(num_thread, builder_fn)?;
+        let session = builder.commit_from_file(path)?;
         self.init(session);
 
         Ok(())
@@ -55,9 +54,8 @@ pub trait BaseNet {
         num_thread: usize,
         builder_fn: Option<fn(SessionBuilder) -> Result<SessionBuilder, ort::Error>>,
     ) -> Result<(), OcrError> {
-        let session = self
-            .get_session_builder(num_thread, builder_fn)?
-            .commit_from_memory(model_bytes)?;
+        let builder = self.get_session_builder(num_thread, builder_fn)?;
+        let session = builder.commit_from_memory(model_bytes)?;
 
         self.init(session);
 

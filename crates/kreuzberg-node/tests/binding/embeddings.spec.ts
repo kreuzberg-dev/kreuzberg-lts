@@ -722,15 +722,15 @@ describe("Embedding Vector Generation (Node.js Bindings)", () => {
 			}
 		});
 
-		it("should support fastembed model configuration", () => {
+		it("should support custom ONNX model configuration", () => {
 			const config: ExtractionConfig = {
 				chunking: {
 					maxChars: 500,
 					maxOverlap: 100,
 					embedding: {
 						model: {
-							modelType: "fastembed",
-							value: "BGEBaseENV15",
+							modelType: "custom",
+							value: "BAAI/bge-base-en-v1.5",
 							dimensions: 768,
 						},
 						normalize: true,
@@ -738,7 +738,7 @@ describe("Embedding Vector Generation (Node.js Bindings)", () => {
 				},
 			};
 
-			const text = "FastEmbed models provide efficient embedding generation.";
+			const text = "Custom ONNX models provide efficient embedding generation.";
 			const textBytes = new TextEncoder().encode(text);
 
 			const result = extractBytesSync(textBytes, "text/plain", config);

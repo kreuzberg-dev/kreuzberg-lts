@@ -43,8 +43,7 @@ homepage = "https://kreuzberg.dev"
 kreuzberg = { path = "./crates/kreuzberg", version = "4.4.6", default-features = false }
 kreuzberg-ffi = { path = "./crates/kreuzberg-ffi", version = "4.4.6" }
 
-# Pinned: fastembed 5.12 requires exact =2.0.0-rc.11, kreuzberg-paddle-ocr must match
-ort = { version = "=2.0.0-rc.11", default-features = false }
+ort = { version = "2.0.0-rc.11", default-features = false }
 tokio = { version = "1.50.0", features = [
     "rt",
     "rt-multi-thread",

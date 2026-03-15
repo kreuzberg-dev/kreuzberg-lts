@@ -164,6 +164,31 @@ The original MIT OR Apache-2.0 dual license permits relicensing under MIT alone.
 
 ---
 
-**Last Updated**: February 10, 2026
+## fastembed-rs
+
+Text embedding inference pipeline vendored into `crates/kreuzberg/src/embeddings/engine.rs`:
+
+- **Source**: https://github.com/Anush008/fastembed-rs
+- **License**: Apache-2.0
+- **Author**: Anush008 and contributors
+- **Vendored Version**: Based on 0.2.x
+- **Location**: `crates/kreuzberg/src/embeddings/engine.rs`
+- **Purpose**: ONNX-based text embedding inference with thread-safe concurrent embedding generation
+
+### Modifications
+
+The vendored code has been modified from the original fastembed-rs:
+
+- Changed `embed()` method signature from `&mut self` to `&self` for thread-safe concurrent inference without mutex contention
+- Adapted to Kreuzberg's ONNX Runtime integration and error handling
+- Integrated with Kreuzberg's embedding configuration and model management
+
+### License Compatibility
+
+The original Apache-2.0 license is fully compatible with Kreuzberg's MIT license. The original copyright and attribution are preserved in the vendored code's comments.
+
+---
+
+**Last Updated**: March 15, 2026
 **Pandoc Version Used**: 3.8.3
 **Baseline Generation Date**: December 6, 2025

@@ -320,7 +320,7 @@ ISO 639-3 codes including:
 
 ## Embedding Generation
 
-Generate embeddings for vector databases, semantic search, and RAG systems using ONNX models via `fastembed-rs`.
+Generate embeddings for vector databases, semantic search, and RAG systems using ONNX models.
 
 ### Available Presets
 

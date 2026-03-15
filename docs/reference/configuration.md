@@ -539,7 +539,7 @@ EmbeddingConfig is used to control embedding generation when chunking documents.
 
 | Field                    | Type                 | Default                          | Description                                                                    |
 | ------------------------ | -------------------- | -------------------------------- | ------------------------------------------------------------------------------ |
-| `model`                  | `EmbeddingModelType` | `Preset { name: "balanced" }`    | Embedding model selection (preset, fastembed, or custom)                       |
+| `model`                  | `EmbeddingModelType` | `Preset { name: "balanced" }`    | Embedding model selection (preset or custom)                                   |
 | `batch_size`             | `usize`              | `32`                             | Number of texts to process in each batch (higher = faster but more memory)     |
 | `normalize`              | `bool`               | `true`                           | Normalize embedding vectors to unit length (recommended for cosine similarity) |
 | `show_download_progress` | `bool`               | `false`                          | Show progress when downloading model files                                     |
@@ -687,12 +687,12 @@ cache_dir = "/custom/cache/path"
     };
     ```
 
-=== "Rust - FastEmbed Model"
+=== "Rust - Custom ONNX Model"
 
-    ```rust title="embedding_fastembed.rs"
+    ```rust title="embedding_custom_onnx.rs"
     use kreuzberg::core::{EmbeddingConfig, EmbeddingModelType};
 
-    // Explicit FastEmbed model specification
+    // Explicit ONNX model specification
     let config = EmbeddingConfig {
         model: EmbeddingModelType::FastEmbed {
             model: "BGEBaseENV15".to_string(),

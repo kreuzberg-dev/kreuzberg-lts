@@ -202,7 +202,7 @@ impl Default for ChunkingConfig {
 
 /// Embedding configuration for text chunks.
 ///
-/// Configures embedding generation using ONNX models via fastembed-rs.
+/// Configures embedding generation using ONNX models via the vendored embedding engine.
 /// Requires the `embeddings` feature to be enabled.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct EmbeddingConfig {
@@ -250,10 +250,6 @@ impl Default for EmbeddingConfig {
 pub enum EmbeddingModelType {
     /// Use a preset model configuration (recommended)
     Preset { name: String },
-
-    /// Use a specific fastembed model by name
-    #[cfg(feature = "embeddings")]
-    FastEmbed { model: String, dimensions: usize },
 
     /// Use a custom ONNX model from HuggingFace
     Custom { model_id: String, dimensions: usize },

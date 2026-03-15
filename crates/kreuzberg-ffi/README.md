@@ -771,7 +771,7 @@ private static extern IntPtr kreuzberg_extract_file(
 
 ### Default Features
 - `html`: HTML to Markdown conversion support
-- `embeddings`: Text embedding extraction via fastembed-rs (requires ONNX Runtime - must be installed separately)
+- `embeddings`: Text embedding extraction via ONNX models (requires ONNX Runtime - must be installed separately)
 
 ### System Requirements for Embeddings
 

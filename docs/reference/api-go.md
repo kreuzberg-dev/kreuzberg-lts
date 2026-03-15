@@ -678,9 +678,9 @@ type EmbeddingConfig struct {
 }
 
 type EmbeddingModelType struct {
-	Type       string // "preset", "fastembed", "custom"
+	Type       string // "preset" or "custom"
 	Name       string // For preset models
-	Model      string // For fastembed/custom
+	Model      string // For custom models
 	ModelID    string // Alias for custom
 	Dimensions *int   // Embedding dimensions
 }
