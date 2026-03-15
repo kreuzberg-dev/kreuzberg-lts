@@ -6,10 +6,14 @@ use ort::{
     value::Tensor,
 };
 
-const MEAN_VALUES: [f32; 3] = [127.5, 127.5, 127.5];
-const NORM_VALUES: [f32; 3] = [1.0 / 127.5, 1.0 / 127.5, 1.0 / 127.5];
-const ANGLE_DST_WIDTH: u32 = 192;
-const ANGLE_DST_HEIGHT: u32 = 48;
+// PP-LCNet_x1_0_textline_ori preprocessing (ImageNet normalization).
+// Input: resize to 160×80, normalize with ImageNet mean/std.
+// Formula in substract_mean_normalize: (pixel - MEAN) * NORM
+// For ImageNet: (pixel/255 - mean) / std = (pixel - mean*255) * (1/(std*255))
+const MEAN_VALUES: [f32; 3] = [0.485 * 255.0, 0.456 * 255.0, 0.406 * 255.0];
+const NORM_VALUES: [f32; 3] = [1.0 / (0.229 * 255.0), 1.0 / (0.224 * 255.0), 1.0 / (0.225 * 255.0)];
+const ANGLE_DST_WIDTH: u32 = 160;
+const ANGLE_DST_HEIGHT: u32 = 80;
 const ANGLE_COLS: usize = 2;
 
 #[derive(Debug)]

@@ -13,7 +13,9 @@ use crate::ocr::cache::OcrCache;
 use crate::ocr::conversion::{TsvRow, iterator_word_to_element, tsv_row_to_element};
 use crate::ocr::error::OcrError;
 use crate::ocr::hocr::convert_hocr_to_markdown;
-use crate::ocr::table::{extract_words_from_tsv, post_process_table, reconstruct_table, table_to_markdown};
+#[cfg(feature = "pdf")]
+use crate::ocr::table::post_process_table;
+use crate::ocr::table::{extract_words_from_tsv, reconstruct_table, table_to_markdown};
 use crate::ocr::types::{BatchItemResult, TesseractConfig};
 use crate::types::{OcrExtractionResult, OcrTable, OcrTableBoundingBox};
 use kreuzberg_tesseract::{TessPageSegMode, TessPolyBlockType, TesseractAPI};
@@ -1055,7 +1057,12 @@ pub(super) fn perform_ocr(
             let table = reconstruct_table(&words, config.table_column_threshold, config.table_row_threshold_ratio);
             if !table.is_empty() && !table[0].is_empty() {
                 // Apply full post-processing validation to reject false positives.
-                if let Some(cleaned) = post_process_table(table, false) {
+                // post_process_table is only available with the pdf feature; without it, use table as-is.
+                #[cfg(feature = "pdf")]
+                let cleaned = post_process_table(table, false);
+                #[cfg(not(feature = "pdf"))]
+                let cleaned = Some(table);
+                if let Some(cleaned) = cleaned {
                     metadata.insert("table_count".to_string(), serde_json::Value::String("1".to_string()));
                     metadata.insert(
                         "tables_detected".to_string(),

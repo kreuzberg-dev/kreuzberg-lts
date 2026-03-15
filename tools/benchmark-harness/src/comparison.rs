@@ -24,10 +24,14 @@ pub enum Pipeline {
     Tesseract,
     /// Tesseract OCR + layout detection
     TesseractLayout,
-    /// PaddleOCR (force_ocr)
+    /// PaddleOCR server tier (force_ocr)
     Paddle,
-    /// PaddleOCR + layout detection
+    /// PaddleOCR server tier + layout detection
     PaddleLayout,
+    /// PaddleOCR mobile tier (force_ocr, lightweight models)
+    PaddleMobile,
+    /// PaddleOCR mobile tier + layout detection
+    PaddleMobileLayout,
     /// Docling vendored extraction (read from file)
     Docling,
 }
@@ -41,6 +45,8 @@ impl Pipeline {
             Pipeline::TesseractLayout => "tesseract+layout",
             Pipeline::Paddle => "paddle",
             Pipeline::PaddleLayout => "paddle+layout",
+            Pipeline::PaddleMobile => "paddle-mobile",
+            Pipeline::PaddleMobileLayout => "paddle-mobile+layout",
             Pipeline::Docling => "docling",
         }
     }
@@ -53,6 +59,8 @@ impl Pipeline {
             "tesseract+layout" | "tesseract-layout" => Some(Pipeline::TesseractLayout),
             "paddle" => Some(Pipeline::Paddle),
             "paddle+layout" | "paddle-layout" => Some(Pipeline::PaddleLayout),
+            "paddle-mobile" => Some(Pipeline::PaddleMobile),
+            "paddle-mobile+layout" | "paddle-mobile-layout" => Some(Pipeline::PaddleMobileLayout),
             "docling" => Some(Pipeline::Docling),
             _ => None,
         }
@@ -67,6 +75,8 @@ impl Pipeline {
             Pipeline::TesseractLayout,
             Pipeline::Paddle,
             Pipeline::PaddleLayout,
+            Pipeline::PaddleMobile,
+            Pipeline::PaddleMobileLayout,
         ]
     }
 }
@@ -159,6 +169,30 @@ fn build_extraction_config(pipeline: Pipeline) -> kreuzberg::ExtractionConfig {
             ocr: Some(kreuzberg::core::config::OcrConfig {
                 backend: "paddleocr".to_string(),
                 language: "eng".to_string(),
+                ..Default::default()
+            }),
+            layout: Some(LayoutDetectionConfig {
+                preset: "fast".to_string(),
+                ..Default::default()
+            }),
+            ..base
+        },
+        Pipeline::PaddleMobile => kreuzberg::ExtractionConfig {
+            force_ocr: true,
+            ocr: Some(kreuzberg::core::config::OcrConfig {
+                backend: "paddleocr".to_string(),
+                language: "eng".to_string(),
+                paddle_ocr_config: Some(serde_json::json!({"model_tier": "mobile"})),
+                ..Default::default()
+            }),
+            ..base
+        },
+        Pipeline::PaddleMobileLayout => kreuzberg::ExtractionConfig {
+            force_ocr: true,
+            ocr: Some(kreuzberg::core::config::OcrConfig {
+                backend: "paddleocr".to_string(),
+                language: "eng".to_string(),
+                paddle_ocr_config: Some(serde_json::json!({"model_tier": "mobile"})),
                 ..Default::default()
             }),
             layout: Some(LayoutDetectionConfig {

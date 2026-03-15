@@ -9,6 +9,8 @@
 //! | P4 | tesseract+layout  | P3 + layout: fast                                |
 //! | P5 | paddleocr         | output_format: Markdown, ocr: paddleocr, force    |
 //! | P6 | paddleocr+layout  | P5 + layout: fast                                |
+//! | P7 | paddleocr-mobile  | P5 + model_tier: mobile                           |
+//! | P8 | paddleocr-mobile+layout | P7 + layout: fast                           |
 
 use crate::Result;
 use crate::comparison::{Pipeline, PipelineResult};
@@ -171,6 +173,30 @@ fn build_config(pipeline: Pipeline) -> kreuzberg::ExtractionConfig {
             ocr: Some(OcrConfig {
                 backend: "paddleocr".to_string(),
                 language: "eng".to_string(),
+                ..Default::default()
+            }),
+            layout: Some(LayoutDetectionConfig {
+                preset: "fast".to_string(),
+                ..Default::default()
+            }),
+            ..base
+        },
+        Pipeline::PaddleMobile => kreuzberg::ExtractionConfig {
+            force_ocr: true,
+            ocr: Some(OcrConfig {
+                backend: "paddleocr".to_string(),
+                language: "eng".to_string(),
+                paddle_ocr_config: Some(serde_json::json!({"model_tier": "mobile"})),
+                ..Default::default()
+            }),
+            ..base
+        },
+        Pipeline::PaddleMobileLayout => kreuzberg::ExtractionConfig {
+            force_ocr: true,
+            ocr: Some(OcrConfig {
+                backend: "paddleocr".to_string(),
+                language: "eng".to_string(),
+                paddle_ocr_config: Some(serde_json::json!({"model_tier": "mobile"})),
                 ..Default::default()
             }),
             layout: Some(LayoutDetectionConfig {

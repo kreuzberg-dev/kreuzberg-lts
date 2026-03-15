@@ -73,6 +73,8 @@ paddle-ocr = [
     "dep:image",
     "dep:hf-hub",
     "dep:ureq",
+    "dep:ort",
+    "dep:ndarray",
     "html",
     "tokio-runtime",
     "ocr",
