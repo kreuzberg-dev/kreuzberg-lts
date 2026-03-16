@@ -1151,7 +1151,7 @@ static void test_batch_extraction(void) {
     /* Batch file extraction */
     {
         const char *files[] = {pdf_path, docx_path};
-        CBatchResult *batch = kreuzberg_batch_extract_files_sync(files, 2, NULL);
+        CBatchResult *batch = kreuzberg_batch_extract_files_sync(files, NULL, 2, NULL);
         if (batch && batch->success) {
             if (batch->count == 2) {
                 pass("batch_extract_files_sync: returns 2 results");
@@ -1194,7 +1194,7 @@ static void test_batch_extraction(void) {
     {
         const char *files[] = {pdf_path};
         const char *config_json = "{\"use_cache\": false}";
-        CBatchResult *batch = kreuzberg_batch_extract_files_sync(files, 1, config_json);
+        CBatchResult *batch = kreuzberg_batch_extract_files_sync(files, NULL, 1, config_json);
         if (batch && batch->success) {
             pass("batch_extract_files_sync with config: success");
             kreuzberg_free_batch_result(batch);

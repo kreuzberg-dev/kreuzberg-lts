@@ -8,6 +8,7 @@ use crate::result::extraction_result_to_ruby;
 
 use std::path::PathBuf;
 
+use magnus::value::ReprValue;
 use magnus::{Error, RArray, RHash, RString, Ruby, Value, scan_args::scan_args, TryConvert};
 
 /// Batch extract content from multiple files (synchronous)
@@ -148,17 +149,17 @@ pub fn batch_extract_bytes(args: &[Value]) -> Result<RArray, Error> {
 /// If `file_configs` keyword is present in opts, zip with paths.
 /// Otherwise, all items get `None` config.
 fn build_file_items(
-    _ruby: &Ruby,
+    ruby: &Ruby,
     paths: &[String],
     opts: Option<RHash>,
 ) -> Result<Vec<(PathBuf, Option<kreuzberg::FileExtractionConfig>)>, Error> {
     let file_configs_array: Option<RArray> = opts
         .and_then(|kw| kw.get(magnus::Symbol::new("file_configs")))
         .and_then(|v: Value| {
-            if v.is_nil() {
-                None
-            } else {
-                RArray::try_convert(v).ok()
+            match v.equal(ruby.qnil()) {
+                Ok(true) => None,
+                Ok(false) => RArray::try_convert(v).ok(),
+                Err(_) => None,
             }
         });
 
@@ -188,7 +189,7 @@ fn build_file_items(
 
 /// Build bytes items from byte arrays, mime types, and optional file_configs keyword arg.
 fn build_bytes_items(
-    _ruby: &Ruby,
+    ruby: &Ruby,
     bytes_vec: &[RString],
     mime_types: &[String],
     opts: Option<RHash>,
@@ -196,10 +197,10 @@ fn build_bytes_items(
     let file_configs_array: Option<RArray> = opts
         .and_then(|kw| kw.get(magnus::Symbol::new("file_configs")))
         .and_then(|v: Value| {
-            if v.is_nil() {
-                None
-            } else {
-                RArray::try_convert(v).ok()
+            match v.equal(ruby.qnil()) {
+                Ok(true) => None,
+                Ok(false) => RArray::try_convert(v).ok(),
+                Err(_) => None,
             }
         });
 

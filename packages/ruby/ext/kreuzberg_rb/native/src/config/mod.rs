@@ -11,14 +11,16 @@ pub use types::*;
 
 use crate::error_handling::runtime_error;
 use crate::helpers::ruby_value_to_json;
-use magnus::{Error, Value};
+use magnus::value::ReprValue;
+use magnus::{Error, Ruby, Value};
 
 /// Parse a Ruby value (nil or Hash) into an `Option<kreuzberg::FileExtractionConfig>`.
 ///
 /// - `nil` → `None` (use batch-level defaults)
 /// - Hash  → serialize to JSON, then deserialize to `FileExtractionConfig`
 pub fn parse_file_extraction_config(value: Value) -> Result<Option<kreuzberg::FileExtractionConfig>, Error> {
-    if value.is_nil() {
+    let ruby = Ruby::get().expect("Ruby not initialized");
+    if value.equal(ruby.qnil())? {
         return Ok(None);
     }
 

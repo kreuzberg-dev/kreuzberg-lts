@@ -88,7 +88,7 @@ pub fn ruby_key_to_string(value: Value) -> Result<String, Error> {
 pub fn ruby_value_to_json(value: Value) -> Result<serde_json::Value, Error> {
     let ruby = Ruby::get().expect("Ruby not initialized");
 
-    if value.is_nil() {
+    if value.equal(ruby.qnil())? {
         return Ok(serde_json::Value::Null);
     }
 

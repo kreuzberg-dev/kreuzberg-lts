@@ -53,7 +53,7 @@ pub fn parse_ocr_config(ruby: &Ruby, hash: RHash) -> Result<OcrConfig, Error> {
     };
 
     if let Some(val) = get_kw(ruby, hash, "tesseract_config")
-        && !val.is_nil()
+        && val.equal(ruby.qnil()).ok() != Some(true)
     {
         let tc_json = ruby_value_to_json(val)?;
         let parsed: RustTesseractConfig =
@@ -62,13 +62,13 @@ pub fn parse_ocr_config(ruby: &Ruby, hash: RHash) -> Result<OcrConfig, Error> {
     }
 
     if let Some(val) = get_kw(ruby, hash, "paddle_ocr_config")
-        && !val.is_nil()
+        && val.equal(ruby.qnil()).ok() != Some(true)
     {
         config.paddle_ocr_config = Some(ruby_value_to_json(val)?);
     }
 
     if let Some(val) = get_kw(ruby, hash, "element_config")
-        && !val.is_nil()
+        && val.equal(ruby.qnil()).ok() != Some(true)
     {
         let ec_json = ruby_value_to_json(val)?;
         let parsed: kreuzberg::types::OcrElementConfig =
@@ -77,7 +77,7 @@ pub fn parse_ocr_config(ruby: &Ruby, hash: RHash) -> Result<OcrConfig, Error> {
     }
 
     if let Some(val) = get_kw(ruby, hash, "output_format")
-        && !val.is_nil()
+        && val.equal(ruby.qnil()).ok() != Some(true)
     {
         let format_str = symbol_to_string(val)?;
         let format: OutputFormat = match format_str.as_str() {
@@ -108,7 +108,7 @@ pub fn parse_chunking_config(ruby: &Ruby, hash: RHash) -> Result<ChunkingConfig,
     };
 
     let preset = if let Some(val) = get_kw(ruby, hash, "preset")
-        && !val.is_nil()
+        && val.equal(ruby.qnil()).ok() != Some(true)
     {
         Some(symbol_to_string(val)?)
     } else {
@@ -116,7 +116,7 @@ pub fn parse_chunking_config(ruby: &Ruby, hash: RHash) -> Result<ChunkingConfig,
     };
 
     let embedding = if let Some(val) = get_kw(ruby, hash, "embedding")
-        && !val.is_nil()
+        && val.equal(ruby.qnil()).ok() != Some(true)
     {
         let json_value = ruby_value_to_json(val)?;
         let parsed: EmbeddingConfig = serde_json::from_value(json_value)
@@ -127,7 +127,7 @@ pub fn parse_chunking_config(ruby: &Ruby, hash: RHash) -> Result<ChunkingConfig,
     };
 
     let chunker_type = if let Some(val) = get_kw(ruby, hash, "chunker_type")
-        && !val.is_nil()
+        && val.equal(ruby.qnil()).ok() != Some(true)
     {
         match symbol_to_string(val)?.as_str() {
             "markdown" => kreuzberg::ChunkerType::Markdown,
@@ -155,7 +155,7 @@ pub fn parse_chunking_config(ruby: &Ruby, hash: RHash) -> Result<ChunkingConfig,
 /// Parse ChunkSizing from Ruby Hash fields.
 fn parse_chunk_sizing(ruby: &Ruby, hash: RHash) -> Result<kreuzberg::ChunkSizing, Error> {
     let sizing_type = if let Some(val) = get_kw(ruby, hash, "sizing_type")
-        && !val.is_nil()
+        && val.equal(ruby.qnil()).ok() != Some(true)
     {
         Some(symbol_to_string(val)?)
     } else {
@@ -165,14 +165,14 @@ fn parse_chunk_sizing(ruby: &Ruby, hash: RHash) -> Result<kreuzberg::ChunkSizing
     match sizing_type.as_deref() {
         Some("tokenizer") => {
             let model = if let Some(val) = get_kw(ruby, hash, "sizing_model")
-                && !val.is_nil()
+                && val.equal(ruby.qnil()).ok() != Some(true)
             {
                 String::try_convert(val)?
             } else {
                 "Xenova/gpt-4o".to_string()
             };
             let cache_dir = if let Some(val) = get_kw(ruby, hash, "sizing_cache_dir")
-                && !val.is_nil()
+                && val.equal(ruby.qnil()).ok() != Some(true)
             {
                 Some(std::path::PathBuf::from(String::try_convert(val)?))
             } else {
@@ -234,7 +234,7 @@ pub fn parse_hierarchy_config(ruby: &Ruby, hash: RHash) -> Result<HierarchyConfi
     };
 
     let ocr_coverage_threshold = if let Some(val) = get_kw(ruby, hash, "ocr_coverage_threshold") {
-        if !val.is_nil() {
+        if val.equal(ruby.qnil()).ok() != Some(true) {
             Some(f64::try_convert(val)? as f32)
         } else {
             None
@@ -262,7 +262,7 @@ pub fn parse_pdf_config(ruby: &Ruby, hash: RHash) -> Result<PdfConfig, Error> {
     };
 
     let passwords = if let Some(val) = get_kw(ruby, hash, "passwords") {
-        if !val.is_nil() {
+        if val.equal(ruby.qnil()).ok() != Some(true) {
             let arr = RArray::try_convert(val)?;
             Some(arr.to_vec::<String>()?)
         } else {
@@ -279,7 +279,7 @@ pub fn parse_pdf_config(ruby: &Ruby, hash: RHash) -> Result<PdfConfig, Error> {
     };
 
     let hierarchy = if let Some(val) = get_kw(ruby, hash, "hierarchy") {
-        if !val.is_nil() {
+        if val.equal(ruby.qnil()).ok() != Some(true) {
             let h_hash = RHash::try_convert(val)?;
             Some(parse_hierarchy_config(ruby, h_hash)?)
         } else {
@@ -296,7 +296,7 @@ pub fn parse_pdf_config(ruby: &Ruby, hash: RHash) -> Result<PdfConfig, Error> {
     };
 
     let top_margin_fraction = if let Some(val) = get_kw(ruby, hash, "top_margin_fraction") {
-        if !val.is_nil() {
+        if val.equal(ruby.qnil()).ok() != Some(true) {
             Some(f32::try_convert(val)?)
         } else {
             None
@@ -306,7 +306,7 @@ pub fn parse_pdf_config(ruby: &Ruby, hash: RHash) -> Result<PdfConfig, Error> {
     };
 
     let bottom_margin_fraction = if let Some(val) = get_kw(ruby, hash, "bottom_margin_fraction") {
-        if !val.is_nil() {
+        if val.equal(ruby.qnil()).ok() != Some(true) {
             Some(f32::try_convert(val)?)
         } else {
             None
@@ -394,7 +394,7 @@ pub fn parse_postprocessor_config(ruby: &Ruby, hash: RHash) -> Result<PostProces
     };
 
     let enabled_processors = if let Some(val) = get_kw(ruby, hash, "enabled_processors")
-        && !val.is_nil()
+        && val.equal(ruby.qnil()).ok() != Some(true)
     {
         let arr = RArray::try_convert(val)?;
         Some(arr.to_vec::<String>()?)
@@ -403,7 +403,7 @@ pub fn parse_postprocessor_config(ruby: &Ruby, hash: RHash) -> Result<PostProces
     };
 
     let disabled_processors = if let Some(val) = get_kw(ruby, hash, "disabled_processors")
-        && !val.is_nil()
+        && val.equal(ruby.qnil()).ok() != Some(true)
     {
         let arr = RArray::try_convert(val)?;
         Some(arr.to_vec::<String>()?)
@@ -481,13 +481,13 @@ pub fn parse_keyword_config(ruby: &Ruby, hash: RHash) -> Result<RustKeywordConfi
     }
 
     if let Some(val) = get_kw(ruby, hash, "language")
-        && !val.is_nil()
+        && val.equal(ruby.qnil()).ok() != Some(true)
     {
         config.language = Some(symbol_to_string(val)?);
     }
 
     if let Some(val) = get_kw(ruby, hash, "yake_params")
-        && !val.is_nil()
+        && val.equal(ruby.qnil()).ok() != Some(true)
     {
         let yake_hash = RHash::try_convert(val)?;
         let window = if let Some(window_val) = get_kw(ruby, yake_hash, "window_size") {
@@ -499,7 +499,7 @@ pub fn parse_keyword_config(ruby: &Ruby, hash: RHash) -> Result<RustKeywordConfi
     }
 
     if let Some(val) = get_kw(ruby, hash, "rake_params")
-        && !val.is_nil()
+        && val.equal(ruby.qnil()).ok() != Some(true)
     {
         let rake_hash = RHash::try_convert(val)?;
         let mut params = RustRakeParams::default();
@@ -698,7 +698,7 @@ pub fn parse_html_options(ruby: &Ruby, hash: RHash) -> Result<ConversionOptions,
     }
 
     if let Some(val) = get_kw(ruby, hash, "preprocessing")
-        && !val.is_nil()
+        && val.equal(ruby.qnil()).ok() != Some(true)
     {
         let pre_hash = RHash::try_convert(val)?;
         let mut preprocessing = options.preprocessing.clone();
@@ -809,77 +809,77 @@ pub fn parse_extraction_config(ruby: &Ruby, opts: Option<RHash>) -> Result<Extra
         }
 
         if let Some(val) = get_kw(ruby, hash, "ocr")
-            && !val.is_nil()
+            && val.equal(ruby.qnil()).ok() != Some(true)
         {
             let ocr_hash = RHash::try_convert(val)?;
             config.ocr = Some(parse_ocr_config(ruby, ocr_hash)?);
         }
 
         if let Some(val) = get_kw(ruby, hash, "chunking")
-            && !val.is_nil()
+            && val.equal(ruby.qnil()).ok() != Some(true)
         {
             let chunking_hash = RHash::try_convert(val)?;
             config.chunking = Some(parse_chunking_config(ruby, chunking_hash)?);
         }
 
         if let Some(val) = get_kw(ruby, hash, "language_detection")
-            && !val.is_nil()
+            && val.equal(ruby.qnil()).ok() != Some(true)
         {
             let lang_hash = RHash::try_convert(val)?;
             config.language_detection = Some(parse_language_detection_config(ruby, lang_hash)?);
         }
 
         if let Some(val) = get_kw(ruby, hash, "pdf_options")
-            && !val.is_nil()
+            && val.equal(ruby.qnil()).ok() != Some(true)
         {
             let pdf_hash = RHash::try_convert(val)?;
             config.pdf_options = Some(parse_pdf_config(ruby, pdf_hash)?);
         }
 
         if let Some(val) = get_kw(ruby, hash, "images")
-            && !val.is_nil()
+            && val.equal(ruby.qnil()).ok() != Some(true)
         {
             let images_hash = RHash::try_convert(val)?;
             config.images = Some(parse_image_extraction_config(ruby, images_hash)?);
         }
 
         if let Some(val) = get_kw(ruby, hash, "postprocessor")
-            && !val.is_nil()
+            && val.equal(ruby.qnil()).ok() != Some(true)
         {
             let postprocessor_hash = RHash::try_convert(val)?;
             config.postprocessor = Some(parse_postprocessor_config(ruby, postprocessor_hash)?);
         }
 
         if let Some(val) = get_kw(ruby, hash, "token_reduction")
-            && !val.is_nil()
+            && val.equal(ruby.qnil()).ok() != Some(true)
         {
             let token_reduction_hash = RHash::try_convert(val)?;
             config.token_reduction = Some(parse_token_reduction_config(ruby, token_reduction_hash)?);
         }
 
         if let Some(val) = get_kw(ruby, hash, "keywords")
-            && !val.is_nil()
+            && val.equal(ruby.qnil()).ok() != Some(true)
         {
             let keywords_hash = RHash::try_convert(val)?;
             config.keywords = Some(parse_keyword_config(ruby, keywords_hash)?);
         }
 
         if let Some(val) = get_kw(ruby, hash, "acceleration")
-            && !val.is_nil()
+            && val.equal(ruby.qnil()).ok() != Some(true)
         {
             let accel_hash = RHash::try_convert(val)?;
             config.acceleration = Some(parse_acceleration_config(ruby, accel_hash)?);
         }
 
         if let Some(val) = get_kw(ruby, hash, "html_options")
-            && !val.is_nil()
+            && val.equal(ruby.qnil()).ok() != Some(true)
         {
             let html_hash = RHash::try_convert(val)?;
             config.html_options = Some(parse_html_options(ruby, html_hash)?);
         }
 
         if let Some(val) = get_kw(ruby, hash, "pages")
-            && !val.is_nil()
+            && val.equal(ruby.qnil()).ok() != Some(true)
         {
             let pages_hash = RHash::try_convert(val)?;
             config.pages = Some(parse_page_config(ruby, pages_hash)?);

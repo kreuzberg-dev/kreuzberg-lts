@@ -990,7 +990,7 @@ fn render_test(fixture: &Fixture) -> Result<(String, String)> {
             writeln!(code, "    const char *batch_paths[] = {{ doc_path }};")?;
             writeln!(
                 code,
-                "    CBatchResult *batch = kreuzberg_batch_extract_files_sync(batch_paths, 1, {config_literal});"
+                "    CBatchResult *batch = kreuzberg_batch_extract_files_sync(batch_paths, NULL, 1, {config_literal});"
             )?;
             writeln!(code, "    free(doc_path);")?;
             writeln!(code, "    if (!batch) {{")?;

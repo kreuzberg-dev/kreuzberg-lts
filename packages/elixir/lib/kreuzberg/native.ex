@@ -31,13 +31,13 @@ defmodule Kreuzberg.Native do
   # Batch extraction
   def batch_extract_files(_file_paths, _input_type), do: :erlang.nif_error(:nif_not_loaded)
 
-  def batch_extract_files_with_options(_file_paths, _input_type, _options),
+  def batch_extract_files_with_options(_file_paths, _input_type, _options, _file_configs),
     do: :erlang.nif_error(:nif_not_loaded)
 
   # Batch extraction from bytes
   def batch_extract_bytes(_bytes_list, _input_type), do: :erlang.nif_error(:nif_not_loaded)
 
-  def batch_extract_bytes_with_options(_bytes_list, _input_type, _options),
+  def batch_extract_bytes_with_options(_bytes_list, _input_type, _options, _file_configs),
     do: :erlang.nif_error(:nif_not_loaded)
 
   # Cache operations

@@ -253,7 +253,7 @@ pub fn config_merge_wrapper(_ruby: &Ruby, base_json: String, override_json: Stri
 
 /// Get page count from extraction result
 /// Accesses metadata["page_count"] or metadata["sheet_count"] (for Excel) or returns 0
-pub fn result_page_count(_ruby: &Ruby, result: Value) -> Result<i32, Error> {
+pub fn result_page_count(ruby: &Ruby, result: Value) -> Result<i32, Error> {
     // Try to get the result as an RHash
     let hash = match RHash::try_convert(result) {
         Ok(h) => h,
@@ -274,7 +274,7 @@ pub fn result_page_count(_ruby: &Ruby, result: Value) -> Result<i32, Error> {
 
     // Try page_count first (PDF/PPTX format)
     if let Some(page_count) = metadata_hash.get("page_count") {
-        if !page_count.is_nil() {
+        if page_count.equal(ruby.qnil()).ok() != Some(true) {
             if let Ok(count) = i32::try_convert(page_count) {
                 return Ok(count);
             }
@@ -283,7 +283,7 @@ pub fn result_page_count(_ruby: &Ruby, result: Value) -> Result<i32, Error> {
 
     // Fall back to sheet_count (Excel format)
     if let Some(sheet_count) = metadata_hash.get("sheet_count") {
-        if !sheet_count.is_nil() {
+        if sheet_count.equal(ruby.qnil()).ok() != Some(true) {
             if let Ok(count) = i32::try_convert(sheet_count) {
                 return Ok(count);
             }
@@ -295,7 +295,7 @@ pub fn result_page_count(_ruby: &Ruby, result: Value) -> Result<i32, Error> {
 
 /// Get chunk count from extraction result
 /// Returns chunks.length or 0 if nil/empty
-pub fn result_chunk_count(_ruby: &Ruby, result: Value) -> Result<i32, Error> {
+pub fn result_chunk_count(ruby: &Ruby, result: Value) -> Result<i32, Error> {
     // Try to get the result as an RHash
     let hash = match RHash::try_convert(result) {
         Ok(h) => h,
@@ -309,7 +309,7 @@ pub fn result_chunk_count(_ruby: &Ruby, result: Value) -> Result<i32, Error> {
     };
 
     // Check if chunks is nil
-    if chunks.is_nil() {
+    if chunks.equal(ruby.qnil()).ok() == Some(true) {
         return Ok(0);
     }
 
@@ -333,7 +333,7 @@ pub fn result_detected_language(ruby: &Ruby, result: Value) -> Result<Value, Err
 
     // First try detected_languages array (primary detection result)
     if let Some(detected_languages) = hash.get("detected_languages") {
-        if !detected_languages.is_nil() {
+        if detected_languages.equal(ruby.qnil()).ok() != Some(true) {
             if let Ok(langs_array) = magnus::RArray::try_convert(detected_languages) {
                 if langs_array.len() > 0 {
                     if let Ok(first) = langs_array.entry(0) {
@@ -348,7 +348,7 @@ pub fn result_detected_language(ruby: &Ruby, result: Value) -> Result<Value, Err
     if let Some(metadata) = hash.get("metadata") {
         if let Ok(metadata_hash) = RHash::try_convert(metadata) {
             if let Some(language) = metadata_hash.get("language") {
-                if !language.is_nil() {
+                if language.equal(ruby.qnil()).ok() != Some(true) {
                     return Ok(language);
                 }
             }
@@ -374,7 +374,7 @@ pub fn result_metadata_field(ruby: &Ruby, result: Value, field_name: String) -> 
     };
 
     // Check if metadata is nil
-    if metadata.is_nil() {
+    if metadata.equal(ruby.qnil()).ok() == Some(true) {
         return Ok(ruby.qnil().as_value());
     }
 
@@ -396,7 +396,7 @@ pub fn result_metadata_field(ruby: &Ruby, result: Value, field_name: String) -> 
         };
 
         // Check if current is nil
-        if current.is_nil() {
+        if current.equal(ruby.qnil()).ok() == Some(true) {
             return Ok(ruby.qnil().as_value());
         }
     }

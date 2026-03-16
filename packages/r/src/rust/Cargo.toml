@@ -28,9 +28,6 @@ repository = "https://github.com/kreuzberg-dev/kreuzberg"
 homepage = "https://kreuzberg.dev"
 description = "R bindings (extendr) for Kreuzberg - high-performance document intelligence framework"
 
-[lints]
-workspace = true
-
 [lib]
 name = "kreuzberg_r"
 crate-type = ["staticlib", "lib"]
