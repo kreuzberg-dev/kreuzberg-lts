@@ -308,10 +308,8 @@ pub(crate) async fn extract_with_ocr(
     use image::codecs::png::PngEncoder;
     use std::io::Cursor;
 
-    let base_ocr_config = config.ocr.as_ref().ok_or_else(|| crate::KreuzbergError::Parsing {
-        message: "OCR config required for force_ocr".to_string(),
-        source: None,
-    })?;
+    let default_ocr_config = crate::core::config::OcrConfig::default();
+    let base_ocr_config = config.ocr.as_ref().unwrap_or(&default_ocr_config);
 
     // When layout detections are available, ensure OCR produces elements
     // so the layout assembly module can use them for structured markdown.
