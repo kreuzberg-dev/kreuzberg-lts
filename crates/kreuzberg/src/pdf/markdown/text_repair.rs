@@ -418,6 +418,64 @@ pub(super) fn repair_broken_word_spacing(text: &str) -> Cow<'_, str> {
     Cow::Owned(result)
 }
 
+/// Expand Unicode ligature characters (U+FB00–U+FB06) to ASCII equivalents,
+/// absorbing a spurious space between the ligature glyph and the following word.
+///
+/// PDFs sometimes emit ligature codepoints (ﬁ, ﬂ, ﬀ, ﬃ, ﬄ, ﬅ, ﬆ) that need
+/// to be expanded. Additionally, a space is often inserted between the ligature
+/// glyph and the continuation of the word (e.g. "ﬁ eld"), which must be absorbed
+/// to produce correct text ("field").
+///
+/// Matches Docling's approach:
+/// ```python
+/// _LIGATURE_RE = re.compile(r"([\ufb00-\ufb06])( (?=\w))?")
+/// ```
+///
+/// Uses `Cow<str>` for zero-alloc fast path when no ligatures are present.
+pub(super) fn expand_ligatures_with_space_absorption(text: &str) -> Cow<'_, str> {
+    // Fast path: check if any byte could start a ligature codepoint (U+FB00–U+FB06).
+    // These encode as 0xEF 0xBC 0x80..0x86 in UTF-8.
+    if !text.contains([
+        '\u{FB00}', '\u{FB01}', '\u{FB02}', '\u{FB03}', '\u{FB04}', '\u{FB05}', '\u{FB06}',
+    ]) {
+        return Cow::Borrowed(text);
+    }
+
+    let mut result = String::with_capacity(text.len());
+    let mut chars = text.chars().peekable();
+
+    while let Some(ch) = chars.next() {
+        let expansion = match ch {
+            '\u{FB00}' => "ff",
+            '\u{FB01}' => "fi",
+            '\u{FB02}' => "fl",
+            '\u{FB03}' => "ffi",
+            '\u{FB04}' => "ffl",
+            '\u{FB05}' => "st",
+            '\u{FB06}' => "st",
+            _ => {
+                result.push(ch);
+                continue;
+            }
+        };
+
+        result.push_str(expansion);
+
+        // Absorb a trailing space if followed by a word character.
+        // This handles the "ﬁ eld" → "field" pattern.
+        if chars.peek() == Some(&' ') {
+            // Clone the iterator to peek two ahead (space + next char).
+            let mut lookahead = chars.clone();
+            lookahead.next(); // consume the space
+            if lookahead.peek().is_some_and(|c| c.is_alphanumeric() || *c == '_') {
+                chars.next(); // absorb the space
+            }
+        }
+    }
+
+    Cow::Owned(result)
+}
+
 /// Normalize Unicode characters commonly found in PDFs to their ASCII equivalents.
 ///
 /// Matches docling's `sanitize_text()` normalizations for curly quotes, fraction
@@ -693,5 +751,111 @@ mod tests {
     #[test]
     fn test_normalize_preserves_tabs_newlines() {
         assert_eq!(normalize_text_encoding("a\tb\nc\r"), "a\tb\nc\r");
+    }
+
+    // --- expand_ligatures_with_space_absorption ---
+
+    #[test]
+    fn test_expand_ligatures_no_ligatures() {
+        let text = "hello world";
+        let result = expand_ligatures_with_space_absorption(text);
+        assert!(matches!(result, Cow::Borrowed(_)));
+        assert_eq!(result, "hello world");
+    }
+
+    #[test]
+    fn test_expand_ligatures_fi() {
+        assert_eq!(expand_ligatures_with_space_absorption("\u{FB01}eld"), "field");
+    }
+
+    #[test]
+    fn test_expand_ligatures_fl() {
+        assert_eq!(expand_ligatures_with_space_absorption("\u{FB02}oor"), "floor");
+    }
+
+    #[test]
+    fn test_expand_ligatures_ff() {
+        assert_eq!(expand_ligatures_with_space_absorption("e\u{FB00}ect"), "effect");
+    }
+
+    #[test]
+    fn test_expand_ligatures_ffi() {
+        assert_eq!(expand_ligatures_with_space_absorption("e\u{FB03}cient"), "efficient");
+    }
+
+    #[test]
+    fn test_expand_ligatures_ffl() {
+        assert_eq!(expand_ligatures_with_space_absorption("ba\u{FB04}e"), "baffle");
+    }
+
+    #[test]
+    fn test_expand_ligatures_st() {
+        assert_eq!(expand_ligatures_with_space_absorption("\u{FB05}art"), "start");
+        assert_eq!(expand_ligatures_with_space_absorption("\u{FB06}art"), "start");
+    }
+
+    #[test]
+    fn test_expand_ligatures_space_absorption_fi() {
+        // "ﬁ eld" → "field" (space absorbed before word char)
+        assert_eq!(expand_ligatures_with_space_absorption("\u{FB01} eld"), "field");
+    }
+
+    #[test]
+    fn test_expand_ligatures_space_absorption_fl() {
+        // "ﬂ oor" → "floor"
+        assert_eq!(expand_ligatures_with_space_absorption("\u{FB02} oor"), "floor");
+    }
+
+    #[test]
+    fn test_expand_ligatures_space_absorption_ff() {
+        // "e ﬀ ect" → "e effect" (space before ligature preserved, space after absorbed)
+        assert_eq!(expand_ligatures_with_space_absorption("e \u{FB00} ect"), "e ffect");
+    }
+
+    #[test]
+    fn test_expand_ligatures_space_not_absorbed_before_punctuation() {
+        // "ﬁ ." → "fi ." (space before punctuation not absorbed)
+        assert_eq!(expand_ligatures_with_space_absorption("\u{FB01} ."), "fi .");
+    }
+
+    #[test]
+    fn test_expand_ligatures_space_not_absorbed_before_space() {
+        // "ﬁ  word" → "fi  word" (double space: first space not absorbed because next is space)
+        assert_eq!(expand_ligatures_with_space_absorption("\u{FB01}  word"), "fi  word");
+    }
+
+    #[test]
+    fn test_expand_ligatures_at_end_of_string() {
+        // Ligature at end with no trailing chars
+        assert_eq!(expand_ligatures_with_space_absorption("pro\u{FB01}"), "profi");
+    }
+
+    #[test]
+    fn test_expand_ligatures_space_at_end_not_absorbed() {
+        // "ﬁ " at end → "fi " (space not absorbed because no following word char)
+        assert_eq!(expand_ligatures_with_space_absorption("\u{FB01} "), "fi ");
+    }
+
+    #[test]
+    fn test_expand_ligatures_multiple_in_sentence() {
+        // "the ﬁ rst ﬂ oor" → "the first floor"
+        assert_eq!(
+            expand_ligatures_with_space_absorption("the \u{FB01} rst \u{FB02} oor"),
+            "the first floor"
+        );
+    }
+
+    #[test]
+    fn test_expand_ligatures_mixed_with_normal_text() {
+        assert_eq!(
+            expand_ligatures_with_space_absorption("a \u{FB01} eld of \u{FB02} owers"),
+            "a field of flowers"
+        );
+    }
+
+    #[test]
+    fn test_expand_ligatures_no_space_no_absorption() {
+        // Ligature directly adjacent to word char — no space to absorb
+        assert_eq!(expand_ligatures_with_space_absorption("\u{FB01}nally"), "finally");
     }
 }

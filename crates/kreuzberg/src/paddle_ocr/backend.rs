@@ -289,8 +289,12 @@ impl PaddleOcrBackend {
 
         let padding = config.padding;
         let max_side_len = config.det_limit_side_len;
-        let box_score_thresh = config.det_db_thresh;
-        let box_thresh = config.det_db_box_thresh;
+        // Reference mapping: det_db_thresh (0.3) = DB binarization threshold,
+        // det_db_box_thresh (0.5) = minimum box confidence score.
+        // OcrLite::detect takes (box_score_thresh, box_thresh, ...) where
+        // box_score_thresh filters by score and box_thresh is legacy (now unused).
+        let box_score_thresh = config.det_db_box_thresh;
+        let box_thresh = config.det_db_thresh;
         let un_clip_ratio = config.det_db_unclip_ratio;
         let do_angle = config.use_angle_cls;
         let most_angle = false;
@@ -311,12 +315,17 @@ impl PaddleOcrBackend {
                 source: None,
             })?;
 
-        tracing::debug!(
-            text_block_count = result.text_blocks.len(),
-            "PaddleOCR detection completed"
-        );
+        // Filter out low-confidence recognition results (matches PaddleOCR's drop_score)
+        let drop_score = config.drop_score;
+        let text_blocks: Vec<_> = result
+            .text_blocks
+            .into_iter()
+            .filter(|block| block.text_score >= drop_score && !block.text_score.is_nan())
+            .collect();
 
-        Ok(result.text_blocks)
+        tracing::debug!(text_block_count = text_blocks.len(), "PaddleOCR detection completed");
+
+        Ok(text_blocks)
     }
 }
 

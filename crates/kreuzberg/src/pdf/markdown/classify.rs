@@ -22,12 +22,20 @@ pub(super) fn classify_paragraphs(paragraphs: &mut [PdfParagraph], heading_map: 
             .sum();
 
         // Pass 1: font-size-based heading classification.
-        // Skip when layout model explicitly says Text — trust the model over font-size heuristics.
+        // When the layout model says Text, only promote to heading if there is
+        // strong typographic evidence: the font size maps to a heading cluster
+        // AND the paragraph is bold (sub-headings the model missed).
         let layout_says_text = para.layout_class == Some(super::types::LayoutHintClass::Text);
+        let heading_level = find_heading_level(para.dominant_font_size, heading_map, &gap_info);
         let heading_level = if layout_says_text {
-            None
+            // Override layout Text only when bold + heading font size → sub-heading
+            if para.is_bold && heading_level.is_some() {
+                heading_level
+            } else {
+                None
+            }
         } else {
-            find_heading_level(para.dominant_font_size, heading_map, &gap_info)
+            heading_level
         };
 
         if let Some(level) = heading_level
@@ -49,11 +57,17 @@ pub(super) fn classify_paragraphs(paragraphs: &mut [PdfParagraph], heading_map: 
         // Pass 2: bold or italic short paragraphs → section headings (H2).
         // Some documents use italic instead of bold for section titles.
         let is_italic = !para.lines.is_empty() && para.lines.iter().all(|l| l.segments.iter().all(|s| s.is_italic));
-        // Skip bold-heading promotion when the layout model explicitly classified
-        // this paragraph as body Text — the model's judgment takes precedence.
+        // When the layout model says Text, only allow bold promotion if the font
+        // size is distinctly larger than body text (a sub-heading the model missed).
+        // Pure body-size bold text (e.g., emphasis) stays as body.
+        let layout_text_overridable = if layout_says_text {
+            body_font_size > 0.0 && para.dominant_font_size > body_font_size + 0.5
+        } else {
+            true
+        };
         if (para.is_bold || is_italic)
             && !para.is_list_item
-            && !layout_says_text
+            && layout_text_overridable
             && word_count <= MAX_BOLD_HEADING_WORD_COUNT
         {
             let text: String = para
@@ -570,7 +584,7 @@ mod tests {
     #[test]
     fn test_classify_too_many_segments_for_heading() {
         let heading_map = vec![(18.0, Some(1)), (12.0, None)];
-        let mut paragraphs = vec![make_paragraph(18.0, 20)]; // > MAX_HEADING_WORD_COUNT
+        let mut paragraphs = vec![make_paragraph(18.0, 21)]; // > MAX_HEADING_WORD_COUNT
         classify_paragraphs(&mut paragraphs, &heading_map);
         assert_eq!(paragraphs[0].heading_level, None);
     }
@@ -640,7 +654,7 @@ mod tests {
         // 3 segments but each contains many words — total word count exceeds threshold
         let segments: Vec<SegmentData> = (0..3)
             .map(|i| SegmentData {
-                text: "one two three four five six".to_string(),
+                text: "one two three four five six seven".to_string(),
                 x: i as f32 * 200.0,
                 y: 700.0,
                 width: 180.0,
@@ -672,7 +686,7 @@ mod tests {
             caption_for: None,
             block_bbox: None,
         }];
-        // 3 segments × 6 words = 18 words > MAX_HEADING_WORD_COUNT
+        // 3 segments × 7 words = 21 words > MAX_HEADING_WORD_COUNT
         let heading_map = vec![(18.0, Some(1)), (12.0, None)];
         classify_paragraphs(&mut paragraphs, &heading_map);
         assert_eq!(paragraphs[0].heading_level, None);
@@ -735,5 +749,53 @@ mod tests {
         mark_cross_page_repeating_text(&mut pages);
         // Headings should not be marked as furniture even if they repeat.
         assert!(!pages[0][0].is_page_furniture);
+    }
+
+    #[test]
+    fn test_layout_text_bold_heading_font_promoted() {
+        // Sub-heading: layout model says Text, but bold + heading font size → promote
+        let heading_map = vec![(16.0, Some(2)), (12.0, None)];
+        let mut para = make_paragraph(16.0, 3);
+        para.is_bold = true;
+        para.layout_class = Some(super::super::types::LayoutHintClass::Text);
+        let mut paragraphs = vec![para];
+        classify_paragraphs(&mut paragraphs, &heading_map);
+        assert_eq!(paragraphs[0].heading_level, Some(2));
+    }
+
+    #[test]
+    fn test_layout_text_non_bold_heading_font_not_promoted() {
+        // Layout says Text, heading font size but NOT bold → stay as body
+        let heading_map = vec![(16.0, Some(2)), (12.0, None)];
+        let mut para = make_paragraph(16.0, 3);
+        para.layout_class = Some(super::super::types::LayoutHintClass::Text);
+        let mut paragraphs = vec![para];
+        classify_paragraphs(&mut paragraphs, &heading_map);
+        assert_eq!(paragraphs[0].heading_level, None);
+    }
+
+    #[test]
+    fn test_layout_text_bold_body_font_not_promoted_pass1() {
+        // Layout says Text, bold but body font size → Pass 1 skips (no heading cluster match)
+        let heading_map = vec![(16.0, Some(2)), (12.0, None)];
+        let mut para = make_paragraph(12.0, 3);
+        para.is_bold = true;
+        para.layout_class = Some(super::super::types::LayoutHintClass::Text);
+        let mut paragraphs = vec![para];
+        classify_paragraphs(&mut paragraphs, &heading_map);
+        // Pass 1 won't promote (body font), Pass 2 won't either (body font <= body + 0.5)
+        assert_eq!(paragraphs[0].heading_level, None);
+    }
+
+    #[test]
+    fn test_layout_text_bold_larger_font_promoted_pass2() {
+        // Layout says Text, bold + font distinctly larger than body → Pass 2 promotes to H2
+        let heading_map = vec![(12.0, None)]; // no heading clusters
+        let mut para = make_paragraph(14.0, 3);
+        para.is_bold = true;
+        para.layout_class = Some(super::super::types::LayoutHintClass::Text);
+        let mut paragraphs = vec![para];
+        classify_paragraphs(&mut paragraphs, &heading_map);
+        assert_eq!(paragraphs[0].heading_level, Some(2));
     }
 }

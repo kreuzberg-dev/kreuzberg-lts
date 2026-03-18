@@ -19,8 +19,8 @@ use super::lines::is_cjk_char;
 use super::paragraphs::{merge_continuation_paragraphs, split_embedded_list_items};
 use super::render::inject_image_placeholders;
 use super::text_repair::{
-    apply_ligature_repairs, apply_to_all_segments, build_ligature_repair_map, normalize_unicode_text,
-    repair_broken_word_spacing, repair_contextual_ligatures, text_has_broken_word_spacing,
+    apply_ligature_repairs, apply_to_all_segments, build_ligature_repair_map, expand_ligatures_with_space_absorption,
+    normalize_unicode_text, repair_broken_word_spacing, repair_contextual_ligatures, text_has_broken_word_spacing,
     text_has_ligature_corruption,
 };
 use super::types::{LayoutHint, PdfParagraph};
@@ -100,6 +100,8 @@ fn extract_structure_tree_pages(
                         apply_to_all_segments(&mut paragraphs, repair_broken_word_spacing);
                     }
                 }
+                // Expand Unicode ligature characters (ﬁ, ﬂ, etc.) and absorb spurious spaces.
+                apply_to_all_segments(&mut paragraphs, expand_ligatures_with_space_absorption);
                 // Normalize Unicode characters (curly quotes, fraction slash, etc.)
                 apply_to_all_segments(&mut paragraphs, normalize_unicode_text);
                 // Dehyphenate: rejoin trailing hyphens. Use positional
@@ -491,6 +493,8 @@ fn process_single_page(
                 apply_to_all_segments(&mut paragraphs, repair_broken_word_spacing);
             }
         }
+        // Expand Unicode ligature characters (ﬁ, ﬂ, etc.) and absorb spurious spaces.
+        apply_to_all_segments(&mut paragraphs, expand_ligatures_with_space_absorption);
         // Normalize Unicode characters (curly quotes, fraction slash, etc.)
         apply_to_all_segments(&mut paragraphs, normalize_unicode_text);
         // Dehyphenate: heuristic path has positional data for
@@ -944,6 +948,7 @@ pub fn render_document_as_markdown_with_tables(
     // markdown so that any text that bypassed per-segment processing (e.g.
     // OCR results, table cells, injected image captions) is also cleaned up.
     let final_markdown = repair_contextual_ligatures(&final_markdown);
+    let final_markdown = expand_ligatures_with_space_absorption(&final_markdown);
     let final_markdown = normalize_unicode_text(&final_markdown);
 
     Ok((final_markdown.into_owned(), has_font_encoding_issues))

@@ -49,6 +49,7 @@ impl DbNet {
         box_score_thresh: f32,
         box_thresh: f32,
         un_clip_ratio: f32,
+        thresh: f32,
     ) -> Result<Vec<TextBox>, OcrError> {
         let Some(session) = &self.session else {
             return Err(OcrError::SessionNotInitialized);
@@ -89,6 +90,7 @@ impl DbNet {
             box_score_thresh,
             box_thresh,
             un_clip_ratio,
+            thresh,
         )?;
 
         Ok(text_boxes)
@@ -100,8 +102,9 @@ impl DbNet {
         cols: u32,
         s: &ScaleParam,
         box_score_thresh: f32,
-        box_thresh: f32,
+        _box_thresh: f32,
         un_clip_ratio: f32,
+        thresh: f32,
     ) -> Result<Vec<TextBox>, OcrError> {
         let max_side_thresh = 3.0;
         let mut rs_boxes = Vec::new();
@@ -140,13 +143,13 @@ impl DbNet {
 
         let threshold_img = imageproc::contrast::threshold(
             &cbuf_img,
-            (box_thresh * 255.0) as u8,
+            (thresh * 255.0) as u8,
             imageproc::contrast::ThresholdType::Binary,
         );
 
-        let dilate_img = imageproc::morphology::dilate(&threshold_img, imageproc::distance_transform::Norm::LInf, 1);
-
-        let img_contours: Vec<imageproc::contours::Contour<i32>> = imageproc::contours::find_contours(&dilate_img);
+        // RapidOCR and PaddleOCR reference do NOT apply dilation before contour extraction.
+        // Dilation merges adjacent text regions, causing word concatenation.
+        let img_contours: Vec<imageproc::contours::Contour<i32>> = imageproc::contours::find_contours(&threshold_img);
 
         for contour in img_contours {
             if contour.points.len() <= 2 {

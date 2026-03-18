@@ -12,8 +12,9 @@ use ort::{
 // For ImageNet: (pixel/255 - mean) / std = (pixel - mean*255) * (1/(std*255))
 const MEAN_VALUES: [f32; 3] = [0.485 * 255.0, 0.456 * 255.0, 0.406 * 255.0];
 const NORM_VALUES: [f32; 3] = [1.0 / (0.229 * 255.0), 1.0 / (0.224 * 255.0), 1.0 / (0.225 * 255.0)];
-const ANGLE_DST_WIDTH: u32 = 160;
-const ANGLE_DST_HEIGHT: u32 = 80;
+// PP-OCR angle classifier expects [3, 48, 192] input (cls_image_shape in PaddleOCR Python).
+const ANGLE_DST_WIDTH: u32 = 192;
+const ANGLE_DST_HEIGHT: u32 = 48;
 const ANGLE_COLS: usize = 2;
 
 #[derive(Debug)]
@@ -45,12 +46,13 @@ impl AngleNet {
         part_imgs: &[image::RgbImage],
         do_angle: bool,
         most_angle: bool,
+        cls_thresh: f32,
     ) -> Result<Vec<Angle>, OcrError> {
         let mut angles = Vec::new();
 
         if do_angle {
             for img in part_imgs {
-                let angle = self.get_angle(img)?;
+                let angle = self.get_angle(img, cls_thresh)?;
                 angles.push(angle);
             }
         } else {
@@ -70,7 +72,7 @@ impl AngleNet {
         Ok(angles)
     }
 
-    fn get_angle(&self, img_src: &image::RgbImage) -> Result<Angle, OcrError> {
+    fn get_angle(&self, img_src: &image::RgbImage, cls_thresh: f32) -> Result<Angle, OcrError> {
         let Some(session) = &self.session else {
             return Err(OcrError::SessionNotInitialized);
         };
@@ -93,7 +95,12 @@ impl AngleNet {
             (*session_ptr).run(inputs![self.input_names[0].as_str() => input_tensors])?
         };
 
-        let angle = Self::score_to_angle(&outputs, ANGLE_COLS)?;
+        let mut angle = Self::score_to_angle(&outputs, ANGLE_COLS)?;
+
+        // Only apply rotation if confidence exceeds threshold (matches PaddleOCR's cls_thresh=0.9)
+        if angle.score < cls_thresh {
+            angle.index = 0; // Keep original orientation when confidence is low
+        }
 
         Ok(angle)
     }

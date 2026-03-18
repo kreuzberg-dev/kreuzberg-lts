@@ -68,6 +68,12 @@ pub struct PaddleOcrConfig {
     /// Large values can include surrounding content like table gridlines.
     pub padding: u32,
 
+    /// Minimum recognition confidence score for text lines (default: 0.5).
+    /// Text regions with recognition confidence below this threshold are discarded.
+    /// Matches PaddleOCR Python's `drop_score` parameter.
+    /// Range: 0.0-1.0
+    pub drop_score: f32,
+
     /// Model tier controlling detection/recognition model size and accuracy trade-off.
     /// - `"server"` (default): Large, high-accuracy models (~88MB detection, ~84MB recognition)
     /// - `"mobile"`: Lightweight models (~4.5MB detection, ~16.5MB recognition), faster download and inference
@@ -100,6 +106,7 @@ impl PaddleOcrConfig {
             det_limit_side_len: 960,
             rec_batch_num: 6,
             padding: 10,
+            drop_score: 0.5,
             model_tier: "server".to_string(),
         }
     }
@@ -200,6 +207,16 @@ impl PaddleOcrConfig {
     /// * `batch_size` - Number of text regions to process simultaneously
     pub fn with_rec_batch_num(mut self, batch_size: u32) -> Self {
         self.rec_batch_num = batch_size.clamp(1, 64);
+        self
+    }
+
+    /// Sets the minimum recognition confidence threshold.
+    ///
+    /// # Arguments
+    ///
+    /// * `score` - Minimum confidence (0.0-1.0), text below this is dropped
+    pub fn with_drop_score(mut self, score: f32) -> Self {
+        self.drop_score = score.clamp(0.0, 1.0);
         self
     }
 

@@ -108,16 +108,16 @@ pub(in crate::pdf::markdown) fn assign_segments_to_regions<'a>(
             continue;
         }
 
-        // Segments inside Picture regions are preserved as unassigned.
-        // Suppressing text in Picture regions loses valid content (axis labels,
-        // musical notation, diagram text) that the ground truth includes.
-        // The text falls through to the standard pipeline as body text.
+        // Suppress segments inside Picture regions. Diagram labels, flow chart
+        // text, axis labels etc. inside pictures pollute the output as body text.
+        // Following Docling's approach: pictures emit an image placeholder only;
+        // captions are separate layout regions and are preserved independently.
         let in_picture = picture_hints.iter().any(|(ph, _is_empty)| {
             let hint_rect = Rect::from_lbrt(ph.left, ph.bottom, ph.right, ph.top);
             seg_rect.intersection_over_self(&hint_rect) >= 0.5
         });
         if in_picture {
-            unassigned.push(seg_idx);
+            suppressed_count += 1;
             continue;
         }
 

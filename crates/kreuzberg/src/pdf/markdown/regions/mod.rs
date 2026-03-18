@@ -700,14 +700,45 @@ mod tests {
     }
 
     #[test]
-    fn test_picture_regions_preserve_all_text() {
-        // All text inside Picture regions is preserved as unassigned.
-        // Picture regions never suppress text — it falls through to body text.
+    fn test_picture_regions_suppress_text() {
+        // Text inside Picture regions is suppressed (not emitted as body text).
+        // Diagram labels, flow chart text, axis labels etc. would pollute output.
+        // Captions are separate layout regions and preserved independently.
         let segments = vec![make_segment("ab", 10.0, 700.0, 40.0, 12.0)];
         let hints = vec![make_hint(LayoutHintClass::Picture, 0.9, 0.0, 690.0, 200.0, 720.0)];
         let (regions, unassigned) = assignment::assign_segments_to_regions(&segments, &hints, 0.5, &[], &[]);
         assert!(regions.is_empty());
-        assert_eq!(unassigned.len(), 1); // preserved as unassigned
+        assert!(unassigned.is_empty()); // suppressed, not preserved
+    }
+
+    #[test]
+    fn test_picture_text_suppressed_caption_preserved() {
+        // Picture region contains diagram text that should be suppressed.
+        // Caption region below the picture should be preserved.
+        let segments = vec![
+            // Text inside the picture region (diagram labels)
+            make_segment("Parse PDF", 20.0, 700.0, 60.0, 12.0),
+            make_segment("OCR", 100.0, 700.0, 30.0, 12.0),
+            make_segment("Layout Analysis", 20.0, 680.0, 80.0, 12.0),
+            // Caption text below the picture
+            make_segment("Figure 1. Pipeline overview.", 20.0, 640.0, 150.0, 10.0),
+        ];
+        let hints = vec![
+            make_hint(LayoutHintClass::Picture, 0.9, 0.0, 670.0, 200.0, 720.0),
+            make_hint(LayoutHintClass::Caption, 0.9, 0.0, 630.0, 200.0, 655.0),
+        ];
+        let paragraphs = assemble_region_paragraphs(segments, &hints, &[], 0.5, None, 0, &[], &[]);
+        // Only the caption paragraph should survive; picture text is suppressed
+        assert_eq!(paragraphs.len(), 1);
+        assert_eq!(paragraphs[0].layout_class, Some(LayoutHintClass::Caption));
+        let text: String = paragraphs[0]
+            .lines
+            .iter()
+            .flat_map(|l| l.segments.iter())
+            .map(|s| s.text.as_str())
+            .collect::<Vec<_>>()
+            .join(" ");
+        assert!(text.contains("Figure 1"));
     }
 
     #[test]

@@ -229,17 +229,21 @@ fn build_config(pipeline: Pipeline) -> kreuzberg::ExtractionConfig {
             }),
             ..base
         },
-        Pipeline::Docling => base, // Docling reads from file, not used here
+        Pipeline::Docling | Pipeline::PaddleOcrPython | Pipeline::RapidOcr => base, // Vendored pipelines read from file, not used here
     }
 }
 
 /// Per-doc extraction timeout (seconds).
 const DOC_TIMEOUT_SECS: u64 = 60;
 
-/// Read docling vendored markdown + cached timing for a single document.
+/// Read vendored markdown + cached timing for a single document.
 /// Returns (content, time_ms) where time_ms is NaN if no cached timing exists.
-fn read_docling_cached(doc_name: &str, fixtures_dir: &Path) -> (String, f64) {
-    let vendored_dir = fixtures_dir.parent().unwrap_or(fixtures_dir).join("vendored/docling");
+fn read_vendored_cached(doc_name: &str, fixtures_dir: &Path, vendored_name: &str) -> (String, f64) {
+    let vendored_dir = fixtures_dir
+        .parent()
+        .unwrap_or(fixtures_dir)
+        .join("vendored")
+        .join(vendored_name);
     let vendored_md_path = vendored_dir.join("md").join(format!("{}.md", doc_name));
     let timing_path = vendored_dir.join("timing").join(format!("{}.ms", doc_name));
 
@@ -378,10 +382,15 @@ async fn extract_and_score(
     gt_markdown: Option<&str>,
     fixtures_dir: &Path,
 ) -> PipelineResult {
-    let (content, time_ms) = if pipeline == Pipeline::Docling {
-        // Docling results are pre-computed by run_docling_batch() before the main loop.
-        // Read cached markdown + timing from vendored/docling/{md,timing}/.
-        read_docling_cached(&doc.name, fixtures_dir)
+    let vendored_name = match pipeline {
+        Pipeline::Docling => Some("docling"),
+        Pipeline::PaddleOcrPython => Some("paddleocr-python"),
+        Pipeline::RapidOcr => Some("rapidocr"),
+        _ => None,
+    };
+    let (content, time_ms) = if let Some(name) = vendored_name {
+        // Vendored results are pre-computed. Read cached markdown + timing.
+        read_vendored_cached(&doc.name, fixtures_dir, name)
     } else {
         let t = Instant::now();
         let config = build_config(pipeline);

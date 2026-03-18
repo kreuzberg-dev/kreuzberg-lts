@@ -38,6 +38,10 @@ pub enum Pipeline {
     PaddleNoRotate,
     /// Docling vendored extraction (read from file)
     Docling,
+    /// PaddleOCR Python vendored extraction (read from file)
+    PaddleOcrPython,
+    /// RapidOCR vendored extraction (read from file)
+    RapidOcr,
 }
 
 impl Pipeline {
@@ -54,6 +58,8 @@ impl Pipeline {
             Pipeline::TesseractAutoRotate => "tesseract-autorotate",
             Pipeline::PaddleNoRotate => "paddle-norotate",
             Pipeline::Docling => "docling",
+            Pipeline::PaddleOcrPython => "paddleocr-python",
+            Pipeline::RapidOcr => "rapidocr",
         }
     }
 
@@ -70,6 +76,8 @@ impl Pipeline {
             "tesseract-autorotate" => Some(Pipeline::TesseractAutoRotate),
             "paddle-norotate" => Some(Pipeline::PaddleNoRotate),
             "docling" => Some(Pipeline::Docling),
+            "paddleocr-python" => Some(Pipeline::PaddleOcrPython),
+            "rapidocr" => Some(Pipeline::RapidOcr),
             _ => None,
         }
     }
@@ -241,7 +249,7 @@ fn build_extraction_config(pipeline: Pipeline) -> kreuzberg::ExtractionConfig {
             }),
             ..base
         },
-        Pipeline::Docling => base, // Not used for extraction — read from file
+        Pipeline::Docling | Pipeline::PaddleOcrPython | Pipeline::RapidOcr => base, // Not used for extraction — read from file
     }
 }
 
@@ -254,11 +262,20 @@ async fn run_pipeline(
     fixtures_dir: &std::path::Path,
 ) -> PipelineResult {
     let (content, time_ms) = match pipeline {
-        Pipeline::Docling => {
-            // Docling: read vendored output + cached timing.
-            // Vendored data lives at tools/benchmark-harness/vendored/docling/
+        Pipeline::Docling | Pipeline::PaddleOcrPython | Pipeline::RapidOcr => {
+            // Vendored pipelines: read output + cached timing from files.
+            // Vendored data lives at tools/benchmark-harness/vendored/{name}/
             // (sibling of fixtures_dir).
-            let vendored_dir = fixtures_dir.parent().unwrap_or(fixtures_dir).join("vendored/docling");
+            let vendored_name = match pipeline {
+                Pipeline::PaddleOcrPython => "paddleocr-python",
+                Pipeline::RapidOcr => "rapidocr",
+                _ => "docling",
+            };
+            let vendored_dir = fixtures_dir
+                .parent()
+                .unwrap_or(fixtures_dir)
+                .join("vendored")
+                .join(vendored_name);
             let md_path = vendored_dir.join("md").join(format!("{}.md", doc.name));
             let timing_path = vendored_dir.join("timing").join(format!("{}.ms", doc.name));
             let md = std::fs::read_to_string(&md_path).unwrap_or_default();

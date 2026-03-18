@@ -1,3 +1,4 @@
+use ndarray::Array4;
 use ort::session::Session;
 use ort::value::Tensor;
 use ort::{inputs, session::builder::SessionBuilder};
@@ -113,22 +114,122 @@ impl CrnnNet {
         part_imgs: &[image::RgbImage],
         angle_rollback_records: &HashMap<usize, image::RgbImage>,
         angle_rollback_threshold: f32,
+        batch_size: u32,
     ) -> Result<Vec<TextLine>, OcrError> {
-        let mut text_lines = Vec::new();
+        if part_imgs.is_empty() {
+            return Ok(Vec::new());
+        }
 
-        for (index, img) in part_imgs.iter().enumerate() {
-            let mut text_line = self.get_text_line(img)?;
+        // Batch recognition: sort by aspect ratio, batch, pad to max width
+        let mut text_lines = self.get_text_lines_batched(part_imgs, batch_size)?;
 
+        // Angle rollback: re-recognize individual images that scored poorly
+        for (index, text_line) in text_lines.iter_mut().enumerate() {
             if (text_line.text_score.is_nan() || text_line.text_score < angle_rollback_threshold)
                 && let Some(angle_rollback_record) = angle_rollback_records.get(&index)
             {
-                text_line = self.get_text_line(angle_rollback_record)?;
+                *text_line = self.get_text_line(angle_rollback_record)?;
             }
-
-            text_lines.push(text_line);
         }
 
         Ok(text_lines)
+    }
+
+    /// Batch recognition: sort crops by width, group into batches, pad to max width,
+    /// run single ONNX inference per batch. Matches PaddleOCR/RapidOCR batching strategy.
+    fn get_text_lines_batched(
+        &self,
+        part_imgs: &[image::RgbImage],
+        batch_size: u32,
+    ) -> Result<Vec<TextLine>, OcrError> {
+        let session = self.session.as_ref().ok_or(OcrError::SessionNotInitialized)?;
+        let batch_size = (batch_size as usize).max(1);
+
+        // Compute target widths and sort indices by aspect ratio (width/height)
+        let mut indexed_widths: Vec<(usize, u32)> = part_imgs
+            .iter()
+            .enumerate()
+            .map(|(i, img)| {
+                let scale = CRNN_DST_HEIGHT as f32 / img.height().max(1) as f32;
+                let dst_width = (img.width() as f32 * scale).ceil() as u32;
+                (i, dst_width.max(1))
+            })
+            .collect();
+        indexed_widths.sort_by_key(|&(_, w)| w);
+
+        let mut results: Vec<(usize, TextLine)> = Vec::with_capacity(part_imgs.len());
+
+        // Process in batches
+        for chunk in indexed_widths.chunks(batch_size) {
+            if chunk.len() == 1 {
+                // Single image — use existing path (no padding overhead)
+                let (orig_idx, _) = chunk[0];
+                let text_line = self.get_text_line(&part_imgs[orig_idx])?;
+                results.push((orig_idx, text_line));
+                continue;
+            }
+
+            // Find max width in this batch
+            let max_width = chunk.iter().map(|&(_, w)| w).max().unwrap_or(1);
+
+            // Build batch tensor [N, 3, 48, max_width] with zero-padding
+            let n = chunk.len();
+            let mut batch_data = Array4::<f32>::zeros((n, 3, CRNN_DST_HEIGHT as usize, max_width as usize));
+
+            for (batch_idx, &(orig_idx, dst_width)) in chunk.iter().enumerate() {
+                let img = &part_imgs[orig_idx];
+                let resized =
+                    image::imageops::resize(img, dst_width, CRNN_DST_HEIGHT, image::imageops::FilterType::Triangle);
+
+                // Normalize and fill into batch tensor (zero-padded on right)
+                let cols = resized.width() as usize;
+                let rows = resized.height() as usize;
+                for r in 0..rows {
+                    for c in 0..cols {
+                        let pixel = resized.get_pixel(c as u32, r as u32);
+                        for ch in 0..3 {
+                            let value = pixel[ch] as f32;
+                            batch_data[[batch_idx, ch, r, c]] =
+                                value * NORM_VALUES[ch] - MEAN_VALUES[ch] * NORM_VALUES[ch];
+                        }
+                    }
+                }
+                // Remaining columns stay zero (padding)
+            }
+
+            let input_tensor = Tensor::from_array(batch_data)?;
+
+            // SAFETY: ONNX Runtime C API is thread-safe for concurrent inference.
+            #[allow(unsafe_code)]
+            let outputs = unsafe {
+                let session_ptr = session as *const Session as *mut Session;
+                (*session_ptr).run(inputs![self.input_names[0].as_str() => input_tensor])?
+            };
+
+            let (_, output_value) = outputs.iter().next().ok_or_else(|| {
+                OcrError::Io(std::io::Error::new(
+                    std::io::ErrorKind::InvalidData,
+                    "No output tensors found in batched CRNN session output",
+                ))
+            })?;
+
+            let (shape, flat_data) = output_value.try_extract_tensor::<f32>()?;
+            // Shape: [batch, timesteps, num_classes]
+            let batch_dim = *shape.first().unwrap_or(&1) as usize;
+            let timesteps = *shape.get(1).unwrap_or(&0) as usize;
+            let num_classes = *shape.get(2).unwrap_or(&0) as usize;
+
+            for (batch_idx, item) in chunk.iter().enumerate().take(batch_dim.min(n)) {
+                let offset = batch_idx * timesteps * num_classes;
+                let slice = &flat_data[offset..offset + timesteps * num_classes];
+                let text_line = Self::score_to_text_line(slice, timesteps, num_classes, &self.keys)?;
+                results.push((item.0, text_line));
+            }
+        }
+
+        // Reorder results back to original index order
+        results.sort_by_key(|&(idx, _)| idx);
+        Ok(results.into_iter().map(|(_, tl)| tl).collect())
     }
 
     fn get_text_line(&self, img_src: &image::RgbImage) -> Result<TextLine, OcrError> {
@@ -137,7 +238,7 @@ impl CrnnNet {
         };
 
         let scale = CRNN_DST_HEIGHT as f32 / img_src.height() as f32;
-        let dst_width = (img_src.width() as f32 * scale) as u32;
+        let dst_width = (img_src.width() as f32 * scale).ceil() as u32;
 
         let src_resize = image::imageops::resize(
             img_src,
