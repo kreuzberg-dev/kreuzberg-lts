@@ -42,8 +42,10 @@ from typing import TYPE_CHECKING, Any
 from kreuzberg import _setup_lib_path  # noqa: F401
 from kreuzberg._deprecation import deprecated
 from kreuzberg._internal_bindings import (
+    AccelerationConfig,
     Chunk,
     ChunkingConfig,
+    EmailConfig,
     EmbeddingConfig,
     EmbeddingModelType,
     EmbeddingPreset,
@@ -214,9 +216,11 @@ if not TYPE_CHECKING:
 
 
 __all__ = [
+    "AccelerationConfig",
     "CacheError",
     "Chunk",
     "ChunkingConfig",
+    "EmailConfig",
     "EmbeddingConfig",
     "EmbeddingModelType",
     "EmbeddingPreset",

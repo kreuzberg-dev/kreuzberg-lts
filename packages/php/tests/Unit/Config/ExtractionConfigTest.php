@@ -6,6 +6,7 @@ namespace Kreuzberg\Tests\Unit\Config;
 
 use Kreuzberg\Config\ChunkingConfig;
 use Kreuzberg\Config\ExtractionConfig;
+use Kreuzberg\Config\HtmlConversionOptions;
 use Kreuzberg\Config\ImageExtractionConfig;
 use Kreuzberg\Config\KeywordConfig;
 use Kreuzberg\Config\LanguageDetectionConfig;
@@ -74,7 +75,7 @@ final class ExtractionConfigTest extends TestCase
         $ocrConfig = new OcrConfig(backend: 'tesseract');
         $pdfConfig = new PdfConfig(extractImages: true);
         $chunkingConfig = new ChunkingConfig(maxChars: 1024);
-        $htmlOptions = ['heading_style' => 'atx', 'code_block_style' => 'fenced'];
+        $htmlOptions = HtmlConversionOptions::fromArray(['heading_style' => 'atx', 'code_block_style' => 'fenced']);
 
         $config = new ExtractionConfig(
             useCache: false,
@@ -98,7 +99,9 @@ final class ExtractionConfigTest extends TestCase
         $this->assertSame(8, $config->maxConcurrentExtractions);
         $this->assertSame('element_based', $config->resultFormat);
         $this->assertSame('markdown', $config->outputFormat);
-        $this->assertSame($htmlOptions, $config->htmlOptions);
+        $this->assertInstanceOf(HtmlConversionOptions::class, $config->htmlOptions);
+        $this->assertSame('atx', $config->htmlOptions->headingStyle);
+        $this->assertSame('fenced', $config->htmlOptions->codeBlockStyle);
     }
 
     #[Test]
@@ -190,9 +193,9 @@ final class ExtractionConfigTest extends TestCase
         $this->assertSame(16, $config->maxConcurrentExtractions);
         $this->assertSame('element_based', $config->resultFormat);
         $this->assertSame('markdown', $config->outputFormat);
-        $this->assertIsArray($config->htmlOptions);
-        $this->assertSame('setext', $config->htmlOptions['heading_style']);
-        $this->assertSame('dash', $config->htmlOptions['list_style']);
+        $this->assertInstanceOf(HtmlConversionOptions::class, $config->htmlOptions);
+        $this->assertSame('setext', $config->htmlOptions->headingStyle);
+        $this->assertSame('dash', $config->htmlOptions->listStyle);
     }
 
     #[Test]
@@ -239,7 +242,7 @@ final class ExtractionConfigTest extends TestCase
     #[Test]
     public function it_round_trips_through_json(): void
     {
-        $htmlOptions = ['heading_style' => 'atx', 'code_block_style' => 'fenced'];
+        $htmlOptions = HtmlConversionOptions::fromArray(['heading_style' => 'atx', 'code_block_style' => 'fenced']);
         $original = new ExtractionConfig(
             useCache: false,
             enableQualityProcessing: false,
@@ -318,8 +321,8 @@ final class ExtractionConfigTest extends TestCase
     {
         $this->expectException(\Error::class);
 
-        $config = new ExtractionConfig(htmlOptions: ['heading_style' => 'atx']);
-        $config->htmlOptions = ['heading_style' => 'setext'];
+        $config = new ExtractionConfig(htmlOptions: HtmlConversionOptions::fromArray(['heading_style' => 'atx']));
+        $config->htmlOptions = HtmlConversionOptions::fromArray(['heading_style' => 'setext']);
     }
 
     #[Test]
@@ -568,16 +571,15 @@ final class ExtractionConfigTest extends TestCase
     #[Test]
     public function it_handles_html_options_in_serialization(): void
     {
-        $htmlOptions = [
-            'heading_style' => 'atx',
-            'code_block_style' => 'fenced',
-            'list_style' => 'dash',
-        ];
+        $htmlOptions = new HtmlConversionOptions(
+            headingStyle: 'atx',
+            codeBlockStyle: 'fenced',
+        );
         $config = new ExtractionConfig(htmlOptions: $htmlOptions);
         $array = $config->toArray();
 
         $this->assertArrayHasKey('html_options', $array);
-        $this->assertSame($htmlOptions, $array['html_options']);
+        $this->assertSame($htmlOptions->toArray(), $array['html_options']);
     }
 
     #[Test]
@@ -591,9 +593,9 @@ final class ExtractionConfigTest extends TestCase
         ];
         $config = ExtractionConfig::fromArray($data);
 
-        $this->assertIsArray($config->htmlOptions);
-        $this->assertSame('setext', $config->htmlOptions['heading_style']);
-        $this->assertSame('indented', $config->htmlOptions['code_block_style']);
+        $this->assertInstanceOf(HtmlConversionOptions::class, $config->htmlOptions);
+        $this->assertSame('setext', $config->htmlOptions->headingStyle);
+        $this->assertSame('indented', $config->htmlOptions->codeBlockStyle);
     }
 
     #[Test]
@@ -608,10 +610,10 @@ final class ExtractionConfigTest extends TestCase
     #[Test]
     public function it_handles_empty_html_options_array(): void
     {
-        $config = new ExtractionConfig(htmlOptions: []);
+        $config = new ExtractionConfig(htmlOptions: new HtmlConversionOptions());
         $array = $config->toArray();
 
-        // Empty array should still be included in serialization
+        // Empty HtmlConversionOptions (all nulls) serializes to empty array
         $this->assertArrayHasKey('html_options', $array);
         $this->assertSame([], $array['html_options']);
     }
@@ -638,7 +640,8 @@ final class ExtractionConfigTest extends TestCase
         $this->assertSame(16, $config->maxConcurrentExtractions);
         $this->assertSame('element_based', $config->resultFormat);
         $this->assertSame('markdown', $config->outputFormat);
-        $this->assertSame($htmlOptions, $config->htmlOptions);
+        $this->assertInstanceOf(HtmlConversionOptions::class, $config->htmlOptions);
+        $this->assertSame('atx', $config->htmlOptions->headingStyle);
     }
 
     #[Test]

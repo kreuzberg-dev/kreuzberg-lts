@@ -59,6 +59,7 @@ pub(crate) fn render_paragraph_to_output(para: &PdfParagraph, output: &mut Strin
 ///
 /// Paragraphs are separated by double newlines. Returns an empty string when
 /// `paragraphs` is empty.
+#[allow(dead_code)] // Called from extractors/pdf/ocr.rs when ocr feature is enabled
 pub(crate) fn render_paragraphs_to_string(paragraphs: &[PdfParagraph]) -> String {
     let mut output = String::new();
     for para in paragraphs {

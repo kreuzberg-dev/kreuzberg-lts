@@ -153,18 +153,23 @@ pub(super) fn objects_to_page_data(
         }
     }
 
-    // Primary path: Segment-based extraction with inside_rect() re-extraction.
-    // Uses pdfium's segment API to get text rects, groups into rows,
-    // merges adjacent cells, then re-extracts text from merged bboxes.
-    // Post-processing (normalize_text_encoding in pipeline.rs) handles
-    // pdfium's \x02 soft-hyphen markers by stripping them + adjacent whitespace.
     let page_height = page.height().value;
+    let page_width = page.width().value;
+
+    // Primary path: Geometric cell-merging (adapted from docling-parse).
+    // Builds per-character cells from pdfium's loose_bounds() API,
+    // merges using geometric adjacency. Produces correct word boundaries
+    // without inside_rect(), avoiding \x02 markers and line-break spaces.
+    if let Some(segments) = extract_segments_cell_merge(page, page_width) {
+        return (segments, images);
+    }
+
+    // Fallback 1: Segment-based extraction with inside_rect().
     if let Some(segments) = extract_segments_merged(page, page_height) {
         return (segments, images);
     }
 
-    // Secondary fallback: character-level extraction with column detection.
-    let page_width = page.width().value;
+    // Fallback 2: character-level extraction with column detection.
     if let Some(data) = extract_page_text_data(page)
         && let Some(segments) = chars_to_segments_from_data(&data, page_width)
     {
@@ -495,6 +500,7 @@ fn merge_cells_in_row(mut row: TextRow) -> Vec<MergedCellGroup> {
 
 // ── Geometric cell-merging (adapted from docling-parse, MIT license) ──
 // See ATTRIBUTIONS.md for license details.
+// Currently only used by tests; gated to avoid dead_code warnings.
 
 /// Euclidean distance between two 2D points.
 fn dist(x0: f32, y0: f32, x1: f32, y1: f32) -> f32 {
@@ -705,79 +711,88 @@ fn merge_cells_geometric(cells: &mut Vec<CharCell>, merge_factor: f32, space_fac
     cells.retain(|c| c.active);
 }
 
-/// Extract text segments using geometric cell-merging (docling-parse approach).
+/// Extract text segments using geometric cell-merging (adapted from docling-parse).
 ///
-/// Builds per-character cells from pre-extracted `PageTextData` (which uses
-/// `origin()` positions — advance-width based, not glyph-ink bounds). Adjacent
-/// characters chain properly because origin positions follow the text matrix
-/// advance, just like docling-parse's raw PDF operator extraction.
+/// Builds per-character cells directly from pdfium's `loose_bounds()` API
+/// (`FPDFText_GetLooseCharBox`), which returns the full advance-width character
+/// box (not just ink bounds). Adjacent characters in the same word have
+/// touching/overlapping loose bounds, enabling proper geometric merging.
 ///
 /// This produces correct word boundaries without `inside_rect()` re-extraction,
 /// avoiding `\x02` markers and spurious spaces at line breaks.
-fn extract_segments_cell_merge(data: &PageTextData, page_width: f32) -> Option<Vec<SegmentData>> {
-    if data.chars.is_empty() {
+fn extract_segments_cell_merge(page: &PdfPage, page_width: f32) -> Option<Vec<SegmentData>> {
+    let text_obj = page.text().ok()?;
+    let chars = text_obj.chars();
+    let char_count = chars.len();
+    if char_count == 0 {
         return None;
     }
 
-    let mut cells: Vec<CharCell> = Vec::with_capacity(data.chars.len());
+    let mut cells: Vec<CharCell> = Vec::with_capacity(char_count);
 
-    // Build cells, using the NEXT character's origin x as the current character's
-    // right edge. This ensures advance-width-based chaining — adjacent characters
-    // in the same word have touching bboxes because origin positions follow the
-    // text matrix advance (same as docling-parse's raw PDF operator extraction).
-    let char_count = data.chars.len();
-    for (idx, ec) in data.chars.iter().enumerate() {
-        // Skip control characters but keep spaces (they bridge word gaps).
-        if ec.ch.is_control() {
-            continue;
-        }
-        if ec.ch == '\n' || ec.ch == '\r' || ec.ch == '\t' {
-            continue;
-        }
-
-        let fs = if ec.font_size > 0.0 { ec.font_size } else { 12.0 };
-
-        let left = ec.x;
-
-        // Use next char's x as right edge if on the same line (similar Y).
-        // This gives advance-width-based right edges that chain properly.
-        // For the last char on a line (or last char overall), fall back to
-        // right_x but extend it slightly (by 0.1 * font_size) to ensure
-        // the cell overlaps with any adjacent character that follows closely.
-        let right = if idx + 1 < char_count {
-            let next = &data.chars[idx + 1];
-            let same_line = (next.y - ec.y).abs() < fs * 0.5;
-            if same_line && next.x > ec.x {
-                next.x
-            } else {
-                // End of line or next char is to the left (line wrap).
-                // Use right_x with a small extension to handle ligature glyphs
-                // whose tight_bounds don't reach the advance position.
-                ec.right_x.max(ec.x + fs * 0.5)
-            }
-        } else {
-            ec.right_x.max(ec.x + fs * 0.5)
+    for i in 0..char_count {
+        let ch = match chars.get(i) {
+            Ok(c) => c,
+            Err(_) => continue,
         };
 
-        let bottom = ec.y - fs * 0.25;
-        let top = ec.y + fs * 0.75;
+        // Get character value.
+        let unicode_val = ch.unicode_value();
+        let uc = match char::from_u32(unicode_val) {
+            Some(c) => c,
+            None => continue,
+        };
 
-        // Skip degenerate cells.
-        if (right - left).abs() < 0.01 {
+        // Skip control characters and newlines, but keep spaces
+        // (space characters bridge word gaps for line-level merging).
+        if uc.is_control() || uc == '\n' || uc == '\r' || uc == '\t' {
+            continue;
+        }
+        // Skip soft hyphens.
+        if uc == '\u{00AD}' {
             continue;
         }
 
+        // Use loose_bounds (FPDFText_GetLooseCharBox) for the full advance-width box.
+        // This is critical: loose bounds include sidebearings and advance width,
+        // so adjacent characters in a word have touching/overlapping boxes.
+        let bounds = match ch.loose_bounds() {
+            Ok(b) => b,
+            Err(_) => {
+                // Fall back to tight_bounds if loose unavailable.
+                match ch.tight_bounds() {
+                    Ok(b) => b,
+                    Err(_) => continue,
+                }
+            }
+        };
+
+        let left = bounds.left().value;
+        let bottom_val = bounds.bottom().value;
+        let right = bounds.right().value;
+        let top_val = bounds.top().value;
+
+        // Skip degenerate bounds (zero-width generated spaces, etc.).
+        if (right - left).abs() < 0.1 {
+            continue;
+        }
+
+        let fs = ch.scaled_font_size().value;
+        let effective_fs = if fs > 0.0 { fs } else { 12.0 };
+        let font_info = ch.font_info();
+        let baseline_y = ch.origin().map(|o| o.1.value).unwrap_or(bottom_val);
+
         cells.push(CharCell {
-            text: ec.ch.to_string(),
+            text: uc.to_string(),
             left,
-            bottom,
+            bottom: bottom_val,
             right,
-            top,
-            font_size: fs,
-            is_bold: ec.is_bold,
-            is_italic: ec.is_italic,
-            is_monospace: ec.is_monospace,
-            baseline_y: ec.y,
+            top: top_val,
+            font_size: effective_fs,
+            is_bold: font_info.1,
+            is_italic: font_info.2,
+            is_monospace: ch.font_is_fixed_pitch(),
+            baseline_y,
             active: true,
         });
     }
@@ -794,12 +809,13 @@ fn extract_segments_cell_merge(data: &PageTextData, page_width: f32) -> Option<V
         return None;
     }
 
-    // Merge characters into textlines using docling-parse's algorithm.
-    // merge_factor=3.0: adjacent threshold as fraction of avg char width.
-    //   Higher than docling-parse's 1.0 because pdfium's character positions
-    //   have larger gaps around ligature glyphs (fi, fl) and kerned pairs.
+    // Merge characters into textlines using docling-parse's three-pass algorithm.
+    // merge_factor=1.5: adjacent threshold as fraction of avg char width.
+    //   With loose_bounds, adjacent chars have touching/overlapping boxes,
+    //   so 1.5 is sufficient (close to docling-parse's 1.0).
     // space_factor=0.33: gap > 0.33 * avg_char_width → insert space (word boundary).
-    merge_cells_geometric(&mut cells, 3.0, 0.33);
+    //   Same as docling-parse's default for textline assembly.
+    merge_cells_geometric(&mut cells, 1.5, 0.33);
 
     // Convert merged cells to SegmentData.
     let mut segments: Vec<SegmentData> = Vec::with_capacity(cells.len());

@@ -26,4 +26,5 @@ pub(crate) mod types;
 pub(crate) use content_convert::{content_to_paragraphs, reorder_elements_reading_order};
 pub(crate) use pipeline::render_document_as_markdown_with_tables;
 pub use render::inject_image_placeholders;
+#[allow(unused_imports)] // Used by extractors/pdf/ocr.rs when ocr feature is enabled
 pub(crate) use render::render_paragraphs_to_string;

@@ -6,6 +6,7 @@ namespace Kreuzberg\Tests\Unit;
 
 use Kreuzberg\Config\ChunkingConfig;
 use Kreuzberg\Config\ExtractionConfig;
+use Kreuzberg\Config\HtmlConversionOptions;
 use Kreuzberg\Config\ImageExtractionConfig;
 use Kreuzberg\Config\ImagePreprocessingConfig;
 use Kreuzberg\Config\KeywordConfig;
@@ -289,10 +290,10 @@ final class ConfigTest extends TestCase
     #[Test]
     public function it_converts_extraction_config_with_html_options(): void
     {
-        $htmlOptions = [
+        $htmlOptions = HtmlConversionOptions::fromArray([
             'heading_style' => 'atx',
             'list_format' => 'unordered',
-        ];
+        ]);
 
         $config = new ExtractionConfig(htmlOptions: $htmlOptions);
 

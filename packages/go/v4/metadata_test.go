@@ -49,15 +49,15 @@ func TestMetadataRoundTripPreservesFormatAndAdditionalFields(t *testing.T) {
 	if meta.Format.Pdf == nil || meta.Format.Pdf.PageCount == nil || *meta.Format.Pdf.PageCount != 2 {
 		t.Fatalf("expected pdf metadata with page count")
 	}
-	if meta.Additional == nil || len(meta.Additional) != 2 {
-		t.Fatalf("expected 2 additional metadata fields (date + custom_meta), got %d", len(meta.Additional))
+	if meta.Additional == nil || len(meta.Additional) != 1 {
+		t.Fatalf("expected 1 additional metadata field (custom_meta), got %d", len(meta.Additional))
 	}
 
 	if _, ok := meta.Additional["custom_meta"]; !ok {
 		t.Fatalf("missing custom metadata field")
 	}
-	if _, ok := meta.Additional["date"]; !ok {
-		t.Fatalf("missing date in additional (no longer a core field)")
+	if meta.Date == nil || *meta.Date != "2025-01-01" {
+		t.Fatalf("expected date to be '2025-01-01' as core field, got %v", meta.Date)
 	}
 
 	encoded, err := json.Marshal(meta)

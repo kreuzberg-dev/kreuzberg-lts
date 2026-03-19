@@ -476,6 +476,53 @@ pub(super) fn expand_ligatures_with_space_absorption(text: &str) -> Cow<'_, str>
     Cow::Owned(result)
 }
 
+/// Repair ligature-glyph word breaks in extracted text.
+///
+/// When pdfium decomposes ligature glyphs (fi, fl, ff, ffi, ffl) into individual
+/// characters, the resulting character positions often have gaps that get interpreted
+/// as word boundaries. This produces patterns like "eff iciently", "signif icant",
+/// "f irst" where the space appears at the ligature position.
+///
+/// This function detects and removes these spurious spaces by looking for the pattern:
+/// `f` (or `ff`) followed by space followed by lowercase letter that would form a
+/// common ligature combination (fi, fl, ff).
+pub(super) fn repair_ligature_spaces(text: &str) -> Cow<'_, str> {
+    // Fast path: no "f " pattern
+    if !text.contains("f ") {
+        return Cow::Borrowed(text);
+    }
+
+    let mut result = String::with_capacity(text.len());
+    let bytes = text.as_bytes();
+    let len = bytes.len();
+    let mut i = 0;
+
+    while i < len {
+        // Look for 'f' followed by ' ' followed by a lowercase letter
+        // that would form a ligature: fi, fl, ff, ffi, ffl
+        if bytes[i] == b'f' && i + 2 < len && bytes[i + 1] == b' ' {
+            let next = bytes[i + 2];
+            // Check if this is a ligature break: f + space + {i, l, f, e, o, a, ...}
+            // Only absorb if preceded by a word character (not start of word "for", "from")
+            // and the preceding context suggests mid-word break.
+            if (next == b'i' || next == b'l' || next == b'f') && i > 0 && bytes[i - 1].is_ascii_alphabetic() {
+                // This looks like a ligature break: "eff iciently" → "efficiently"
+                result.push('f');
+                i += 2; // skip the space
+                continue;
+            }
+        }
+        result.push(bytes[i] as char);
+        i += 1;
+    }
+
+    if result == text {
+        Cow::Borrowed(text)
+    } else {
+        Cow::Owned(result)
+    }
+}
+
 /// Normalize Unicode characters commonly found in PDFs to their ASCII equivalents.
 ///
 /// Matches docling's `sanitize_text()` normalizations for curly quotes, fraction

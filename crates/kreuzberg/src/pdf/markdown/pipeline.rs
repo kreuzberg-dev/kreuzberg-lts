@@ -21,7 +21,7 @@ use super::render::inject_image_placeholders;
 use super::text_repair::{
     apply_ligature_repairs, apply_to_all_segments, build_ligature_repair_map, clean_duplicate_punctuation,
     expand_ligatures_with_space_absorption, normalize_text_encoding, normalize_unicode_text,
-    repair_broken_word_spacing, repair_contextual_ligatures, text_has_broken_word_spacing,
+    repair_broken_word_spacing, repair_contextual_ligatures, repair_ligature_spaces, text_has_broken_word_spacing,
     text_has_ligature_corruption,
 };
 use super::types::{LayoutHint, PdfParagraph};
@@ -104,6 +104,8 @@ fn extract_structure_tree_pages(
                 // Normalize text encoding: strip pdfium's \x02 soft-hyphen markers
                 // and handle Unicode soft hyphens.
                 apply_to_all_segments(&mut paragraphs, normalize_text_encoding);
+                // Repair ligature-glyph spaces ("eff iciently" → "efficiently").
+                apply_to_all_segments(&mut paragraphs, repair_ligature_spaces);
                 // Expand Unicode ligature characters (ﬁ, ﬂ, etc.) and absorb spurious spaces.
                 apply_to_all_segments(&mut paragraphs, expand_ligatures_with_space_absorption);
                 // Normalize Unicode characters (curly quotes, fraction slash, etc.)
@@ -503,6 +505,8 @@ fn process_single_page(
         // (rejoining word fragments like "soft\x02 ware" → "software") and
         // handle Unicode soft hyphens.
         apply_to_all_segments(&mut paragraphs, normalize_text_encoding);
+        // Repair ligature-glyph spaces ("eff iciently" → "efficiently").
+        apply_to_all_segments(&mut paragraphs, repair_ligature_spaces);
         // Expand Unicode ligature characters (ﬁ, ﬂ, etc.) and absorb spurious spaces.
         apply_to_all_segments(&mut paragraphs, expand_ligatures_with_space_absorption);
         // Normalize Unicode characters (curly quotes, fraction slash, etc.)

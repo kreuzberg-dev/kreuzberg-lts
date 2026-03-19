@@ -17,7 +17,9 @@
 //! let hocr_word = element_to_hocr_word(&element);
 //! ```
 
-use crate::types::{OcrBoundingGeometry, OcrConfidence, OcrElement, OcrElementLevel, OcrRotation};
+#[cfg(feature = "paddle-ocr")]
+use crate::types::OcrRotation;
+use crate::types::{OcrBoundingGeometry, OcrConfidence, OcrElement, OcrElementLevel};
 
 #[cfg(feature = "paddle-ocr")]
 use crate::error::{KreuzbergError, Result};
@@ -329,10 +331,12 @@ pub fn elements_to_hocr_words(elements: &[OcrElement], min_confidence: f64) -> V
 }
 
 /// Extension trait to add optional rotation to OcrElement builder.
+#[cfg(feature = "paddle-ocr")]
 trait OcrElementExt {
     fn with_rotation_opt(self, rotation: Option<OcrRotation>) -> Self;
 }
 
+#[cfg(feature = "paddle-ocr")]
 impl OcrElementExt for OcrElement {
     fn with_rotation_opt(mut self, rotation: Option<OcrRotation>) -> Self {
         self.rotation = rotation;

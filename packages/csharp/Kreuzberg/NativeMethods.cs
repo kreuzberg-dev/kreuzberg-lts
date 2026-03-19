@@ -88,10 +88,11 @@ internal static partial class NativeMethods
     [StructLayout(LayoutKind.Sequential)]
     internal struct CBatchResult
     {
-        /// <summary>Pointer to array of CExtractionResult structs.</summary>
-        public IntPtr Results;
+        // Field order MUST match Rust #[repr(C)] struct: count, results, success
         /// <summary>Number of results in the array.</summary>
         public UIntPtr Count;
+        /// <summary>Pointer to array of CExtractionResult structs.</summary>
+        public IntPtr Results;
 
         /// <summary>Whether the batch operation succeeded.</summary>
         [MarshalAs(UnmanagedType.I1)]
