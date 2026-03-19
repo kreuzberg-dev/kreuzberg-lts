@@ -168,14 +168,10 @@ pub(super) fn objects_to_page_data(
         let merged_result = extract_segments_merged(page, page_height);
 
         let dto_tokens = dto_result.as_ref().map_or(0, |segs| {
-            segs.iter()
-                .map(|s| s.text.split_whitespace().count())
-                .sum::<usize>()
+            segs.iter().map(|s| s.text.split_whitespace().count()).sum::<usize>()
         });
         let merged_tokens = merged_result.as_ref().map_or(0, |segs| {
-            segs.iter()
-                .map(|s| s.text.split_whitespace().count())
-                .sum::<usize>()
+            segs.iter().map(|s| s.text.split_whitespace().count()).sum::<usize>()
         });
 
         // Pick the result whose token count is closer to the reference.
@@ -188,11 +184,7 @@ pub(super) fn objects_to_page_data(
 
             if dto_result.is_some() && merged_result.is_some() {
                 let dto_within_10pct = dto_diff <= merged_diff * 1.1;
-                if dto_within_10pct {
-                    dto_result
-                } else {
-                    merged_result
-                }
+                if dto_within_10pct { dto_result } else { merged_result }
             } else {
                 dto_result.or(merged_result)
             }
@@ -670,9 +662,7 @@ fn extract_segments_from_dto(data: &PageTextData, page_width: f32) -> Option<Vec
         sorted_segs.sort_by(|a, b| a.left.partial_cmp(&b.left).unwrap_or(std::cmp::Ordering::Equal));
 
         // De-duplicate overlapping segments with identical text (bold/shadow rendering).
-        sorted_segs.dedup_by(|b_seg, a_seg| {
-            a_seg.text == b_seg.text && (a_seg.left - b_seg.left).abs() < 1.0
-        });
+        sorted_segs.dedup_by(|b_seg, a_seg| a_seg.text == b_seg.text && (a_seg.left - b_seg.left).abs() < 1.0);
 
         let mut row_text = String::new();
         let mut row_left = f32::MAX;

@@ -482,9 +482,10 @@ pub(super) fn mark_cross_page_repeating_text(all_pages: &mut [Vec<PdfParagraph>]
         // Use a set per page to count each text only once per page.
         let mut seen: std::collections::HashSet<String> = std::collections::HashSet::new();
         for para in page {
-            if para.heading_level.is_some() || para.is_page_furniture {
+            if para.is_page_furniture {
                 continue;
             }
+            // Include headings: a heading on >50% of pages is a running header.
             let text = paragraph_plain_text(para);
             let normalized = text.trim().to_lowercase();
             let word_count = normalized.split_whitespace().count();
@@ -511,13 +512,14 @@ pub(super) fn mark_cross_page_repeating_text(all_pages: &mut [Vec<PdfParagraph>]
     // Mark matching paragraphs as furniture.
     for page in all_pages.iter_mut() {
         for para in page.iter_mut() {
-            if para.heading_level.is_some() || para.is_page_furniture {
+            if para.is_page_furniture {
                 continue;
             }
             let text = paragraph_plain_text(para);
             let normalized = text.trim().to_lowercase();
             if repeating.contains(&normalized) {
                 para.is_page_furniture = true;
+                para.heading_level = None;
             }
         }
     }
@@ -747,8 +749,9 @@ mod tests {
             pages.push(vec![h, make_paragraph(12.0, 3)]);
         }
         mark_cross_page_repeating_text(&mut pages);
-        // Headings should not be marked as furniture even if they repeat.
-        assert!(!pages[0][0].is_page_furniture);
+        // Headings repeating on >50% of pages are running headers — furniture.
+        assert!(pages[0][0].is_page_furniture);
+        assert!(pages[0][0].heading_level.is_none());
     }
 
     #[test]
