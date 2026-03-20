@@ -24,14 +24,14 @@ pub enum Pipeline {
     Tesseract,
     /// Tesseract OCR + layout detection
     TesseractLayout,
-    /// PaddleOCR server tier (force_ocr)
+    /// PaddleOCR mobile tier (force_ocr) — default model tier
     Paddle,
-    /// PaddleOCR server tier + layout detection
+    /// PaddleOCR mobile tier + layout detection — default model tier
     PaddleLayout,
-    /// PaddleOCR mobile tier (force_ocr, lightweight models)
-    PaddleMobile,
-    /// PaddleOCR mobile tier + layout detection
-    PaddleMobileLayout,
+    /// PaddleOCR server tier (force_ocr, explicit server models)
+    PaddleServer,
+    /// PaddleOCR server tier + layout detection
+    PaddleServerLayout,
     /// Tesseract OCR with auto_rotate enabled
     TesseractAutoRotate,
     /// PaddleOCR without auto_rotate (for comparison)
@@ -53,8 +53,8 @@ impl Pipeline {
             Pipeline::TesseractLayout => "tesseract+layout",
             Pipeline::Paddle => "paddle",
             Pipeline::PaddleLayout => "paddle+layout",
-            Pipeline::PaddleMobile => "paddle-mobile",
-            Pipeline::PaddleMobileLayout => "paddle-mobile+layout",
+            Pipeline::PaddleServer => "paddle-server",
+            Pipeline::PaddleServerLayout => "paddle-server+layout",
             Pipeline::TesseractAutoRotate => "tesseract-autorotate",
             Pipeline::PaddleNoRotate => "paddle-norotate",
             Pipeline::Docling => "docling",
@@ -69,10 +69,12 @@ impl Pipeline {
             "layout" => Some(Pipeline::Layout),
             "tesseract" => Some(Pipeline::Tesseract),
             "tesseract+layout" | "tesseract-layout" => Some(Pipeline::TesseractLayout),
-            "paddle" => Some(Pipeline::Paddle),
-            "paddle+layout" | "paddle-layout" => Some(Pipeline::PaddleLayout),
-            "paddle-mobile" => Some(Pipeline::PaddleMobile),
-            "paddle-mobile+layout" | "paddle-mobile-layout" => Some(Pipeline::PaddleMobileLayout),
+            "paddle" | "paddle-mobile" => Some(Pipeline::Paddle),
+            "paddle+layout" | "paddle-layout" | "paddle-mobile+layout" | "paddle-mobile-layout" => {
+                Some(Pipeline::PaddleLayout)
+            }
+            "paddle-server" => Some(Pipeline::PaddleServer),
+            "paddle-server+layout" | "paddle-server-layout" => Some(Pipeline::PaddleServerLayout),
             "tesseract-autorotate" => Some(Pipeline::TesseractAutoRotate),
             "paddle-norotate" => Some(Pipeline::PaddleNoRotate),
             "docling" => Some(Pipeline::Docling),
@@ -91,8 +93,8 @@ impl Pipeline {
             Pipeline::TesseractLayout,
             Pipeline::Paddle,
             Pipeline::PaddleLayout,
-            Pipeline::PaddleMobile,
-            Pipeline::PaddleMobileLayout,
+            Pipeline::PaddleServer,
+            Pipeline::PaddleServerLayout,
         ]
     }
 }
@@ -203,28 +205,28 @@ fn build_extraction_config(pipeline: Pipeline) -> kreuzberg::ExtractionConfig {
             }),
             ..base
         },
-        Pipeline::PaddleMobile => kreuzberg::ExtractionConfig {
+        Pipeline::PaddleServer => kreuzberg::ExtractionConfig {
             force_ocr: true,
             ocr: Some(kreuzberg::core::config::OcrConfig {
                 backend: "paddleocr".to_string(),
                 language: "eng".to_string(),
                 auto_rotate: true,
-                paddle_ocr_config: Some(serde_json::json!({"model_tier": "mobile"})),
+                paddle_ocr_config: Some(serde_json::json!({"model_tier": "server"})),
                 ..Default::default()
             }),
             ..base
         },
-        Pipeline::PaddleMobileLayout => kreuzberg::ExtractionConfig {
+        Pipeline::PaddleServerLayout => kreuzberg::ExtractionConfig {
             force_ocr: true,
             ocr: Some(kreuzberg::core::config::OcrConfig {
                 backend: "paddleocr".to_string(),
                 language: "eng".to_string(),
                 auto_rotate: true,
-                paddle_ocr_config: Some(serde_json::json!({"model_tier": "mobile"})),
+                paddle_ocr_config: Some(serde_json::json!({"model_tier": "server"})),
                 ..Default::default()
             }),
             layout: Some(LayoutDetectionConfig {
-                preset: "fast".to_string(),
+                preset: "accurate".to_string(),
                 ..Default::default()
             }),
             ..base

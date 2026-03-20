@@ -15,36 +15,42 @@ impl OcrUtils {
     ///
     /// Formula per pixel: `output[ch] = pixel[ch] * norm[ch] - mean[ch] * norm[ch]`
     ///
-    /// Optimizations over the original implementation:
-    /// - Pre-computes `mean * norm` constants (was recomputed per-pixel)
-    /// - Uses raw slice access (avoids per-pixel bounds checks)
-    /// - Row-major iteration with pre-computed row offsets (cache-friendly)
+    /// This is a hot path called once per page. Key optimizations:
+    /// - Pre-computes `mean * norm` constants (avoids repeated multiply)
+    /// - Writes each channel plane contiguously via `as_slice_mut()`, enabling
+    ///   LLVM auto-vectorization (NEON on ARM64, SSE/AVX on x86-64). The previous
+    ///   approach used `tensor[[0, ch, r, c]]` which scattered writes across planes
+    ///   and prevented any vectorization.
     pub fn substract_mean_normalize(img_src: &image::RgbImage, mean_vals: &[f32], norm_vals: &[f32]) -> Array4<f32> {
         let cols = img_src.width() as usize;
         let rows = img_src.height() as usize;
+        let pixel_count = rows * cols;
 
         let mut input_tensor = Array::zeros((1, 3, rows, cols));
 
-        // Pre-compute adjusted mean constants: mean[ch] * norm[ch]
-        // This avoids a multiply per pixel per channel (was 3× per pixel before).
         let adjusted = [
             mean_vals[0] * norm_vals[0],
             mean_vals[1] * norm_vals[1],
             mean_vals[2] * norm_vals[2],
         ];
 
-        // Access raw pixel buffer directly — avoids per-pixel bounds checks.
-        // RgbImage stores pixels in row-major HWC format: [R, G, B, R, G, B, ...].
         let raw = img_src.as_raw();
 
-        for r in 0..rows {
-            let row_offset = r * cols * 3;
-            for c in 0..cols {
-                let idx = row_offset + c * 3;
-                // Channel-separated output (CHW format for ONNX Runtime).
-                input_tensor[[0, 0, r, c]] = raw[idx] as f32 * norm_vals[0] - adjusted[0];
-                input_tensor[[0, 1, r, c]] = raw[idx + 1] as f32 * norm_vals[1] - adjusted[1];
-                input_tensor[[0, 2, r, c]] = raw[idx + 2] as f32 * norm_vals[2] - adjusted[2];
+        // Write each channel plane as a contiguous slice. ndarray stores (1,3,H,W)
+        // in C-contiguous (row-major) order, so plane [0,ch] is a contiguous H*W block.
+        // This enables LLVM to auto-vectorize the inner loop (4-8 f32 ops per cycle).
+        for ch in 0..3 {
+            let norm = norm_vals[ch];
+            let adj = adjusted[ch];
+            let plane = input_tensor
+                .slice_mut(ndarray::s![0, ch, .., ..])
+                .into_shape_with_order(pixel_count)
+                .expect("contiguous plane slice");
+            let plane_slice = plane.into_slice().expect("contiguous memory");
+
+            for (i, out) in plane_slice.iter_mut().enumerate() {
+                // raw is HWC: pixel i has R at raw[i*3], G at raw[i*3+1], B at raw[i*3+2]
+                *out = raw[i * 3 + ch] as f32 * norm - adj;
             }
         }
 
@@ -172,31 +178,29 @@ impl OcrUtils {
         imageops::rotate180_in_place(src);
     }
 
+    /// Compute mean of f32 image values where mask > 0.
+    ///
+    /// Uses raw slice access instead of per-pixel get_pixel() for better
+    /// cache behavior and to enable auto-vectorization of the reduction.
     pub fn calculate_mean_with_mask(
         img: &image::ImageBuffer<image::Luma<f32>, Vec<f32>>,
         mask: &image::ImageBuffer<image::Luma<u8>, Vec<u8>>,
     ) -> f32 {
-        let mut sum: f32 = 0.0;
-        let mut mask_count = 0;
-
         assert_eq!(img.width(), mask.width());
         assert_eq!(img.height(), mask.height());
 
-        for y in 0..img.height() {
-            for x in 0..img.width() {
-                let mask_value = mask.get_pixel(x, y)[0];
-                if mask_value > 0 {
-                    let pixel = img.get_pixel(x, y);
-                    sum += pixel[0];
-                    mask_count += 1;
-                }
+        let img_raw = img.as_raw();
+        let mask_raw = mask.as_raw();
+        let mut sum: f32 = 0.0;
+        let mut count: u32 = 0;
+
+        for (px, &m) in img_raw.iter().zip(mask_raw.iter()) {
+            if m > 0 {
+                sum += *px;
+                count += 1;
             }
         }
 
-        if mask_count == 0 {
-            return 0.0;
-        }
-
-        sum / mask_count as f32
+        if count == 0 { 0.0 } else { sum / count as f32 }
     }
 }

@@ -94,7 +94,7 @@ Kreuzberg supports three OCR backends with different strengths:
 ### Recommendation
 
 - **Production/CLI**: Use **Tesseract** for simplicity and broad platform support
-- **Speed + Accuracy (any binding)**: Use **PaddleOCR** for fast processing with excellent accuracy, especially for CJK languages. Use `model_tier="server"` (default, ~88MB det model) for highest accuracy or `model_tier="mobile"` (~4.5MB det model) for lightweight/edge deployments
+- **Speed + Accuracy (any binding)**: Use **PaddleOCR** for fast processing with excellent accuracy, especially for CJK languages. The default `model_tier="mobile"` (~4.5MB det model) is faster than RapidOCR on simple documents; use `model_tier="server"` (~88MB det model) for maximum accuracy with GPU
 - **Python + Accuracy**: Use **EasyOCR** for best accuracy with deep learning models (Python only)
 
 ## Installation

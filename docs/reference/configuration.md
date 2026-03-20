@@ -514,7 +514,7 @@ PaddleOCR-specific configuration for model selection and detection tuning.
 
 | Field              | Type   | Default      | Description                                                                                                                        |
 | ------------------ | ------ | ------------ | ---------------------------------------------------------------------------------------------------------------------------------- |
-| `model_tier` <span class="version-badge">v4.5.0</span> | `str`  | `"server"`   | Model tier: `"server"` (high accuracy, ~88MB det model) or `"mobile"` (lightweight, ~4.5MB det model) |
+| `model_tier` <span class="version-badge">v4.5.0</span> | `str`  | `"mobile"`   | Model tier: `"mobile"` (lightweight, ~21MB total, fast) or `"server"` (high accuracy, ~172MB, best with GPU) |
 | `padding` <span class="version-badge">v4.5.0</span>    | `int`  | `10`         | Padding in pixels (0-100) added around the image before detection                                     |
 
 ---

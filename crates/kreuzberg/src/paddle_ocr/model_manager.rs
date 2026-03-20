@@ -161,6 +161,10 @@ const V2_DET_MODELS: &[V2DetModelDefinition] = &[
 ];
 
 /// V2 recognition models: unified server/mobile (CJK+English) and English-only mobile.
+///
+/// Note: `en_mobile` is kept for backward compatibility (direct `ensure_v2_rec_model("en_mobile")`
+/// callers) but is not used by the default resolution matrix — both English and Chinese mobile
+/// resolve to `unified_mobile`.
 const V2_REC_MODELS: &[V2RecModelDefinition] = &[
     V2RecModelDefinition {
         model_key: "unified_server",
@@ -678,15 +682,15 @@ impl ModelManager {
     ///
     /// | Family | Server | Mobile |
     /// |---|---|---|
-    /// | english | v2 unified_server (84MB) | v2 en_mobile (7.8MB) |
+    /// | english | v2 unified_server (84MB) | v2 unified_mobile (16.5MB) |
     /// | chinese (ch, jpn, chinese_cht) | v2 unified_server (84MB) | v2 unified_mobile (16.5MB) |
     /// | all others | per-script (unchanged) | per-script (unchanged) |
     pub fn resolve_rec_model(&self, family: &str, tier: &str) -> Result<ResolvedRecModel, KreuzbergError> {
         match (family, tier) {
             // English + Chinese families use v2 unified models
             ("english", "server") | ("chinese", "server") => self.ensure_v2_rec_model("unified_server"),
-            ("chinese", "mobile") => self.ensure_v2_rec_model("unified_mobile"),
-            ("english", "mobile") => self.ensure_v2_rec_model("en_mobile"),
+            // Both English and Chinese mobile use unified_mobile (CJK+English in one model)
+            ("english", "mobile") | ("chinese", "mobile") => self.ensure_v2_rec_model("unified_mobile"),
 
             // All other scripts: per-script models (no tier distinction)
             _ => {

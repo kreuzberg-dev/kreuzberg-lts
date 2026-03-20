@@ -75,8 +75,8 @@ pub struct PaddleOcrConfig {
     pub drop_score: f32,
 
     /// Model tier controlling detection/recognition model size and accuracy trade-off.
-    /// - `"server"` (default): Large, high-accuracy models (~88MB detection, ~84MB recognition)
-    /// - `"mobile"`: Lightweight models (~4.5MB detection, ~16.5MB recognition), faster download and inference
+    /// - `"mobile"` (default): Lightweight models (~4.5MB detection, ~16.5MB recognition), fast download and inference
+    /// - `"server"`: Large, high-accuracy models (~88MB detection, ~84MB recognition), best for GPU or complex documents
     pub model_tier: String,
 }
 
@@ -107,7 +107,7 @@ impl PaddleOcrConfig {
             rec_batch_num: 6,
             padding: 10,
             drop_score: 0.5,
-            model_tier: "server".to_string(),
+            model_tier: "mobile".to_string(), // mobile is the default: fast, ~13MB total download
         }
     }
 
@@ -234,7 +234,7 @@ impl PaddleOcrConfig {
     ///
     /// # Arguments
     ///
-    /// * `tier` - `"server"` (default, high accuracy) or `"mobile"` (lightweight, faster)
+    /// * `tier` - `"mobile"` (default, lightweight, faster) or `"server"` (high accuracy, GPU/complex documents)
     pub fn with_model_tier(mut self, tier: impl Into<String>) -> Self {
         self.model_tier = tier.into();
         self
@@ -435,7 +435,7 @@ mod tests {
         assert!(!config.use_angle_cls);
         assert!(!config.enable_table_detection);
         assert_eq!(config.padding, 10);
-        assert_eq!(config.model_tier, "server");
+        assert_eq!(config.model_tier, "mobile");
     }
 
     #[test]
@@ -448,7 +448,7 @@ mod tests {
         assert_eq!(config.det_limit_side_len, 960);
         assert_eq!(config.rec_batch_num, 6);
         assert_eq!(config.padding, 10);
-        assert_eq!(config.model_tier, "server");
+        assert_eq!(config.model_tier, "mobile");
     }
 
     #[test]
@@ -558,25 +558,25 @@ mod tests {
 
     #[test]
     fn test_model_tier_builder() {
-        let config = PaddleOcrConfig::new("en").with_model_tier("mobile");
-        assert_eq!(config.model_tier, "mobile");
+        let config = PaddleOcrConfig::new("en").with_model_tier("server");
+        assert_eq!(config.model_tier, "server");
     }
 
     #[test]
     fn test_model_tier_serde_roundtrip() {
-        let config = PaddleOcrConfig::new("ch").with_model_tier("mobile");
+        let config = PaddleOcrConfig::new("ch").with_model_tier("server");
         let json = serde_json::to_string(&config).unwrap();
-        assert!(json.contains("\"model_tier\":\"mobile\""));
+        assert!(json.contains("\"model_tier\":\"server\""));
 
         let deserialized: PaddleOcrConfig = serde_json::from_str(&json).unwrap();
-        assert_eq!(deserialized.model_tier, "mobile");
+        assert_eq!(deserialized.model_tier, "server");
     }
 
     #[test]
     fn test_model_tier_backward_compat() {
-        // JSON without model_tier should deserialize to default "server"
+        // JSON without model_tier should deserialize to default "mobile"
         let json = r#"{"language":"en","det_db_thresh":0.3}"#;
         let config: PaddleOcrConfig = serde_json::from_str(json).unwrap();
-        assert_eq!(config.model_tier, "server");
+        assert_eq!(config.model_tier, "mobile");
     }
 }

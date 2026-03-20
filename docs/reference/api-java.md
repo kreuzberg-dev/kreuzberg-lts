@@ -669,12 +669,12 @@ OcrConfig ocr = OcrConfig.builder()
 
 **PaddleOcrConfig Fields:** <span class="version-badge">v4.5.0</span>
 
-- `modelTier` (String): Model tier: "server" (high accuracy, ~88MB det model) or "mobile" (lightweight, ~4.5MB det model). Default: "server"
+- `modelTier` (String): Model tier: "mobile" (lightweight, ~21MB total, fast) or "server" (high accuracy, ~172MB, best with GPU). Default: "mobile"
 - `padding` (Integer): Padding in pixels (0-100) added around the image before detection. Default: 10
 
 ```java title="PaddleOcrConfiguration.java"
 PaddleOcrConfig paddleConfig = PaddleOcrConfig.builder()
-    .modelTier("mobile")
+    .modelTier("server")
     .padding(10)
     .build();
 ```

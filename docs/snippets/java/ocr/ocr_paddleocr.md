@@ -13,9 +13,7 @@ public class Main {
                 .ocr(OcrConfig.builder()
                     .backend("paddle-ocr")
                     .language("en")
-                    .paddleOcrConfig(PaddleOcrConfig.builder()
-                        .modelTier("mobile")
-                        .build())
+                    // .paddleOcrConfig(PaddleOcrConfig.builder().modelTier("server").build()) // for max accuracy
                     .build())
                 .build();
 

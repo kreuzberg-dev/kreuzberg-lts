@@ -1448,7 +1448,7 @@ Configuration for OCR processing.
 
 **PaddleOcrConfig Properties:** <span class="version-badge">v4.5.0</span>
 
-- `ModelTier` (string?): Model tier: "server" (high accuracy, ~88MB det model) or "mobile" (lightweight, ~4.5MB det model). Default: "server"
+- `ModelTier` (string?): Model tier: "mobile" (lightweight, ~21MB total, fast) or "server" (high accuracy, ~172MB, best with GPU). Default: "mobile"
 - `Padding` (int?): Padding in pixels (0-100) added around the image before detection. Default: 10
 
 ---

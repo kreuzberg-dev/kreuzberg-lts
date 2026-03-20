@@ -7,10 +7,10 @@
 //! | P2 | native+layout     | output_format: Markdown, layout: fast             |
 //! | P3 | tesseract         | output_format: Markdown, ocr: tesseract, force    |
 //! | P4 | tesseract+layout  | P3 + layout: fast                                |
-//! | P5 | paddleocr         | output_format: Markdown, ocr: paddleocr, force    |
-//! | P6 | paddleocr+layout  | P5 + layout: fast                                |
-//! | P7 | paddleocr-mobile  | P5 + model_tier: mobile                           |
-//! | P8 | paddleocr-mobile+layout | P7 + layout: fast                           |
+//! | P5 | paddleocr         | output_format: Markdown, ocr: paddleocr, force (mobile default) |
+//! | P6 | paddleocr+layout  | P5 + layout: accurate                            |
+//! | P7 | paddleocr-server  | P5 + model_tier: server                           |
+//! | P8 | paddleocr-server+layout | P7 + layout: accurate                       |
 
 use crate::Result;
 use crate::comparison::{Pipeline, PipelineResult};
@@ -183,28 +183,28 @@ fn build_config(pipeline: Pipeline) -> kreuzberg::ExtractionConfig {
             }),
             ..base
         },
-        Pipeline::PaddleMobile => kreuzberg::ExtractionConfig {
+        Pipeline::PaddleServer => kreuzberg::ExtractionConfig {
             force_ocr: true,
             ocr: Some(OcrConfig {
                 backend: "paddleocr".to_string(),
                 language: "eng".to_string(),
                 auto_rotate: true,
-                paddle_ocr_config: Some(serde_json::json!({"model_tier": "mobile"})),
+                paddle_ocr_config: Some(serde_json::json!({"model_tier": "server"})),
                 ..Default::default()
             }),
             ..base
         },
-        Pipeline::PaddleMobileLayout => kreuzberg::ExtractionConfig {
+        Pipeline::PaddleServerLayout => kreuzberg::ExtractionConfig {
             force_ocr: true,
             ocr: Some(OcrConfig {
                 backend: "paddleocr".to_string(),
                 language: "eng".to_string(),
                 auto_rotate: true,
-                paddle_ocr_config: Some(serde_json::json!({"model_tier": "mobile"})),
+                paddle_ocr_config: Some(serde_json::json!({"model_tier": "server"})),
                 ..Default::default()
             }),
             layout: Some(LayoutDetectionConfig {
-                preset: "fast".to_string(),
+                preset: "accurate".to_string(),
                 ..Default::default()
             }),
             ..base

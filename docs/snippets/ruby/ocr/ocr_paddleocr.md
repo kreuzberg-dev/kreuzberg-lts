@@ -4,8 +4,8 @@ require 'kreuzberg'
 config = Kreuzberg::Config::Extraction.new(
   ocr: Kreuzberg::Config::OCR.new(
     backend: 'paddleocr',
-    language: 'eng',
-    model_tier: 'mobile'
+    language: 'eng'
+    # model_tier: 'server' # for max accuracy
   )
 )
 

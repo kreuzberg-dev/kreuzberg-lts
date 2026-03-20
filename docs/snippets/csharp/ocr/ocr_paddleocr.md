@@ -7,10 +7,7 @@ var config = new ExtractionConfig
     {
         Backend = "paddle-ocr",
         Language = "en",
-        PaddleOcrConfig = new PaddleOcrConfig
-        {
-            ModelTier = "mobile"
-        }
+        // PaddleOcrConfig = new PaddleOcrConfig { ModelTier = "server" } // for max accuracy
     }
 };
 

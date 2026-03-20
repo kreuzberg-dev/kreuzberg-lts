@@ -12,9 +12,7 @@ $config = new ExtractionConfig(
     ocr: new OcrConfig(
         backend: 'paddle-ocr',
         language: 'en',
-        paddleOcrConfig: new PaddleOcrConfig(
-            modelTier: 'mobile'
-        )
+        // paddleOcrConfig: new PaddleOcrConfig(modelTier: 'server') // for max accuracy
     )
 );
 

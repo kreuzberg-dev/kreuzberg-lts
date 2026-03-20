@@ -5,7 +5,7 @@ const config = {
 	ocr: {
 		backend: 'paddle-ocr',
 		language: 'en',
-		modelTier: 'mobile',
+		// modelTier: 'server', // for max accuracy
 	},
 };
 

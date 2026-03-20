@@ -231,7 +231,7 @@ result = Kreuzberg.extract_file_sync("document.pdf", config: config)
     - `tessedit_char_whitelist` (String): Character whitelist. Default: nil
     - `tessedit_char_blacklist` (String): Character blacklist. Default: nil
   - `paddle_ocr_config` (Hash): PaddleOCR-specific options
-    - `model_tier` (String): <span class="version-badge">v4.5.0</span> Model tier: "server" (high accuracy, ~88MB det model) or "mobile" (lightweight, ~4.5MB det model). Default: "server"
+    - `model_tier` (String): <span class="version-badge">v4.5.0</span> Model tier: "mobile" (lightweight, ~21MB total, fast) or "server" (high accuracy, ~172MB, best with GPU). Default: "mobile"
     - `padding` (Integer): <span class="version-badge">v4.5.0</span> Padding in pixels (0-100) added around the image before detection. Default: 10
     - `use_angle_cls` (Boolean): Use angle classification. Default: false
     - `det_db_thresh` (Float): Detection threshold. Default: 0.3
