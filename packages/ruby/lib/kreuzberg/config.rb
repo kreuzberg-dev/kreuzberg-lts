@@ -1321,6 +1321,12 @@ module Kreuzberg
       end
 
       def update_from_merged(merged)
+        update_core_options(merged)
+        update_processing_options(merged)
+        update_output_options(merged)
+      end
+
+      def update_core_options(merged)
         @use_cache = merged.use_cache
         @enable_quality_processing = merged.enable_quality_processing
         @force_ocr = merged.force_ocr
@@ -1328,6 +1334,9 @@ module Kreuzberg
         @ocr = merged.ocr
         @chunking = merged.chunking
         @language_detection = merged.language_detection
+      end
+
+      def update_processing_options(merged)
         @pdf_options = merged.pdf_options
         @images = merged.image_extraction
         @postprocessor = merged.postprocessor
@@ -1336,6 +1345,9 @@ module Kreuzberg
         @html_options = merged.html_options
         @pages = merged.pages
         @layout = merged.layout
+      end
+
+      def update_output_options(merged)
         @concurrency = merged.concurrency
         @max_concurrent_extractions = merged.max_concurrent_extractions
         @output_format = merged.output_format

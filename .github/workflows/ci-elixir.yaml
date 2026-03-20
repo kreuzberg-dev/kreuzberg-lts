@@ -228,6 +228,7 @@ jobs:
           KREUZBERG_EMBEDDINGS_AVAILABLE: "1"
           KREUZBERG_KEYWORDS_RAKE_AVAILABLE: "1"
           KREUZBERG_KEYWORDS_YAKE_AVAILABLE: "1"
+          HF_HOME: ~/.cache/huggingface
         run: task elixir:e2e:test
 
       - name: Verify FFI build artifacts

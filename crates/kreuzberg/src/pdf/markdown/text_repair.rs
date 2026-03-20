@@ -113,11 +113,7 @@ pub(super) fn build_ligature_repair_map(page: &PdfPage) -> Option<Vec<(char, &'s
 /// space is removed (matching the reference regex-based post-processing).
 pub(super) fn apply_ligature_repairs<'a>(text: &'a str, repair_map: &[(char, &str)]) -> Cow<'a, str> {
     // Fast path: if no characters in the text match the repair map, return borrowed.
-    if repair_map.is_empty()
-        || !text
-            .chars()
-            .any(|c| repair_map.iter().any(|(rc, _)| *rc == c))
-    {
+    if repair_map.is_empty() || !text.chars().any(|c| repair_map.iter().any(|(rc, _)| *rc == c)) {
         return Cow::Borrowed(text);
     }
 
@@ -137,13 +133,10 @@ pub(super) fn apply_ligature_repairs<'a>(text: &'a str, repair_map: &[(char, &st
     let mut collapsed = String::with_capacity(result.len());
     let mut chars = result.chars().peekable();
     while let Some(ch) = chars.next() {
-        if ch == ' ' && !collapsed.is_empty() {
-            if chars.peek().is_some_and(|&nc| nc.is_lowercase()) {
-                let should_collapse =
-                    ligature_endings.iter().any(|lig| collapsed.ends_with(lig));
-                if should_collapse {
-                    continue;
-                }
+        if ch == ' ' && !collapsed.is_empty() && chars.peek().is_some_and(|&nc| nc.is_lowercase()) {
+            let should_collapse = ligature_endings.iter().any(|lig| collapsed.ends_with(lig));
+            if should_collapse {
+                continue;
             }
         }
         collapsed.push(ch);

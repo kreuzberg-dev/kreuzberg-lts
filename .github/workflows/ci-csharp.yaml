@@ -294,6 +294,7 @@ jobs:
           KREUZBERG_EMBEDDINGS_AVAILABLE: "1"
           KREUZBERG_KEYWORDS_RAKE_AVAILABLE: "1"
           KREUZBERG_KEYWORDS_YAKE_AVAILABLE: "1"
+          HF_HOME: ~/.cache/huggingface
         run: task csharp:e2e:test
 
       - name: Upload C# crash dumps

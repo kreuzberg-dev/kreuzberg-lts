@@ -10,12 +10,10 @@ echo "=== Cleaning Cargo Fingerprints ==="
 echo "Removing incremental compilation caches..."
 find target -type d -name "incremental" -exec rm -rf {} + 2>/dev/null || true
 
-# Remove fingerprint directories for workspace crates (these become stale across cache restores)
-# Only remove fingerprints for our own crates, not third-party deps
-echo "Cleaning workspace crate fingerprints..."
-for package in kreuzberg kreuzberg-ffi kreuzberg-py kreuzberg-php kreuzberg-node kreuzberg-wasm kreuzberg-cli kreuzberg-tesseract kreuzberg-paddle-ocr kreuzberg-pdfium-render kreuzberg_rustler benchmark-harness kreuzberg-e2e-generator snippet-runner kreuzberg-e2e-rust; do
-  find target -type d -name "${package}-*" -path "*/.fingerprint/*" -exec rm -rf {} + 2>/dev/null || true
-done
+# Remove ALL fingerprint directories (not just workspace crates)
+# Stale dependency fingerprints also cause "failed to read fingerprint" errors
+echo "Cleaning all fingerprint directories..."
+find target -type d -name ".fingerprint" -exec rm -rf {} + 2>/dev/null || true
 
 # Remove .cargo-ok markers that can be stale
 find target -name ".cargo-ok" -delete 2>/dev/null || true

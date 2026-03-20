@@ -70,19 +70,79 @@ fn build_bytes_items(
 }
 
 /// Extract format strings from ExtractionConfig before it's consumed.
+fn output_format_to_string(fmt: &kreuzberg::core::config::formats::OutputFormat) -> String {
+    match fmt {
+        kreuzberg::core::config::formats::OutputFormat::Plain => "plain".to_string(),
+        kreuzberg::core::config::formats::OutputFormat::Markdown => "markdown".to_string(),
+        kreuzberg::core::config::formats::OutputFormat::Djot => "djot".to_string(),
+        kreuzberg::core::config::formats::OutputFormat::Html => "html".to_string(),
+        kreuzberg::core::config::formats::OutputFormat::Structured => "structured".to_string(),
+    }
+}
+
+fn result_format_to_string(fmt: &kreuzberg::types::OutputFormat) -> String {
+    match fmt {
+        kreuzberg::types::OutputFormat::Unified => "unified".to_string(),
+        kreuzberg::types::OutputFormat::ElementBased => "element_based".to_string(),
+    }
+}
+
 fn extract_format_strings(config: &ExtractionConfig) -> (Option<String>, Option<String>) {
-    let output_fmt = match config.inner.output_format {
-        kreuzberg::core::config::formats::OutputFormat::Plain => Some("plain".to_string()),
-        kreuzberg::core::config::formats::OutputFormat::Markdown => Some("markdown".to_string()),
-        kreuzberg::core::config::formats::OutputFormat::Djot => Some("djot".to_string()),
-        kreuzberg::core::config::formats::OutputFormat::Html => Some("html".to_string()),
-        kreuzberg::core::config::formats::OutputFormat::Structured => Some("structured".to_string()),
-    };
-    let result_fmt = match config.inner.result_format {
-        kreuzberg::types::OutputFormat::Unified => Some("unified".to_string()),
-        kreuzberg::types::OutputFormat::ElementBased => Some("element_based".to_string()),
-    };
-    (output_fmt, result_fmt)
+    (
+        Some(output_format_to_string(&config.inner.output_format)),
+        Some(result_format_to_string(&config.inner.result_format)),
+    )
+}
+
+/// Collect per-item format strings, using file_config overrides where present.
+/// Returns an iterator that yields (output_format, result_format) for each result.
+fn collect_per_item_formats(
+    config: &ExtractionConfig,
+    file_configs: &Option<Vec<Option<FileExtractionConfig>>>,
+) -> PerItemFormats {
+    let default_output = output_format_to_string(&config.inner.output_format);
+    let default_result = result_format_to_string(&config.inner.result_format);
+
+    match file_configs {
+        Some(configs) => {
+            let formats: Vec<_> = configs
+                .iter()
+                .map(|fc| {
+                    let output = fc
+                        .as_ref()
+                        .and_then(|c| c.inner.output_format.as_ref())
+                        .map(output_format_to_string)
+                        .unwrap_or_else(|| default_output.clone());
+                    let result = fc
+                        .as_ref()
+                        .and_then(|c| c.inner.result_format.as_ref())
+                        .map(result_format_to_string)
+                        .unwrap_or_else(|| default_result.clone());
+                    (output, result)
+                })
+                .collect();
+            PerItemFormats::Explicit(formats)
+        }
+        None => PerItemFormats::Default(default_output, default_result),
+    }
+}
+
+/// Per-item format info that can be either explicit per-item or a repeated default.
+enum PerItemFormats {
+    Explicit(Vec<(String, String)>),
+    Default(String, String),
+}
+
+impl PerItemFormats {
+    fn get(&self, index: usize) -> (String, String) {
+        match self {
+            PerItemFormats::Explicit(formats) => formats
+                .get(index)
+                .cloned()
+                .unwrap_or_else(|| formats.last().cloned().unwrap_or_default()),
+            PerItemFormats::Default(output, result) => (output.clone(), result.clone()),
+        }
+    }
 }
 
 /// Extract a path string from Python input (str, pathlib.Path, or bytes).
@@ -235,9 +295,9 @@ pub fn batch_extract_files_sync(
     let path_strings: PyResult<Vec<String>> = paths.iter().map(|p| extract_path_string(&p)).collect();
     let path_strings = path_strings?;
 
+    let per_item_formats = collect_per_item_formats(&config, &file_configs);
     let items = build_file_items(path_strings, file_configs)?;
 
-    let (output_fmt, result_fmt) = extract_format_strings(&config);
     let rust_config = config.into();
 
     // Release GIL during sync batch extraction - OSError/RuntimeError must bubble up ~keep
@@ -245,8 +305,10 @@ pub fn batch_extract_files_sync(
 
     let converted: PyResult<Vec<_>> = results
         .into_iter()
-        .map(|result| {
-            ExtractionResult::from_rust(result, py, output_fmt.as_ref().cloned(), result_fmt.as_ref().cloned())
+        .enumerate()
+        .map(|(i, result)| {
+            let (output_fmt, result_fmt) = per_item_formats.get(i);
+            ExtractionResult::from_rust(result, py, Some(output_fmt), Some(result_fmt))
         })
         .collect();
     let list = PyList::new(py, converted?)?;
@@ -290,9 +352,9 @@ pub fn batch_extract_bytes_sync(
         )));
     }
 
+    let per_item_formats = collect_per_item_formats(&config, &file_configs);
     let items = build_bytes_items(data_list, mime_types, file_configs)?;
 
-    let (output_fmt, result_fmt) = extract_format_strings(&config);
     let rust_config = config.into();
 
     // Release GIL during sync batch extraction - OSError/RuntimeError must bubble up ~keep
@@ -300,7 +362,11 @@ pub fn batch_extract_bytes_sync(
 
     let converted: PyResult<Vec<_>> = results
         .into_iter()
-        .map(|result| ExtractionResult::from_rust(result, py, output_fmt.clone(), result_fmt.clone()))
+        .enumerate()
+        .map(|(i, result)| {
+            let (output_fmt, result_fmt) = per_item_formats.get(i);
+            ExtractionResult::from_rust(result, py, Some(output_fmt), Some(result_fmt))
+        })
         .collect();
     let list = PyList::new(py, converted?)?;
     Ok(list.unbind())
@@ -434,9 +500,9 @@ pub fn batch_extract_files<'py>(
     let path_strings: PyResult<Vec<String>> = paths.iter().map(|p| extract_path_string(&p)).collect();
     let path_strings = path_strings?;
 
+    let per_item_formats = collect_per_item_formats(&config, &file_configs);
     let items = build_file_items(path_strings, file_configs)?;
 
-    let (output_fmt, result_fmt) = extract_format_strings(&config);
     let rust_config: kreuzberg::ExtractionConfig = config.into();
     pyo3_async_runtimes::tokio::future_into_py(py, async move {
         let results = kreuzberg::batch_extract_file(items, &rust_config)
@@ -446,8 +512,10 @@ pub fn batch_extract_files<'py>(
         Python::attach(|py| {
             let converted: PyResult<Vec<_>> = results
                 .into_iter()
-                .map(|result| {
-                    ExtractionResult::from_rust(result, py, output_fmt.as_ref().cloned(), result_fmt.as_ref().cloned())
+                .enumerate()
+                .map(|(i, result)| {
+                    let (output_fmt, result_fmt) = per_item_formats.get(i);
+                    ExtractionResult::from_rust(result, py, Some(output_fmt), Some(result_fmt))
                 })
                 .collect();
             let list = PyList::new(py, converted?)?;
@@ -496,9 +564,9 @@ pub fn batch_extract_bytes<'py>(
         )));
     }
 
+    let per_item_formats = collect_per_item_formats(&config, &file_configs);
     let items = build_bytes_items(data_list, mime_types, file_configs)?;
 
-    let (output_fmt, result_fmt) = extract_format_strings(&config);
     let rust_config: kreuzberg::ExtractionConfig = config.into();
     pyo3_async_runtimes::tokio::future_into_py(py, async move {
         let results = kreuzberg::batch_extract_bytes(items, &rust_config)
@@ -508,8 +576,10 @@ pub fn batch_extract_bytes<'py>(
         Python::attach(|py| {
             let converted: PyResult<Vec<_>> = results
                 .into_iter()
-                .map(|result| {
-                    ExtractionResult::from_rust(result, py, output_fmt.as_ref().cloned(), result_fmt.as_ref().cloned())
+                .enumerate()
+                .map(|(i, result)| {
+                    let (output_fmt, result_fmt) = per_item_formats.get(i);
+                    ExtractionResult::from_rust(result, py, Some(output_fmt), Some(result_fmt))
                 })
                 .collect();
             let list = PyList::new(py, converted?)?;

@@ -112,17 +112,18 @@ public final class KreuzbergFFI {
 	public static final MethodHandle KREUZBERG_ERROR_CODE_DESCRIPTION;
 
 	public static final StructLayout C_EXTRACTION_RESULT_LAYOUT = MemoryLayout.structLayout(
-			ValueLayout.ADDRESS.withName("content"), ValueLayout.ADDRESS.withName("mime_type"),
-			ValueLayout.ADDRESS.withName("language"), ValueLayout.ADDRESS.withName("date"),
-			ValueLayout.ADDRESS.withName("subject"), ValueLayout.ADDRESS.withName("tables_json"),
-			ValueLayout.ADDRESS.withName("detected_languages_json"), ValueLayout.ADDRESS.withName("metadata_json"),
-			ValueLayout.ADDRESS.withName("chunks_json"), ValueLayout.ADDRESS.withName("images_json"),
+			ValueLayout.ADDRESS.withName("annotations_json"), ValueLayout.ADDRESS.withName("chunks_json"),
+			ValueLayout.ADDRESS.withName("content"), ValueLayout.ADDRESS.withName("date"),
+			ValueLayout.ADDRESS.withName("detected_languages_json"), ValueLayout.ADDRESS.withName("djot_content_json"),
+			ValueLayout.ADDRESS.withName("document_json"), ValueLayout.ADDRESS.withName("elements_json"),
+			ValueLayout.ADDRESS.withName("extracted_keywords_json"), ValueLayout.ADDRESS.withName("images_json"),
+			ValueLayout.ADDRESS.withName("language"), ValueLayout.ADDRESS.withName("metadata_json"),
+			ValueLayout.ADDRESS.withName("mime_type"), ValueLayout.ADDRESS.withName("ocr_elements_json"),
 			ValueLayout.ADDRESS.withName("page_structure_json"), ValueLayout.ADDRESS.withName("pages_json"),
-			ValueLayout.ADDRESS.withName("elements_json"), ValueLayout.ADDRESS.withName("ocr_elements_json"),
-			ValueLayout.ADDRESS.withName("document_json"), ValueLayout.ADDRESS.withName("extracted_keywords_json"),
-			ValueLayout.ADDRESS.withName("quality_score_json"),
-			ValueLayout.ADDRESS.withName("processing_warnings_json"), ValueLayout.ADDRESS.withName("annotations_json"),
-			ValueLayout.JAVA_BOOLEAN.withName("success"), MemoryLayout.paddingLayout(7));
+			ValueLayout.ADDRESS.withName("processing_warnings_json"),
+			ValueLayout.ADDRESS.withName("quality_score_json"), ValueLayout.ADDRESS.withName("subject"),
+			ValueLayout.ADDRESS.withName("tables_json"), ValueLayout.JAVA_BOOLEAN.withName("success"),
+			MemoryLayout.paddingLayout(7));
 
 	public static final long CONTENT_OFFSET = C_EXTRACTION_RESULT_LAYOUT
 			.byteOffset(MemoryLayout.PathElement.groupElement("content"));
@@ -162,6 +163,8 @@ public final class KreuzbergFFI {
 			.byteOffset(MemoryLayout.PathElement.groupElement("processing_warnings_json"));
 	public static final long ANNOTATIONS_JSON_OFFSET = C_EXTRACTION_RESULT_LAYOUT
 			.byteOffset(MemoryLayout.PathElement.groupElement("annotations_json"));
+	public static final long DJOT_CONTENT_JSON_OFFSET = C_EXTRACTION_RESULT_LAYOUT
+			.byteOffset(MemoryLayout.PathElement.groupElement("djot_content_json"));
 	public static final long SUCCESS_OFFSET = C_EXTRACTION_RESULT_LAYOUT
 			.byteOffset(MemoryLayout.PathElement.groupElement("success"));
 

@@ -260,7 +260,7 @@ impl DocumentExtractor for PdfExtractor {
                         }
                     })?;
 
-                let document = load_pdf_from_byte_slice(&pdfium, &content, config)?;
+                let document = load_pdf_from_byte_slice(&pdfium, content, config)?;
 
                 extract_all_from_document(&document, config, None, None, None)?
             }
@@ -386,7 +386,7 @@ impl DocumentExtractor for PdfExtractor {
                 let pdfium =
                     crate::pdf::bindings::bind_pdfium(PdfError::MetadataExtractionFailed, "initialize Pdfium")?;
 
-                let document = load_pdf_from_byte_slice(&pdfium, &content, config)?;
+                let document = load_pdf_from_byte_slice(&pdfium, content, config)?;
 
                 extract_all_from_document(
                     &document,

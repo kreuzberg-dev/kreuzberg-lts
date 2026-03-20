@@ -458,8 +458,7 @@ fn process_single_page(
                             if inter_left >= inter_right || inter_bottom >= inter_top {
                                 return false;
                             }
-                            let inter_area =
-                                (inter_right - inter_left) * (inter_top - inter_bottom);
+                            let inter_area = (inter_right - inter_left) * (inter_top - inter_bottom);
                             inter_area / seg_area >= 0.5
                         })
                     })
@@ -467,14 +466,11 @@ fn process_single_page(
             } else {
                 standard_segments
             };
-            let mut standard_paras =
-                super::regions::assemble_standard_pipeline(standard_filtered);
+            let mut standard_paras = super::regions::assemble_standard_pipeline(standard_filtered);
             classify_paragraphs(&mut standard_paras, heading_map);
 
-            let layout_alphanum: usize =
-                layout_paragraphs.iter().map(|p| paragraph_alphanum_len(p)).sum();
-            let standard_alphanum: usize =
-                standard_paras.iter().map(|p| paragraph_alphanum_len(p)).sum();
+            let layout_alphanum: usize = layout_paragraphs.iter().map(paragraph_alphanum_len).sum();
+            let standard_alphanum: usize = standard_paras.iter().map(paragraph_alphanum_len).sum();
 
             if standard_alphanum > 20 && layout_alphanum < standard_alphanum * 7 / 10 {
                 // Layout lost too much text — fall back to standard pipeline.
@@ -1173,12 +1169,7 @@ fn paragraph_alphanum_len(para: &PdfParagraph) -> usize {
     para.lines
         .iter()
         .flat_map(|line| line.segments.iter())
-        .map(|seg| {
-            seg.text
-                .bytes()
-                .filter(|b| b.is_ascii_alphanumeric())
-                .count()
-        })
+        .map(|seg| seg.text.bytes().filter(|b| b.is_ascii_alphanumeric()).count())
         .sum()
 }
 

@@ -542,8 +542,7 @@ fn repair_word_breaks_from_full_text(segments: &mut [SegmentData], full_text: &s
         .chars()
         .filter(|c| !c.is_control() || *c == ' ' || *c == '\n')
         .collect();
-    let full_words: std::collections::HashSet<&str> =
-        normalized_full.split_whitespace().collect();
+    let full_words: std::collections::HashSet<&str> = normalized_full.split_whitespace().collect();
 
     for seg in segments.iter_mut() {
         if !seg.text.contains(' ') {
@@ -554,22 +553,14 @@ fn repair_word_breaks_from_full_text(segments: &mut [SegmentData], full_text: &s
         let mut i = 0;
         let mut changed = false;
         while i < words.len() {
-            if i + 1 < words.len()
-                && !words[i].is_empty()
-                && !words[i + 1].is_empty()
-            {
+            if i + 1 < words.len() && !words[i].is_empty() && !words[i + 1].is_empty() {
                 // Strip control chars for matching (pdfium's \x02 markers etc.)
                 let w1_clean: String = words[i].chars().filter(|c| !c.is_control()).collect();
-                let w2_clean: String =
-                    words[i + 1].chars().filter(|c| !c.is_control()).collect();
+                let w2_clean: String = words[i + 1].chars().filter(|c| !c.is_control()).collect();
 
-                if w1_clean.ends_with(|c: char| c.is_alphabetic())
-                    && w2_clean.starts_with(|c: char| c.is_lowercase())
-                {
+                if w1_clean.ends_with(|c: char| c.is_alphabetic()) && w2_clean.starts_with(|c: char| c.is_lowercase()) {
                     let joined = format!("{}{}", w1_clean, w2_clean);
-                    if full_words.contains(joined.as_str())
-                        && !full_words.contains(w1_clean.as_str())
-                    {
+                    if full_words.contains(joined.as_str()) && !full_words.contains(w1_clean.as_str()) {
                         // The joined form exists in full_text but the fragment doesn't
                         // → this is a spurious line-break space.
                         if !result.is_empty() {
@@ -2479,10 +2470,7 @@ mod tests {
 
     #[test]
     fn test_repair_across_multiple_segments() {
-        let mut segs = vec![
-            make_seg("first docu ment"),
-            make_seg("second cor recting"),
-        ];
+        let mut segs = vec![make_seg("first docu ment"), make_seg("second cor recting")];
         let full_text = "first document second correcting";
         repair_word_breaks_from_full_text(&mut segs, full_text);
         assert_eq!(segs[0].text, "first document");

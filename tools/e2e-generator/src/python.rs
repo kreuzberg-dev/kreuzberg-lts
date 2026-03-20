@@ -25,6 +25,7 @@ from kreuzberg import (
     EmbeddingConfig,
     EmbeddingModelType,
     ExtractionConfig,
+    FileExtractionConfig,
     HierarchyConfig,
     ImageExtractionConfig,
     KeywordAlgorithm,
@@ -132,6 +133,29 @@ def build_config(config: dict[str, Any] | None) -> ExtractionConfig:
         kwargs["result_format"] = ResultFormat(result_format)
 
     return ExtractionConfig(**kwargs)
+
+
+def build_file_config(config: dict[str, Any] | None) -> FileExtractionConfig:
+    """Construct a FileExtractionConfig from a plain dictionary."""
+
+    if not config:
+        return FileExtractionConfig()
+
+    kwargs: dict[str, Any] = {}
+
+    for key in ("enable_quality_processing", "force_ocr", "include_document_structure"):
+        if key in config:
+            kwargs[key] = config[key]
+
+    _build_config_objects(config, kwargs)
+
+    if (output_format := config.get("output_format")) is not None:
+        kwargs["output_format"] = output_format
+
+    if (result_format := config.get("result_format")) is not None:
+        kwargs["result_format"] = result_format
+
+    return FileExtractionConfig(**kwargs)
 
 
 def assert_expected_mime(result: Any, expected: list[str]) -> None:
@@ -796,6 +820,21 @@ fn render_test(fixture: &Fixture) -> Result<String> {
     writeln!(code, "    config = helpers.build_config({})", config_literal)?;
     writeln!(code)?;
 
+    // Render file_configs if present in fixture
+    let has_file_configs = extraction.has_file_configs();
+    if has_file_configs {
+        if let Some(ref file_configs) = extraction.file_configs {
+            let fc_literal = render_file_configs_literal(file_configs);
+            writeln!(code, "    file_configs = {fc_literal}")?;
+            writeln!(code)?;
+        }
+    }
+    let fc_arg = if has_file_configs {
+        ", file_configs=file_configs"
+    } else {
+        ""
+    };
+
     let func_name = get_extraction_function_name(extraction.method, extraction.input_type);
     let await_prefix = if is_async { "await " } else { "" };
 
@@ -806,7 +845,7 @@ fn render_test(fixture: &Fixture) -> Result<String> {
         if is_batch {
             writeln!(
                 code,
-                "    results = {await_prefix}{func_name}([file_bytes], [mime_type], config=config)"
+                "    results = {await_prefix}{func_name}([file_bytes], [mime_type], config=config{fc_arg})"
             )?;
             writeln!(code, "    result = results[0]")?;
         } else {
@@ -818,7 +857,7 @@ fn render_test(fixture: &Fixture) -> Result<String> {
     } else if is_batch {
         writeln!(
             code,
-            "    results = {await_prefix}{func_name}([document_path], config=config)"
+            "    results = {await_prefix}{func_name}([document_path], config=config{fc_arg})"
         )?;
         writeln!(code, "    result = results[0]")?;
     } else {
@@ -1138,6 +1177,20 @@ fn render_config_literal(config: &Map<String, Value>) -> String {
         let value = Value::Object(config.clone());
         render_python_value(&value)
     }
+}
+
+fn render_file_configs_literal(file_configs: &[Option<Map<String, Value>>]) -> String {
+    let parts: Vec<String> = file_configs
+        .iter()
+        .map(|fc| match fc {
+            Some(map) => {
+                let value = Value::Object(map.clone());
+                format!("helpers.build_file_config({})", render_python_value(&value))
+            }
+            None => "None".to_string(),
+        })
+        .collect();
+    format!("[{}]", parts.join(", "))
 }
 
 fn render_string_list(values: &[String]) -> String {
