@@ -32,6 +32,8 @@
 		}
 	},
 	"skip": {
-		"requires_feature": ["embeddings"]
+		"requires_feature": ["embeddings"],
+		"skip_on_platform": ["x86_64-pc-windows-msvc"],
+		"notes": "Embeddings not supported on Windows"
 	}
 }

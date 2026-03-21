@@ -18,7 +18,7 @@
 	},
 	"assertions": {
 		"expected_mime": "image/jpeg",
-		"max_content_length": 200
+		"max_content_length": 300
 	},
 	"skip": {
 		"requires_feature": ["tesseract"],

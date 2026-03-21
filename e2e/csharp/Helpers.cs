@@ -121,6 +121,14 @@ public static class TestHelpers
         SkipIfFeatureUnavailable("paddle-ocr");
     }
 
+    public static void SkipOnWindows()
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            throw new Xunit.SkipException("Test is not supported on Windows");
+        }
+    }
+
     public static void SkipIfFeatureUnavailable(string feature)
     {
         var envVar = "KREUZBERG_" + feature.Replace("-", "_").ToUpperInvariant() + "_AVAILABLE";

@@ -8,7 +8,7 @@ batch_extract_files_sync <- function(paths, config = NULL) {
   paths <- as.character(paths)
   stopifnot(length(paths) > 0L)
   config_json <- if (!is.null(config)) jsonlite::toJSON(config, auto_unbox = TRUE) else NULL
-  results <- check_native_result(batch_extract_files_sync_native(paths, NULL, config_json))
+  results <- check_native_result(batch_extract_files_sync_native(paths, config_json))
   lapply(results, as_kreuzberg_result)
 }
 
@@ -22,7 +22,7 @@ batch_extract_files <- function(paths, config = NULL) {
   paths <- as.character(paths)
   stopifnot(length(paths) > 0L)
   config_json <- if (!is.null(config)) jsonlite::toJSON(config, auto_unbox = TRUE) else NULL
-  results <- check_native_result(batch_extract_files_native(paths, NULL, config_json))
+  results <- check_native_result(batch_extract_files_native(paths, config_json))
   lapply(results, as_kreuzberg_result)
 }
 
@@ -40,7 +40,7 @@ batch_extract_bytes_sync <- function(data_list, mime_types, config = NULL) {
     stop("data_list and mime_types must have the same length", call. = FALSE)
   }
   config_json <- if (!is.null(config)) jsonlite::toJSON(config, auto_unbox = TRUE) else NULL
-  results <- check_native_result(batch_extract_bytes_sync_native(data_list, mime_types, NULL, config_json))
+  results <- check_native_result(batch_extract_bytes_sync_native(data_list, mime_types, config_json))
   lapply(results, as_kreuzberg_result)
 }
 
@@ -58,6 +58,6 @@ batch_extract_bytes <- function(data_list, mime_types, config = NULL) {
     stop("data_list and mime_types must have the same length", call. = FALSE)
   }
   config_json <- if (!is.null(config)) jsonlite::toJSON(config, auto_unbox = TRUE) else NULL
-  results <- check_native_result(batch_extract_bytes_native(data_list, mime_types, NULL, config_json))
+  results <- check_native_result(batch_extract_bytes_native(data_list, mime_types, config_json))
   lapply(results, as_kreuzberg_result)
 }

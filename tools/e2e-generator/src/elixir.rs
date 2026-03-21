@@ -925,6 +925,22 @@ fn render_example(fixture: &Fixture, is_last: bool) -> Result<String> {
 
     writeln!(body, "    test \"{}\" do", escape_elixir_string_content(&fixture.id))?;
 
+    // Emit platform skip guard if requested
+    let skip_on_windows = fixture
+        .skip()
+        .skip_on_platform
+        .iter()
+        .any(|triple| triple == "x86_64-pc-windows-msvc");
+    if skip_on_windows {
+        writeln!(body, "      if :os.type() == {{:win32, :nt}} do")?;
+        writeln!(
+            body,
+            "        IO.puts(\"SKIPPED: {} - not supported on Windows\")",
+            escape_elixir_string_content(&fixture.id)
+        )?;
+        writeln!(body, "      else")?;
+    }
+
     if use_simple_runner {
         writeln!(body, "      case E2E.Helpers.run_fixture(")?;
         writeln!(body, "        {},", render_elixir_string(&fixture.id))?;
@@ -988,6 +1004,9 @@ fn render_example(fixture: &Fixture, is_last: bool) -> Result<String> {
     writeln!(body, "        {{:error, reason}} ->")?;
     writeln!(body, "          flunk(\"Extraction failed: #{{inspect(reason)}}\")")?;
     writeln!(body, "      end")?;
+    if skip_on_windows {
+        writeln!(body, "      end")?;
+    }
     writeln!(body, "    end")?;
     if !is_last {
         writeln!(body)?;

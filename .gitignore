@@ -190,3 +190,6 @@ tests/test_apps/**/pnpm-lock.yaml
 tests/test_apps/**/Gemfile.lock
 tests/test_apps/**/composer.lock
 tests/test_apps/**/mix.lock
+
+# PHP Composer vendor directory
+vendor/

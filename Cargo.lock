@@ -1875,7 +1875,7 @@ dependencies = [
  "once_cell",
  "parking_lot",
  "skeptic",
- "ureq 3.2.0",
+ "ureq 3.2.1",
  "zip 7.2.0",
 ]
 
@@ -2493,7 +2493,7 @@ dependencies = [
  "serde",
  "serde_json",
  "thiserror 2.0.18",
- "ureq 3.2.0",
+ "ureq 3.2.1",
  "windows-sys 0.61.2",
 ]
 
@@ -3404,7 +3404,7 @@ dependencies = [
  "pdf_oxide",
  "pkg-config",
  "pprof",
- "pulldown-cmark 0.13.1",
+ "pulldown-cmark 0.13.2",
  "quick-xml 0.39.2",
  "rake",
  "rayon",
@@ -3434,7 +3434,7 @@ dependencies = [
  "tracing-opentelemetry",
  "tracing-subscriber",
  "unicode-normalization",
- "ureq 3.2.0",
+ "ureq 3.2.1",
  "utoipa",
  "wasm-bindgen-rayon",
  "whatlang",
@@ -3455,7 +3455,7 @@ dependencies = [
  "tokio",
  "tracing",
  "tracing-subscriber",
- "ureq 3.2.0",
+ "ureq 3.2.1",
 ]
 
 [[package]]
@@ -4604,7 +4604,7 @@ dependencies = [
  "ort-sys",
  "smallvec",
  "tracing",
- "ureq 3.2.0",
+ "ureq 3.2.1",
 ]
 
 [[package]]
@@ -4615,7 +4615,7 @@ checksum = "d7b497d21a8b6fbb4b5a544f8fadb77e801a09ae0add9e411d31c6f89e3c1e90"
 dependencies = [
  "hmac-sha256",
  "lzma-rust2 0.15.3",
- "ureq 3.2.0",
+ "ureq 3.2.1",
 ]
 
 [[package]]
@@ -5031,9 +5031,9 @@ dependencies = [
 
 [[package]]
 name = "pulldown-cmark"
-version = "0.13.1"
+version = "0.13.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "83c41efbf8f90ac44de7f3a868f0867851d261b56291732d0cbf7cceaaeb55a6"
+checksum = "14104c5a24d9bcf7eb2c24753e0f49fe14555d8bd565ea3d38e4b4303267259d"
 dependencies = [
  "bitflags 2.11.0",
  "getopts",
@@ -5755,9 +5755,9 @@ checksum = "f87165f0995f63a9fbeea62b64d10b4d9d8e78ec6d7d51fb2125fda7bb36788f"
 
 [[package]]
 name = "rustls-webpki"
-version = "0.103.9"
+version = "0.103.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d7df23109aa6c1567d1c575b9952556388da57401e4ace1d15f79eedad0d8f53"
+checksum = "df33b2b81ac578cabaf06b89b0631153a3f416b0a886e8a7a1707fb51abbd1ef"
 dependencies = [
  "aws-lc-rs",
  "ring",
@@ -6490,7 +6490,7 @@ dependencies = [
  "icu_segmenter",
  "itertools 0.14.0",
  "memchr",
- "pulldown-cmark 0.13.1",
+ "pulldown-cmark 0.13.2",
  "strum",
  "thiserror 2.0.18",
  "tokenizers",
@@ -7130,9 +7130,9 @@ dependencies = [
 
 [[package]]
 name = "ureq"
-version = "3.2.0"
+version = "3.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fdc97a28575b85cfedf2a7e7d3cc64b3e11bd8ac766666318003abbacc7a21fc"
+checksum = "4ab5172ab0c2b6d01a9bb4f9332f7c1211193ea002742188040d09ea4eafe867"
 dependencies = [
  "base64 0.22.1",
  "cookie_store",
@@ -7147,7 +7147,7 @@ dependencies = [
  "serde_json",
  "socks",
  "ureq-proto",
- "utf-8",
+ "utf8-zero",
  "webpki-root-certs",
  "webpki-roots 1.0.6",
 ]
@@ -7196,6 +7196,12 @@ name = "utf8-width"
 version = "0.1.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1292c0d970b54115d14f2492fe0170adf21d68a1de108eebc51c1df4f346a091"
+
+[[package]]
+name = "utf8-zero"
+version = "0.8.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b8c0a043c9540bae7c578c88f91dda8bd82e59ae27c21baca69c8b191aaf5a6e"
 
 [[package]]
 name = "utf8_iter"

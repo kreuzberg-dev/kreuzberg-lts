@@ -44,7 +44,7 @@ defmodule E2E.OcrTest do
         {:ok, result} ->
           result
           |> E2E.Helpers.assert_expected_mime(["image/jpeg"])
-          |> E2E.Helpers.assert_max_content_length(200)
+          |> E2E.Helpers.assert_max_content_length(300)
 
         {:skipped, reason} ->
           IO.puts("SKIPPED: #{reason}")

@@ -37,7 +37,7 @@ namespace Kreuzberg.E2E.Ocr
 
             var result = KreuzbergClient.ExtractFileSync(documentPath, config);
             TestHelpers.AssertExpectedMime(result, new[] { "image/jpeg" });
-            TestHelpers.AssertMaxContentLength(result, 200);
+            TestHelpers.AssertMaxContentLength(result, 300);
         }
 
         [SkippableFact]

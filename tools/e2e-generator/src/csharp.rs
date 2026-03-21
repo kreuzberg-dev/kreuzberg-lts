@@ -129,6 +129,14 @@ public static class TestHelpers
         SkipIfFeatureUnavailable("paddle-ocr");
     }
 
+    public static void SkipOnWindows()
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            throw new Xunit.SkipException("Test is not supported on Windows");
+        }
+    }
+
     public static void SkipIfFeatureUnavailable(string feature)
     {
         var envVar = "KREUZBERG_" + feature.Replace("-", "_").ToUpperInvariant() + "_AVAILABLE";
@@ -1004,6 +1012,14 @@ fn render_test(buffer: &mut String, fixture: &Fixture) -> Result<()> {
             "            TestHelpers.SkipIfFeatureUnavailable(\"{}\");",
             escape_csharp_string(feature)
         )?;
+    }
+    // Skip on specific platforms if requested
+    let skip_on_windows = skip_directive
+        .skip_on_platform
+        .iter()
+        .any(|triple| triple == "x86_64-pc-windows-msvc");
+    if skip_on_windows {
+        writeln!(buffer, "            TestHelpers.SkipOnWindows();")?;
     }
     writeln!(
         buffer,

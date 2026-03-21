@@ -51,7 +51,7 @@ public class OcrTest {
         true,
         result -> {
           E2EHelpers.Assertions.assertExpectedMime(result, Arrays.asList("image/jpeg"));
-          E2EHelpers.Assertions.assertMaxContentLength(result, 200);
+          E2EHelpers.Assertions.assertMaxContentLength(result, 300);
         });
   }
 

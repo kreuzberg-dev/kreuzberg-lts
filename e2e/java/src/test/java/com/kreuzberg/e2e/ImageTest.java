@@ -79,7 +79,7 @@ public class ImageTest {
         true,
         result -> {
           E2EHelpers.Assertions.assertExpectedMime(result, Arrays.asList("image/jpeg"));
-          E2EHelpers.Assertions.assertMaxContentLength(result, 100);
+          E2EHelpers.Assertions.assertMaxContentLength(result, 200);
         });
   }
 

@@ -48,7 +48,10 @@ public class EmbeddingsTest {
       if (cause instanceof Exception) {
         String skipReason =
             E2EHelpers.skipReasonFor(
-                (Exception) cause, "embedding_async", Arrays.asList("embeddings"), null);
+                (Exception) cause,
+                "embedding_async",
+                Arrays.asList("embeddings"),
+                "Embeddings not supported on Windows");
         if (skipReason != null) {
           org.junit.jupiter.api.Assumptions.assumeTrue(false, skipReason);
           return;
@@ -72,7 +75,7 @@ public class EmbeddingsTest {
         "pdf/fake_memo.pdf",
         config,
         Arrays.asList("embeddings"),
-        null,
+        "Embeddings not supported on Windows",
         true,
         result -> {
           E2EHelpers.Assertions.assertExpectedMime(result, Arrays.asList("application/pdf"));
@@ -108,7 +111,7 @@ public class EmbeddingsTest {
         "pdf/fake_memo.pdf",
         config,
         Arrays.asList("embeddings"),
-        null,
+        "Embeddings not supported on Windows",
         true,
         result -> {
           E2EHelpers.Assertions.assertExpectedMime(result, Arrays.asList("application/pdf"));
