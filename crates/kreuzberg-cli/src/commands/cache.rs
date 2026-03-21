@@ -121,6 +121,11 @@ pub fn manifest_command(format: OutputFormat) -> Result<()> {
         entries.extend(kreuzberg::layout::LayoutModelManager::manifest());
     }
 
+    #[cfg(feature = "paddle-ocr")]
+    {
+        entries.extend(kreuzberg::ocr::TessdataManager::manifest());
+    }
+
     let total_size_bytes: u64 = entries.iter().map(|e| e.size_bytes).sum();
     let version = env!("CARGO_PKG_VERSION");
 
@@ -216,6 +221,22 @@ pub fn warm_command(
                 .ensure_all_models()
                 .context("Failed to download layout models")?;
             downloaded.push("layout (rtdetr, tatr)".to_string());
+        }
+    }
+
+    #[cfg(feature = "paddle-ocr")]
+    {
+        let tessdata_dir = cache_base.join("tessdata");
+        let manager = kreuzberg::ocr::TessdataManager::new(Some(tessdata_dir));
+
+        let newly_downloaded = manager
+            .ensure_all_languages()
+            .context("Failed to download tessdata files")?;
+
+        if newly_downloaded > 0 {
+            downloaded.push(format!("tessdata ({newly_downloaded} languages)"));
+        } else {
+            already_cached.push("tessdata (all languages)".to_string());
         }
     }
 

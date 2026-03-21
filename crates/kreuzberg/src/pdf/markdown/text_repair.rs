@@ -317,12 +317,12 @@ pub(super) fn text_has_ligature_corruption(text: &str) -> bool {
     count >= 1
 }
 
-/// Check if text has an abnormal density of single-letter words followed by
+/// Check if text has an abnormal density of short-fragment words followed by
 /// lowercase continuation, indicating broken word spacing from pdfium.
 ///
-/// Pattern: `"M ust"`, `"rom ance"`, `"w ork"` — a single letter (or small
-/// fragment) followed by a space then a lowercase continuation. Normal English
-/// text rarely has single-letter words other than "a", "I", and some articles.
+/// Pattern: `"M ust"`, `"s hall"`, `"sen d er"`, `"a dd ress"` — short fragments
+/// (1-3 chars) followed by a space then a lowercase continuation. Normal English
+/// text rarely has runs of consecutive short fragments.
 ///
 /// Returns true if the density of suspicious fragments exceeds a threshold,
 /// indicating systematic font-metric corruption on this page.
@@ -340,11 +340,15 @@ pub(super) fn text_has_broken_word_spacing(text: &str) -> bool {
     for window in words.windows(2) {
         let w = window[0];
         let next = window[1];
-        // Single letter (not "a", "I", or common single-char words) followed
-        // by lowercase start — likely a broken word.
-        if w.len() == 1 && w.chars().next().is_some_and(|c| c.is_alphabetic()) {
-            let ch = w.chars().next().unwrap();
-            if ch != 'a' && ch != 'I' && ch != 'A' && next.chars().next().is_some_and(|c| c.is_lowercase()) {
+
+        // Short fragment (1-3 chars, all alphabetic) followed by lowercase start.
+        if w.len() <= 3
+            && !w.is_empty()
+            && w.chars().all(|c| c.is_alphabetic())
+            && next.chars().next().is_some_and(|c| c.is_lowercase())
+        {
+            // Exclude common standalone short words to reduce false positives.
+            if !is_common_short_word(w) {
                 suspicious += 1;
             }
         }
@@ -354,37 +358,34 @@ pub(super) fn text_has_broken_word_spacing(text: &str) -> bool {
     suspicious >= 5 && (suspicious as f64 / words.len() as f64) > 0.05
 }
 
-/// Repair broken word spacing by joining single-letter fragments to adjacent words.
+/// Repair broken word spacing by joining short fragments to adjacent words.
 ///
 /// Targets the pattern where pdfium inserts spaces mid-word due to broken font
-/// CMap/ToUnicode tables. For example: `"M ust Be Tough"` → `"Must Be Tough"`.
+/// CMap/ToUnicode tables. Handles both single-character and multi-character
+/// fragments:
+/// - `"M ust Be Tough"` → `"Must Be Tough"` (single-char)
+/// - `"s hall a b e active"` → `"shall be active"` (multi-char)
+/// - `"a dd ress"` → `"address"` (mixed)
+/// - `"sen d er"` → `"sender"` (mixed)
 ///
 /// Only joins when:
-/// - The fragment is a single alphabetic character
-/// - It's not a common standalone word ("a", "I", "A")
+/// - The fragment is a short alphabetic word (1-3 chars)
+/// - It's not a common standalone short word
 /// - The next word starts with a lowercase letter (continuation)
+/// - Or the fragment is part of a run of consecutive short fragments
 pub(super) fn repair_broken_word_spacing(text: &str) -> Cow<'_, str> {
     if text.is_empty() {
         return Cow::Borrowed(text);
     }
 
     let words: Vec<&str> = text.split_whitespace().collect();
-    let mut repaired = false;
 
     // Quick pre-scan: check if any joins would be made before allocating.
-    for window in words.windows(2) {
-        let w = window[0];
-        let next = window[1];
-        if w.len() == 1 && w.chars().next().is_some_and(|c| c.is_alphabetic()) {
-            let ch = w.chars().next().unwrap();
-            if ch != 'a' && ch != 'I' && ch != 'A' && next.chars().next().is_some_and(|c| c.is_lowercase()) {
-                repaired = true;
-                break;
-            }
-        }
-    }
+    let has_joinable = words
+        .windows(2)
+        .any(|window| is_joinable_fragment(window[0], window[1]));
 
-    if !repaired {
+    if !has_joinable {
         return Cow::Borrowed(text);
     }
 
@@ -396,26 +397,89 @@ pub(super) fn repair_broken_word_spacing(text: &str) -> Cow<'_, str> {
         }
 
         let w = words[i];
-        // Check if this is a single-letter fragment that should be joined to
-        // the next word.
-        if w.len() == 1 && i + 1 < words.len() && w.chars().next().is_some_and(|c| c.is_alphabetic()) {
-            let ch = w.chars().next().unwrap();
-            let next = words[i + 1];
-            // Join if not a common standalone and next starts lowercase.
-            if ch != 'a' && ch != 'I' && ch != 'A' && next.chars().next().is_some_and(|c| c.is_lowercase()) {
-                result.push(ch);
-                // Don't push space — join directly to next word.
-                result.push_str(next);
-                i += 2;
-                continue;
+
+        // Check if this word starts a joinable fragment run.
+        if i + 1 < words.len() && is_joinable_fragment(w, words[i + 1]) {
+            // Greedily join consecutive short fragments.
+            result.push_str(w);
+            i += 1;
+            while i < words.len() {
+                let next = words[i];
+                // Continue joining if next starts lowercase and the previous
+                // fragment or this one is short (part of the broken run).
+                if next.chars().next().is_some_and(|c| c.is_lowercase()) {
+                    let prev_word = if i >= 2 { words[i - 2] } else { w };
+                    let cur_frag = words[i - 1];
+                    // Join if the fragment we just consumed was short,
+                    // or if the next word is short (continuation of run).
+                    if cur_frag.len() <= 3 || next.len() <= 3 || prev_word.len() <= 3 {
+                        result.push_str(next);
+                        i += 1;
+                        continue;
+                    }
+                }
+                break;
             }
+            continue;
         }
 
         result.push_str(w);
         i += 1;
     }
 
-    Cow::Owned(result)
+    if result == text.split_whitespace().collect::<Vec<_>>().join(" ") {
+        // No actual changes were made (just whitespace normalization).
+        // Still return Owned since whitespace may have been normalized.
+        Cow::Borrowed(text)
+    } else {
+        Cow::Owned(result)
+    }
+}
+
+/// Check if a word is a joinable fragment: short, alphabetic, not a common
+/// standalone word, and followed by a lowercase-starting continuation.
+fn is_joinable_fragment(word: &str, next: &str) -> bool {
+    word.len() <= 3
+        && !word.is_empty()
+        && word.chars().all(|c| c.is_alphabetic())
+        && !is_common_short_word(word)
+        && next.chars().next().is_some_and(|c| c.is_lowercase())
+}
+
+/// Check if a short word is a common standalone English word that should
+/// not be joined to adjacent words.
+///
+/// Covers articles, pronouns, prepositions, conjunctions, and common verbs
+/// up to 3 characters. This is intentionally conservative — when in doubt,
+/// include the word to avoid false joins.
+fn is_common_short_word(word: &str) -> bool {
+    matches!(
+        word,
+        // 1-char
+        "a" | "A" | "I"
+        // 2-char
+        | "an" | "am" | "as" | "at" | "be" | "by" | "do" | "go" | "he"
+        | "if" | "in" | "is" | "it" | "me" | "my" | "no" | "of" | "oh"
+        | "on" | "or" | "so" | "to" | "up" | "us" | "we"
+        | "An" | "Am" | "As" | "At" | "Be" | "By" | "Do" | "Go" | "He"
+        | "If" | "In" | "Is" | "It" | "Me" | "My" | "No" | "Of" | "Oh"
+        | "On" | "Or" | "So" | "To" | "Up" | "Us" | "We"
+        // 3-char
+        | "the" | "and" | "are" | "but" | "can" | "did" | "for" | "got"
+        | "had" | "has" | "her" | "him" | "his" | "how" | "its" | "let"
+        | "may" | "new" | "nor" | "not" | "now" | "old" | "one" | "our"
+        | "out" | "own" | "ran" | "say" | "she" | "too" | "two" | "use"
+        | "was" | "way" | "who" | "why" | "yet" | "you" | "all" | "any"
+        | "big" | "day" | "end" | "far" | "few" | "put" | "run"
+        | "saw" | "set" | "top" | "try" | "win" | "yes"
+        | "The" | "And" | "Are" | "But" | "Can" | "Did" | "For" | "Got"
+        | "Had" | "Has" | "Her" | "Him" | "His" | "How" | "Its" | "Let"
+        | "May" | "New" | "Nor" | "Not" | "Now" | "Old" | "One" | "Our"
+        | "Out" | "Own" | "Ran" | "Say" | "She" | "Too" | "Two" | "Use"
+        | "Was" | "Way" | "Who" | "Why" | "Yet" | "You" | "All" | "Any"
+        | "Big" | "Day" | "End" | "Far" | "Few" | "Put" | "Run"
+        | "Saw" | "Set" | "Top" | "Try" | "Win" | "Yes"
+    )
 }
 
 /// Expand Unicode ligature characters (U+FB00–U+FB06) to ASCII equivalents,
@@ -844,11 +908,36 @@ mod tests {
     }
 
     #[test]
-    fn test_repair_joins_single_letter_only() {
+    fn test_repair_joins_multi_char_fragments() {
         let broken = "rom ance and m arriage";
         let repaired = repair_broken_word_spacing(broken);
-        // "rom" is 3 chars — not joined. "m" is single letter before "arriage" → joined.
-        assert_eq!(repaired, "rom ance and marriage");
+        // "rom" (3 chars) before lowercase "ance" → joined. "m" before "arriage" → joined.
+        assert_eq!(repaired, "romance and marriage");
+    }
+
+    #[test]
+    fn test_repair_joins_shall_be_active() {
+        let broken = "s hall a b e active";
+        let repaired = repair_broken_word_spacing(broken);
+        // Multi-char fragments: "s"+"hall" → "shall", "b"+"e" → "be"
+        // Note: "a" is common word so starts new fragment; "b"+"e" joins.
+        assert_eq!(repaired, "shall a be active");
+    }
+
+    #[test]
+    fn test_repair_joins_address() {
+        let broken = "a dd ress";
+        let repaired = repair_broken_word_spacing(broken);
+        // "a" is common standalone, "dd" (2 chars) + "ress" → "ddress"
+        assert_eq!(repaired, "a ddress");
+    }
+
+    #[test]
+    fn test_repair_joins_sender() {
+        let broken = "sen d er hardware";
+        let repaired = repair_broken_word_spacing(broken);
+        // "sen" (3 chars) + "d" + "er" → "sender"
+        assert_eq!(repaired, "sender hardware");
     }
 
     #[test]
