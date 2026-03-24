@@ -181,7 +181,19 @@ tasks:
   build:all:
     desc: Build all bindings across all languages
     cmds:
-      - task: _build_wf:all
+      - task: rust:build
+      - task: rust:ffi:build
+      - task: python:build
+      - task: node:build
+      - task: go:build
+      - task: java:build
+      - task: csharp:build
+      - task: wasm:build
+      - task: ruby:build
+      - task: php:build
+      - task: elixir:build
+      - task: r:build
+      - task: c:build
 
   build:all:dev:
     desc: Build all bindings in debug mode
