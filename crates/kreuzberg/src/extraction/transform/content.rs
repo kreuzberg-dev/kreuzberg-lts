@@ -88,25 +88,56 @@ pub(super) fn format_table_as_text(table: &crate::types::Table) -> String {
     output.trim().to_string()
 }
 
-/// Process hierarchy blocks (PDF headings) into Title elements.
+/// Process hierarchy blocks into Title and NarrativeText elements.
+///
+/// Returns `true` when any body-level block was emitted, indicating
+/// the caller should skip the plain-text `process_content` pass to avoid
+/// producing duplicate elements. Body blocks without bounding boxes are still
+/// emitted (without coordinates); the flag is set regardless of bbox presence.
 pub(super) fn process_hierarchy(
     elements: &mut Vec<Element>,
     hierarchy: &crate::types::PageHierarchy,
     page_number: usize,
     title: &Option<String>,
-) {
-    for block in &hierarchy.blocks {
-        let element_type = match block.level.as_str() {
-            "h1" | "h2" | "h3" | "h4" | "h5" | "h6" => ElementType::Title,
-            _ => continue, // Body text will be processed separately
-        };
+) -> bool {
+    let mut has_any_body_blocks = false;
 
+    for block in &hierarchy.blocks {
         let coords = block.bbox.as_ref().map(|(left, top, right, bottom)| BoundingBox {
             x0: *left as f64,
             y0: *top as f64,
             x1: *right as f64,
             y1: *bottom as f64,
         });
+
+        let element_type = match block.level.as_str() {
+            "h1" | "h2" | "h3" | "h4" | "h5" | "h6" => ElementType::Title,
+            _ => {
+                // Body text: emit as NarrativeText with coordinates when available.
+                if block.text.trim().is_empty() {
+                    continue;
+                }
+                has_any_body_blocks = true;
+                let element_id = generate_element_id(&block.text, ElementType::NarrativeText, Some(page_number));
+                elements.push(Element {
+                    element_id,
+                    element_type: ElementType::NarrativeText,
+                    text: block.text.clone(),
+                    metadata: ElementMetadata {
+                        page_number: Some(page_number),
+                        filename: title.clone(),
+                        coordinates: coords,
+                        element_index: Some(elements.len()),
+                        additional: {
+                            let mut m = HashMap::new();
+                            m.insert("font_size".to_string(), block.font_size.to_string());
+                            m
+                        },
+                    },
+                });
+                continue;
+            }
+        };
 
         let element_id = generate_element_id(&block.text, element_type, Some(page_number));
         elements.push(Element {
@@ -127,6 +158,8 @@ pub(super) fn process_hierarchy(
             },
         });
     }
+
+    has_any_body_blocks
 }
 
 /// Process tables on a page into Table elements.

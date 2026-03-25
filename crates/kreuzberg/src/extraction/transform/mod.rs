@@ -56,10 +56,14 @@ pub fn transform_extraction_result_to_elements(result: &ExtractionResult) -> Vec
         for page in pages {
             let page_number = page.page_number;
 
-            // 1. Process hierarchy blocks (PDF headings)
-            if let Some(ref hierarchy) = page.hierarchy {
-                process_hierarchy(&mut elements, hierarchy, page_number, &result.metadata.title);
-            }
+            // 1. Process hierarchy blocks (headings + body text with coordinates).
+            // Returns true when body blocks with bounding boxes were emitted, in
+            // which case step 4 is skipped to avoid coordinate-less duplicates.
+            let hierarchy_covered_body = if let Some(ref hierarchy) = page.hierarchy {
+                process_hierarchy(&mut elements, hierarchy, page_number, &result.metadata.title)
+            } else {
+                false
+            };
 
             // 2. Process tables on this page
             process_tables(&mut elements, &page.tables, page_number, &result.metadata.title);
@@ -67,8 +71,12 @@ pub fn transform_extraction_result_to_elements(result: &ExtractionResult) -> Vec
             // 3. Process images on this page
             process_images(&mut elements, &page.images, page_number, &result.metadata.title);
 
-            // 4. Process page content (body text, list items, paragraphs)
-            process_content(&mut elements, &page.content, page_number, &result.metadata.title);
+            // 4. Process page content (body text, list items, paragraphs).
+            // Skipped when hierarchy already emitted body elements with coordinates
+            // to prevent producing duplicate coordinate-less elements.
+            if !hierarchy_covered_body {
+                process_content(&mut elements, &page.content, page_number, &result.metadata.title);
+            }
 
             // 5. Add PageBreak after each page (except the last)
             if page_number < pages.len() {
@@ -609,5 +617,150 @@ mod tests {
         assert_eq!(narratives[0].text, "First paragraph.");
         assert_eq!(narratives[1].text, "Second paragraph.");
         assert_eq!(narratives[2].text, "Third paragraph.");
+    }
+
+    /// Body-level hierarchy blocks with bounding boxes must produce NarrativeText
+    /// elements with populated coordinates (issue #566).
+    #[test]
+    fn test_body_hierarchy_blocks_get_coordinates() {
+        use crate::types::{ElementType, ExtractionResult, HierarchicalBlock, PageContent, PageHierarchy};
+
+        let result = ExtractionResult {
+            content: "Some body text here.".to_string(),
+            mime_type: Cow::Borrowed("application/pdf"),
+            metadata: test_metadata(Some("Doc".to_string())),
+            tables: vec![],
+            detected_languages: None,
+            chunks: None,
+            images: None,
+            djot_content: None,
+            pages: Some(vec![PageContent {
+                page_number: 1,
+                content: "Some body text here.".to_string(),
+                tables: vec![],
+                images: vec![],
+                hierarchy: Some(PageHierarchy {
+                    block_count: 2,
+                    blocks: vec![
+                        HierarchicalBlock {
+                            text: "Heading".to_string(),
+                            font_size: 18.0,
+                            level: "h1".to_string(),
+                            bbox: Some((10.0, 20.0, 200.0, 40.0)),
+                        },
+                        HierarchicalBlock {
+                            text: "Some body text here.".to_string(),
+                            font_size: 12.0,
+                            level: "body".to_string(),
+                            bbox: Some((10.0, 50.0, 200.0, 65.0)),
+                        },
+                    ],
+                }),
+                is_blank: None,
+            }]),
+            elements: None,
+            ocr_elements: None,
+            document: None,
+            #[cfg(any(feature = "keywords-yake", feature = "keywords-rake"))]
+            extracted_keywords: None,
+            quality_score: None,
+            processing_warnings: Vec::new(),
+            annotations: None,
+            children: None,
+        };
+
+        let elements = transform_extraction_result_to_elements(&result);
+
+        // Title element must have coordinates
+        let titles: Vec<_> = elements
+            .iter()
+            .filter(|e| e.element_type == ElementType::Title)
+            .collect();
+        assert_eq!(titles.len(), 1);
+        assert!(
+            titles[0].metadata.coordinates.is_some(),
+            "Title should have coordinates"
+        );
+
+        // Body text must be emitted as NarrativeText with coordinates
+        let narratives: Vec<_> = elements
+            .iter()
+            .filter(|e| e.element_type == ElementType::NarrativeText)
+            .collect();
+        assert_eq!(
+            narratives.len(),
+            1,
+            "Should have exactly 1 NarrativeText (no duplicate from process_content)"
+        );
+        assert_eq!(narratives[0].text, "Some body text here.");
+        assert!(
+            narratives[0].metadata.coordinates.is_some(),
+            "Body text should have coordinates"
+        );
+        let coords = narratives[0].metadata.coordinates.unwrap();
+        assert_eq!(coords.x0, 10.0);
+        assert_eq!(coords.y0, 50.0);
+        assert_eq!(coords.x1, 200.0);
+        assert_eq!(coords.y1, 65.0);
+    }
+
+    /// Body blocks without bboxes are emitted once by process_hierarchy; process_content is skipped.
+    #[test]
+    fn test_body_hierarchy_without_bbox_emits_once_without_coordinates() {
+        use crate::types::{ElementType, ExtractionResult, HierarchicalBlock, PageContent, PageHierarchy};
+
+        let result = ExtractionResult {
+            content: "Paragraph one.\n\nParagraph two.".to_string(),
+            mime_type: Cow::Borrowed("application/pdf"),
+            metadata: test_metadata(None),
+            tables: vec![],
+            detected_languages: None,
+            chunks: None,
+            images: None,
+            djot_content: None,
+            pages: Some(vec![PageContent {
+                page_number: 1,
+                content: "Paragraph one.\n\nParagraph two.".to_string(),
+                tables: vec![],
+                images: vec![],
+                hierarchy: Some(PageHierarchy {
+                    block_count: 1,
+                    blocks: vec![HierarchicalBlock {
+                        text: "Paragraph one.\n\nParagraph two.".to_string(),
+                        font_size: 12.0,
+                        level: "body".to_string(),
+                        bbox: None, // no bbox — include_bbox was false
+                    }],
+                }),
+                is_blank: None,
+            }]),
+            elements: None,
+            ocr_elements: None,
+            document: None,
+            #[cfg(any(feature = "keywords-yake", feature = "keywords-rake"))]
+            extracted_keywords: None,
+            quality_score: None,
+            processing_warnings: Vec::new(),
+            annotations: None,
+            children: None,
+        };
+
+        let elements = transform_extraction_result_to_elements(&result);
+
+        // process_hierarchy emits the body block as NarrativeText (no bbox → no coords).
+        // Because a body block was emitted, process_content is skipped entirely — no duplicates.
+        let narratives: Vec<_> = elements
+            .iter()
+            .filter(|e| e.element_type == ElementType::NarrativeText)
+            .collect();
+        assert_eq!(
+            narratives.len(),
+            1,
+            "bbox-less body block should produce exactly one NarrativeText element"
+        );
+        assert!(
+            narratives[0].metadata.coordinates.is_none(),
+            "NarrativeText without hierarchy bbox should have no coordinates"
+        );
     }
 }
