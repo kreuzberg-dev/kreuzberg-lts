@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [Unreleased]
+## [4.6.1] - 2026-03-25
 
 ### Added
 
@@ -20,6 +20,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **OCR elements now propagated to ExtractionResult** (#566): OCR elements with geometry data are collected during extraction and set on `ExtractionResult.ocr_elements`. Hierarchy transformer emits body-level blocks as `NarrativeText` elements with coordinates. OpenAPI schema registers OCR-related types.
 - **OOM crash on multi-page scanned PDFs** (#570): Replaced pre-rendering all PDF pages into memory with batched rendering. Pages are now rendered and OCR'd in bounded batches, capping peak memory to `batch_size * page` instead of `page_count * page`.
+- **OCR memory usage reduced 60-78%**: Restructured the OCR batch rendering loop to render-and-encode one page at a time instead of holding all decoded RGB buffers simultaneously. A 98-page scanned PDF dropped from 4.6GB to 1.9GB peak RSS (batch_size=4), and from 3.3GB to 713MB (batch_size=1). Batch size now adapts to available system memory on Linux and macOS.
+- **PDF control character encoding artifacts**: PDFs with broken ToUnicode font mappings that produce U+0002 (STX) and other control characters where hyphens should appear now have these replaced with hyphens when between word characters, or stripped otherwise. Fixes garbled output like `re\x02labelling` → `re-labelling`.
 - **DocumentStructure missing Heading nodes for PDFs**: `push_heading_group` now inserts a `Heading` child inside each `Group` node (matching DOCX builder behavior). Fallback `add_paragraphs` now detects markdown heading markers and creates heading groups instead of flat paragraphs.
 - **Layout detection returns empty tables on scanned PDFs** (#574): Three independent bugs caused `result.tables` to always be `[]` for scanned/image-based PDFs: (1) layout detection was gated behind a `needs_structured` output-format check, silently skipping detection for `Plain` (the default); (2) TATR-recognized tables in the OCR path were inlined as markdown text but never converted to `Table` structs; (3) `run_ocr_with_layout` returned only text, discarding table data. All three paths now propagate tables correctly.
 - **PDF layout engine panic on malformed input** (#544): Replaced the panicking `.expect()` inside the thread-local `LayoutEngine` initializer in `layout_runner.rs` with proper `Result`-based error propagation. A failure to initialise the layout engine now returns a descriptive error instead of crashing the host process via FFI (Python, Node, etc.).

@@ -560,18 +560,36 @@ pub(crate) async fn extract_with_ocr(
 
     // Encode and OCR pages in bounded batches so that at most `batch_size`
     // PNG-encoded images are alive at a time. This caps peak memory to roughly
-    // batch_size * (rendered_image + encoded_PNG + OCR working set) instead of
-    // page_count * that amount.
+    // batch_size * (encoded_PNG + OCR working set) instead of
+    // page_count * that amount. Images are rendered and encoded one at a time
+    // within each batch to avoid holding multiple decoded RGB buffers.
     use rayon::prelude::*;
     use std::sync::Arc;
     use tokio::task::JoinSet;
 
-    let batch_size = config
+    let configured_batch_size = config
         .concurrency
         .as_ref()
         .and_then(|c| c.max_threads)
         .unwrap_or_else(|| num_cpus::get().min(4))
         .max(1);
+
+    // Estimate per-page memory cost and adapt batch size to available system memory.
+    // A rendered page at 300 DPI (A4) is ~26MB RGB + ~5MB PNG + ~100MB OCR working set.
+    // We also need headroom for the PDF document itself and other allocations.
+    let batch_size = if images.is_none() {
+        adapt_batch_size_to_memory(configured_batch_size, content.map(|b| b.len()).unwrap_or(0))
+    } else {
+        configured_batch_size
+    };
+
+    if batch_size < configured_batch_size {
+        tracing::info!(
+            configured = configured_batch_size,
+            adapted = batch_size,
+            "Reduced OCR batch size to fit available memory"
+        );
+    }
 
     let ocr_config_owned = ocr_config.clone();
     let total_pages = if let Some(imgs) = images {
@@ -598,20 +616,45 @@ pub(crate) async fn extract_with_ocr(
     for batch_start in (0..total_pages).step_by(batch_size) {
         let batch_end = (batch_start + batch_size).min(total_pages);
 
-        let batch_slice = if let Some(imgs) = images {
-            Cow::Borrowed(&imgs[batch_start..batch_end])
+        // Render and encode pages one at a time within the batch to avoid holding
+        // multiple decoded RGB buffers (~26MB each at 300 DPI) simultaneously.
+        // Only the compact PNG-encoded bytes are kept for the batch's OCR phase.
+        let (batch_slice, encoded_batch) = if let Some(imgs) = images {
+            let slice: Cow<'_, [image::DynamicImage]> = Cow::Borrowed(&imgs[batch_start..batch_end]);
+            // Encode pre-rendered images in parallel.
+            #[allow(clippy::type_complexity)]
+            let encoded: crate::Result<Vec<(usize, Arc<Vec<u8>>, u32, u32)>> = slice
+                .par_iter()
+                .enumerate()
+                .map(|(offset, image)| {
+                    let page_idx = batch_start + offset;
+                    let rgb_image = image.to_rgb8();
+                    let (width, height) = rgb_image.dimensions();
+                    let mut image_bytes = Cursor::new(Vec::new());
+                    let encoder = PngEncoder::new(&mut image_bytes);
+                    encoder
+                        .write_image(&rgb_image, width, height, image::ColorType::Rgb8.into())
+                        .map_err(|e| crate::KreuzbergError::Parsing {
+                            message: format!("Failed to encode image: {}", e),
+                            source: None,
+                        })?;
+                    Ok((page_idx, Arc::new(image_bytes.into_inner()), width, height))
+                })
+                .collect();
+            (Some(slice), encoded?)
         } else {
             #[cfg(feature = "pdf")]
-            {
-                // Instantiate the renderer inside the batch loop, avoiding
-                // holding `!Send` pdfium contexts across `.await` boundaries!
+            let encoded = {
+                // Render each page, encode to PNG immediately, then drop the RGB buffer.
+                // This keeps only one ~26MB RGB image alive at a time instead of batch_size.
                 let renderer =
                     crate::pdf::rendering::PdfRenderer::new().map_err(|e| crate::KreuzbergError::Parsing {
                         message: format!("Failed to initialize PDF renderer for OCR batch: {:?}", e),
                         source: None,
                     })?;
                 let render_opts = crate::pdf::rendering::PageRenderOptions::default();
-                let mut batch_imgs = Vec::with_capacity(batch_end - batch_start);
+                let mut batch_encoded: Vec<(usize, Arc<Vec<u8>>, u32, u32)> =
+                    Vec::with_capacity(batch_end - batch_start);
                 for i in batch_start..batch_end {
                     let pdf_bytes = content.ok_or_else(|| crate::KreuzbergError::Parsing {
                         message: "PDF content is required for OCR rendering but was not provided".to_string(),
@@ -623,37 +666,26 @@ pub(crate) async fn extract_with_ocr(
                             source: None,
                         }
                     })?;
-                    batch_imgs.push(image);
+                    // Encode immediately so the DynamicImage can be dropped.
+                    let rgb_image = image.to_rgb8();
+                    let (width, height) = rgb_image.dimensions();
+                    let mut image_bytes = Cursor::new(Vec::new());
+                    let png_encoder = PngEncoder::new(&mut image_bytes);
+                    png_encoder
+                        .write_image(&rgb_image, width, height, image::ColorType::Rgb8.into())
+                        .map_err(|e| crate::KreuzbergError::Parsing {
+                            message: format!("Failed to encode page {} image: {}", i, e),
+                            source: None,
+                        })?;
+                    batch_encoded.push((i, Arc::new(image_bytes.into_inner()), width, height));
+                    // `image` and `rgb_image` are dropped here, freeing ~52MB per page.
                 }
-                Cow::Owned(batch_imgs)
-            }
+                batch_encoded
+            };
             #[cfg(not(feature = "pdf"))]
-            {
-                Cow::Borrowed(&[] as &[image::DynamicImage])
-            }
+            let encoded: Vec<(usize, Arc<Vec<u8>>, u32, u32)> = Vec::new();
+            (None::<Cow<'_, [image::DynamicImage]>>, encoded)
         };
-
-        // Encode this batch's images to PNG in parallel (CPU-bound, rayon).
-        #[allow(clippy::type_complexity)]
-        let encoded_batch: crate::Result<Vec<(usize, Arc<Vec<u8>>, u32, u32)>> = batch_slice
-            .par_iter()
-            .enumerate()
-            .map(|(offset, image)| {
-                let page_idx = batch_start + offset;
-                let rgb_image = image.to_rgb8();
-                let (width, height) = rgb_image.dimensions();
-                let mut image_bytes = Cursor::new(Vec::new());
-                let encoder = PngEncoder::new(&mut image_bytes);
-                encoder
-                    .write_image(&rgb_image, width, height, image::ColorType::Rgb8.into())
-                    .map_err(|e| crate::KreuzbergError::Parsing {
-                        message: format!("Failed to encode image: {}", e),
-                        source: None,
-                    })?;
-                Ok((page_idx, Arc::new(image_bytes.into_inner()), width, height))
-            })
-            .collect();
-        let encoded_batch = encoded_batch?;
 
         // OCR this batch concurrently (tokio JoinSet).
         let mut join_set: JoinSet<(usize, crate::Result<crate::types::ExtractionResult>)> = JoinSet::new();
@@ -669,7 +701,8 @@ pub(crate) async fn extract_with_ocr(
             });
         }
 
-        let mut batch_ocr_results: Vec<Option<crate::types::ExtractionResult>> = vec![None; batch_slice.len()];
+        let batch_count = encoded_batch.len();
+        let mut batch_ocr_results: Vec<Option<crate::types::ExtractionResult>> = vec![None; batch_count];
         while let Some(join_result) = join_set.join_next().await {
             let (page_idx, ocr_result) = join_result.map_err(|e| crate::KreuzbergError::Plugin {
                 message: format!("OCR task panicked: {}", e),
@@ -679,7 +712,7 @@ pub(crate) async fn extract_with_ocr(
         }
 
         // Sequential post-processing for this batch utilizing TATR.
-        for offset in 0..batch_slice.len() {
+        for offset in 0..batch_count {
             let page_idx = batch_start + offset;
             let ocr_result = batch_ocr_results[offset].take().expect("OCR result missing for page");
             #[cfg(feature = "layout-detection")]
@@ -708,7 +741,20 @@ pub(crate) async fn extract_with_ocr(
                 let detection = detections.get(page_idx);
                 let recognized_tables = match (detection, tatr_model.as_mut()) {
                     (Some(det), Some(model)) => {
-                        let rgb = batch_slice[offset].to_rgb8();
+                        // Decode the page image from its PNG for TATR table recognition.
+                        // When pre-rendered images are available, use them directly.
+                        // Otherwise, decode from the PNG we already encoded.
+                        let rgb = if let Some(ref slice) = batch_slice {
+                            slice[offset].to_rgb8()
+                        } else {
+                            let png_data = &encoded_batch[offset].1;
+                            let decoded =
+                                image::load_from_memory(png_data).map_err(|e| crate::KreuzbergError::Parsing {
+                                    message: format!("Failed to decode PNG for TATR: {}", e),
+                                    source: None,
+                                })?;
+                            decoded.to_rgb8()
+                        };
                         crate::ocr::layout_assembly::recognize_page_tables(&rgb, det, elements, model)
                     }
                     _ => Vec::new(),
@@ -839,6 +885,90 @@ pub(crate) async fn extract_with_ocr(
         result.push_str(text);
     }
     Ok((result, mean_text_conf, collected_tables, all_ocr_elements))
+}
+
+/// Adapt batch size to available system memory.
+///
+/// Estimates per-page memory cost based on typical page dimensions at 300 DPI
+/// and compares against available system memory. Returns a batch size that
+/// should keep peak memory within safe bounds.
+///
+/// Conservative estimate: each page in a batch needs approximately:
+/// - ~50MB for render + encode working set (RGB buffer briefly, then PNG)
+/// - ~100MB for OCR working set per concurrent page
+/// - Plus the document itself and base allocations
+#[cfg(feature = "ocr")]
+fn adapt_batch_size_to_memory(configured: usize, document_size: usize) -> usize {
+    let available_bytes = get_available_memory();
+
+    if available_bytes == 0 {
+        return configured;
+    }
+
+    // Reserve memory for: the document itself, base process overhead, and safety margin.
+    let reserved = document_size + 512 * 1024 * 1024; // document + 512MB overhead
+    let usable = available_bytes.saturating_sub(reserved);
+
+    // Estimated memory per concurrent page in OCR batch:
+    // ~50MB render/encode working set + ~100MB OCR working set
+    const PER_PAGE_ESTIMATE: usize = 150 * 1024 * 1024;
+
+    let memory_limited_batch = (usable / PER_PAGE_ESTIMATE).max(1);
+
+    let result = configured.min(memory_limited_batch);
+
+    tracing::debug!(
+        available_mb = available_bytes / (1024 * 1024),
+        usable_mb = usable / (1024 * 1024),
+        document_mb = document_size / (1024 * 1024),
+        memory_limited_batch,
+        configured,
+        result,
+        "OCR batch size adaptation"
+    );
+
+    result
+}
+
+/// Query available system memory without external dependencies.
+///
+/// On Linux (including Docker), reads `/proc/meminfo` for `MemAvailable`.
+/// On macOS, uses `sysctl hw.memsize` for total memory (conservative fallback).
+/// Returns 0 if the query fails, signaling the caller to use the default batch size.
+#[cfg(feature = "ocr")]
+fn get_available_memory() -> usize {
+    #[cfg(target_os = "linux")]
+    {
+        if let Ok(contents) = std::fs::read_to_string("/proc/meminfo") {
+            for line in contents.lines() {
+                if let Some(rest) = line.strip_prefix("MemAvailable:") {
+                    let kb_str = rest.trim().trim_end_matches("kB").trim();
+                    if let Ok(kb) = kb_str.parse::<usize>() {
+                        return kb * 1024;
+                    }
+                }
+            }
+        }
+        0
+    }
+    #[cfg(target_os = "macos")]
+    {
+        // On macOS, read page size and free+inactive pages from vm_stat.
+        // This is a rough estimate since macOS memory management is complex.
+        use std::process::Command;
+        if let Ok(output) = Command::new("sysctl").args(["-n", "hw.memsize"]).output()
+            && let Ok(s) = std::str::from_utf8(&output.stdout)
+            && let Ok(total) = s.trim().parse::<usize>()
+        {
+            // Use 50% of total as a conservative "available" estimate.
+            return total / 2;
+        }
+        0
+    }
+    #[cfg(not(any(target_os = "linux", target_os = "macos")))]
+    {
+        0
+    }
 }
 
 /// Run a multi-backend OCR pipeline with quality-based fallback.

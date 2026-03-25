@@ -363,7 +363,7 @@ curl http://localhost:8000/version
 
 ```json title="Response"
 {
-  "version": "4.6.0"
+  "version": "4.6.1"
 }
 ```
 
@@ -514,7 +514,7 @@ curl http://localhost:8000/health
 ```json title="Response"
 {
   "status": "healthy",
-  "version": "4.6.0"
+  "version": "4.6.1"
 }
 ```
 
@@ -525,7 +525,7 @@ The response may optionally include a `plugins` object containing information ab
 ```json title="Response with Plugins"
 {
   "status": "healthy",
-  "version": "4.6.0",
+  "version": "4.6.1",
   "plugins": {
     "ocr_backends_count": 2,
     "ocr_backends": ["tesseract"],
@@ -557,7 +557,7 @@ curl http://localhost:8000/info
 
 ```json title="Response"
 {
-  "version": "4.6.0",
+  "version": "4.6.1",
   "rust_backend": true
 }
 ```
@@ -910,7 +910,7 @@ Get the current Kreuzberg library version.
 
 ```json title="Response"
 {
-  "version": "4.6.0"
+  "version": "4.6.1"
 }
 ```
 
