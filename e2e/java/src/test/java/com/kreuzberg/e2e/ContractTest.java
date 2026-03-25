@@ -32,7 +32,7 @@ public class ContractTest {
     JsonNode config = null;
     Path documentPath = E2EHelpers.resolveDocument("pdf/fake_memo.pdf");
 
-    if (true && !Files.exists(documentPath)) {
+    if (!Files.exists(documentPath)) {
       String msg =
           String.format("Skipping api_batch_bytes_async: missing document at %s", documentPath);
       System.err.println(msg);
@@ -76,7 +76,7 @@ public class ContractTest {
     JsonNode config = null;
     Path documentPath = E2EHelpers.resolveDocument("pdf/fake_memo.pdf");
 
-    if (true && !Files.exists(documentPath)) {
+    if (!Files.exists(documentPath)) {
       String msg =
           String.format("Skipping api_batch_bytes_sync: missing document at %s", documentPath);
       System.err.println(msg);
@@ -114,7 +114,7 @@ public class ContractTest {
     JsonNode config = null;
     Path documentPath = E2EHelpers.resolveDocument("pdf/fake_memo.pdf");
 
-    if (true && !Files.exists(documentPath)) {
+    if (!Files.exists(documentPath)) {
       String msg =
           String.format(
               "Skipping api_batch_bytes_with_configs_async: missing document at %s", documentPath);
@@ -161,7 +161,7 @@ public class ContractTest {
     JsonNode config = null;
     Path documentPath = E2EHelpers.resolveDocument("pdf/fake_memo.pdf");
 
-    if (true && !Files.exists(documentPath)) {
+    if (!Files.exists(documentPath)) {
       String msg =
           String.format(
               "Skipping api_batch_bytes_with_configs_sync: missing document at %s", documentPath);
@@ -200,7 +200,7 @@ public class ContractTest {
     JsonNode config = null;
     Path documentPath = E2EHelpers.resolveDocument("pdf/fake_memo.pdf");
 
-    if (true && !Files.exists(documentPath)) {
+    if (!Files.exists(documentPath)) {
       String msg =
           String.format("Skipping api_batch_file_async: missing document at %s", documentPath);
       System.err.println(msg);
@@ -242,7 +242,7 @@ public class ContractTest {
     JsonNode config = null;
     Path documentPath = E2EHelpers.resolveDocument("pdf/fake_memo.pdf");
 
-    if (true && !Files.exists(documentPath)) {
+    if (!Files.exists(documentPath)) {
       String msg =
           String.format("Skipping api_batch_file_sync: missing document at %s", documentPath);
       System.err.println(msg);
@@ -278,7 +278,7 @@ public class ContractTest {
     JsonNode config = null;
     Path documentPath = E2EHelpers.resolveDocument("pdf/fake_memo.pdf");
 
-    if (true && !Files.exists(documentPath)) {
+    if (!Files.exists(documentPath)) {
       String msg =
           String.format(
               "Skipping api_batch_file_with_configs_async: missing document at %s", documentPath);
@@ -323,7 +323,7 @@ public class ContractTest {
     JsonNode config = null;
     Path documentPath = E2EHelpers.resolveDocument("pdf/fake_memo.pdf");
 
-    if (true && !Files.exists(documentPath)) {
+    if (!Files.exists(documentPath)) {
       String msg =
           String.format(
               "Skipping api_batch_file_with_configs_sync: missing document at %s", documentPath);
@@ -360,7 +360,7 @@ public class ContractTest {
     JsonNode config = MAPPER.readTree("{\"extraction_timeout_secs\":300}");
     Path documentPath = E2EHelpers.resolveDocument("pdf/fake_memo.pdf");
 
-    if (true && !Files.exists(documentPath)) {
+    if (!Files.exists(documentPath)) {
       String msg =
           String.format(
               "Skipping api_batch_file_with_timeout_sync: missing document at %s", documentPath);
@@ -397,7 +397,7 @@ public class ContractTest {
     JsonNode config = null;
     Path documentPath = E2EHelpers.resolveDocument("pdf/fake_memo.pdf");
 
-    if (true && !Files.exists(documentPath)) {
+    if (!Files.exists(documentPath)) {
       String msg =
           String.format("Skipping api_extract_bytes_async: missing document at %s", documentPath);
       System.err.println(msg);
@@ -437,7 +437,7 @@ public class ContractTest {
     JsonNode config = null;
     Path documentPath = E2EHelpers.resolveDocument("pdf/fake_memo.pdf");
 
-    if (true && !Files.exists(documentPath)) {
+    if (!Files.exists(documentPath)) {
       String msg =
           String.format("Skipping api_extract_bytes_sync: missing document at %s", documentPath);
       System.err.println(msg);
@@ -471,7 +471,7 @@ public class ContractTest {
     JsonNode config = null;
     Path documentPath = E2EHelpers.resolveDocument("pdf/fake_memo.pdf");
 
-    if (true && !Files.exists(documentPath)) {
+    if (!Files.exists(documentPath)) {
       String msg =
           String.format("Skipping api_extract_file_async: missing document at %s", documentPath);
       System.err.println(msg);
@@ -1280,7 +1280,7 @@ public class ContractTest {
     JsonNode config = MAPPER.readTree("{\"output_format\":\"markdown\"}");
     Path documentPath = E2EHelpers.resolveDocument("pdf/fake_memo.pdf");
 
-    if (true && !Files.exists(documentPath)) {
+    if (!Files.exists(documentPath)) {
       String msg =
           String.format(
               "Skipping output_format_bytes_markdown: missing document at %s", documentPath);

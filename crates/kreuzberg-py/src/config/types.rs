@@ -434,11 +434,13 @@ impl ExtractionConfig {
 
     fn __repr__(&self) -> String {
         format!(
-            "ExtractionConfig(use_cache={}, enable_quality_processing={}, ocr={}, force_ocr={})",
+            "ExtractionConfig(use_cache={}, enable_quality_processing={}, ocr={}, force_ocr={}, extraction_timeout_secs={:?}, force_ocr_pages={:?})",
             self.inner.use_cache,
             self.inner.enable_quality_processing,
             if self.inner.ocr.is_some() { "Some(...)" } else { "None" },
-            self.inner.force_ocr
+            self.inner.force_ocr,
+            self.inner.extraction_timeout_secs,
+            self.inner.force_ocr_pages
         )
     }
 
@@ -2596,8 +2598,12 @@ impl FileExtractionConfig {
 
     fn __repr__(&self) -> String {
         format!(
-            "FileExtractionConfig(force_ocr={:?}, enable_quality_processing={:?}, include_document_structure={:?})",
-            self.inner.force_ocr, self.inner.enable_quality_processing, self.inner.include_document_structure
+            "FileExtractionConfig(force_ocr={:?}, enable_quality_processing={:?}, include_document_structure={:?}, timeout_secs={:?}, force_ocr_pages={:?})",
+            self.inner.force_ocr,
+            self.inner.enable_quality_processing,
+            self.inner.include_document_structure,
+            self.inner.timeout_secs,
+            self.inner.force_ocr_pages
         )
     }
 }
