@@ -76,6 +76,24 @@ pub(crate) fn format_pdfium_error<E: std::fmt::Debug>(error: E) -> String {
     }
 }
 
+/// Classify a PDFium document-load error into the appropriate `PdfError` variant.
+///
+/// Password-related errors are distinguished by inspecting the formatted message.
+/// When `password` is `Some`, a password-related failure means the password was wrong;
+/// when `None`, it means the document requires one.
+pub(crate) fn classify_pdfium_load_error<E: std::fmt::Debug>(error: E, password: Option<&str>) -> PdfError {
+    let err_msg = format_pdfium_error(error);
+    if err_msg.contains("password") || err_msg.contains("Password") {
+        if password.is_some() {
+            PdfError::InvalidPassword
+        } else {
+            PdfError::PasswordRequired
+        }
+    } else {
+        PdfError::InvalidPdf(err_msg)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

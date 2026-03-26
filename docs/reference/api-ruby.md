@@ -577,6 +577,36 @@ end
 
 ---
 
+## PDF Rendering
+### Kreuzberg.render_pdf_page
+
+Render a single page of a PDF as a PNG image.
+
+**Signature:**
+
+```ruby title="Ruby"
+Kreuzberg.render_pdf_page(path, page_index, dpi: 150) -> String
+```
+
+**Parameters:**
+
+- `path` (String): Path to the PDF file
+- `page_index` (Integer): Zero-based page index to render
+- `dpi:` (Integer): Resolution for rendering (default 150)
+
+**Returns:**
+
+- `String`: PNG-encoded binary string for the requested page
+
+**Example:**
+
+```ruby title="render_single_page.rb"
+png = Kreuzberg.render_pdf_page("document.pdf", 0)
+File.binwrite("first_page.png", png)
+```
+
+---
+
 ## Error Handling
 
 All Kreuzberg errors are raised as standardized Ruby exceptions.

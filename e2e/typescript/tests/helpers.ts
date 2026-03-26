@@ -379,8 +379,9 @@ export function buildConfig(raw: unknown): ExtractionConfig {
 
 	if (isPlainRecord(source.email)) {
 		const email = source.email as PlainRecord;
-		target.email =
-			typeof email.msg_fallback_codepage === "number" ? { msgFallbackCodepage: email.msg_fallback_codepage } : {};
+		target.email = {
+			...(typeof email.msg_fallback_codepage === "number" ? { msgFallbackCodepage: email.msg_fallback_codepage } : {}),
+		};
 	}
 
 	if (typeof source.output_format === "string") {
@@ -681,6 +682,19 @@ export const assertions = {
 				expect(annotations.length).toBeGreaterThanOrEqual(minCount);
 			}
 		}
+	},
+
+	assertIsPng(data: Buffer): void {
+		expect(data.length).toBeGreaterThanOrEqual(4);
+		const magic = data.subarray(0, 4);
+		expect(magic[0]).toBe(0x89);
+		expect(magic[1]).toBe(0x50);
+		expect(magic[2]).toBe(0x4e);
+		expect(magic[3]).toBe(0x47);
+	},
+
+	assertMinByteLength(data: Buffer, minLength: number): void {
+		expect(data.length).toBeGreaterThanOrEqual(minLength);
 	},
 };
 

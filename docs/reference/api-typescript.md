@@ -1306,6 +1306,74 @@ console.log(result.content);
 
 ---
 
+## PDF Rendering
+### renderPdfPageSync()
+
+Render a single page of a PDF as a PNG image (synchronous).
+
+**Signature:**
+
+```typescript title="TypeScript"
+function renderPdfPageSync(filePath: string, pageIndex: number, dpi?: number): Buffer
+```
+
+**Parameters:**
+
+- `filePath` (string): Path to the PDF file
+- `pageIndex` (number): Zero-based page index to render
+- `dpi` (number | undefined): Resolution for rendering (default 150)
+
+**Returns:**
+
+- `Buffer`: PNG-encoded Buffer for the requested page
+
+**Example:**
+
+```typescript title="renderSinglePage.ts"
+import { renderPdfPageSync } from "@kreuzberg/node";
+
+const png = renderPdfPageSync("document.pdf", 0);
+writeFileSync("first_page.png", png);
+```
+
+---
+
+### PdfPageIterator (class)
+
+A more memory-efficient alternative to `iteratePdfPagesSync`/`iteratePdfPages` when memory is a concern or when pages should be processed as they are rendered (e.g., sending each page to a vision model for OCR). Renders one page at a time via the `.next()` method.
+
+**Signature:**
+
+```typescript title="TypeScript"
+class PdfPageIterator {
+    constructor(filePath: string, dpi?: number);
+    next(): PdfPageResult | null;
+    pageCount(): number;
+    close(): void;
+}
+
+interface PdfPageResult {
+    pageIndex: number;
+    data: Buffer;
+}
+```
+
+**Example:**
+
+```typescript title="iteratePages.ts"
+import { PdfPageIterator } from "@kreuzberg/node";
+
+const iter = new PdfPageIterator("document.pdf", 150);
+let result;
+while ((result = iter.next()) !== null) {
+    const { pageIndex, data } = result;
+    writeFileSync(`page_${pageIndex}.png`, data);
+}
+iter.close();
+```
+
+---
+
 ## Error Handling
 
 All errors are thrown as standard JavaScript `Error` objects with descriptive messages.

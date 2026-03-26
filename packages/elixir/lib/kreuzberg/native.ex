@@ -73,4 +73,12 @@ defmodule Kreuzberg.Native do
   def list_document_extractors, do: :erlang.nif_error(:nif_not_loaded)
   def unregister_document_extractor(_name), do: :erlang.nif_error(:nif_not_loaded)
   def clear_document_extractors, do: :erlang.nif_error(:nif_not_loaded)
+
+  # PDF rendering
+  def render_pdf_page(_input, _page_index, _dpi), do: :erlang.nif_error(:nif_not_loaded)
+
+  # PDF page iterator
+  def render_pdf_pages_iter_open(_path, _dpi), do: :erlang.nif_error(:nif_not_loaded)
+  def render_pdf_pages_iter_next(_handle), do: :erlang.nif_error(:nif_not_loaded)
+  def render_pdf_pages_iter_free(_handle), do: :erlang.nif_error(:nif_not_loaded)
 end

@@ -418,6 +418,85 @@ defmodule Kreuzberg do
     end
   end
 
+  @doc """
+  Render a single PDF page as a PNG image.
+
+  ## Parameters
+
+    * `path` - Path to the PDF file
+    * `page_index` - Zero-based page index
+    * `opts` - Keyword list of options:
+      * `:dpi` - Rendering resolution (default 150)
+
+  ## Returns
+
+    * `{:ok, binary()}` - PNG-encoded binary
+    * `{:error, reason}` - Rendering failed
+
+  ## Examples
+
+      {:ok, png} = Kreuzberg.render_pdf_page("document.pdf", 0)
+      {:ok, png} = Kreuzberg.render_pdf_page("document.pdf", 2, dpi: 300)
+  """
+  @spec render_pdf_page(String.t(), non_neg_integer(), keyword()) ::
+          {:ok, binary()} | {:error, String.t()}
+  def render_pdf_page(path, page_index, opts \\ [])
+      when is_binary(path) and is_integer(page_index) and page_index >= 0 do
+    dpi = Keyword.get(opts, :dpi, 150)
+
+    case Native.render_pdf_page(path, page_index, dpi) do
+      {:ok, data} -> {:ok, data}
+      {:error, _reason} = err -> err
+    end
+  end
+
+  @doc """
+  Return a lazy Stream that yields `{page_index, png_binary}` tuples.
+
+  Pages are rendered one at a time via the native PDF page iterator, so only
+  one page's worth of PNG bytes is in memory at a time.
+
+  ## Parameters
+
+    * `path` - Path to the PDF file
+    * `opts` - Keyword list of options:
+      * `:dpi` - Rendering resolution (default 150)
+
+  ## Returns
+
+    * `Enumerable.t()` - A Stream of `{non_neg_integer(), binary()}` tuples
+
+  ## Examples
+
+      Kreuzberg.render_pdf_pages_stream("document.pdf")
+      |> Enum.each(fn {page_index, png} ->
+        File.write!("page_\#{page_index}.png", png)
+      end)
+  """
+  @spec render_pdf_pages_stream(String.t(), keyword()) :: Enumerable.t()
+  def render_pdf_pages_stream(path, opts \\ []) when is_binary(path) do
+    dpi = Keyword.get(opts, :dpi, 150)
+
+    Stream.resource(
+      fn -> Native.render_pdf_pages_iter_open(path, dpi) end,
+      fn
+        {:error, _reason} = err ->
+          {:halt, err}
+
+        handle ->
+          case Native.render_pdf_pages_iter_next(handle) do
+            {:ok, {page_index, png}} -> {[{page_index, png}], handle}
+            :done -> {:halt, handle}
+            {:error, _reason} -> {:halt, handle}
+          end
+      end,
+      fn
+        {:error, _} -> :ok
+        handle -> Native.render_pdf_pages_iter_free(handle)
+      end
+    )
+  end
+
   defp call_native_file(path, mime_type, nil) do
     Native.extract_file(path, mime_type)
   end

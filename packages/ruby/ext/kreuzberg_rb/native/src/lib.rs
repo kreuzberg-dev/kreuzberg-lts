@@ -23,7 +23,7 @@ pub use gc_guarded_value::GcGuardedValue;
 pub use helpers::{get_kw, set_hash_entry, json_value_to_ruby, ruby_value_to_json, cache_root_dir, cache_directories};
 pub use config::parse_extraction_config;
 pub use result::extraction_result_to_ruby;
-pub use extraction::{extract_file_sync, extract_bytes_sync, extract_file, extract_bytes};
+pub use extraction::{extract_file_sync, extract_bytes_sync, extract_file, extract_bytes, render_pdf_pages_iter, native_render_pdf_page};
 pub use batch::{
     batch_extract_files_sync, batch_extract_bytes_sync, batch_extract_files, batch_extract_bytes,
 };
@@ -441,6 +441,10 @@ fn init(ruby: &Ruby) -> Result<(), Error> {
     module.define_module_function("extract_bytes", function!(extract_bytes, -1))?;
     module.define_module_function("batch_extract_files", function!(batch_extract_files, -1))?;
     module.define_module_function("batch_extract_bytes", function!(batch_extract_bytes, -1))?;
+
+    // PDF page iterator
+    module.define_module_function("native_render_pdf_pages_iter", function!(render_pdf_pages_iter, 2))?;
+    module.define_module_function("native_render_pdf_page", function!(native_render_pdf_page, 3))?;
 
     // Cache functions
     module.define_module_function("clear_cache", function!(ruby_clear_cache, 0))?;

@@ -499,6 +499,133 @@ pub fn kreuzberg_get_extensions_for_mime(mime_type: String) -> PhpResult<Vec<Str
     kreuzberg::get_extensions_for_mime(&mime_type).map_err(|e| format!("Failed to get extensions: {}", e).into())
 }
 
+/// Render a single page of a PDF file to a PNG byte string.
+///
+/// # Parameters
+///
+/// - `path` (string): Path to the PDF file
+/// - `page_index` (int): Zero-based page index
+/// - `dpi` (int|null): Optional DPI (default 150)
+///
+/// # Returns
+///
+/// Binary string containing PNG image data
+///
+/// # Throws
+///
+/// - Exception: If rendering fails
+///
+/// # Example
+///
+/// ```php
+/// $png = kreuzberg_render_pdf_page("document.pdf", 0);
+/// file_put_contents("page_0.png", $png);
+/// ```
+#[php_function]
+pub fn kreuzberg_render_pdf_page(path: String, page_index: i64, dpi: Option<i64>) -> PhpResult<Vec<u8>> {
+    if page_index < 0 {
+        return Err(PhpException::default(
+            "[Validation] page_index must be non-negative".to_string(),
+        ));
+    }
+    let page_index = usize::try_from(page_index)
+        .map_err(|_| PhpException::default("[Validation] page_index out of range".to_string()))?;
+    let dpi_i32 = dpi
+        .map(|d| i32::try_from(d).map_err(|_| PhpException::default("[Validation] dpi out of range".to_string())))
+        .transpose()?;
+    let pdf_bytes =
+        std::fs::read(&path).map_err(|e| PhpException::default(format!("[IO] Failed to read file: {}", e)))?;
+    kreuzberg::pdf::render_pdf_page_to_png(&pdf_bytes, page_index, dpi_i32, None)
+        .map_err(|e| PhpException::default(format!("[Rendering] {}", e)))
+}
+
+/// Create a new PDF page iterator, returning an opaque handle as i64.
+///
+/// # Parameters
+///
+/// - `path` (string): Path to the PDF file
+/// - `dpi` (int|null): Optional DPI (default 150)
+///
+/// # Returns
+///
+/// An opaque iterator handle (i64) for use with the other iterator functions.
+///
+/// # Throws
+///
+/// - Exception: If the file cannot be read or the PDF is invalid
+#[php_function]
+pub fn kreuzberg_pdf_page_iterator_new(path: String, dpi: Option<i64>) -> PhpResult<i64> {
+    let dpi_i32 = dpi
+        .map(|d| i32::try_from(d).map_err(|_| PhpException::default("[Validation] dpi out of range".to_string())))
+        .transpose()?;
+    let iter = kreuzberg::pdf::PdfPageIterator::from_file(&path, dpi_i32, None)
+        .map_err(|e| PhpException::default(format!("[Rendering] {}", e)))?;
+    let boxed = Box::new(iter);
+    Ok(Box::into_raw(boxed) as i64)
+}
+
+/// Advance the iterator and return the next page's PNG bytes, or None when exhausted.
+///
+/// # Parameters
+///
+/// - `handle` (int): Opaque iterator handle from `kreuzberg_pdf_page_iterator_new`
+///
+/// # Returns
+///
+/// PNG bytes for the next page, or null when all pages have been rendered.
+///
+/// # Throws
+///
+/// - Exception: If rendering a page fails
+#[php_function]
+pub fn kreuzberg_pdf_page_iterator_next(handle: i64) -> PhpResult<Option<Vec<u8>>> {
+    if handle == 0 {
+        return Err(PhpException::default(
+            "[Validation] Invalid iterator handle".to_string(),
+        ));
+    }
+    let iter = unsafe { &mut *(handle as *mut kreuzberg::pdf::PdfPageIterator) };
+    match iter.next() {
+        Some(Ok((_page_index, png))) => Ok(Some(png)),
+        Some(Err(e)) => Err(PhpException::default(format!("[Rendering] {}", e))),
+        None => Ok(None),
+    }
+}
+
+/// Free the PDF page iterator. Safe to call once; do not reuse the handle afterwards.
+///
+/// # Parameters
+///
+/// - `handle` (int): Opaque iterator handle from `kreuzberg_pdf_page_iterator_new`
+#[php_function]
+pub fn kreuzberg_pdf_page_iterator_free(handle: i64) -> PhpResult<()> {
+    if handle == 0 {
+        return Ok(());
+    }
+    let _ = unsafe { Box::from_raw(handle as *mut kreuzberg::pdf::PdfPageIterator) };
+    Ok(())
+}
+
+/// Return the total number of pages in the PDF behind the iterator.
+///
+/// # Parameters
+///
+/// - `handle` (int): Opaque iterator handle from `kreuzberg_pdf_page_iterator_new`
+///
+/// # Returns
+///
+/// Page count as i64.
+#[php_function]
+pub fn kreuzberg_pdf_page_iterator_page_count(handle: i64) -> PhpResult<i64> {
+    if handle == 0 {
+        return Err(PhpException::default(
+            "[Validation] Invalid iterator handle".to_string(),
+        ));
+    }
+    let iter = unsafe { &*(handle as *const kreuzberg::pdf::PdfPageIterator) };
+    Ok(iter.page_count() as i64)
+}
+
 /// Returns all function builders for the extraction module.
 pub fn get_function_builders() -> Vec<ext_php_rs::builders::FunctionBuilder<'static>> {
     vec![
@@ -511,5 +638,10 @@ pub fn get_function_builders() -> Vec<ext_php_rs::builders::FunctionBuilder<'sta
         wrap_function!(kreuzberg_detect_mime_type_from_path),
         wrap_function!(kreuzberg_validate_mime_type),
         wrap_function!(kreuzberg_get_extensions_for_mime),
+        wrap_function!(kreuzberg_render_pdf_page),
+        wrap_function!(kreuzberg_pdf_page_iterator_new),
+        wrap_function!(kreuzberg_pdf_page_iterator_next),
+        wrap_function!(kreuzberg_pdf_page_iterator_free),
+        wrap_function!(kreuzberg_pdf_page_iterator_page_count),
     ]
 }

@@ -15,7 +15,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
@@ -1373,6 +1375,56 @@ public final class Kreuzberg {
 		return configArray;
 	}
 
+	/**
+	 * Render a single page of a PDF as a PNG image.
+	 *
+	 * @param path
+	 *            path to the PDF file
+	 * @param pageIndex
+	 *            zero-based page index
+	 * @param dpi
+	 *            resolution for rendering (e.g., 150)
+	 * @return PNG-encoded byte array
+	 * @throws IOException
+	 *             if the file cannot be read
+	 * @throws KreuzbergException
+	 *             if rendering fails
+	 */
+	public static byte[] renderPdfPage(Path path, int pageIndex, int dpi)
+			throws IOException, KreuzbergException {
+		if (pageIndex < 0) {
+			throw new IllegalArgumentException("pageIndex must be non-negative");
+		}
+		validateFile(path);
+		FFI_LOCK.lock();
+		try (Arena arena = Arena.ofConfined()) {
+			MemorySegment pathSegment = KreuzbergFFI.allocateCString(arena, path.toString());
+
+			MemorySegment resultPtr = (MemorySegment) KreuzbergFFI.KREUZBERG_RENDER_PDF_PAGE
+					.invoke(pathSegment, (long) pageIndex, dpi);
+
+			if (resultPtr == null || resultPtr.address() == 0) {
+				throw KreuzbergFFI.createTypedException("PDF page rendering failed");
+			}
+
+			try {
+				// CPageImage layout: { data: *mut u8, len: usize }
+				MemorySegment page = resultPtr.reinterpret(ValueLayout.ADDRESS.byteSize() + ValueLayout.JAVA_LONG.byteSize());
+				MemorySegment dataPtr = page.get(ValueLayout.ADDRESS, 0);
+				long dataLen = page.get(ValueLayout.JAVA_LONG, ValueLayout.ADDRESS.byteSize());
+				return dataPtr.reinterpret(dataLen).toArray(ValueLayout.JAVA_BYTE);
+			} finally {
+				KreuzbergFFI.KREUZBERG_FREE_RENDER_PAGE_RESULT.invoke(resultPtr);
+			}
+		} catch (KreuzbergException e) {
+			throw e;
+		} catch (Throwable e) {
+			throw new KreuzbergException("Unexpected error during PDF page rendering", e);
+		} finally {
+			FFI_LOCK.unlock();
+		}
+	}
+
 	private static void validateFile(Path path) throws IOException {
 		if (!Files.exists(path)) {
 			throw new IOException("File not found: " + path);
@@ -1396,6 +1448,171 @@ public final class Kreuzberg {
 			return KreuzbergFFI.readCString(errorPtr);
 		} catch (Throwable e) {
 			return "Unknown error (failed to retrieve error message)";
+		}
+	}
+
+	/**
+	 * A rendered PDF page with its zero-based index and PNG data.
+	 *
+	 * @param pageIndex zero-based page index within the PDF
+	 * @param data      PNG-encoded image bytes
+	 */
+	public record PageResult(int pageIndex, byte[] data) {
+	}
+
+	/**
+	 * Lazy, one-page-at-a-time PDF renderer. A more memory-efficient alternative
+	 * to rendering all pages at once when memory is a concern or when pages
+	 * should be processed as they are rendered (e.g., sending each page to a vision
+	 * model for OCR).
+	 *
+	 * <p>
+	 * Implements {@link Iterator} and {@link AutoCloseable} so it can be used in
+	 * enhanced for-loops and try-with-resources blocks.
+	 *
+	 * <pre>{@code
+	 * try (var iter = PdfPageIterator.open(path, 150)) {
+	 *     while (iter.hasNext()) {
+	 *         PageResult page = iter.next();
+	 *         System.out.println("Page " + page.pageIndex());
+	 *         Files.write(Path.of("page_" + page.pageIndex() + ".png"), page.data());
+	 *     }
+	 * }
+	 * }</pre>
+	 */
+	public static final class PdfPageIterator implements Iterator<PageResult>, AutoCloseable {
+		private MemorySegment handle;
+		private PageResult prefetched;
+		private boolean exhausted;
+
+		private PdfPageIterator(MemorySegment handle) {
+			this.handle = handle;
+		}
+
+		/**
+		 * Open a new PDF page iterator.
+		 *
+		 * @param path
+		 *            path to the PDF file
+		 * @param dpi
+		 *            rendering resolution
+		 * @return a new iterator
+		 * @throws IOException
+		 *             if the file cannot be read
+		 * @throws KreuzbergException
+		 *             if the native call fails
+		 */
+		public static PdfPageIterator open(Path path, int dpi) throws IOException, KreuzbergException {
+			validateFile(path);
+			FFI_LOCK.lock();
+			try (Arena arena = Arena.ofConfined()) {
+				MemorySegment pathSegment = KreuzbergFFI.allocateCString(arena, path.toString());
+				MemorySegment ptr = (MemorySegment) KreuzbergFFI.KREUZBERG_PDF_PAGE_ITERATOR_NEW
+						.invoke(pathSegment, dpi);
+				if (ptr == null || ptr.address() == 0) {
+					throw KreuzbergFFI.createTypedException("Failed to create PDF page iterator");
+				}
+				return new PdfPageIterator(ptr);
+			} catch (KreuzbergException | IOException e) {
+				throw e;
+			} catch (Throwable e) {
+				throw new KreuzbergException("Unexpected error creating PDF page iterator", e);
+			} finally {
+				FFI_LOCK.unlock();
+			}
+		}
+
+		@Override
+		public boolean hasNext() {
+			if (exhausted) {
+				return false;
+			}
+			if (prefetched != null) {
+				return true;
+			}
+			prefetched = fetchNext();
+			if (prefetched == null) {
+				exhausted = true;
+				return false;
+			}
+			return true;
+		}
+
+		@Override
+		public PageResult next() {
+			if (!hasNext()) {
+				throw new NoSuchElementException("No more pages");
+			}
+			PageResult result = prefetched;
+			prefetched = null;
+			return result;
+		}
+
+		/**
+		 * Returns the total number of pages in the PDF.
+		 *
+		 * @return page count
+		 */
+		public int pageCount() {
+			if (handle == null || handle.address() == 0) {
+				return 0;
+			}
+			FFI_LOCK.lock();
+			try {
+				return (int) (long) KreuzbergFFI.KREUZBERG_PDF_PAGE_ITERATOR_PAGE_COUNT.invoke(handle);
+			} catch (Throwable e) {
+				return 0;
+			} finally {
+				FFI_LOCK.unlock();
+			}
+		}
+
+		@Override
+		public void close() {
+			if (handle != null && handle.address() != 0) {
+				FFI_LOCK.lock();
+				try {
+					KreuzbergFFI.KREUZBERG_PDF_PAGE_ITERATOR_FREE.invoke(handle);
+				} catch (Throwable ignored) {
+					// best-effort cleanup
+				} finally {
+					handle = null;
+					FFI_LOCK.unlock();
+				}
+			}
+		}
+
+		private PageResult fetchNext() {
+			if (handle == null || handle.address() == 0) {
+				return null;
+			}
+			FFI_LOCK.lock();
+			try {
+				MemorySegment resultPtr = (MemorySegment) KreuzbergFFI.KREUZBERG_PDF_PAGE_ITERATOR_NEXT
+						.invoke(handle);
+				if (resultPtr == null || resultPtr.address() == 0) {
+					// NULL means exhausted or error. Check kreuzberg_last_error() to distinguish.
+					return null;
+				}
+				try {
+					// CPageIterResult layout: usize page_index, *mut u8 data, usize len
+					long ptrSize = ValueLayout.ADDRESS.byteSize();
+					MemorySegment page = resultPtr.reinterpret(
+							ValueLayout.JAVA_LONG.byteSize() + ptrSize + ValueLayout.JAVA_LONG.byteSize());
+					int pageIndex = (int) page.get(ValueLayout.JAVA_LONG, 0);
+					MemorySegment dataPtr = page.get(ValueLayout.ADDRESS, ValueLayout.JAVA_LONG.byteSize());
+					long dataLen = page.get(ValueLayout.JAVA_LONG,
+							ValueLayout.JAVA_LONG.byteSize() + ptrSize);
+					byte[] data = dataPtr.reinterpret(dataLen).toArray(ValueLayout.JAVA_BYTE);
+					return new PageResult(pageIndex, data);
+				} finally {
+					KreuzbergFFI.KREUZBERG_PDF_PAGE_ITERATOR_FREE_RESULT.invoke(resultPtr);
+				}
+			} catch (Throwable e) {
+				throw new RuntimeException("PDF page iteration failed", e);
+			} finally {
+				FFI_LOCK.unlock();
+			}
 		}
 	}
 }

@@ -762,6 +762,36 @@ if (metadata$format_type == "pdf") {
 
 ---
 
+## PDF Rendering
+### render_pdf_page()
+
+Render a single page of a PDF as a PNG image.
+
+**Signature:**
+
+```r title="R"
+render_pdf_page(path, page_index, dpi = 150L)
+```
+
+**Parameters:**
+
+- `path` (character): Path to the PDF file
+- `page_index` (integer): Zero-based page index to render
+- `dpi` (integer): Resolution for rendering (default 150L)
+
+**Returns:**
+
+- `raw` vector: PNG-encoded raw vector for the requested page
+
+**Example:**
+
+```r title="render_single_page.R"
+png <- render_pdf_page("document.pdf", 0L)
+writeBin(png, "first_page.png")
+```
+
+---
+
 ## Error Handling
 
 Errors are raised as typed conditions with class hierarchy:

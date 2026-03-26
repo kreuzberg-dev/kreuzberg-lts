@@ -99,7 +99,7 @@ pub use images::{PdfImage, PdfImageExtractor, extract_images_from_pdf};
 #[cfg(feature = "pdf")]
 pub use metadata::extract_metadata;
 #[cfg(feature = "pdf")]
-pub use rendering::{PageRenderOptions, render_page_to_image};
+pub use rendering::{PageRenderOptions, PdfPageIterator, render_page_to_image, render_pdf_page_to_png};
 #[cfg(feature = "pdf")]
 pub use table::extract_words_from_page;
 #[cfg(feature = "pdf")]

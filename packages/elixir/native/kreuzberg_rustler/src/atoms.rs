@@ -16,4 +16,5 @@ rustler::atoms! {
     ocr_error,
     unknown_error,
     not_found,
+    done,
 }

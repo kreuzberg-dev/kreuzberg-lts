@@ -883,4 +883,18 @@ public static class TestHelpers
             }
         }
     }
+
+    public static void AssertIsPng(byte[] data)
+    {
+        Assert.NotNull(data);
+        Assert.True(data.Length >= 4, $"Data too short for PNG: {data.Length} bytes");
+        Assert.True(data[0] == 0x89 && data[1] == 0x50 && data[2] == 0x4E && data[3] == 0x47,
+            $"Missing PNG magic bytes, got: [{data[0]:X2}, {data[1]:X2}, {data[2]:X2}, {data[3]:X2}]");
+    }
+
+    public static void AssertMinByteLength(byte[] data, int minLength)
+    {
+        Assert.NotNull(data);
+        Assert.True(data.Length >= minLength, $"Expected at least {minLength} bytes, got {data.Length}");
+    }
 }

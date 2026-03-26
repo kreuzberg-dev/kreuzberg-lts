@@ -64,6 +64,7 @@ from kreuzberg._internal_bindings import (
     OcrConfig,
     PageConfig,
     PdfConfig,
+    PdfPageIterator,
     PostProcessorConfig,
     RakeParams,
     TesseractConfig,
@@ -283,6 +284,8 @@ __all__ = [
     "extract_bytes_sync",
     "extract_file",
     "extract_file_sync",
+    "PdfPageIterator",
+    "render_pdf_page",
     "get_embedding_preset",
     "get_error_details",
     "get_extensions_for_mime",
@@ -382,6 +385,22 @@ def _ensure_ocr_backend_registered(
 
         register_ocr_backend(backend)
         _REGISTERED_OCR_BACKENDS[cache_key] = backend
+
+
+def render_pdf_page(file_path: str | Path, page_index: int, *, dpi: int = 150) -> bytes:
+    """Render a single PDF page as a PNG image.
+
+    Args:
+        file_path: Path to the PDF file.
+        page_index: Zero-based page index to render.
+        dpi: Resolution for rendering (default 150).
+
+    Returns:
+        PNG-encoded bytes for the requested page.
+    """
+    from kreuzberg._internal_bindings import render_pdf_page_impl  # noqa: PLC0415
+
+    return render_pdf_page_impl(str(file_path), page_index, dpi)
 
 
 def extract_file_sync(

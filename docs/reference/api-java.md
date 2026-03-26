@@ -1662,6 +1662,67 @@ for (String preset : presets) {
 
 ---
 
+## PDF Rendering
+### Kreuzberg.renderPdfPage()
+
+Render a single page of a PDF as a PNG image.
+
+**Signature:**
+
+```java title="Java"
+public static byte[] renderPdfPage(Path path, int pageIndex, int dpi) throws IOException, KreuzbergException
+```
+
+**Parameters:**
+
+- `path` (Path): Path to the PDF file
+- `pageIndex` (int): Zero-based page index to render
+- `dpi` (int): Resolution for rendering (e.g. 150)
+
+**Returns:**
+
+- `byte[]`: PNG-encoded bytes for the requested page
+
+**Example:**
+
+```java title="RenderSinglePage.java"
+byte[] png = Kreuzberg.renderPdfPage(Path.of("document.pdf"), 0, 150);
+Files.write(Path.of("first_page.png"), png);
+```
+
+---
+
+### Kreuzberg.PdfPageIterator
+
+A more memory-efficient alternative to rendering all pages at once when memory is a concern or when pages should be processed as they are rendered (e.g., sending each page to a vision model for OCR). Renders one page at a time, so only one raw image is in memory at a time.
+
+**Signature:**
+
+```java title="Java"
+public static class PdfPageIterator implements Iterator<PageResult>, AutoCloseable {
+    public static PdfPageIterator open(Path path, int dpi) throws IOException, KreuzbergException;
+    public boolean hasNext();
+    public PageResult next();
+    public int pageCount();
+    public void close();
+}
+
+public record PageResult(int pageIndex, byte[] data) {}
+```
+
+**Example:**
+
+```java title="IteratePages.java"
+try (var iter = Kreuzberg.PdfPageIterator.open(Path.of("document.pdf"), 150)) {
+    while (iter.hasNext()) {
+        Kreuzberg.PageResult page = iter.next();
+        Files.write(Path.of("page_" + page.pageIndex() + ".png"), page.data());
+    }
+}
+```
+
+---
+
 ## Error Handling
 
 ### Exception Hierarchy

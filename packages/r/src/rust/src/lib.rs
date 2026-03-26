@@ -74,6 +74,12 @@ fn batch_extract_bytes_native(data_list: List, mime_types: Strings, config_json:
     batch::batch_extract_bytes_impl(data_list, mime_types, Nullable::Null, config_json)
 }
 
+// PDF rendering
+#[extendr]
+fn render_pdf_page_native(path: &str, page_index: i32, dpi: i32) -> extendr_api::Result<Raw> {
+    extraction::render_pdf_page_impl(path, page_index, dpi)
+}
+
 // Metadata functions
 #[extendr]
 fn detect_mime_type_native(data: Raw) -> extendr_api::Result<String> {
@@ -213,6 +219,8 @@ extendr_module! {
     fn batch_extract_files_native;
     fn batch_extract_bytes_sync_native;
     fn batch_extract_bytes_native;
+
+    fn render_pdf_page_native;
 
     fn detect_mime_type_native;
     fn detect_mime_type_from_path_native;

@@ -6,7 +6,7 @@ use crate::config::{ExtractionConfig, FileExtractionConfig};
 use crate::error::to_py_err;
 use crate::types::ExtractionResult;
 use pyo3::prelude::*;
-use pyo3::types::PyList;
+use pyo3::types::{PyBytes, PyList};
 use std::path::PathBuf;
 
 type BatchBytesItem = (Vec<u8>, String, Option<kreuzberg::FileExtractionConfig>);
@@ -587,6 +587,105 @@ pub fn batch_extract_bytes<'py>(
             Ok(list.unbind())
         })
     })
+}
+
+/// Render a single page of a PDF file to a PNG byte buffer.
+///
+/// Args:
+///     file_path: Path to the PDF file
+///     page_index: Zero-based page index
+///     dpi: Optional DPI (default 150)
+///
+/// Returns:
+///     bytes: PNG image data
+///
+/// Raises:
+///     RuntimeError: If rendering fails
+#[pyfunction]
+#[pyo3(signature = (file_path, page_index, dpi=None))]
+pub fn render_pdf_page_impl(
+    py: Python<'_>,
+    file_path: &str,
+    page_index: usize,
+    dpi: Option<i32>,
+) -> PyResult<Py<PyBytes>> {
+    let pdf_bytes = std::fs::read(file_path)
+        .map_err(|e| pyo3::exceptions::PyIOError::new_err(format!("Failed to read file: {}", e)))?;
+    let page = Python::detach(py, || {
+        kreuzberg::pdf::render_pdf_page_to_png(&pdf_bytes, page_index, dpi, None)
+    })
+    .map_err(|e| pyo3::exceptions::PyRuntimeError::new_err(e.to_string()))?;
+    Python::attach(|py| Ok(PyBytes::new(py, &page).unbind()))
+}
+
+/// Lazy page-by-page PDF renderer.
+///
+/// Opens the PDF once and yields one PNG-encoded page per `.next()` call.
+/// Only one rendered page is held in memory at a time. Supports the
+/// iterator protocol and the context-manager protocol (`with` statement).
+///
+/// Args:
+///     file_path: Path to the PDF file
+///     dpi: Optional DPI (default 150)
+///
+/// Example:
+///     from kreuzberg import PdfPageIterator
+///
+///     with PdfPageIterator("document.pdf") as pages:
+///         for page_index, png_bytes in pages:
+///             print(f"page {page_index}: {len(png_bytes)} bytes")
+#[pyclass(name = "PdfPageIterator", module = "kreuzberg")]
+pub struct PyPdfPageIterator {
+    inner: Option<kreuzberg::pdf::PdfPageIterator>,
+}
+
+#[pymethods]
+impl PyPdfPageIterator {
+    #[new]
+    #[pyo3(signature = (file_path, dpi=None))]
+    fn new(file_path: &str, dpi: Option<i32>) -> PyResult<Self> {
+        let iter = kreuzberg::pdf::PdfPageIterator::from_file(file_path, dpi, None)
+            .map_err(|e| pyo3::exceptions::PyRuntimeError::new_err(e.to_string()))?;
+        Ok(Self { inner: Some(iter) })
+    }
+
+    fn __iter__(slf: PyRef<'_, Self>) -> PyRef<'_, Self> {
+        slf
+    }
+
+    fn __next__(&mut self, py: Python<'_>) -> PyResult<Option<(usize, Py<PyBytes>)>> {
+        let iter = match self.inner.as_mut() {
+            Some(it) => it,
+            None => return Ok(None),
+        };
+
+        match iter.next() {
+            Some(Ok((page_index, png))) => {
+                let bytes = PyBytes::new(py, &png).unbind();
+                Ok(Some((page_index, bytes)))
+            }
+            Some(Err(e)) => Err(pyo3::exceptions::PyRuntimeError::new_err(e.to_string())),
+            None => Ok(None),
+        }
+    }
+
+    fn __enter__(slf: PyRef<'_, Self>) -> PyRef<'_, Self> {
+        slf
+    }
+
+    fn __exit__(
+        &mut self,
+        _exc_type: &Bound<'_, PyAny>,
+        _exc_val: &Bound<'_, PyAny>,
+        _exc_tb: &Bound<'_, PyAny>,
+    ) -> bool {
+        self.inner = None;
+        false
+    }
+
+    fn __len__(&self) -> usize {
+        self.inner.as_ref().map_or(0, |it| it.page_count())
+    }
 }
 
 #[cfg(test)]

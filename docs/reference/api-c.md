@@ -439,6 +439,38 @@ char *kreuzberg_load_extraction_config_from_file(const char *file_path);
 
 ---
 
+## PDF Rendering
+### kreuzberg_render_pdf_page
+
+Render a single page of a PDF as a PNG image.
+
+**Signature:**
+
+```c title="C"
+CRenderPageResult* kreuzberg_render_pdf_page(const char* file_path, size_t page_index, int dpi);
+```
+
+**Parameters:**
+
+- `file_path` (const char*): Path to the PDF file (UTF-8 encoded)
+- `page_index` (size_t): Zero-based page index to render
+- `dpi` (int): Resolution for rendering (e.g. 150)
+
+**Returns:**
+
+- `CRenderPageResult*`: Pointer to a single page render result, or NULL on error. Free with `kreuzberg_free_render_page_result`.
+
+---
+### kreuzberg_free_render_page_result
+
+Free a single page result returned by `kreuzberg_render_pdf_page`.
+
+```c title="C"
+void kreuzberg_free_render_page_result(CRenderPageResult* page);
+```
+
+---
+
 ## Error Handling
 
 ### kreuzberg_last_error

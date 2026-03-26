@@ -110,6 +110,13 @@ public final class KreuzbergFFI {
 	public static final MethodHandle KREUZBERG_CLASSIFY_ERROR;
 	public static final MethodHandle KREUZBERG_ERROR_CODE_NAME;
 	public static final MethodHandle KREUZBERG_ERROR_CODE_DESCRIPTION;
+	public static final MethodHandle KREUZBERG_RENDER_PDF_PAGE;
+	public static final MethodHandle KREUZBERG_FREE_RENDER_PAGE_RESULT;
+	public static final MethodHandle KREUZBERG_PDF_PAGE_ITERATOR_NEW;
+	public static final MethodHandle KREUZBERG_PDF_PAGE_ITERATOR_NEXT;
+	public static final MethodHandle KREUZBERG_PDF_PAGE_ITERATOR_PAGE_COUNT;
+	public static final MethodHandle KREUZBERG_PDF_PAGE_ITERATOR_FREE;
+	public static final MethodHandle KREUZBERG_PDF_PAGE_ITERATOR_FREE_RESULT;
 
 	public static final StructLayout C_EXTRACTION_RESULT_LAYOUT = MemoryLayout.structLayout(
 			ValueLayout.ADDRESS.withName("annotations_json"), ValueLayout.ADDRESS.withName("chunks_json"),
@@ -398,6 +405,35 @@ public final class KreuzbergFFI {
 
 			KREUZBERG_ERROR_CODE_DESCRIPTION = linkFunction("kreuzberg_error_code_description",
 					FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.JAVA_LONG));
+
+			// PDF rendering: kreuzberg_render_pdf_page(path, page_index, dpi) -> *mut CPageImage
+			KREUZBERG_RENDER_PDF_PAGE = linkFunction("kreuzberg_render_pdf_page",
+					FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.JAVA_LONG,
+							ValueLayout.JAVA_INT));
+
+			KREUZBERG_FREE_RENDER_PAGE_RESULT = linkFunction("kreuzberg_free_render_page_result",
+					FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
+
+			// PDF page iterator: new(path, dpi) -> *mut CPdfPageIterator
+			KREUZBERG_PDF_PAGE_ITERATOR_NEW = linkFunction("kreuzberg_pdf_page_iterator_new",
+					FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.JAVA_INT));
+
+			// PDF page iterator: next(iter) -> *mut CPageIterResult
+			KREUZBERG_PDF_PAGE_ITERATOR_NEXT = linkFunction("kreuzberg_pdf_page_iterator_next",
+					FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+			// PDF page iterator: page_count(iter) -> usize
+			KREUZBERG_PDF_PAGE_ITERATOR_PAGE_COUNT = linkFunction("kreuzberg_pdf_page_iterator_page_count",
+					FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.ADDRESS));
+
+			// PDF page iterator: free(iter) -> void
+			KREUZBERG_PDF_PAGE_ITERATOR_FREE = linkFunction("kreuzberg_pdf_page_iterator_free",
+					FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
+
+			// PDF page iterator: free_result(result) -> void
+			KREUZBERG_PDF_PAGE_ITERATOR_FREE_RESULT = linkFunction(
+					"kreuzberg_pdf_page_iterator_free_result",
+					FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
 		} catch (Exception e) {
 			throw new ExceptionInInitializerError(e);
 		}

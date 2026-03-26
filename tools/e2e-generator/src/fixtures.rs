@@ -30,6 +30,8 @@ pub struct Fixture {
     #[serde(default)]
     pub extraction: Option<ExtractionSpec>,
     #[serde(default)]
+    pub render: Option<RenderSpec>,
+    #[serde(default)]
     pub assertions: Option<Assertions>,
     #[serde(default)]
     pub skip: Option<SkipDirective>,
@@ -61,7 +63,12 @@ impl Fixture {
 
     /// Returns true if this is a document extraction fixture
     pub fn is_document_extraction(&self) -> bool {
-        self.document.is_some()
+        self.document.is_some() && !self.is_render()
+    }
+
+    /// Returns true if this is a PDF rendering fixture
+    pub fn is_render(&self) -> bool {
+        self.render.is_some()
     }
 
     /// Get document spec for document extraction fixtures.
@@ -119,6 +126,32 @@ pub enum InputType {
     #[default]
     File,
     Bytes,
+}
+
+#[derive(Debug, Clone, Deserialize, Default)]
+pub struct RenderSpec {
+    /// "single_page" or "iterator"
+    #[serde(default)]
+    pub mode: String,
+    /// Page index for single page render (None = page 0)
+    #[serde(default)]
+    pub page_index: Option<i64>,
+    /// DPI override (None = use default 150)
+    #[serde(default)]
+    pub dpi: Option<i32>,
+}
+
+#[derive(Debug, Clone, Deserialize, Default)]
+pub struct RenderAssertions {
+    /// Assert output starts with PNG magic bytes
+    #[serde(default)]
+    pub is_png: Option<bool>,
+    /// Assert output byte length >= this
+    #[serde(default)]
+    pub min_byte_length: Option<usize>,
+    /// Assert page count >= this (iterator mode)
+    #[serde(default)]
+    pub page_count_gte: Option<usize>,
 }
 
 #[allow(dead_code)]
@@ -199,6 +232,9 @@ pub struct Assertions {
     /// Annotation extraction assertions
     #[serde(default)]
     pub annotations: Option<AnnotationAssertion>,
+    /// PDF rendering assertions
+    #[serde(default)]
+    pub render: Option<RenderAssertions>,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -601,9 +637,9 @@ pub fn load_fixtures(fixtures_dir: &Utf8Path) -> Result<Vec<Fixture>> {
         let contents = std::fs::read_to_string(&path).with_context(|| format!("Failed to read fixture {}", path))?;
         let mut fixture: Fixture = serde_json::from_str(&contents).with_context(|| format!("Parsing {path}"))?;
 
-        if !fixture.is_document_extraction() && !fixture.is_plugin_api() {
+        if !fixture.is_document_extraction() && !fixture.is_plugin_api() && !fixture.is_render() {
             bail!(
-                "Fixture {} must have either 'document' (document extraction) or 'api_category' (plugin API) field",
+                "Fixture {} must have either 'document' (document extraction), 'api_category' (plugin API), or 'document'+'render' (PDF rendering) field",
                 path
             );
         }

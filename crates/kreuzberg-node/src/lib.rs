@@ -36,7 +36,10 @@ pub use result::{
     JsPageContent, JsPageHierarchy, JsProcessingWarning, JsTable,
 };
 
-pub use extraction::{extract_bytes, extract_bytes_sync, extract_file, extract_file_sync};
+pub use extraction::{
+    JsPdfPageIterator, PdfPageResult, extract_bytes, extract_bytes_sync, extract_file, extract_file_sync,
+    iterate_pdf_pages, iterate_pdf_pages_sync, pdf_page_count, render_pdf_page, render_pdf_page_sync,
+};
 
 pub use batch::{batch_extract_bytes, batch_extract_bytes_sync, batch_extract_files, batch_extract_files_sync};
 

@@ -6,7 +6,8 @@
 use crate::atoms;
 use crate::config::parse_extraction_config;
 use crate::conversion::convert_extraction_result_to_term;
-use rustler::{Binary, Encoder, Env, NifResult, Term};
+use rustler::{Binary, Encoder, Env, NifResult, ResourceArc, Term};
+use std::sync::Mutex;
 
 // Constants for validation
 const MAX_BINARY_SIZE: usize = 500 * 1024 * 1024; // 500MB
@@ -153,4 +154,117 @@ pub fn extract_file_with_options<'a>(
         }
         Err(e) => Ok((atoms::error(), format!("Extraction failed: {}", e)).encode(env)),
     }
+}
+
+/// Render a single page of a PDF file to a PNG byte buffer
+///
+/// # Arguments
+/// * `input` - String file path to the PDF
+/// * `page_index` - Zero-based page index
+/// * `dpi` - Optional DPI (default 150)
+///
+/// # Returns
+/// * `{:ok, binary}` - PNG binary
+/// * `{:error, reason}` - Error tuple with reason string
+#[rustler::nif(schedule = "DirtyCpu")]
+pub fn render_pdf_page<'a>(env: Env<'a>, input: String, page_index: usize, dpi: Option<i32>) -> NifResult<Term<'a>> {
+    if input.is_empty() {
+        return Ok((atoms::error(), "File path cannot be empty").encode(env));
+    }
+
+    let pdf_bytes = match std::fs::read(&input) {
+        Ok(b) => b,
+        Err(e) => return Ok((atoms::error(), format!("Failed to read file: {}", e)).encode(env)),
+    };
+
+    match kreuzberg::pdf::render_pdf_page_to_png(&pdf_bytes, page_index, dpi, None) {
+        Ok(png) => {
+            let mut obin = match rustler::OwnedBinary::new(png.len()) {
+                Some(b) => b,
+                None => {
+                    return Ok((
+                        atoms::error(),
+                        format!("failed to allocate binary of {} bytes", png.len()),
+                    )
+                        .encode(env));
+                }
+            };
+            obin.as_mut_slice().copy_from_slice(&png);
+            Ok((atoms::ok(), obin.release(env)).encode(env))
+        }
+        Err(e) => Ok((atoms::error(), format!("Rendering failed: {}", e)).encode(env)),
+    }
+}
+
+/// Resource wrapper for PdfPageIterator to allow passing between NIF calls.
+pub struct PdfPageIteratorResource {
+    inner: Mutex<Option<kreuzberg::pdf::PdfPageIterator>>,
+}
+
+#[rustler::resource_impl]
+impl rustler::Resource for PdfPageIteratorResource {}
+
+/// Open a new PDF page iterator, returning a resource handle.
+#[rustler::nif(schedule = "DirtyCpu")]
+pub fn render_pdf_pages_iter_open<'a>(env: Env<'a>, path: String, dpi: Option<i32>) -> NifResult<Term<'a>> {
+    if path.is_empty() {
+        return Ok((atoms::error(), "File path cannot be empty").encode(env));
+    }
+
+    match kreuzberg::pdf::PdfPageIterator::from_file(&path, dpi, None) {
+        Ok(iter) => {
+            let resource = ResourceArc::new(PdfPageIteratorResource {
+                inner: Mutex::new(Some(iter)),
+            });
+            Ok(resource.encode(env))
+        }
+        Err(e) => Ok((atoms::error(), format!("Failed to open iterator: {}", e)).encode(env)),
+    }
+}
+
+/// Advance the iterator and return the next page.
+///
+/// Returns `{:ok, {page_index, png_binary}}` or `:done` when exhausted.
+#[rustler::nif(schedule = "DirtyCpu")]
+pub fn render_pdf_pages_iter_next<'a>(
+    env: Env<'a>,
+    resource: ResourceArc<PdfPageIteratorResource>,
+) -> NifResult<Term<'a>> {
+    let mut guard = resource
+        .inner
+        .lock()
+        .map_err(|_| rustler::Error::Term(Box::new("iterator lock poisoned")))?;
+
+    let iter = match guard.as_mut() {
+        Some(it) => it,
+        None => return Ok(atoms::done().encode(env)),
+    };
+
+    match iter.next() {
+        Some(Ok((page_index, png))) => {
+            let mut obin = match rustler::OwnedBinary::new(png.len()) {
+                Some(b) => b,
+                None => {
+                    return Ok((
+                        atoms::error(),
+                        format!("failed to allocate binary of {} bytes", png.len()),
+                    )
+                        .encode(env));
+                }
+            };
+            obin.as_mut_slice().copy_from_slice(&png);
+            Ok((atoms::ok(), (page_index, obin.release(env))).encode(env))
+        }
+        Some(Err(e)) => Ok((atoms::error(), format!("Iterator error: {}", e)).encode(env)),
+        None => Ok(atoms::done().encode(env)),
+    }
+}
+
+/// Free the iterator resource.
+#[rustler::nif]
+pub fn render_pdf_pages_iter_free(resource: ResourceArc<PdfPageIteratorResource>) -> rustler::NifResult<()> {
+    if let Ok(mut guard) = resource.inner.lock() {
+        *guard = None;
+    }
+    Ok(())
 }

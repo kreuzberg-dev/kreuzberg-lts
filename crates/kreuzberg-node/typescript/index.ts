@@ -131,6 +131,15 @@ export {
 	extractFile,
 	extractFileSync,
 } from "./extraction/single.js";
+export {
+	iteratePdfPages,
+	iteratePdfPagesSync,
+	pdfPageCount,
+	PdfPageIterator,
+	renderPdfPage,
+	renderPdfPageSync,
+} from "./extraction/render.js";
+export type { PdfPageResult } from "./extraction/render.js";
 
 // ============================================================================
 // Worker Pool APIs

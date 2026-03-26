@@ -1336,6 +1336,78 @@ for imgIdx, img := range result.Images {
 
 ---
 
+## PDF Rendering
+### RenderPdfPage
+
+Render a single page of a PDF as a PNG image.
+
+**Signature:**
+
+```go title="Go"
+func RenderPdfPage(path string, pageIndex int, dpi int) ([]byte, error)
+```
+
+**Parameters:**
+
+- `path` (string): Path to the PDF file
+- `pageIndex` (int): Zero-based page index to render
+- `dpi` (int): Resolution for rendering (e.g. 150)
+
+**Returns:**
+
+- `[]byte`: PNG-encoded bytes for the requested page
+- `error`: Error if file cannot be read, rendered, or page index is out of bounds
+
+**Example:**
+
+```go title="render_single_page.go"
+png, err := kreuzberg.RenderPdfPage("document.pdf", 0, 150)
+if err != nil {
+	log.Fatalf("render failed: %v", err)
+}
+os.WriteFile("first_page.png", png, 0644)
+```
+
+---
+
+### PdfPageIterator
+
+A more memory-efficient alternative to rendering all pages at once when memory is a concern or when pages should be processed as they are rendered (e.g., sending each page to a vision model for OCR). Renders one page at a time, so only one raw image is in memory at a time.
+
+**Type:**
+
+```go title="Go"
+type PdfPageIterator struct { ... }
+
+func NewPdfPageIterator(path string, dpi int) (*PdfPageIterator, error)
+func (it *PdfPageIterator) Next() (pageIndex int, png []byte, ok bool, err error)
+func (it *PdfPageIterator) PageCount() int
+func (it *PdfPageIterator) Close()
+```
+
+**Example:**
+
+```go title="iterate_pages.go"
+iter, err := kreuzberg.NewPdfPageIterator("document.pdf", 150)
+if err != nil {
+	log.Fatalf("failed to create iterator: %v", err)
+}
+defer iter.Close()
+
+for {
+	pageIndex, png, ok, err := iter.Next()
+	if err != nil {
+		log.Fatalf("render error: %v", err)
+	}
+	if !ok {
+		break
+	}
+	os.WriteFile(fmt.Sprintf("page_%d.png", pageIndex), png, 0644)
+}
+```
+
+---
+
 ## Error Handling
 
 ### Error Types

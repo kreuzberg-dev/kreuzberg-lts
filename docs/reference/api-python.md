@@ -1179,6 +1179,44 @@ See [Error Handling Reference](errors.md) for detailed error documentation and b
 
 ---
 
+## PDF Rendering
+### render_pdf_page()
+
+Render a single PDF page as a PNG image.
+
+**Signature:**
+
+```python title="Python"
+def render_pdf_page(
+    file_path: str | Path,
+    page_index: int,
+    *,
+    dpi: int = 150,
+) -> bytes
+```
+
+**Parameters:**
+
+- `file_path` (str | Path): Path to the PDF file
+- `page_index` (int): Zero-based page index to render
+- `dpi` (int): Resolution for rendering (default 150)
+
+**Returns:**
+
+- `bytes`: PNG-encoded bytes for the requested page
+
+**Example:**
+
+```python title="render_single_page.py"
+from kreuzberg import render_pdf_page
+
+png_bytes = render_pdf_page("document.pdf", 0)
+with open("first_page.png", "wb") as f:
+    f.write(png_bytes)
+```
+
+---
+
 ## Utilities
 
 - **`detect_mime_type(data: bytes | bytearray)`** → str: Detect MIME type from file bytes (e.g. for `extract_bytes_sync`).

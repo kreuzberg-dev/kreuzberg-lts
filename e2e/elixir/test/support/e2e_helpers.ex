@@ -780,4 +780,15 @@ defmodule E2E.Helpers do
   end
 
   defp convert_numeric(_), do: 0.0
+
+  def assert_is_png(data) do
+    assert byte_size(data) >= 4, "Data too short for PNG: #{byte_size(data)} bytes"
+    <<magic::binary-size(4), _rest::binary>> = data
+    assert magic == <<0x89, 0x50, 0x4E, 0x47>>, "Missing PNG magic bytes"
+  end
+
+  def assert_min_byte_length(data, min_length) do
+    assert byte_size(data) >= min_length,
+           "Expected at least #{min_length} bytes, got #{byte_size(data)}"
+  end
 end

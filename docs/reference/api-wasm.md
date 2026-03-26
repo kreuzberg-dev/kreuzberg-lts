@@ -1920,6 +1920,29 @@ Common MIME types supported by Kreuzberg WASM:
 
 ---
 
+## PDF Rendering
+### renderPdfPageSync()
+
+Render a single page of a PDF as a PNG image (synchronous).
+
+**Signature:**
+
+```typescript title="TypeScript"
+function renderPdfPageSync(filePath: string, pageIndex: number, dpi?: number): Uint8Array
+```
+
+**Parameters:**
+
+- `filePath` (string): Path to the PDF file
+- `pageIndex` (number): Zero-based page index to render
+- `dpi` (number | undefined): Resolution for rendering (default 150)
+
+**Returns:**
+
+- `Uint8Array`: PNG-encoded Uint8Array for the requested page
+
+---
+
 ## Troubleshooting
 
 ### "WASM module failed to initialize"

@@ -1534,6 +1534,40 @@ if ($result->pages !== null) {
 
 ---
 
+## PDF Rendering
+### render_pdf_page()
+
+Render a single page of a PDF as a PNG image.
+
+**Signature:**
+
+```php title="PHP"
+function render_pdf_page(string $filePath, int $pageIndex, int $dpi = 150): string
+```
+
+**Parameters:**
+
+- `$filePath` (string): Path to the PDF file
+- `$pageIndex` (int): Zero-based page index to render
+- `$dpi` (int): Resolution for rendering (default 150)
+
+**Returns:**
+
+- `string`: PNG-encoded string for the requested page
+
+**Throws:**
+
+- `KreuzbergException`: If file cannot be read, rendered, or page index is out of bounds
+
+**Example:**
+
+```php title="render_single_page.php"
+$png = \Kreuzberg\render_pdf_page('document.pdf', 0);
+file_put_contents('first_page.png', $png);
+```
+
+---
+
 ## Exceptions
 
 ### KreuzbergException
