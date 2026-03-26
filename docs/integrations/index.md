@@ -1,18 +1,18 @@
 # Integrations
 
-Kreuzberg integrations connect extracted document content to external databases for storage, indexing, and search.
-
-Each integration is a standalone package that manages schema setup, content deduplication, and index configuration against the target system.
+Kreuzberg integrates with AI frameworks, databases, and search engines — bringing document extraction into your existing stack. Each integration is a standalone package published on PyPI.
 
 ---
 
 ## Available integrations
 
-| Integration | Target | Package | Search capabilities | Status |
-|---|---|---|---|---|
-| [SurrealDB](surrealdb.md) | [SurrealDB](https://surrealdb.com/) | [`kreuzberg-surrealdb`](https://pypi.org/project/kreuzberg-surrealdb/) | BM25, Vector (HNSW), Hybrid (RRF¹) | :white_check_mark: Stable |
-
-¹ RRF = Reciprocal Rank Fusion — combines results from multiple search strategies into a single ranked list.
+| Integration | Framework | Package | Docs |
+|---|---|---|---|
+| LangChain | [LangChain](https://www.langchain.com/) | [`langchain-kreuzberg`](https://pypi.org/project/langchain-kreuzberg/) | [GitHub](https://github.com/kreuzberg-dev/langchain-kreuzberg) |
+| LlamaIndex | [LlamaIndex](https://www.llamaindex.ai/) | [`llama-index-readers-kreuzberg`](https://pypi.org/project/llama-index-readers-kreuzberg/) | [GitHub](https://github.com/kreuzberg-dev/llama-index-kreuzberg) |
+| Haystack | [Haystack](https://haystack.deepset.ai/) | [`kreuzberg-haystack`](https://pypi.org/project/kreuzberg-haystack/) | [GitHub](https://github.com/deepset-ai/haystack-core-integrations/tree/main/integrations/kreuzberg) |
+| CrewAI | [CrewAI](https://www.crewai.com/) | [`kreuzberg-crewai`](https://pypi.org/project/kreuzberg-crewai/) | [GitHub](https://github.com/kreuzberg-dev/kreuzberg-crewai) |
+| SurrealDB | [SurrealDB](https://surrealdb.com/) | [`kreuzberg-surrealdb`](https://pypi.org/project/kreuzberg-surrealdb/) | [SurrealDB](surrealdb.md) |
 
 !!! tip "Building a new integration?"
-    Use the [SurrealDB integration](https://github.com/kreuzberg-dev/kreuzberg-surrealdb) as the reference implementation.
+    Explore existing integrations on [GitHub](https://github.com/kreuzberg-dev) for reference.
