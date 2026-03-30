@@ -8,6 +8,7 @@ use crate::Result;
 use crate::core::config::ExtractionConfig;
 use crate::plugins::{DocumentExtractor, Plugin};
 use crate::types::Metadata;
+use crate::types::uri::{Uri, UriKind, classify_uri};
 use crate::types::internal::InternalDocument;
 use crate::types::internal_builder::InternalDocumentBuilder;
 use async_trait::async_trait;
@@ -252,21 +253,41 @@ impl DjotExtractor {
                     if let Some(pos) = annotation_starts.iter().rposition(|(k, _, _)| *k == 4) {
                         let (_, start, url_opt) = annotation_starts.remove(pos);
                         if let Some(url) = url_opt {
-                            if in_paragraph {
+                            let label_text = if in_paragraph {
                                 let end = paragraph_text.len() as u32;
                                 if start < end {
                                     paragraph_annotations.push(builder::link(start, end, &url, None));
+                                    Some(paragraph_text[start as usize..end as usize].to_string())
+                                } else {
+                                    None
                                 }
                             } else if in_heading {
                                 let end = heading_text.len() as u32;
                                 if start < end {
                                     heading_annotations.push(builder::link(start, end, &url, None));
+                                    Some(heading_text[start as usize..end as usize].to_string())
+                                } else {
+                                    None
                                 }
                             } else if in_list_item {
                                 let end = list_item_text.len() as u32;
                                 if start < end {
                                     list_item_annotations.push(builder::link(start, end, &url, None));
+                                    Some(list_item_text[start as usize..end as usize].to_string())
+                                } else {
+                                    None
                                 }
+                            } else {
+                                None
+                            };
+                            // Collect URI
+                            if !url.is_empty() {
+                                b.push_uri(Uri {
+                                    url: url.clone(),
+                                    label: label_text.filter(|s| !s.is_empty()),
+                                    page: None,
+                                    kind: classify_uri(&url),
+                                });
                             }
                         }
                     }
@@ -360,7 +381,7 @@ impl DjotExtractor {
                 Event::Start(Container::Image(..), _) => {
                     // Images in djot — will push element on End
                 }
-                Event::End(Container::Image(..)) => {
+                Event::End(Container::Image(src, ..)) => {
                     // Push a proper image element (no ExtractedImage data, use sentinel index)
                     use crate::types::document_structure::ContentLayer;
                     use crate::types::internal::{ElementKind, InternalElement, InternalElementId};
@@ -381,6 +402,16 @@ impl DjotExtractor {
                         ocr_confidence: None,
                         ocr_rotation: None,
                     });
+                    // Collect image URI
+                    let src_str = src.as_ref();
+                    if !src_str.is_empty() {
+                        b.push_uri(Uri {
+                            url: src_str.to_string(),
+                            label: None,
+                            page: None,
+                            kind: UriKind::Image,
+                        });
+                    }
                 }
                 Event::Start(Container::Footnote { label }, _) => {
                     in_footnote = true;

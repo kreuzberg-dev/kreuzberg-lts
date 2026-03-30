@@ -10,6 +10,7 @@ use crate::types::ExtractedImage;
 use crate::types::Metadata;
 use crate::types::internal::InternalDocument;
 use crate::types::internal_builder::InternalDocumentBuilder;
+use crate::types::uri::{Uri, UriKind};
 use ahash::AHashMap;
 use async_trait::async_trait;
 use bytes::Bytes;
@@ -260,7 +261,10 @@ fn build_internal_elements(
     for node in parent.children() {
         match node.tag_name().name() {
             "h" => {
-                let (text, _annotations) = collect_odt_annotations(node, style_map);
+                let (text, _annotations, uris) = collect_odt_annotations(node, style_map);
+                for uri in uris {
+                    builder.push_uri(uri);
+                }
                 let trimmed = text.trim();
                 if !trimmed.is_empty() {
                     let level = node
@@ -360,7 +364,10 @@ fn build_internal_elements(
                     }
                 }
 
-                let (text, annotations) = collect_odt_annotations(node, style_map);
+                let (text, annotations, uris) = collect_odt_annotations(node, style_map);
+                for uri in uris {
+                    builder.push_uri(uri);
+                }
                 let trimmed = text.trim();
                 if !trimmed.is_empty() {
                     builder.push_paragraph(trimmed, annotations, None, None);
@@ -462,12 +469,13 @@ fn extract_odt_internal_headers_footers(
 fn collect_odt_annotations(
     node: roxmltree::Node,
     style_map: &AHashMap<String, OdtStyleProps>,
-) -> (String, Vec<crate::types::TextAnnotation>) {
+) -> (String, Vec<crate::types::TextAnnotation>, Vec<Uri>) {
     use crate::types::builder;
     use crate::types::document_structure::{AnnotationKind, TextAnnotation};
 
     let mut text = String::new();
     let mut annotations = Vec::new();
+    let mut uris = Vec::new();
 
     for child in node.children() {
         match child.tag_name().name() {
@@ -537,6 +545,19 @@ fn collect_odt_annotations(
                         .unwrap_or("");
                     if !url.is_empty() {
                         annotations.push(builder::link(start, end, url, None));
+                        let kind = if url.starts_with('#') {
+                            UriKind::Anchor
+                        } else if url.starts_with("mailto:") {
+                            UriKind::Email
+                        } else {
+                            UriKind::Hyperlink
+                        };
+                        uris.push(Uri {
+                            url: url.to_string(),
+                            label: Some(link_text.to_string()),
+                            page: None,
+                            kind,
+                        });
                     }
                 }
             }
@@ -555,7 +576,7 @@ fn collect_odt_annotations(
         text = t.to_string();
     }
 
-    (text, annotations)
+    (text, annotations, uris)
 }
 
 /// Extract table cells as `Vec<Vec<String>>` from an ODT table element.

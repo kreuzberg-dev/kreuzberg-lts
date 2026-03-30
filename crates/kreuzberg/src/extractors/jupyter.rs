@@ -20,6 +20,8 @@ use crate::types::internal::InternalDocument;
 #[cfg(feature = "office")]
 use crate::types::internal_builder::InternalDocumentBuilder;
 #[cfg(feature = "office")]
+use crate::types::uri::Uri;
+#[cfg(feature = "office")]
 use crate::types::{ExtractedImage, Metadata};
 #[cfg(feature = "office")]
 use ahash::AHashMap;
@@ -436,6 +438,54 @@ impl JupyterExtractor {
         bytes[start..].iter().position(|&b| b == delim).map(|p| start + p)
     }
 
+    /// Extract markdown-style `[text](url)` links from text and return as URIs.
+    fn extract_markdown_links(text: &str) -> Vec<Uri> {
+        let mut uris = Vec::new();
+        let bytes = text.as_bytes();
+        let len = bytes.len();
+        let mut i = 0;
+
+        while i < len {
+            // Check for ![alt](url) image links first (before [text](url))
+            if bytes[i] == b'!'
+                && i + 1 < len
+                && bytes[i + 1] == b'['
+                && let Some(close_bracket) = Self::find_closing_byte(bytes, i + 2, b']')
+                && close_bracket + 1 < len
+                && bytes[close_bracket + 1] == b'('
+                && let Some(close_paren) = Self::find_closing_byte(bytes, close_bracket + 2, b')')
+            {
+                let alt = &text[i + 2..close_bracket];
+                let url = &text[close_bracket + 2..close_paren];
+                if !url.is_empty() {
+                    let label_opt = if alt.is_empty() { None } else { Some(alt.to_string()) };
+                    uris.push(Uri::image(url, label_opt));
+                }
+                i = close_paren + 1;
+                continue;
+            }
+            // [text](url) links
+            if bytes[i] == b'['
+                && let Some(close_bracket) = Self::find_closing_byte(bytes, i + 1, b']')
+                && close_bracket + 1 < len
+                && bytes[close_bracket + 1] == b'('
+                && let Some(close_paren) = Self::find_closing_byte(bytes, close_bracket + 2, b')')
+            {
+                let label = &text[i + 1..close_bracket];
+                let url = &text[close_bracket + 2..close_paren];
+                if !url.is_empty() {
+                    let label_opt = if label.is_empty() { None } else { Some(label.to_string()) };
+                    uris.push(Uri::hyperlink(url, label_opt));
+                }
+                i = close_paren + 1;
+                continue;
+            }
+            i += 1;
+        }
+
+        uris
+    }
+
     /// Build an `InternalDocument` from the already-parsed notebook JSON.
     ///
     /// Markdown cells become paragraphs, code cells become code blocks.
@@ -467,6 +517,11 @@ impl JupyterExtractor {
 
             match cell_type {
                 "markdown" => {
+                    // Extract markdown links as URIs
+                    let link_uris = Self::extract_markdown_links(trimmed);
+                    for uri in link_uris {
+                        builder.push_uri(uri);
+                    }
                     let (stripped, annotations) = Self::scan_markdown_inline(trimmed);
                     builder.push_paragraph(&stripped, annotations, None, None);
                 }

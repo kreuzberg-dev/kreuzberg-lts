@@ -22,6 +22,7 @@ use crate::types::Metadata;
 use crate::types::ProcessingWarning;
 use crate::types::internal::InternalDocument;
 use crate::types::internal_builder::InternalDocumentBuilder;
+use crate::types::uri::{Uri, UriKind, classify_uri};
 use ahash::{AHashMap, AHashSet};
 use async_trait::async_trait;
 use std::borrow::Cow;
@@ -257,9 +258,11 @@ impl EpubExtractor {
                             if first_heading_idx.is_none() {
                                 first_heading_idx = Some(idx);
                             }
+                            collect_annotation_uris(&node.annotations, text, &mut builder);
                         }
                         NodeContent::Paragraph { text } => {
                             builder.push_paragraph(text, node.annotations.clone(), None, None);
+                            collect_annotation_uris(&node.annotations, text, &mut builder);
                         }
                         NodeContent::ListItem { text } => {
                             if !in_list {
@@ -286,6 +289,17 @@ impl EpubExtractor {
                             builder.push_code(text, language.as_deref(), None, None);
                         }
                         NodeContent::Image { description, src, .. } => {
+                            // Collect image URI
+                            if let Some(img_src) = src {
+                                if !img_src.is_empty() {
+                                    builder.push_uri(Uri {
+                                        url: img_src.clone(),
+                                        label: description.clone(),
+                                        page: Some((index + 1) as u32),
+                                        kind: UriKind::Image,
+                                    });
+                                }
+                            }
                             // Try to extract image binary from the EPUB ZIP.
                             // Image src is relative to the XHTML file, not the manifest dir.
                             let xhtml_dir = file_path.rsplit_once('/').map(|(d, _)| d).unwrap_or("");
@@ -365,6 +379,35 @@ impl EpubExtractor {
         // so the derivation step can resolve TOC entries to headings by key.
 
         Some(builder.build())
+    }
+}
+
+/// Extract URIs from document structure annotations (link annotations).
+#[cfg(feature = "office")]
+fn collect_annotation_uris(
+    annotations: &[crate::types::document_structure::TextAnnotation],
+    text: &str,
+    builder: &mut InternalDocumentBuilder,
+) {
+    use crate::types::document_structure::AnnotationKind;
+
+    for ann in annotations {
+        if let AnnotationKind::Link { url, .. } = &ann.kind {
+            if !url.is_empty() {
+                let label = if ann.start < ann.end && (ann.end as usize) <= text.len() {
+                    let slice = &text[ann.start as usize..ann.end as usize];
+                    if slice.is_empty() { None } else { Some(slice.to_string()) }
+                } else {
+                    None
+                };
+                builder.push_uri(Uri {
+                    url: url.clone(),
+                    label,
+                    page: None,
+                    kind: classify_uri(url),
+                });
+            }
+        }
     }
 }
 

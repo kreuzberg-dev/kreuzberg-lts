@@ -296,6 +296,7 @@ fn build_internal_document(doc: &crate::extraction::docx::parser::Document) -> I
     use crate::types::document_structure::ContentLayer;
     use crate::types::extraction::BoundingBox;
     use crate::types::internal::{ElementKind, InternalElement, RelationshipKind, RelationshipTarget};
+    use crate::types::uri::{Uri, UriKind};
 
     let mut builder = InternalDocumentBuilder::new("docx");
 
@@ -398,20 +399,39 @@ fn build_internal_document(doc: &crate::extraction::docx::parser::Document) -> I
                         let para_idx = builder.push_paragraph(&text, annotations.clone(), None, None);
 
                         // Scan runs for hyperlink URLs to create InternalLink relationships
+                        // and extract URIs
                         for run in &paragraph.runs {
                             if run.math_latex.is_some() || run.text.is_empty() {
                                 continue;
                             }
-                            if let Some(ref url) = run.hyperlink_url
-                                && url.starts_with('#')
-                            {
-                                // Internal link: create a relationship
-                                let anchor_key = url.trim_start_matches('#').to_string();
-                                builder.push_relationship(
-                                    para_idx,
-                                    RelationshipTarget::Key(anchor_key),
-                                    RelationshipKind::InternalLink,
-                                );
+                            if let Some(ref url) = run.hyperlink_url {
+                                if url.starts_with('#') {
+                                    // Internal link: create a relationship
+                                    let anchor_key = url.trim_start_matches('#').to_string();
+                                    builder.push_relationship(
+                                        para_idx,
+                                        RelationshipTarget::Key(anchor_key),
+                                        RelationshipKind::InternalLink,
+                                    );
+                                    builder.push_uri(Uri {
+                                        url: url.clone(),
+                                        label: Some(run.text.clone()),
+                                        page: None,
+                                        kind: UriKind::Anchor,
+                                    });
+                                } else {
+                                    let kind = if url.starts_with("mailto:") {
+                                        UriKind::Email
+                                    } else {
+                                        UriKind::Hyperlink
+                                    };
+                                    builder.push_uri(Uri {
+                                        url: url.clone(),
+                                        label: Some(run.text.clone()),
+                                        page: None,
+                                        kind,
+                                    });
+                                }
                             }
                         }
 

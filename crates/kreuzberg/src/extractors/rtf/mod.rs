@@ -30,6 +30,7 @@ use crate::types::ExtractedImage;
 use crate::types::internal::InternalDocument;
 use crate::types::internal_builder::InternalDocumentBuilder;
 use crate::types::metadata::Metadata;
+use crate::types::uri::Uri;
 use async_trait::async_trait;
 use bytes::Bytes;
 use std::borrow::Cow;
@@ -64,6 +65,15 @@ impl RtfExtractor {
         let formatting = extract_rtf_formatting(rtf_content);
 
         let mut builder = InternalDocumentBuilder::new("rtf");
+
+        // Extract URIs from hyperlinks found during RTF parsing
+        for (_start, _end, url) in &formatting.hyperlinks {
+            if !url.is_empty() {
+                // Try to find link text from the extracted text
+                let label = extracted_text.get(*_start..*_end).map(|s| s.to_string());
+                builder.push_uri(Uri::hyperlink(url, label));
+            }
+        }
 
         let mut table_idx = 0;
         let mut meta_idx = 0;

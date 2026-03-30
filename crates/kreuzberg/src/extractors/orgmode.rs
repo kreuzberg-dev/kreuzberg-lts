@@ -31,6 +31,8 @@ use crate::types::internal::RelationshipTarget;
 #[cfg(feature = "office")]
 use crate::types::internal_builder::InternalDocumentBuilder;
 #[cfg(feature = "office")]
+use crate::types::uri::Uri;
+#[cfg(feature = "office")]
 use crate::types::{Metadata, Table};
 #[cfg(feature = "office")]
 use ahash::AHashMap;
@@ -608,6 +610,29 @@ impl OrgModeExtractor {
                 // Check for footnote references [fn:name]
                 let footnote_refs = Self::find_footnote_references(trimmed);
                 let (stripped, annotations) = Self::parse_inline_markup(trimmed);
+
+                // Extract URIs from link annotations
+                for ann in &annotations {
+                    if let AnnotationKind::Link { url, .. } = &ann.kind
+                        && !url.is_empty()
+                    {
+                        let label = stripped.get(ann.start as usize..ann.end as usize).map(|s| s.to_string());
+                        let is_image = url.ends_with(".png")
+                            || url.ends_with(".jpg")
+                            || url.ends_with(".jpeg")
+                            || url.ends_with(".gif")
+                            || url.ends_with(".svg")
+                            || (url.starts_with("file:")
+                                && label
+                                    .as_deref()
+                                    .is_some_and(|l| l.ends_with(".png") || l.ends_with(".jpg") || l.ends_with(".jpeg")));
+                        if is_image {
+                            b.push_uri(Uri::image(url, label));
+                        } else {
+                            b.push_uri(Uri::hyperlink(url, label));
+                        }
+                    }
+                }
 
                 // Check if the line contains internal links (org links to headings)
                 let idx = b.push_paragraph(&stripped, annotations, None, None);

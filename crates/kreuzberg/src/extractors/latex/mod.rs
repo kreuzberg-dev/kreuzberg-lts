@@ -26,6 +26,7 @@ use crate::types::document_structure::{AnnotationKind, TextAnnotation};
 use crate::types::internal::InternalDocument;
 use crate::types::internal::{RelationshipKind, RelationshipTarget};
 use crate::types::internal_builder::InternalDocumentBuilder;
+use crate::types::uri::Uri;
 use crate::types::{Metadata, Table};
 use async_trait::async_trait;
 
@@ -336,6 +337,7 @@ impl LatexExtractor {
                         let caption = Self::extract_caption(&env_content);
                         let label = Self::extract_label(&env_content);
                         if let Some(path) = Self::extract_includegraphics_path(&env_content) {
+                            b.push_uri(Uri::image(&path, caption.clone()));
                             let idx = b.push_paragraph(&format!("[image: {}]", path), vec![], None, None);
                             if let Some(lbl) = label {
                                 b.set_anchor(idx, &lbl);
@@ -406,6 +408,7 @@ impl LatexExtractor {
                 if trimmed.contains("\\includegraphics")
                     && let Some(path) = Self::extract_includegraphics_path(trimmed)
                 {
+                    b.push_uri(Uri::image(&path, None));
                     b.push_paragraph(&format!("[image: {}]", path), vec![], None, None);
                     i += 1;
                     continue;
@@ -463,6 +466,15 @@ impl LatexExtractor {
                     let line_text = line_text.trim();
                     if !line_text.is_empty() {
                         let (text, annotations) = Self::strip_inline_commands(line_text);
+                        // Extract URIs from link annotations
+                        for ann in &annotations {
+                            if let AnnotationKind::Link { url, .. } = &ann.kind
+                                && !url.is_empty()
+                            {
+                                let label = text.get(ann.start as usize..ann.end as usize).map(|s| s.to_string());
+                                b.push_uri(Uri::hyperlink(url, label));
+                            }
+                        }
                         let idx = b.push_paragraph(&text, annotations, None, None);
                         // Check for \label in this line
                         if let Some(lbl) = Self::extract_label(line_text) {

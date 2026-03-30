@@ -5,6 +5,7 @@
 
 use crate::Result;
 use crate::text::utf8_validation;
+use crate::types::uri::Uri;
 use ahash::AHashMap;
 use std::borrow::Cow;
 
@@ -223,6 +224,21 @@ fn build_outline_internal(
     }
 
     let attrs = extract_outline_attributes(node);
+
+    // Extract URIs from xmlUrl and htmlUrl attributes
+    let label = if text.is_empty() { None } else { Some(text.to_string()) };
+    if let Some(xml_url) = node.attribute("xmlUrl") {
+        let trimmed = xml_url.trim();
+        if !trimmed.is_empty() {
+            builder.push_uri(Uri::hyperlink(trimmed, label.clone()));
+        }
+    }
+    if let Some(html_url) = node.attribute("htmlUrl") {
+        let trimmed = html_url.trim();
+        if !trimmed.is_empty() {
+            builder.push_uri(Uri::hyperlink(trimmed, label));
+        }
+    }
 
     if child_outlines.is_empty() {
         let idx = builder.push_paragraph(text, vec![], None, None);

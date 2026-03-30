@@ -27,6 +27,8 @@ use crate::types::internal::{RelationshipKind, RelationshipTarget};
 #[cfg(feature = "office")]
 use crate::types::internal_builder::InternalDocumentBuilder;
 #[cfg(feature = "office")]
+use crate::types::uri::Uri;
+#[cfg(feature = "office")]
 use crate::types::{Metadata, Table};
 #[cfg(feature = "office")]
 use ahash::AHashMap;
@@ -664,6 +666,9 @@ impl RstExtractor {
                 let opts = Self::parse_image_options(&lines, &mut i);
                 let alt = opts.get("alt").cloned();
                 let desc = alt.as_deref().unwrap_or(uri);
+                if !uri.is_empty() {
+                    b.push_uri(Uri::image(uri, alt.clone()));
+                }
                 let idx = b.push_paragraph(&format!("[image: {}]", desc), vec![], None, None);
                 if !uri.is_empty() {
                     let mut attrs = ahash::AHashMap::new();

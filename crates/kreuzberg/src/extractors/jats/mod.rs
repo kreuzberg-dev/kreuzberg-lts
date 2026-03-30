@@ -24,6 +24,7 @@ use crate::text::utf8_validation;
 use crate::types::Metadata;
 use crate::types::internal::InternalDocument;
 use crate::types::internal_builder::InternalDocumentBuilder;
+use crate::types::uri::Uri;
 use async_trait::async_trait;
 use quick_xml::Reader;
 use quick_xml::events::Event;
@@ -210,6 +211,16 @@ fn build_jats_internal_document(content: &str) -> crate::Result<InternalDocument
                     "p" if in_body => {
                         let (text, annotations) = extract_para_with_annotations_jats(&mut reader)?;
                         if !text.is_empty() {
+                            // Extract URIs from link annotations
+                            for ann in &annotations {
+                                if let crate::types::document_structure::AnnotationKind::Link { url, .. } = &ann.kind
+                                    && !url.is_empty()
+                                {
+                                    let label =
+                                        text.get(ann.start as usize..ann.end as usize).map(|s| s.to_string());
+                                    builder.push_uri(Uri::hyperlink(url, label));
+                                }
+                            }
                             builder.push_paragraph(&text, annotations, None, None);
                         }
                         continue;
@@ -492,6 +503,14 @@ impl DocumentExtractor for JatsExtractor {
         let mut doc = build_jats_internal_document(&jats_content)?;
         doc.mime_type = std::borrow::Cow::Owned(mime_type.to_string());
         doc.metadata = metadata;
+
+        // Add DOI as a citation URI
+        if let Some(doi) = &jats_metadata.doi {
+            doc.push_uri(Uri::citation(
+                format!("https://doi.org/{}", doi),
+                Some(format!("DOI: {}", doi)),
+            ));
+        }
 
         Ok(doc)
     }

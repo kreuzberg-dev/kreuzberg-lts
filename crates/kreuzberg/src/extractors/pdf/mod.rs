@@ -895,6 +895,44 @@ impl PdfExtractor {
             doc
         };
 
+        // Extract URIs from PDF annotations (links).
+        // Collect into a temp vec first to avoid borrow conflict with doc.annotations.
+        {
+            use crate::types::annotations::PdfAnnotationType;
+            use crate::types::uri::{Uri, UriKind};
+
+            let uris: Vec<Uri> = doc
+                .annotations
+                .as_ref()
+                .map(|annotations| {
+                    annotations
+                        .iter()
+                        .filter(|a| a.annotation_type == PdfAnnotationType::Link)
+                        .filter_map(|a| {
+                            a.content.as_ref().map(|url| {
+                                let kind = if url.starts_with('#') {
+                                    UriKind::Anchor
+                                } else if url.starts_with("mailto:") {
+                                    UriKind::Email
+                                } else {
+                                    UriKind::Hyperlink
+                                };
+                                Uri {
+                                    url: url.clone(),
+                                    label: None,
+                                    page: Some(a.page_number as u32),
+                                    kind,
+                                }
+                            })
+                        })
+                        .collect()
+                })
+                .unwrap_or_default();
+            for uri in uris {
+                doc.push_uri(uri);
+            }
+        }
+
         // Attach pre-built per-page content so derive_extraction_result can use it.
         doc.prebuilt_pages = final_pages;
 

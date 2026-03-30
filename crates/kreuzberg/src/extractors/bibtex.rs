@@ -9,6 +9,7 @@ use crate::plugins::{DocumentExtractor, Plugin};
 use crate::types::internal::InternalDocument;
 use crate::types::internal_builder::InternalDocumentBuilder;
 use crate::types::metadata::Metadata;
+use crate::types::uri::Uri;
 use ahash::AHashMap;
 use async_trait::async_trait;
 use std::borrow::Cow;
@@ -130,6 +131,21 @@ impl DocumentExtractor for BibtexExtractor {
                     }
 
                     formatted_entries.push_str("}\n\n");
+
+                    // Extract URIs from URL and DOI fields
+                    if let Some(url) = entry_fields.get("url")
+                        && !url.is_empty()
+                    {
+                        builder.push_uri(Uri::citation(url, Some(key.clone())));
+                    }
+                    if let Some(doi) = entry_fields.get("doi")
+                        && !doi.is_empty()
+                    {
+                        builder.push_uri(Uri::citation(
+                            format!("https://doi.org/{}", doi),
+                            Some(key.clone()),
+                        ));
+                    }
 
                     // Build citation element with attributes
                     let citation_text = formatted_entries[entry_start..].trim().to_string();

@@ -18,6 +18,7 @@ use crate::core::config::ExtractionConfig;
 use crate::plugins::{DocumentExtractor, Plugin};
 use crate::types::internal::InternalDocument;
 use crate::types::internal_builder::InternalDocumentBuilder;
+use crate::types::uri::{Uri, UriKind, classify_uri};
 use crate::types::{Metadata, Table};
 use async_trait::async_trait;
 use pulldown_cmark::{Event, Options, Parser, Tag, TagEnd};
@@ -93,6 +94,7 @@ impl MarkdownExtractor {
         let mut in_list_item = false;
         let mut in_image = false;
         let mut image_alt = String::new();
+        let mut image_url: Option<String> = None;
         let mut footnote_def_label: Option<String> = None;
         let mut footnote_def_text = String::new();
 
@@ -270,21 +272,42 @@ impl MarkdownExtractor {
                     if let Some(i) = annotation_starts.iter().rposition(|(k, _, _)| *k == 4) {
                         let (_, start, link_data) = annotation_starts.remove(i);
                         if let Some((url, title)) = link_data {
-                            if in_paragraph {
+                            // Collect the link label text from the active buffer
+                            let label_text = if in_paragraph {
                                 let end = active_text_offset(&paragraph_text);
                                 if start < end {
                                     paragraph_annotations.push(builder::link(start, end, &url, title.as_deref()));
+                                    Some(paragraph_text[start as usize..end as usize].to_string())
+                                } else {
+                                    None
                                 }
                             } else if in_heading {
                                 let end = active_text_offset(&heading_text);
                                 if start < end {
                                     heading_annotations.push(builder::link(start, end, &url, title.as_deref()));
+                                    Some(heading_text[start as usize..end as usize].to_string())
+                                } else {
+                                    None
                                 }
                             } else if in_list_item {
                                 let end = active_text_offset(&list_item_text);
                                 if start < end {
                                     list_item_annotations.push(builder::link(start, end, &url, title.as_deref()));
+                                    Some(list_item_text[start as usize..end as usize].to_string())
+                                } else {
+                                    None
                                 }
+                            } else {
+                                None
+                            };
+                            // Push URI
+                            if !url.is_empty() {
+                                b.push_uri(Uri {
+                                    url: url.clone(),
+                                    label: label_text.filter(|s| !s.is_empty()),
+                                    page: None,
+                                    kind: classify_uri(&url),
+                                });
                             }
                         }
                     }
@@ -379,9 +402,11 @@ impl MarkdownExtractor {
                     current_row.push(current_cell.trim().to_string());
                     current_cell.clear();
                 }
-                Event::Start(Tag::Image { .. }) => {
+                Event::Start(Tag::Image { dest_url, .. }) => {
                     in_image = true;
                     image_alt.clear();
+                    // Store image URL for URI collection on End
+                    image_url = Some(dest_url.to_string());
                 }
                 Event::End(TagEnd::Image) => {
                     in_image = false;
@@ -407,6 +432,15 @@ impl MarkdownExtractor {
                             ocr_geometry: None,
                             ocr_confidence: None,
                             ocr_rotation: None,
+                        });
+                    }
+                    // Collect image URI
+                    if let Some(url) = image_url.take().filter(|u| !u.is_empty()) {
+                        b.push_uri(Uri {
+                            url,
+                            label: if desc.is_empty() { None } else { Some(desc.to_string()) },
+                            page: None,
+                            kind: UriKind::Image,
                         });
                     }
                     image_alt.clear();

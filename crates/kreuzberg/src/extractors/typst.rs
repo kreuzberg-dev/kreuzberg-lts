@@ -34,6 +34,8 @@ use crate::types::internal::InternalDocument;
 #[cfg(feature = "office")]
 use crate::types::internal_builder::InternalDocumentBuilder;
 #[cfg(feature = "office")]
+use crate::types::uri::Uri;
+#[cfg(feature = "office")]
 use async_trait::async_trait;
 #[cfg(feature = "office")]
 use regex::Regex;
@@ -288,10 +290,11 @@ impl TypstExtractor {
             // #image("path") — extract image description
             if trimmed.starts_with("#image(") {
                 Self::flush_paragraph_internal(&mut paragraph_buf, &mut builder);
-                let description = IMAGE_RE
-                    .captures(trimmed)
-                    .and_then(|c| c.get(1))
-                    .map(|m| format!("[Image: {}]", m.as_str()));
+                let image_path = IMAGE_RE.captures(trimmed).and_then(|c| c.get(1)).map(|m| m.as_str());
+                if let Some(path) = image_path {
+                    builder.push_uri(Uri::image(path, None));
+                }
+                let description = image_path.map(|p| format!("[Image: {}]", p));
                 let desc_text = description.unwrap_or_else(|| "[Image]".to_string());
                 builder.push_paragraph(&desc_text, vec![], None, None);
                 continue;
@@ -317,6 +320,15 @@ impl TypstExtractor {
     fn flush_paragraph_internal(buf: &mut String, builder: &mut InternalDocumentBuilder) {
         if !buf.is_empty() {
             let (text, annotations) = Self::parse_inline_annotations(buf.trim());
+            // Extract URIs from link annotations
+            for ann in &annotations {
+                if let crate::types::document_structure::AnnotationKind::Link { url, .. } = &ann.kind
+                    && !url.is_empty()
+                {
+                    let label = text.get(ann.start as usize..ann.end as usize).map(|s| s.to_string());
+                    builder.push_uri(Uri::hyperlink(url, label));
+                }
+            }
             builder.push_paragraph(&text, annotations, None, None);
             buf.clear();
         }
