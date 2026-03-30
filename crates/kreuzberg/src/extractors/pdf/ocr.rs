@@ -3,6 +3,9 @@
 //! Handles text quality evaluation, OCR fallback decision logic, and OCR processing.
 
 #[cfg(feature = "ocr")]
+use std::borrow::Cow;
+
+#[cfg(feature = "ocr")]
 use crate::core::config::ExtractionConfig;
 #[cfg(feature = "ocr")]
 use crate::core::config::OcrQualityThresholds;
@@ -261,13 +264,18 @@ pub fn evaluate_per_page_ocr(
     document_decision
 }
 
-/// Render PDF pages to images for OCR processing.
+// We no longer pre-render all pages for OCR to prevent OOMs.
+// See `extract_with_ocr` for lazy streaming logic.
+
+/// Render only specific PDF pages to images for OCR processing.
 ///
-/// Renders one page at a time so the pdfium document handle is released
-/// between pages, avoiding holding all rendered images plus the full
-/// document bitmap cache in memory simultaneously.
+/// `page_indices` are 0-indexed. Only the requested pages are rendered,
+/// returned as `(page_index, image)` pairs.
 #[cfg(feature = "ocr")]
-pub(crate) fn render_pages_for_ocr(content: &[u8]) -> crate::Result<Vec<image::DynamicImage>> {
+pub(crate) fn render_selected_pages_for_ocr(
+    content: &[u8],
+    page_indices: &[usize],
+) -> crate::Result<Vec<(usize, image::DynamicImage)>> {
     use crate::pdf::rendering::{PageRenderOptions, PdfRenderer};
 
     let renderer = PdfRenderer::new().map_err(|e| crate::KreuzbergError::Parsing {
@@ -283,18 +291,167 @@ pub(crate) fn render_pages_for_ocr(content: &[u8]) -> crate::Result<Vec<image::D
         })?;
 
     let render_options = PageRenderOptions::default();
-    let mut images = Vec::with_capacity(page_count);
-    for i in 0..page_count {
+    let mut images = Vec::with_capacity(page_indices.len());
+    for &idx in page_indices {
+        if idx >= page_count {
+            tracing::warn!(
+                page = idx + 1,
+                page_count,
+                "force_ocr_pages: page {} is out of range (document has {} pages), skipping",
+                idx + 1,
+                page_count
+            );
+            continue;
+        }
         let image = renderer
-            .render_page_to_image(content, i, &render_options)
+            .render_page_to_image(content, idx, &render_options)
             .map_err(|e| crate::KreuzbergError::Parsing {
-                message: format!("Failed to render PDF page {}: {}", i, e),
+                message: format!("Failed to render PDF page {}: {}", idx + 1, e),
                 source: None,
             })?;
-        images.push(image);
+        images.push((idx, image));
     }
 
     Ok(images)
+}
+
+/// Build mixed text from native extraction and per-page OCR results.
+///
+/// For each page boundary, if the page is in `ocr_page_numbers` (1-indexed),
+/// use the OCR result; otherwise use the native text slice.
+///
+/// Page numbers must be >= 1 (invalid values are filtered out with a warning).
+/// An `ocr` config is recommended but not required; defaults are used if absent.
+#[cfg(feature = "ocr")]
+pub(crate) async fn extract_mixed_ocr_native(
+    native_text: &str,
+    boundaries: &[crate::types::PageBoundary],
+    ocr_page_numbers: &[usize],
+    content: &[u8],
+    config: &ExtractionConfig,
+    _path: Option<&std::path::Path>,
+) -> crate::Result<String> {
+    use std::collections::HashSet;
+
+    // Deduplicate and validate page numbers (must be >= 1)
+    let ocr_set: HashSet<usize> = ocr_page_numbers
+        .iter()
+        .copied()
+        .filter(|&p| {
+            if p == 0 {
+                tracing::warn!("force_ocr_pages contains 0; page numbers are 1-indexed, ignoring");
+                false
+            } else {
+                true
+            }
+        })
+        .collect();
+
+    if ocr_set.is_empty() {
+        return Ok(native_text.to_string());
+    }
+
+    // Convert 1-indexed page numbers to 0-indexed for rendering (sorted + deduplicated)
+    let mut page_indices: Vec<usize> = ocr_set.iter().map(|&p| p - 1).collect();
+    page_indices.sort_unstable();
+    let page_images = render_selected_pages_for_ocr(content, &page_indices)?;
+
+    if page_images.is_empty() {
+        return Ok(native_text.to_string());
+    }
+
+    // OCR all selected pages concurrently using the same batched pipeline pattern
+    // as extract_with_ocr: rayon-parallel PNG encoding + tokio JoinSet OCR calls.
+    use image::ImageEncoder;
+    use image::codecs::png::PngEncoder;
+    use rayon::prelude::*;
+    use std::io::Cursor;
+    use std::sync::Arc;
+
+    let default_ocr_config = crate::core::config::OcrConfig::default();
+    let ocr_config = config.ocr.as_ref().unwrap_or(&default_ocr_config);
+
+    let backend = {
+        let registry = crate::plugins::registry::get_ocr_backend_registry();
+        let registry = registry.read();
+        registry.get(&ocr_config.backend)?
+    };
+
+    let batch_size = config
+        .concurrency
+        .as_ref()
+        .and_then(|c| c.max_threads)
+        .unwrap_or_else(|| num_cpus::get().min(4))
+        .max(1);
+
+    let ocr_config_owned = ocr_config.clone();
+    let total = page_images.len();
+    let mut ocr_results: std::collections::HashMap<usize, String> = std::collections::HashMap::with_capacity(total);
+
+    // Process in batches to bound peak memory (PNG buffers freed between batches)
+    for batch_start in (0..total).step_by(batch_size) {
+        let batch_end = (batch_start + batch_size).min(total);
+        let batch_slice = &page_images[batch_start..batch_end];
+
+        // Encode this batch's images to PNG in parallel (CPU-bound, rayon)
+        let encoded: crate::Result<Vec<(usize, Arc<Vec<u8>>)>> = batch_slice
+            .par_iter()
+            .map(|(page_idx, image)| {
+                let rgb = image.to_rgb8();
+                let (w, h) = rgb.dimensions();
+                let mut buf = Cursor::new(Vec::new());
+                PngEncoder::new(&mut buf)
+                    .write_image(&rgb, w, h, image::ColorType::Rgb8.into())
+                    .map_err(|e| crate::KreuzbergError::Parsing {
+                        message: format!("Failed to encode page {} for OCR: {}", page_idx + 1, e),
+                        source: None,
+                    })?;
+                Ok((*page_idx, Arc::new(buf.into_inner())))
+            })
+            .collect();
+        let encoded = encoded?;
+
+        // OCR this batch concurrently (tokio JoinSet)
+        let mut join_set = tokio::task::JoinSet::new();
+        for (page_idx, data) in &encoded {
+            let backend_clone = Arc::clone(&backend);
+            let config_clone = ocr_config_owned.clone();
+            let data_clone = Arc::clone(data);
+            let idx = *page_idx;
+            join_set.spawn(async move {
+                let result = backend_clone.process_image(&data_clone, &config_clone).await;
+                (idx, result)
+            });
+        }
+
+        while let Some(join_result) = join_set.join_next().await {
+            let (page_idx, result) = join_result.map_err(|e| crate::KreuzbergError::Plugin {
+                message: format!("OCR task panicked: {}", e),
+                plugin_name: "ocr".to_string(),
+            })?;
+            let extraction_result = result?;
+            ocr_results.insert(page_idx + 1, extraction_result.content); // 1-indexed
+        }
+        // encoded PNGs dropped here — memory freed before next batch
+    }
+
+    // Assemble final text by replacing OCR pages in-place within the native text.
+    // Process boundaries in reverse byte order so offsets remain valid after replacement.
+    let mut result = native_text.to_string();
+
+    let mut sorted_boundaries: Vec<&crate::types::PageBoundary> = boundaries
+        .iter()
+        .filter(|b| b.byte_end <= native_text.len() && b.byte_start <= b.byte_end)
+        .collect();
+    sorted_boundaries.sort_unstable_by(|a, b| b.byte_start.cmp(&a.byte_start));
+
+    for boundary in sorted_boundaries {
+        if let Some(ocr_text) = ocr_results.get(&boundary.page_number) {
+            result.replace_range(boundary.byte_start..boundary.byte_end, ocr_text);
+        }
+    }
+
+    Ok(result)
 }
 
 /// Extract text from PDF using OCR on pre-rendered page images.
@@ -319,7 +476,12 @@ pub(crate) async fn extract_with_ocr(
     #[cfg(feature = "layout-detection")] layout_detections: Option<&[crate::layout::DetectionResult]>,
     config: &ExtractionConfig,
     path: Option<&std::path::Path>,
-) -> crate::Result<(String, Option<f64>)> {
+) -> crate::Result<(
+    String,
+    Option<f64>,
+    Vec<crate::types::Table>,
+    Vec<crate::types::OcrElement>,
+)> {
     use crate::plugins::registry::get_ocr_backend_registry;
     use image::ImageEncoder;
     use image::codecs::png::PngEncoder;
@@ -361,25 +523,10 @@ pub(crate) async fn extract_with_ocr(
     #[cfg(feature = "layout-detection")]
     let supports_doc = backend.supports_document_processing() && layout_detections.is_none();
 
-    let rendered_images;
-    let images_to_use = if let Some(imgs) = images {
-        imgs
-    } else if !supports_doc || path.is_none() {
-        // We need images but don't have them. Render now if we have content.
-        if let Some(bytes) = content {
-            rendered_images = render_pages_for_ocr(bytes)?;
-            rendered_images.as_slice()
-        } else {
-            // No images and no content to render from.
-            &[] as &[image::DynamicImage]
-        }
-    } else {
-        // We have a path and support doc processing, so we might not need images.
-        &[] as &[image::DynamicImage]
-    };
+    let use_document_processing = supports_doc && path.is_some();
 
     if let Some(doc_path) = path
-        && supports_doc
+        && use_document_processing
     {
         tracing::debug!(backend = %ocr_config.backend, "Using document-level OCR processing");
         let result = backend.process_document(doc_path, ocr_config).await?;
@@ -389,61 +536,158 @@ pub(crate) async fn extract_with_ocr(
             .get("mean_text_conf")
             .and_then(|v| v.as_f64())
             .map(|v| v / 100.0);
-        return Ok((result.content, mean_conf));
+        let ocr_elements = result.ocr_elements.unwrap_or_default();
+        return Ok((result.content, mean_conf, Vec::new(), ocr_elements));
+    }
+    let mut lazy_pdf_page_count = 0;
+
+    if !use_document_processing
+        && images.is_none()
+        && let Some(bytes) = content
+    {
+        #[cfg(feature = "pdf")]
+        {
+            let renderer = crate::pdf::rendering::PdfRenderer::new().map_err(|e| crate::KreuzbergError::Parsing {
+                message: format!("Failed to initialize PDF renderer for OCR streaming: {:?}", e),
+                source: None,
+            })?;
+            lazy_pdf_page_count = renderer.page_count(bytes).map_err(|e| crate::KreuzbergError::Parsing {
+                message: format!("Failed to get document page count: {:?}", e),
+                source: None,
+            })?;
+        }
     }
 
     // Encode and OCR pages in bounded batches so that at most `batch_size`
     // PNG-encoded images are alive at a time. This caps peak memory to roughly
-    // batch_size * (rendered_image + encoded_PNG + OCR working set) instead of
-    // page_count * that amount.
+    // batch_size * (encoded_PNG + OCR working set) instead of
+    // page_count * that amount. Images are rendered and encoded one at a time
+    // within each batch to avoid holding multiple decoded RGB buffers.
     use rayon::prelude::*;
     use std::sync::Arc;
     use tokio::task::JoinSet;
 
-    let batch_size = config
+    let configured_batch_size = config
         .concurrency
         .as_ref()
         .and_then(|c| c.max_threads)
         .unwrap_or_else(|| num_cpus::get().min(4))
         .max(1);
 
-    let ocr_config_owned = ocr_config.clone();
-    let total_pages = images_to_use.len();
+    // Estimate per-page memory cost and adapt batch size to available system memory.
+    // A rendered page at 300 DPI (A4) is ~26MB RGB + ~5MB PNG + ~100MB OCR working set.
+    // We also need headroom for the PDF document itself and other allocations.
+    let batch_size = if images.is_none() {
+        adapt_batch_size_to_memory(configured_batch_size, content.map(|b| b.len()).unwrap_or(0))
+    } else {
+        configured_batch_size
+    };
 
-    // Per-page encoded dimensions needed later by the post-processing loop.
-    let mut encoded_dimensions: Vec<(u32, u32)> = Vec::with_capacity(total_pages);
-    let mut ocr_results: Vec<Option<crate::types::ExtractionResult>> = vec![None; total_pages];
+    if batch_size < configured_batch_size {
+        tracing::info!(
+            configured = configured_batch_size,
+            adapted = batch_size,
+            "Reduced OCR batch size to fit available memory"
+        );
+    }
+
+    let ocr_config_owned = ocr_config.clone();
+    let total_pages = if let Some(imgs) = images {
+        imgs.len()
+    } else {
+        lazy_pdf_page_count
+    };
+
+    let mut page_texts = vec![String::new(); total_pages];
+    #[allow(unused_mut)]
+    let mut collected_tables: Vec<crate::types::Table> = Vec::new();
+    let mut all_ocr_elements: Vec<crate::types::OcrElement> = Vec::new();
+    let mut conf_sum: f64 = 0.0;
+    let mut conf_count: usize = 0;
+
+    // Initialize TATR for table structure recognition when layout detection is active.
+    // TATR requires mutable access so pages are processed sequentially after OCR.
+    #[cfg(feature = "layout-detection")]
+    let mut tatr_model = if layout_detections.is_some() {
+        crate::layout::take_or_create_tatr()
+    } else {
+        None
+    };
 
     for batch_start in (0..total_pages).step_by(batch_size) {
         let batch_end = (batch_start + batch_size).min(total_pages);
-        let batch_slice = &images_to_use[batch_start..batch_end];
 
-        // Encode this batch's images to PNG in parallel (CPU-bound, rayon).
-        #[allow(clippy::type_complexity)]
-        let encoded_batch: crate::Result<Vec<(usize, Arc<Vec<u8>>, u32, u32)>> = batch_slice
-            .par_iter()
-            .enumerate()
-            .map(|(offset, image)| {
-                let page_idx = batch_start + offset;
-                let rgb_image = image.to_rgb8();
-                let (width, height) = rgb_image.dimensions();
-                let mut image_bytes = Cursor::new(Vec::new());
-                let encoder = PngEncoder::new(&mut image_bytes);
-                encoder
-                    .write_image(&rgb_image, width, height, image::ColorType::Rgb8.into())
-                    .map_err(|e| crate::KreuzbergError::Parsing {
-                        message: format!("Failed to encode image: {}", e),
+        // Render and encode pages one at a time within the batch to avoid holding
+        // multiple decoded RGB buffers (~26MB each at 300 DPI) simultaneously.
+        // Only the compact PNG-encoded bytes are kept for the batch's OCR phase.
+        #[allow(unused_variables)]
+        let (batch_slice, encoded_batch) = if let Some(imgs) = images {
+            let slice: Cow<'_, [image::DynamicImage]> = Cow::Borrowed(&imgs[batch_start..batch_end]);
+            // Encode pre-rendered images in parallel.
+            #[allow(clippy::type_complexity)]
+            let encoded: crate::Result<Vec<(usize, Arc<Vec<u8>>, u32, u32)>> = slice
+                .par_iter()
+                .enumerate()
+                .map(|(offset, image)| {
+                    let page_idx = batch_start + offset;
+                    let rgb_image = image.to_rgb8();
+                    let (width, height) = rgb_image.dimensions();
+                    let mut image_bytes = Cursor::new(Vec::new());
+                    let encoder = PngEncoder::new(&mut image_bytes);
+                    encoder
+                        .write_image(&rgb_image, width, height, image::ColorType::Rgb8.into())
+                        .map_err(|e| crate::KreuzbergError::Parsing {
+                            message: format!("Failed to encode image: {}", e),
+                            source: None,
+                        })?;
+                    Ok((page_idx, Arc::new(image_bytes.into_inner()), width, height))
+                })
+                .collect();
+            (Some(slice), encoded?)
+        } else {
+            #[cfg(feature = "pdf")]
+            let encoded = {
+                // Render each page, encode to PNG immediately, then drop the RGB buffer.
+                // This keeps only one ~26MB RGB image alive at a time instead of batch_size.
+                let renderer =
+                    crate::pdf::rendering::PdfRenderer::new().map_err(|e| crate::KreuzbergError::Parsing {
+                        message: format!("Failed to initialize PDF renderer for OCR batch: {:?}", e),
                         source: None,
                     })?;
-                Ok((page_idx, Arc::new(image_bytes.into_inner()), width, height))
-            })
-            .collect();
-        let encoded_batch = encoded_batch?;
-
-        // Record dimensions for each page in the batch.
-        for &(_, _, w, h) in &encoded_batch {
-            encoded_dimensions.push((w, h));
-        }
+                let render_opts = crate::pdf::rendering::PageRenderOptions::default();
+                let mut batch_encoded: Vec<(usize, Arc<Vec<u8>>, u32, u32)> =
+                    Vec::with_capacity(batch_end - batch_start);
+                for i in batch_start..batch_end {
+                    let pdf_bytes = content.ok_or_else(|| crate::KreuzbergError::Parsing {
+                        message: "PDF content is required for OCR rendering but was not provided".to_string(),
+                        source: None,
+                    })?;
+                    let image = renderer.render_page_to_image(pdf_bytes, i, &render_opts).map_err(|e| {
+                        crate::KreuzbergError::Parsing {
+                            message: format!("Failed to render page {} for OCR: {:?}", i, e),
+                            source: None,
+                        }
+                    })?;
+                    // Encode immediately so the DynamicImage can be dropped.
+                    let rgb_image = image.to_rgb8();
+                    let (width, height) = rgb_image.dimensions();
+                    let mut image_bytes = Cursor::new(Vec::new());
+                    let png_encoder = PngEncoder::new(&mut image_bytes);
+                    png_encoder
+                        .write_image(&rgb_image, width, height, image::ColorType::Rgb8.into())
+                        .map_err(|e| crate::KreuzbergError::Parsing {
+                            message: format!("Failed to encode page {} image: {}", i, e),
+                            source: None,
+                        })?;
+                    batch_encoded.push((i, Arc::new(image_bytes.into_inner()), width, height));
+                    // `image` and `rgb_image` are dropped here, freeing ~52MB per page.
+                }
+                batch_encoded
+            };
+            #[cfg(not(feature = "pdf"))]
+            let encoded: Vec<(usize, Arc<Vec<u8>>, u32, u32)> = Vec::new();
+            (None::<Cow<'_, [image::DynamicImage]>>, encoded)
+        };
 
         // OCR this batch concurrently (tokio JoinSet).
         let mut join_set: JoinSet<(usize, crate::Result<crate::types::ExtractionResult>)> = JoinSet::new();
@@ -459,155 +703,198 @@ pub(crate) async fn extract_with_ocr(
             });
         }
 
-        // Collect this batch's results. The encoded PNGs are dropped at the
-        // end of this loop iteration, freeing their memory before the next
-        // batch is encoded.
+        let batch_count = encoded_batch.len();
+        let mut batch_ocr_results: Vec<Option<crate::types::ExtractionResult>> = vec![None; batch_count];
         while let Some(join_result) = join_set.join_next().await {
             let (page_idx, ocr_result) = join_result.map_err(|e| crate::KreuzbergError::Plugin {
                 message: format!("OCR task panicked: {}", e),
                 plugin_name: "ocr".to_string(),
             })?;
-            ocr_results[page_idx] = Some(ocr_result?);
-        }
-        // `encoded_batch` dropped here — PNG buffers freed before next batch.
-    }
-
-    // Initialize TATR for table structure recognition when layout detection is active.
-    // TATR requires mutable access so pages are processed sequentially after OCR.
-    #[cfg(feature = "layout-detection")]
-    let mut tatr_model = if layout_detections.is_some() {
-        crate::layout::take_or_create_tatr()
-    } else {
-        None
-    };
-
-    let mut page_texts = Vec::with_capacity(images_to_use.len());
-    let mut conf_sum: f64 = 0.0;
-    let mut conf_count: usize = 0;
-
-    for (page_idx, ocr_result) in ocr_results.into_iter().enumerate() {
-        // SAFETY: every slot was filled in the join loop above; None is unreachable.
-        let ocr_result = ocr_result.expect("OCR result missing for page");
-        let (_width, _height) = encoded_dimensions[page_idx];
-        #[cfg(feature = "layout-detection")]
-        let height = _height;
-
-        // Accumulate mean_text_conf from per-page OCR results.
-        if let Some(conf_val) = ocr_result
-            .metadata
-            .additional
-            .get("mean_text_conf")
-            .and_then(|v| v.as_i64())
-        {
-            conf_sum += conf_val as f64;
-            conf_count += 1;
+            batch_ocr_results[page_idx - batch_start] = Some(ocr_result?);
         }
 
-        // When layout detections are available and OCR produced elements,
-        // use layout-aware markdown assembly instead of plain text.
-        #[cfg(feature = "layout-detection")]
-        if let Some(detections) = layout_detections
-            && let Some(ref elements) = ocr_result.ocr_elements
-            && !elements.is_empty()
-        {
-            let detection = detections.get(page_idx); // Run TATR table recognition if available (requires mutable model).
-            let recognized_tables = match (detection, tatr_model.as_mut()) {
-                (Some(det), Some(model)) => {
-                    let rgb = images_to_use[page_idx].to_rgb8();
-                    crate::ocr::layout_assembly::recognize_page_tables(&rgb, det, elements, model)
-                }
-                _ => Vec::new(),
-            };
+        // Sequential post-processing for this batch utilizing TATR.
+        for offset in 0..batch_count {
+            let page_idx = batch_start + offset;
+            let mut ocr_result = batch_ocr_results[offset].take().expect("OCR result missing for page");
+            #[cfg(feature = "layout-detection")]
+            let height = encoded_batch[offset].3;
 
-            // Convert OcrElements to PageContent via unified adapter.
-            let mut page_content = crate::pdf::markdown::adapters::from_ocr_elements(elements, height as f32);
-
-            // Reorder for multi-column reading order.
-            crate::pdf::markdown::reorder_elements_reading_order(&mut page_content.elements);
-
-            // Convert to paragraphs via the unified pipeline.
-            let mut paragraphs = crate::pdf::markdown::content_to_paragraphs(&page_content);
-
-            // Apply layout classification overrides (Title, SectionHeader, PageHeader, etc.)
-            // from the RT-DETR layout detection model. This is the same classification step
-            // that the native PDF path uses (pipeline.rs:397,474) — without it, OCR output
-            // has no heading detection or furniture filtering from layout.
-            if let Some(det) = detection {
-                let hints = detection_to_layout_hints(det, height as f32);
-                crate::pdf::markdown::layout_classify::apply_layout_overrides(&mut paragraphs, &hints, 0.5, 0.2, None);
+            if let Some(conf_val) = ocr_result
+                .metadata
+                .additional
+                .get("mean_text_conf")
+                .and_then(|v| v.as_i64())
+            {
+                conf_sum += conf_val as f64;
+                conf_count += 1;
             }
 
-            // Filter page furniture (headers/footers) — must come AFTER layout overrides
-            // since overrides may reclassify paragraphs as PageHeader/PageFooter.
-            let paragraphs: Vec<_> = paragraphs.into_iter().filter(|p| !p.is_page_furniture).collect();
-
-            // Interleave paragraphs and TATR tables by vertical position.
-            //
-            // Paragraphs have baseline_y in PDF space (y=0 at bottom; higher = top of page).
-            // RecognizedTable.detection_bbox is in image space (y=0 at top; smaller = top of page).
-            // Convert table positions to PDF space: pdf_y = page_height - bbox.y1.
-            let page_md = {
-                struct Block {
-                    /// Vertical position in PDF space (higher = earlier in reading order).
-                    y_pos: f32,
-                    text: String,
+            // Accumulate OCR elements from this page.
+            if let Some(ref mut elems) = ocr_result.ocr_elements {
+                for elem in elems.iter_mut() {
+                    elem.page_number = page_idx + 1;
                 }
+                all_ocr_elements.extend(elems.iter().cloned());
+            }
 
-                let mut blocks: Vec<Block> = paragraphs
-                    .iter()
-                    .filter_map(|p| {
-                        // Render a single paragraph by borrowing render_paragraphs_to_string
-                        // with a one-element slice.
-                        let text = crate::pdf::markdown::render_paragraphs_to_string(std::slice::from_ref(p));
-                        if text.trim().is_empty() {
-                            return None;
-                        }
-                        let y_pos = p.lines.first().map(|l| l.baseline_y).unwrap_or(0.0);
-                        Some(Block { y_pos, text })
-                    })
-                    .collect();
+            #[cfg(feature = "layout-detection")]
+            if let Some(detections) = layout_detections
+                && let Some(ref elements) = ocr_result.ocr_elements
+                && !elements.is_empty()
+            {
+                let detection = detections.get(page_idx);
 
+                // Scale layout detection bounding boxes from layout-model resolution
+                // (e.g. 640×640) to OCR render resolution so that coordinates are
+                // consistent when passed to recognize_page_tables and detection_to_layout_hints.
+                // `width` and `height` come from the encoded PNG dimensions, i.e. they are
+                // the actual pixel dimensions of the OCR-rendered page image.
+                let ocr_render_width = encoded_batch[offset].2;
+                let ocr_render_height = encoded_batch[offset].3;
+                let scaled_detection: Option<crate::layout::DetectionResult> = detection.map(|det| {
+                    let sx = ocr_render_width as f32 / det.page_width as f32;
+                    let sy = ocr_render_height as f32 / det.page_height as f32;
+                    let mut scaled = det.clone();
+                    scaled.page_width = ocr_render_width;
+                    scaled.page_height = ocr_render_height;
+                    for region in &mut scaled.detections {
+                        region.bbox.x1 *= sx;
+                        region.bbox.y1 *= sy;
+                        region.bbox.x2 *= sx;
+                        region.bbox.y2 *= sy;
+                    }
+                    scaled
+                });
+
+                let recognized_tables = match (scaled_detection.as_ref(), tatr_model.as_mut()) {
+                    (Some(scaled_det), Some(model)) => {
+                        // Decode the page image from its PNG for TATR table recognition.
+                        // When pre-rendered images are available, use them directly.
+                        // Otherwise, decode from the PNG we already encoded.
+                        let rgb = if let Some(ref slice) = batch_slice {
+                            slice[offset].to_rgb8()
+                        } else {
+                            let png_data = &encoded_batch[offset].1;
+                            let decoded =
+                                image::load_from_memory(png_data).map_err(|e| crate::KreuzbergError::Parsing {
+                                    message: format!("Failed to decode PNG for TATR: {}", e),
+                                    source: None,
+                                })?;
+                            decoded.to_rgb8()
+                        };
+                        crate::ocr::layout_assembly::recognize_page_tables(&rgb, scaled_det, elements, model)
+                    }
+                    _ => Vec::new(),
+                };
+
+                // Collect recognized tables as Table structs for ExtractionResult.tables
                 for rt in &recognized_tables {
-                    if rt.markdown.is_empty() {
-                        continue;
+                    if !rt.markdown.is_empty() {
+                        let cells: Vec<Vec<String>> = rt
+                            .markdown
+                            .lines()
+                            .filter(|line| {
+                                let trimmed = line.trim();
+                                if trimmed.is_empty() || !trimmed.contains('|') {
+                                    return false;
+                                }
+                                let inner = trimmed.trim_matches('|');
+                                !inner.split('|').all(|seg| {
+                                    let s = seg.trim();
+                                    !s.is_empty() && s.chars().all(|c| c == '-' || c == ':')
+                                })
+                            })
+                            .map(|line| {
+                                line.trim()
+                                    .trim_matches('|')
+                                    .split('|')
+                                    .map(|cell| cell.trim().to_string())
+                                    .collect()
+                            })
+                            .collect();
+
+                        collected_tables.push(crate::types::Table {
+                            cells,
+                            markdown: rt.markdown.clone(),
+                            page_number: page_idx + 1,
+                            bounding_box: None,
+                        });
                     }
-                    // Convert image-space y1 (top of bbox) to PDF space.
-                    let y_pos = height as f32 - rt.detection_bbox.y1;
-                    blocks.push(Block {
-                        y_pos,
-                        text: rt.markdown.clone(),
-                    });
                 }
 
-                // Sort descending: highest PDF y (top of page) first.
-                blocks.sort_by(|a, b| b.y_pos.total_cmp(&a.y_pos));
+                let mut page_content = crate::pdf::markdown::adapters::from_ocr_elements(elements, height as f32);
+                crate::pdf::markdown::reorder_elements_reading_order(&mut page_content.elements);
+                let mut paragraphs = crate::pdf::markdown::content_to_paragraphs(&page_content);
 
-                let mut output = String::new();
-                for block in &blocks {
-                    if !output.is_empty() {
-                        output.push_str("\n\n");
-                    }
-                    output.push_str(block.text.trim());
+                if let Some(ref scaled_det) = scaled_detection {
+                    let hints = detection_to_layout_hints(scaled_det, height as f32);
+                    crate::pdf::markdown::layout_classify::apply_layout_overrides(
+                        &mut paragraphs,
+                        &hints,
+                        0.5,
+                        0.2,
+                        None,
+                    );
                 }
-                output
-            };
 
-            page_texts.push(page_md);
-            continue;
+                let paragraphs: Vec<_> = paragraphs.into_iter().filter(|p| !p.is_page_furniture).collect();
+
+                let page_md = {
+                    struct Block {
+                        y_pos: f32,
+                        text: String,
+                    }
+
+                    let mut blocks: Vec<Block> = paragraphs
+                        .iter()
+                        .filter_map(|p| {
+                            let text = crate::pdf::markdown::render_paragraphs_to_string(std::slice::from_ref(p));
+                            if text.trim().is_empty() {
+                                return None;
+                            }
+                            let y_pos = p.lines.first().map(|l| l.baseline_y).unwrap_or(0.0);
+                            Some(Block { y_pos, text })
+                        })
+                        .collect();
+
+                    for rt in &recognized_tables {
+                        if rt.markdown.is_empty() {
+                            continue;
+                        }
+                        let y_pos = height as f32 - rt.detection_bbox.y1;
+                        blocks.push(Block {
+                            y_pos,
+                            text: rt.markdown.clone(),
+                        });
+                    }
+
+                    blocks.sort_by(|a, b| b.y_pos.total_cmp(&a.y_pos));
+
+                    let mut output = String::new();
+                    for block in &blocks {
+                        if !output.is_empty() {
+                            output.push_str("\n\n");
+                        }
+                        output.push_str(block.text.trim());
+                    }
+                    output
+                };
+
+                page_texts[page_idx] = page_md;
+                continue;
+            }
+
+            let _ = page_idx;
+            page_texts[page_idx] = ocr_result.content;
         }
-
-        // Fallback: use plain OCR text (move the String directly; no clone needed)
-        let _ = page_idx; // used only in layout-detection path above
-        page_texts.push(ocr_result.content);
     }
 
-    // Return TATR model to global cache for reuse
     #[cfg(feature = "layout-detection")]
     if let Some(model) = tatr_model.take() {
         crate::layout::return_tatr(model);
     }
 
-    // Compute average mean_text_conf across all pages, normalized to 0.0-1.0.
     let mean_text_conf = if conf_count > 0 {
         Some((conf_sum / conf_count as f64) / 100.0)
     } else {
@@ -625,7 +912,91 @@ pub(crate) async fn extract_with_ocr(
         }
         result.push_str(text);
     }
-    Ok((result, mean_text_conf))
+    Ok((result, mean_text_conf, collected_tables, all_ocr_elements))
+}
+
+/// Adapt batch size to available system memory.
+///
+/// Estimates per-page memory cost based on typical page dimensions at 300 DPI
+/// and compares against available system memory. Returns a batch size that
+/// should keep peak memory within safe bounds.
+///
+/// Conservative estimate: each page in a batch needs approximately:
+/// - ~50MB for render + encode working set (RGB buffer briefly, then PNG)
+/// - ~100MB for OCR working set per concurrent page
+/// - Plus the document itself and base allocations
+#[cfg(feature = "ocr")]
+fn adapt_batch_size_to_memory(configured: usize, document_size: usize) -> usize {
+    let available_bytes = get_available_memory();
+
+    if available_bytes == 0 {
+        return configured;
+    }
+
+    // Reserve memory for: the document itself, base process overhead, and safety margin.
+    let reserved = document_size + 512 * 1024 * 1024; // document + 512MB overhead
+    let usable = available_bytes.saturating_sub(reserved);
+
+    // Estimated memory per concurrent page in OCR batch:
+    // ~50MB render/encode working set + ~100MB OCR working set
+    const PER_PAGE_ESTIMATE: usize = 150 * 1024 * 1024;
+
+    let memory_limited_batch = (usable / PER_PAGE_ESTIMATE).max(1);
+
+    let result = configured.min(memory_limited_batch);
+
+    tracing::debug!(
+        available_mb = available_bytes / (1024 * 1024),
+        usable_mb = usable / (1024 * 1024),
+        document_mb = document_size / (1024 * 1024),
+        memory_limited_batch,
+        configured,
+        result,
+        "OCR batch size adaptation"
+    );
+
+    result
+}
+
+/// Query available system memory without external dependencies.
+///
+/// On Linux (including Docker), reads `/proc/meminfo` for `MemAvailable`.
+/// On macOS, uses `sysctl hw.memsize` for total memory (conservative fallback).
+/// Returns 0 if the query fails, signaling the caller to use the default batch size.
+#[cfg(feature = "ocr")]
+fn get_available_memory() -> usize {
+    #[cfg(target_os = "linux")]
+    {
+        if let Ok(contents) = std::fs::read_to_string("/proc/meminfo") {
+            for line in contents.lines() {
+                if let Some(rest) = line.strip_prefix("MemAvailable:") {
+                    let kb_str = rest.trim().trim_end_matches("kB").trim();
+                    if let Ok(kb) = kb_str.parse::<usize>() {
+                        return kb * 1024;
+                    }
+                }
+            }
+        }
+        0
+    }
+    #[cfg(target_os = "macos")]
+    {
+        // On macOS, read page size and free+inactive pages from vm_stat.
+        // This is a rough estimate since macOS memory management is complex.
+        use std::process::Command;
+        if let Ok(output) = Command::new("sysctl").args(["-n", "hw.memsize"]).output()
+            && let Ok(s) = std::str::from_utf8(&output.stdout)
+            && let Ok(total) = s.trim().parse::<usize>()
+        {
+            // Use 50% of total as a conservative "available" estimate.
+            return total / 2;
+        }
+        0
+    }
+    #[cfg(not(any(target_os = "linux", target_os = "macos")))]
+    {
+        0
+    }
 }
 
 /// Run a multi-backend OCR pipeline with quality-based fallback.
@@ -642,7 +1013,7 @@ pub(crate) async fn run_ocr_pipeline(
     config: &ExtractionConfig,
     pipeline: &crate::core::config::OcrPipelineConfig,
     path: Option<&std::path::Path>,
-) -> crate::Result<String> {
+) -> crate::Result<(String, Vec<crate::types::Table>, Vec<crate::types::OcrElement>)> {
     use crate::plugins::registry::get_ocr_backend_registry;
 
     let default_ocr_config = crate::core::config::OcrConfig::default();
@@ -673,7 +1044,7 @@ pub(crate) async fn run_ocr_pipeline(
         });
     }
 
-    let mut best_result: Option<(String, f64)> = None;
+    let mut best_result: Option<(String, f64, Vec<crate::types::Table>, Vec<crate::types::OcrElement>)> = None;
 
     for stage in &available_stages {
         // Build a modified config for this stage
@@ -711,12 +1082,9 @@ pub(crate) async fn run_ocr_pipeline(
         .await;
 
         match result {
-            Ok((text, mean_conf)) => {
+            Ok((text, mean_conf, stage_tables, stage_ocr_elements)) => {
                 let text_score = compute_quality_score(&text, &pipeline.quality_thresholds);
 
-                // Blend the heuristic text score with the native Tesseract mean_text_conf
-                // when available. The OCR engine confidence is weighted at 30% to complement
-                // the text-analysis heuristics (70%).
                 let score = match mean_conf {
                     Some(conf) => text_score * 0.7 + conf * 0.3,
                     None => text_score,
@@ -732,16 +1100,16 @@ pub(crate) async fn run_ocr_pipeline(
                 );
 
                 if score >= pipeline.quality_thresholds.pipeline_min_quality {
-                    return Ok(text);
+                    return Ok((text, stage_tables, stage_ocr_elements));
                 }
 
                 // Track best-so-far
                 match best_result {
-                    Some((_, best_score)) if score > best_score => {
-                        best_result = Some((text, score));
+                    Some((_, best_score, _, _)) if score > best_score => {
+                        best_result = Some((text, score, stage_tables, stage_ocr_elements));
                     }
                     None => {
-                        best_result = Some((text, score));
+                        best_result = Some((text, score, stage_tables, stage_ocr_elements));
                     }
                     _ => {}
                 }
@@ -758,13 +1126,13 @@ pub(crate) async fn run_ocr_pipeline(
 
     // Return best result (with warning) or error if all backends failed entirely
     match best_result {
-        Some((text, score)) => {
+        Some((text, score, tables, elements)) => {
             tracing::warn!(
                 score,
                 threshold = pipeline.quality_thresholds.pipeline_min_quality,
                 "All OCR pipeline backends produced suboptimal quality, using best result"
             );
-            Ok(text)
+            Ok((text, tables, elements))
         }
         None => Err(crate::KreuzbergError::Parsing {
             message: "All OCR pipeline backends failed".to_string(),

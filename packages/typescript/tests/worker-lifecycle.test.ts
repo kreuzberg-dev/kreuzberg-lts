@@ -28,7 +28,7 @@ interface WorkerState {
  */
 class LifecycleWorker {
 	private state: WorkerState;
-	private eventListeners: Map<string, Set<Function>> = new Map();
+	private eventListeners: Map<string, Set<(...args: unknown[]) => unknown>> = new Map();
 	private messageQueue: unknown[] = [];
 
 	constructor() {
@@ -82,14 +82,14 @@ class LifecycleWorker {
 		}
 	}
 
-	on(event: string, callback: Function): void {
+	on(event: string, callback: (...args: unknown[]) => unknown): void {
 		if (!this.eventListeners.has(event)) {
 			this.eventListeners.set(event, new Set());
 		}
 		this.eventListeners.get(event)!.add(callback);
 	}
 
-	off(event: string, callback: Function): void {
+	off(event: string, callback: (...args: unknown[]) => unknown): void {
 		const listeners = this.eventListeners.get(event);
 		if (listeners) {
 			listeners.delete(callback);

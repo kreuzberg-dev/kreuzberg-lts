@@ -907,6 +907,51 @@ def main():
         elif old_ver != "NOT FOUND":
             unchanged_files.append(str(rel_path))
 
+    # Sync Docker compose test app image versions
+    docker_compose = repo_root / "tests/test_apps/docker/docker-compose.yml"
+    if docker_compose.exists():
+        content = docker_compose.read_text()
+        new_content = re.sub(
+            r'(ghcr\.io/kreuzberg-dev/kreuzberg:)\d+\.\d+\.\d+',
+            rf'\g<1>{version}',
+            content,
+        )
+        if new_content != content:
+            docker_compose.write_text(new_content)
+            print(f"✓ {docker_compose.relative_to(repo_root)}: updated image tags to {version}")
+            updated_files.append(str(docker_compose.relative_to(repo_root)))
+        else:
+            unchanged_files.append(str(docker_compose.relative_to(repo_root)))
+
+    # Sync Go C header from generated FFI header
+    go_ffi_header = repo_root / "packages/go/v4/internal/ffi/kreuzberg.h"
+    generated_header = repo_root / "crates/kreuzberg-ffi/kreuzberg.h"
+    if go_ffi_header.exists() and generated_header.exists():
+        gen_content = generated_header.read_text()
+        go_content = go_ffi_header.read_text()
+        if gen_content != go_content:
+            go_ffi_header.write_text(gen_content)
+            print(f"✓ {go_ffi_header.relative_to(repo_root)}: synced from generated C header")
+            updated_files.append(str(go_ffi_header.relative_to(repo_root)))
+        else:
+            unchanged_files.append(str(go_ffi_header.relative_to(repo_root)))
+
+    # Sync Go DefaultVersion constant
+    go_install_main = repo_root / "packages/go/v4/cmd/install/main.go"
+    if go_install_main.exists():
+        content = go_install_main.read_text()
+        old_pattern = re.search(r'DefaultVersion = "([^"]+)"', content)
+        if old_pattern and old_pattern.group(1) != version:
+            new_content = content.replace(
+                f'DefaultVersion = "{old_pattern.group(1)}"',
+                f'DefaultVersion = "{version}"',
+            )
+            go_install_main.write_text(new_content)
+            print(f"✓ {go_install_main.relative_to(repo_root)}: {old_pattern.group(1)} → {version}")
+            updated_files.append(str(go_install_main.relative_to(repo_root)))
+        elif old_pattern:
+            unchanged_files.append(str(go_install_main.relative_to(repo_root)))
+
     print()
     test_apps_manifests = [
         (

@@ -324,7 +324,7 @@
     </footer>
 
     <script type="module">
-      import { initWasm, extractFromFile } from 'https://cdn.jsdelivr.net/npm/@kreuzberg/wasm@latest/dist/index.js';
+      import { extractFromFile, initWasm } from 'https://cdn.jsdelivr.net/npm/@kreuzberg/wasm@latest/dist/index.js';
 
       const dropZone = document.getElementById("dropZone");
       const fileInput = document.getElementById("fileInput");
@@ -367,7 +367,7 @@
       }, false);
       dropZone.addEventListener('drop', (e) => {
         const dt = e.dataTransfer;
-        if (dt && dt.files && dt.files.length > 0) processFile(dt.files[0]);
+        if (dt?.files && dt.files.length > 0) processFile(dt.files[0]);
       }, false);
 
       // ── Markdown Renderer ──────────────────────────────────────────────────
@@ -429,7 +429,7 @@
 
         uploadScreen.style.display = "none";
         document.getElementById("file-name-display").textContent = file.name;
-        document.getElementById("file-size-display").textContent = (file.size / 1024 / 1024).toFixed(2) + "MB";
+        document.getElementById("file-size-display").textContent = `${(file.size / 1024 / 1024).toFixed(2)}MB`;
         btnBack.style.display = 'flex';
         fileInfo.style.display = 'flex';
 
@@ -473,7 +473,7 @@
       document.getElementById("btn-copy").addEventListener("click", async () => {
         const mdEl   = document.getElementById("content-markdown");
         const jsonEl = document.getElementById("content-json");
-        const isMd   = mdEl && mdEl.classList.contains("block");
+        const isMd   = mdEl?.classList.contains("block");
         const text   = isMd ? mdEl.innerText : jsonEl.innerText;
         if (!text) return;
         try {

@@ -35,11 +35,9 @@ class DockerKreuzbergClient {
     const form = new FormData();
     form.append("file", fileContent, basename(filePath));
 
-    const response = await axios.post(
-      `http://localhost:${this.apiPort}/api/extract`,
-      form,
-      { headers: form.getHeaders() }
-    );
+    const response = await axios.post(`http://localhost:${this.apiPort}/api/extract`, form, {
+      headers: form.getHeaders(),
+    });
 
     return response.data.content;
   }
@@ -64,5 +62,5 @@ class DockerKreuzbergClient {
   } finally {
     await dockerClient.stopContainer();
   }
-})();
+})()
 ```

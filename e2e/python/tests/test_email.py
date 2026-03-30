@@ -74,6 +74,20 @@ def test_email_msg_basic() -> None:
     helpers.assert_min_content_length(result, 10)
 
 
+def test_email_pst_empty() -> None:
+    """Empty Outlook PST archive with no messages."""
+
+    document_path = helpers.resolve_document("email/empty.pst")
+    if not document_path.exists():
+        pytest.skip(f"Skipping email_pst_empty: missing document at {document_path}")
+
+    config = helpers.build_config(None)
+
+    result = extract_file_sync(document_path, None, config)
+
+    helpers.assert_expected_mime(result, ["application/vnd.ms-outlook-pst"])
+
+
 def test_email_sample_eml() -> None:
     """Sample EML email file to verify email parsing."""
 

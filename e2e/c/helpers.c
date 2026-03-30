@@ -622,3 +622,23 @@ void assert_annotations(const CExtractionResult *result,
         exit(1);
     }
 }
+
+void assert_is_png(const uint8_t *data, size_t len) {
+    if (len < 4) {
+        fprintf(stderr, "FAIL: data too short for PNG: %zu bytes\n", len);
+        exit(1);
+    }
+    if (data[0] != 0x89 || data[1] != 0x50 || data[2] != 0x4E || data[3] != 0x47) {
+        fprintf(stderr, "FAIL: missing PNG magic bytes, got: [%02x, %02x, %02x, %02x]\n",
+                data[0], data[1], data[2], data[3]);
+        exit(1);
+    }
+}
+
+void assert_min_byte_length(const uint8_t *data, size_t len, size_t min_length) {
+    (void)data;
+    if (len < min_length) {
+        fprintf(stderr, "FAIL: expected at least %zu bytes, got %zu\n", min_length, len);
+        exit(1);
+    }
+}

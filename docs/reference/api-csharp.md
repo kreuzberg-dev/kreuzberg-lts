@@ -8,7 +8,7 @@ Add the NuGet package to your `.csproj`:
 
 ```xml title=".csproj"
 <ItemGroup>
-    <PackageReference Include="Kreuzberg" Version="4.6.0" />
+    <PackageReference Include="Kreuzberg" Version="4.6.3" />
 </ItemGroup>
 ```
 
@@ -1709,6 +1709,67 @@ Metadata specific to XML documents.
 - `UniqueElements` (List<string>): List of unique XML element names found in the document.
 
 ---
+
+---
+
+## PDF Rendering
+
+!!! info "Added in v4.6.2"
+
+### KreuzbergClient.RenderPdfPage()
+
+Render a single page of a PDF as a PNG image.
+
+**Signature:**
+
+```csharp title="C#"
+public static byte[] RenderPdfPage(string path, int pageIndex, int dpi = 150)
+```
+
+**Parameters:**
+
+- `path` (string): Path to the PDF file
+- `pageIndex` (int): Zero-based page index to render
+- `dpi` (int): Resolution for rendering (default 150)
+
+**Returns:**
+
+- `byte[]`: PNG-encoded bytes for the requested page
+
+**Example:**
+
+```csharp title="RenderSinglePage.cs"
+byte[] png = KreuzbergClient.RenderPdfPage("document.pdf", 0);
+File.WriteAllBytes("first_page.png", png);
+```
+
+---
+
+### PdfPageIterator
+
+A more memory-efficient alternative to rendering all pages at once when memory is a concern or when pages should be processed as they are rendered (e.g., sending each page to a vision model for OCR). Renders one page at a time, so only one raw image is in memory at a time.
+
+**Signature:**
+
+```csharp title="C#"
+public class PdfPageIterator : IEnumerable<PageResult>, IDisposable
+{
+    public static PdfPageIterator Open(string path, int dpi = 150);
+    public int PageCount { get; }
+}
+
+public record PageResult(int PageIndex, byte[] Data);
+```
+
+**Example:**
+
+```csharp title="IteratePages.cs"
+using var iter = PdfPageIterator.Open("document.pdf");
+foreach (var page in iter)
+{
+    File.WriteAllBytes($"page_{page.PageIndex}.png", page.Data);
+}
+```
 
 ---
 

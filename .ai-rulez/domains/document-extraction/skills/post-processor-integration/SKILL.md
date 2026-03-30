@@ -1,6 +1,8 @@
 ---
+description: "post processor integration"
 name: post-processor-integration
 ---
+
 Enhance extraction results through post-processors
 
 1. Get configured post-processors

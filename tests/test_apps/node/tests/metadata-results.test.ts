@@ -9,18 +9,18 @@ import { writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
-	extractFileSync,
-	extractBytesSync,
-	type ExtractionResult,
 	type Chunk,
 	type ChunkMetadata,
 	type ExtractedImage,
-	type Table,
 	type ExtractedKeyword,
+	type ExtractionResult,
+	extractBytesSync,
+	extractFileSync,
 	type Metadata,
-	type PageStructure,
 	type PageBoundary,
 	type PageInfo,
+	type PageStructure,
+	type Table,
 } from "@kreuzberg/node";
 import { beforeAll, describe, expect, it } from "vitest";
 

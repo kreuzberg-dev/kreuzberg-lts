@@ -459,6 +459,21 @@ module Kreuzberg
       def to_h: () -> Hash[Symbol, untyped]
     end
 
+    class Acceleration
+      attr_reader provider: String
+      attr_reader device_id: Integer
+
+      def initialize: (?provider: String, ?device_id: Integer) -> void
+      def to_h: () -> Hash[Symbol, untyped]
+    end
+
+    class Email
+      attr_reader msg_fallback_codepage: Integer?
+
+      def initialize: (?msg_fallback_codepage: Integer?) -> void
+      def to_h: () -> Hash[Symbol, untyped]
+    end
+
     class LayoutDetection
       attr_reader preset: String
       attr_reader confidence_threshold: Float?
@@ -481,7 +496,9 @@ module Kreuzberg
       attr_reader enable_quality_processing: bool
       attr_reader cache_namespace: String?
       attr_reader cache_ttl_secs: Integer?
+      attr_reader extraction_timeout_secs: Integer?
       attr_reader force_ocr: bool
+      attr_reader force_ocr_pages: Array[Integer]?
       attr_reader include_document_structure: bool
       attr_reader ocr: OCR?
       attr_reader chunking: Chunking?
@@ -495,7 +512,10 @@ module Kreuzberg
       attr_reader pages: PageConfig?
       attr_reader layout: LayoutDetection?
       attr_reader concurrency: Concurrency?
+      attr_reader acceleration: Acceleration?
+      attr_reader email: Email?
       attr_reader max_concurrent_extractions: Integer?
+      attr_reader max_archive_depth: Integer
       attr_reader output_format: String?
       attr_reader result_format: String?
       attr_reader security_limits: Hash[String, Integer]?
@@ -508,6 +528,7 @@ module Kreuzberg
         ?use_cache: bool,
         ?enable_quality_processing: bool,
         ?force_ocr: bool,
+        ?force_ocr_pages: Array[Integer]?,
         ?include_document_structure: bool,
         ?ocr: (OCR | Hash[Symbol, untyped])?,
         ?chunking: (Chunking | Hash[Symbol, untyped])?,
@@ -521,11 +542,15 @@ module Kreuzberg
         ?pages: (PageConfig | Hash[Symbol, untyped])?,
         ?layout: (LayoutDetection | Hash[Symbol, untyped])?,
         ?concurrency: (Concurrency | Hash[Symbol, untyped])?,
+        ?acceleration: (Acceleration | Hash[Symbol, untyped])?,
+        ?email: (Email | Hash[Symbol, untyped])?,
         ?max_concurrent_extractions: Integer?,
+        ?max_archive_depth: Integer,
         ?output_format: String?,
         ?result_format: String?,
         ?cache_namespace: String?,
-        ?cache_ttl_secs: Integer?
+        ?cache_ttl_secs: Integer?,
+        ?extraction_timeout_secs: Integer?
       ) -> void
       def to_h: () -> Hash[Symbol, untyped]
       def to_json: (*untyped) -> String

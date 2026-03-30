@@ -735,6 +735,7 @@ Configuration for ONNX-based document layout analysis.
 **Type Definition:**
 
 <!-- skip -->
+
 ```typescript title="TypeScript"
 interface LayoutDetectionConfig {
   preset?: string;              // "fast" or "accurate" (default)
@@ -752,6 +753,7 @@ interface LayoutDetectionConfig {
 **Example:**
 
 <!-- skip -->
+
 ```typescript title="layout_config.ts"
 const config: ExtractionConfig = {
   layout: {
@@ -779,9 +781,11 @@ interface ChunkingConfig {
   maxOverlap?: number;
   embedding?: EmbeddingConfig | null;
   preset?: string | null;
+  chunkerType?: string | null;
   sizingType?: "characters" | "tokenizer" | null;
   sizingModel?: string | null;
   sizingCacheDir?: string | null;
+  prependHeadingContext?: boolean | null;
 }
 ```
 
@@ -794,6 +798,8 @@ interface ChunkingConfig {
 - `sizingType` ("characters" | "tokenizer" | null): How chunk size is measured. Use `"tokenizer"` to measure by token count using a HuggingFace tokenizer. Default: null (characters)
 - `sizingModel` (string | null): HuggingFace model ID for tokenizer-based sizing (e.g. `"bert-base-uncased"`). Required when `sizingType` is `"tokenizer"`. Default: null
 - `sizingCacheDir` (string | null): Optional directory to cache downloaded tokenizer files. Default: null
+- `chunkerType` (string | null): Type of chunker to use. Options: `"text"` (default), `"markdown"`, `"yaml"`. Default: null (text)
+- `prependHeadingContext` (boolean | null): When true, prepends heading hierarchy path to each chunk's content. Most useful with `chunkerType: "markdown"`. Default: null (false)
 
 ---
 
@@ -952,6 +958,7 @@ if (result.detectedLanguages) {
 Per-page extracted content when page extraction is enabled via `PageConfig.extractPages = true`.
 
 Each page contains:
+
 - Page number (1-indexed)
 - Text content for that page
 - Tables on that page
@@ -1302,6 +1309,77 @@ const config = {
 
 const result = extractFileSync('scanned.pdf', null, config);
 console.log(result.content);
+```
+
+---
+
+## PDF Rendering
+
+!!! info "Added in v4.6.2"
+
+### renderPdfPageSync()
+
+Render a single page of a PDF as a PNG image (synchronous).
+
+**Signature:**
+
+```typescript title="TypeScript"
+function renderPdfPageSync(filePath: string, pageIndex: number, dpi?: number): Buffer
+```
+
+**Parameters:**
+
+- `filePath` (string): Path to the PDF file
+- `pageIndex` (number): Zero-based page index to render
+- `dpi` (number | undefined): Resolution for rendering (default 150)
+
+**Returns:**
+
+- `Buffer`: PNG-encoded Buffer for the requested page
+
+**Example:**
+
+```typescript title="renderSinglePage.ts"
+import { renderPdfPageSync } from "@kreuzberg/node";
+
+const png = renderPdfPageSync("document.pdf", 0);
+writeFileSync("first_page.png", png);
+```
+
+---
+
+### PdfPageIterator (class)
+
+A more memory-efficient alternative to `iteratePdfPagesSync`/`iteratePdfPages` when memory is a concern or when pages should be processed as they are rendered (e.g., sending each page to a vision model for OCR). Renders one page at a time via the `.next()` method.
+
+**Signature:**
+
+```typescript title="TypeScript"
+class PdfPageIterator {
+    constructor(filePath: string, dpi?: number);
+    next(): PdfPageResult | null;
+    pageCount(): number;
+    close(): void;
+}
+
+interface PdfPageResult {
+    pageIndex: number;
+    data: Buffer;
+}
+```
+
+**Example:**
+
+```typescript title="iteratePages.ts"
+import { PdfPageIterator } from "@kreuzberg/node";
+
+const iter = new PdfPageIterator("document.pdf", 150);
+let result;
+while ((result = iter.next()) !== null) {
+    const { pageIndex, data } = result;
+    writeFileSync(`page_${pageIndex}.png`, data);
+}
+iter.close();
 ```
 
 ---

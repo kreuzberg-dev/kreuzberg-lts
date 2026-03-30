@@ -168,13 +168,6 @@ impl SyncExtractor for ExcelExtractor {
 #[cfg_attr(not(target_arch = "wasm32"), async_trait)]
 #[cfg_attr(target_arch = "wasm32", async_trait(?Send))]
 impl DocumentExtractor for ExcelExtractor {
-    #[cfg_attr(feature = "otel", tracing::instrument(
-        skip(self, content, config),
-        fields(
-            extractor.name = self.name(),
-            content.size_bytes = content.len(),
-        )
-    ))]
     async fn extract_bytes(
         &self,
         content: &[u8],
@@ -270,12 +263,6 @@ impl DocumentExtractor for ExcelExtractor {
         })
     }
 
-    #[cfg_attr(feature = "otel", tracing::instrument(
-        skip(self, path, config),
-        fields(
-            extractor.name = self.name(),
-        )
-    ))]
     async fn extract_file(&self, path: &Path, mime_type: &str, config: &ExtractionConfig) -> Result<ExtractionResult> {
         let path_str = path
             .to_str()

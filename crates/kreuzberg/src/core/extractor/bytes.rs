@@ -13,8 +13,6 @@ use crate::core::mime::{LEGACY_POWERPOINT_MIME_TYPE, LEGACY_WORD_MIME_TYPE};
 use crate::types::ExtractionResult;
 
 use super::file::extract_bytes_with_extractor;
-#[cfg(feature = "otel")]
-use super::file::record_error;
 
 /// Extract content from a byte array.
 ///
@@ -57,8 +55,12 @@ use super::file::record_error;
 #[cfg_attr(feature = "otel", tracing::instrument(
     skip(config, content),
     fields(
-        extraction.mime_type = mime_type,
-        extraction.size_bytes = content.len(),
+        { crate::telemetry::conventions::OPERATION } = crate::telemetry::conventions::operations::EXTRACT_BYTES,
+        { crate::telemetry::conventions::DOCUMENT_MIME_TYPE } = mime_type,
+        { crate::telemetry::conventions::DOCUMENT_SIZE_BYTES } = content.len(),
+        { crate::telemetry::conventions::OTEL_STATUS_CODE } = tracing::field::Empty,
+        { crate::telemetry::conventions::ERROR_TYPE } = tracing::field::Empty,
+        { crate::telemetry::conventions::ERROR_MESSAGE } = tracing::field::Empty,
     )
 ))]
 pub async fn extract_bytes(content: &[u8], mime_type: &str, config: &ExtractionConfig) -> Result<ExtractionResult> {
@@ -101,7 +103,7 @@ pub async fn extract_bytes(content: &[u8], mime_type: &str, config: &ExtractionC
 
     #[cfg(feature = "otel")]
     if let Err(ref e) = result {
-        record_error(e);
+        crate::telemetry::spans::record_error_on_current_span(e);
     }
 
     result

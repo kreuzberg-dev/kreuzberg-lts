@@ -457,3 +457,83 @@ function batch_extract_bytes_async(
         throw convertToKreuzbergException($e);
     }
 }
+
+/**
+ * Render a single PDF page as a PNG image.
+ *
+ * @param string $filePath Path to the PDF file
+ * @param int $pageIndex Zero-based page index
+ * @param int $dpi Rendering resolution (default 150)
+ * @return string PNG-encoded binary string
+ * @throws KreuzbergException If rendering fails
+ *
+ * @example
+ * ```php
+ * use function Kreuzberg\render_pdf_page;
+ *
+ * $png = render_pdf_page('document.pdf', 0, 150);
+ * file_put_contents('first_page.png', $png);
+ * ```
+ */
+function render_pdf_page(string $filePath, int $pageIndex, int $dpi = 150): string
+{
+    try {
+        /** @var string $result */
+        $result = \kreuzberg_render_pdf_page($filePath, $pageIndex, $dpi);
+
+        return is_array($result) ? pack('C*', ...$result) : $result;
+    } catch (\Exception $e) {
+        if ($e instanceof KreuzbergException) {
+            throw $e;
+        }
+        throw convertToKreuzbergException($e);
+    }
+}
+
+/**
+ * Iterate over PDF pages lazily, yielding PNG bytes one page at a time.
+ *
+ * Returns a Generator that yields PNG-encoded binary strings. Each page is
+ * rendered on demand, keeping memory usage low for large documents.
+ *
+ * @param string $filePath Path to the PDF file
+ * @param int $dpi Rendering resolution (default 150)
+ * @return \Generator<int, string> Generator yielding page_index => png_bytes
+ * @throws KreuzbergException If rendering fails
+ *
+ * @example
+ * ```php
+ * use function Kreuzberg\render_pdf_pages_iter;
+ *
+ * foreach (render_pdf_pages_iter('document.pdf') as $pageIndex => $png) {
+ *     file_put_contents("page_{$pageIndex}.png", $png);
+ * }
+ * ```
+ */
+function render_pdf_pages_iter(string $filePath, int $dpi = 150): \Generator
+{
+    try {
+        /** @var resource $handle */
+        $handle = \kreuzberg_pdf_page_iterator_new($filePath, $dpi);
+
+        $pageIndex = 0;
+        try {
+            while (true) {
+                /** @var string|null $png */
+                $png = \kreuzberg_pdf_page_iterator_next($handle);
+                if ($png === null) {
+                    break;
+                }
+                yield $pageIndex => is_array($png) ? pack('C*', ...$png) : $png;
+                $pageIndex++;
+            }
+        } finally {
+            \kreuzberg_pdf_page_iterator_free($handle);
+        }
+    } catch (\Exception $e) {
+        if ($e instanceof KreuzbergException) {
+            throw $e;
+        }
+        throw convertToKreuzbergException($e);
+    }
+}

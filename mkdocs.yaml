@@ -82,7 +82,7 @@ markdown_extensions:
   - pymdownx.mark
   - pymdownx.smartsymbols
   - pymdownx.snippets:
-      base_path: ["docs", "."]
+      base_path: [".", "docs"]
       check_paths: true
   - pymdownx.superfences:
       custom_fences:
@@ -104,12 +104,6 @@ markdown_extensions:
 
 plugins:
   - search
-  # TODO: Add Algolia DocSearch for enhanced search
-  - social:
-      cards: false
-  - tags
-  - minify:
-      minify_html: true
   - mkdocstrings:
       default_handler: python
       handlers:
@@ -125,11 +119,6 @@ plugins:
             show_submodules: false
             docstring_style: google
             docstring_section_style: spacy
-  - git-revision-date-localized:
-      enable_creation_date: true
-      type: timeago
-      fallback_to_build_date: true
-      enabled: true
 
 extra:
   social:
@@ -177,6 +166,7 @@ nav:
       - Element-Based Output: guides/element-based-output.md
       - Document Structure: guides/document-structure.md
       - PDF Hierarchy: guides/pdf-hierarchy.md
+      - PDF Rendering: guides/pdf-rendering.md
       - Keyword Extraction: guides/keywords.md
       - Layout Detection: guides/layout-detection.md
       - Advanced Features: guides/advanced.md
@@ -186,6 +176,9 @@ nav:
       - Creating Plugins: guides/plugins.md
       - AI Coding Assistants: guides/agent-skills.md
       - C# Bindings: guides/csharp.md
+  - Integrations:
+      - integrations/index.md
+      - SurrealDB: integrations/surrealdb.md
   - CLI: cli/usage.md
   - API Reference:
       - Python: reference/api-python.md

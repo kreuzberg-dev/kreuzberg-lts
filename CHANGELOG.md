@@ -9,8 +9,106 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Strict config validation via `#[serde(deny_unknown_fields)]`**: All extraction config structs (30 total) now reject unknown keys during deserialization. Typos and invalid fields in TOML/YAML/JSON config files are caught at load time instead of silently ignored. Enums are excluded.
+
 ### Fixed
 
+- **Python wheel `__isoc23_strtoll` error on older Linux distributions** (#588): Downgraded the Linux build environment `manylinux` target from `manylinux_2_39` to `manylinux_2_28` for pre-compiled Python wheels to ensure compatibility with systems using glibc versions prior to 2.39 (e.g., Ubuntu 20.04/22.04, Debian 11/12).
+- **`clear_ocr_backends` now resets to built-in defaults**: Previously, clearing OCR backends permanently emptied the registry, causing subsequent OCR extractions to fail with "No available OCR backends for pipeline." Now re-registers Tesseract and PaddleOCR defaults after clearing.
+- **Go macOS link failure**: Added missing `-framework Foundation` to CGO LDFLAGS. ORT's CoreML provider uses Foundation for NSLog/NSFileManager, causing undefined symbol errors on macOS.
+- **Tesseract Windows MinGW build (Elixir/Go/C FFI publish)**: CMake resolved bare `g++` to MSVC `cl.exe` on CI runners with both toolchains. Added `resolve_mingw_compiler()` to find absolute paths from MSYS2 subsystem dirs. Bumped Tesseract cache key to invalidate stale MSVC-compiled artifacts.
+- **Windows GNU ORT linking**: `bundled` strategy on Windows GNU now uses dynamic linking with pre-downloaded Microsoft ORT (pyke.io has no static binaries for `x86_64-pc-windows-gnu`). Documented ONNX Runtime DLL requirement for Go, Elixir, and C/C++ on Windows.
+
+### Documented
+
+- Windows feature limitations for Go and C/C++ bindings (no PaddleOCR, layout detection, or auto-rotate on MinGW/GNU target).
+- ONNX Runtime runtime requirement for Go, Elixir, and C/C++ Windows bindings.
+
+---
+
+## [4.6.3] - 2026-03-27
+
+### Added
+
+- **Tower service layer** (`service` module): Composable `ExtractionService` implementing `tower::Service` with configurable middleware layers (tracing, metrics, timeout, concurrency limit). New `tower-service` feature flag, auto-enabled by `api` and `mcp`. `ExtractionServiceBuilder` provides ergonomic layer composition.
+- **Semantic OpenTelemetry conventions** (`telemetry` module): Formal `kreuzberg.*` attribute namespace with 30+ span attributes, metric names, and operation/stage constants. Documented conventions for document extraction, pipeline stages, OCR, and model inference telemetry.
+- **Extraction metrics**: 11 OTel metric instruments (counters, histograms, gauge) covering extraction totals, durations, cache hits/misses, pipeline stages, OCR, and concurrent extractions. Feature-gated behind `otel`.
+- **InstrumentedExtractor wrapper**: Automatic per-extractor tracing spans and metrics without per-extractor annotations. Injected at registry dispatch when `otel` feature is enabled.
+
+### Improved
+
+- **Deeper instrumentation**: Pipeline post-processing stages (Early/Middle/Late), individual processor execution, OCR operations, and RT-DETR layout model inference now have semantic spans and duration metrics.
+- **API and MCP servers use ExtractionService**: Both consumers now route extractions through the Tower service stack, getting unified tracing, metrics, and middleware for free.
+- **Unified config merge**: JSON config merge logic deduplicated between CLI and MCP into a shared function.
+- **API server hardening**: Added response compression (gzip/brotli/zstd), panic recovery, request-ID correlation, and sensitive header redaction via tower-http middleware.
+
+### Changed
+
+- **Removed per-extractor `#[instrument]` annotations**: 29 manual `#[cfg_attr(feature = "otel", tracing::instrument(...))]` annotations replaced by the automatic `InstrumentedExtractor` wrapper.
+- **Span attribute names migrated to `kreuzberg.*` namespace**: `extraction.filename` -> `kreuzberg.document.filename`, `extraction.mime_type` -> `kreuzberg.document.mime_type`, etc.
+
+### Fixed
+
+- **EPUB spine semantics refactor** (#594): Richer OPF package model preserves manifest fallback chains, guide references, and non-linear spine items. Navigation chrome stripped from output. Malformed guide references now produce warnings instead of hard failures. Tested for fallback cycles and empty spines.
+- **DOCX image extraction for `<a:blip>` with child elements** (#591): Images with high-quality settings (containing `<a:extLst>` children) were not extracted because only `Event::Empty` was handled. Now also handles `Event::Start` for `<a:blip>`.
+- **OCR table extraction returned empty results via pipeline path** (#593): Layout detection was gated behind a `needs_structured` check, skipping it for the default `Plain` output format. Tables from `run_ocr_pipeline` were discarded. Both paths now propagate tables correctly.
+- **Missing `chunker_type` field in bindings** (#592): Exposed `chunker_type`, `sizing_cache_dir`, and `prepend_heading_context` fields across Python, TypeScript/WASM, Go, C#, PHP bindings.
+- **Full API parity across all 10 bindings**: Added `max_archive_depth` to all bindings. Added missing `acceleration`, `email` to Ruby/R. Added `layout` to PHP. Added 7 missing fields to WASM. Fixed parity script regex for Go slice types.
+- **`test_pipeline_with_all_features` assertion without `quality` feature**: `quality_score` assertion now gated behind `#[cfg(feature = "quality")]`.
+- **Node Windows publish failure**: Prepare script fallback used bash-specific `mkdir -p` and `echo >` which fail on Windows. Replaced with cross-platform `node -e` fallback.
+- **CI Validate path triggers too narrow**: Broadened glob patterns to cover `docs/**`, `biome.json`, `.task/**`, and other lintable paths that prek hooks check.
+- **Publish pipeline ORT bundling**: Added configurable `strategy` input (`system`/`bundled`) to `setup-onnx-runtime` action. Set `strategy: bundled` for all publish jobs so `ort-bundled` cargo feature takes effect, producing self-contained binaries.
+
+---
+
+## [4.6.2] - 2026-03-26
+
+### Added
+
+- **PDF page rendering API** (#583): New `render_pdf_page` function and `PdfPageIterator` for rendering individual PDF pages as PNG images. Available across all 11 language bindings with idiomatic patterns (Python context manager, Go Close(), Java AutoCloseable, C# IDisposable, Elixir Stream, etc.). Default 150 DPI, configurable per call.
+
+### Fixed
+
+- **Table recognition coordinate mismatch on scanned PDFs** (#582): Layout detection bboxes (640x640 model space) are now scaled to OCR render resolution before TATR table recognition. Previously, coordinate space mismatch caused zero tables to be found.
+- **OCR elements report `page_number: 1` for all pages** (#582): Tesseract resets page numbers per single-page render. Page numbers are now correctly stamped after OCR in the batch loop.
+- **Rust E2E tests missing PDF feature**: Added `pdf` feature to the e2e-generator Rust template, fixing 41 `UnsupportedFormat("application/pdf")` failures.
+- **HWP styled extraction empty on ARM**: Added `skip_on_platform` support to Python and Java e2e generators, skipping the `hwp_styled` fixture on `aarch64-unknown-linux-gnu`.
+- **WASM CI build failure**: Made `kreuzberg-node` prepare script resilient to missing native addon, preventing `ENOENT: dist/cli.js` during pnpm workspace install.
+- **Go C header stale at 4.5.0**: Synced header and `DefaultVersion` constant to match current version.
+- **Ruby gem missing ONNX Runtime**: Added `ort-bundled` feature to Ruby native Cargo.toml.
+- **Elixir doctest failures**: Updated `ExtractionConfig.to_map/1` doctests for `force_ocr_pages` field.
+- **WASM benchmark timeout**: Reduced per-extraction timeout from 600s to 120s and job timeout from 6h to 2h.
+
+### Improved
+
+- **`version:sync` now syncs Go C header, DefaultVersion, and Docker compose tags**: Prevents version drift across language bindings.
+- **Publish pipeline commits Elixir NIF checksums back to main**: Prevents stale checksums after releases.
+- **WASM test app migrated to Deno**: Replaced Node.js/vitest with Deno test runner, fixing `fetch()` unavailability.
+- **Docs migrated from MkDocs to Zensical**: 4-5x faster incremental builds.
+
+---
+
+## [4.6.1] - 2026-03-25
+
+### Added
+
+- **Per-file batch extraction timeouts** (#546): New `extraction_timeout_secs` on `ExtractionConfig` (batch-level default) and `timeout_secs` on `FileExtractionConfig` (per-file override). Timeouts apply after semaphore acquisition. New `KreuzbergError::Timeout` variant with `elapsed_ms` and `limit_ms` fields. All binding layers updated.
+- **Page-level OCR overrides** (#432): New `force_ocr_pages` option (1-indexed) on both `ExtractionConfig` and `FileExtractionConfig`. Enables selective OCR on specific pages of mixed-quality PDFs while preserving native text on others.
+- **PST extraction support** (#502): Extract emails from Microsoft Outlook PST archives via the `outlook-pst` crate. Iterative depth-first folder traversal with depth cap of 50. Feature-gated under `email`.
+- **JSONL/NDJSON extraction** (#575): Native `.jsonl`/`.ndjson` extraction via `StructuredExtractor`. Registered as `application/x-ndjson` MIME type.
+
+### Fixed
+
+- **OCR elements now propagated to ExtractionResult** (#566): OCR elements with geometry data are collected during extraction and set on `ExtractionResult.ocr_elements`. Hierarchy transformer emits body-level blocks as `NarrativeText` elements with coordinates. OpenAPI schema registers OCR-related types.
+- **OOM crash on multi-page scanned PDFs** (#570): Replaced pre-rendering all PDF pages into memory with batched rendering. Pages are now rendered and OCR'd in bounded batches, capping peak memory to `batch_size * page` instead of `page_count * page`.
+- **OCR memory usage reduced 60-78%**: Restructured the OCR batch rendering loop to render-and-encode one page at a time instead of holding all decoded RGB buffers simultaneously. A 98-page scanned PDF dropped from 4.6GB to 1.9GB peak RSS (batch_size=4), and from 3.3GB to 713MB (batch_size=1). Batch size now adapts to available system memory on Linux and macOS.
+- **PDF control character encoding artifacts**: PDFs with broken ToUnicode font mappings that produce U+0002 (STX) and other control characters where hyphens should appear now have these replaced with hyphens when between word characters, or stripped otherwise. Fixes garbled output like `re\x02labelling` → `re-labelling`.
+- **DocumentStructure missing Heading nodes for PDFs**: `push_heading_group` now inserts a `Heading` child inside each `Group` node (matching DOCX builder behavior). Fallback `add_paragraphs` now detects markdown heading markers and creates heading groups instead of flat paragraphs.
+- **Layout detection returns empty tables on scanned PDFs** (#574): Three independent bugs caused `result.tables` to always be `[]` for scanned/image-based PDFs: (1) layout detection was gated behind a `needs_structured` output-format check, silently skipping detection for `Plain` (the default); (2) TATR-recognized tables in the OCR path were inlined as markdown text but never converted to `Table` structs; (3) `run_ocr_with_layout` returned only text, discarding table data. All three paths now propagate tables correctly.
+- **Table recognition coordinate mismatch on scanned PDFs** (#582): Layout detection operates at 640×640 pixels but TATR table recognition and layout-hint classification consumed those coordinates verbatim against OCR-rendered images (e.g. 2480×3508 px at 300 DPI). Bounding boxes never overlapped OCR word positions, producing zero recognized tables and incorrect paragraph-class overrides. Bounding boxes are now scaled from layout-model resolution to the actual OCR render resolution before both `recognize_page_tables` and `detection_to_layout_hints` are called.
+- **OCR elements report `page_number: 1` for all pages** (#582): The Tesseract backend resets `page_number` to 1 for every single-page render. The page-number is now stamped with the correct 1-indexed page index after collecting each batch page's OCR elements.
 - **PDF layout engine panic on malformed input** (#544): Replaced the panicking `.expect()` inside the thread-local `LayoutEngine` initializer in `layout_runner.rs` with proper `Result`-based error propagation. A failure to initialise the layout engine now returns a descriptive error instead of crashing the host process via FFI (Python, Node, etc.).
 
 ---
@@ -69,6 +167,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Tests
 
 - **Backend registry robustness**: Hardened backend registry tests with drop guards and comprehensive mock coverage.
+
+### Added
+
+- **PST (Outlook Personal Folders) extraction**: New `PstExtractor` backed by the `outlook-pst` crate. Traverses the full IPM folder hierarchy iteratively, extracts subject, sender, recipients (TO/CC/BCC), body, and date from every message in the archive. Enabled via the existing `email` feature flag. MIME type: `application/vnd.ms-outlook-pst`.
 
 ### Fixed
 
@@ -332,10 +434,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **OMML-to-LaTeX math conversion for DOCX**: Mathematical equations in DOCX files (Office Math Markup Language) are now converted to LaTeX notation instead of being rendered as concatenated Unicode text. Supports superscripts, subscripts, fractions (`\frac`), radicals (`\sqrt`), n-ary operators (`\sum`, `\int`), delimiters, function names, accents, equation arrays, limits, bars, border boxes, matrices, and pre-sub-superscripts. Display math uses `$$...$$` and inline math uses `$...$` in markdown output. Plain text output includes raw LaTeX without delimiters.
 
-- **Plain text output paths for all extractors**: When `OutputFormat::Plain` or `OutputFormat::Structured` is requested, DOCX, PPTX, ODT, FB2, DocBook, RTF, and Jupyter extractors now produce clean plain text without markdown syntax (`#`, `**`, `|`, `![](image)`, `- `, etc.). Previously these extractors always emitted markdown regardless of the requested output format.
+- **Plain text output paths for all extractors**: When `OutputFormat::Plain` or `OutputFormat::Structured` is requested, DOCX, PPTX, ODT, FB2, DocBook, RTF, and Jupyter extractors now produce clean plain text without markdown syntax (`#`, `**`, `|`, `![](image)`, `-`, etc.). Previously these extractors always emitted markdown regardless of the requested output format.
   - **DOCX**: `Document::to_plain_text()` skips heading prefixes, inline formatting markers, image placeholders, and renders footnotes/endnotes as `id: text` instead of `[^id]: text`.
-  - **PPTX**: `ContentBuilder` respects `plain` mode — skips `# ` title prefix, image markers, list markers, and uses `Notes:` instead of `### Notes:`.
-  - **ODT**: Heading prefixes (`# `), list markers (`- `), and pipe-delimited tables conditionally omitted for plain text.
+  - **PPTX**: `ContentBuilder` respects `plain` mode — skips `#` title prefix, image markers, list markers, and uses `Notes:` instead of `### Notes:`.
+  - **ODT**: Heading prefixes (`#`), list markers (`-`), and pipe-delimited tables conditionally omitted for plain text.
   - **FB2/FictionBook**: Inline markers (`*`, `**`, `` ` ``, `~~`), heading prefixes, and cite prefixes skipped for plain text.
   - **DocBook**: Section title prefixes, code fences, list markers, blockquote prefixes, bold figure captions, and pipe tables all conditionally omitted.
   - **RTF**: Table output in result string uses tab separation instead of pipe-delimited markdown. Image `![image](...)` markers omitted for plain text.
@@ -614,19 +716,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 #### Centralized Image OCR Processing
+
 - **Shared `process_images_with_ocr` function**: Extracted duplicated OCR processing logic from DOCX and PPTX extractors into `extraction::image_ocr` module, providing a single shared implementation for all document extractors.
 
 #### Jupyter Notebook Image Extraction
+
 - **Base64 image decoding**: Jupyter extractor now decodes embedded base64 image data (PNG, JPEG, GIF, WebP) from notebook cell outputs into `ExtractedImage` structs instead of emitting placeholder text.
 - **OCR on notebook images**: Extracted images are processed with OCR when configured, using the centralized `process_images_with_ocr` function.
 - **SVG handling**: SVG images in notebook outputs are handled as text content (not sent to raster OCR).
 
 #### Markdown Data URI Image Extraction
+
 - **Data URI image decoding**: Markdown extractor now decodes `data:image/...;base64,...` URIs into `ExtractedImage` structs with proper format detection (PNG, JPEG, GIF, WebP).
 - **OCR on embedded images**: Decoded data URI images are processed with OCR when configured.
 - **HTTP URLs preserved as text**: Non-data URIs (HTTP/HTTPS) are kept as `[Image: url]` text markers without attempting network access or filesystem traversal.
 
 #### PaddleOCR Multi-Language Support (#388)
+
 - **80+ language support via 11 script families**: PaddleOCR recognition models now cover english, chinese (simplified+traditional+japanese), latin, korean, east slavic (cyrillic), thai, greek, arabic, devanagari, tamil, and telugu script families.
 - **Per-family recognition model architecture**: Shared detection/classification models with per-family recognition models and dictionaries, downloaded on demand from HuggingFace (`Kreuzberg/paddleocr-onnx-models`).
 - **Engine pool for concurrent multi-language OCR**: Replaced single-engine architecture with a per-family engine pool (`HashMap<String, Arc<Mutex<OcrLite>>>`), enabling concurrent OCR across different languages.
@@ -636,11 +742,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 #### PaddleOCR Engine Internals
+
 - **CrnnNet recognition height**: Changed to 32 pixels (later found to be incorrect for PP-OCRv4/v5 models; fixed in next release).
 - **Model manager split**: `MODELS` constant replaced with `SHARED_MODELS` (det+cls) and `REC_MODELS` (11 families) with new cache layout `rec/{family}/model.onnx`.
 - **Language code mapping expanded**: `map_language_code()` now handles Thai, Greek, East Slavic, and additional Latin-script languages.
 
 #### DOCX Full Extraction Pipeline (#387)
+
 - **DocumentStructure generation**: Builds hierarchical document tree with heading-based sections, paragraphs, lists, tables, images, headers/footers, and footnotes/endnotes when `include_document_structure = true`.
 - **Pages field population**: Splits extracted text into per-page `PageContent` entries using detected page break boundaries, with tables and images assigned to correct pages.
 - **OCR on embedded images**: Runs secondary OCR on extracted DOCX images when OCR is configured, following the PPTX pattern.
@@ -655,6 +763,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 #### DOCX Extractor Performance & Code Quality
+
 - **Eliminated 3x code duplication**: Extracted `parse_docx_core()` helper to deduplicate parsing logic across tokio/non-tokio cfg branches.
 - **Removed unnecessary clones**: Metadata structs (core/app/custom properties) borrowed then moved instead of cloned; drawings and image relationships only cloned when image extraction is enabled.
 - **Optimized Run::to_markdown()**: Single-pass string builder with pre-calculated capacity replaces clone + repeated `format!` calls on the hot path.
@@ -667,11 +776,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 #### Extraction Quality Improvements
+
 - **LaTeX zero-arg command handling**: Added explicit skip list for 35 zero-argument commands (`\par`, `\noindent`, `\centering`, size commands, etc.). The catch-all handler no longer consumes the next `{...}` group as an argument, preventing silent text loss for unknown zero-arg commands.
 - **Structured data `is_text_field` false positives**: Changed from `.contains()` substring matching to exact equality on the leaf field name. Previously, "width" matched because it contains "id"; "valid" matched because it contains "id". Now only exact leaf name matches are considered.
 - **XML dead code in `Event::End` handler**: Removed unused variable allocation and discarded comparison (`let _ = popped == name_owned`), replaced with simple `element_stack.pop()`.
 
 ### Removed
+
 - **Dead code cleanup**: Removed unused `Document.lists` field, `ListItem` struct, `process_lists()` method, and `HeaderFooter::extract_text()` method.
 
 ---
@@ -681,9 +792,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 #### PHP 8.4 Requirement Update
+
 - **Updated PHP requirement to 8.4+**: All PHP composer.json files, CI workflows, and documentation now require PHP 8.4+ to support PHPUnit 13.0. This fixes CI validation and PHP workflow failures caused by PHPUnit 13.0 requiring PHP 8.4.1+.
 
 #### Elixir Publishing Workflow
+
 - **Fixed macOS ARM64 build timeout**: Increased timeout from 180 to 300 minutes (5 hours) for macOS ARM64 Elixir native library builds. The previous timeout caused incomplete builds and prevented Elixir v4.3.1 from being published to Hex.pm.
 
 ---
@@ -693,16 +806,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 #### Elixir Package Checksums (#383)
+
 - **Fixed checksum mismatch for Elixir 4.3.0 Hex package**: Updated `checksum-Elixir.Kreuzberg.Native.exs` with correct SHA256 checksums for all 8 precompiled NIF binaries (NIF 2.16/2.17 across aarch64-apple-darwin, aarch64-unknown-linux-gnu, x86_64-unknown-linux-gnu, x86_64-pc-windows-gnu). The 4.3.0 release shipped with outdated 4.2.10 checksums, causing installation failures.
 
 #### Dependency Updates
+
 - **Updated all dependencies across 10 language ecosystems**: Rust, Python, Node/TypeScript, Ruby, PHP, Go, Java, C#, Elixir, WASM, and pre-commit hooks all updated to latest compatible versions.
 - **Enhanced dependency update tasks**: All language-specific `task update` commands now upgrade to latest major versions (not just respecting version constraints). PHP, Ruby, C#, Elixir, and Python update tasks enhanced with major version upgrade support.
 
 #### WASM Compatibility
+
 - **Fixed WASM build failures**: Added explicit `getrandom 0.3.4` dependency with `wasm_js` feature to `kreuzberg-wasm` crate to ensure transitive dependencies (ahash, lopdf, rand_core) have WebAssembly support enabled.
 
 #### Dependency Pins
+
 - **Pinned lzma-rust2 to 0.15.7**: The 0.16.1 upgrade is incompatible with crc 3.4.0. Keeping 0.15.7 until upstream compatibility is restored.
 
 ---
@@ -712,82 +829,103 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 #### Blank Page Detection
+
 - **`is_blank` field on `PageInfo` and `PageContent`**: Pages with fewer than 3 non-whitespace characters and no tables or images are flagged as blank. Detection uses a two-phase approach: text-only analysis during extraction, then refinement after table/image assignment. Available across all 9 language bindings (Python, TypeScript, Ruby, Java, Go, C#, PHP, Elixir, WASM). Closes #378.
 
 #### PaddleOCR Backend
+
 - **PaddleOCR backend via ONNX Runtime**: New OCR backend (`kreuzberg-paddle-ocr`) using PaddlePaddle's PP-OCRv4 models converted to ONNX format, run via ONNX Runtime. Supports 6 languages (English, Chinese, Japanese, Korean, German, French) with automatic model downloading and caching. Provides superior CJK recognition compared to Tesseract.
 - **PaddleOCR support in all bindings**: Available across Python, Rust, TypeScript/Node.js, Go, Java, PHP, Ruby, C#, and Elixir bindings via the `paddle-ocr` feature flag.
 - **PaddleOCR CLI support**: The `kreuzberg-cli` binary supports `--ocr-backend paddle-ocr` for PaddleOCR extraction.
 
 #### Unified OCR Element Output
+
 - **Structured OCR element data**: Extraction results now include `OcrElement` data with bounding geometry (rectangles and quadrilaterals), per-element confidence scores, rotation information, and hierarchical levels (word, line, block, page). Available from both PaddleOCR and Tesseract backends.
 
 #### Shared ONNX Runtime Discovery
+
 - **`ort_discovery` module**: Finds ONNX Runtime shared libraries across platforms, shared between PaddleOCR and future ONNX-based backends.
 
 #### Document Structure Output
+
 - **`DocumentStructure` support across all bindings**: Added structured document output with `include_document_structure` configuration option across Python, TypeScript/Node.js, Go, Java, PHP, Ruby, C#, Elixir, and WASM bindings.
 
 #### Native DOC/PPT Extraction
+
 - **OLE/CFB-based extraction**: Added native DOC and PPT extraction via OLE/CFB binary parsing. Legacy Office formats no longer require any external tools.
 
 #### musl Linux Support
+
 - **Re-enabled musl targets**: Added `x86_64-unknown-linux-musl` and `aarch64-unknown-linux-musl` targets for CLI binaries, Python wheels (musllinux), and Node.js native bindings. Resolves glibc 2.38+ requirement for prebuilt CLI binaries on older distros like Ubuntu 22.04 (#364).
 
 ### Fixed
 
 #### MSG Extraction Hang on Large Attachments (#372)
+
 - Fixed `.msg` (Outlook) extraction hanging indefinitely on files with large attachments. Replaced the `msg_parser` crate with direct OLE/CFB parsing using the `cfb` crate — attachment binary data is now read directly without hex-encoding overhead.
 - Added lenient FAT padding for MSG files with truncated sector tables produced by some Outlook versions.
 
 #### Rotated PDF Text Extraction
+
 - Fixed text extraction returning empty content for PDFs with 90° or 270° page rotation. Kreuzberg now strips `/Rotate` entries from page dictionaries before loading, restoring correct text extraction for all rotation angles.
 
 #### CSV and Excel Extraction Quality
+
 - Fixed CSV extraction producing near-zero quality scores (0.024) by outputting proper delimited text instead of debug format.
 - Fixed Excel extraction producing low quality scores (0.22) by outputting clean tab/newline-delimited cell text.
 
 #### XML Extraction Quality
+
 - Improved XML text extraction to better handle namespaced elements, CDATA sections, and mixed content, improving quality scores.
 
 #### WASM Table Extraction
+
 - Fixed WASM adapter not recognizing `page_number` field (snake_case) from Rust FFI, causing table data to be silently dropped in Deno and Cloudflare Workers tests.
 
 #### DOCX Formatting Output (#376)
+
 - Fixed DOCX extraction producing plain text instead of formatted markdown. Bold, italic, underline, strikethrough, and hyperlinks are now rendered with proper markdown markers (`**bold**`, `*italic*`, `~~strikethrough~~`, `[text](url)`).
 - Fixed heading hierarchy: Title style maps to `#`, Heading1 to `##`, through Heading5+ clamped at `######`.
-- Fixed bullet lists (`- `), numbered lists (`1. `), and nested list indentation (2-space per level).
+- Fixed bullet lists (`-`), numbered lists (`1.`), and nested list indentation (2-space per level).
 - Fixed tables missing from markdown output. Tables are now interleaved with paragraphs in document order and rendered as markdown pipe tables.
 - Fixed table cell formatting being stripped — bold/italic inside table cells is now preserved.
 - Added 16 integration tests covering formatting, headings, lists, tables, and document structure.
 
 #### Typst Table Content Extraction
+
 - Fixed Typst `extract_table_content` double-counting opening parenthesis, which caused the table parser to consume all remaining document content after a `#table()` call.
 
 #### PaddleOCR Recognition Model
+
 - Fixed PaddleOCR recognition model (`en_PP-OCRv4_rec_infer.onnx`) failing to load with `ShapeInferenceError` on ONNX Runtime 1.23.x.
 - Fixed incorrect detection model filename in Docker and CI action (`en_PP-OCRv4_det_infer.onnx` → `ch_PP-OCRv4_det_infer.onnx`).
 
 #### Python Bindings
+
 - Fixed `OcrConfig` constructor silently ignoring `paddle_ocr_config` and `element_config` keyword arguments.
 - Fixed keyword extraction results (and all `metadata.additional` entries from post-processors) being silently dropped in Python bindings. The `ExtractionResult.from_rust()` method now propagates flattened additional metadata fields, matching all other bindings. Closes #379.
 
 #### TypeScript/Node.js Bindings
+
 - Fixed PaddleOCR config (`paddle_ocr_config`) and element config (`element_config`) being silently dropped by the NAPI-RS binding layer.
 - Fixed `ocr_elements` missing from extraction result conversion in TypeScript wrapper.
 
 #### Ruby Bindings
+
 - Fixed `kreuzberg-pdfium-render` vendored crate not included in gemspec, causing gem build failures.
 - Fixed PaddleOCR config and element config not being parsed in Ruby binding config layer.
 - Fixed `ocr_elements` missing from Ruby extraction result conversion.
 
 #### Go Bindings
+
 - Fixed `PdfMetadata` deserialization failing when keyword extraction produces object arrays instead of simple strings. Added lenient `UnmarshalJSON` fallback with field-by-field recovery.
 
 #### C# Bindings
+
 - Fixed keyword extraction data inaccessible in C# — `ExtractedKeywords` was marked `[JsonIgnore]` and excluded from metadata serialization. Added lenient metadata extraction fallback for mixed-type keyword fields.
 
 #### PHP Bindings
+
 - Fixed `document`, `elements`, and `ocrElements` properties inaccessible on `ExtractionResult` — these fields were not exposed through the `__get` handler.
 - Fixed `ExtractionConfig::toArray()` not serializing `include_document_structure`, causing document structure extraction to be silently ignored.
 - Fixed wrapper function names for document extractor management (`kreuzberg_*_document_extractors` → `kreuzberg_*_extractors`).
@@ -795,15 +933,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed `page_count` metadata key mismatch between serialization (`pageCount`) and deserialization (`page_count`).
 
 #### Elixir Bindings
+
 - Fixed NIF config parser not forwarding `include_document_structure`, `result_format`, `output_format`, `html_options`, `max_concurrent_extractions`, and `security_limits` options.
 - Added missing document extractor management NIFs (`list_document_extractors`, `unregister_document_extractor`, `clear_document_extractors`).
 
 #### CI
+
 - Fixed PHP E2E tests not actually running in CI — the task was configured to run package unit tests instead of E2E tests.
 
 ### Changed
 
 #### Build System
+
 - Bumped ONNX Runtime from 1.23.2 to 1.24.1 across CI, Docker images, and documentation.
 - Bumped vendored Tesseract from 5.5.1 to 5.5.2.
 - Bumped vendored Leptonica from 1.86.0 to 1.87.0.
@@ -811,12 +952,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 
 #### LibreOffice Dependency
+
 - **LibreOffice is no longer required**: Legacy .doc and .ppt files are now extracted natively via OLE/CFB parsing. LibreOffice has been removed from Docker images, CI pipelines, and system dependency requirements, reducing the full Docker image size by ~500-800MB. Users on Kreuzberg <4.3 still need LibreOffice for these formats.
 
 #### `msg_parser` Dependency
+
 - Replaced `msg_parser` crate with direct CFB parsing for MSG extraction. Eliminates hex-encoding overhead and reduces dependency count.
 
 #### Guten OCR Backend
+
 - Removed all references to the unused Guten OCR backend from Node.js and PHP bindings. Renamed `KREUZBERG_DEBUG_GUTEN` env var to `KREUZBERG_DEBUG_OCR`.
 
 ---
@@ -830,37 +974,47 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Agent Skill for document extraction**: Added `skills/kreuzberg/SKILL.md` following the [Agent Skills](https://agentskills.io) open standard, with comprehensive instructions for Python, Node.js, Rust, and CLI usage. Includes 8 detailed reference files covering API signatures, configuration, supported formats, plugins, and all language bindings. Works with Claude Code, Codex, Gemini CLI, Cursor, VS Code, Amp, Goose, Roo Code, and any compatible tool.
 
 #### MIME Type Mappings
+
 - Added `.docbook` (`application/docbook+xml`) and `.jats` (`application/x-jats+xml`) file extension mappings.
 
 ### Fixed
 
 #### ODT List and Section Extraction
+
 - Fixed ODT extractor not handling `text:list` and `text:section` elements. Documents containing bulleted/numbered lists or sections returned empty content.
 
 #### UTF-16 EML Parsing
+
 - Fixed EML files encoded in UTF-16 (LE/BE, with or without BOM) returning empty content. Detects UTF-16 encoding via BOM markers and heuristic byte-pattern analysis, transcoding to UTF-8 before parsing.
 
 #### Email Attachment Metadata Serialization
+
 - Fixed email extraction inserting a comma-joined string `"attachments"` into the `additional` metadata HashMap, which via `#[serde(flatten)]` overwrote the structured `EmailMetadata.attachments` array. This caused deserialization failures in Go, C#, and other typed bindings when processing emails with attachments.
 
 #### WASM Office Document Support (DOCX, PPTX, ODT)
+
 - DOCX, PPTX, and ODT extractors were gated on `#[cfg(all(feature = "tokio-runtime", feature = "office"))]` but `wasm-target` does not enable `tokio-runtime`. Changed cfg gates to `#[cfg(feature = "office")]` with conditional `spawn_blocking` only when `tokio-runtime` is available. Office documents now extract correctly in WASM builds.
 
 #### WASM PDF Support in Non-Browser Runtimes
+
 - PDFium initialization was guarded by `isBrowser()`, preventing PDF extraction in Node.js, Bun, and Deno. Removed the browser-only restriction so PDFium auto-initializes in all WASM runtimes.
 
 #### Elixir PageBoundary JSON Serialization
+
 - Added missing `@derive Jason.Encoder` to `PageBoundary`, `PageInfo`, and `PageStructure` structs in the Elixir bindings. Without this, encoding page structure metadata to JSON would fail with a protocol error.
 
 #### Pre-built CLI Binary Missing MCP Command
+
 - Pre-built standalone CLI binaries were built without the `mcp` feature flag, causing the `kreuzberg mcp` command to be unavailable. The build script now enables all features (`--features all`) to match the Python, Node, and Homebrew builds. Fixes #369.
 
 #### PDF Error Handling Regression
+
 - Reverted incorrect change from v4.2.14 that silently returned empty results for corrupted/malformed PDFs instead of propagating errors. Corrupted PDFs now correctly return `PdfError::InvalidPdf` and password-protected PDFs return `PdfError::PasswordRequired` as expected.
 
 ### Changed
 
 #### API Parity
+
 - Added `security_limits` field to all 9 language bindings (TypeScript, Go, Python, Ruby, PHP, Java, C#, WASM, Elixir) for API parity with Rust core `ExtractionConfig`.
 
 ---
@@ -870,12 +1024,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 #### Excel File-Path Extraction
+
 - Fixed `.xla` (legacy add-in) and `.xlsb` (binary spreadsheet) graceful fallback only applied to byte-based extraction; file-path-based extraction still propagated parse errors.
 
 #### PDF Test Flakiness
+
 - Fixed flaky PDF tests caused by concurrent pdfium access during parallel test execution. Added `#[serial]` to all pdfium-using tests to prevent global state conflicts.
 
 #### Benchmark Fixtures
+
 - Replaced auto-generated fixture discovery (`generate.rs`) with curated, validated fixture set.
 - Added comprehensive fixture validation test suite (8 tests: JSON parsing, document existence, file sizes, ground truth, duplicate detection, format coverage).
 - Removed 5 duplicate fixture entries pointing to the same test documents.
@@ -884,6 +1041,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed `validate_ground_truth.py` only checking root-level fixtures; now uses `rglob` for recursive validation.
 
 ### Removed
+
 - Removed `generate.rs` auto-generation system from benchmark harness (caused recurring breakage from malformed vendored files).
 
 ---
@@ -893,35 +1051,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 #### WASM Office Format Support
+
 - Added office document extraction to the WASM target: DOCX, PPTX, RTF, reStructuredText, Org-mode, FictionBook, Typst, BibTeX, and Markdown are now available in the browser/WASM build.
 - Added WASM integration tests for all new office formats (`office_extraction.rs`).
 - Added e2e fixture definitions for RTF, RST, Org, FB2, Typst, BibTeX, and Markdown formats.
 - Regenerated e2e test suites across all language bindings to include new office format fixtures.
 
 #### Citation Extraction
+
 - Added structured citation extraction for RIS (`.ris`), PubMed/MEDLINE (`.nbib`), and EndNote XML (`.enw`) formats via `biblib` crate with rich metadata including authors, DOI, year, keywords, and abstract.
 - Added `CitationExtractor` with priority 60 for `application/x-research-info-systems`, `application/x-pubmed`, and `application/x-endnote+xml` MIME types.
 
 #### JPEG 2000 OCR Support
+
 - Added full JPEG 2000 image decoding for OCR via `hayro-jpeg2000` (pure Rust, memory-safe decoder). JP2 container and J2K codestream images are now decoded to RGB pixels for Tesseract OCR processing.
 - Added pure Rust JP2 metadata parsing (dimensions, format detection) without external dependencies.
 
 #### JBIG2 Image Support
+
 - Added JBIG2 bi-level image decoding for OCR via `hayro-jbig2` (pure Rust, memory-safe decoder). JBIG2 is commonly used in scanned PDF documents.
 - Added `image/x-jbig2` MIME type with `.jbig2` and `.jb2` file extension mappings.
 
 #### Gzip Archive Extraction
+
 - Added `GzipExtractor` for extracting text content from gzip-compressed files (`.gz`) via `flate2`, with decompression size limits to prevent gzip bomb attacks.
 
 #### Extractor Registration
+
 - Registered `JatsExtractor` and `DocbookExtractor` in the default extractor registry (extractors existed but were never registered).
 
 #### MIME Type & Extension Mappings
+
 - Added missing MIME types to `SUPPORTED_MIME_TYPES`: `text/x-fictionbook`, `application/x-fictionbook`, `text/x-bibtex`, `text/docbook`, `application/x-pubmed`.
 - Added MIME type aliases for broader compatibility: `text/djot`, `text/jats`, `application/x-epub+zip`, `application/vnd.epub+zip`, `text/rtf`, `text/prs.fallenstein.rst`, `text/x-tex`, `text/org`, `application/x-org`, `application/xhtml+xml`, `text/x-typst`, `image/jpg`.
 - Added missing file extension mappings: `.fb2`, `.opml`, `.dbk`, `.j2k`, `.j2c`, `.ris`, `.nbib`, `.enw`, `.typ`, `.djot`.
 
 #### Security
+
 - Wired `SecurityLimits` into the archive extraction pipeline: ZIP, TAR, 7z, and GZIP extractors now enforce configurable limits for max archive size, file count, compression ratio, and content size.
 - Added `security_limits` field to `ExtractionConfig` for user-configurable archive security thresholds.
 - ZIP archives are now validated with `ZipBombValidator` before extraction.
@@ -930,11 +1096,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 #### WASM Build
+
 - Fixed `zstd-sys` build failure for `wasm32-unknown-unknown` by disabling default features on the `zip` crate and using `deflate-flate2` (pure Rust) instead of `zstd` (C code incompatible with WASM).
 - Fixed `tokio`/`mio` compilation failure on WASM by removing `tokio-runtime` from the `office` feature (only needed for LibreOffice subprocess conversion, not in-memory parsers).
 - Gated LibreOffice conversion paths (`libreoffice.rs`, legacy DOC/PPT handlers) behind `not(target_arch = "wasm32")` to prevent WASM builds from pulling in tokio filesystem and process APIs.
 
 #### MIME Type Detection
+
 - Fixed `.typ` files not recognized as Typst format; added `.typ` as an alias for `application/x-typst`.
 - Fixed `.djot` files not recognized; added `.djot` extension mapping to `text/x-djot`.
 - Fixed `application/gzip` rejected by MIME validation; added to `SUPPORTED_MIME_TYPES`.
@@ -942,24 +1110,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Synced `SUPPORTED_MIME_TYPES` with extractor registry to prevent valid formats being rejected before reaching their extractor.
 
 #### Image Extraction
+
 - Fixed JPEG 2000 images (`.jp2`) not handled by ImageExtractor; added `image/jp2`, `image/jpx`, `image/jpm`, and `image/mj2` to supported types.
 
 #### Extraction
+
 - Fixed YAML files rejected with "Unsupported format: application/yaml"; now accepts all four YAML MIME type variants including the standard `application/yaml` (RFC 9512).
 
 #### CLI
+
 - Fixed `.yml` config files rejected by `--config` flag; now accepts both `.yml` and `.yaml`.
 
 #### .tgz Archive Extraction
+
 - Fixed `.tgz` files parsed as raw TAR instead of gzip-compressed TAR. The MIME mapping now correctly routes `.tgz` to the GzipExtractor, which detects inner TAR archives via ustar magic bytes and delegates to TAR extraction.
 
 #### Excel Exotic Formats
+
 - Fixed `.xlam` (Excel add-in), `.xla` (legacy add-in), and `.xlsb` (binary spreadsheet) files causing extraction errors when they lack standard workbook data. These formats now gracefully return an empty workbook instead of propagating parse errors.
 
 #### PDF Error Handling
+
 - Fixed password-protected and malformed PDFs causing extraction errors. The PDF extractor now gracefully returns an empty `ExtractionResult` instead of propagating `PdfError::PasswordRequired` and `PdfError::InvalidPdf`.
 
 #### Benchmark Harness
+
 - Fixed framework initialization check running before external adapters (Tika, pdfplumber, etc.) were registered, causing false "failed to initialize" errors.
 - Fixed missing `composer install` step in PHP benchmark CI job.
 - Fixed C# benchmark wrapper using wrong MIME type casing for macro-enabled Office formats and incorrect djot MIME type.
@@ -975,6 +1150,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 #### DOCX Extraction
+
 - Fixed DOCX list items missing whitespace between text runs, causing words to merge together. (#359)
 
 ---
@@ -984,6 +1160,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 #### Python Bindings
+
 - Fixed CLI binary missing from all platform wheels in the publish workflow. (#349)
 
 ### Fixed
@@ -1000,13 +1177,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 #### MIME Type Detection
+
 - Fixed DOCX/XLSX/PPTX files incorrectly detected as `application/zip` when using bytes-based MIME detection. (#350)
 
 #### Java Bindings
+
 - Fixed format-specific metadata (e.g., `sheet_count`, `sheet_names`) missing from `getMetadataMap()`.
 - Fixed `ClassCastException` when deserializing nested generic collections in model classes. (#355)
 
 #### Python Bindings
+
 - Fixed Windows CLI binary still missing from wheel due to wrong filename in CI copy step. (#349)
 
 ---
@@ -1016,13 +1196,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 #### MCP Server
+
 - Fixed "Cannot start a runtime from within a runtime" panic when using MCP server in Docker.
 - Removed unused `async` parameter from MCP tools.
 
 #### Python Bindings
+
 - Fixed "embedded binary not found" error on Windows due to missing `.exe` extension handling. (#349)
 
 #### OCR Heuristic
+
 - Fixed OCR fallback evaluator receiving `None` for page count, causing scanned PDFs to incorrectly skip OCR.
 - Added per-page OCR evaluation so that mixed-content PDFs with some scanned pages are properly OCR'd.
 
@@ -1033,15 +1216,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 #### Python Bindings
+
 - Fixed `ChunkingConfig` serialization outputting wrong field names (`max_characters`/`overlap` instead of `max_chars`/`max_overlap`).
 
 #### Java Bindings
+
 - Fixed ARM64 SIGBUS crash in `kreuzberg_get_error_details` by returning a heap-allocated pointer instead of struct-by-value.
 
 #### Ruby Bindings
+
 - Fixed `rb_sys` missing as runtime dependency, causing `LoadError` during native extension compilation.
 
 #### FFI
+
 - Added `kreuzberg_free_error_details()` to properly free heap-allocated `CErrorDetails` structs.
 
 ---
@@ -1051,52 +1238,66 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 #### API
+
 - Added OpenAPI schema for `/extract` endpoint with full type documentation.
 - Added unified `ChunkingConfig` with canonical field names and serde aliases for backwards compatibility.
 
 #### OCR
+
 - Added `KREUZBERG_OCR_LANGUAGE="all"` support to auto-detect and use all installed Tesseract languages. (#344)
 
 ### Fixed
 
 #### Ruby Bindings
+
 - Fixed `Cow<'static, str>` type conversions in Magnus bindings.
 - Fixed missing `bytes` workspace dependency in vendor Cargo.toml.
 
 #### Python Bindings
+
 - Fixed runtime `ExtractedImage` import; defined as Python-level runtime types instead of importing from compiled Rust bindings.
 
 #### C# Bindings
+
 - Fixed `Attributes` deserialization on ARM64 to handle both array-of-arrays and object JSON formats.
 
 #### Java Bindings
+
 - Fixed test timeouts causing CI hangs by adding `@Timeout(60)` to concurrency and async tests.
 
 #### Elixir Bindings
+
 - Overhauled all struct types to match Rust source: fixed `Metadata`, `Table`, `Image`, `Chunk`, `Page`, `ExtractionResult` field names and types.
 - Added new struct modules matching Rust types: `ChunkMetadata`, `Keyword`, `PageHierarchy`, `DjotContent`, `PageStructure`, `ErrorMetadata`, `ImagePreprocessingMetadata`, and more.
 
 #### TypeScript Bindings
+
 - Overhauled type definitions to match NAPI-RS Rust source; fixed `ChunkingConfig`, `ExtractionResult`, `ExtractionConfig`, and `FormattedBlock` fields.
 
 #### PHP Bindings
+
 - Overhauled type definitions to match Rust source; fixed `Keyword`, `Metadata`, `ExtractionResult`, and `FormattedBlock` fields.
 
 #### Ruby Bindings
+
 - Overhauled RBS type stubs to match Ruby source and Rust Magnus bindings.
 
 #### Python Bindings
+
 - Overhauled `_internal_bindings.pyi` type stubs to match Rust source; fixed `Chunk`, `PptxMetadata`, `PdfMetadata`, `HtmlMetadata`, and optionality on multiple fields.
 - Removed duplicate `types.py` containing 43 conflicting type definitions.
 
 #### Java Bindings
+
 - Overhauled type definitions to match Rust source; fixed `Metadata`, `PptxMetadata`, `PageInfo`, `ImageMetadata`, `LinkMetadata`, and added missing enums and types.
 
 #### C# Bindings
+
 - Overhauled type definitions to match Rust source; fixed `Metadata`, `PptxMetadata`, `PageBoundary`, `ImageMetadata`, and added missing types.
 - Fixed keyword deserialization to discriminate between simple string keywords and extracted keyword objects.
 
 #### Go Bindings
+
 - Overhauled type definitions to match Rust source; fixed `Metadata`, `PptxMetadata`, `ImageMetadata`, `PageBoundary`, `PageInfo`, and added missing enums and types.
 
 ### Changed
@@ -1118,6 +1319,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 #### Python Bindings
+
 - Fixed missing `output_format`/`result_format` fields on `ExtractionResult`.
 - Fixed missing `elements` and `djot_content` fields on `ExtractionResult`.
 - Fixed chunks returned as dicts instead of objects; created proper `PyChunk` class with attribute access.
@@ -1129,29 +1331,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 #### Python Bindings
+
 - Fixed missing `OutputFormat`/`ResultFormat` exports causing `ImportError`.
 - Fixed `.pyi` stub alignment for `ExtractionResult`, `Element`, and related types.
 - Fixed Python 3.10 compatibility for `StrEnum` (native `StrEnum` is 3.11+).
 
 #### PHP Bindings
+
 - Fixed config alignment with Rust core for `ImageExtractionConfig`, `PdfConfig`, `ImagePreprocessingConfig`, and `ExtractionConfig`.
 - Removed phantom parameters not present in Rust core.
 
 #### TypeScript/Node Bindings
+
 - Fixed missing `elements` field; added `JsElement`, `JsElementMetadata`, `JsBoundingBox` to NAPI-RS bindings.
 
 #### C# Bindings
+
 - Fixed enum serialization using `JsonStringEnumMemberName` for .NET 9+.
 
 #### Elixir Bindings
+
 - Fixed test failures and cleaned up warnings on Windows.
 
 #### Node Bindings
+
 - Added Bun runtime support.
 
 ### Changed
 
 #### All Bindings
+
 - Achieved `PageContent` field parity across all language bindings.
 
 ---
@@ -1161,15 +1370,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 #### TypeScript/Node Bindings
+
 - Fixed missing `elements` field; added `Element`, `ElementType`, `BoundingBox`, and `ElementMetadata` types.
 
 #### Rust Core
+
 - Fixed `KeywordConfig` deserialization failing on partial configs by adding `#[serde(default)]`.
 
 #### C# Bindings
+
 - Fixed `Element` serialization for `element_based` result format deserialization.
 
 #### Elixir Bindings
+
 - Derived `Jason.Encoder` for `ExtractionConfig` struct.
 
 ---
@@ -1179,31 +1392,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 #### API
+
 - Fixed JSON array rejection; `/embed`, `/chunk`, and other endpoints now properly reject arrays in request bodies with 400 status.
 
 #### CLI
+
 - Fixed `--format json` to serialize the complete `ExtractionResult` including chunks, embeddings, images, pages, and elements.
 
 #### MCP
+
 - Fixed MCP tool responses to return full JSON-serialized `ExtractionResult`, matching API and CLI output.
 
 #### Elixir Bindings
+
 - Added `ExtractionConfig.new/0` and `new/1` constructors.
 - Changed `text` field to `content` on `Chunk` for API parity with Rust core.
 
 #### C# Bindings
+
 - Fixed file-not-found errors to throw `KreuzbergIOException` instead of `KreuzbergValidationException`.
 
 #### WASM / Cloudflare Workers
+
 - Fixed `initWasm()` failing in Cloudflare Workers and Vercel Edge with "Invalid URL string" error; added `initWasm({ wasmModule })` option for explicit WASM module injection.
 
 #### Go Bindings
+
 - Removed references to deprecated `WithEmbedding()` API and `Chunking.Embedding` field.
 
 #### Java Bindings
+
 - Removed non-canonical `embedding` and `imagePreprocessing` top-level fields from `ExtractionConfig`.
 
 #### MCP
+
 - Fixed boolean merge logic bug causing configuration corruption when using `config` parameter.
 
 ---
@@ -1213,36 +1435,45 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 #### PHP Bindings
+
 - Removed 5 non-canonical fields from `ExtractionConfig` and fixed defaults; all 16 fields now match Rust canonical source.
 
 #### Go Bindings
+
 - Removed non-canonical `Success`, `Visible`, and `ContentType` fields from result types.
 
 #### Ruby Bindings
+
 - Fixed `enable_quality_processing` default from `false` to `true` to match Rust.
 
 #### Java Bindings
+
 - Fixed `enableQualityProcessing` default from `false` to `true` to match Rust.
 
 #### TypeScript Bindings
+
 - Removed non-existent type exports (`EmbeddingConfig`, `HierarchyConfig`, etc.) from index.ts.
 
 ### Fixed
 
 #### Elixir Bindings
+
 - Fixed `force_build: true` causing production installs to fail; now only builds from source in development. ([#333](https://github.com/kreuzberg-dev/kreuzberg/issues/333))
 
 #### Docker Images
+
 - Fixed "OCR backend 'tesseract' not registered" error by adding dynamic tessdata discovery for multiple tesseract versions.
 - Fixed "Failed to initialize embedding model" error by adding persistent Hugging Face model cache directory.
 
 #### API
+
 - Fixed JSON error responses to return proper JSON `ErrorResponse` instead of plain text.
 - Added validation constraints for chunking config and embed texts array.
 - Added validation that `overlap` must be less than `max_characters`.
 - `EmbeddingConfig.model` now defaults to "balanced" preset when not specified.
 
 #### Rust Core
+
 - Fixed XLSX out-of-memory with Excel Solver files that declare extreme cell dimensions. ([#331](https://github.com/kreuzberg-dev/kreuzberg/issues/331))
 
 ---
@@ -1252,29 +1483,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 #### Rust Core
+
 - Fixed PPTX image page numbers being reversed due to unsorted slide paths. ([#329](https://github.com/kreuzberg-dev/kreuzberg/issues/329))
 - Added comprehensive error logging for silent plugin failures. ([#328](https://github.com/kreuzberg-dev/kreuzberg/issues/328))
 - Extended `VALID_OUTPUT_FORMATS` to include all valid aliases (`plain`, `text`, `markdown`, `md`, `djot`, `html`).
 - Fixed `validate_file_exists()` to return `Io` error instead of `Validation` error for file-not-found.
 
 #### Go Bindings
+
 - Added `OutputFormatText` and `OutputFormatMd` format constant aliases.
 
 #### Elixir Bindings
+
 - Added `text` and `md` aliases to `validate_output_format`.
 
 #### Ruby Bindings
+
 - Fixed `extract` and `detect` methods to accept both positional and keyword arguments.
 - Renamed `image_extraction` to `images` (canonical name) with backward-compatible alias.
 
 #### PHP Bindings
+
 - Renamed fields to canonical names (`images`, `pages`, `pdfOptions`, `postprocessor`, `tokenReduction`).
 - Added missing `postprocessor` and `tokenReduction` fields.
 
 #### Java Bindings
+
 - Added `getImages()` and `images()` builder methods as aliases for `getImageExtraction()`.
 
 #### WASM Bindings
+
 - Added `outputFormat`, `resultFormat`, and `htmlOptions` to `ExtractionConfig` interface.
 
 ### Documentation
@@ -1288,41 +1526,51 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 #### MCP Interface
+
 - Full `config` parameter support on all MCP tools, enabling complete configuration pass-through from AI agents.
 
 #### CLI
+
 - Added `--output-format` flag (canonical replacement for `--content-format`).
 - Added `--result-format` flag for controlling result structure (unified, element_based).
 - Added `--config-json` flag for inline JSON configuration.
 - Added `--config-json-base64` flag for base64-encoded JSON configuration.
 
 #### API - All Language Bindings
+
 - Added `outputFormat` / `output_format` field (Plain, Markdown, Djot, HTML) to all bindings.
 - Added `resultFormat` / `result_format` field (Unified, ElementBased) to all bindings.
 
 #### Go Bindings
+
 - Added `OutputFormat` and `ResultFormat` types with `WithOutputFormat()` and `WithResultFormat()` functional options.
 
 #### Java Bindings
+
 - Added `outputFormat` and `resultFormat` to Builder pattern.
 
 #### PHP Bindings
+
 - Added 6 missing configuration fields: `useCache`, `enableQualityProcessing`, `forceOcr`, `maxConcurrentExtractions`, `resultFormat`, `outputFormat`.
 
 ### Changed
 
 #### Configuration Precedence
+
 - CLI flag > inline JSON > config file > defaults.
 
 #### MCP Schema Evolution
+
 - `enable_ocr` and `force_ocr` now under `config` object instead of top-level parameters.
 
 ### Fixed
 
 #### Ruby Bindings
+
 - Fixed batch chunking operations.
 
 #### MCP
+
 - Fixed boolean merge logic bug in nested config objects.
 
 ### BREAKING CHANGES
@@ -1335,9 +1583,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Deprecated
 
 #### CLI (backward compatible)
+
 - `--content-format` flag deprecated in favor of `--output-format`.
 
 #### Environment Variables (backward compatible)
+
 - `KREUZBERG_CONTENT_FORMAT` deprecated in favor of `KREUZBERG_OUTPUT_FORMAT`.
 
 ---
@@ -1347,14 +1597,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 #### Ruby Bindings
+
 - Added Ruby 4.0 support (tested with Ruby 4.0.1).
 
 ### Fixed
 
 #### Ruby Bindings
+
 - Fixed gem native extension build failure due to incorrect Cargo.toml path rewriting.
 
 #### Go Bindings
+
 - Fixed Windows timeout caused by FFI mutex deadlock; now uses lazy initialization via `sync.Once`.
 
 ---
@@ -1364,6 +1617,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 #### PPTX/PPSX Extraction
+
 - Fixed PPTX extraction failing on shapes without text (e.g., image placeholders). (#321)
 - Added PPSX (PowerPoint Show) file support.
 - Added PPTM (PowerPoint Macro-Enabled) file support.
@@ -1375,15 +1629,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 #### API
+
 - Added `POST /chunk` endpoint for text chunking with configurable `max_characters`, `overlap`, and `trim`.
 
 #### Core
+
 - Added Djot markup format support (`.djot`) with full parser, structured representation, and YAML frontmatter extraction.
 - Added content output format configuration (`ContentFormat` enum: Plain, Markdown, Djot, HTML) with CLI `--content-format` flag.
 - Added Djot output format support for HTML and OCR conversions.
 - Added element-based output format (`ResultFormat::ElementBased`) providing Unstructured.io-compatible semantic element extraction.
 
 #### Language Bindings
+
 - All bindings (Python, TypeScript, Ruby, PHP, Go, Java, C#, Elixir, WASM) updated with content format and result format configuration, plus `Element`, `ElementType`, `ElementMetadata`, `BoundingBox`, and `DjotContent` types.
 
 ### Changed
@@ -1393,9 +1650,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 #### Python
+
 - Fixed missing type exports (`Element`, `ElementMetadata`, `ElementType`, `BoundingBox`, `HtmlImageMetadata`) in `kreuzberg.types.__all__`.
 
 #### Elixir
+
 - Fixed `FunctionClauseError` when extracting DOCX files with keywords metadata. ([#309](https://github.com/kreuzberg-dev/kreuzberg/issues/309))
 
 ---
@@ -1405,17 +1664,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 #### Docker
+
 - Migrated from Docker Hub to GitHub Container Registry (`ghcr.io/kreuzberg-dev/kreuzberg`).
 
 ### Fixed
 
-#### C#
+#### C
+
 - Fixed `HtmlConversionOptions` serializing as `null` instead of `{}` when empty, causing Rust FFI errors.
 
 #### Python
+
 - Fixed missing `_internal_bindings.pyi` type stub file in Python wheels. ([#298](https://github.com/kreuzberg-dev/kreuzberg/issues/298))
 
 #### Homebrew
+
 - Fixed bottle checksum mismatches by computing checksums from actual uploaded release files.
 
 ---
@@ -1425,9 +1688,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 #### Elixir
+
 - Fixed checksum file generation for precompiled NIFs during Hex.pm publishing.
 
 #### PHP
+
 - Fixed runtime panic from unregistered `ChunkMetadata` and `Keyword` classes in ext-php-rs.
 
 ---
@@ -1437,11 +1702,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 #### Go Module
+
 - Added automated FFI library installer that downloads the correct platform-specific library from GitHub releases. ([#281](https://github.com/kreuzberg-dev/kreuzberg/issues/281))
 
 ### Fixed
 
 #### Elixir
+
 - Fixed precompiled NIF checksums missing from Hex package.
 
 ---
@@ -1451,6 +1718,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 #### Docker
+
 - Fixed `MissingDependencyError` when extracting legacy MS Office formats in Docker; added LibreOffice symlinks and missing runtime dependencies. ([#288](https://github.com/kreuzberg-dev/kreuzberg/issues/288))
 
 ---
@@ -1460,17 +1728,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 #### HTML Configuration Support
+
 - Full `html_options` configuration now available from config files and all language bindings. ([#282](https://github.com/kreuzberg-dev/kreuzberg/issues/282))
 
 ### Fixed
 
 #### Go Module
+
 - Fixed header include path so `go get` users no longer get compilation errors about missing headers. ([#280](https://github.com/kreuzberg-dev/kreuzberg/issues/280))
 
 #### C# SDK
+
 - Fixed `JsonException` when using keyword extraction; keywords now properly deserialized as `ExtractedKeyword` objects. ([#285](https://github.com/kreuzberg-dev/kreuzberg/issues/285))
 
 #### Distribution
+
 - Made Homebrew tap repository public to enable `brew install kreuzberg-dev/tap/kreuzberg`. ([#283](https://github.com/kreuzberg-dev/kreuzberg/issues/283))
 
 ---
@@ -1480,9 +1752,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 #### Go Module
+
 - Fixed Go module tag format so `go get` works correctly. ([#264](https://github.com/kreuzberg-dev/kreuzberg/issues/264))
 
 #### Elixir
+
 - Fixed macOS native library extension (`.dylib` instead of `.so`).
 
 ---
@@ -1492,18 +1766,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 #### Elixir
+
 - Fixed NIF binaries not uploaded to GitHub releases, breaking `rustler_precompiled`. ([#279](https://github.com/kreuzberg-dev/kreuzberg/issues/279))
 
 #### Python
+
 - Fixed `kreuzberg-tesseract` missing from PyPI source distributions, causing builds from source to fail. ([#277](https://github.com/kreuzberg-dev/kreuzberg/issues/277))
 
 #### Homebrew
+
 - Fixed bottle publishing workflow to publish releases from draft state.
 
 #### Ruby
+
 - Updated RBS type definitions to match keyword argument signatures.
 
 #### WASM
+
 - Fixed Svelte 5 variable naming and removed call to non-existent `detectMimeType()` API.
 
 ---
@@ -1517,6 +1796,7 @@ First stable release of Kreuzberg v4, a complete rewrite with a Rust core and po
 ### Added
 
 #### FFI & Language Bindings
+
 - Python FFI error handling via `get_last_error_code()` and `get_last_panic_context()`.
 - PHP custom extractor support with metadata and tables flowing through to results.
 - Dynamic Tesseract language discovery from installation.
@@ -1524,6 +1804,7 @@ First stable release of Kreuzberg v4, a complete rewrite with a Rust core and po
 ### Removed
 
 #### Legacy Support
+
 - Completely removed v3 legacy Python package and infrastructure. V3 users should migrate to v4 using the [migration guide](https://docs.kreuzberg.dev/migration/v3-to-v4/).
 
 ---
@@ -1533,6 +1814,7 @@ First stable release of Kreuzberg v4, a complete rewrite with a Rust core and po
 ### Added
 
 #### Documentation
+
 - Added comprehensive platform support documentation to all READMEs.
 
 ---
@@ -1542,22 +1824,27 @@ First stable release of Kreuzberg v4, a complete rewrite with a Rust core and po
 ### Added
 
 #### API Server
+
 - Added `POST /embed` endpoint for generating embeddings from text. ([#266](https://github.com/Anthropic/kreuzberg/issues/266))
 - Added `ServerConfig` type for file-based server configuration (TOML/YAML/JSON) with environment variable overrides.
 
 #### Observability
+
 - Added OpenTelemetry tracing instrumentation to all API endpoints.
 
 ### Fixed
 
 #### API Server & CLI
+
 - Fixed CLI to properly use ServerConfig from config files (CORS origins, upload size limits).
 
 #### Configuration Examples
+
 - Fixed YAKE/RAKE parameter examples to match actual source code.
 - Changed default host from `0.0.0.0` to `127.0.0.1` for safer defaults.
 
 #### PHP
+
 - Fixed `extract_tables` config flag to properly filter table results.
 
 ---
@@ -1610,12 +1897,15 @@ First stable release of Kreuzberg v4, a complete rewrite with a Rust core and po
 ### Added
 
 #### Java
+
 - Added `EmbeddingConfig` class with builder pattern for embedding generation.
 
-#### C#
+#### C
+
 - Added `EmbeddingConfig` sealed class as type-safe replacement for Dictionary-based configuration.
 
 #### Node.js (NAPI-RS)
+
 - Added Worker Thread Pool APIs: `createWorkerPool`, `extractFileInWorker`, `batchExtractFilesInWorker`, `closeWorkerPool`.
 
 ### Fixed
@@ -1986,6 +2276,7 @@ See [Migration Guide](https://docs.kreuzberg.dev/migration/v3-to-v4/) for detail
 ## [3.22.0] - 2025-11-27
 
 ### Fixed
+
 - Fixed EasyOCR import error handling.
 - Hardened HTML regexes for script/style stripping.
 
@@ -2356,11 +2647,24 @@ See [Migration Guide](https://docs.kreuzberg.dev/migration/v3-to-v4/) for detail
 
 ## See Also
 
-- [Configuration Reference](reference/configuration.md) - Detailed configuration options
-- [Migration Guide](migration/v3-to-v4.md) - v3 to v4 migration instructions
-- [Format Support](reference/formats.md) - Supported file formats
-- [Extraction Guide](guides/extraction.md) - Extraction examples
+- [Configuration Reference](docs/reference/configuration.md) - Detailed configuration options
+- [Migration Guide](docs/migration/v3-to-v4.md) - v3 to v4 migration instructions
+- [Format Support](docs/reference/formats.md) - Supported file formats
+- [Extraction Guide](docs/guides/extraction.md) - Extraction examples
 
+[4.6.2]: https://github.com/kreuzberg-dev/kreuzberg/releases/tag/v4.6.2
+[4.6.1]: https://github.com/kreuzberg-dev/kreuzberg/releases/tag/v4.6.1
+[4.6.0]: https://github.com/kreuzberg-dev/kreuzberg/releases/tag/v4.6.0
+[4.5.4]: https://github.com/kreuzberg-dev/kreuzberg/releases/tag/v4.5.4
+[4.5.3]: https://github.com/kreuzberg-dev/kreuzberg/releases/tag/v4.5.3
+[4.5.2]: https://github.com/kreuzberg-dev/kreuzberg/releases/tag/v4.5.2
+[4.5.1]: https://github.com/kreuzberg-dev/kreuzberg/releases/tag/v4.5.1
+[4.5.0]: https://github.com/kreuzberg-dev/kreuzberg/releases/tag/v4.5.0
+[4.4.6]: https://github.com/kreuzberg-dev/kreuzberg/releases/tag/v4.4.6
+[4.4.5]: https://github.com/kreuzberg-dev/kreuzberg/releases/tag/v4.4.5
+[4.4.4]: https://github.com/kreuzberg-dev/kreuzberg/releases/tag/v4.4.4
+[4.4.3]: https://github.com/kreuzberg-dev/kreuzberg/releases/tag/v4.4.3
+[4.4.2]: https://github.com/kreuzberg-dev/kreuzberg/releases/tag/v4.4.2
 [4.4.1]: https://github.com/kreuzberg-dev/kreuzberg/releases/tag/v4.4.1
 [4.4.0]: https://github.com/kreuzberg-dev/kreuzberg/releases/tag/v4.4.0
 [4.3.8]: https://github.com/kreuzberg-dev/kreuzberg/releases/tag/v4.3.8

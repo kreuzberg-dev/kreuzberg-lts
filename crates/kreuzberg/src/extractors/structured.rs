@@ -1,4 +1,4 @@
-//! Structured data extractor (JSON, YAML, TOML).
+//! Structured data extractor (JSON, JSONL/NDJSON, YAML, TOML).
 
 use crate::Result;
 use crate::core::config::ExtractionConfig;
@@ -23,13 +23,14 @@ fn build_structured_document_structure(
 
     let source_format = match mime_type {
         "application/json" | "text/json" | "application/csl+json" => "json",
+        "application/x-ndjson" | "application/jsonl" | "application/x-jsonlines" => "jsonl",
         "application/yaml" | "application/x-yaml" | "text/yaml" | "text/x-yaml" => "yaml",
         "application/toml" | "text/toml" => "toml",
         _ => "structured",
     };
 
     let language = match source_format {
-        "json" => Some("json"),
+        "json" | "jsonl" => Some("json"),
         "yaml" => Some("yaml"),
         "toml" => Some("toml"),
         _ => None,
@@ -105,7 +106,7 @@ fn build_json_structure(
     }
 }
 
-/// Structured data extractor supporting JSON, YAML, and TOML.
+/// Structured data extractor supporting JSON, JSONL/NDJSON, YAML, and TOML.
 pub struct StructuredExtractor;
 
 impl Default for StructuredExtractor {
@@ -141,13 +142,6 @@ impl Plugin for StructuredExtractor {
 #[cfg_attr(not(target_arch = "wasm32"), async_trait)]
 #[cfg_attr(target_arch = "wasm32", async_trait(?Send))]
 impl DocumentExtractor for StructuredExtractor {
-    #[cfg_attr(feature = "otel", tracing::instrument(
-        skip(self, content, config),
-        fields(
-            extractor.name = self.name(),
-            content.size_bytes = content.len(),
-        )
-    ))]
     async fn extract_bytes(
         &self,
         content: &[u8],
@@ -157,6 +151,9 @@ impl DocumentExtractor for StructuredExtractor {
         let structured_result = match mime_type {
             "application/json" | "text/json" | "application/csl+json" => {
                 crate::extraction::structured::parse_json(content, None)?
+            }
+            "application/x-ndjson" | "application/jsonl" | "application/x-jsonlines" => {
+                crate::extraction::structured::parse_jsonl(content, None)?
             }
             "application/yaml" | "application/x-yaml" | "text/yaml" | "text/x-yaml" => {
                 crate::extraction::structured::parse_yaml(content)?
@@ -211,12 +208,6 @@ impl DocumentExtractor for StructuredExtractor {
     }
 
     #[cfg(feature = "tokio-runtime")]
-    #[cfg_attr(feature = "otel", tracing::instrument(
-        skip(self, path, config),
-        fields(
-            extractor.name = self.name(),
-        )
-    ))]
     async fn extract_file(&self, path: &Path, mime_type: &str, config: &ExtractionConfig) -> Result<ExtractionResult> {
         let bytes = tokio::fs::read(path).await?;
         self.extract_bytes(&bytes, mime_type, config).await
@@ -227,6 +218,9 @@ impl DocumentExtractor for StructuredExtractor {
             "application/json",
             "text/json",
             "application/csl+json",
+            "application/x-ndjson",
+            "application/jsonl",
+            "application/x-jsonlines",
             "application/yaml",
             "application/x-yaml",
             "text/yaml",
@@ -257,8 +251,11 @@ mod tests {
     fn test_structured_extractor_supported_mime_types() {
         let extractor = StructuredExtractor::new();
         let mime_types = extractor.supported_mime_types();
-        assert_eq!(mime_types.len(), 9);
+        assert_eq!(mime_types.len(), 12);
         assert!(mime_types.contains(&"application/json"));
+        assert!(mime_types.contains(&"application/x-ndjson"));
+        assert!(mime_types.contains(&"application/jsonl"));
+        assert!(mime_types.contains(&"application/x-jsonlines"));
         assert!(mime_types.contains(&"application/x-yaml"));
         assert!(mime_types.contains(&"application/toml"));
         assert!(mime_types.contains(&"application/csl+json"));

@@ -306,6 +306,7 @@ export function buildConfig(raw: unknown): ExtractionConfig {
 	assignBooleanField(target, source, "force_ocr", "forceOcr");
 	assignBooleanField(target, source, "include_document_structure", "includeDocumentStructure");
 	assignNumberField(target, source, "max_concurrent_extractions", "maxConcurrentExtractions");
+	assignNumberField(target, source, "extraction_timeout_secs", "extractionTimeoutSecs");
 
 	if (isPlainRecord(source.ocr)) {
 		const mapped = mapOcrConfig(source.ocr as PlainRecord);
@@ -680,6 +681,19 @@ export const assertions = {
 				expect(annotations.length).toBeGreaterThanOrEqual(minCount);
 			}
 		}
+	},
+
+	assertIsPng(data: Buffer): void {
+		expect(data.length).toBeGreaterThanOrEqual(4);
+		const magic = data.subarray(0, 4);
+		expect(magic[0]).toBe(0x89);
+		expect(magic[1]).toBe(0x50);
+		expect(magic[2]).toBe(0x4e);
+		expect(magic[3]).toBe(0x47);
+	},
+
+	assertMinByteLength(data: Buffer, minLength: number): void {
+		expect(data.length).toBeGreaterThanOrEqual(minLength);
 	},
 };
 

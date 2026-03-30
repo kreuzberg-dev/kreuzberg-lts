@@ -619,6 +619,8 @@ Text chunking configuration for splitting long documents.
 - `sizing_type` (str | None): How chunk size is measured. Options: `"characters"` (default) or `"tokenizer"` (use a HuggingFace tokenizer). Default: None (characters)
 - `sizing_model` (str | None): HuggingFace model ID for tokenizer-based sizing (e.g. `"bert-base-uncased"`). Required when `sizing_type="tokenizer"`. Default: None
 - `sizing_cache_dir` (str | None): Optional directory to cache downloaded tokenizer files. Default: None
+- `chunker_type` (str | None): Type of chunker to use. Options: `"text"` (default), `"markdown"`, `"yaml"`. Default: None (text)
+- `prepend_heading_context` (bool | None): When True, prepends heading hierarchy path to each chunk's content. Most useful with `chunker_type="markdown"`. Default: None (False)
 
 **Example:**
 
@@ -1176,6 +1178,47 @@ except KreuzbergError as e:
 - `error_code_name(code: int)` → str
 
 See [Error Handling Reference](errors.md) for detailed error documentation and best practices.
+
+---
+
+## PDF Rendering
+
+!!! info "Added in v4.6.2"
+
+### render_pdf_page()
+
+Render a single PDF page as a PNG image.
+
+**Signature:**
+
+```python title="Python"
+def render_pdf_page(
+    file_path: str | Path,
+    page_index: int,
+    *,
+    dpi: int = 150,
+) -> bytes
+```
+
+**Parameters:**
+
+- `file_path` (str | Path): Path to the PDF file
+- `page_index` (int): Zero-based page index to render
+- `dpi` (int): Resolution for rendering (default 150)
+
+**Returns:**
+
+- `bytes`: PNG-encoded bytes for the requested page
+
+**Example:**
+
+```python title="render_single_page.py"
+from kreuzberg import render_pdf_page
+
+png_bytes = render_pdf_page("document.pdf", 0)
+with open("first_page.png", "wb") as f:
+    f.write(png_bytes)
+```
 
 ---
 

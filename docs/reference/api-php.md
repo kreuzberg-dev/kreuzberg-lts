@@ -888,6 +888,8 @@ readonly class ChunkingConfig
         public ?string $sizingType = null,
         public ?string $sizingModel = null,
         public ?string $sizingCacheDir = null,
+        public string $chunkerType = 'text',
+        public bool $prependHeadingContext = false,
     );
 }
 ```
@@ -901,6 +903,8 @@ readonly class ChunkingConfig
 - `$sizingType` (string|null): How chunk size is measured. Options: `"characters"` (default) or `"tokenizer"` (use a HuggingFace tokenizer). Default: null (characters)
 - `$sizingModel` (string|null): HuggingFace model ID for tokenizer-based sizing (e.g. `"bert-base-uncased"`). Required when `$sizingType` is `"tokenizer"`. Default: null
 - `$sizingCacheDir` (string|null): Optional directory to cache downloaded tokenizer files. Default: null
+- `$chunkerType` (string): Type of chunker to use. Options: `"text"` (default), `"markdown"`, `"yaml"`. Default: `"text"`
+- `$prependHeadingContext` (bool): When true, prepends heading hierarchy path to each chunk's content. Most useful with `chunkerType: "markdown"`. Default: false
 
 **Examples:**
 
@@ -1530,6 +1534,43 @@ if ($result->pages !== null) {
         echo "  Images: " . count($page->images) . "\n";
     }
 }
+```
+
+---
+
+## PDF Rendering
+
+!!! info "Added in v4.6.2"
+
+### render_pdf_page()
+
+Render a single page of a PDF as a PNG image.
+
+**Signature:**
+
+```php title="PHP"
+function render_pdf_page(string $filePath, int $pageIndex, int $dpi = 150): string
+```
+
+**Parameters:**
+
+- `$filePath` (string): Path to the PDF file
+- `$pageIndex` (int): Zero-based page index to render
+- `$dpi` (int): Resolution for rendering (default 150)
+
+**Returns:**
+
+- `string`: PNG-encoded string for the requested page
+
+**Throws:**
+
+- `KreuzbergException`: If file cannot be read, rendered, or page index is out of bounds
+
+**Example:**
+
+```php title="render_single_page.php"
+$png = \Kreuzberg\render_pdf_page('document.pdf', 0);
+file_put_contents('first_page.png', $png);
 ```
 
 ---
@@ -2536,21 +2577,25 @@ echo "File is accessible!\n";
 **Migration Steps:**
 
 1. Update PHP to 8.2+:
+
    ```bash
    php -v  # Check current version
    ```
 
 2. Update Composer dependency:
+
    ```bash
    composer require kreuzberg/kreuzberg:^4.0
    ```
 
 3. Update extension:
+
    ```bash
    pie install kreuzberg/kreuzberg-ext:^4.0
    ```
 
 4. Update code:
+
    ```php
    // Before
    use Kreuzberg\Config\Config;

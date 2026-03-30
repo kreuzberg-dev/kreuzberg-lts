@@ -9,33 +9,12 @@ tasks:
   build:
     desc: Build documentation
     cmds:
-      - uv run mkdocs build --clean --strict
+      - uv run --group doc zensical build --clean
 
   serve:
     desc: Serve documentation locally
     cmds:
-      - uv run mkdocs serve
-
-  serve:versioned:
-    desc: Serve versioned documentation with mike
-    cmds:
-      - uv run mike serve
-
-  deploy:v4:
-    desc: Deploy v4 documentation with mike
-    cmds:
-      - uv run mike deploy --update-aliases 4.0 latest
-      - uv run mike set-default latest
-
-  deploy:all:
-    desc: Deploy v4 documentation
-    cmds:
-      - task: deploy:v4
-
-  publish:
-    desc: Publish documentation to GitHub Pages
-    cmds:
-      - uv run mike deploy --push 4.0 latest
+      - uv run --group doc zensical serve
 
   generate-readme:
     desc: Generate and format language package READMEs from templates

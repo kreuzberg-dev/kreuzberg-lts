@@ -837,6 +837,25 @@ module Kreuzberg
       end
     end
 
+    # Email extraction configuration
+    #
+    # @example With fallback codepage
+    #   email = Email.new(msg_fallback_codepage: 1251)
+    #
+    class Email
+      attr_reader :msg_fallback_codepage
+
+      def initialize(msg_fallback_codepage: nil)
+        @msg_fallback_codepage = msg_fallback_codepage&.to_i
+      end
+
+      def to_h
+        h = {}
+        h[:msg_fallback_codepage] = @msg_fallback_codepage unless @msg_fallback_codepage.nil?
+        h
+      end
+    end
+
     # Layout detection configuration
     #
     # @example Basic usage with fast preset
@@ -926,14 +945,15 @@ module Kreuzberg
     #   )
     #
     class Extraction
-      attr_reader :use_cache, :enable_quality_processing, :force_ocr,
+      attr_reader :use_cache, :enable_quality_processing, :force_ocr, :force_ocr_pages,
                   :include_document_structure,
                   :ocr, :chunking, :language_detection, :pdf_options,
                   :images, :postprocessor,
                   :token_reduction, :keywords, :html_options, :pages,
                   :max_concurrent_extractions, :output_format, :result_format,
                   :security_limits, :layout, :concurrency,
-                  :cache_namespace, :cache_ttl_secs
+                  :cache_namespace, :cache_ttl_secs, :extraction_timeout_secs,
+                  :max_archive_depth, :acceleration, :email
 
       # Alias for backward compatibility - image_extraction is the canonical name
       alias image_extraction images
@@ -954,11 +974,12 @@ module Kreuzberg
       #
       # Keys that are allowed in the Extraction config
       ALLOWED_KEYS = %i[
-        use_cache enable_quality_processing force_ocr include_document_structure ocr chunking
+        use_cache enable_quality_processing force_ocr force_ocr_pages include_document_structure ocr chunking
         language_detection pdf_options image_extraction
         postprocessor token_reduction keywords html_options pages
         max_concurrent_extractions output_format result_format
-        security_limits layout concurrency cache_namespace cache_ttl_secs
+        security_limits layout concurrency cache_namespace cache_ttl_secs extraction_timeout_secs
+        max_archive_depth acceleration email
       ].freeze
 
       # Aliases for backward compatibility
@@ -1015,10 +1036,11 @@ module Kreuzberg
         new(**normalize_hash_keys(hash))
       end
 
-      def initialize(hash = nil,
+      def initialize(hash = nil, # rubocop:disable Metrics/MethodLength
                      use_cache: true,
                      enable_quality_processing: true,
                      force_ocr: false,
+                     force_ocr_pages: nil,
                      include_document_structure: false,
                      ocr: nil,
                      chunking: nil,
@@ -1037,10 +1059,15 @@ module Kreuzberg
                      layout: nil,
                      concurrency: nil,
                      cache_namespace: nil,
-                     cache_ttl_secs: nil)
+                     cache_ttl_secs: nil,
+                     extraction_timeout_secs: nil,
+                     max_archive_depth: 3,
+                     acceleration: nil,
+                     email: nil)
         kwargs = {
           use_cache: use_cache, enable_quality_processing: enable_quality_processing,
-          force_ocr: force_ocr, include_document_structure: include_document_structure,
+          force_ocr: force_ocr, force_ocr_pages: force_ocr_pages,
+          include_document_structure: include_document_structure,
           ocr: ocr, chunking: chunking, language_detection: language_detection,
           pdf_options: pdf_options, image_extraction: image_extraction,
           postprocessor: postprocessor,
@@ -1050,7 +1077,11 @@ module Kreuzberg
           security_limits: security_limits, layout: layout,
           concurrency: concurrency,
           cache_namespace: cache_namespace,
-          cache_ttl_secs: cache_ttl_secs
+          cache_ttl_secs: cache_ttl_secs,
+          extraction_timeout_secs: extraction_timeout_secs,
+          max_archive_depth: max_archive_depth,
+          acceleration: acceleration,
+          email: email
         }
         extracted = extract_from_hash(hash, kwargs)
 
@@ -1068,6 +1099,7 @@ module Kreuzberg
         @use_cache = params[:use_cache] ? true : false
         @enable_quality_processing = params[:enable_quality_processing] ? true : false
         @force_ocr = params[:force_ocr] ? true : false
+        @force_ocr_pages = params[:force_ocr_pages]
         @include_document_structure = params[:include_document_structure] ? true : false
         @ocr = normalize_config(params[:ocr], OCR)
         @chunking = normalize_config(params[:chunking], Chunking)
@@ -1081,11 +1113,15 @@ module Kreuzberg
         @pages = normalize_config(params[:pages], PageConfig)
         @layout = normalize_config(params[:layout], LayoutDetection)
         @concurrency = normalize_config(params[:concurrency], Concurrency)
+        @acceleration = normalize_config(params[:acceleration], Acceleration)
+        @email = normalize_config(params[:email], Email)
         @max_concurrent_extractions = params[:max_concurrent_extractions]&.to_i
+        @max_archive_depth = params[:max_archive_depth]&.to_i || 3
         @output_format = validate_output_format(params[:output_format])
         @result_format = validate_result_format(params[:result_format])
         @cache_namespace = params[:cache_namespace]
         @cache_ttl_secs = params[:cache_ttl_secs]&.to_i
+        @extraction_timeout_secs = params[:extraction_timeout_secs]&.to_i
         @security_limits = params[:security_limits]
       end
 
@@ -1118,12 +1154,15 @@ module Kreuzberg
           use_cache: @use_cache,
           enable_quality_processing: @enable_quality_processing,
           force_ocr: @force_ocr,
+          force_ocr_pages: @force_ocr_pages,
           include_document_structure: @include_document_structure,
           max_concurrent_extractions: @max_concurrent_extractions,
+          max_archive_depth: @max_archive_depth,
           output_format: @output_format,
           result_format: @result_format,
           cache_namespace: @cache_namespace,
-          cache_ttl_secs: @cache_ttl_secs
+          cache_ttl_secs: @cache_ttl_secs,
+          extraction_timeout_secs: @extraction_timeout_secs
         }
       end
 
@@ -1134,7 +1173,8 @@ module Kreuzberg
           image_extraction: @images&.to_h, postprocessor: @postprocessor&.to_h,
           token_reduction: @token_reduction&.to_h, keywords: @keywords&.to_h,
           html_options: @html_options&.to_h, pages: @pages&.to_h,
-          layout: @layout&.to_h, concurrency: @concurrency&.to_h
+          layout: @layout&.to_h, concurrency: @concurrency&.to_h,
+          acceleration: @acceleration&.to_h, email: @email&.to_h
         }
       end
 
@@ -1250,6 +1290,8 @@ module Kreuzberg
           @enable_quality_processing = value ? true : false
         when :force_ocr
           @force_ocr = value ? true : false
+        when :force_ocr_pages
+          @force_ocr_pages = value
         when :include_document_structure
           @include_document_structure = value ? true : false
         when :ocr
@@ -1276,6 +1318,12 @@ module Kreuzberg
           @layout = normalize_config(value, LayoutDetection)
         when :concurrency
           @concurrency = normalize_config(value, Concurrency)
+        when :acceleration
+          @acceleration = normalize_config(value, Acceleration)
+        when :email
+          @email = normalize_config(value, Email)
+        when :max_archive_depth
+          @max_archive_depth = value&.to_i || 3
         when :max_concurrent_extractions
           @max_concurrent_extractions = value&.to_i
         when :output_format
@@ -1286,6 +1334,8 @@ module Kreuzberg
           @cache_namespace = value
         when :cache_ttl_secs
           @cache_ttl_secs = value&.to_i
+        when :extraction_timeout_secs
+          @extraction_timeout_secs = value&.to_i
         else
           raise ArgumentError, "Unknown configuration key: #{key}"
         end
@@ -1345,6 +1395,7 @@ module Kreuzberg
         @use_cache = merged.use_cache
         @enable_quality_processing = merged.enable_quality_processing
         @force_ocr = merged.force_ocr
+        @force_ocr_pages = merged.force_ocr_pages
         @include_document_structure = merged.include_document_structure
         @ocr = merged.ocr
         @chunking = merged.chunking
@@ -1360,6 +1411,9 @@ module Kreuzberg
         @html_options = merged.html_options
         @pages = merged.pages
         @layout = merged.layout
+        @acceleration = merged.acceleration
+        @email = merged.email
+        @max_archive_depth = merged.max_archive_depth
       end
 
       def update_output_options(merged)
@@ -1369,6 +1423,7 @@ module Kreuzberg
         @result_format = merged.result_format
         @cache_namespace = merged.cache_namespace
         @cache_ttl_secs = merged.cache_ttl_secs
+        @extraction_timeout_secs = merged.extraction_timeout_secs
       end
     end
   end

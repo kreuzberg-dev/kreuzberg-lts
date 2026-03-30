@@ -1,6 +1,8 @@
 ---
+description: "plugin configuration"
 name: plugin-configuration
 ---
+
 Design plugin configuration systems
 
 1. Define config struct with serde Deserialize

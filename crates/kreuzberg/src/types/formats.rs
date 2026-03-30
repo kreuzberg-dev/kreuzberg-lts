@@ -220,6 +220,7 @@ pub struct OcrTableBoundingBox {
 /// for different document types.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default)]
+#[serde(deny_unknown_fields)]
 pub struct ImagePreprocessingConfig {
     /// Target DPI for the image (300 is standard, 600 for small text).
     pub target_dpi: i32,

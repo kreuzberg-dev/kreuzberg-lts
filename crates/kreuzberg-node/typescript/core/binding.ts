@@ -89,6 +89,21 @@ export interface NativeBinding {
 		config: Record<string, unknown> | null,
 	): Promise<Record<string, unknown>[]>;
 	closeWorkerPool(pool: Record<string, unknown>): Promise<void>;
+	renderPdfPageSync(filePath: string, pageIndex: number, dpi?: number | null): Buffer;
+	renderPdfPage(filePath: string, pageIndex: number, dpi?: number | null): Promise<Buffer>;
+	iteratePdfPagesSync(filePath: string, dpi?: number | null): Array<{ pageIndex: number; data: Buffer }>;
+	iteratePdfPages(filePath: string, dpi?: number | null): Promise<Array<{ pageIndex: number; data: Buffer }>>;
+	pdfPageCount(filePath: string, dpi?: number | null): number;
+	JsPdfPageIterator: {
+		new (
+			filePath: string,
+			dpi?: number | null,
+		): {
+			next(): { pageIndex: number; data: Buffer } | null;
+			pageCount(): number;
+			close(): void;
+		};
+	};
 }
 
 /**

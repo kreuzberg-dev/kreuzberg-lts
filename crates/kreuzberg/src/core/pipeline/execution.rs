@@ -8,6 +8,10 @@ use crate::plugins::ProcessingStage;
 use crate::types::{ExtractionResult, ProcessingWarning};
 use crate::{KreuzbergError, Result};
 use std::borrow::Cow;
+#[cfg(feature = "otel")]
+use std::time::Instant;
+#[cfg(feature = "otel")]
+use tracing::Instrument;
 
 /// Execute all registered post-processors by stage.
 pub(super) async fn execute_processors(
@@ -23,13 +27,34 @@ pub(super) async fn execute_processors(
         (ProcessingStage::Middle, middle_processors),
         (ProcessingStage::Late, late_processors),
     ] {
+        #[cfg(feature = "otel")]
+        let stage_name = match _stage {
+            ProcessingStage::Early => crate::telemetry::conventions::stages::POST_PROCESSING_EARLY,
+            ProcessingStage::Middle => crate::telemetry::conventions::stages::POST_PROCESSING_MIDDLE,
+            ProcessingStage::Late => crate::telemetry::conventions::stages::POST_PROCESSING_LATE,
+        };
+        #[cfg(feature = "otel")]
+        let stage_span = crate::telemetry::spans::pipeline_stage_span(stage_name);
+        #[cfg(feature = "otel")]
+        let stage_start = Instant::now();
+        #[cfg(feature = "otel")]
+        let _stage_guard = stage_span.enter();
+
         for processor in processors_arc.iter() {
             let processor_name = processor.name();
 
             let should_run = should_processor_run(pp_config, processor_name);
 
             if should_run && processor.should_process(result, config) {
-                match processor.process(result, config).await {
+                #[cfg(feature = "otel")]
+                let processor_span = crate::telemetry::spans::pipeline_processor_span(stage_name, processor_name);
+
+                #[cfg(feature = "otel")]
+                let process_result = processor.process(result, config).instrument(processor_span).await;
+                #[cfg(not(feature = "otel"))]
+                let process_result = processor.process(result, config).await;
+
+                match process_result {
                     Ok(_) => {}
                     Err(err @ KreuzbergError::Io(_))
                     | Err(err @ KreuzbergError::LockPoisoned(_))
@@ -50,6 +75,20 @@ pub(super) async fn execute_processors(
                     }
                 }
             }
+        }
+
+        #[cfg(feature = "otel")]
+        {
+            let stage_ms = stage_start.elapsed().as_secs_f64() * 1000.0;
+            crate::telemetry::metrics::get_metrics().pipeline_duration_ms.record(
+                stage_ms,
+                &[opentelemetry::KeyValue::new(
+                    crate::telemetry::conventions::PIPELINE_STAGE,
+                    stage_name.to_string(),
+                )],
+            );
+            drop(_stage_guard);
+            drop(stage_span);
         }
     }
     Ok(())

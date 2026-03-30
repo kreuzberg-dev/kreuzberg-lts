@@ -18,7 +18,7 @@ async function extractWithChunking() {
 	// Example: prepend heading context so each chunk carries its heading breadcrumb
 	const configWithHeadings: ExtractionConfig = {
 		chunking: {
-			chunkerType: 'markdown',
+			chunkerType: "markdown",
 			maxChars: 800,
 			prependHeadingContext: true,
 		},

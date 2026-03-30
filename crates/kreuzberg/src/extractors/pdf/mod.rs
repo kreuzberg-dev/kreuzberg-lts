@@ -49,15 +49,8 @@ struct LayoutDetectionBundle {
 fn run_layout_detection(content: &[u8], config: &ExtractionConfig) -> Option<LayoutDetectionBundle> {
     let layout_config = config.layout.as_ref()?;
 
-    // Only run for output formats that use the markdown pipeline.
-    let needs_structured = matches!(
-        config.output_format,
-        OutputFormat::Markdown | OutputFormat::Djot | OutputFormat::Html
-    );
-    if !needs_structured {
-        tracing::debug!("Layout detection skipped: output format does not use markdown pipeline");
-        return None;
-    }
+    // We no longer pre-render all images here because `detect_layout_for_document`
+    // now uses batched rendering under the hood to prevent OOMs.
 
     let mut engine = match crate::layout::take_or_create_engine(layout_config) {
         Ok(e) => e,
@@ -90,24 +83,16 @@ fn run_layout_detection(content: &[u8], config: &ExtractionConfig) -> Option<Lay
     result
 }
 
-/// Run layout detection on pre-rendered images, returning pixel-space results.
+/// Run layout detection on PDF bytes via batching, returning pixel-space results.
 ///
-/// Used by the OCR path to share rendered images with layout detection.
+/// Used by the OCR path to get layout detections without rendering all pages upfront.
 /// Returns `None` when layout detection is not configured or fails.
 #[cfg(all(feature = "pdf", feature = "layout-detection", feature = "ocr"))]
-fn run_layout_detection_on_images(
-    images: &[image::DynamicImage],
+fn run_layout_detection_ocr_pass(
+    content: &[u8],
     config: &ExtractionConfig,
 ) -> Option<Vec<crate::layout::DetectionResult>> {
     let layout_config = config.layout.as_ref()?;
-
-    let needs_structured = matches!(
-        config.output_format,
-        OutputFormat::Markdown | OutputFormat::Djot | OutputFormat::Html
-    );
-    if !needs_structured {
-        return None;
-    }
 
     let mut engine = match crate::layout::take_or_create_engine(layout_config) {
         Ok(e) => e,
@@ -117,71 +102,116 @@ fn run_layout_detection_on_images(
         }
     };
 
-    let result = match crate::pdf::layout_runner::detect_layout_for_images(images, &mut engine) {
-        Ok(results) => {
-            let total_detections: usize = results.iter().map(|r| r.detections.len()).sum();
-            tracing::info!(
-                page_count = results.len(),
-                total_detections,
-                "Layout detection on OCR images completed"
-            );
-            Some(results)
-        }
+    let mut all_results = Vec::new();
+    let batch_size = crate::pdf::layout_runner::DEFAULT_LAYOUT_BATCH_SIZE;
+
+    let result = match crate::pdf::layout_runner::detect_layout_for_document_batched(
+        content,
+        &mut engine,
+        batch_size,
+        |batch_res, _timings, _batch_imgs| {
+            // Reconstruct DetectionResult (pixel-space bbox) from PageLayoutResult (PDF-space bbox)
+            // We know:
+            // pixel_x * (page_width / img_width) = pdf_left
+            // page_height - pixel_y * (page_height / img_height) = pdf_top
+            // Solving for pixel_x and pixel_y:
+            // pixel_x = pdf_left * (img_width / page_width)
+            // pixel_y = (page_height - pdf_top) * (img_height / page_height)
+
+            for res in batch_res {
+                let img_w = res.render_width_px as f32;
+                let img_h = res.render_height_px as f32;
+                let page_w = res.page_width_pts;
+                let page_h = res.page_height_pts;
+
+                let sx = if page_w > 0.0 { img_w / page_w } else { 1.0 };
+                let sy = if page_h > 0.0 { img_h / page_h } else { 1.0 };
+
+                let detections = res
+                    .regions
+                    .into_iter()
+                    .map(|region| {
+                        let bbox = crate::layout::BBox {
+                            x1: region.bbox.left * sx,
+                            y1: (page_h - region.bbox.top) * sy,
+                            x2: region.bbox.right * sx,
+                            y2: (page_h - region.bbox.bottom) * sy,
+                        };
+                        crate::layout::LayoutDetection {
+                            class: region.class,
+                            confidence: region.confidence,
+                            bbox,
+                        }
+                    })
+                    .collect();
+
+                all_results.push(crate::layout::DetectionResult {
+                    page_width: res.render_width_px,
+                    page_height: res.render_height_px,
+                    detections,
+                });
+            }
+            Ok(())
+        },
+    ) {
+        Ok(_) => Some(all_results),
         Err(e) => {
-            tracing::warn!("Layout detection on OCR images failed: {}", e);
+            tracing::warn!("Layout detection batched pass failed: {}", e);
             None
         }
     };
 
-    // Return engine to cache for reuse by subsequent extractions
     crate::layout::return_engine(engine);
     result
 }
 
-/// Render PDF pages, optionally run layout detection, then run OCR.
+/// Render PDF layout detections, then run OCR lazily.
 ///
-/// Renders images once and shares them between layout detection and OCR
-/// to avoid redundant PDF rendering. When a multi-backend pipeline is
-/// configured (or auto-constructed), uses quality-based fallback across
-/// backends.
+/// Layout caching is performed at 72 DPI to save memory. OCR rendering
+/// is executed dynamically at 300 DPI within batches via `extract_with_ocr`
+/// to avoid `Vec<DynamicImage>` out-of-memory errors on large PDFs.
 #[cfg(feature = "ocr")]
 async fn run_ocr_with_layout(
     content: &[u8],
     config: &ExtractionConfig,
     path: Option<&std::path::Path>,
-) -> crate::Result<String> {
+) -> crate::Result<(String, Vec<crate::types::Table>, Vec<crate::types::OcrElement>)> {
     let default_ocr_config = crate::core::config::OcrConfig::default();
     let ocr_config = config.ocr.as_ref().unwrap_or(&default_ocr_config);
 
+    // Run layout detection up front so it is available to both the pipeline
+    // path and the direct extract_with_ocr path below.  Without this, the
+    // pipeline branch (active whenever `paddle-ocr` is compiled in via the
+    // `full` feature) would silently skip layout detection entirely and always
+    // return empty tables.
+    #[cfg(feature = "layout-detection")]
+    let layout_detections = run_layout_detection_ocr_pass(content, config);
+
     // Check for pipeline configuration
     if let Some(pipeline) = ocr_config.effective_pipeline() {
-        return ocr::run_ocr_pipeline(
+        let (text, ocr_tables, ocr_elements) = ocr::run_ocr_pipeline(
             Some(content),
-            None, // No images rendered yet
+            None,
             #[cfg(feature = "layout-detection")]
-            None, // No layout detected yet
+            layout_detections.as_deref(),
             config,
             &pipeline,
             path,
         )
-        .await;
+        .await?;
+        return Ok((text, ocr_tables, ocr_elements));
     }
 
-    let images = ocr::render_pages_for_ocr(content)?;
-
-    #[cfg(feature = "layout-detection")]
-    let layout_detections = run_layout_detection_on_images(&images, config);
-
-    let (text, _mean_conf) = extract_with_ocr(
+    let (text, _mean_conf, ocr_tables, ocr_elements) = extract_with_ocr(
         Some(content),
-        Some(&images),
+        None, // Lazy stream 300 DPI pages in extract_with_ocr's batch loop
         #[cfg(feature = "layout-detection")]
         layout_detections.as_deref(),
         config,
         path,
     )
     .await?;
-    Ok(text)
+    Ok((text, ocr_tables, ocr_elements))
 }
 
 /// PDF document extractor using pypdfium2 and playa-pdf.
@@ -251,7 +281,6 @@ impl PdfExtractor {
     ///
     /// Accepts an optional `path` which is passed to OCR backends to allow
     /// direct document-level processing (bypassing page rendering).
-    #[cfg_attr(feature = "otel", tracing::instrument(skip(self, content)))]
     async fn extract_core(
         &self,
         content: &[u8],
@@ -269,11 +298,11 @@ impl PdfExtractor {
         let content = &*derotated;
 
         #[cfg(feature = "pdf")]
-        #[allow(unused_variables)]
+        #[allow(unused_variables, unused_mut)]
         let (
             mut pdf_metadata,
             native_text,
-            tables,
+            mut tables,
             page_contents,
             boundaries,
             pre_rendered_markdown,
@@ -442,8 +471,34 @@ impl PdfExtractor {
         };
 
         #[cfg(feature = "ocr")]
+        let mut ocr_tables: Vec<crate::types::Table> = Vec::new();
+        #[cfg(feature = "ocr")]
+        let mut ocr_elements_from_ocr: Vec<crate::types::OcrElement> = Vec::new();
+        #[cfg(feature = "ocr")]
         let (text, used_ocr) = if config.force_ocr {
-            (run_ocr_with_layout(content, config, path).await?, true)
+            let (ocr_text, ocr_tbls, ocr_elems) = run_ocr_with_layout(content, config, path).await?;
+            ocr_tables = ocr_tbls;
+            ocr_elements_from_ocr = ocr_elems;
+            (ocr_text, true)
+        } else if let Some(ref ocr_pages) = config.force_ocr_pages {
+            if !ocr_pages.is_empty() {
+                if let Some(ref bounds) = boundaries {
+                    if !bounds.is_empty() {
+                        let mixed =
+                            ocr::extract_mixed_ocr_native(&native_text, bounds, ocr_pages, content, config, path)
+                                .await?;
+                        (mixed, true)
+                    } else {
+                        tracing::warn!("force_ocr_pages set but no page boundaries available; using native text");
+                        (native_text, false)
+                    }
+                } else {
+                    tracing::warn!("force_ocr_pages set but no page boundaries available; using native text");
+                    (native_text, false)
+                }
+            } else {
+                (native_text, false)
+            }
         } else if let Some(ocr_config) = config.ocr.as_ref() {
             let thresholds = ocr_config.effective_thresholds();
             let decision = ocr::evaluate_per_page_ocr(
@@ -522,7 +577,10 @@ impl PdfExtractor {
                 );
                 (native_text, false)
             } else if decision.fallback || has_font_encoding_issues {
-                (run_ocr_with_layout(content, config, path).await?, true)
+                let (ocr_text, ocr_tbls, ocr_elems) = run_ocr_with_layout(content, config, path).await?;
+                ocr_tables = ocr_tbls;
+                ocr_elements_from_ocr = ocr_elems;
+                (ocr_text, true)
             } else {
                 (native_text, false)
             }
@@ -532,6 +590,14 @@ impl PdfExtractor {
 
         #[cfg(not(feature = "ocr"))]
         let (text, used_ocr) = (native_text, false);
+
+        // Merge OCR-detected tables with native-extracted tables.
+        // When OCR was used, its TATR-detected tables may be more accurate for scanned pages.
+        #[cfg(feature = "ocr")]
+        if !ocr_tables.is_empty() {
+            tables.extend(ocr_tables);
+            tables.sort_by_key(|t| t.page_number);
+        }
 
         // Post-processing: use pre-rendered markdown from initial document load if available.
         // The markdown was rendered during the first document load to avoid redundant PDF parsing.
@@ -740,6 +806,13 @@ impl PdfExtractor {
             images,
             djot_content: None,
             elements: None,
+            #[cfg(feature = "ocr")]
+            ocr_elements: if ocr_elements_from_ocr.is_empty() {
+                None
+            } else {
+                Some(ocr_elements_from_ocr)
+            },
+            #[cfg(not(feature = "ocr"))]
             ocr_elements: None,
             document: None,
             #[cfg(any(feature = "keywords-yake", feature = "keywords-rake"))]

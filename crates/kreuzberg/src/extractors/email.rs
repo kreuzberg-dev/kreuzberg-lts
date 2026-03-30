@@ -127,7 +127,7 @@ impl SyncExtractor for EmailExtractor {
                                 }
                             }
                             crate::types::NodeContent::Heading { level, text } => {
-                                builder.push_heading(*level, text, None, None);
+                                builder.push_heading(*level, text.as_str(), None, None);
                             }
                             crate::types::NodeContent::List { ordered } => {
                                 let list_idx = builder.push_list(*ordered, None);
@@ -136,12 +136,12 @@ impl SyncExtractor for EmailExtractor {
                                     if let Some(child) = html_doc.nodes.get(child_idx.0 as usize)
                                         && let crate::types::NodeContent::ListItem { text } = &child.content
                                     {
-                                        builder.push_list_item(list_idx, text, None);
+                                        builder.push_list_item(list_idx, text.as_str(), None);
                                     }
                                 }
                             }
                             crate::types::NodeContent::Code { text, language } => {
-                                builder.push_code(text, language.as_deref(), None);
+                                builder.push_code(text.as_str(), language.as_deref(), None);
                             }
                             _ => {
                                 // For other node types, extract text if available
@@ -214,13 +214,6 @@ impl SyncExtractor for EmailExtractor {
 #[cfg_attr(not(target_arch = "wasm32"), async_trait)]
 #[cfg_attr(target_arch = "wasm32", async_trait(?Send))]
 impl DocumentExtractor for EmailExtractor {
-    #[cfg_attr(feature = "otel", tracing::instrument(
-        skip(self, content, config),
-        fields(
-            extractor.name = self.name(),
-            content.size_bytes = content.len(),
-        )
-    ))]
     async fn extract_bytes(
         &self,
         content: &[u8],
@@ -230,13 +223,6 @@ impl DocumentExtractor for EmailExtractor {
         self.extract_sync(content, mime_type, config)
     }
 
-    #[cfg(feature = "tokio-runtime")]
-    #[cfg_attr(feature = "otel", tracing::instrument(
-        skip(self, path, config),
-        fields(
-            extractor.name = self.name(),
-        )
-    ))]
     #[cfg(feature = "tokio-runtime")]
     async fn extract_file(&self, path: &Path, mime_type: &str, config: &ExtractionConfig) -> Result<ExtractionResult> {
         let bytes = tokio::fs::read(path).await?;

@@ -22,6 +22,9 @@ pub mod archive;
 #[cfg(feature = "email")]
 pub mod email;
 
+#[cfg(feature = "email")]
+pub mod pst;
+
 #[cfg(any(feature = "excel", feature = "excel-wasm"))]
 pub mod excel;
 
@@ -76,6 +79,9 @@ pub use archive::{
 
 #[cfg(feature = "email")]
 pub use email::{build_email_text_output, extract_email_content, parse_eml_content, parse_msg_content};
+
+#[cfg(feature = "email")]
+pub use pst::extract_pst_messages;
 
 #[cfg(any(feature = "excel", feature = "excel-wasm"))]
 pub use excel::{excel_to_markdown, read_excel_bytes, read_excel_file};

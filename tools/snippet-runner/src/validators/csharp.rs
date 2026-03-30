@@ -91,6 +91,8 @@ impl SnippetValidator for CSharpValidator {
             "CS0101", // namespace already contains a definition (conflict from wrapping)
             "CS0161", // not all code paths return a value
             "CS1001", // Identifier expected (from bare signatures)
+            "CS0501", // must declare a body (method without body in non-abstract class)
+            "CS0535", // does not implement interface member
         ];
 
         error_lines

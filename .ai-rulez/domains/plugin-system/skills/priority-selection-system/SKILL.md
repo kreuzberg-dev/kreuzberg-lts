@@ -1,6 +1,8 @@
 ---
+description: "priority selection system"
 name: priority-selection-system
 ---
+
 Implement priority-based plugin selection
 
 1. Define priority semantics:

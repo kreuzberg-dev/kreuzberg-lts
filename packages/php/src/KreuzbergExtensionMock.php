@@ -664,6 +664,7 @@ if (!function_exists('kreuzberg_detect_mime_type_from_path')) {
             'toml' => 'application/toml',
             'eml' => 'message/rfc822',
             'msg' => 'application/vnd.ms-outlook',
+            'pst' => 'application/vnd.ms-outlook-pst',
             'rst' => 'text/x-rst',
             'org' => 'text/x-org',
             'ipynb' => 'application/x-ipynb+json',
@@ -740,6 +741,7 @@ if (!function_exists('kreuzberg_validate_mime_type')) {
             'application/csl+json',
             'message/rfc822',
             'application/vnd.ms-outlook',
+            'application/vnd.ms-outlook-pst',
         ];
 
         // Check if MIME type is in supported list or is an image type

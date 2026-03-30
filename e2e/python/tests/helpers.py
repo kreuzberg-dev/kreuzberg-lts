@@ -114,9 +114,12 @@ def build_config(config: dict[str, Any] | None) -> ExtractionConfig:
 
     kwargs: dict[str, Any] = {}
 
-    for key in ("use_cache", "enable_quality_processing", "force_ocr", "include_document_structure"):
+    for key in ("use_cache", "enable_quality_processing", "force_ocr", "force_ocr_pages", "include_document_structure"):
         if key in config:
             kwargs[key] = config[key]
+
+    if (extraction_timeout_secs := config.get("extraction_timeout_secs")) is not None:
+        kwargs["extraction_timeout_secs"] = int(extraction_timeout_secs)
 
     _build_config_objects(config, kwargs)
 
@@ -137,9 +140,12 @@ def build_file_config(config: dict[str, Any] | None) -> FileExtractionConfig:
 
     kwargs: dict[str, Any] = {}
 
-    for key in ("enable_quality_processing", "force_ocr", "include_document_structure"):
+    for key in ("enable_quality_processing", "force_ocr", "force_ocr_pages", "include_document_structure"):
         if key in config:
             kwargs[key] = config[key]
+
+    if (timeout_secs := config.get("timeout_secs")) is not None:
+        kwargs["timeout_secs"] = int(timeout_secs)
 
     _build_config_objects(config, kwargs)
 
@@ -644,3 +650,14 @@ def assert_annotations(result: Any, has_annotations: bool = False, min_count: in
         and len(annotations) < min_count
     ):
         pytest.fail(f"Expected at least {min_count} annotations, found {len(annotations)}")
+
+
+def assert_is_png(data: bytes) -> None:
+    """Assert data starts with PNG magic bytes."""
+    assert len(data) >= 4, f"Data too short for PNG: {len(data)} bytes"
+    assert data[:4] == b"\x89PNG", f"Missing PNG magic bytes, got: {data[:4]!r}"
+
+
+def assert_min_byte_length(data: bytes, min_length: int) -> None:
+    """Assert data is at least min_length bytes."""
+    assert len(data) >= min_length, f"Expected at least {min_length} bytes, got {len(data)}"

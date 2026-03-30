@@ -11,6 +11,43 @@ use memchr::memmem;
 use pdfium_render::prelude::*;
 use std::borrow::Cow;
 
+/// Replace PDF font encoding artifacts in extracted text.
+///
+/// Some PDFs have broken ToUnicode mappings that produce control characters
+/// (U+0001–U+001F) where printable characters (typically hyphens) should appear.
+/// This function replaces such control characters with hyphens when they appear
+/// between word characters, or removes them otherwise. Tab, newline, and carriage
+/// return are preserved.
+///
+/// Returns `Cow::Borrowed` when no replacements are needed (zero-cost for clean text).
+fn fix_pdf_control_chars(text: &str) -> Cow<'_, str> {
+    // Quick scan: skip allocation if no problematic chars exist.
+    if !text.bytes().any(|b| b < 0x20 && b != b'\t' && b != b'\n' && b != b'\r') {
+        return Cow::Borrowed(text);
+    }
+
+    let chars: Vec<char> = text.chars().collect();
+    let mut result = String::with_capacity(text.len());
+
+    for (i, &ch) in chars.iter().enumerate() {
+        if matches!(ch, '\u{0001}'..='\u{001F}') && ch != '\t' && ch != '\n' && ch != '\r' {
+            // Check if the control char is between alphanumeric/word characters.
+            // If so, it likely represents a hyphen from a broken ToUnicode mapping.
+            let prev_is_word = i > 0 && (chars[i - 1].is_alphanumeric() || chars[i - 1] == '-');
+            let next_is_word = i + 1 < chars.len() && (chars[i + 1].is_alphanumeric() || chars[i + 1] == '-');
+
+            if prev_is_word && next_is_word {
+                result.push('-');
+            }
+            // Otherwise, drop the control character entirely.
+        } else {
+            result.push(ch);
+        }
+    }
+
+    Cow::Owned(result)
+}
+
 /// Result type for PDF text extraction with optional page tracking.
 type PdfTextExtractionResult = (String, Option<Vec<PageBoundary>>, Option<Vec<PageContent>>);
 
@@ -297,7 +334,8 @@ fn extract_text_lazy_fast_path(document: &PdfDocument<'_>) -> Result<PdfTextExtr
             content.push_str("\n\n");
         }
 
-        content.push_str(&page_text);
+        let cleaned_text = fix_pdf_control_chars(&page_text);
+        content.push_str(&cleaned_text);
 
         if page_idx < 5 {
             total_sample_size += page_size;
@@ -397,8 +435,9 @@ fn extract_text_lazy_with_tracking(
             content.push_str("\n\n");
         }
 
+        let cleaned_text = fix_pdf_control_chars(&page_text_ref);
         let byte_start = content.len();
-        content.push_str(&page_text_ref);
+        content.push_str(&cleaned_text);
         let byte_end = content.len();
 
         boundaries.push(PageBoundary {

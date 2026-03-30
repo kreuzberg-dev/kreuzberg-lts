@@ -157,6 +157,8 @@ impl SnippetValidator for TypeScriptValidator {
             "TS2531",  // Object is possibly 'null'
             "TS2532",  // Object is possibly 'undefined'
             "TS2451",  // Cannot redeclare block-scoped variable
+            "TS2591",  // Cannot find name (needs @types/node for fs, process, module, etc.)
+            "TS2390",  // Constructor implementation is missing (bare class signatures)
         ];
 
         let error_lines: Vec<&str> = output.lines().filter(|l| l.contains("error TS")).collect();

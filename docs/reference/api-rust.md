@@ -1405,6 +1405,119 @@ fn main() -> kreuzberg::Result<()> {
 
 ---
 
+## PDF Rendering
+
+!!! info "Added in v4.6.2"
+
+### render_pdf_page_to_png()
+
+Render a single page of a PDF as a PNG image.
+
+**Signature:**
+
+```rust title="Rust"
+pub fn render_pdf_page_to_png(
+    pdf_bytes: &[u8],
+    page_index: usize,
+    dpi: Option<i32>,
+    password: Option<&str>,
+) -> Result<Vec<u8>, KreuzbergError>
+```
+
+**Parameters:**
+
+- `pdf_bytes` (&[u8]): Raw PDF file bytes
+- `page_index` (usize): Zero-based page index to render
+- `dpi` (Option<i32>): Resolution for rendering (default 150 if None)
+- `password` (Option<&str>): Optional password for encrypted PDFs
+
+**Returns:**
+
+- `Result<Vec<u8>, KreuzbergError>`: PNG-encoded bytes or an error
+
+**Example:**
+
+```rust title="render_page.rs"
+use kreuzberg::pdf::render_pdf_page_to_png;
+
+let pdf_bytes = std::fs::read("document.pdf")?;
+let png = render_pdf_page_to_png(&pdf_bytes, 0, Some(150), None)?;
+std::fs::write("first_page.png", &png)?;
+```
+
+---
+
+### render_pdf_file_to_png_pages()
+
+Render each page of a PDF as a PNG image.
+
+**Signature:**
+
+```rust title="Rust"
+pub fn render_pdf_file_to_png_pages(
+    pdf_bytes: &[u8],
+    dpi: Option<i32>,
+    password: Option<&str>,
+) -> Result<Vec<Vec<u8>>, KreuzbergError>
+```
+
+**Parameters:**
+
+- `pdf_bytes` (&[u8]): Raw PDF file bytes
+- `dpi` (Option<i32>): Resolution for rendering (default 150 if None)
+- `password` (Option<&str>): Optional password for encrypted PDFs
+
+**Returns:**
+
+- `Result<Vec<Vec<u8>>, KreuzbergError>`: Vector of PNG-encoded byte vectors, one per page
+
+**Example:**
+
+```rust title="render_all_pages.rs"
+use kreuzberg::pdf::render_pdf_file_to_png_pages;
+
+let pdf_bytes = std::fs::read("document.pdf")?;
+let pages = render_pdf_file_to_png_pages(&pdf_bytes, Some(150), None)?;
+for (i, png) in pages.iter().enumerate() {
+    std::fs::write(format!("page_{i}.png"), png)?;
+}
+```
+
+---
+
+### PdfPageIterator
+
+A more memory-efficient alternative to `render_pdf_file_to_png_pages` when memory is a concern or when pages should be processed as they are rendered (e.g., sending each page to a vision model for OCR). Renders one page at a time, releasing memory for each page before rendering the next.
+
+**Signature:**
+
+```rust title="Rust"
+pub struct PdfPageIterator { ... }
+
+impl PdfPageIterator {
+    pub fn from_file(path: &str, dpi: Option<i32>, password: Option<&str>) -> Result<Self, KreuzbergError>;
+    pub fn page_count(&self) -> usize;
+}
+
+impl Iterator for PdfPageIterator {
+    type Item = Result<(usize, Vec<u8>), KreuzbergError>;
+}
+```
+
+**Example:**
+
+```rust title="iterate_pages.rs"
+use kreuzberg::pdf::PdfPageIterator;
+
+let iter = PdfPageIterator::from_file("document.pdf", Some(150), None)?;
+for result in iter {
+    let (page_index, png) = result?;
+    std::fs::write(format!("page_{page_index}.png"), &png)?;
+}
+```
+
+---
+
 ## Error Handling
 
 ### KreuzbergError

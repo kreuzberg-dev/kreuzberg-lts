@@ -5,6 +5,9 @@
 mod registry;
 mod r#trait;
 
+#[cfg(feature = "otel")]
+pub(crate) mod instrumented;
+
 // Re-export trait for backward compatibility
 pub use r#trait::DocumentExtractor;
 

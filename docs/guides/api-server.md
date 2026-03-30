@@ -363,7 +363,7 @@ curl http://localhost:8000/version
 
 ```json title="Response"
 {
-  "version": "4.6.0"
+  "version": "4.6.3"
 }
 ```
 
@@ -514,7 +514,7 @@ curl http://localhost:8000/health
 ```json title="Response"
 {
   "status": "healthy",
-  "version": "4.6.0"
+  "version": "4.6.3"
 }
 ```
 
@@ -525,7 +525,7 @@ The response may optionally include a `plugins` object containing information ab
 ```json title="Response with Plugins"
 {
   "status": "healthy",
-  "version": "4.6.0",
+  "version": "4.6.3",
   "plugins": {
     "ocr_backends_count": 2,
     "ocr_backends": ["tesseract"],
@@ -557,7 +557,7 @@ curl http://localhost:8000/info
 
 ```json title="Response"
 {
-  "version": "4.6.0",
+  "version": "4.6.3",
   "rust_backend": true
 }
 ```
@@ -910,7 +910,7 @@ Get the current Kreuzberg library version.
 
 ```json title="Response"
 {
-  "version": "4.6.0"
+  "version": "4.6.3"
 }
 ```
 
@@ -1058,7 +1058,7 @@ Split text into chunks with configurable size and overlap.
 - **Name:** `kreuzberg-mcp`
 - **Title:** Kreuzberg Document Intelligence MCP Server
 - **Version:** Current package version
-- **Website:** https://kreuzberg-dev.github.io/kreuzberg/
+- **Website:** <https://kreuzberg-dev.github.io/kreuzberg/>
 - **Protocol:** MCP (Model Context Protocol)
 - **Transport:** stdio (stdin/stdout)
 

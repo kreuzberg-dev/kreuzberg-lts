@@ -667,4 +667,24 @@ public final class E2EHelpers {
       }
     }
   }
+
+  public static void assertIsPng(byte[] data) {
+    assertNotNull(data, "PNG data should not be null");
+    assertTrue(data.length >= 4, String.format("Data too short for PNG: %d bytes", data.length));
+    assertTrue(
+        data[0] == (byte) 0x89
+            && data[1] == (byte) 0x50
+            && data[2] == (byte) 0x4E
+            && data[3] == (byte) 0x47,
+        String.format(
+            "Missing PNG magic bytes, got: [%02x, %02x, %02x, %02x]",
+            data[0], data[1], data[2], data[3]));
+  }
+
+  public static void assertMinByteLength(byte[] data, int minLength) {
+    assertNotNull(data, "Data should not be null");
+    assertTrue(
+        data.length >= minLength,
+        String.format("Expected at least %d bytes, got %d", minLength, data.length));
+  }
 }

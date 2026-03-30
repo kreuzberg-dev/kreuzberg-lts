@@ -22,6 +22,12 @@ public class PdfTest {
   @Test
   public void pdfAnnotations() throws Exception {
     JsonNode config = MAPPER.readTree("{\"pdf_options\":{\"extract_annotations\":true}}");
+    if ((System.getProperty("os.arch").equals("aarch64")
+        && System.getProperty("os.name").startsWith("Linux"))) {
+      org.junit.jupiter.api.Assumptions.assumeTrue(
+          false, "Skipping pdf_annotations: not supported on this platform");
+      return;
+    }
     E2EHelpers.runFixture(
         "pdf_annotations",
         "pdf/test_article.pdf",

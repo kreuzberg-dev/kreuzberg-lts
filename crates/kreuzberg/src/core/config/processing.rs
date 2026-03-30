@@ -52,6 +52,7 @@ pub enum ChunkSizing {
 
 /// Post-processor configuration.
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct PostProcessorConfig {
     /// Enable post-processors
     #[serde(default = "default_true")]
@@ -115,6 +116,7 @@ impl Default for PostProcessorConfig {
 /// };
 /// ```
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct ChunkingConfig {
     /// Maximum size per chunk (in units determined by `sizing`).
     ///
@@ -287,6 +289,7 @@ impl Default for ChunkingConfig {
 /// Configures embedding generation using ONNX models via the vendored embedding engine.
 /// Requires the `embeddings` feature to be enabled.
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct EmbeddingConfig {
     /// The embedding model to use (defaults to "balanced" preset if not specified)
     #[serde(default = "default_model")]

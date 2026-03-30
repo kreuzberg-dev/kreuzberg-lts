@@ -1,6 +1,7 @@
 ```java title="Java"
 import dev.kreuzberg.Kreuzberg;
 import dev.kreuzberg.ExtractionResult;
+import dev.kreuzberg.Metadata;
 import dev.kreuzberg.KreuzbergException;
 import java.io.IOException;
 import java.util.Map;
@@ -11,98 +12,96 @@ public class Main {
         try {
             ExtractionResult result = Kreuzberg.extractFileSync("document.pdf");
 
-            // Access PDF metadata
-            @SuppressWarnings("unchecked")
-            Map<String, Object> pdfMeta = (Map<String, Object>) result.getMetadata().get("pdf");
-            if (pdfMeta != null) {
-                System.out.println("Pages: " + pdfMeta.get("page_count"));
-                System.out.println("Author: " + pdfMeta.get("author"));
-                System.out.println("Title: " + pdfMeta.get("title"));
+            // Metadata is flat — format-specific fields are at the top level
+            Metadata metadata = result.getMetadata();
+            metadata.getTitle().ifPresent(t -> System.out.println("Title: " + t));
+            metadata.getAuthors().ifPresent(a -> System.out.println("Authors: " + String.join(", ", a)));
+
+            // Format-specific fields are in the additional map
+            Map<String, Object> extra = metadata.getAdditional();
+            if (extra.get("page_count") != null) {
+                System.out.println("Pages: " + extra.get("page_count"));
             }
 
             // Access HTML metadata
             ExtractionResult htmlResult = Kreuzberg.extractFileSync("page.html");
+            Metadata htmlMeta = htmlResult.getMetadata();
+            htmlMeta.getTitle().ifPresent(t -> System.out.println("Title: " + t));
+
+            Map<String, Object> htmlExtra = htmlMeta.getAdditional();
+            String description = (String) htmlExtra.get("description");
+            if (description != null) {
+                System.out.println("Description: " + description);
+            }
+
+            // Access keywords as array
+            htmlMeta.getKeywords().ifPresent(keywords ->
+                System.out.println("Keywords: " + keywords));
+
+            // Access canonical URL (renamed from canonical)
+            String canonicalUrl = (String) htmlExtra.get("canonical_url");
+            if (canonicalUrl != null) {
+                System.out.println("Canonical URL: " + canonicalUrl);
+            }
+
+            // Access Open Graph fields from map
             @SuppressWarnings("unchecked")
-            Map<String, Object> htmlMeta = (Map<String, Object>) htmlResult.getMetadata().get("html");
-            if (htmlMeta != null) {
-                System.out.println("Title: " + htmlMeta.get("title"));
-                System.out.println("Description: " + htmlMeta.get("description"));
+            Map<String, String> openGraph = (Map<String, String>) htmlExtra.get("open_graph");
+            if (openGraph != null) {
+                System.out.println("Open Graph Image: " + openGraph.get("image"));
+                System.out.println("Open Graph Title: " + openGraph.get("title"));
+                System.out.println("Open Graph Type: " + openGraph.get("type"));
+            }
 
-                // Access keywords as array
-                @SuppressWarnings("unchecked")
-                List<String> keywords = (List<String>) htmlMeta.get("keywords");
-                if (keywords != null) {
-                    System.out.println("Keywords: " + keywords);
-                }
+            // Access Twitter Card fields from map
+            @SuppressWarnings("unchecked")
+            Map<String, String> twitterCard = (Map<String, String>) htmlExtra.get("twitter_card");
+            if (twitterCard != null) {
+                System.out.println("Twitter Card Type: " + twitterCard.get("card"));
+                System.out.println("Twitter Creator: " + twitterCard.get("creator"));
+            }
 
-                // Access canonical URL (renamed from canonical)
-                String canonicalUrl = (String) htmlMeta.get("canonical_url");
-                if (canonicalUrl != null) {
-                    System.out.println("Canonical URL: " + canonicalUrl);
-                }
+            // Access new fields
+            htmlMeta.getLanguage().ifPresent(l -> System.out.println("Language: " + l));
 
-                // Access Open Graph fields from map
-                @SuppressWarnings("unchecked")
-                Map<String, String> openGraph = (Map<String, String>) htmlMeta.get("open_graph");
-                if (openGraph != null) {
-                    System.out.println("Open Graph Image: " + openGraph.get("image"));
-                    System.out.println("Open Graph Title: " + openGraph.get("title"));
-                    System.out.println("Open Graph Type: " + openGraph.get("type"));
-                }
+            String textDirection = (String) htmlExtra.get("text_direction");
+            if (textDirection != null) {
+                System.out.println("Text Direction: " + textDirection);
+            }
 
-                // Access Twitter Card fields from map
-                @SuppressWarnings("unchecked")
-                Map<String, String> twitterCard = (Map<String, String>) htmlMeta.get("twitter_card");
-                if (twitterCard != null) {
-                    System.out.println("Twitter Card Type: " + twitterCard.get("card"));
-                    System.out.println("Twitter Creator: " + twitterCard.get("creator"));
-                }
+            // Access headers
+            @SuppressWarnings("unchecked")
+            List<Map<String, Object>> headers = (List<Map<String, Object>>) htmlExtra.get("headers");
+            if (headers != null) {
+                headers.stream()
+                    .map(h -> h.get("text"))
+                    .forEach(text -> System.out.print(text + ", "));
+                System.out.println();
+            }
 
-                // Access new fields
-                String language = (String) htmlMeta.get("language");
-                if (language != null) {
-                    System.out.println("Language: " + language);
+            // Access links
+            @SuppressWarnings("unchecked")
+            List<Map<String, Object>> links = (List<Map<String, Object>>) htmlExtra.get("links");
+            if (links != null) {
+                for (Map<String, Object> link : links) {
+                    System.out.println("Link: " + link.get("href") + " (" + link.get("text") + ")");
                 }
+            }
 
-                String textDirection = (String) htmlMeta.get("text_direction");
-                if (textDirection != null) {
-                    System.out.println("Text Direction: " + textDirection);
+            // Access images
+            @SuppressWarnings("unchecked")
+            List<Map<String, Object>> images = (List<Map<String, Object>>) htmlExtra.get("images");
+            if (images != null) {
+                for (Map<String, Object> image : images) {
+                    System.out.println("Image: " + image.get("src"));
                 }
+            }
 
-                // Access headers
-                @SuppressWarnings("unchecked")
-                List<Map<String, Object>> headers = (List<Map<String, Object>>) htmlMeta.get("headers");
-                if (headers != null) {
-                    headers.stream()
-                        .map(h -> h.get("text"))
-                        .forEach(text -> System.out.print(text + ", "));
-                    System.out.println();
-                }
-
-                // Access links
-                @SuppressWarnings("unchecked")
-                List<Map<String, Object>> links = (List<Map<String, Object>>) htmlMeta.get("links");
-                if (links != null) {
-                    for (Map<String, Object> link : links) {
-                        System.out.println("Link: " + link.get("href") + " (" + link.get("text") + ")");
-                    }
-                }
-
-                // Access images
-                @SuppressWarnings("unchecked")
-                List<Map<String, Object>> images = (List<Map<String, Object>>) htmlMeta.get("images");
-                if (images != null) {
-                    for (Map<String, Object> image : images) {
-                        System.out.println("Image: " + image.get("src"));
-                    }
-                }
-
-                // Access structured data
-                @SuppressWarnings("unchecked")
-                List<Map<String, Object>> structuredData = (List<Map<String, Object>>) htmlMeta.get("structured_data");
-                if (structuredData != null) {
-                    System.out.println("Structured data items: " + structuredData.size());
-                }
+            // Access structured data
+            @SuppressWarnings("unchecked")
+            List<Map<String, Object>> structuredData = (List<Map<String, Object>>) htmlExtra.get("structured_data");
+            if (structuredData != null) {
+                System.out.println("Structured data items: " + structuredData.size());
             }
         } catch (IOException | KreuzbergException e) {
             System.err.println("Extraction failed: " + e.getMessage());

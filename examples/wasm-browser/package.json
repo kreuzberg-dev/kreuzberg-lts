@@ -1,7 +1,7 @@
 {
 	"name": "kreuzberg-wasm-browser",
 	"description": "Browser example for Kreuzberg WASM document extraction with Vite",
-	"version": "4.6.0",
+	"version": "4.6.3",
 	"type": "module",
 	"private": true,
 	"scripts": {
@@ -18,6 +18,6 @@
 	},
 	"devDependencies": {
 		"typescript": "^6.0.2",
-		"vite": "^8.0.2"
+		"vite": "^8.0.3"
 	}
 }

@@ -382,6 +382,7 @@ async fn test_pipeline_with_all_features() {
     };
 
     let processed = run_pipeline(result, &config).await.unwrap();
+    #[cfg(feature = "quality")]
     assert!(processed.metadata.additional.contains_key("quality_score"));
     assert!(processed.metadata.additional.contains_key("chunk_count"));
 }

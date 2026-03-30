@@ -10,7 +10,7 @@
  */
 
 import * as readline from "node:readline";
-import { batchExtractFiles, extractFile, type ExtractionConfig } from "@kreuzberg/node";
+import { batchExtractFiles, type ExtractionConfig, extractFile } from "@kreuzberg/node";
 
 interface ExtractionOutput {
 	content: string;

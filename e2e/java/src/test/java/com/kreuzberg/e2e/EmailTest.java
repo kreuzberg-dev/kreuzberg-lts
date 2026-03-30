@@ -86,6 +86,22 @@ public class EmailTest {
   }
 
   @Test
+  public void emailPstEmpty() throws Exception {
+    JsonNode config = null;
+    E2EHelpers.runFixture(
+        "email_pst_empty",
+        "email/empty.pst",
+        config,
+        Collections.emptyList(),
+        null,
+        true,
+        result -> {
+          E2EHelpers.Assertions.assertExpectedMime(
+              result, Arrays.asList("application/vnd.ms-outlook-pst"));
+        });
+  }
+
+  @Test
   public void emailSampleEml() throws Exception {
     JsonNode config = null;
     E2EHelpers.runFixture(

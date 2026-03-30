@@ -115,7 +115,6 @@ export function registerOcrBackend(backend: OcrBackendProtocol): void {
 			...processArgs: [OcrProcessPayload | OcrProcessTuple | NestedOcrProcessTuple, string?]
 		): Promise<string> {
 			const [imagePayload, maybeLanguage] = processArgs;
-			// biome-ignore lint/complexity/useLiteralKeys: required for environment variable access
 			if (process.env["KREUZBERG_DEBUG_OCR"] === "1") {
 				console.log("[registerOcrBackend] JS arguments", { length: processArgs.length });
 				console.log("[registerOcrBackend] Raw args", {
@@ -140,7 +139,6 @@ export function registerOcrBackend(backend: OcrBackendProtocol): void {
 				throw new Error("OCR backend did not receive a language parameter");
 			}
 
-			// biome-ignore lint/complexity/useLiteralKeys: required for environment variable access
 			if (process.env["KREUZBERG_DEBUG_OCR"] === "1") {
 				const length = typeof rawBytes === "string" ? rawBytes.length : rawBytes.length;
 				console.log(

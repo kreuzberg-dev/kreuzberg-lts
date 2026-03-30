@@ -2,7 +2,9 @@
 
 use axum::{Json, extract::State};
 
-use crate::{batch_extract_bytes, cache, extract_bytes};
+use tower::Service;
+
+use crate::{batch_extract_bytes, cache, service::ExtractionRequest};
 
 use super::{
     error::{ApiError, JsonApi, MultipartApi},
@@ -201,7 +203,13 @@ pub async fn extract_handler(
             .into_iter()
             .next()
             .expect("files.len() == 1 guarantees one element exists");
-        let result = extract_bytes(&data, mime_type.as_str(), final_config).await?;
+        let request = ExtractionRequest::bytes(data, mime_type, final_config.clone());
+        let mut svc = state
+            .extraction_service
+            .lock()
+            .expect("extraction service lock poisoned")
+            .clone();
+        let result = svc.call(request).await?;
         return Ok(Json(vec![result]));
     }
 
@@ -210,7 +218,21 @@ pub async fn extract_handler(
         .map(|(data, mime, _name)| (data, mime, None))
         .collect();
 
-    let results = batch_extract_bytes(files_data, final_config).await?;
+    #[cfg(feature = "otel")]
+    let batch_span = tracing::info_span!(
+        "kreuzberg.service",
+        { crate::telemetry::conventions::OPERATION } = crate::telemetry::conventions::operations::BATCH_EXTRACT,
+        { crate::telemetry::conventions::BATCH_SIZE } = files_data.len(),
+    );
+    #[cfg(not(feature = "otel"))]
+    let batch_span = tracing::Span::none();
+
+    let results = {
+        use tracing::Instrument;
+        batch_extract_bytes(files_data, final_config)
+            .instrument(batch_span)
+            .await?
+    };
     Ok(Json(results))
 }
 
@@ -878,8 +900,10 @@ mod tests {
     use tower::ServiceExt;
 
     fn test_router() -> Router {
+        let extraction_service = crate::service::ExtractionServiceBuilder::new().build();
         let state = ApiState {
             default_config: std::sync::Arc::new(crate::ExtractionConfig::default()),
+            extraction_service: std::sync::Arc::new(std::sync::Mutex::new(extraction_service)),
         };
         Router::new()
             .route("/version", get(version_handler))

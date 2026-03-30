@@ -1,6 +1,8 @@
 ---
+description: "document extractor plugin"
 name: document-extractor-plugin
 ---
+
 Implement custom document extractors
 
 1. Create struct implementing DocumentExtractor

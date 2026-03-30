@@ -1,9 +1,11 @@
 //! API request and response types.
 
-use serde::{Deserialize, Serialize};
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
-use crate::{ExtractionConfig, types::ExtractionResult};
+use serde::{Deserialize, Serialize};
+use tower::util::BoxCloneService;
+
+use crate::{ExtractionConfig, KreuzbergError, service::ExtractionRequest, types::ExtractionResult};
 
 /// API server size limit configuration.
 ///
@@ -174,10 +176,16 @@ pub struct ErrorResponse {
 ///
 /// Holds the default extraction configuration loaded from config file
 /// (via discovery or explicit path). Per-request configs override these defaults.
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct ApiState {
     /// Default extraction configuration
     pub default_config: Arc<ExtractionConfig>,
+    /// Tower service for extraction requests.
+    ///
+    /// Wrapped in `Arc<Mutex>` because `BoxCloneService` is `Send` but not `Sync`,
+    /// while `ApiState` must be `Clone + Sync` for Axum's state requirement.
+    /// The lock is held only long enough to clone the service.
+    pub extraction_service: Arc<Mutex<BoxCloneService<ExtractionRequest, ExtractionResult, KreuzbergError>>>,
 }
 
 /// Cache statistics response.

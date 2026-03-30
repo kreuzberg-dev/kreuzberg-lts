@@ -10,7 +10,7 @@ import (
 	"testing"
 	"unicode"
 
-	kreuzberg "github.com/kreuzberg-dev/kreuzberg/packages/go/v4"
+	"github.com/kreuzberg-dev/kreuzberg/packages/go/v4"
 )
 
 var (
@@ -647,5 +647,22 @@ func assertAnnotations(t *testing.T, result *kreuzberg.ExtractionResult, hasAnno
 		if len(result.Annotations) < *minCount {
 			t.Fatalf("expected at least %d annotations, got %d", *minCount, len(result.Annotations))
 		}
+	}
+}
+
+func assertIsPng(t *testing.T, data []byte) {
+	t.Helper()
+	if len(data) < 4 {
+		t.Fatalf("data too short for PNG: %d bytes", len(data))
+	}
+	if data[0] != 0x89 || data[1] != 0x50 || data[2] != 0x4E || data[3] != 0x47 {
+		t.Fatalf("missing PNG magic bytes, got: %v", data[:4])
+	}
+}
+
+func assertMinByteLength(t *testing.T, data []byte, minLen int) {
+	t.Helper()
+	if len(data) < minLen {
+		t.Fatalf("expected at least %d bytes, got %d", minLen, len(data))
 	}
 }

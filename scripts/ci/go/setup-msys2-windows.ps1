@@ -12,7 +12,7 @@ $msys2RootPath = "C:\msys64"
 
 # Verify MSYS2 installation directory exists
 if (-not (Test-Path $msys2Path)) {
-  throw "MSYS2 UCRT64 bin directory not found at $msys2Path"
+  throw "MSYS2 MINGW64 bin directory not found at $msys2Path"
 }
 
 Write-Host "MSYS2 installation found at $msys2RootPath"

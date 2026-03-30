@@ -426,6 +426,78 @@ internal static partial class NativeMethods
     [DllImport(LibraryName, EntryPoint = "kreuzberg_get_embedding_preset", CallingConvention = CallingConvention.Cdecl)]
     internal static extern IntPtr GetEmbeddingPreset(IntPtr name);
 
+    /// <summary>
+    /// C-compatible struct for a single rendered page image (PNG bytes).
+    /// </summary>
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct CPageImage
+    {
+        /// <summary>Pointer to PNG data.</summary>
+        public IntPtr Data;
+        /// <summary>Length of PNG data in bytes.</summary>
+        public UIntPtr Len;
+    }
+
+    /// <summary>
+    /// Renders a single PDF page as a PNG image.
+    /// </summary>
+    /// <param name="filePath">Pointer to UTF-8 file path string.</param>
+    /// <param name="pageIndex">Zero-based page index.</param>
+    /// <param name="dpi">Rendering resolution in DPI.</param>
+    /// <returns>Pointer to CPageImage struct (null on failure, check LastError).</returns>
+    [DllImport(LibraryName, EntryPoint = "kreuzberg_render_pdf_page", CallingConvention = CallingConvention.Cdecl)]
+    internal static extern IntPtr RenderPdfPage(IntPtr filePath, UIntPtr pageIndex, int dpi);
+
+    /// <summary>
+    /// Frees a single page result returned by RenderPdfPage.
+    /// </summary>
+    /// <param name="page">Pointer to CPageImage struct.</param>
+    [DllImport(LibraryName, EntryPoint = "kreuzberg_free_render_page_result", CallingConvention = CallingConvention.Cdecl)]
+    internal static extern void FreeRenderPageResult(IntPtr page);
+
+    /// <summary>
+    /// Creates a new PDF page iterator from a file path.
+    /// </summary>
+    [DllImport(LibraryName, EntryPoint = "kreuzberg_pdf_page_iterator_new", CallingConvention = CallingConvention.Cdecl)]
+    internal static extern IntPtr PdfPageIteratorNew(IntPtr filePath, int dpi);
+
+    /// <summary>
+    /// Advances the iterator and returns the next rendered page (CPageIterResult).
+    /// Returns NULL when iteration is complete. Check LastError() to distinguish
+    /// exhaustion (no error) from failure (error set).
+    /// </summary>
+    [DllImport(LibraryName, EntryPoint = "kreuzberg_pdf_page_iterator_next", CallingConvention = CallingConvention.Cdecl)]
+    internal static extern IntPtr PdfPageIteratorNext(IntPtr iter);
+
+    /// <summary>
+    /// Frees a single iterator result returned by PdfPageIteratorNext.
+    /// </summary>
+    [DllImport(LibraryName, EntryPoint = "kreuzberg_pdf_page_iterator_free_result", CallingConvention = CallingConvention.Cdecl)]
+    internal static extern void PdfPageIteratorFreeResult(IntPtr result);
+
+    /// <summary>
+    /// Returns the total number of pages in the PDF.
+    /// </summary>
+    [DllImport(LibraryName, EntryPoint = "kreuzberg_pdf_page_iterator_page_count", CallingConvention = CallingConvention.Cdecl)]
+    internal static extern UIntPtr PdfPageIteratorPageCount(IntPtr iter);
+
+    /// <summary>
+    /// Frees a PDF page iterator.
+    /// </summary>
+    [DllImport(LibraryName, EntryPoint = "kreuzberg_pdf_page_iterator_free", CallingConvention = CallingConvention.Cdecl)]
+    internal static extern void PdfPageIteratorFree(IntPtr iter);
+
+    /// <summary>
+    /// Native CPageIterResult layout: usize page_index, *mut u8 data, usize len.
+    /// </summary>
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct CPageIterResult
+    {
+        public UIntPtr PageIndex;
+        public IntPtr Data;
+        public UIntPtr Len;
+    }
+
     private static IntPtr ResolveLibrary(string libraryName, Assembly assembly, DllImportSearchPath? searchPath)
     {
         if (!string.Equals(libraryName, LibraryName, StringComparison.Ordinal))

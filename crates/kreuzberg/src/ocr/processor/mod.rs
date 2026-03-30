@@ -13,6 +13,8 @@ use crate::ocr::cache::OcrCache;
 use crate::ocr::error::OcrError;
 use crate::ocr::types::{BatchItemResult, TesseractConfig};
 use crate::types::OcrExtractionResult;
+#[cfg(feature = "otel")]
+use std::time::Instant;
 
 pub struct OcrProcessor {
     cache: OcrCache,
@@ -24,37 +26,63 @@ impl OcrProcessor {
         Ok(Self { cache })
     }
 
-    #[cfg_attr(feature = "otel", tracing::instrument(
-        skip(self, image_bytes),
-        fields(
-            ocr.backend = "tesseract",
-            ocr.language = %config.language,
-            image.size_bytes = image_bytes.len(),
-        )
-    ))]
     pub fn process_image(&self, image_bytes: &[u8], config: &TesseractConfig) -> Result<OcrExtractionResult, OcrError> {
-        execution::process_image_with_cache(image_bytes, config, &self.cache, None)
+        #[cfg(feature = "otel")]
+        let span = crate::telemetry::spans::ocr_span("tesseract", &config.language);
+        #[cfg(feature = "otel")]
+        let _guard = span.enter();
+        #[cfg(feature = "otel")]
+        let start = Instant::now();
+
+        let result = execution::process_image_with_cache(image_bytes, config, &self.cache, None);
+
+        #[cfg(feature = "otel")]
+        {
+            let duration_ms = start.elapsed().as_secs_f64() * 1000.0;
+            crate::telemetry::metrics::get_metrics().ocr_duration_ms.record(
+                duration_ms,
+                &[
+                    opentelemetry::KeyValue::new(crate::telemetry::conventions::OCR_BACKEND, "tesseract"),
+                    opentelemetry::KeyValue::new(crate::telemetry::conventions::OCR_LANGUAGE, config.language.clone()),
+                ],
+            );
+        }
+
+        result
     }
 
     /// Process an image with OCR and respect the output format from ExtractionConfig.
     ///
     /// This variant allows specifying an output format (Plain, Markdown, Djot) which
     /// affects how the OCR result's mime_type is set when markdown output is requested.
-    #[cfg_attr(feature = "otel", tracing::instrument(
-        skip(self, image_bytes),
-        fields(
-            ocr.backend = "tesseract",
-            ocr.language = %config.language,
-            image.size_bytes = image_bytes.len(),
-        )
-    ))]
     pub fn process_image_with_format(
         &self,
         image_bytes: &[u8],
         config: &TesseractConfig,
         output_format: crate::core::config::OutputFormat,
     ) -> Result<OcrExtractionResult, OcrError> {
-        execution::process_image_with_cache(image_bytes, config, &self.cache, Some(output_format))
+        #[cfg(feature = "otel")]
+        let span = crate::telemetry::spans::ocr_span("tesseract", &config.language);
+        #[cfg(feature = "otel")]
+        let _guard = span.enter();
+        #[cfg(feature = "otel")]
+        let start = Instant::now();
+
+        let result = execution::process_image_with_cache(image_bytes, config, &self.cache, Some(output_format));
+
+        #[cfg(feature = "otel")]
+        {
+            let duration_ms = start.elapsed().as_secs_f64() * 1000.0;
+            crate::telemetry::metrics::get_metrics().ocr_duration_ms.record(
+                duration_ms,
+                &[
+                    opentelemetry::KeyValue::new(crate::telemetry::conventions::OCR_BACKEND, "tesseract"),
+                    opentelemetry::KeyValue::new(crate::telemetry::conventions::OCR_LANGUAGE, config.language.clone()),
+                ],
+            );
+        }
+
+        result
     }
 
     pub fn clear_cache(&self) -> Result<(), OcrError> {

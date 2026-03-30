@@ -1,6 +1,8 @@
 ---
+description: "cache integration"
 name: cache-integration
 ---
+
 Optimize extraction with content-based caching
 
 1. Compute content hash of file

@@ -8,9 +8,9 @@ cat("Quality Score:", result$quality_score, "\n")
 cat("Keywords:", paste(result$keywords, collapse=", "), "\n\n")
 
 cat("Metadata fields:\n")
-author <- metadata_field(result, "author")
-if (!is.null(author)) {
-  cat("Author:", author, "\n")
+authors <- metadata_field(result, "authors")
+if (!is.null(authors)) {
+  cat("Authors:", paste(authors, collapse=", "), "\n")
 }
 
 created <- metadata_field(result, "created_date")
@@ -18,8 +18,8 @@ if (!is.null(created)) {
   cat("Created Date:", created, "\n")
 }
 
-pages_meta <- metadata_field(result, "total_pages")
+pages_meta <- metadata_field(result, "page_count")
 if (!is.null(pages_meta)) {
-  cat("Total Pages:", pages_meta, "\n")
+  cat("Pages:", pages_meta, "\n")
 }
 ```

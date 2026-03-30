@@ -8,22 +8,22 @@ import { writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
+	CacheError,
 	classifyError,
-	extractFileSync,
+	ErrorCode,
 	extractBytesSync,
-	getLastErrorCode,
+	extractFileSync,
 	getErrorCodeDescription,
 	getErrorCodeName,
+	getLastErrorCode,
 	getLastPanicContext,
-	ErrorCode,
-	KreuzbergError,
-	ValidationError,
-	ParsingError,
-	OcrError,
-	CacheError,
-	MissingDependencyError,
 	ImageProcessingError,
+	KreuzbergError,
+	MissingDependencyError,
+	OcrError,
+	ParsingError,
 	PluginError,
+	ValidationError,
 	validateMimeType,
 } from "@kreuzberg/node";
 import { describe, expect, it } from "vitest";
@@ -393,7 +393,7 @@ describe("Comprehensive Error Handling", () => {
 			writeFileSync(validFile, Buffer.from("test content"));
 
 			// First attempt
-			let result1;
+			let result1: unknown;
 			try {
 				result1 = extractFileSync(validFile, null);
 			} catch (error) {

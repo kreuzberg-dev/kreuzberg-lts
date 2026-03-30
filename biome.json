@@ -1,5 +1,5 @@
 {
-	"$schema": "https://biomejs.dev/schemas/2.4.0/schema.json",
+	"$schema": "https://biomejs.dev/schemas/2.4.9/schema.json",
 	"vcs": {
 		"enabled": true,
 		"clientKind": "git",
@@ -10,10 +10,14 @@
 			"**/*",
 			"!crates/kreuzberg-tesseract/third_party",
 			"!test_documents",
+			"!tests/test_apps/docker/fixtures",
+			"!tests/test_apps/java/test_documents",
 			"!**/artifacts",
 			"!**/dist",
 			"!**/pkg",
-			"!**/vendor"
+			"!**/vendor",
+			"!docs/snippets/typescript/docker/usage.ts",
+			"!packages/java/src/test/resources/test-large.html"
 		]
 	},
 	"formatter": {
@@ -44,6 +48,9 @@
 		{
 			"includes": ["docs/snippets/**/*.ts"],
 			"linter": {
+				"enabled": false
+			},
+			"formatter": {
 				"enabled": false
 			}
 		},
@@ -117,6 +124,9 @@
 				"rules": {
 					"complexity": {
 						"noImportantStyles": "off"
+					},
+					"style": {
+						"noDescendingSpecificity": "off"
 					}
 				}
 			}
@@ -127,6 +137,28 @@
 				"rules": {
 					"suspicious": {
 						"noExplicitAny": "off"
+					}
+				}
+			}
+		},
+		{
+			"includes": [
+				"docs/**/*.html",
+				"examples/**/*.html",
+				"crates/kreuzberg-wasm/examples/**/*.html",
+				"examples/wasm-deno/fixtures/**/*.html",
+				"packages/java/src/test/resources/**/*.html"
+			],
+			"linter": {
+				"rules": {
+					"a11y": {
+						"useButtonType": "off",
+						"noSvgWithoutTitle": "off",
+						"useHtmlLang": "off",
+						"noRedundantAlt": "off"
+					},
+					"complexity": {
+						"noArguments": "off"
 					}
 				}
 			}

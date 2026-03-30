@@ -82,5 +82,6 @@ validate_language_code_native <- function(code) .Call(wrap__validate_language_co
 
 validate_output_format_native <- function(format) .Call(wrap__validate_output_format_native, format)
 
+render_pdf_page_native <- function(path, page_index, dpi) .Call(wrap__render_pdf_page_native, path, page_index, dpi)
 
 # nolint end

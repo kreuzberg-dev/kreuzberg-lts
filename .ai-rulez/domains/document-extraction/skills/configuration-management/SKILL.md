@@ -1,6 +1,8 @@
 ---
+description: "configuration management"
 name: configuration-management
 ---
+
 Control extraction behavior through ExtractionConfig
 
 1. Define ExtractionConfig with all options

@@ -1,4 +1,7 @@
-______________________________________________________________________
+---
+description: "mime detection routing"
+priority: high
+---
 
 ## priority: high
 
@@ -6,7 +9,7 @@ ______________________________________________________________________
 
 ## Detection Flow
 
-```
+```text
 Extension → EXT_TO_MIME map → validate → Registry lookup → Extractor
 ```
 

@@ -44,6 +44,7 @@ env:
   CARGO_INCREMENTAL: 0
   CARGO_PROFILE_DEV_DEBUG: 0
   RUST_BACKTRACE: short
+  ORT_VERSION: "1.24.1"
 
 jobs:
   c-ffi-tests:
@@ -69,6 +70,12 @@ jobs:
         with:
           cache-key-prefix: c-ffi-${{ matrix.os }}
           use-sccache: 'true'
+
+      - name: Setup ONNX Runtime
+        uses: ./.github/actions/setup-onnx-runtime
+        with:
+          ort-version: ${{ env.ORT_VERSION }}
+          dest-dir: target/debug
 
       - name: Build kreuzberg-ffi
         shell: bash
@@ -148,6 +155,12 @@ jobs:
           cache-key-prefix: c-ffi-windows
           use-sccache: 'true'
           disable-cache: 'true'
+
+      - name: Setup ONNX Runtime
+        uses: ./.github/actions/setup-onnx-runtime
+        with:
+          ort-version: ${{ env.ORT_VERSION }}
+          dest-dir: target/debug
 
       - name: Build kreuzberg-ffi
         shell: bash

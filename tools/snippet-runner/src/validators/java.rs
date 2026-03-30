@@ -247,6 +247,7 @@ impl SnippetValidator for JavaValidator {
                 || line.trim().ends_with("errors") // "N errors" summary line
                 || line.contains("implicitly declared classes") // preview feature error (Java 21+)
                 || line.contains("preview feature") // general preview feature errors
+                || line.contains("missing method body, or declare abstract") // bare method signatures
         })
     }
 }

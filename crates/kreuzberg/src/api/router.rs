@@ -8,12 +8,16 @@ use axum::{
     routing::{delete, get, post},
 };
 use tower_http::{
+    catch_panic::CatchPanicLayer,
+    compression::CompressionLayer,
     cors::{AllowOrigin, Any, CorsLayer},
     limit::RequestBodyLimitLayer,
+    request_id::{MakeRequestUuid, PropagateRequestIdLayer, SetRequestIdLayer},
+    sensitive_headers::SetSensitiveHeadersLayer,
     trace::TraceLayer,
 };
 
-use crate::{ExtractionConfig, core::ServerConfig};
+use crate::{ExtractionConfig, core::ServerConfig, service::ExtractionServiceBuilder};
 
 use super::{
     handlers::{
@@ -119,8 +123,11 @@ pub fn create_router_with_limits_and_server_config(
     limits: ApiSizeLimits,
     server_config: ServerConfig,
 ) -> Router {
+    let extraction_service = ExtractionServiceBuilder::new().with_tracing().with_metrics().build();
+
     let state = ApiState {
         default_config: Arc::new(config),
+        extraction_service: Arc::new(std::sync::Mutex::new(extraction_service)),
     };
 
     // CORS configuration based on ServerConfig
@@ -177,6 +184,11 @@ pub fn create_router_with_limits_and_server_config(
         .layer(DefaultBodyLimit::max(limits.max_request_body_bytes))
         .layer(RequestBodyLimitLayer::new(limits.max_request_body_bytes))
         .layer(cors_layer)
+        .layer(SetRequestIdLayer::x_request_id(MakeRequestUuid))
+        .layer(PropagateRequestIdLayer::x_request_id())
+        .layer(CompressionLayer::new())
+        .layer(CatchPanicLayer::new())
+        .layer(SetSensitiveHeadersLayer::new([axum::http::header::AUTHORIZATION]))
         .layer(TraceLayer::new_for_http())
         .with_state(state)
 }

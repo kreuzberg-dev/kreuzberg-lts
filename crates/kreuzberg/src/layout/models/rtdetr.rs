@@ -47,6 +47,13 @@ impl RtDetrModel {
     /// distorting the page geometry. The model sees a properly proportioned
     /// image, which produces more accurate bounding box coordinates.
     fn run_inference(&mut self, img: &RgbImage, threshold: f32) -> Result<Vec<LayoutDetection>, LayoutError> {
+        #[cfg(feature = "otel")]
+        let inference_span = crate::telemetry::spans::model_inference_span("rtdetr-layout");
+        #[cfg(feature = "otel")]
+        let _inference_guard = inference_span.enter();
+        #[cfg(feature = "otel")]
+        let inference_start = Instant::now();
+
         let orig_width = img.width();
         let orig_height = img.height();
 
@@ -159,6 +166,12 @@ impl RtDetrModel {
             "RT-DETR inference breakdown"
         );
 
+        #[cfg(feature = "otel")]
+        {
+            let total_inference_ms = inference_start.elapsed().as_secs_f64() * 1000.0;
+            tracing::Span::current().record(crate::telemetry::conventions::MODEL_INFERENCE_MS, total_inference_ms);
+        }
+
         Ok(detections)
     }
 
@@ -173,6 +186,13 @@ impl RtDetrModel {
         images: &[&RgbImage],
         threshold: f32,
     ) -> Result<Vec<Vec<LayoutDetection>>, LayoutError> {
+        #[cfg(feature = "otel")]
+        let inference_span = crate::telemetry::spans::model_inference_span("rtdetr-layout");
+        #[cfg(feature = "otel")]
+        let _inference_guard = inference_span.enter();
+        #[cfg(feature = "otel")]
+        let inference_start = Instant::now();
+
         let batch = images.len();
         assert!(!images.is_empty(), "run_batch_inference called with empty slice");
 
@@ -309,6 +329,12 @@ impl RtDetrModel {
         }
 
         tracing::debug!(preprocess_ms, onnx_ms, batch, "RT-DETR batch inference breakdown");
+
+        #[cfg(feature = "otel")]
+        {
+            let total_inference_ms = inference_start.elapsed().as_secs_f64() * 1000.0;
+            tracing::Span::current().record(crate::telemetry::conventions::MODEL_INFERENCE_MS, total_inference_ms);
+        }
 
         Ok(results)
     }

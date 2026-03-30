@@ -126,6 +126,48 @@ mod build_tesseract {
         fallback.to_string()
     }
 
+    /// Resolve a MinGW compiler to an absolute path.
+    ///
+    /// On Windows CI runners (GitHub Actions), both MSVC and MinGW toolchains
+    /// are present. CMake may pick up MSVC's cl.exe even when
+    /// `CMAKE_CXX_COMPILER=g++` is set, producing MSVC-ABI objects that
+    /// MinGW's linker cannot link. Using the absolute path prevents this.
+    ///
+    /// Search order:
+    /// 1. `CXX`/`CC` env var (if it matches the tool name)
+    /// 2. Common MSYS2 paths: ucrt64, mingw64, clang64, usr
+    /// 3. Fall back to bare name (rely on PATH)
+    fn resolve_mingw_compiler(name: &str) -> String {
+        // Check environment variables first
+        let env_var = if name.contains("++") { "CXX" } else { "CC" };
+        if let Ok(val) = env::var(env_var)
+            && !val.is_empty()
+        {
+            let p = PathBuf::from(&val);
+            if p.is_absolute() && p.exists() {
+                return val;
+            }
+        }
+
+        // Search common MSYS2 subsystem paths
+        let msys2_base = PathBuf::from(r"C:\msys64");
+        for subsystem in &["ucrt64", "mingw64", "clang64", "usr"] {
+            let candidate = msys2_base.join(subsystem).join("bin").join(format!("{}.exe", name));
+            if candidate.exists() {
+                let path = candidate.to_string_lossy().replace('\\', "/");
+                println!("cargo:warning=Resolved MinGW {} to {}", name, path);
+                return path;
+            }
+        }
+
+        // Fall back to bare name
+        println!(
+            "cargo:warning=Could not resolve absolute path for MinGW {}, using bare name",
+            name
+        );
+        name.to_string()
+    }
+
     /// Create a g++ wrapper script for musl cross-compilation.
     ///
     /// When cross-compiling from a glibc host to a musl target, plain g++ picks up
@@ -653,8 +695,13 @@ mod build_tesseract {
                 cmake_cxx_flags.push_str("-std=c++17 -DTESSERACT_STATIC ");
                 additional_defines.push(("CMAKE_C_FLAGS_RELEASE".to_string(), "-O2 -DNDEBUG".to_string()));
                 additional_defines.push(("CMAKE_C_FLAGS_DEBUG".to_string(), "-O0 -g".to_string()));
-                additional_defines.push(("CMAKE_C_COMPILER".to_string(), "gcc".to_string()));
-                additional_defines.push(("CMAKE_CXX_COMPILER".to_string(), "g++".to_string()));
+                // Use absolute paths for MinGW compilers to prevent cmake from
+                // falling back to MSVC cl.exe on Windows CI runners where both
+                // toolchains are present.
+                let gcc_path = resolve_mingw_compiler("gcc");
+                let gxx_path = resolve_mingw_compiler("g++");
+                additional_defines.push(("CMAKE_C_COMPILER".to_string(), gcc_path));
+                additional_defines.push(("CMAKE_CXX_COMPILER".to_string(), gxx_path));
                 additional_defines.push(("CMAKE_SYSTEM_NAME".to_string(), "Windows".to_string()));
                 additional_defines.push((
                     "CMAKE_CXX_FLAGS_RELEASE".to_string(),

@@ -84,6 +84,7 @@ type ExtractionConfig struct {
 	EnableQualityProcessing  *bool                    `json:"enable_quality_processing,omitempty"`
 	OCR                      *OCRConfig               `json:"ocr,omitempty"`
 	ForceOCR                 *bool                    `json:"force_ocr,omitempty"`
+	ForceOCRPages            []uint64                 `json:"force_ocr_pages,omitempty"`
 	Chunking                 *ChunkingConfig          `json:"chunking,omitempty"`
 	Images                   *ImageExtractionConfig   `json:"images,omitempty"`
 	PdfOptions               *PdfConfig               `json:"pdf_options,omitempty"`
@@ -104,6 +105,8 @@ type ExtractionConfig struct {
 	ResultFormat             string                   `json:"result_format,omitempty"`
 	CacheNamespace           *string                  `json:"cache_namespace,omitempty"`
 	CacheTTLSecs             *uint64                  `json:"cache_ttl_secs,omitempty"`
+	ExtractionTimeoutSecs    *uint64                  `json:"extraction_timeout_secs,omitempty"`
+	MaxArchiveDepth          *int                     `json:"max_archive_depth,omitempty"`
 }
 
 // SecurityLimitsConfig controls security thresholds for archive extraction.
@@ -204,6 +207,7 @@ type ChunkingConfig struct {
 	ChunkSize             *int               `json:"chunk_size,omitempty"`
 	ChunkOverlap          *int               `json:"chunk_overlap,omitempty"`
 	Preset                *string            `json:"preset,omitempty"`
+	ChunkerType           *string            `json:"chunker_type,omitempty"`
 	Enabled               *bool              `json:"enabled,omitempty"`
 	Embedding             *EmbeddingConfig   `json:"embedding,omitempty"`
 	Sizing                *ChunkSizingConfig `json:"sizing,omitempty"`
@@ -422,6 +426,7 @@ type FileExtractionConfig struct {
 	EnableQualityProcessing  *bool                    `json:"enable_quality_processing,omitempty"`
 	OCR                      *OCRConfig               `json:"ocr,omitempty"`
 	ForceOCR                 *bool                    `json:"force_ocr,omitempty"`
+	ForceOCRPages            []uint64                 `json:"force_ocr_pages,omitempty"`
 	Chunking                 *ChunkingConfig          `json:"chunking,omitempty"`
 	Images                   *ImageExtractionConfig   `json:"images,omitempty"`
 	PdfOptions               *PdfConfig               `json:"pdf_options,omitempty"`
@@ -435,6 +440,7 @@ type FileExtractionConfig struct {
 	IncludeDocumentStructure *bool                    `json:"include_document_structure,omitempty"`
 	OutputFormat             string                   `json:"output_format,omitempty"`
 	ResultFormat             string                   `json:"result_format,omitempty"`
+	TimeoutSecs              *uint64                  `json:"timeout_secs,omitempty"`
 }
 
 // FileItem represents a file path paired with an optional per-file extraction config override.

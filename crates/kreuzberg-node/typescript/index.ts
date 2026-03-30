@@ -125,6 +125,15 @@ export {
 	batchExtractFiles,
 	batchExtractFilesSync,
 } from "./extraction/batch.js";
+export type { PdfPageResult } from "./extraction/render.js";
+export {
+	iteratePdfPages,
+	iteratePdfPagesSync,
+	PdfPageIterator,
+	pdfPageCount,
+	renderPdfPage,
+	renderPdfPageSync,
+} from "./extraction/render.js";
 export {
 	extractBytes,
 	extractBytesSync,
@@ -218,7 +227,7 @@ export {
 // Version
 // ============================================================================
 
-export const __version__ = "4.6.0";
+export const __version__ = "4.6.3";
 
 // ============================================================================
 // Test Utilities

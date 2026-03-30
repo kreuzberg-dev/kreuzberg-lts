@@ -43,9 +43,13 @@ pub mod model_cache;
 pub mod panic_context;
 pub mod plugins;
 pub mod rendering;
+pub mod telemetry;
 pub mod text;
 pub mod types;
 pub mod utils;
+
+#[cfg(feature = "tower-service")]
+pub mod service;
 
 #[cfg(feature = "api")]
 pub mod api;

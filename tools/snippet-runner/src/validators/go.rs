@@ -192,6 +192,7 @@ impl SnippetValidator for GoValidator {
                 || line.contains("expected '('") // CGo export comments causing parse issues
                 || line.contains("expected declaration") // cascading from wrapping
                 || line.contains("more errors") // N more errors summary
+                || line.contains("expected '}'") // struct { ... } literal syntax in signatures
         })
     }
 }

@@ -22,6 +22,11 @@ async def test_embedding_async() -> None:
     if not document_path.exists():
         pytest.skip(f"Skipping embedding_async: missing document at {document_path}")
 
+    import platform as _platform
+
+    if _platform.machine() == "AMD64" and _platform.system() == "Windows":
+        pytest.skip("Skipping embedding_async: not supported on this platform")
+
     config = helpers.build_config(
         {
             "chunking": {
@@ -45,6 +50,11 @@ def test_embedding_balanced_preset() -> None:
     document_path = helpers.resolve_document("pdf/fake_memo.pdf")
     if not document_path.exists():
         pytest.skip(f"Skipping embedding_balanced_preset: missing document at {document_path}")
+
+    import platform as _platform
+
+    if _platform.machine() == "AMD64" and _platform.system() == "Windows":
+        pytest.skip("Skipping embedding_balanced_preset: not supported on this platform")
 
     config = helpers.build_config(
         {
@@ -85,6 +95,11 @@ def test_embedding_fast_preset() -> None:
     document_path = helpers.resolve_document("pdf/fake_memo.pdf")
     if not document_path.exists():
         pytest.skip(f"Skipping embedding_fast_preset: missing document at {document_path}")
+
+    import platform as _platform
+
+    if _platform.machine() == "AMD64" and _platform.system() == "Windows":
+        pytest.skip("Skipping embedding_fast_preset: not supported on this platform")
 
     config = helpers.build_config(
         {

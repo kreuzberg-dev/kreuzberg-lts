@@ -27,6 +27,15 @@ char *kreuzberg_load_extraction_config_from_file(const char *path);
 char *kreuzberg_list_embedding_presets(void);
 char *kreuzberg_get_embedding_preset(const char *name);
 
+// PDF rendering and iterator function declarations
+CPageImage *kreuzberg_render_pdf_page(const char *file_path, uintptr_t page_index, int32_t dpi);
+void kreuzberg_free_render_page_result(CPageImage *page);
+CPdfPageIterator *kreuzberg_pdf_page_iterator_new(const char *file_path, int32_t dpi);
+CPageIterResult *kreuzberg_pdf_page_iterator_next(CPdfPageIterator *iter);
+uintptr_t kreuzberg_pdf_page_iterator_page_count(const CPdfPageIterator *iter);
+void kreuzberg_pdf_page_iterator_free(CPdfPageIterator *iter);
+void kreuzberg_pdf_page_iterator_free_result(CPageIterResult *result);
+
 // Validation FFI functions
 int32_t kreuzberg_validate_binarization_method(const char *method);
 int32_t kreuzberg_validate_ocr_backend(const char *backend);
@@ -281,6 +290,118 @@ func BatchExtractBytesSync(items []BytesWithMime, config *ExtractionConfig) ([]*
 	defer C.kreuzberg_free_batch_result(batch)
 
 	return convertCBatchResult(batch)
+}
+
+// RenderPdfPage renders a single page of a PDF as a PNG image.
+func RenderPdfPage(path string, pageIndex int, dpi int) ([]byte, error) {
+	if path == "" {
+		return nil, newValidationErrorWithContext("path is required", nil, ErrorCodeValidation, nil)
+	}
+	if pageIndex < 0 {
+		return nil, newValidationErrorWithContext("pageIndex must be non-negative", nil, ErrorCodeValidation, nil)
+	}
+
+	cPath := C.CString(path)
+	defer C.free(unsafe.Pointer(cPath))
+
+	ffiMutex.Lock()
+	defer ffiMutex.Unlock()
+
+	cResult := C.kreuzberg_render_pdf_page(cPath, C.uintptr_t(pageIndex), C.int32_t(dpi))
+	if cResult == nil {
+		return nil, lastError()
+	}
+	defer C.kreuzberg_free_render_page_result(cResult)
+
+	goSlice := unsafe.Slice((*byte)(unsafe.Pointer(cResult.data)), cResult.len)
+	result := make([]byte, cResult.len)
+	copy(result, goSlice)
+	return result, nil
+}
+
+// PdfPageIterator provides lazy, one-page-at-a-time rendering of a PDF file.
+// It wraps the native kreuzberg_pdf_page_iterator FFI functions.
+// Callers must call Close when done to free native resources.
+type PdfPageIterator struct {
+	handle unsafe.Pointer
+	closed bool
+}
+
+// NewPdfPageIterator creates a new iterator over all pages of the PDF at path.
+// Each call to Next renders the next page as PNG bytes.
+// The caller must call Close when iteration is complete.
+func NewPdfPageIterator(path string, dpi int) (*PdfPageIterator, error) {
+	if path == "" {
+		return nil, newValidationErrorWithContext("path is required", nil, ErrorCodeValidation, nil)
+	}
+
+	cPath := C.CString(path)
+	defer C.free(unsafe.Pointer(cPath))
+
+	ffiMutex.Lock()
+	defer ffiMutex.Unlock()
+
+	handle := C.kreuzberg_pdf_page_iterator_new(cPath, C.int32_t(dpi))
+	if handle == nil {
+		return nil, lastError()
+	}
+
+	return &PdfPageIterator{handle: unsafe.Pointer(handle), closed: false}, nil
+}
+
+// Next advances the iterator and returns the next page's PNG bytes.
+// pageIndex is the zero-based index of the returned page.
+// ok is false when the iterator is exhausted or the iterator is closed.
+func (it *PdfPageIterator) Next() (pageIndex int, png []byte, ok bool, err error) {
+	if it.closed || it.handle == nil {
+		return 0, nil, false, nil
+	}
+
+	ffiMutex.Lock()
+	defer ffiMutex.Unlock()
+
+	cResult := C.kreuzberg_pdf_page_iterator_next((*C.CPdfPageIterator)(it.handle))
+	if cResult == nil {
+		// NULL means exhausted or error. The FFI clears the error before
+		// each call, so a non-NULL kreuzberg_last_error() indicates failure.
+		errPtr := C.kreuzberg_last_error()
+		if errPtr != nil {
+			return 0, nil, false, lastError()
+		}
+		return 0, nil, false, nil
+	}
+	defer C.kreuzberg_pdf_page_iterator_free_result(cResult)
+
+	goSlice := unsafe.Slice((*byte)(unsafe.Pointer(cResult.data)), cResult.len)
+	pngBytes := make([]byte, cResult.len)
+	copy(pngBytes, goSlice)
+	return int(cResult.page_index), pngBytes, true, nil
+}
+
+// PageCount returns the total number of pages in the PDF.
+func (it *PdfPageIterator) PageCount() int {
+	if it.closed || it.handle == nil {
+		return 0
+	}
+
+	ffiMutex.Lock()
+	defer ffiMutex.Unlock()
+
+	return int(C.kreuzberg_pdf_page_iterator_page_count((*C.CPdfPageIterator)(it.handle)))
+}
+
+// Close frees the native iterator resources. It is safe to call multiple times.
+func (it *PdfPageIterator) Close() {
+	if it.closed || it.handle == nil {
+		return
+	}
+	it.closed = true
+
+	ffiMutex.Lock()
+	defer ffiMutex.Unlock()
+
+	C.kreuzberg_pdf_page_iterator_free((*C.CPdfPageIterator)(it.handle))
+	it.handle = nil
 }
 
 // BatchExtractFilesWithConfigs extracts multiple files with per-file configuration overrides.

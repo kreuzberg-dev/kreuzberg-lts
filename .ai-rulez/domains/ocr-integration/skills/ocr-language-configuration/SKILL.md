@@ -1,6 +1,8 @@
 ---
+description: "ocr language configuration"
 name: ocr-language-configuration
 ---
+
 Configure OCR for multiple languages
 
 1. Validate language packs installed

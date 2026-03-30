@@ -4,7 +4,7 @@ Kreuzberg is a document intelligence library built on a Rust core with bindings 
 
 This page is a map of what Kreuzberg can do. Each section links to the guide or reference page where you will find configuration details and code examples.
 
-![Kreuzberg features overview -- 91+ input formats flow through extraction, OCR, and processing to produce text, tables, chunks, and metadata](assets/features-overview.png)
+![Kreuzberg features overview -- 91+ input formats flow through extraction, OCR, and processing to produce text, tables, chunks, and metadata](assets/feature-overview.png)
 
 ---
 
@@ -189,6 +189,10 @@ After extraction, Kreuzberg can run a chain of processing steps. Each is optiona
 **Page Tracking** -- Extract per-page content with byte-accurate offsets for O(1) page lookups. Chunks are automatically mapped to their source pages, enabling precise citations in retrieval systems. Supported for PDF (byte-accurate), PPTX (slide boundaries), and DOCX (best-effort page breaks). See [Extraction Basics](guides/extraction.md) for usage.
 
 **PDF Hierarchy Detection** -- Detect document structure from PDFs using K-means clustering on block characteristics (font size, weight, indentation, position). Blocks are assigned to semantic levels (title, section, subsection, paragraph) without relying on explicit heading tags. See the [PDF Hierarchy Guide](guides/pdf-hierarchy.md).
+
+**PDF Page Rendering** -- Render individual PDF pages as PNG images for thumbnails, vision model input, or custom processing pipelines. Memory-efficient iterator renders one page at a time. Configurable DPI (default 150). Available across all language bindings. See [PDF Rendering Guide](guides/pdf-rendering.md).
+
+!!! info "Added in v4.6.2"
 
 ### For Search and Indexing
 

@@ -9,8 +9,8 @@
 
 #define KREUZBERG_VERSION_MAJOR 4
 #define KREUZBERG_VERSION_MINOR 6
-#define KREUZBERG_VERSION_PATCH 0
-#define KREUZBERG_VERSION "4.6.0"
+#define KREUZBERG_VERSION_PATCH 3
+#define KREUZBERG_VERSION "4.6.3"
 
 
 #include <stdarg.h>
@@ -502,6 +502,48 @@ typedef char *(*PostProcessorCallback)(const char *result_json);
 typedef char *(*ValidatorCallback)(const char *result_json);
 
 /**
+ * A single rendered page image (PNG bytes).
+ */
+typedef struct CPageImage {
+  /**
+   * Pointer to PNG data. Owned by this struct; freed via `kreuzberg_free_render_page_result`.
+   */
+  uint8_t *data;
+  /**
+   * Length of PNG data in bytes.
+   */
+  uintptr_t len;
+} CPageImage;
+
+/**
+ * Opaque handle to a PDF page iterator.
+ *
+ * Created by `kreuzberg_pdf_page_iterator_new`, freed by
+ * `kreuzberg_pdf_page_iterator_free`.
+ */
+typedef struct CPdfPageIterator {
+  uint8_t _private[0];
+} CPdfPageIterator;
+
+/**
+ * A single page from the PDF page iterator, including its zero-based index.
+ */
+typedef struct CPageIterResult {
+  /**
+   * Zero-based page index within the PDF.
+   */
+  uintptr_t page_index;
+  /**
+   * Pointer to PNG data. Owned by this struct; freed via `kreuzberg_pdf_page_iterator_free_result`.
+   */
+  uint8_t *data;
+  /**
+   * Length of PNG data in bytes.
+   */
+  uintptr_t len;
+} CPageIterResult;
+
+/**
  * Metadata field accessor structure
  *
  * Returned by `kreuzberg_result_get_metadata_field()`. Contains the field value
@@ -948,6 +990,28 @@ int32_t kreuzberg_config_set_cache_namespace(struct ConfigBuilder *builder,
 KREUZBERG_EXPORT
 int32_t kreuzberg_config_set_cache_ttl_secs(struct ConfigBuilder *builder,
                                             uint64_t ttl_secs);
+
+/**
+ * Set the extraction_timeout_secs field for per-file timeout in batch extraction.
+ *
+ * # Arguments
+ *
+ * * `builder` - Non-null pointer to ConfigBuilder
+ * * `timeout_secs` - Default per-file timeout in seconds; 0 clears the timeout
+ *
+ * # Returns
+ *
+ * 0 on success, -1 on error (NULL builder)
+ *
+ * # Safety
+ *
+ * This function is meant to be called from C/FFI code. The caller must ensure:
+ * - `builder` must be a valid, non-null pointer previously returned by `kreuzberg_config_builder_new`
+ * - The pointer must be properly aligned and point to a valid ConfigBuilder instance
+ */
+KREUZBERG_EXPORT
+int32_t kreuzberg_config_set_extraction_timeout_secs(struct ConfigBuilder *builder,
+                                                     uint64_t timeout_secs);
 
 /**
  * Set OCR configuration from JSON.
@@ -2395,6 +2459,89 @@ KREUZBERG_EXPORT bool kreuzberg_clear_validators(void);
  * - Returns NULL on error (check `kreuzberg_last_error`).
  */
 KREUZBERG_EXPORT char *kreuzberg_list_validators(void);
+
+/**
+ * Render a single page of a PDF file to a PNG byte buffer.
+ *
+ * # Safety
+ *
+ * - `file_path` must be a valid null-terminated C string
+ * - The returned pointer must be freed with `kreuzberg_free_render_page_result`
+ * - Returns NULL on panic (check `kreuzberg_last_error`)
+ */
+KREUZBERG_EXPORT
+struct CPageImage *kreuzberg_render_pdf_page(const char *file_path,
+                                             uintptr_t page_index,
+                                             int32_t dpi);
+
+/**
+ * Free a single page result returned by `kreuzberg_render_pdf_page`.
+ *
+ * # Safety
+ *
+ * - `page` must be a pointer returned by `kreuzberg_render_pdf_page`, or NULL (no-op)
+ * - `page` must not be used after this call
+ */
+KREUZBERG_EXPORT void kreuzberg_free_render_page_result(struct CPageImage *page);
+
+/**
+ * Create a new PDF page iterator from a file path.
+ *
+ * # Safety
+ *
+ * - `file_path` must be a valid null-terminated C string
+ * - The returned pointer must be freed with `kreuzberg_pdf_page_iterator_free`
+ * - Returns NULL on error (check `kreuzberg_last_error`)
+ */
+KREUZBERG_EXPORT
+struct CPdfPageIterator *kreuzberg_pdf_page_iterator_new(const char *file_path,
+                                                         int32_t dpi);
+
+/**
+ * Advance the iterator and return the next rendered page with its page index.
+ *
+ * Returns NULL when iteration is complete. Check `kreuzberg_last_error()` to
+ * distinguish exhaustion (no error) from failure (error set).
+ *
+ * # Safety
+ *
+ * - `iter` must be a valid pointer returned by `kreuzberg_pdf_page_iterator_new`
+ * - The returned `CPageIterResult` must be freed with `kreuzberg_pdf_page_iterator_free_result`
+ * - Returns NULL when the iterator is exhausted (no error) or on error (error set)
+ */
+KREUZBERG_EXPORT
+struct CPageIterResult *kreuzberg_pdf_page_iterator_next(struct CPdfPageIterator *iter);
+
+/**
+ * Free a single iterator result returned by `kreuzberg_pdf_page_iterator_next`.
+ *
+ * # Safety
+ *
+ * - `result` must be a pointer returned by `kreuzberg_pdf_page_iterator_next`, or NULL (no-op)
+ * - `result` must not be used after this call
+ */
+KREUZBERG_EXPORT void kreuzberg_pdf_page_iterator_free_result(struct CPageIterResult *result);
+
+/**
+ * Return the total number of pages in the PDF.
+ *
+ * # Safety
+ *
+ * - `iter` must be a valid pointer returned by `kreuzberg_pdf_page_iterator_new`
+ * - Returns 0 if `iter` is NULL
+ */
+KREUZBERG_EXPORT
+uintptr_t kreuzberg_pdf_page_iterator_page_count(const struct CPdfPageIterator *iter);
+
+/**
+ * Free a PDF page iterator.
+ *
+ * # Safety
+ *
+ * - `iter` must be a pointer returned by `kreuzberg_pdf_page_iterator_new`, or NULL (no-op)
+ * - `iter` must not be used after this call
+ */
+KREUZBERG_EXPORT void kreuzberg_pdf_page_iterator_free(struct CPdfPageIterator *iter);
 
 /**
  * Get page count from extraction result.

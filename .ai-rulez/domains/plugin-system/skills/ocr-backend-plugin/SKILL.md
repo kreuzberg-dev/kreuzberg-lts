@@ -1,6 +1,8 @@
 ---
+description: "ocr uackend plugin"
 name: ocr-backend-plugin
 ---
+
 Implement custom OCR backends
 
 1. Create struct implementing OcrBackend

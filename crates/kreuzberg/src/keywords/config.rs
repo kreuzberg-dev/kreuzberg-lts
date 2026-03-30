@@ -14,6 +14,7 @@ fn default_ngram_range() -> (usize, usize) {
 /// YAKE-specific parameters.
 #[cfg(feature = "keywords-yake")]
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct YakeParams {
     /// Window size for co-occurrence analysis (default: 2).
     ///
@@ -31,6 +32,7 @@ impl Default for YakeParams {
 /// RAKE-specific parameters.
 #[cfg(feature = "keywords-rake")]
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct RakeParams {
     /// Minimum word length to consider (default: 1).
     pub min_word_length: usize,
@@ -51,6 +53,7 @@ impl Default for RakeParams {
 
 /// Keyword extraction configuration.
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct KeywordConfig {
     /// Algorithm to use for extraction.
     #[serde(default)]

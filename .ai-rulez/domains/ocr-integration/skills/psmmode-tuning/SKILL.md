@@ -1,6 +1,8 @@
 ---
+description: "psmmode tuning"
 name: psmmode-tuning
 ---
+
 Select and optimize Tesseract PSM modes
 
 1. Analyze document layout

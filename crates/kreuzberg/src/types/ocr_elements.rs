@@ -95,6 +95,7 @@ impl OcrBoundingGeometry {
 /// from recognition confidence (how confident about the actual text content).
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[cfg_attr(feature = "api", derive(utoipa::ToSchema))]
+#[serde(deny_unknown_fields)]
 pub struct OcrConfidence {
     /// Detection confidence: how confident the OCR engine is that text exists here.
     ///
@@ -136,6 +137,7 @@ impl OcrConfidence {
 /// Rotation information for an OCR element.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[cfg_attr(feature = "api", derive(utoipa::ToSchema))]
+#[serde(deny_unknown_fields)]
 pub struct OcrRotation {
     /// Rotation angle in degrees (0, 90, 180, 270 for PaddleOCR).
     pub angle_degrees: f64,
@@ -220,6 +222,7 @@ impl OcrElementLevel {
 /// from both Tesseract and PaddleOCR backends.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[cfg_attr(feature = "api", derive(utoipa::ToSchema))]
+#[serde(deny_unknown_fields)]
 pub struct OcrElement {
     /// The recognized text content.
     pub text: String,
@@ -308,6 +311,7 @@ impl OcrElement {
 /// Controls how OCR elements are extracted and filtered.
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 #[cfg_attr(feature = "api", derive(utoipa::ToSchema))]
+#[serde(deny_unknown_fields)]
 pub struct OcrElementConfig {
     /// Whether to include OCR elements in the extraction result.
     ///

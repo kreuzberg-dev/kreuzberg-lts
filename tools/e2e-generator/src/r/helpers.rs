@@ -431,5 +431,14 @@ values_equal <- function(lhs, rhs) {
 }
 
 `%||%` <- function(x, y) if (is.null(x)) y else x
+
+assert_is_png <- function(data) {
+  testthat::expect_true(length(data) >= 4, label = "Data too short for PNG")
+  testthat::expect_identical(data[1:4], as.raw(c(0x89, 0x50, 0x4e, 0x47)))
+}
+
+assert_min_byte_length <- function(data, min_length) {
+  testthat::expect_gte(length(data), min_length)
+}
 # nolint end
 "#;

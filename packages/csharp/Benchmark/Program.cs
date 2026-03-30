@@ -278,6 +278,7 @@ static string GuessMimeType(string path)
         ".epub" => "application/epub+zip",
         ".eml" => "message/rfc822",
         ".msg" => "application/vnd.ms-outlook",
+        ".pst" => "application/vnd.ms-outlook-pst",
         ".ipynb" => "application/x-ipynb+json",
         ".yaml" or ".yml" => "application/yaml",
         ".toml" => "application/toml",

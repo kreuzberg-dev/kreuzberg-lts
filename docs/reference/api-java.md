@@ -1,4 +1,4 @@
-# Java API Reference <span class="version-badge">v4.6.0</span>
+# Java API Reference <span class="version-badge">v4.6.3</span>
 
 Complete reference for the Kreuzberg Java bindings using Java 25+ Foreign Function & Memory API (FFM/Panama).
 
@@ -10,7 +10,7 @@ Add the dependency to your Maven `pom.xml`:
 <dependency>
     <groupId>dev.kreuzberg</groupId>
     <artifactId>kreuzberg</artifactId>
-    <version>4.6.0</version>
+    <version>4.6.3</version>
 </dependency>
 ```
 
@@ -18,7 +18,7 @@ Or with Gradle:
 
 ```gradle title="build.gradle"
 dependencies {
-    implementation 'dev.kreuzberg:kreuzberg:4.6.0'
+    implementation 'dev.kreuzberg:kreuzberg:4.6.3'
 }
 ```
 
@@ -233,7 +233,7 @@ public static CompletableFuture<List<ExtractionResult>> batchExtractFilesAsync(
 
 ---
 
-### batchExtractFilesWithConfigs() <span class="version-badge">v4.6.0</span>
+### batchExtractFilesWithConfigs() <span class="version-badge">v4.6.3</span>
 
 Extract multiple files in parallel with per-file configuration overrides (synchronous).
 
@@ -253,7 +253,7 @@ public static List<ExtractionResult> batchExtractFilesWithConfigs(
 
 ---
 
-### batchExtractBytesWithConfigs() <span class="version-badge">v4.6.0</span>
+### batchExtractBytesWithConfigs() <span class="version-badge">v4.6.3</span>
 
 Extract multiple byte arrays in parallel with per-file configuration overrides (synchronous).
 
@@ -268,7 +268,7 @@ public static List<ExtractionResult> batchExtractBytesWithConfigs(
 
 ---
 
-### FileExtractionConfig <span class="version-badge">v4.6.0</span>
+### FileExtractionConfig <span class="version-badge">v4.6.3</span>
 
 Per-file extraction configuration overrides for batch operations. All fields are `Optional<T>` — empty means "use the batch-level default."
 
@@ -667,7 +667,7 @@ OcrConfig ocr = OcrConfig.builder()
     .build();
 ```
 
-**PaddleOcrConfig Fields:** <span class="version-badge">v4.6.0</span>
+**PaddleOcrConfig Fields:** <span class="version-badge">v4.6.3</span>
 
 - `modelTier` (String): Model tier: "mobile" (lightweight, ~21MB total, fast) or "server" (high accuracy, ~172MB, best with GPU). Default: "mobile"
 - `padding` (Integer): Padding in pixels (0-100) added around the image before detection. Default: 10
@@ -788,7 +788,7 @@ PDF-specific extraction options.
 ```java title="PdfConfiguration.java"
 // Configure PDF-specific extraction options
 PdfConfig pdf = PdfConfig.builder()
-    .allowSingleColumnTables(false) // <span class="version-badge">v4.6.0</span> Allow extraction of single-column tables
+    .allowSingleColumnTables(false) // <span class="version-badge">v4.6.3</span> Allow extraction of single-column tables
     .extractImages(true)         // Extract images from PDF
     .extractMetadata(true)       // Extract PDF metadata
     .renderImages(false)         // Render pages as images for processing
@@ -832,7 +832,7 @@ ImagePreprocessingConfig preproc = ImagePreprocessingConfig.builder()
 
 ---
 
-### ConcurrencyConfig <span class="version-badge">v4.6.0</span>
+### ConcurrencyConfig <span class="version-badge">v4.6.3</span>
 
 Concurrency configuration for controlling parallel extraction.
 
@@ -1662,13 +1662,77 @@ for (String preset : presets) {
 
 ---
 
+## PDF Rendering
+
+!!! info "Added in v4.6.3"
+
+### Kreuzberg.renderPdfPage()
+
+Render a single page of a PDF as a PNG image.
+
+**Signature:**
+
+```java title="Java"
+public static byte[] renderPdfPage(Path path, int pageIndex, int dpi) throws IOException, KreuzbergException
+```
+
+**Parameters:**
+
+- `path` (Path): Path to the PDF file
+- `pageIndex` (int): Zero-based page index to render
+- `dpi` (int): Resolution for rendering (e.g. 150)
+
+**Returns:**
+
+- `byte[]`: PNG-encoded bytes for the requested page
+
+**Example:**
+
+```java title="RenderSinglePage.java"
+byte[] png = Kreuzberg.renderPdfPage(Path.of("document.pdf"), 0, 150);
+Files.write(Path.of("first_page.png"), png);
+```
+
+---
+
+### Kreuzberg.PdfPageIterator
+
+A more memory-efficient alternative to rendering all pages at once when memory is a concern or when pages should be processed as they are rendered (e.g., sending each page to a vision model for OCR). Renders one page at a time, so only one raw image is in memory at a time.
+
+**Signature:**
+
+```java title="Java"
+public static class PdfPageIterator implements Iterator<PageResult>, AutoCloseable {
+    public static PdfPageIterator open(Path path, int dpi) throws IOException, KreuzbergException;
+    public boolean hasNext();
+    public PageResult next();
+    public int pageCount();
+    public void close();
+}
+
+public record PageResult(int pageIndex, byte[] data) {}
+```
+
+**Example:**
+
+```java title="IteratePages.java"
+try (var iter = Kreuzberg.PdfPageIterator.open(Path.of("document.pdf"), 150)) {
+    while (iter.hasNext()) {
+        Kreuzberg.PageResult page = iter.next();
+        Files.write(Path.of("page_" + page.pageIndex() + ".png"), page.data());
+    }
+}
+```
+
+---
+
 ## Error Handling
 
 ### Exception Hierarchy
 
 Kreuzberg uses a checked exception model for error handling.
 
-```
+```text
 Exception
 ├── IOException (from java.io)
 ├── KreuzbergException
@@ -2040,7 +2104,7 @@ brew install tesseract
 
 ---
 
-### LayoutDetectionConfig <span class="version-badge">v4.6.0</span>
+### LayoutDetectionConfig <span class="version-badge">v4.6.3</span>
 
 Configuration for ONNX-based document layout detection.
 

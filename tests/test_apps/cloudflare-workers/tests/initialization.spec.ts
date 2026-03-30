@@ -1,6 +1,6 @@
-import { describe, it, expect } from "vitest";
+import { getVersion, initWasm, isInitialized } from "@kreuzberg/wasm";
 import wasmModule from "@kreuzberg/wasm/kreuzberg_wasm_bg.wasm";
-import { initWasm, isInitialized, getVersion } from "@kreuzberg/wasm";
+import { describe, expect, it } from "vitest";
 
 describe("WASM Initialization in Cloudflare Workers", () => {
 	it("should initialize the WASM module without errors", async () => {

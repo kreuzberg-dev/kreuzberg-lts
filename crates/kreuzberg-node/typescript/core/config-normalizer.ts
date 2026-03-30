@@ -414,19 +414,19 @@ function normalizeLayoutDetectionConfig(config?: LayoutDetectionConfig): NativeE
  * Export public normalization functions for use by extraction modules.
  */
 export {
-	normalizeExtractionConfig,
-	normalizeTesseractConfig,
-	normalizeOcrConfig,
 	normalizeChunkingConfig,
-	normalizeImageExtractionConfig,
-	normalizePdfConfig,
-	normalizeTokenReductionConfig,
-	normalizeLanguageDetectionConfig,
-	normalizePostProcessorConfig,
-	normalizeHtmlPreprocessing,
+	normalizeExtractionConfig,
 	normalizeHtmlOptions,
+	normalizeHtmlPreprocessing,
+	normalizeImageExtractionConfig,
 	normalizeKeywordConfig,
+	normalizeLanguageDetectionConfig,
 	normalizeLayoutDetectionConfig,
+	normalizeOcrConfig,
 	normalizePageConfig,
+	normalizePdfConfig,
+	normalizePostProcessorConfig,
+	normalizeTesseractConfig,
+	normalizeTokenReductionConfig,
 	setIfDefined,
 };

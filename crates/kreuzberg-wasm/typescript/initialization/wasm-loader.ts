@@ -114,30 +114,25 @@ import {
 	type WasmModule,
 } from "./state.js";
 
-export type { WasmModule, ModuleInfo };
-
+export type { ModuleInfo, WasmModule };
 /**
  * Get the loaded WASM module
  *
  * @returns The WASM module instance or null if not loaded
  * @internal
  */
-export { getWasmModule };
-
 /**
  * Check if WASM module is initialized
  *
  * @returns True if WASM module is initialized, false otherwise
  */
-export { isInitialized };
-
 /**
  * Get initialization error if module failed to load
  *
  * @returns The error that occurred during initialization, or null if no error
  * @internal
  */
-export { getInitializationError };
+export { getInitializationError, getWasmModule, isInitialized };
 
 /**
  * Get WASM module version

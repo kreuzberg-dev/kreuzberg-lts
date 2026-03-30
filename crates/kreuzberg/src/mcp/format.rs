@@ -2,58 +2,8 @@
 //!
 //! This module provides utilities for formatting extraction results and building configurations.
 
+use crate::core::config::merge::build_config_from_json;
 use crate::{ExtractionConfig, ExtractionResult as KreuzbergResult};
-
-/// Merge extraction configuration using JSON-level merge.
-///
-/// This function performs a JSON-level merge where fields present in the override
-/// JSON take precedence over the base config. This approach correctly handles
-/// boolean fields that are explicitly set to their default values.
-///
-/// # Strategy
-///
-/// 1. Serialize base config to JSON
-/// 2. For each field in the override JSON, merge into base JSON (field-by-field override)
-/// 3. Deserialize merged JSON back to ExtractionConfig
-///
-/// This ensures that explicitly provided values always take precedence, even if
-/// they match the default value. Unspecified fields are preserved from base config.
-///
-/// # Examples
-///
-/// ```rust,ignore
-/// use kreuzberg::{ExtractionConfig, OutputFormat};
-/// use serde_json::json;
-///
-/// let mut base = ExtractionConfig::default();
-/// base.use_cache = true;
-///
-/// let override_json = json!({
-///     "force_ocr": true,
-/// });
-///
-/// let merged = merge_configs(&base, &override_json).unwrap();
-/// assert_eq!(merged.use_cache, true);  // from base
-/// assert_eq!(merged.force_ocr, true);  // from override
-/// ```
-fn merge_configs(base: &ExtractionConfig, override_json: serde_json::Value) -> Result<ExtractionConfig, String> {
-    // Serialize base config to JSON
-    let mut config_json =
-        serde_json::to_value(base).map_err(|e| format!("Failed to serialize base config to JSON: {}", e))?;
-
-    // Merge JSON value into config JSON (simple field-by-field merge)
-    // For each key in the provided JSON, override the corresponding key in config JSON
-    if let serde_json::Value::Object(json_obj) = override_json
-        && let Some(config_obj) = config_json.as_object_mut()
-    {
-        for (key, value) in json_obj {
-            config_obj.insert(key, value);
-        }
-    }
-
-    // Deserialize merged JSON back to ExtractionConfig
-    serde_json::from_value(config_json).map_err(|e| format!("Failed to deserialize merged config: {}", e))
-}
 
 /// Build extraction config from MCP parameters.
 ///
@@ -63,13 +13,7 @@ pub(super) fn build_config(
     default_config: &ExtractionConfig,
     config_json: Option<serde_json::Value>,
 ) -> Result<ExtractionConfig, String> {
-    if let Some(json) = config_json {
-        // Merge using JSON-level merge: provided JSON fields override default config
-        merge_configs(default_config, json)
-    } else {
-        // No config provided, use default
-        Ok(default_config.clone())
-    }
+    build_config_from_json(default_config, config_json)
 }
 
 /// Format extraction result as JSON string.

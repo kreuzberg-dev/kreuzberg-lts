@@ -1,4 +1,6 @@
-use crate::fixtures::{Assertions, ExtractionMethod, Fixture, InputType, PluginAssertions, PluginTestSpec};
+use crate::fixtures::{
+    Assertions, ExtractionMethod, Fixture, InputType, PluginAssertions, PluginTestSpec, RenderAssertions,
+};
 use anyhow::{Context, Result};
 use camino::Utf8Path;
 use itertools::Itertools;
@@ -692,6 +694,21 @@ public final class E2EHelpers {
             }
         }
     }
+
+    public static void assertIsPng(byte[] data) {
+        assertNotNull(data, "PNG data should not be null");
+        assertTrue(data.length >= 4, String.format("Data too short for PNG: %d bytes", data.length));
+        assertTrue(data[0] == (byte) 0x89 && data[1] == (byte) 0x50
+                && data[2] == (byte) 0x4E && data[3] == (byte) 0x47,
+                String.format("Missing PNG magic bytes, got: [%02x, %02x, %02x, %02x]",
+                        data[0], data[1], data[2], data[3]));
+    }
+
+    public static void assertMinByteLength(byte[] data, int minLength) {
+        assertNotNull(data, "Data should not be null");
+        assertTrue(data.length >= minLength,
+                String.format("Expected at least %d bytes, got %d", minLength, data.length));
+    }
 }
 "#;
 
@@ -712,16 +729,16 @@ const JAVA_POM_TEMPLATE: &str = r#"<?xml version="1.0" encoding="UTF-8"?>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <junit.version>5.11.3</junit.version>
         <jackson.version>2.18.2</jackson.version>
-        <kreuzberg.version>4.6.0</kreuzberg.version>
+        <kreuzberg.version>4.6.3</kreuzberg.version>
     </properties>
 
     <dependencies>
         <dependency>
             <groupId>dev.kreuzberg</groupId>
             <artifactId>kreuzberg</artifactId>
-            <version>4.6.0</version>
+            <version>4.6.3</version>
             <scope>system</scope>
-            <systemPath>${project.basedir}/../../packages/java/target/kreuzberg-4.6.0.jar</systemPath>
+            <systemPath>${project.basedir}/../../packages/java/target/kreuzberg-4.6.3.jar</systemPath>
         </dependency>
 
         <dependency>
@@ -803,6 +820,15 @@ pub fn generate(fixtures: &[Fixture], output_root: &Utf8Path) -> Result<()> {
 
     if !api_fixtures.is_empty() {
         generate_plugin_api_tests(&api_fixtures, &src_test)?;
+    }
+
+    let render_fixtures: Vec<_> = fixtures.iter().filter(|f| f.is_render()).collect();
+    if !render_fixtures.is_empty() {
+        let mut sorted = render_fixtures;
+        sorted.sort_by(|a, b| a.id.cmp(&b.id));
+        let content = render_render_category(&sorted)?;
+        let path = src_test.join("RenderTest.java");
+        fs::write(&path, content).with_context(|| format!("Writing {}", path))?;
     }
 
     Ok(())
@@ -952,6 +978,25 @@ fn render_test(fixture: &Fixture) -> Result<String> {
         writeln!(body, "        E2EHelpers.skipIfPaddleOcrUnavailable();")?;
     }
 
+    let skip_platforms = &fixture.skip().skip_on_platform;
+    if !skip_platforms.is_empty() {
+        let conditions: Vec<String> = skip_platforms
+            .iter()
+            .filter_map(|triple| rust_triple_to_java_condition(triple))
+            .collect();
+        if !conditions.is_empty() {
+            let combined = conditions.join(" || ");
+            writeln!(body, "        if ({combined}) {{")?;
+            writeln!(
+                body,
+                "            org.junit.jupiter.api.Assumptions.assumeTrue(false, \"Skipping {}: not supported on this platform\");",
+                fixture.id
+            )?;
+            writeln!(body, "            return;")?;
+            writeln!(body, "        }}")?;
+        }
+    }
+
     // Generate different code based on extraction method and input type
     match (method, input_type) {
         (ExtractionMethod::Sync, InputType::File) => {
@@ -982,19 +1027,21 @@ fn render_test(fixture: &Fixture) -> Result<String> {
                 render_java_string(&fixture.document().path)
             )?;
             writeln!(body)?;
-            writeln!(body, "        if ({} && !Files.exists(documentPath)) {{", skip_flag)?;
-            writeln!(
-                body,
-                "            String msg = String.format(\"Skipping {}: missing document at %s\", documentPath);",
-                fixture.id
-            )?;
-            writeln!(body, "            System.err.println(msg);")?;
-            writeln!(
-                body,
-                "            org.junit.jupiter.api.Assumptions.assumeTrue(false, msg);"
-            )?;
-            writeln!(body, "            return;")?;
-            writeln!(body, "        }}")?;
+            if skip_flag == "true" {
+                writeln!(body, "        if (!Files.exists(documentPath)) {{")?;
+                writeln!(
+                    body,
+                    "            String msg = String.format(\"Skipping {}: missing document at %s\", documentPath);",
+                    fixture.id
+                )?;
+                writeln!(body, "            System.err.println(msg);")?;
+                writeln!(
+                    body,
+                    "            org.junit.jupiter.api.Assumptions.assumeTrue(false, msg);"
+                )?;
+                writeln!(body, "            return;")?;
+                writeln!(body, "        }}")?;
+            }
             writeln!(body)?;
             writeln!(body, "        byte[] documentBytes = Files.readAllBytes(documentPath);")?;
             writeln!(
@@ -1050,19 +1097,21 @@ fn render_test(fixture: &Fixture) -> Result<String> {
                 render_java_string(&fixture.document().path)
             )?;
             writeln!(body)?;
-            writeln!(body, "        if ({} && !Files.exists(documentPath)) {{", skip_flag)?;
-            writeln!(
-                body,
-                "            String msg = String.format(\"Skipping {}: missing document at %s\", documentPath);",
-                fixture.id
-            )?;
-            writeln!(body, "            System.err.println(msg);")?;
-            writeln!(
-                body,
-                "            org.junit.jupiter.api.Assumptions.assumeTrue(false, msg);"
-            )?;
-            writeln!(body, "            return;")?;
-            writeln!(body, "        }}")?;
+            if skip_flag == "true" {
+                writeln!(body, "        if (!Files.exists(documentPath)) {{")?;
+                writeln!(
+                    body,
+                    "            String msg = String.format(\"Skipping {}: missing document at %s\", documentPath);",
+                    fixture.id
+                )?;
+                writeln!(body, "            System.err.println(msg);")?;
+                writeln!(
+                    body,
+                    "            org.junit.jupiter.api.Assumptions.assumeTrue(false, msg);"
+                )?;
+                writeln!(body, "            return;")?;
+                writeln!(body, "        }}")?;
+            }
             writeln!(body)?;
             writeln!(
                 body,
@@ -1120,19 +1169,21 @@ fn render_test(fixture: &Fixture) -> Result<String> {
                 render_java_string(&fixture.document().path)
             )?;
             writeln!(body)?;
-            writeln!(body, "        if ({} && !Files.exists(documentPath)) {{", skip_flag)?;
-            writeln!(
-                body,
-                "            String msg = String.format(\"Skipping {}: missing document at %s\", documentPath);",
-                fixture.id
-            )?;
-            writeln!(body, "            System.err.println(msg);")?;
-            writeln!(
-                body,
-                "            org.junit.jupiter.api.Assumptions.assumeTrue(false, msg);"
-            )?;
-            writeln!(body, "            return;")?;
-            writeln!(body, "        }}")?;
+            if skip_flag == "true" {
+                writeln!(body, "        if (!Files.exists(documentPath)) {{")?;
+                writeln!(
+                    body,
+                    "            String msg = String.format(\"Skipping {}: missing document at %s\", documentPath);",
+                    fixture.id
+                )?;
+                writeln!(body, "            System.err.println(msg);")?;
+                writeln!(
+                    body,
+                    "            org.junit.jupiter.api.Assumptions.assumeTrue(false, msg);"
+                )?;
+                writeln!(body, "            return;")?;
+                writeln!(body, "        }}")?;
+            }
             writeln!(body)?;
             writeln!(body, "        byte[] documentBytes = Files.readAllBytes(documentPath);")?;
             writeln!(
@@ -1195,19 +1246,21 @@ fn render_test(fixture: &Fixture) -> Result<String> {
                 render_java_string(&fixture.document().path)
             )?;
             writeln!(body)?;
-            writeln!(body, "        if ({} && !Files.exists(documentPath)) {{", skip_flag)?;
-            writeln!(
-                body,
-                "            String msg = String.format(\"Skipping {}: missing document at %s\", documentPath);",
-                fixture.id
-            )?;
-            writeln!(body, "            System.err.println(msg);")?;
-            writeln!(
-                body,
-                "            org.junit.jupiter.api.Assumptions.assumeTrue(false, msg);"
-            )?;
-            writeln!(body, "            return;")?;
-            writeln!(body, "        }}")?;
+            if skip_flag == "true" {
+                writeln!(body, "        if (!Files.exists(documentPath)) {{")?;
+                writeln!(
+                    body,
+                    "            String msg = String.format(\"Skipping {}: missing document at %s\", documentPath);",
+                    fixture.id
+                )?;
+                writeln!(body, "            System.err.println(msg);")?;
+                writeln!(
+                    body,
+                    "            org.junit.jupiter.api.Assumptions.assumeTrue(false, msg);"
+                )?;
+                writeln!(body, "            return;")?;
+                writeln!(body, "        }}")?;
+            }
             writeln!(body)?;
             writeln!(
                 body,
@@ -1268,19 +1321,21 @@ fn render_test(fixture: &Fixture) -> Result<String> {
                 render_java_string(&fixture.document().path)
             )?;
             writeln!(body)?;
-            writeln!(body, "        if ({} && !Files.exists(documentPath)) {{", skip_flag)?;
-            writeln!(
-                body,
-                "            String msg = String.format(\"Skipping {}: missing document at %s\", documentPath);",
-                fixture.id
-            )?;
-            writeln!(body, "            System.err.println(msg);")?;
-            writeln!(
-                body,
-                "            org.junit.jupiter.api.Assumptions.assumeTrue(false, msg);"
-            )?;
-            writeln!(body, "            return;")?;
-            writeln!(body, "        }}")?;
+            if skip_flag == "true" {
+                writeln!(body, "        if (!Files.exists(documentPath)) {{")?;
+                writeln!(
+                    body,
+                    "            String msg = String.format(\"Skipping {}: missing document at %s\", documentPath);",
+                    fixture.id
+                )?;
+                writeln!(body, "            System.err.println(msg);")?;
+                writeln!(
+                    body,
+                    "            org.junit.jupiter.api.Assumptions.assumeTrue(false, msg);"
+                )?;
+                writeln!(body, "            return;")?;
+                writeln!(body, "        }}")?;
+            }
             writeln!(body)?;
             writeln!(body, "        byte[] documentBytes = Files.readAllBytes(documentPath);")?;
             writeln!(
@@ -1346,19 +1401,21 @@ fn render_test(fixture: &Fixture) -> Result<String> {
                 render_java_string(&fixture.document().path)
             )?;
             writeln!(body)?;
-            writeln!(body, "        if ({} && !Files.exists(documentPath)) {{", skip_flag)?;
-            writeln!(
-                body,
-                "            String msg = String.format(\"Skipping {}: missing document at %s\", documentPath);",
-                fixture.id
-            )?;
-            writeln!(body, "            System.err.println(msg);")?;
-            writeln!(
-                body,
-                "            org.junit.jupiter.api.Assumptions.assumeTrue(false, msg);"
-            )?;
-            writeln!(body, "            return;")?;
-            writeln!(body, "        }}")?;
+            if skip_flag == "true" {
+                writeln!(body, "        if (!Files.exists(documentPath)) {{")?;
+                writeln!(
+                    body,
+                    "            String msg = String.format(\"Skipping {}: missing document at %s\", documentPath);",
+                    fixture.id
+                )?;
+                writeln!(body, "            System.err.println(msg);")?;
+                writeln!(
+                    body,
+                    "            org.junit.jupiter.api.Assumptions.assumeTrue(false, msg);"
+                )?;
+                writeln!(body, "            return;")?;
+                writeln!(body, "        }}")?;
+            }
             writeln!(body)?;
             writeln!(
                 body,
@@ -1426,19 +1483,21 @@ fn render_test(fixture: &Fixture) -> Result<String> {
                 render_java_string(&fixture.document().path)
             )?;
             writeln!(body)?;
-            writeln!(body, "        if ({} && !Files.exists(documentPath)) {{", skip_flag)?;
-            writeln!(
-                body,
-                "            String msg = String.format(\"Skipping {}: missing document at %s\", documentPath);",
-                fixture.id
-            )?;
-            writeln!(body, "            System.err.println(msg);")?;
-            writeln!(
-                body,
-                "            org.junit.jupiter.api.Assumptions.assumeTrue(false, msg);"
-            )?;
-            writeln!(body, "            return;")?;
-            writeln!(body, "        }}")?;
+            if skip_flag == "true" {
+                writeln!(body, "        if (!Files.exists(documentPath)) {{")?;
+                writeln!(
+                    body,
+                    "            String msg = String.format(\"Skipping {}: missing document at %s\", documentPath);",
+                    fixture.id
+                )?;
+                writeln!(body, "            System.err.println(msg);")?;
+                writeln!(
+                    body,
+                    "            org.junit.jupiter.api.Assumptions.assumeTrue(false, msg);"
+                )?;
+                writeln!(body, "            return;")?;
+                writeln!(body, "        }}")?;
+            }
             writeln!(body)?;
             writeln!(body, "        byte[] documentBytes = Files.readAllBytes(documentPath);")?;
             writeln!(
@@ -2369,4 +2428,121 @@ fn property_to_is_getter(property: &str) -> String {
     }
 
     format!("is{}", result)
+}
+
+fn render_render_category(fixtures: &[&Fixture]) -> Result<String> {
+    let mut buffer = String::new();
+    writeln!(buffer, "package com.kreuzberg.e2e;")?;
+    writeln!(buffer)?;
+    writeln!(buffer, "// Code generated by kreuzberg-e2e-generator. DO NOT EDIT.")?;
+    writeln!(
+        buffer,
+        "// To regenerate: cargo run -p kreuzberg-e2e-generator -- generate --lang java"
+    )?;
+    writeln!(buffer)?;
+    writeln!(buffer, "import dev.kreuzberg.Kreuzberg;")?;
+    writeln!(buffer, "import dev.kreuzberg.Kreuzberg.PdfPageIterator;")?;
+    writeln!(buffer, "import dev.kreuzberg.Kreuzberg.PageResult;")?;
+    writeln!(buffer, "import org.junit.jupiter.api.Test;")?;
+    writeln!(buffer)?;
+    writeln!(buffer, "import java.nio.file.Files;")?;
+    writeln!(buffer, "import java.nio.file.Path;")?;
+    writeln!(buffer)?;
+    writeln!(buffer, "import static org.junit.jupiter.api.Assertions.assertTrue;")?;
+    writeln!(buffer, "import static org.junit.jupiter.api.Assumptions.assumeTrue;")?;
+    writeln!(buffer)?;
+    writeln!(buffer, "/** Tests for render fixtures. */")?;
+    writeln!(buffer, "public class RenderTest {{")?;
+    writeln!(buffer)?;
+
+    for fixture in fixtures {
+        buffer.push_str(&render_render_test_java(fixture)?);
+        writeln!(buffer)?;
+    }
+
+    writeln!(buffer, "}}")?;
+    Ok(buffer)
+}
+
+fn render_render_test_java(fixture: &Fixture) -> Result<String> {
+    let mut body = String::new();
+    let render = fixture.render.as_ref().expect("render spec required");
+    let assertions = fixture.assertions().render.unwrap_or_default();
+    let method_name = to_java_method_name(&fixture.id);
+    let doc_path = render_java_string(&fixture.document().path);
+
+    writeln!(body, "    @Test")?;
+    writeln!(body, "    public void {method_name}() throws Exception {{")?;
+    writeln!(
+        body,
+        "        Path documentPath = E2EHelpers.resolveDocument({doc_path});"
+    )?;
+    writeln!(body, "        assumeTrue(Files.exists(documentPath),")?;
+    writeln!(body, "                \"Skipping {}: missing document\");", fixture.id)?;
+
+    let dpi_arg = render.dpi.map(|d| format!(", {d}")).unwrap_or_default();
+
+    match render.mode.as_str() {
+        "single_page" => {
+            let page_index = render.page_index.unwrap_or(0);
+            writeln!(
+                body,
+                "        byte[] pngData = Kreuzberg.renderPdfPage(documentPath, {page_index}{dpi_arg});"
+            )?;
+            render_render_assertions_java(&assertions, "pngData", &mut body, "        ")?;
+        }
+        "iterator" => {
+            writeln!(body, "        int pageCount = 0;")?;
+            writeln!(
+                body,
+                "        try (PdfPageIterator iter = PdfPageIterator.open(documentPath{dpi_arg})) {{"
+            )?;
+            writeln!(body, "            while (iter.hasNext()) {{")?;
+            writeln!(body, "                PageResult page = iter.next();")?;
+            writeln!(body, "                E2EHelpers.assertIsPng(page.data());")?;
+            writeln!(body, "                pageCount++;")?;
+            writeln!(body, "            }}")?;
+            writeln!(body, "        }}")?;
+            if let Some(page_count_gte) = assertions.page_count_gte {
+                writeln!(body, "        assertTrue(pageCount >= {page_count_gte},")?;
+                writeln!(
+                    body,
+                    "                String.format(\"Expected at least {page_count_gte} pages, got %d\", pageCount));"
+                )?;
+            }
+        }
+        _ => anyhow::bail!("Unknown render mode: {}", render.mode),
+    }
+
+    writeln!(body, "    }}")?;
+    Ok(body)
+}
+
+fn render_render_assertions_java(
+    assertions: &RenderAssertions,
+    var: &str,
+    code: &mut String,
+    indent: &str,
+) -> Result<()> {
+    if assertions.is_png == Some(true) {
+        writeln!(code, "{indent}E2EHelpers.assertIsPng({var});")?;
+    }
+    if let Some(min_len) = assertions.min_byte_length {
+        writeln!(code, "{indent}E2EHelpers.assertMinByteLength({var}, {min_len});")?;
+    }
+    Ok(())
+}
+
+fn rust_triple_to_java_condition(triple: &str) -> Option<String> {
+    let (arch, os_name) = match triple {
+        "aarch64-unknown-linux-gnu" | "aarch64-unknown-linux-musl" => ("aarch64", "Linux"),
+        "x86_64-unknown-linux-gnu" | "x86_64-unknown-linux-musl" => ("amd64", "Linux"),
+        "aarch64-apple-darwin" => ("aarch64", "Mac OS X"),
+        "x86_64-apple-darwin" => ("x86_64", "Mac OS X"),
+        "x86_64-pc-windows-msvc" => ("amd64", "Windows"),
+        _ => return None,
+    };
+    Some(format!(
+        "(System.getProperty(\"os.arch\").equals(\"{arch}\") && System.getProperty(\"os.name\").startsWith(\"{os_name}\"))"
+    ))
 }

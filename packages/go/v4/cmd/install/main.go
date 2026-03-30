@@ -31,7 +31,7 @@ import (
 
 const (
 	// DefaultVersion is the default version to download if not specified
-	DefaultVersion = "4.5.0"
+	DefaultVersion = "4.6.3"
 	// BaseURL is the base URL for GitHub releases
 	BaseURL = "https://github.com/kreuzberg-dev/kreuzberg/releases/download"
 	// DefaultInstallDir is the default installation directory
@@ -389,7 +389,7 @@ func printEnvVars(libDir, headerDir string) {
 	switch runtime.GOOS {
 	case "darwin":
 		// macOS: Direct path to static library (Apple ld does not support -Bstatic)
-		ldflags = fmt.Sprintf("%s -framework CoreFoundation -framework CoreServices -framework SystemConfiguration -framework Security -lc++", libPath)
+		ldflags = fmt.Sprintf("%s -framework CoreFoundation -framework CoreServices -framework SystemConfiguration -framework Security -framework Foundation -lc++", libPath)
 	case "linux":
 		// Linux: Use GNU ld static/dynamic switching
 		ldflags = fmt.Sprintf("-L%s -Wl,-Bstatic -lkreuzberg_ffi -Wl,-Bdynamic -lpthread -ldl -lm -lstdc++", libDir)
@@ -439,10 +439,10 @@ func generateCgoFlags(installDir, outputDir string) error {
 		InstallDir: installDir,
 		IncludeDir: includeDir,
 		// macOS ARM64: Direct path to static library (Apple ld does not support -Bstatic)
-		DarwinArm64LDFLAGS: fmt.Sprintf("%s/darwin_arm64/libkreuzberg_ffi.a -framework CoreFoundation -framework CoreServices -framework SystemConfiguration -framework Security -lc++",
+		DarwinArm64LDFLAGS: fmt.Sprintf("%s/darwin_arm64/libkreuzberg_ffi.a -framework CoreFoundation -framework CoreServices -framework SystemConfiguration -framework Security -framework Foundation -lc++",
 			libDir),
 		// macOS AMD64: Direct path to static library
-		DarwinAmd64LDFLAGS: fmt.Sprintf("%s/darwin_amd64/libkreuzberg_ffi.a -framework CoreFoundation -framework CoreServices -framework SystemConfiguration -framework Security -lc++",
+		DarwinAmd64LDFLAGS: fmt.Sprintf("%s/darwin_amd64/libkreuzberg_ffi.a -framework CoreFoundation -framework CoreServices -framework SystemConfiguration -framework Security -framework Foundation -lc++",
 			libDir),
 		// Linux AMD64: Use GNU ld static/dynamic switching
 		LinuxAmd64LDFLAGS: fmt.Sprintf("-L%s/linux_amd64 -Wl,-Bstatic -lkreuzberg_ffi -Wl,-Bdynamic -lpthread -ldl -lm -lstdc++",

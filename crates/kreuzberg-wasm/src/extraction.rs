@@ -477,6 +477,98 @@ async fn read_file_as_array_buffer(file: &web_sys::File) -> Result<Vec<u8>, Stri
     Ok(arr.to_vec())
 }
 
+/// Render a single page of a PDF to a PNG byte buffer (synchronous).
+///
+/// # JavaScript Parameters
+///
+/// * `data: Uint8Array` - The PDF document bytes
+/// * `pageIndex: number` - Zero-based page index
+/// * `dpi?: number` - Optional DPI (default 150)
+///
+/// # Returns
+///
+/// `Uint8Array` - PNG image data.
+#[wasm_bindgen(js_name = renderPdfPageSync)]
+pub fn render_pdf_page_sync_wasm(data: Uint8Array, page_index: u32, dpi: Option<i32>) -> Result<Uint8Array, JsValue> {
+    let bytes = data.to_vec();
+    let page = kreuzberg::pdf::render_pdf_page_to_png(&bytes, page_index as usize, dpi, None)
+        .map_err(|e| convert_error(e.into()))?;
+
+    let arr = Uint8Array::new_with_length(page.len() as u32);
+    arr.copy_from(&page);
+    Ok(arr)
+}
+
+/// WASM-compatible PDF page iterator.
+///
+/// Holds pre-rendered PNG pages and yields them one at a time on `next()`.
+/// In WASM, true lazy rendering is limited because `PdfPageIterator::from_file`
+/// requires filesystem access; instead we pre-render and dispense pages lazily.
+///
+/// # JavaScript Usage
+///
+/// ```js
+/// const iter = new PdfPageIteratorWasm(pdfBytes, 150);
+/// console.log(`Total pages: ${iter.pageCount()}`);
+/// let result;
+/// while ((result = iter.next()) !== null) {
+///     // result is a Uint8Array of PNG bytes
+///     processPage(result);
+/// }
+/// iter.free();
+/// ```
+#[wasm_bindgen(js_name = PdfPageIteratorWasm)]
+pub struct PdfPageIteratorWasm {
+    pages: Vec<Vec<u8>>,
+    current_page: usize,
+}
+
+#[wasm_bindgen(js_class = PdfPageIteratorWasm)]
+impl PdfPageIteratorWasm {
+    /// Create a new PDF page iterator from raw PDF bytes.
+    #[wasm_bindgen(constructor)]
+    pub fn new(data: Uint8Array, dpi: Option<i32>) -> Result<PdfPageIteratorWasm, JsValue> {
+        let bytes = data.to_vec();
+        let iter = kreuzberg::pdf::PdfPageIterator::new(bytes, dpi, None).map_err(|e| convert_error(e.into()))?;
+        let pages: Vec<Vec<u8>> = iter
+            .collect::<std::result::Result<Vec<_>, _>>()
+            .map_err(|e| convert_error(e.into()))?
+            .into_iter()
+            .map(|(_idx, png)| png)
+            .collect();
+        Ok(PdfPageIteratorWasm { pages, current_page: 0 })
+    }
+
+    /// Return the next page as `{ pageIndex: number, data: Uint8Array }`, or null if exhausted.
+    #[allow(clippy::should_implement_trait)]
+    pub fn next(&mut self) -> JsValue {
+        if self.current_page >= self.pages.len() {
+            return JsValue::NULL;
+        }
+        let png = &self.pages[self.current_page];
+        let page_index = self.current_page;
+        self.current_page += 1;
+        let arr = Uint8Array::new_with_length(png.len() as u32);
+        arr.copy_from(png);
+
+        let obj = js_sys::Object::new();
+        js_sys::Reflect::set(&obj, &JsValue::from_str("pageIndex"), &JsValue::from(page_index as u32)).unwrap();
+        js_sys::Reflect::set(&obj, &JsValue::from_str("data"), &arr.into()).unwrap();
+        obj.into()
+    }
+
+    /// Total number of pages in the PDF.
+    #[wasm_bindgen(js_name = pageCount)]
+    pub fn page_count(&self) -> usize {
+        self.pages.len()
+    }
+
+    /// Free the iterator's internal state.
+    pub fn free(mut self) {
+        self.pages.clear();
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

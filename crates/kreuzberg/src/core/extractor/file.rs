@@ -6,7 +6,7 @@
 //! - File validation and reading
 //! - Extraction pipeline orchestration
 
-#[cfg(any(feature = "otel", not(feature = "office")))]
+#[cfg(not(feature = "office"))]
 use crate::KreuzbergError;
 use crate::Result;
 use crate::core::config::ExtractionConfig;
@@ -15,65 +15,6 @@ use crate::types::ExtractionResult;
 use std::path::Path;
 
 use super::helpers::get_extractor;
-
-/// Sanitize a file path to return only the filename.
-///
-/// This function extracts the filename from a path to avoid recording
-/// potentially sensitive full file paths in telemetry data.
-///
-/// # Arguments
-///
-/// * `path` - The path to sanitize
-///
-/// # Returns
-///
-/// The filename as a string, or "unknown" if extraction fails
-///
-/// # Security
-///
-/// This prevents PII (personally identifiable information) from appearing in
-/// traces by only recording filenames instead of full paths.
-///
-/// # Example
-///
-/// ```rust,ignore
-/// let path = Path::new("/home/user/documents/secret.pdf");
-/// assert_eq!(sanitize_path(path), "secret.pdf");
-/// ```
-#[cfg(feature = "otel")]
-pub(super) fn sanitize_path(path: &Path) -> String {
-    path.file_name()
-        .and_then(|n| n.to_str())
-        .unwrap_or("unknown")
-        .to_string()
-}
-
-/// Record error information in the current OpenTelemetry span.
-///
-/// This function records error details in the current span when the `otel` feature is enabled.
-/// It marks the span with `otel.status_code=ERROR` and adds error type and message fields.
-///
-/// # Arguments
-///
-/// * `error` - The error to record in the span
-///
-/// # Example
-///
-/// ```rust,ignore
-/// let result = extract_file("doc.pdf", None, &config).await;
-/// #[cfg(feature = "otel")]
-/// if let Err(ref e) = result {
-///     record_error(e);
-/// }
-/// result
-/// ```
-#[cfg(feature = "otel")]
-pub(in crate::core::extractor) fn record_error(error: &KreuzbergError) {
-    let span = tracing::Span::current();
-    span.record("otel.status_code", "ERROR");
-    span.record("error.type", format!("{:?}", error));
-    span.record("error.message", error.to_string());
-}
 
 /// Extract content from a file.
 ///
@@ -116,7 +57,11 @@ pub(in crate::core::extractor) fn record_error(error: &KreuzbergError) {
 #[cfg_attr(feature = "otel", tracing::instrument(
     skip(config, path),
     fields(
-        extraction.filename = tracing::field::Empty,
+        { crate::telemetry::conventions::OPERATION } = crate::telemetry::conventions::operations::EXTRACT_FILE,
+        { crate::telemetry::conventions::DOCUMENT_FILENAME } = tracing::field::Empty,
+        { crate::telemetry::conventions::OTEL_STATUS_CODE } = tracing::field::Empty,
+        { crate::telemetry::conventions::ERROR_TYPE } = tracing::field::Empty,
+        { crate::telemetry::conventions::ERROR_MESSAGE } = tracing::field::Empty,
     )
 ))]
 pub async fn extract_file(
@@ -131,7 +76,10 @@ pub async fn extract_file(
     #[cfg(feature = "otel")]
     {
         let span = tracing::Span::current();
-        span.record("extraction.filename", sanitize_path(path));
+        span.record(
+            crate::telemetry::conventions::DOCUMENT_FILENAME,
+            crate::telemetry::spans::sanitize_path(path),
+        );
     }
 
     let result = async {
@@ -169,7 +117,7 @@ pub async fn extract_file(
 
     #[cfg(feature = "otel")]
     if let Err(ref e) = result {
-        record_error(e);
+        crate::telemetry::spans::record_error_on_current_span(e);
     }
 
     result

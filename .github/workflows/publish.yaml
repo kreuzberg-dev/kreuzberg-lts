@@ -468,7 +468,7 @@ jobs:
             os: ubuntu-latest
             artifact: python-wheels-linux-x86_64
             rust_target: x86_64-unknown-linux-gnu
-            manylinux: manylinux_2_39
+            manylinux: manylinux_2_28
             python: "3.10"
             needs_qemu: false
             extra_args: ""
@@ -476,7 +476,7 @@ jobs:
             os: ubuntu-24.04-arm
             artifact: python-wheels-linux-aarch64
             rust_target: aarch64-unknown-linux-gnu
-            manylinux: manylinux_2_39
+            manylinux: manylinux_2_28
             python: "3.10"
             needs_qemu: false
             extra_args: ""
@@ -1261,6 +1261,7 @@ jobs:
         with:
           ort-version: ${{ env.ORT_VERSION }}
           dest-dir: target/release
+          strategy: bundled
 
       - name: Setup Layout Models
         uses: ./.github/actions/setup-layout-models
@@ -1457,6 +1458,7 @@ jobs:
         uses: ./.github/actions/setup-onnx-runtime
         with:
           ort-version: ${{ env.ORT_VERSION }}
+          strategy: bundled
 
       - name: Setup Layout Models
         uses: ./.github/actions/setup-layout-models
@@ -1601,6 +1603,7 @@ jobs:
         with:
           ort-version: ${{ env.ORT_VERSION }}
           dest-dir: target/release
+          strategy: bundled
 
       - name: Setup Layout Models
         uses: ./.github/actions/setup-layout-models
@@ -1751,6 +1754,7 @@ jobs:
         uses: ./.github/actions/setup-onnx-runtime
         with:
           ort-version: ${{ env.ORT_VERSION }}
+          strategy: bundled
 
       - name: Setup Layout Models
         uses: ./.github/actions/setup-layout-models
@@ -1881,6 +1885,7 @@ jobs:
         with:
           ort-version: ${{ env.ORT_VERSION }}
           dest-dir: target/release
+          strategy: bundled
 
       - name: Setup Layout Models
         uses: ./.github/actions/setup-layout-models
@@ -2324,6 +2329,7 @@ jobs:
         uses: ./.github/actions/setup-onnx-runtime
         with:
           ort-version: ${{ env.ORT_VERSION }}
+          strategy: bundled
 
       - name: Setup Layout Models
         uses: ./.github/actions/setup-layout-models
@@ -2589,6 +2595,7 @@ jobs:
         uses: ./.github/actions/setup-onnx-runtime
         with:
           ort-version: ${{ env.ORT_VERSION }}
+          strategy: bundled
 
       - name: Setup OpenSSL
         uses: kreuzberg-dev/actions/setup-openssl@v1
@@ -2878,6 +2885,19 @@ jobs:
       - name: Generate checksums from GitHub release
         run: |
           ./scripts/publish/generate_elixir_checksums.sh "${{ needs.prepare.outputs.version }}"
+
+      - name: Commit updated checksum file to main
+        if: ${{ needs.prepare.outputs.dry_run != 'true' }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add packages/elixir/checksum-Elixir.Kreuzberg.Native.exs
+          if git diff --cached --quiet; then
+            echo "No checksum changes to commit"
+          else
+            git commit -m "chore: update Elixir NIF checksums for v${{ needs.prepare.outputs.version }}"
+            git push origin HEAD:refs/heads/main || echo "Push failed (non-critical, checksums are in Hex package)"
+          fi
 
       - name: Setup Elixir
         uses: erlef/setup-elixir@v1
@@ -3383,6 +3403,7 @@ jobs:
         uses: ./.github/actions/setup-onnx-runtime
         with:
           ort-version: ${{ env.ORT_VERSION }}
+          strategy: bundled
 
       - name: Setup Layout Models
         uses: ./.github/actions/setup-layout-models
@@ -3623,6 +3644,38 @@ jobs:
           version: ${{ needs.prepare.outputs.version }}
           github-repo: kreuzberg-dev/kreuzberg
           dry-run: ${{ needs.prepare.outputs.dry_run }}
+
+      - name: Verify formula sha256 matches current tarball
+        if: ${{ steps.recheck.outputs.exists != 'true' && needs.prepare.outputs.dry_run != 'true' }}
+        env:
+          GH_TOKEN: ${{ secrets.HOMEBREW_TOKEN }}
+        run: |
+          TAG="${{ needs.prepare.outputs.tag }}"
+          TARBALL_URL="https://github.com/kreuzberg-dev/kreuzberg/archive/${TAG}.tar.gz"
+          ACTUAL_SHA=$(curl -sL "$TARBALL_URL" | sha256sum | awk '{print $1}')
+
+          # Clone the tap and check the formula
+          TAP_DIR=$(mktemp -d)
+          git clone "https://x-access-token:${GH_TOKEN}@github.com/kreuzberg-dev/homebrew-tap.git" "$TAP_DIR"
+          FORMULA_SHA=$(grep 'sha256 "' "$TAP_DIR/Formula/kreuzberg.rb" | head -1 | sed 's/.*sha256 "\([^"]*\)".*/\1/')
+
+          echo "Tarball SHA256: $ACTUAL_SHA"
+          echo "Formula SHA256: $FORMULA_SHA"
+
+          if [ "$ACTUAL_SHA" != "$FORMULA_SHA" ]; then
+            echo "::error::Homebrew formula sha256 mismatch! Tarball=$ACTUAL_SHA Formula=$FORMULA_SHA"
+            echo "This usually means the git tag was recreated after the formula was published."
+            echo "Updating formula with correct sha256..."
+            sed -i "s|sha256 \"${FORMULA_SHA}\"|sha256 \"${ACTUAL_SHA}\"|" "$TAP_DIR/Formula/kreuzberg.rb"
+            cd "$TAP_DIR"
+            git add Formula/kreuzberg.rb
+            git commit -m "fix(homebrew): correct sha256 for kreuzberg ${TAG}"
+            git push
+            echo "Formula sha256 corrected."
+          else
+            echo "Formula sha256 verified OK."
+          fi
+          rm -rf "$TAP_DIR"
 
       - name: Homebrew already published summary
         if: ${{ steps.recheck.outputs.exists == 'true' }}

@@ -1,6 +1,6 @@
 [package]
 name = "kreuzberg-rb"
-version = "4.6.0"
+version = "4.6.3"
 edition = "2024"
 rust-version = "1.91"
 authors = ["Na'aman Hirschfeld <naaman@kreuzberg.dev>"]
@@ -36,6 +36,7 @@ kreuzberg = { path = "../../../../../crates/kreuzberg", default-features = false
     "chunking",
     "chunking-tokenizers",
     "embeddings",
+    "ort-bundled",
     "quality",
     "keywords",
     "api",

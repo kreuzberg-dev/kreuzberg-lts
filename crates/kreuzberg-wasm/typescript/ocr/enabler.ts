@@ -83,7 +83,7 @@ class NativeWasmOcrBackend implements OcrBackendProtocol {
 
 	async initialize(): Promise<void> {
 		const wasm = getWasmModule();
-		if (!wasm?.ocrIsAvailable || !wasm.ocrIsAvailable()) {
+		if (!wasm?.ocrIsAvailable?.()) {
 			throw new Error(
 				"Native WASM OCR is not available. Build with the 'ocr-wasm' feature to enable kreuzberg-tesseract.",
 			);

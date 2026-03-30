@@ -1,4 +1,7 @@
-______________________________________________________________________
+---
+description: "format specific extraction"
+priority: high
+---
 
 ## priority: high
 
@@ -6,7 +9,7 @@ ______________________________________________________________________
 
 ## Office XML (DOCX/PPTX/ODT)
 
-```
+```text
 ZIP archive → Security validation → XML parsing → Text + tables + metadata
 ```
 
@@ -18,7 +21,7 @@ ZIP archive → Security validation → XML parsing → Text + tables + metadata
 
 ## PDF
 
-```
+```text
 Bytes → pdfium-render → Per-page text + OCR fallback → Tables → Metadata
 ```
 
@@ -30,7 +33,7 @@ Bytes → pdfium-render → Per-page text + OCR fallback → Tables → Metadata
 
 ## Archives (ZIP/TAR/7z/GZIP)
 
-```
+```text
 Validate → Extract metadata → Extract plaintext files only
 ```
 
@@ -42,7 +45,7 @@ Validate → Extract metadata → Extract plaintext files only
 
 ## Structured Text (JSON/YAML/TOML/XML)
 
-```
+```text
 Detect format from MIME → Parse → Pretty-print → Metadata
 ```
 
@@ -51,7 +54,7 @@ See: `extractors/structured.rs`
 
 ## Email (EML/MSG)
 
-```
+```text
 Parse headers → Extract body (text/html) → Process attachments
 ```
 

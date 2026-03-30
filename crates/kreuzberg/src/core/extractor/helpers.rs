@@ -14,6 +14,10 @@ use std::sync::Arc;
 /// This function acquires the registry read lock and retrieves the appropriate
 /// extractor for the given MIME type.
 ///
+/// When the `otel` feature is enabled, the returned extractor is wrapped in an
+/// [`InstrumentedExtractor`](crate::plugins::extractor::instrumented::InstrumentedExtractor)
+/// that adds tracing spans and metrics automatically.
+///
 /// # Performance
 ///
 /// RwLock read + HashMap lookup is ~100ns, fast enough without caching.
@@ -21,7 +25,19 @@ use std::sync::Arc;
 pub(in crate::core::extractor) fn get_extractor(mime_type: &str) -> Result<Arc<dyn DocumentExtractor>> {
     let registry = crate::plugins::registry::get_document_extractor_registry();
     let registry_read = registry.read();
-    registry_read.get(mime_type)
+    let extractor = registry_read.get(mime_type)?;
+
+    #[cfg(feature = "otel")]
+    {
+        Ok(Arc::new(
+            crate::plugins::extractor::instrumented::InstrumentedExtractor::new(extractor),
+        ))
+    }
+
+    #[cfg(not(feature = "otel"))]
+    {
+        Ok(extractor)
+    }
 }
 
 /// Get optimal pool sizing hint for a document.

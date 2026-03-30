@@ -1,9 +1,7 @@
 //! File and bytes extraction functions (sync + async via Tokio)
 
 use crate::config::parse_config;
-use crate::error::kreuzberg_error;
-#[cfg(not(target_arch = "wasm32"))]
-use crate::error::to_r_error;
+use crate::error::{kreuzberg_error, to_r_error};
 use crate::result::extraction_result_to_list;
 use extendr_api::prelude::*;
 
@@ -51,6 +49,25 @@ pub fn extract_bytes_sync_impl(data: Raw, mime_type: &str, config_json: Nullable
     let bytes = data.as_slice();
     let result = kreuzberg::extract_bytes_sync(bytes, mime_type, &config).map_err(kreuzberg_error)?;
     extraction_result_to_list(result)
+}
+
+pub fn render_pdf_page_impl(path: &str, page_index: i32, dpi: i32) -> extendr_api::Result<Raw> {
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        if page_index < 0 {
+            return Err("page_index must be non-negative".into());
+        }
+        let pdf_bytes = std::fs::read(path).map_err(to_r_error)?;
+        let dpi_opt = if dpi <= 0 { None } else { Some(dpi) };
+        let png = kreuzberg::pdf::render_pdf_page_to_png(&pdf_bytes, page_index as usize, dpi_opt, None)
+            .map_err(to_r_error)?;
+        Ok(Raw::from_bytes(&png))
+    }
+    #[cfg(target_arch = "wasm32")]
+    {
+        let _ = (path, page_index, dpi);
+        Err("PDF rendering is not supported on WebAssembly".into())
+    }
 }
 
 pub fn extract_bytes_impl(data: Raw, mime_type: &str, config_json: Nullable<&str>) -> extendr_api::Result<List> {

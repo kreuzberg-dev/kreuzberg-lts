@@ -248,11 +248,20 @@ fn test_extraction_config_no_unknown_fields_in_default() {
         "keywords",
         "postprocessor",
         "html_options",
+        "extraction_timeout_secs",
         "max_concurrent_extractions",
         "result_format",
         "output_format",
         "include_document_structure",
         "security_limits",
+        "acceleration",
+        "cache_namespace",
+        "cache_ttl_secs",
+        "concurrency",
+        "email",
+        "layout",
+        "force_ocr_pages",
+        "max_archive_depth",
     ];
 
     for key in obj.keys() {

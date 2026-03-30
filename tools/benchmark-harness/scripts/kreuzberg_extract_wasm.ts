@@ -1,14 +1,14 @@
 #!/usr/bin/env tsx
-import * as readline from "node:readline";
-import * as path from "node:path";
 import * as fs from "node:fs";
+import * as path from "node:path";
+import * as readline from "node:readline";
 import {
+	type ExtractionConfig,
 	enableOcr,
 	extractFile,
 	getWasmModule,
 	initializePdfiumAsync,
 	initWasm,
-	type ExtractionConfig,
 } from "@kreuzberg/wasm";
 
 /** Default per-extraction timeout in milliseconds (5 minutes). */
@@ -167,7 +167,7 @@ function createConfig(ocrEnabled: boolean, forceOcr?: boolean): ExtractionConfig
  * the file path, MIME type, file size, and memory usage for debugging.
  */
 async function withTimeout<T>(promise: Promise<T>, filePath: string, mimeType: string | null): Promise<T> {
-	let timer: ReturnType<typeof setTimeout>;
+	let timer: ReturnType<typeof setTimeout> | undefined;
 	const timeoutPromise = new Promise<never>((_resolve, reject) => {
 		timer = setTimeout(() => {
 			const fileSize = (() => {
@@ -196,7 +196,7 @@ async function withTimeout<T>(promise: Promise<T>, filePath: string, mimeType: s
 	try {
 		return await Promise.race([promise, timeoutPromise]);
 	} finally {
-		clearTimeout(timer!);
+		if (timer) clearTimeout(timer);
 	}
 }
 

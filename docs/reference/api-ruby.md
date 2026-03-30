@@ -402,6 +402,7 @@ end
 Per-page extracted content when page extraction is enabled via `PageConfig.extract_pages = true`.
 
 Each page hash contains:
+
 - `page_number` (Integer): 1-indexed page number
 - `content` (String): Text content for that page
 - `tables` (Array<Hash>): Tables on that page
@@ -573,6 +574,39 @@ result.chunks&.each do |chunk|
 
   puts "Chunk [#{meta['byte_start']}:#{meta['byte_end']}]: #{meta['char_count']} chars#{page_info}"
 end
+```
+
+---
+
+## PDF Rendering
+
+!!! info "Added in v4.6.2"
+
+### Kreuzberg.render_pdf_page
+
+Render a single page of a PDF as a PNG image.
+
+**Signature:**
+
+```ruby title="Ruby"
+Kreuzberg.render_pdf_page(path, page_index, dpi: 150) -> String
+```
+
+**Parameters:**
+
+- `path` (String): Path to the PDF file
+- `page_index` (Integer): Zero-based page index to render
+- `dpi:` (Integer): Resolution for rendering (default 150)
+
+**Returns:**
+
+- `String`: PNG-encoded binary string for the requested page
+
+**Example:**
+
+```ruby title="render_single_page.rb"
+png = Kreuzberg.render_pdf_page("document.pdf", 0)
+File.binwrite("first_page.png", png)
 ```
 
 ---
@@ -776,6 +810,7 @@ end
 Extract text from multiple byte arrays synchronously.
 
 **Parameters:**
+
 - `data_list` (Array<String>): Array of byte strings (binary data)
 - `mime_types` (Array<String>): Array of MIME types corresponding to each byte array
 - `config` (Hash, optional): Extraction configuration

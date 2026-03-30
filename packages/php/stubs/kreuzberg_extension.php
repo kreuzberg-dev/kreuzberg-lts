@@ -292,3 +292,49 @@ function kreuzberg_batch_extract_files_async(array $paths, ?string $config = nul
 function kreuzberg_batch_extract_bytes_async(array $dataList, array $mimeTypes, ?string $config = null): \Kreuzberg\Types\DeferredResult
 {
 }
+
+/**
+ * Render a single PDF page to PNG bytes.
+ *
+ * @param string $filePath Path to the PDF file
+ * @param int $pageIndex Zero-based page index
+ * @param int|null $dpi Rendering DPI (default: 150)
+ * @return string PNG image data
+ * @throws \Exception If rendering fails
+ */
+function kreuzberg_render_pdf_page(string $filePath, int $pageIndex, ?int $dpi = null): string
+{
+}
+
+/**
+ * Create a new PDF page iterator (native extension function).
+ *
+ * @param string $filePath Path to the PDF file
+ * @param int $dpi Rendering resolution
+ * @return resource Opaque iterator handle
+ * @throws \Exception If creation fails
+ */
+function kreuzberg_pdf_page_iterator_new(string $filePath, int $dpi): mixed
+{
+}
+
+/**
+ * Advance the PDF page iterator and return the next page as PNG bytes.
+ *
+ * @param resource $handle Iterator handle from kreuzberg_pdf_page_iterator_new
+ * @return string|null PNG-encoded bytes, or null when exhausted
+ * @throws \Exception On rendering error
+ */
+function kreuzberg_pdf_page_iterator_next(mixed $handle): ?string
+{
+}
+
+/**
+ * Free a PDF page iterator handle.
+ *
+ * @param resource $handle Iterator handle
+ * @return void
+ */
+function kreuzberg_pdf_page_iterator_free(mixed $handle): void
+{
+}

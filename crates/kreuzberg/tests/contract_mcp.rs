@@ -85,8 +85,7 @@ fn test_mcp_chunking_config_nested_matches_rust_core() {
     let mcp_json = json!({
         "chunking": {
             "max_chars": 500,
-            "max_overlap": 50,
-            "strategy": "sliding_window"
+            "max_overlap": 50
         }
     });
 

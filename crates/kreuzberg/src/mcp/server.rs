@@ -3,6 +3,7 @@
 //! This module provides the main MCP server struct and startup functions.
 
 use crate::ExtractionConfig;
+use crate::service::{ExtractionRequest, ExtractionServiceBuilder};
 use rmcp::{
     ServerHandler, ServiceExt,
     handler::server::{router::tool::ToolRouter, wrapper::Parameters},
@@ -10,6 +11,7 @@ use rmcp::{
     tool, tool_handler, tool_router,
     transport::stdio,
 };
+use tower::util::BoxCloneService;
 
 #[cfg(feature = "mcp-http")]
 use rmcp::transport::streamable_http_server::{StreamableHttpService, session::local::LocalSessionManager};
@@ -20,11 +22,32 @@ use rmcp::transport::streamable_http_server::{StreamableHttpService, session::lo
 ///
 /// The server loads a default extraction configuration from kreuzberg.toml/yaml/json
 /// via discovery. Per-request OCR settings override the defaults.
-#[derive(Clone)]
 pub struct KreuzbergMcp {
     tool_router: ToolRouter<KreuzbergMcp>,
     /// Default extraction configuration loaded from config file via discovery
     default_config: std::sync::Arc<ExtractionConfig>,
+    /// Tower service for extraction requests with tracing and metrics layers.
+    ///
+    /// Wrapped in `Mutex` because `BoxCloneService` is `Send` but not `Sync`,
+    /// while `KreuzbergMcp` must be `Sync` for the MCP handler trait.
+    /// The lock is held only long enough to clone the service.
+    extraction_service:
+        std::sync::Mutex<BoxCloneService<ExtractionRequest, crate::types::ExtractionResult, crate::KreuzbergError>>,
+}
+
+impl Clone for KreuzbergMcp {
+    fn clone(&self) -> Self {
+        let svc = self
+            .extraction_service
+            .lock()
+            .expect("extraction service lock poisoned")
+            .clone();
+        Self {
+            tool_router: self.tool_router.clone(),
+            default_config: self.default_config.clone(),
+            extraction_service: std::sync::Mutex::new(svc),
+        }
+    }
 }
 
 #[tool_router]
@@ -58,9 +81,12 @@ impl KreuzbergMcp {
     ///
     /// * `config` - Default extraction configuration for all tool calls
     pub fn with_config(config: ExtractionConfig) -> Self {
+        let extraction_service = ExtractionServiceBuilder::new().with_tracing().with_metrics().build();
+
         Self {
             tool_router: Self::tool_router(),
             default_config: std::sync::Arc::new(config),
+            extraction_service: std::sync::Mutex::new(extraction_service),
         }
     }
 
@@ -82,17 +108,22 @@ impl KreuzbergMcp {
     ) -> Result<CallToolResult, rmcp::ErrorData> {
         use super::errors::map_kreuzberg_error_to_mcp;
         use super::format::{build_config, format_extraction_result};
-        use crate::extract_file;
+        use tower::Service;
 
         let config =
             build_config(&self.default_config, params.config).map_err(|e| rmcp::ErrorData::invalid_params(e, None))?;
 
-        // Always use async extraction - we're already in a Tokio runtime context.
-        // Calling sync wrappers (which use GLOBAL_RUNTIME.block_on()) from within
-        // an async context causes "Cannot start a runtime from within a runtime" panic.
-        let result = extract_file(&params.path, params.mime_type.as_deref(), &config)
-            .await
-            .map_err(map_kreuzberg_error_to_mcp)?;
+        let request = match params.mime_type {
+            Some(ref mime) => ExtractionRequest::file_with_mime(&params.path, mime, config),
+            None => ExtractionRequest::file(&params.path, config),
+        };
+
+        let mut svc = self
+            .extraction_service
+            .lock()
+            .expect("extraction service lock poisoned")
+            .clone();
+        let result = svc.call(request).await.map_err(map_kreuzberg_error_to_mcp)?;
 
         let response = format_extraction_result(&result);
         Ok(CallToolResult::success(vec![Content::text(response)]))
@@ -115,8 +146,8 @@ impl KreuzbergMcp {
     ) -> Result<CallToolResult, rmcp::ErrorData> {
         use super::errors::map_kreuzberg_error_to_mcp;
         use super::format::{build_config, format_extraction_result};
-        use crate::extract_bytes;
         use base64::prelude::*;
+        use tower::Service;
 
         let bytes = BASE64_STANDARD
             .decode(&params.data)
@@ -127,10 +158,14 @@ impl KreuzbergMcp {
 
         let mime_type = params.mime_type.as_deref().unwrap_or("");
 
-        // Always use async extraction - we're already in a Tokio runtime context.
-        let result = extract_bytes(&bytes, mime_type, &config)
-            .await
-            .map_err(map_kreuzberg_error_to_mcp)?;
+        let request = ExtractionRequest::bytes(bytes, mime_type, config);
+
+        let mut svc = self
+            .extraction_service
+            .lock()
+            .expect("extraction service lock poisoned")
+            .clone();
+        let result = svc.call(request).await.map_err(map_kreuzberg_error_to_mcp)?;
 
         let response = format_extraction_result(&result);
         Ok(CallToolResult::success(vec![Content::text(response)]))

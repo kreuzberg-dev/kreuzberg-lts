@@ -1,4 +1,4 @@
-use crate::fixtures::{Assertions, ExtractionMethod, Fixture, InputType};
+use crate::fixtures::{Assertions, ExtractionMethod, Fixture, InputType, RenderAssertions};
 use anyhow::{Context, Result, bail};
 use camino::Utf8Path;
 use itertools::Itertools;
@@ -763,6 +763,17 @@ defmodule E2E.Helpers do
     end
   end
   defp convert_numeric(_), do: 0.0
+
+  def assert_is_png(data) do
+    assert byte_size(data) >= 4, "Data too short for PNG: #{byte_size(data)} bytes"
+    <<magic::binary-size(4), _rest::binary>> = data
+    assert magic == <<0x89, 0x50, 0x4E, 0x47>>, "Missing PNG magic bytes"
+  end
+
+  def assert_min_byte_length(data, min_length) do
+    assert byte_size(data) >= min_length,
+      "Expected at least #{min_length} bytes, got #{byte_size(data)}"
+  end
 end
 "##;
 
@@ -840,6 +851,14 @@ pub fn generate(fixtures: &[Fixture], output_root: &Utf8Path) -> Result<()> {
 
     if !plugin_fixtures.is_empty() {
         generate_plugin_api_tests(&plugin_fixtures, &e2e_dir)?;
+    }
+
+    let render_fixtures: Vec<_> = fixtures.iter().filter(|f| f.is_render()).collect();
+    if !render_fixtures.is_empty() {
+        let mut sorted = render_fixtures;
+        sorted.sort_by(|a, b| a.id.cmp(&b.id));
+        let content = render_render_category_elixir(&sorted)?;
+        fs::write(e2e_dir.join("render_test.exs"), content).context("Failed to write Elixir render test file")?;
     }
 
     Ok(())
@@ -929,7 +948,7 @@ fn render_example(fixture: &Fixture, is_last: bool) -> Result<String> {
 
     let use_simple_runner = method == ExtractionMethod::Sync && input_type == InputType::File;
 
-    writeln!(body, "    test \"{}\" do", escape_elixir_string_content(&fixture.id))?;
+    writeln!(body, "    test \"{}\" do", render_elixir_string_content(&fixture.id))?;
 
     // Emit platform skip guard if requested
     let skip_on_windows = fixture
@@ -942,7 +961,7 @@ fn render_example(fixture: &Fixture, is_last: bool) -> Result<String> {
         writeln!(
             body,
             "        IO.puts(\"SKIPPED: {} - not supported on Windows\")",
-            escape_elixir_string_content(&fixture.id)
+            render_elixir_string_content(&fixture.id)
         )?;
         writeln!(body, "      else")?;
     }
@@ -1472,7 +1491,7 @@ fn collect_requirements(fixture: &Fixture) -> Vec<String> {
         .collect()
 }
 
-fn escape_elixir_string_content(s: &str) -> String {
+fn render_elixir_string_content(s: &str) -> String {
     s.replace('\\', "\\\\")
         .replace('"', "\\\"")
         .replace('\n', "\\n")
@@ -1537,7 +1556,7 @@ fn render_plugin_test(fixture: &Fixture) -> Result<String> {
         .with_context(|| format!("Fixture '{}' missing test_spec", fixture.id))?;
 
     let test_name = &fixture.description;
-    writeln!(buffer, "    test \"{}\" do", escape_elixir_string_content(test_name))?;
+    writeln!(buffer, "    test \"{}\" do", render_elixir_string_content(test_name))?;
 
     match test_spec.pattern.as_str() {
         "simple_list" => render_simple_list_test(&mut buffer, fixture)?,
@@ -1581,7 +1600,7 @@ fn render_simple_list_test(buffer: &mut String, fixture: &Fixture) -> Result<()>
         writeln!(
             buffer,
             "      assert Enum.member?(result, \"{}\")",
-            escape_elixir_string_content(contains)
+            render_elixir_string_content(contains)
         )?;
     }
 
@@ -1625,7 +1644,7 @@ fn render_graceful_unregister_test(buffer: &mut String, fixture: &Fixture) -> Re
         buffer,
         "      Kreuzberg.Plugin.{}(:\"{}\")",
         function_name,
-        escape_elixir_string_content(arg)
+        render_elixir_string_content(arg)
     )?;
     writeln!(buffer, "      # Should not raise an error")?;
 
@@ -1660,7 +1679,7 @@ fn render_config_from_file_test(buffer: &mut String, fixture: &Fixture) -> Resul
     writeln!(
         buffer,
         "      config_path = Path.join(tmpdir, \"{}\")",
-        escape_elixir_string_content(temp_file_name)
+        render_elixir_string_content(temp_file_name)
     )?;
     writeln!(buffer, "      config_content = \"\"\"")?;
     for line in temp_file_content.lines() {
@@ -1727,7 +1746,7 @@ fn render_config_discover_test(buffer: &mut String, fixture: &Fixture) -> Result
     writeln!(
         buffer,
         "      config_path = Path.join(tmpdir, \"{}\")",
-        escape_elixir_string_content(temp_file_name)
+        render_elixir_string_content(temp_file_name)
     )?;
     writeln!(buffer, "      config_content = \"\"\"")?;
     for line in temp_file_content.lines() {
@@ -1743,7 +1762,7 @@ fn render_config_discover_test(buffer: &mut String, fixture: &Fixture) -> Result
     writeln!(
         buffer,
         "      subdir = Path.join(tmpdir, \"{}\")",
-        escape_elixir_string_content(subdirectory_name)
+        render_elixir_string_content(subdirectory_name)
     )?;
     writeln!(buffer, "      File.mkdir_p!(subdir)")?;
     writeln!(buffer)?;
@@ -1795,7 +1814,7 @@ fn render_mime_from_bytes_test(buffer: &mut String, fixture: &Fixture) -> Result
     writeln!(
         buffer,
         "      test_bytes = \"{}\"",
-        escape_elixir_string_content(test_data)
+        render_elixir_string_content(test_data)
     )?;
     writeln!(
         buffer,
@@ -1807,7 +1826,7 @@ fn render_mime_from_bytes_test(buffer: &mut String, fixture: &Fixture) -> Result
         writeln!(
             buffer,
             "      assert String.contains?(String.downcase(result), \"{}\")",
-            escape_elixir_string_content(&contains.to_lowercase())
+            render_elixir_string_content(&contains.to_lowercase())
         )?;
     }
 
@@ -1836,7 +1855,7 @@ fn render_mime_from_path_test(buffer: &mut String, fixture: &Fixture) -> Result<
         writeln!(
             buffer,
             "      assert String.contains?(String.downcase(result), \"{}\")",
-            escape_elixir_string_content(&contains.to_lowercase())
+            render_elixir_string_content(&contains.to_lowercase())
         )?;
     }
 
@@ -1861,7 +1880,7 @@ fn render_mime_extension_lookup_test(buffer: &mut String, fixture: &Fixture) -> 
         buffer,
         "      {{:ok, result}} = Kreuzberg.{}(\"{}\")",
         function_name,
-        escape_elixir_string_content(mime_type)
+        render_elixir_string_content(mime_type)
     )?;
     writeln!(buffer, "      assert is_list(result)")?;
 
@@ -1869,7 +1888,7 @@ fn render_mime_extension_lookup_test(buffer: &mut String, fixture: &Fixture) -> 
         writeln!(
             buffer,
             "      assert Enum.member?(result, \"{}\")",
-            escape_elixir_string_content(contains)
+            render_elixir_string_content(contains)
         )?;
     }
 
@@ -1918,7 +1937,7 @@ fn render_object_property_assertion(
                     "{}assert {} == \"{}\"",
                     indent,
                     accessor,
-                    escape_elixir_string_content(s)
+                    render_elixir_string_content(s)
                 )?;
             }
             _ => {
@@ -1947,4 +1966,88 @@ fn to_title_case(s: &str) -> String {
         })
         .collect::<Vec<_>>()
         .join(" ")
+}
+
+fn render_render_category_elixir(fixtures: &[&Fixture]) -> Result<String> {
+    let mut buffer = String::new();
+    writeln!(buffer, "# Code generated by kreuzberg-e2e-generator. DO NOT EDIT.")?;
+    writeln!(
+        buffer,
+        "# To regenerate: cargo run -p kreuzberg-e2e-generator -- generate --lang elixir"
+    )?;
+    writeln!(buffer)?;
+    writeln!(buffer, "defmodule E2E.RenderTest do")?;
+    writeln!(buffer, "  use ExUnit.Case, async: true")?;
+    writeln!(buffer)?;
+    writeln!(buffer, "  import E2E.Helpers")?;
+    writeln!(buffer)?;
+
+    for fixture in fixtures {
+        buffer.push_str(&render_render_example_elixir(fixture)?);
+        writeln!(buffer)?;
+    }
+
+    writeln!(buffer, "end")?;
+    Ok(buffer)
+}
+
+fn render_render_example_elixir(fixture: &Fixture) -> Result<String> {
+    let mut code = String::new();
+    let render = fixture.render.as_ref().expect("render spec required");
+    let assertions = fixture.assertions().render.unwrap_or_default();
+    let test_name = sanitize_identifier(&fixture.id);
+    let doc_path = render_elixir_string_content(&fixture.document().path);
+
+    writeln!(code, "  test \"{}\" do", render_elixir_string_content(&fixture.id))?;
+    writeln!(code, "    document_path = resolve_document(\"{doc_path}\")")?;
+    writeln!(code)?;
+    writeln!(code, "    unless File.exists?(document_path) do")?;
+    writeln!(code, "      IO.warn(\"Skipping {test_name}: missing document\")")?;
+    writeln!(code, "      :ok")?;
+    writeln!(code, "    else")?;
+
+    let dpi_arg = render.dpi.map(|d| format!(", dpi: {d}")).unwrap_or_default();
+
+    match render.mode.as_str() {
+        "single_page" => {
+            let page_index = render.page_index.unwrap_or(0);
+            writeln!(
+                code,
+                "      {{:ok, png_data}} = Kreuzberg.render_pdf_page(document_path, {page_index}{dpi_arg})"
+            )?;
+            render_render_assertions_elixir(&assertions, "png_data", &mut code)?;
+        }
+        "iterator" => {
+            writeln!(
+                code,
+                "      stream = Kreuzberg.render_pdf_pages_stream(document_path{dpi_arg})"
+            )?;
+            writeln!(code, "      pages = Enum.to_list(stream)")?;
+            writeln!(code, "      Enum.each(pages, fn {{_page_index, png_data}} ->")?;
+            writeln!(code, "        assert_is_png(png_data)")?;
+            writeln!(code, "      end)")?;
+            if let Some(page_count_gte) = assertions.page_count_gte {
+                writeln!(code, "      assert length(pages) >= {page_count_gte},")?;
+                writeln!(
+                    code,
+                    "        \"Expected at least {page_count_gte} pages, got #{{length(pages)}}\""
+                )?;
+            }
+        }
+        _ => bail!("Unknown render mode: {}", render.mode),
+    }
+
+    writeln!(code, "    end")?;
+    writeln!(code, "  end")?;
+    Ok(code)
+}
+
+fn render_render_assertions_elixir(assertions: &RenderAssertions, var: &str, code: &mut String) -> Result<()> {
+    if assertions.is_png == Some(true) {
+        writeln!(code, "      assert_is_png({var})")?;
+    }
+    if let Some(min_len) = assertions.min_byte_length {
+        writeln!(code, "      assert_min_byte_length({var}, {min_len})")?;
+    }
+    Ok(())
 }

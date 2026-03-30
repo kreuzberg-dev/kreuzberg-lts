@@ -4,7 +4,7 @@
  * Validates that ExtractionConfig serializes consistently with other language bindings.
  */
 
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 import type { ExtractionConfig } from "../core/src/types/config";
 
 describe("ExtractionConfig Serialization", () => {

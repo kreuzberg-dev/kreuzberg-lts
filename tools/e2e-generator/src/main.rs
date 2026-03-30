@@ -156,7 +156,14 @@ fn main() -> Result<()> {
         Commands::List { fixtures } => {
             let fixtures = load_fixtures(fixtures.as_path())?;
             for fixture in fixtures {
-                if fixture.is_document_extraction() {
+                if fixture.is_render() {
+                    println!(
+                        "{:<24} {:<12} [render] {}",
+                        fixture.id,
+                        fixture.category(),
+                        fixture.document().path
+                    );
+                } else if fixture.is_document_extraction() {
                     println!(
                         "{:<24} {:<12} [doc] {}",
                         fixture.id,

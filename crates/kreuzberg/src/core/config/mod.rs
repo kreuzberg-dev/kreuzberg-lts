@@ -9,6 +9,7 @@ pub mod email;
 pub mod extraction;
 pub mod formats;
 pub mod layout;
+pub mod merge;
 pub mod ocr;
 pub mod page;
 pub mod pdf;

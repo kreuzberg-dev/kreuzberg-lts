@@ -57,6 +57,32 @@ html {
 	background-color: #23232c;
 }
 
+/* Modern theme header: solid dark background with white text */
+.md-header {
+	background-color: #323040;
+	color: #ffffff;
+	-webkit-backdrop-filter: none;
+	backdrop-filter: none;
+}
+
+.md-header .md-ellipsis,
+.md-header__title,
+.md-header__title *,
+.md-header__topic,
+.md-header__topic *,
+.md-header__button,
+.md-header a {
+	color: #ffffff !important;
+}
+
+.md-header__button svg {
+	fill: #ffffff;
+}
+
+.md-header .md-search__input {
+	color: #ffffff;
+}
+
 [data-md-color-scheme="slate"] .md-main {
 	background-color: #23232c;
 }
@@ -746,6 +772,19 @@ details .highlight {
 	transform: scale(0.75);
 }
 
+[data-md-color-scheme="default"] .md-search__button {
+	background: #f0f0f580;
+	color: #323040;
+}
+
+[data-md-color-scheme="default"] .md-search__button svg {
+	fill: #323040;
+}
+
+[data-md-color-scheme="default"] .md-search__button::after {
+	color: #323040;
+}
+
 [data-md-toggle="search"]:checked ~ .md-header .md-search__input {
 	border-radius: 0;
 }
@@ -875,12 +914,12 @@ strong {
 }
 
 .md-header__button.md-logo {
-	margin-right: -0.6rem;
+	margin-right: 0.2rem;
 	padding: 0;
 }
 
 .md-header__title {
-	margin-left: 0;
+	margin-left: 0.2rem;
 	padding-left: 0;
 }
 

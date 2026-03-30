@@ -46,8 +46,14 @@ pub trait BaseNet {
         num_thread: usize,
         builder_fn: Option<fn(SessionBuilder) -> Result<SessionBuilder, ort::Error>>,
     ) -> Result<(), OcrError> {
-        let mut builder = self.get_session_builder(num_thread, builder_fn)?;
-        let session = builder.commit_from_file(path)?;
+        // Wrap ORT session creation in catch_unwind to prevent mutex poisoning
+        // on platforms where ORT initialization can panic (notably Windows).
+        let path_owned = path.to_string();
+        let session = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            let mut builder = self.get_session_builder(num_thread, builder_fn)?;
+            builder.commit_from_file(&path_owned).map_err(OcrError::from)
+        }))
+        .map_err(|_| OcrError::Ort(ort::Error::new("ORT session initialization panicked")))??;
         self.init(session);
 
         Ok(())
@@ -59,8 +65,13 @@ pub trait BaseNet {
         num_thread: usize,
         builder_fn: Option<fn(SessionBuilder) -> Result<SessionBuilder, ort::Error>>,
     ) -> Result<(), OcrError> {
-        let mut builder = self.get_session_builder(num_thread, builder_fn)?;
-        let session = builder.commit_from_memory(model_bytes)?;
+        // Wrap ORT session creation in catch_unwind to prevent mutex poisoning
+        // on platforms where ORT initialization can panic (notably Windows).
+        let session = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            let mut builder = self.get_session_builder(num_thread, builder_fn)?;
+            builder.commit_from_memory(model_bytes).map_err(OcrError::from)
+        }))
+        .map_err(|_| OcrError::Ort(ort::Error::new("ORT session initialization panicked")))??;
 
         self.init(session);
 

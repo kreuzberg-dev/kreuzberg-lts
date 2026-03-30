@@ -82,6 +82,9 @@ pub mod archive;
 #[cfg(feature = "email")]
 pub mod email;
 
+#[cfg(feature = "email")]
+pub mod pst;
+
 #[cfg(any(feature = "excel", feature = "excel-wasm"))]
 pub mod excel;
 
@@ -175,6 +178,9 @@ pub use archive::{GzipExtractor, SevenZExtractor, TarExtractor, ZipExtractor};
 
 #[cfg(feature = "email")]
 pub use email::EmailExtractor;
+
+#[cfg(feature = "email")]
+pub use pst::PstExtractor;
 
 #[cfg(any(feature = "excel", feature = "excel-wasm"))]
 pub use excel::ExcelExtractor;
@@ -369,7 +375,10 @@ pub fn register_default_extractors() -> Result<()> {
     registry.register(Arc::new(MdxExtractor::new()))?;
 
     #[cfg(feature = "email")]
-    registry.register(Arc::new(EmailExtractor::new()))?;
+    {
+        registry.register(Arc::new(EmailExtractor::new()))?;
+        registry.register(Arc::new(PstExtractor::new()))?;
+    }
 
     #[cfg(feature = "html")]
     registry.register(Arc::new(HtmlExtractor::new()))?;
@@ -480,8 +489,9 @@ mod tests {
 
         #[cfg(feature = "email")]
         {
-            expected_count += 1;
+            expected_count += 2;
             assert!(extractor_names.contains(&"email-extractor".to_string()));
+            assert!(extractor_names.contains(&"pst-extractor".to_string()));
         }
 
         #[cfg(feature = "html")]

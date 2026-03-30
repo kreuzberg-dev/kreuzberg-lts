@@ -554,24 +554,7 @@ fn merge_json_into_config(
     base_config: &kreuzberg::ExtractionConfig,
     json_value: serde_json::Value,
 ) -> Result<kreuzberg::ExtractionConfig> {
-    // Serialize base config to JSON
-    let mut config_json = serde_json::to_value(base_config).context("Failed to serialize base config to JSON")?;
-
-    // Merge JSON value into config JSON (simple recursive merge)
-    // For each key in the provided JSON, override the corresponding key in config JSON
-    if let serde_json::Value::Object(json_obj) = json_value
-        && let serde_json::Value::Object(ref mut config_obj) = config_json
-    {
-        for (key, value) in json_obj {
-            config_obj.insert(key, value);
-        }
-    }
-
-    // Deserialize merged JSON back to ExtractionConfig
-    let merged_config: kreuzberg::ExtractionConfig =
-        serde_json::from_value(config_json).context("Failed to deserialize merged config")?;
-
-    Ok(merged_config)
+    kreuzberg::core::config::merge::merge_config_json(base_config, json_value).map_err(|e| anyhow::anyhow!("{}", e))
 }
 
 fn main() -> Result<()> {

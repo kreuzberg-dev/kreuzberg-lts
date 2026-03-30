@@ -1,6 +1,6 @@
-import { describe, it, expect, beforeAll } from "vitest";
+import { extractBytes, extractBytesSync, initWasm, isInitialized } from "@kreuzberg/wasm";
 import wasmModule from "@kreuzberg/wasm/kreuzberg_wasm_bg.wasm";
-import { initWasm, isInitialized, extractBytes, extractBytesSync } from "@kreuzberg/wasm";
+import { beforeAll, describe, expect, it } from "vitest";
 
 beforeAll(async () => {
 	if (!isInitialized()) {

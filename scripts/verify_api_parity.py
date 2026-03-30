@@ -174,7 +174,8 @@ class APIParityValidator:
 
         # Extract field names - Go uses PascalCase, convert to snake_case
         # Match patterns like: UseCache *bool `json:"use_cache,omitempty"`
-        field_pattern = r'(\w+)\s+\*?\w+\s+`json:"(\w+),'
+        # Also handles slice/pointer types: ForceOCRPages []uint64 `json:"..."`
+        field_pattern = r'(\w+)\s+\S+\s+`json:"(\w+),'
         matches = re.findall(field_pattern, struct_body)
 
         # Use the JSON tag names for comparison (they're snake_case)

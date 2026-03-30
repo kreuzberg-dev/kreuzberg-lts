@@ -458,5 +458,14 @@ module E2ERuby
       end
     end
   end
+
+  def assert_is_png(data)
+    raise 'Data too short for PNG' if data.bytesize < 4
+    raise "Missing PNG magic bytes, got: #{data[0..3].bytes}" unless data[0..3] == "\x89PNG".b
+  end
+
+  def assert_min_byte_length(data, min_length)
+    raise "Expected at least #{min_length} bytes, got #{data.bytesize}" if data.bytesize < min_length
+  end
 end
 # rubocop:enable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/MethodLength, Metrics/ModuleLength, Metrics/PerceivedComplexity, Style/IfUnlessModifier, Layout/LineLength, Layout/EmptyLineAfterGuardClause

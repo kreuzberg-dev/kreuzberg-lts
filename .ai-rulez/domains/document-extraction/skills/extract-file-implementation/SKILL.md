@@ -1,6 +1,8 @@
 ---
+description: "extract file implementation"
 name: extract-file-implementation
 ---
+
 Document extraction from file paths
 
 1. Read file into memory (or stream for large files)

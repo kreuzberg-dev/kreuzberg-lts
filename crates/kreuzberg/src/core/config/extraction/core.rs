@@ -30,6 +30,7 @@ use super::types::{ImageExtractionConfig, LanguageDetectionConfig, TokenReductio
 /// // let config = ExtractionConfig::from_toml_file("kreuzberg.toml")?;
 /// ```
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct ExtractionConfig {
     /// Enable caching of extraction results
     #[serde(default = "default_true")]
@@ -46,6 +47,16 @@ pub struct ExtractionConfig {
     /// Force OCR even for searchable PDFs
     #[serde(default)]
     pub force_ocr: bool,
+
+    /// Force OCR on specific pages only (1-indexed page numbers, must be >= 1).
+    ///
+    /// When set, only the listed pages are OCR'd regardless of text layer quality.
+    /// Unlisted pages use native text extraction. Ignored when `force_ocr` is `true`.
+    /// Only applies to PDF documents. Duplicates are automatically deduplicated.
+    /// An `ocr` config is recommended for backend/language selection; defaults are used if absent.
+    #[serde(default)]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub force_ocr_pages: Option<Vec<usize>>,
 
     /// Text chunking configuration (None = chunking disabled)
     #[serde(default)]
@@ -88,6 +99,14 @@ pub struct ExtractionConfig {
     #[cfg(feature = "html")]
     #[serde(default)]
     pub html_options: Option<html_to_markdown_rs::ConversionOptions>,
+
+    /// Default per-file timeout in seconds for batch extraction.
+    ///
+    /// When set, each file in a batch will be canceled after this duration
+    /// unless overridden by [`FileExtractionConfig::timeout_secs`].
+    /// `None` means no timeout (unbounded extraction time).
+    #[serde(default)]
+    pub extraction_timeout_secs: Option<u64>,
 
     /// Maximum concurrent extractions in batch operations (None = (num_cpus × 1.5).ceil()).
     ///
@@ -201,6 +220,7 @@ impl Default for ExtractionConfig {
             enable_quality_processing: true,
             ocr: None,
             force_ocr: false,
+            force_ocr_pages: None,
             chunking: None,
             images: None,
             #[cfg(feature = "pdf")]
@@ -213,6 +233,7 @@ impl Default for ExtractionConfig {
             postprocessor: None,
             #[cfg(feature = "html")]
             html_options: None,
+            extraction_timeout_secs: None,
             max_concurrent_extractions: None,
             #[cfg(feature = "archives")]
             security_limits: None,
@@ -259,6 +280,7 @@ impl ExtractionConfig {
             ref enable_quality_processing,
             ref ocr,
             ref force_ocr,
+            ref force_ocr_pages,
             ref chunking,
             ref images,
             #[cfg(feature = "pdf")]
@@ -276,6 +298,7 @@ impl ExtractionConfig {
             ref include_document_structure,
             #[cfg(feature = "layout-detection")]
             ref layout,
+            ref timeout_secs,
         } = *overrides;
 
         let mut config = self.clone();
@@ -288,6 +311,9 @@ impl ExtractionConfig {
         }
         if let Some(v) = force_ocr {
             config.force_ocr = *v;
+        }
+        if let Some(v) = force_ocr_pages {
+            config.force_ocr_pages = Some(v.clone());
         }
         if let Some(v) = chunking {
             config.chunking = Some(v.clone());
@@ -331,6 +357,9 @@ impl ExtractionConfig {
         #[cfg(feature = "layout-detection")]
         if let Some(v) = layout {
             config.layout = Some(v.clone());
+        }
+        if let Some(v) = timeout_secs {
+            config.extraction_timeout_secs = Some(*v);
         }
 
         config

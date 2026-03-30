@@ -1,7 +1,7 @@
 defmodule Kreuzberg.MixProject do
   use Mix.Project
 
-  @version "4.6.0"
+  @version "4.6.3"
   @source_url "https://github.com/kreuzberg-dev/kreuzberg"
 
   def project do
@@ -31,7 +31,7 @@ defmodule Kreuzberg.MixProject do
     [
       {:jason, "~> 1.4", runtime: false},
       {:rustler, "~> 0.37.0", optional: true, runtime: false},
-      {:rustler_precompiled, "~> 0.8"},
+      {:rustler_precompiled, "~> 0.9"},
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
       {:ex_doc, "~> 0.34", only: :dev, runtime: false}
     ]

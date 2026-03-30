@@ -22,7 +22,7 @@
     <img src="https://img.shields.io/maven-central/v/dev.kreuzberg/kreuzberg?label=Java&color=007ec6" alt="Java">
   </a>
   <a href="https://github.com/kreuzberg-dev/kreuzberg/releases">
-    <img src="https://img.shields.io/github/v/tag/kreuzberg-dev/kreuzberg?label=Go&color=007ec6&filter=v4.6.0" alt="Go">
+    <img src="https://img.shields.io/github/v/tag/kreuzberg-dev/kreuzberg?label=Go&color=007ec6&filter=v4.6.3" alt="Go">
   </a>
   <a href="https://www.nuget.org/packages/Kreuzberg/">
     <img src="https://img.shields.io/nuget/v/Kreuzberg?label=C%23&color=007ec6" alt="C#">
@@ -308,7 +308,7 @@ func init() {
 
 ## Testing / Tooling
 
-- `task go:lint` – runs `gofmt` and `golangci-lint` (`golangci-lint` pinned to v2.11.3).
+- `task go:lint` – runs `gofmt` and `golangci-lint` (`golangci-lint` pinned to v2.11.4).
 - `task go:test` – executes `go test ./...` (after building the static FFI library).
 - `task e2e:go:verify` – regenerates fixtures via the e2e generator and runs `go test ./...` inside `e2e/go`.
 

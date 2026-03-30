@@ -1,4 +1,4 @@
-//! Structured data extraction (JSON, YAML, TOML).
+//! Structured data extraction (JSON, JSONL, YAML, TOML).
 //!
 //! Parses structured data formats and extracts text content while preserving
 //! schema information and metadata.
@@ -6,6 +6,7 @@
 //! # Supported Formats
 //!
 //! - **JSON**: Using `serde_json` with schema extraction
+//! - **JSONL/NDJSON**: Line-delimited JSON, parsed per-line via `serde_json`
 //! - **YAML**: Using `serde_yaml`
 //! - **TOML**: Using `toml`
 //!
@@ -299,6 +300,67 @@ fn is_text_field(key: &str, custom_patterns: &[String]) -> bool {
     false
 }
 
+/// Parse JSONL (newline-delimited JSON) into a structured data result.
+///
+/// Each non-empty line is parsed as an independent JSON value. Blank lines
+/// and whitespace-only lines are skipped. The output is a pretty-printed
+/// JSON array of all parsed objects.
+///
+/// # Errors
+///
+/// Returns an error if any line contains invalid JSON (with 1-based line number)
+/// or if the input is not valid UTF-8.
+///
+/// # Example
+///
+/// ```rust
+/// use kreuzberg::extraction::structured::parse_jsonl;
+///
+/// # fn example() -> kreuzberg::Result<()> {
+/// let jsonl = b"{\"name\": \"Alice\"}\n{\"name\": \"Bob\"}";
+/// let result = parse_jsonl(jsonl, None)?;
+/// assert!(result.content.contains("Alice"));
+/// assert!(result.content.contains("Bob"));
+/// # Ok(())
+/// # }
+/// ```
+pub fn parse_jsonl(data: &[u8], config: Option<JsonExtractionConfig>) -> Result<StructuredDataResult> {
+    let text = utf8_validation::from_utf8(data)
+        .map_err(|e| KreuzbergError::parsing(format!("Invalid UTF-8 in JSONL: {}", e)))?;
+
+    let config = config.unwrap_or_default();
+    let line_count_estimate = memchr::memchr_iter(b'\n', data).count().saturating_add(1);
+    let mut all_objects = Vec::with_capacity(line_count_estimate);
+    let mut metadata = HashMap::new();
+    let mut text_fields = Vec::new();
+    let mut path_buf = String::new();
+
+    for (line_num, line) in text.lines().enumerate() {
+        let trimmed = line.trim();
+        if trimmed.is_empty() {
+            continue;
+        }
+        let value: serde_json::Value = serde_json::from_str(trimmed)
+            .map_err(|e| KreuzbergError::parsing(format!("Failed to parse JSONL line {}: {}", line_num + 1, e)))?;
+
+        path_buf.clear();
+        extract_from_json_value(&value, &mut path_buf, &config, &mut metadata, &mut text_fields);
+        all_objects.push(value);
+    }
+
+    // Infallible: serde_json::to_string_pretty cannot fail on a Value::Array
+    // of already-parsed Value objects.
+    let content = serde_json::to_string_pretty(&serde_json::Value::Array(all_objects))
+        .expect("serializing Vec<serde_json::Value> to JSON cannot fail");
+
+    Ok(StructuredDataResult {
+        content,
+        format: Cow::Borrowed("jsonl"),
+        metadata,
+        text_fields,
+    })
+}
+
 pub fn parse_yaml(data: &[u8]) -> Result<StructuredDataResult> {
     let yaml_str = utf8_validation::from_utf8(data)
         .map_err(|e| KreuzbergError::parsing(format!("Invalid UTF-8 in YAML: {}", e)))?;
@@ -550,6 +612,157 @@ mod tests {
         // Exact match means "width" no longer matches just because it contains "id" substring
         assert!(!is_text_field("width", &[]));
         assert!(!is_text_field("valid", &[]));
+    }
+
+    #[test]
+    fn test_parse_jsonl_simple() {
+        let jsonl = "{\"name\": \"Alice\"}\n{\"name\": \"Bob\"}";
+        let result = parse_jsonl(jsonl.as_bytes(), None).unwrap();
+        assert!(result.content.contains("\"name\": \"Alice\""));
+        assert!(result.content.contains("\"name\": \"Bob\""));
+    }
+
+    #[test]
+    fn test_parse_jsonl_format_field() {
+        let jsonl = "{\"a\": 1}";
+        let result = parse_jsonl(jsonl.as_bytes(), None).unwrap();
+        assert_eq!(result.format, "jsonl");
+    }
+
+    #[test]
+    fn test_parse_jsonl_empty_lines_skipped() {
+        let jsonl = "{\"a\": 1}\n\n\n{\"b\": 2}\n";
+        let result = parse_jsonl(jsonl.as_bytes(), None).unwrap();
+        assert!(result.content.contains("\"a\": 1"));
+        assert!(result.content.contains("\"b\": 2"));
+    }
+
+    #[test]
+    fn test_parse_jsonl_single_line() {
+        let jsonl = "{\"key\": \"value\"}";
+        let result = parse_jsonl(jsonl.as_bytes(), None).unwrap();
+        assert!(result.content.contains("\"key\": \"value\""));
+    }
+
+    #[test]
+    fn test_parse_jsonl_invalid_line() {
+        let jsonl = "{\"a\": 1}\nnot json\n{\"b\": 2}";
+        let result = parse_jsonl(jsonl.as_bytes(), None);
+        assert!(result.is_err());
+        let err = result.unwrap_err().to_string();
+        assert!(err.contains("line 2"), "Error should reference line 2, got: {}", err);
+    }
+
+    #[test]
+    fn test_parse_jsonl_empty_input() {
+        let result = parse_jsonl(b"", None).unwrap();
+        assert_eq!(result.content, "[]");
+    }
+
+    #[test]
+    fn test_parse_jsonl_metadata_extraction() {
+        let jsonl = "{\"name\": \"Alice\", \"title\": \"Engineer\"}";
+        let result = parse_jsonl(jsonl.as_bytes(), None).unwrap();
+        assert!(result.metadata.contains_key("name"));
+        assert!(result.metadata.contains_key("title"));
+        assert!(result.text_fields.contains(&"name".to_string()));
+        assert!(result.text_fields.contains(&"title".to_string()));
+    }
+
+    #[test]
+    fn test_parse_jsonl_bare_scalars() {
+        let jsonl = "42\n\"hello\"\ntrue\nnull";
+        let result = parse_jsonl(jsonl.as_bytes(), None).unwrap();
+        assert!(result.content.contains("42"));
+        assert!(result.content.contains("\"hello\""));
+        assert!(result.content.contains("true"));
+        assert!(result.content.contains("null"));
+    }
+
+    #[test]
+    fn test_parse_jsonl_only_blank_lines() {
+        let jsonl = "\n\n\n";
+        let result = parse_jsonl(jsonl.as_bytes(), None).unwrap();
+        assert_eq!(result.content, "[]");
+    }
+
+    #[test]
+    fn test_parse_jsonl_windows_line_endings() {
+        let jsonl = "{\"a\": 1}\r\n{\"b\": 2}\r\n";
+        let result = parse_jsonl(jsonl.as_bytes(), None).unwrap();
+        assert!(result.content.contains("\"a\": 1"));
+        assert!(result.content.contains("\"b\": 2"));
+    }
+
+    #[test]
+    fn test_parse_jsonl_metadata_last_writer_wins() {
+        // When multiple lines have the same key, last value wins in metadata.
+        // This matches JSON array behavior where duplicate paths overwrite.
+        let jsonl = "{\"name\": \"Alice\"}\n{\"name\": \"Bob\"}";
+        let result = parse_jsonl(jsonl.as_bytes(), None).unwrap();
+        assert_eq!(result.metadata.get("name").unwrap(), "Bob");
+    }
+
+    #[test]
+    fn test_parse_jsonl_unicode_content() {
+        let jsonl = "{\"name\": \"café\", \"emoji\": \"😀\"}";
+        let result = parse_jsonl(jsonl.as_bytes(), None).unwrap();
+        assert!(result.content.contains("café"));
+        assert!(result.content.contains("😀"));
+    }
+
+    #[test]
+    fn test_parse_jsonl_deeply_nested() {
+        let jsonl = "{\"a\":{\"b\":{\"c\":{\"d\":\"deep\"}}}}";
+        let result = parse_jsonl(jsonl.as_bytes(), None).unwrap();
+        assert!(result.content.contains("deep"));
+    }
+
+    #[test]
+    fn test_parse_jsonl_whitespace_only_lines() {
+        let jsonl = "{\"a\": 1}\n  \t  \n{\"b\": 2}";
+        let result = parse_jsonl(jsonl.as_bytes(), None).unwrap();
+        assert!(result.content.contains("\"a\": 1"));
+        assert!(result.content.contains("\"b\": 2"));
+    }
+
+    #[test]
+    fn test_parse_jsonl_array_values_per_line() {
+        let jsonl = "[1,2,3]\n[4,5,6]";
+        let result = parse_jsonl(jsonl.as_bytes(), None).unwrap();
+        let parsed: serde_json::Value = serde_json::from_str(&result.content).unwrap();
+        let arr = parsed.as_array().expect("top-level should be an array");
+        assert_eq!(arr.len(), 2, "should contain two inner arrays");
+        assert_eq!(arr[0], serde_json::json!([1, 2, 3]));
+        assert_eq!(arr[1], serde_json::json!([4, 5, 6]));
+    }
+
+    #[test]
+    fn test_parse_jsonl_empty_objects() {
+        let jsonl = "{}\n{}";
+        let result = parse_jsonl(jsonl.as_bytes(), None).unwrap();
+        assert_eq!(result.format, "jsonl");
+        // Two empty objects produce a valid array
+        let parsed: serde_json::Value = serde_json::from_str(&result.content).unwrap();
+        assert_eq!(parsed.as_array().unwrap().len(), 2);
+    }
+
+    #[test]
+    fn test_parse_jsonl_invalid_utf8() {
+        let data: &[u8] = &[0xFF, 0xFE, 0x7B, 0x7D]; // invalid UTF-8 + "{}"
+        let result = parse_jsonl(data, None);
+        assert!(result.is_err());
+        let err = result.unwrap_err().to_string();
+        assert!(err.contains("UTF-8"), "Error should mention UTF-8, got: {}", err);
+    }
+
+    #[test]
+    fn test_parse_jsonl_large_line_count() {
+        let lines: Vec<String> = (0..1000).map(|i| format!("{{\"id\": {}}}", i)).collect();
+        let jsonl = lines.join("\n");
+        let result = parse_jsonl(jsonl.as_bytes(), None).unwrap();
+        let parsed: serde_json::Value = serde_json::from_str(&result.content).unwrap();
+        assert_eq!(parsed.as_array().unwrap().len(), 1000);
     }
 
     #[test]

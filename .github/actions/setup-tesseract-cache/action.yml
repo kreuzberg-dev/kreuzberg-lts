@@ -45,9 +45,9 @@ runs:
         path: |
           .tesseract-cache/${{ inputs.label }}
           .xdg-cache/${{ inputs.label }}
-        key: kreuzberg-tesseract-cache-v1-${{ runner.os }}-${{ inputs.label }}-${{ hashFiles('crates/kreuzberg-tesseract/Cargo.toml', 'crates/kreuzberg-tesseract/build.rs') }}
+        key: kreuzberg-tesseract-cache-v2-${{ runner.os }}-${{ inputs.label }}-${{ hashFiles('crates/kreuzberg-tesseract/Cargo.toml', 'crates/kreuzberg-tesseract/build.rs') }}
         restore-keys: |
-          kreuzberg-tesseract-cache-v1-${{ runner.os }}-${{ inputs.label }}-
+          kreuzberg-tesseract-cache-v2-${{ runner.os }}-${{ inputs.label }}-
 
     - name: Clean per-target Tesseract cache
       if: inputs.rust-target != ''

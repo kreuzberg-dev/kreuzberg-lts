@@ -16,7 +16,7 @@ interface PendingRequest {
 /** Abstraction over Node.js Worker and browser Worker */
 interface WorkerHandle {
 	postMessage(data: unknown): void;
-	terminate(): void | Promise<unknown>;
+	terminate(): undefined | Promise<unknown>;
 }
 
 let workerHandle: WorkerHandle | null = null;
@@ -144,7 +144,10 @@ async function createNodeWorker(wasmGluePath: string, wasmBinary: Uint8Array | u
 
 	workerHandle = {
 		postMessage: (data: unknown) => worker.postMessage(data),
-		terminate: () => worker.terminate(),
+		terminate: () => {
+			worker.terminate();
+			return undefined;
+		},
 	};
 }
 
@@ -164,7 +167,10 @@ async function createBrowserWorker(wasmGluePath: string, wasmBinary: Uint8Array 
 
 	workerHandle = {
 		postMessage: (data: unknown) => worker.postMessage(data),
-		terminate: () => worker.terminate(),
+		terminate: () => {
+			worker.terminate();
+			return undefined;
+		},
 	};
 
 	// Browser worker needs an init message (no workerData equivalent)
@@ -195,7 +201,7 @@ export function runOcrInWorker(imageData: Uint8Array, tessdata: Uint8Array, lang
 	const id = nextRequestId++;
 	return new Promise<string>((resolve, reject) => {
 		pendingRequests.set(id, { resolve, reject });
-		workerHandle!.postMessage({
+		workerHandle?.postMessage({
 			type: "ocr",
 			id,
 			imageData,

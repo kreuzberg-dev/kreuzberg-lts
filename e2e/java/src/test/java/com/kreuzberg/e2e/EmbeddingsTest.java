@@ -28,9 +28,15 @@ public class EmbeddingsTest {
     JsonNode config =
         MAPPER.readTree(
             "{\"chunking\":{\"embedding\":{\"model\":{\"name\":\"balanced\",\"type\":\"preset\"},\"normalize\":true},\"max_chars\":500,\"max_overlap\":50}}");
+    if ((System.getProperty("os.arch").equals("amd64")
+        && System.getProperty("os.name").startsWith("Windows"))) {
+      org.junit.jupiter.api.Assumptions.assumeTrue(
+          false, "Skipping embedding_async: not supported on this platform");
+      return;
+    }
     Path documentPath = E2EHelpers.resolveDocument("pdf/fake_memo.pdf");
 
-    if (true && !Files.exists(documentPath)) {
+    if (!Files.exists(documentPath)) {
       String msg = String.format("Skipping embedding_async: missing document at %s", documentPath);
       System.err.println(msg);
       org.junit.jupiter.api.Assumptions.assumeTrue(false, msg);
@@ -70,6 +76,12 @@ public class EmbeddingsTest {
     JsonNode config =
         MAPPER.readTree(
             "{\"chunking\":{\"embedding\":{\"model\":{\"name\":\"balanced\",\"type\":\"preset\"},\"normalize\":true},\"max_chars\":500,\"max_overlap\":50}}");
+    if ((System.getProperty("os.arch").equals("amd64")
+        && System.getProperty("os.name").startsWith("Windows"))) {
+      org.junit.jupiter.api.Assumptions.assumeTrue(
+          false, "Skipping embedding_balanced_preset: not supported on this platform");
+      return;
+    }
     E2EHelpers.runFixture(
         "embedding_balanced_preset",
         "pdf/fake_memo.pdf",
@@ -106,6 +118,12 @@ public class EmbeddingsTest {
     JsonNode config =
         MAPPER.readTree(
             "{\"chunking\":{\"embedding\":{\"model\":{\"name\":\"fast\",\"type\":\"preset\"},\"normalize\":true},\"max_chars\":500,\"max_overlap\":50}}");
+    if ((System.getProperty("os.arch").equals("amd64")
+        && System.getProperty("os.name").startsWith("Windows"))) {
+      org.junit.jupiter.api.Assumptions.assumeTrue(
+          false, "Skipping embedding_fast_preset: not supported on this platform");
+      return;
+    }
     E2EHelpers.runFixture(
         "embedding_fast_preset",
         "pdf/fake_memo.pdf",

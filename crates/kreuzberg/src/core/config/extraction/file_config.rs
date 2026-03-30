@@ -44,6 +44,7 @@ use super::types::{ImageExtractionConfig, LanguageDetectionConfig, TokenReductio
 /// ```
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 #[serde(default)]
+#[serde(deny_unknown_fields)]
 pub struct FileExtractionConfig {
     /// Override quality post-processing for this file.
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -56,6 +57,10 @@ pub struct FileExtractionConfig {
     /// Override force OCR for this file.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub force_ocr: Option<bool>,
+
+    /// Override force OCR pages for this file (1-indexed page numbers).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub force_ocr_pages: Option<Vec<usize>>,
 
     /// Override chunking configuration for this file.
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -112,4 +117,12 @@ pub struct FileExtractionConfig {
     #[cfg(feature = "layout-detection")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub layout: Option<super::super::layout::LayoutDetectionConfig>,
+
+    /// Override per-file extraction timeout in seconds.
+    ///
+    /// When set, the extraction for this file will be canceled after the
+    /// specified duration. A timed-out file produces an error result without
+    /// affecting other files in the batch.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub timeout_secs: Option<u64>,
 }

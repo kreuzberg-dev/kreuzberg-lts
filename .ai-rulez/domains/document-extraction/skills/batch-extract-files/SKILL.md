@@ -1,6 +1,8 @@
 ---
+description: "uatch extract files"
 name: batch-extract-files
 ---
+
 Concurrent extraction of multiple documents
 
 1. Estimate optimal worker pool size

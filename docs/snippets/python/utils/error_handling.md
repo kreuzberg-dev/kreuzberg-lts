@@ -10,6 +10,8 @@ from kreuzberg import (
 try:
     result = extract_file_sync("document.pdf")
     print(f"Extracted {len(result.content)} characters")
+except FileNotFoundError as e:
+    print(f"File not found: {e}")
 except ParsingError as e:
     print(f"Failed to parse document: {e}")
 except OCRError as e:

@@ -1,6 +1,8 @@
 ---
+description: "falluack chain implementation"
 name: fallback-chain-implementation
 ---
+
 Implement fallback execution chains
 
 1. Get ordered list of plugins (by priority)

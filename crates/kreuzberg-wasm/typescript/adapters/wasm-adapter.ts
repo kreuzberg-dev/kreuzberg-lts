@@ -301,23 +301,19 @@ export function jsToExtractionResult(jsValue: unknown): ExtractionResult {
 					lastPage = coerceToNumber(lastPageValue, "lastPage");
 				}
 
-				// biome-ignore lint/complexity/useLiteralKeys: dynamic property access from raw object
 				const rawHc = (metadata["heading_context"] ?? metadata["headingContext"]) as
 					| Record<string, unknown>
 					| null
 					| undefined;
 				let headingContext: import("../types.js").HeadingContext | null = null;
 				if (rawHc && typeof rawHc === "object") {
-					// biome-ignore lint/complexity/useLiteralKeys: dynamic property access from raw object
 					const rawHeadings = rawHc["headings"];
 					if (Array.isArray(rawHeadings)) {
 						headingContext = {
 							headings: rawHeadings.map((h: unknown) => {
 								const heading = h as Record<string, unknown>;
 								return {
-									// biome-ignore lint/complexity/useLiteralKeys: dynamic property access from raw object
 									level: (heading["level"] as number) ?? 0,
-									// biome-ignore lint/complexity/useLiteralKeys: dynamic property access from raw object
 									text: (heading["text"] as string) ?? "",
 								};
 							}),

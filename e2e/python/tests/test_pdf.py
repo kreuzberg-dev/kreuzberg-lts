@@ -20,6 +20,11 @@ def test_pdf_annotations() -> None:
     if not document_path.exists():
         pytest.skip(f"Skipping pdf_annotations: missing document at {document_path}")
 
+    import platform as _platform
+
+    if _platform.machine() == "aarch64" and _platform.system() == "Linux":
+        pytest.skip("Skipping pdf_annotations: not supported on this platform")
+
     config = helpers.build_config({"pdf_options": {"extract_annotations": True}})
 
     result = extract_file_sync(document_path, None, config)

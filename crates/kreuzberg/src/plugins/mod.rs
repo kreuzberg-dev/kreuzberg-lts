@@ -223,7 +223,7 @@
 //! }
 //! ```
 
-mod extractor;
+pub(crate) mod extractor;
 mod ocr;
 mod processor;
 pub mod registry;

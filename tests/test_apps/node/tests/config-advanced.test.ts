@@ -8,21 +8,21 @@ import { writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
-	extractFileSync,
-	extractBytesSync,
-	type ExtractionConfig,
 	type ChunkingConfig,
-	type OcrConfig,
-	type TesseractConfig,
-	type ImageExtractionConfig,
-	type PdfConfig,
+	type ExtractionConfig,
+	extractBytesSync,
+	extractFileSync,
 	type HierarchyConfig,
-	type KeywordConfig,
-	type LanguageDetectionConfig,
-	type TokenReductionConfig,
 	type HtmlConversionOptions,
 	type HtmlPreprocessingOptions,
+	type ImageExtractionConfig,
+	type KeywordConfig,
+	type LanguageDetectionConfig,
+	type OcrConfig,
 	type PageExtractionConfig,
+	type PdfConfig,
+	type TesseractConfig,
+	type TokenReductionConfig,
 } from "@kreuzberg/node";
 import { beforeAll, describe, expect, it } from "vitest";
 

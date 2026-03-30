@@ -1,0 +1,11 @@
+{
+	"tasks": {
+		"test": "deno test --allow-read --allow-net --allow-env --allow-ffi tests/"
+	},
+	"imports": {
+		"@kreuzberg/wasm": "npm:@kreuzberg/wasm@4.6.3"
+	},
+	"compilerOptions": {
+		"strict": true
+	}
+}

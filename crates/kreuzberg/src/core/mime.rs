@@ -35,7 +35,9 @@ pub const LEGACY_POWERPOINT_MIME_TYPE: &str = "application/vnd.ms-powerpoint";
 
 pub const EML_MIME_TYPE: &str = "message/rfc822";
 pub const MSG_MIME_TYPE: &str = "application/vnd.ms-outlook";
+pub const PST_MIME_TYPE: &str = "application/vnd.ms-outlook-pst";
 pub const JSON_MIME_TYPE: &str = "application/json";
+pub const JSONL_MIME_TYPE: &str = "application/x-ndjson";
 pub const YAML_MIME_TYPE: &str = "application/x-yaml";
 pub const TOML_MIME_TYPE: &str = "application/toml";
 pub const XML_MIME_TYPE: &str = "application/xml";
@@ -369,6 +371,11 @@ static FORMATS: &[FormatEntry] = &[
         aliases: &[],
     },
     FormatEntry {
+        extensions: &["jsonl", "ndjson"],
+        mime_type: "application/x-ndjson",
+        aliases: &["application/jsonl", "application/x-jsonlines"],
+    },
+    FormatEntry {
         extensions: &["yaml", "yml"],
         mime_type: "application/x-yaml",
         aliases: &["text/yaml", "text/x-yaml", "application/yaml"],
@@ -397,6 +404,11 @@ static FORMATS: &[FormatEntry] = &[
     FormatEntry {
         extensions: &["msg"],
         mime_type: "application/vnd.ms-outlook",
+        aliases: &[],
+    },
+    FormatEntry {
+        extensions: &["pst"],
+        mime_type: "application/vnd.ms-outlook-pst",
         aliases: &[],
     },
     // ── Archives ────────────────────────────────────────────────────────

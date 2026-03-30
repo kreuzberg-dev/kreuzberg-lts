@@ -9,7 +9,7 @@ Add to your `mix.exs`:
 ```elixir title="mix.exs"
 def deps do
   [
-    {:kreuzberg, "~> 4.6.0"}
+    {:kreuzberg, "~> 4.6.3"}
   ]
 end
 ```
@@ -1569,6 +1569,44 @@ Validate an OCR backend name.
 ```elixir title="validate_ocr.exs"
 :ok = Kreuzberg.validate_ocr_backend("tesseract")
 {:error, _} = Kreuzberg.validate_ocr_backend("invalid_backend")
+```
+
+---
+
+## PDF Rendering
+
+!!! info "Added in v4.6.2"
+
+### Kreuzberg.render_pdf_page/3
+
+Render a single page of a PDF as a PNG image.
+
+**Signature:**
+
+```elixir title="Elixir"
+@spec render_pdf_page(String.t(), non_neg_integer(), keyword()) :: {:ok, binary()} | {:error, term()}
+def render_pdf_page(path, page_index, opts \\ [])
+```
+
+**Parameters:**
+
+- `path` (String.t()): Path to the PDF file
+- `page_index` (non_neg_integer()): Zero-based page index to render
+
+**Options:**
+
+- `:dpi` (integer): Resolution for rendering (default 150)
+
+**Returns:**
+
+- `{:ok, binary()}`: PNG-encoded binary for the requested page
+- `{:error, reason}`: Error tuple if file cannot be read, rendered, or page index is out of bounds
+
+**Example:**
+
+```elixir title="render_single_page.exs"
+{:ok, png} = Kreuzberg.render_pdf_page("document.pdf", 0)
+File.write!("first_page.png", png)
 ```
 
 ---

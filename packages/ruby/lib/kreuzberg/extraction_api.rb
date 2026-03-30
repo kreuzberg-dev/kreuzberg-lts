@@ -319,6 +319,43 @@ module Kreuzberg
       results
     end
 
+    # Render a single PDF page as a PNG image.
+    #
+    # @param path [String, Pathname] Path to the PDF file
+    # @param page_index [Integer] Zero-based page index
+    # @param dpi [Integer] Rendering resolution (default 150)
+    # @return [String] PNG-encoded binary string
+    # @raise [Errors::IOError] If the file cannot be read
+    # @raise [Errors::ParsingError] If rendering fails
+    def render_pdf_page(path, page_index, dpi: 150)
+      path_str = path.to_s
+      raise ArgumentError, 'page_index must be non-negative' if page_index.negative?
+      raise Errors::IOError, "File not found: #{path_str}" unless File.exist?(path_str)
+
+      native_render_pdf_page(path_str, page_index, dpi)
+    end
+
+    # Iterate over pages of a PDF lazily, yielding each page as it is rendered.
+    #
+    # Each page is rendered via the native FFI iterator, so only one page is in
+    # memory at a time.
+    #
+    # @param path [String, Pathname] Path to the PDF file
+    # @param dpi [Integer] Rendering resolution (default 150)
+    # @yieldparam page_index [Integer] Zero-based page index
+    # @yieldparam png_bytes [String] PNG-encoded binary string for the page
+    # @return [Enumerator] if no block is given
+    # @raise [Errors::IOError] If the file cannot be read
+    # @raise [Errors::ParsingError] If rendering fails
+    def render_pdf_pages_iter(path, dpi: 150, &block)
+      path_str = path.to_s
+      raise Errors::IOError, "File not found: #{path_str}" unless File.exist?(path_str)
+
+      return enum_for(:render_pdf_pages_iter, path, dpi: dpi) unless block
+
+      native_render_pdf_pages_iter(path_str, dpi, &block)
+    end
+
     def normalize_config(config)
       return {} if config.nil?
       return config if config.is_a?(Hash)

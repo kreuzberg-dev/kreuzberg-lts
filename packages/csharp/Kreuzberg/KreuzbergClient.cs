@@ -718,7 +718,7 @@ public static class KreuzbergClient
     /// <summary>
     /// Returns the version string of the native Kreuzberg library.
     /// </summary>
-    /// <returns>Version string in format "4.6.0" or similar</returns>
+    /// <returns>Version string in format "4.6.3" or similar</returns>
     /// <example>
     /// <code>
     /// var version = KreuzbergClient.GetVersion();
@@ -1438,6 +1438,54 @@ public static class KreuzbergClient
         }
     }
 
+    /// <summary>
+    /// Renders a single PDF page as a PNG image.
+    /// </summary>
+    /// <param name="path">Path to the PDF file. Must not be empty.</param>
+    /// <param name="pageIndex">Zero-based page index.</param>
+    /// <param name="dpi">Rendering resolution in DPI (default 150).</param>
+    /// <returns>PNG-encoded byte array.</returns>
+    /// <exception cref="ArgumentException">If path is null or empty</exception>
+    /// <exception cref="KreuzbergException">If rendering fails</exception>
+    public static byte[] RenderPdfPage(string path, int pageIndex, int dpi = 150)
+    {
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            throw new ArgumentException("path cannot be null or empty", nameof(path));
+        }
+        if (pageIndex < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(pageIndex), "pageIndex must be non-negative");
+        }
+
+        var pathPtr = InteropUtilities.AllocUtf8(path);
+        try
+        {
+            var resultPtr = NativeMethods.RenderPdfPage(pathPtr, (UIntPtr)pageIndex, dpi);
+            if (resultPtr == IntPtr.Zero)
+            {
+                ThrowLastError();
+            }
+
+            try
+            {
+                var pageImage = Marshal.PtrToStructure<NativeMethods.CPageImage>(resultPtr);
+                var length = (int)pageImage.Len;
+                var pngBytes = new byte[length];
+                Marshal.Copy(pageImage.Data, pngBytes, 0, length);
+                return pngBytes;
+            }
+            finally
+            {
+                NativeMethods.FreeRenderPageResult(resultPtr);
+            }
+        }
+        finally
+        {
+            InteropUtilities.FreeUtf8(pathPtr);
+        }
+    }
+
     private static IReadOnlyList<string> ParseStringListAndFree(IntPtr ptr)
     {
         if (ptr == IntPtr.Zero)
@@ -1473,6 +1521,125 @@ public static class KreuzbergClient
             }
         }
         handles.Clear();
+    }
+}
+
+/// <summary>
+/// A rendered PDF page with its zero-based index and PNG data.
+/// </summary>
+/// <param name="PageIndex">Zero-based page index within the PDF.</param>
+/// <param name="Data">PNG-encoded image bytes.</param>
+public record PageResult(int PageIndex, byte[] Data);
+
+/// <summary>
+/// Lazy, one-page-at-a-time PDF renderer. A more memory-efficient alternative
+/// to rendering all pages at once when memory is a concern or when
+/// pages should be processed as they are rendered (e.g., sending each page to a vision
+/// model for OCR).
+/// Implements IEnumerable&lt;PageResult&gt; and IDisposable for use in foreach loops and using blocks.
+/// </summary>
+public class PdfPageIterator : IEnumerable<PageResult>, IDisposable
+{
+    private IntPtr _handle;
+    private bool _disposed;
+
+    private PdfPageIterator(IntPtr handle)
+    {
+        _handle = handle;
+    }
+
+    /// <summary>
+    /// Opens a new PDF page iterator for the given file.
+    /// </summary>
+    /// <param name="path">Path to the PDF file.</param>
+    /// <param name="dpi">Rendering resolution (default 150).</param>
+    /// <returns>A new PdfPageIterator.</returns>
+    /// <exception cref="ArgumentException">If path is null or empty.</exception>
+    /// <exception cref="KreuzbergException">If the native call fails.</exception>
+    public static PdfPageIterator Open(string path, int dpi = 150)
+    {
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            throw new ArgumentException("path cannot be null or empty", nameof(path));
+        }
+
+        var pathPtr = InteropUtilities.AllocUtf8(path);
+        try
+        {
+            var handle = NativeMethods.PdfPageIteratorNew(pathPtr, dpi);
+            if (handle == IntPtr.Zero)
+            {
+                var errorPtr = NativeMethods.LastError();
+                var errorMsg = errorPtr != IntPtr.Zero
+                    ? InteropUtilities.ReadUtf8(errorPtr)
+                    : "Failed to create PDF page iterator";
+                throw new KreuzbergException(KreuzbergErrorKind.Unknown, errorMsg ?? "Failed to create PDF page iterator");
+            }
+            return new PdfPageIterator(handle);
+        }
+        finally
+        {
+            InteropUtilities.FreeUtf8(pathPtr);
+        }
+    }
+
+    /// <summary>
+    /// Total number of pages in the PDF.
+    /// </summary>
+    public int PageCount
+    {
+        get
+        {
+            if (_disposed || _handle == IntPtr.Zero)
+            {
+                return 0;
+            }
+            return (int)NativeMethods.PdfPageIteratorPageCount(_handle);
+        }
+    }
+
+    /// <inheritdoc />
+    public IEnumerator<PageResult> GetEnumerator()
+    {
+        while (!_disposed && _handle != IntPtr.Zero)
+        {
+            var resultPtr = NativeMethods.PdfPageIteratorNext(_handle);
+            if (resultPtr == IntPtr.Zero)
+            {
+                // NULL means exhausted or error. Check kreuzberg_last_error() to distinguish.
+                yield break;
+            }
+
+            try
+            {
+                var iterResult = Marshal.PtrToStructure<NativeMethods.CPageIterResult>(resultPtr);
+                var pageIndex = (int)iterResult.PageIndex;
+                var length = (int)iterResult.Len;
+                var pngBytes = new byte[length];
+                Marshal.Copy(iterResult.Data, pngBytes, 0, length);
+                yield return new PageResult(pageIndex, pngBytes);
+            }
+            finally
+            {
+                NativeMethods.PdfPageIteratorFreeResult(resultPtr);
+            }
+        }
+    }
+
+    System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
+    {
+        return GetEnumerator();
+    }
+
+    /// <inheritdoc />
+    public void Dispose()
+    {
+        if (!_disposed && _handle != IntPtr.Zero)
+        {
+            NativeMethods.PdfPageIteratorFree(_handle);
+            _handle = IntPtr.Zero;
+            _disposed = true;
+        }
     }
 }
 

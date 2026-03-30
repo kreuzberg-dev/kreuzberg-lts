@@ -8,24 +8,24 @@ import { writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
+	clearOcrBackends,
 	clearPostProcessors,
 	clearValidators,
-	clearOcrBackends,
-	extractFileSync,
 	type ExtractionResult,
-	type PostProcessorProtocol,
-	type ValidatorProtocol,
-	type OcrBackendProtocol,
-	type OcrConfig,
+	extractFileSync,
+	listOcrBackends,
 	listPostProcessors,
 	listValidators,
-	listOcrBackends,
+	type OcrBackendProtocol,
+	type OcrConfig,
+	type PostProcessorProtocol,
+	registerOcrBackend,
 	registerPostProcessor,
 	registerValidator,
-	registerOcrBackend,
+	unregisterOcrBackend,
 	unregisterPostProcessor,
 	unregisterValidator,
-	unregisterOcrBackend,
+	type ValidatorProtocol,
 } from "@kreuzberg/node";
 import { afterEach, beforeAll, describe, expect, it } from "vitest";
 

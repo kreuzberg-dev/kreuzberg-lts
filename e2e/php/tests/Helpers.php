@@ -835,4 +835,23 @@ class Helpers
             );
         }
     }
+
+    public static function assertIsPng(string $data): void
+    {
+        Assert::assertGreaterThanOrEqual(
+            4,
+            strlen($data),
+            sprintf('Data too short for PNG: %d bytes', strlen($data))
+        );
+        Assert::assertSame("\x89PNG", substr($data, 0, 4), 'Missing PNG magic bytes');
+    }
+
+    public static function assertMinByteLength(string $data, int $minLength): void
+    {
+        Assert::assertGreaterThanOrEqual(
+            $minLength,
+            strlen($data),
+            sprintf('Expected at least %d bytes, got %d', $minLength, strlen($data))
+        );
+    }
 }

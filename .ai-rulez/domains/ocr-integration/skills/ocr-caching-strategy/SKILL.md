@@ -1,6 +1,8 @@
 ---
+description: "ocr caching strategy"
 name: ocr-caching-strategy
 ---
+
 Optimize OCR performance through caching
 
 1. Generate content hash of image

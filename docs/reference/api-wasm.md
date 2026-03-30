@@ -1443,6 +1443,8 @@ Configuration for text chunking.
 - `sizingType` ("characters" | "tokenizer" | undefined): How chunk size is measured. Use `"tokenizer"` to measure by token count using a HuggingFace tokenizer. Default: undefined (characters)
 - `sizingModel` (string | undefined): HuggingFace model ID for tokenizer-based sizing (e.g. `"bert-base-uncased"`). Required when `sizingType` is `"tokenizer"`. Default: undefined
 - `sizingCacheDir` (string | undefined): Optional directory to cache downloaded tokenizer files. Default: undefined
+- `chunkerType` (string | undefined): Type of chunker to use. Options: `"text"` (default), `"markdown"`, `"yaml"`. Default: undefined (text)
+- `prependHeadingContext` (boolean | undefined): When true, prepends heading hierarchy path to each chunk's content. Most useful with `chunkerType: "markdown"`. Default: undefined (false)
 
 ---
 
@@ -1559,7 +1561,7 @@ Document metadata.
 
 To enable multi-threaded extraction, set these HTTP headers:
 
-```
+```text
 Cross-Origin-Opener-Policy: same-origin
 Cross-Origin-Embedder-Policy: require-corp
 ```
@@ -1920,6 +1922,32 @@ Common MIME types supported by Kreuzberg WASM:
 
 ---
 
+## PDF Rendering
+
+!!! info "Added in v4.6.2"
+
+### renderPdfPageSync()
+
+Render a single page of a PDF as a PNG image (synchronous).
+
+**Signature:**
+
+```typescript title="TypeScript"
+function renderPdfPageSync(filePath: string, pageIndex: number, dpi?: number): Uint8Array
+```
+
+**Parameters:**
+
+- `filePath` (string): Path to the PDF file
+- `pageIndex` (number): Zero-based page index to render
+- `dpi` (number | undefined): Resolution for rendering (default 150)
+
+**Returns:**
+
+- `Uint8Array`: PNG-encoded Uint8Array for the requested page
+
+---
+
 ## Troubleshooting
 
 ### "WASM module failed to initialize"
@@ -1983,12 +2011,14 @@ const result = await extractBytes(pdfBytes, 'application/pdf', {
 **Symptoms:** "Failed to load WASM module" error on initialization
 
 **Causes:**
+
 - Network issues preventing WASM download
 - Bundler misconfiguration (not handling .wasm files correctly)
 - CORS restrictions blocking module fetch
 - Module not included in bundle
 
 **Solutions:**
+
 1. Check browser network tab for failed requests
 2. Configure bundler (see "WASM module failed to initialize" section)
 3. Ensure CORS headers allow WASM requests
@@ -2001,12 +2031,14 @@ const result = await extractBytes(pdfBytes, 'application/pdf', {
 **Symptoms:** Multi-threading features disabled, or "SharedArrayBuffer is not available" warning
 
 **Causes:**
+
 - HTTPS context not used (required for security)
 - Missing Cross-Origin-Opener-Policy (COOP) headers
 - Missing Cross-Origin-Embedder-Policy (COEP) headers
 - Old browser version without SharedArrayBuffer support
 
 **Solutions:**
+
 1. Ensure application runs over HTTPS in production
 2. Set required headers (see Platform-Specific Notes > Browser section):
    - `Cross-Origin-Opener-Policy: same-origin`
@@ -2021,15 +2053,18 @@ const result = await extractBytes(pdfBytes, 'application/pdf', {
 **Symptoms:** "No OCR backend available" error or OCR produces no output
 
 **Causes:**
+
 - WASM module not built with `ocr-wasm` feature (for native OCR)
 - Not in browser environment and native OCR unavailable (for browser fallback)
 - Training data not loading from jsDelivr CDN
 - Language model not available for selected language
 
 **Solutions:**
+
 1. Enable native WASM OCR by building with the `ocr-wasm` feature flag. This embeds `kreuzberg-tesseract` into the WASM binary and works in all environments.
 
 2. Check if OCR is available after enabling:
+
    ```typescript title="check_ocr.ts"
    import { enableOcr, listOcrBackends } from '@kreuzberg/wasm';
 
@@ -2044,6 +2079,7 @@ const result = await extractBytes(pdfBytes, 'application/pdf', {
    ```
 
 3. Check supported languages:
+
    ```typescript title="check_ocr_languages.ts"
    import { getOcrBackend } from '@kreuzberg/wasm';
 
@@ -2060,6 +2096,7 @@ const result = await extractBytes(pdfBytes, 'application/pdf', {
    - May fail without internet connection
 
 5. Handle initialization errors gracefully:
+
    ```typescript title="ocr_graceful.ts"
    import { enableOcr, extractBytes } from '@kreuzberg/wasm';
 
@@ -2085,11 +2122,13 @@ const result = await extractBytes(pdfBytes, 'application/pdf', {
 **Symptoms:** Large bundle size or slow initial load
 
 **Context:**
+
 - WASM module: ~5MB uncompressed
 - Gzip compressed: ~1.5-2MB
 - OCR training data (per language): ~20-50MB (downloaded on demand, cached)
 
 **Optimization strategies:**
+
 1. Use code splitting to load WASM only when needed
 2. Compress with gzip/brotli (bundlers do this automatically)
 3. Load training data selectively (only load languages you need)

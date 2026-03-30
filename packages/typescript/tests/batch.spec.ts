@@ -93,7 +93,7 @@ class MockBatchExtractor {
 		config?: ExtractionConfig,
 		concurrency = 3,
 	): Promise<ExtractionResult[]> {
-		const results = new Array<ExtractionResult>(filePaths.length);
+		const results = Array.from<ExtractionResult>({ length: filePaths.length });
 		let activeCount = 0;
 		let index = 0;
 

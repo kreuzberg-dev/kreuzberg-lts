@@ -208,6 +208,16 @@ impl OcrBackendRegistry {
         }
         Ok(())
     }
+
+    /// Shutdown all backends and re-register the built-in defaults.
+    pub fn reset_to_defaults(&mut self) -> Result<()> {
+        self.shutdown_all()?;
+        let fresh = Self::new();
+        for (_name, backend) in fresh.backends {
+            let _ = self.register(backend);
+        }
+        Ok(())
+    }
 }
 
 impl Default for OcrBackendRegistry {

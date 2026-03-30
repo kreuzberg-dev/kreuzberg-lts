@@ -1,5 +1,5 @@
+import { extractBytes, getVersion, initWasm, isInitialized } from "@kreuzberg/wasm";
 import wasmModule from "@kreuzberg/wasm/kreuzberg_wasm_bg.wasm";
-import { initWasm, extractBytes, isInitialized, getVersion } from "@kreuzberg/wasm";
 
 export default {
 	async fetch(request: Request): Promise<Response> {

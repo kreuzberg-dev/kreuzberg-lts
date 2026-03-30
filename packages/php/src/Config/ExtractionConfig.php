@@ -71,6 +71,17 @@ readonly class ExtractionConfig
         public bool $forceOcr = false,
 
         /**
+         * List of 1-indexed page numbers to force OCR on.
+         *
+         * When set, OCR is forced only for the specified pages. If null, the
+         * forceOcr setting applies to all pages.
+         *
+         * @var int[]|null
+         * @default null
+         */
+        public ?array $forceOcrPages = null,
+
+        /**
          * Text chunking configuration.
          *
          * Configures how extracted text is split into chunks for processing,
@@ -282,6 +293,41 @@ readonly class ExtractionConfig
          * @default null
          */
         public ?int $cacheTtlSecs = null,
+
+        /**
+         * Default per-file extraction timeout in seconds for batch operations.
+         *
+         * When set, each file in a batch will be canceled after this duration
+         * unless overridden by a per-file FileExtractionConfig timeout_secs.
+         * When null, no timeout is applied (unbounded extraction time).
+         *
+         * @var int|null
+         * @default null
+         */
+        public ?int $extractionTimeoutSecs = null,
+
+        /**
+         * Maximum archive extraction depth.
+         *
+         * Controls how many levels deep nested archives (zip within zip, etc.)
+         * are extracted. Prevents excessive recursion from deeply nested archives.
+         *
+         * @var int
+         * @default 3
+         */
+        public int $maxArchiveDepth = 3,
+
+        /**
+         * Layout detection configuration.
+         *
+         * Configures document layout analysis including region detection presets,
+         * confidence filtering, heuristic post-processing, and table structure
+         * recognition model selection.
+         *
+         * @var LayoutDetectionConfig|null
+         * @default null
+         */
+        public ?LayoutDetectionConfig $layout = null,
     ) {
     }
 
@@ -311,6 +357,18 @@ readonly class ExtractionConfig
         if (!is_bool($forceOcr)) {
             /** @var bool $forceOcr */
             $forceOcr = (bool) $forceOcr;
+        }
+
+        /** @var int[]|null $forceOcrPages */
+        $forceOcrPages = null;
+        if (isset($data['force_ocr_pages']) && is_array($data['force_ocr_pages'])) {
+            $pages = [];
+            foreach ($data['force_ocr_pages'] as $page) {
+                if (is_int($page)) {
+                    $pages[] = $page;
+                }
+            }
+            $forceOcrPages = $pages !== [] ? $pages : null;
         }
 
         /** @var int|null $maxConcurrentExtractions */
@@ -458,6 +516,27 @@ readonly class ExtractionConfig
             $cacheTtlSecs = (int) $cacheTtlSecs;
         }
 
+        /** @var int|null $extractionTimeoutSecs */
+        $extractionTimeoutSecs = $data['extraction_timeout_secs'] ?? null;
+        if ($extractionTimeoutSecs !== null && !is_int($extractionTimeoutSecs)) {
+            /** @var int $extractionTimeoutSecs */
+            $extractionTimeoutSecs = (int) $extractionTimeoutSecs;
+        }
+
+        /** @var int $maxArchiveDepth */
+        $maxArchiveDepth = $data['max_archive_depth'] ?? 3;
+        if (!is_int($maxArchiveDepth)) {
+            /** @var int $maxArchiveDepth */
+            $maxArchiveDepth = (int) $maxArchiveDepth;
+        }
+
+        $layout = null;
+        if (isset($data['layout']) && is_array($data['layout'])) {
+            /** @var array<string, mixed> $layoutData */
+            $layoutData = $data['layout'];
+            $layout = LayoutDetectionConfig::fromArray($layoutData);
+        }
+
         $securityLimits = null;
         if (isset($data['security_limits']) && is_array($data['security_limits'])) {
             /** @var array<string, mixed> $securityLimitsData */
@@ -470,6 +549,7 @@ readonly class ExtractionConfig
             enableQualityProcessing: $enableQualityProcessing,
             ocr: $ocr,
             forceOcr: $forceOcr,
+            forceOcrPages: $forceOcrPages,
             chunking: $chunking,
             images: $imageExtraction,
             pdfOptions: $pdf,
@@ -489,6 +569,9 @@ readonly class ExtractionConfig
             concurrency: $concurrency,
             cacheNamespace: $cacheNamespace,
             cacheTtlSecs: $cacheTtlSecs,
+            extractionTimeoutSecs: $extractionTimeoutSecs,
+            maxArchiveDepth: $maxArchiveDepth,
+            layout: $layout,
         );
     }
 
@@ -659,6 +742,7 @@ readonly class ExtractionConfig
             'acceleration' => $this->acceleration?->toArray(),
             'email' => $this->email?->toArray(),
             'concurrency' => $this->concurrency?->toArray(),
+            'layout' => $this->layout?->toArray(),
         ];
 
         // Add simple boolean/string fields only if explicitly set to non-default values
@@ -673,6 +757,10 @@ readonly class ExtractionConfig
         // forceOcr defaults to false, so only add if true
         if ($this->forceOcr) {
             $result['force_ocr'] = true;
+        }
+        // forceOcrPages defaults to null, so only add if set
+        if ($this->forceOcrPages !== null) {
+            $result['force_ocr_pages'] = $this->forceOcrPages;
         }
         // maxConcurrentExtractions defaults to null, so only add if set
         if ($this->maxConcurrentExtractions !== null) {
@@ -697,6 +785,14 @@ readonly class ExtractionConfig
         // cacheTtlSecs defaults to null, so only add if set
         if ($this->cacheTtlSecs !== null) {
             $result['cache_ttl_secs'] = $this->cacheTtlSecs;
+        }
+        // extractionTimeoutSecs defaults to null, so only add if set
+        if ($this->extractionTimeoutSecs !== null) {
+            $result['extraction_timeout_secs'] = $this->extractionTimeoutSecs;
+        }
+        // maxArchiveDepth defaults to 3, so only add if different
+        if ($this->maxArchiveDepth !== 3) {
+            $result['max_archive_depth'] = $this->maxArchiveDepth;
         }
 
         return array_filter($result, static fn ($value): bool => $value !== null);

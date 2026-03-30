@@ -1,0 +1,21 @@
+{
+	"id": "render_custom_dpi",
+	"category": "render",
+	"tags": ["render", "pdf", "dpi"],
+	"description": "Render PDF page with custom DPI",
+	"document": {
+		"path": "pdf/tiny.pdf",
+		"media_type": "application/pdf"
+	},
+	"render": {
+		"mode": "single_page",
+		"page_index": 0,
+		"dpi": 72
+	},
+	"assertions": {
+		"render": {
+			"is_png": true,
+			"min_byte_length": 50
+		}
+	}
+}

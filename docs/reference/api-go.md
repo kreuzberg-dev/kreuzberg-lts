@@ -1,4 +1,4 @@
-# Go API Reference <span class="version-badge">v4.6.0</span>
+# Go API Reference <span class="version-badge">v4.6.3</span>
 
 Complete reference for the Kreuzberg Go bindings using cgo to access the Rust-powered extraction pipeline.
 
@@ -15,7 +15,7 @@ The Go binding exposes the same extraction capabilities as the other languages t
 
 Kreuzberg Go binaries are **statically linked** — once built, they are self-contained and require no runtime library dependencies. Only the static library is needed at build time.
 
-### Add the package to your `go.mod`:
+### Add the package to your `go.mod`
 
 ```bash title="Terminal"
 go get github.com/kreuzberg-dev/kreuzberg/packages/go/v4@latest
@@ -43,7 +43,7 @@ When building outside the monorepo, provide the static library via `CGO_LDFLAGS`
 
 ```bash title="Terminal"
 # Option 1: Download pre-built from GitHub Releases
-curl -LO https://github.com/kreuzberg-dev/kreuzberg/releases/download/v4.6.0/go-ffi-linux-x86_64.tar.gz
+curl -LO https://github.com/kreuzberg-dev/kreuzberg/releases/download/v4.6.3/go-ffi-linux-x86_64.tar.gz
 tar -xzf go-ffi-linux-x86_64.tar.gz
 mkdir -p ~/kreuzberg/lib
 cp kreuzberg-ffi/lib/libkreuzberg_ffi.a ~/kreuzberg/lib/
@@ -195,7 +195,9 @@ for i, result := range results {
 	log.Printf("Item %d: %s format\n", i, result.MimeType)
 }
 ```
-```
+
+
+```text
 
 ---
 
@@ -266,11 +268,13 @@ for i, result := range results {
 	fmt.Printf("File %d: extracted %d chars\n", i, len(result.Content))
 }
 ```
-```
+
+
+```text
 
 ---
 
-### BatchExtractFilesWithConfigs <span class="version-badge">v4.6.0</span>
+### BatchExtractFilesWithConfigs <span class="version-badge">v4.6.3</span>
 
 Batch extract multiple files with per-file configuration overrides (asynchronous).
 
@@ -288,7 +292,7 @@ func BatchExtractFilesWithConfigs(ctx context.Context, items []FileWithConfig, c
 
 ---
 
-### BatchExtractFilesWithConfigsSync <span class="version-badge">v4.6.0</span>
+### BatchExtractFilesWithConfigsSync <span class="version-badge">v4.6.3</span>
 
 Synchronous variant of `BatchExtractFilesWithConfigs`.
 
@@ -300,13 +304,13 @@ func BatchExtractFilesWithConfigsSync(items []FileWithConfig, config *Extraction
 
 ---
 
-### BatchExtractBytesWithConfigs / BatchExtractBytesWithConfigsSync <span class="version-badge">v4.6.0</span>
+### BatchExtractBytesWithConfigs / BatchExtractBytesWithConfigsSync <span class="version-badge">v4.6.3</span>
 
 Batch extract multiple byte arrays with per-file configuration overrides. Async and sync variants follow the same pattern.
 
 ---
 
-### FileExtractionConfig <span class="version-badge">v4.6.0</span>
+### FileExtractionConfig <span class="version-badge">v4.6.3</span>
 
 Per-file extraction configuration overrides for batch operations. All fields are pointers — `nil` means "use the batch-level default."
 
@@ -524,7 +528,7 @@ func LibraryVersion() string
 
 **Returns:**
 
-- `string`: Version string (e.g., "4.6.0")
+- `string`: Version string (e.g., "4.6.3")
 
 **Example:**
 
@@ -671,7 +675,9 @@ type ChunkingConfig struct {
 	MaxChars     *int             // Maximum characters per chunk
 	MaxOverlap   *int             // Overlap between chunks in characters
 	Preset       *string          // Chunking preset name
+	ChunkerType  *string          // "text" (default), "markdown", or "yaml"
 	Sizing       *ChunkSizingConfig // Chunk size measurement configuration
+	PrependHeadingContext *bool   // Prepend heading hierarchy to chunks
 }
 
 type ChunkSizingConfig struct {
@@ -714,7 +720,7 @@ PDF-specific extraction options.
 
 ```go title="Go"
 type PdfConfig struct {
-	AllowSingleColumnTables *bool       // <span class="version-badge">v4.6.0</span> Allow extraction of single-column tables
+	AllowSingleColumnTables *bool       // <span class="version-badge">v4.6.3</span> Allow extraction of single-column tables
 	BottomMarginFraction    *float64    // Bottom margin to ignore during extraction
 	ExtractAnnotations      *bool       // Extract PDF annotations
 	ExtractImages           *bool       // Extract embedded images
@@ -727,7 +733,7 @@ type PdfConfig struct {
 
 ---
 
-### ConcurrencyConfig <span class="version-badge">v4.6.0</span>
+### ConcurrencyConfig <span class="version-badge">v4.6.3</span>
 
 Concurrency configuration for controlling parallel extraction.
 
@@ -806,7 +812,7 @@ type RakeParams struct {
 
 ---
 
-### LayoutDetectionConfig <span class="version-badge">v4.6.0</span>
+### LayoutDetectionConfig <span class="version-badge">v4.6.3</span>
 
 Configure ONNX-based document layout detection.
 
@@ -866,8 +872,8 @@ type PaddleOcrConfig struct {
 	DetLimitSideLen      *int     // Detection side length limit
 	EnableTableDetection *bool    // Detect tables in images
 	Language             string   // Language code
-	ModelTier            string   // (v4.6.0) Model tier: "mobile" (default, ~21MB total, fast) or "server" (~172MB, best with GPU)
-	Padding              *int     // (v4.6.0) Padding in pixels (0-100) around image before detection. Default: 10
+	ModelTier            string   // (v4.6.3) Model tier: "mobile" (default, ~21MB total, fast) or "server" (~172MB, best with GPU)
+	Padding              *int     // (v4.6.3) Padding in pixels (0-100) around image before detection. Default: 10
 	RecBatchNum          *int     // Recognition batch size
 	UseAngleCls          *bool    // Use angle classification
 }
@@ -1331,6 +1337,81 @@ for imgIdx, img := range result.Images {
 	if img.OCRResult != nil {
 		fmt.Printf("Image %d OCR: %s\n", imgIdx, img.OCRResult.Content)
 	}
+}
+```
+
+---
+
+## PDF Rendering
+
+!!! info "Added in v4.6.3"
+
+### RenderPdfPage
+
+Render a single page of a PDF as a PNG image.
+
+**Signature:**
+
+```go title="Go"
+func RenderPdfPage(path string, pageIndex int, dpi int) ([]byte, error)
+```
+
+**Parameters:**
+
+- `path` (string): Path to the PDF file
+- `pageIndex` (int): Zero-based page index to render
+- `dpi` (int): Resolution for rendering (e.g. 150)
+
+**Returns:**
+
+- `[]byte`: PNG-encoded bytes for the requested page
+- `error`: Error if file cannot be read, rendered, or page index is out of bounds
+
+**Example:**
+
+```go title="render_single_page.go"
+png, err := kreuzberg.RenderPdfPage("document.pdf", 0, 150)
+if err != nil {
+	log.Fatalf("render failed: %v", err)
+}
+os.WriteFile("first_page.png", png, 0644)
+```
+
+---
+
+### PdfPageIterator
+
+A more memory-efficient alternative to rendering all pages at once when memory is a concern or when pages should be processed as they are rendered (e.g., sending each page to a vision model for OCR). Renders one page at a time, so only one raw image is in memory at a time.
+
+**Type:**
+
+```go title="Go"
+type PdfPageIterator struct { ... }
+
+func NewPdfPageIterator(path string, dpi int) (*PdfPageIterator, error)
+func (it *PdfPageIterator) Next() (pageIndex int, png []byte, ok bool, err error)
+func (it *PdfPageIterator) PageCount() int
+func (it *PdfPageIterator) Close()
+```
+
+**Example:**
+
+```go title="iterate_pages.go"
+iter, err := kreuzberg.NewPdfPageIterator("document.pdf", 150)
+if err != nil {
+	log.Fatalf("failed to create iterator: %v", err)
+}
+defer iter.Close()
+
+for {
+	pageIndex, png, ok, err := iter.Next()
+	if err != nil {
+		log.Fatalf("render error: %v", err)
+	}
+	if !ok {
+		break
+	}
+	os.WriteFile(fmt.Sprintf("page_%d.png", pageIndex), png, 0644)
 }
 ```
 

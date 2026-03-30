@@ -100,6 +100,28 @@ fn test_email_msg_basic() {
 }
 
 #[test]
+fn test_email_pst_empty() {
+    // Empty Outlook PST archive with no messages.
+
+    let document_path = resolve_document("email/empty.pst");
+    if !document_path.exists() {
+        println!(
+            "Skipping email_pst_empty: missing document at {}",
+            document_path.display()
+        );
+        return;
+    }
+    let config = ExtractionConfig::default();
+
+    let result = match kreuzberg::extract_file_sync(&document_path, None, &config) {
+        Err(err) => panic!("Extraction failed for email_pst_empty: {err:?}"),
+        Ok(result) => result,
+    };
+
+    assertions::assert_expected_mime(&result, &["application/vnd.ms-outlook-pst"]);
+}
+
+#[test]
 fn test_email_sample_eml() {
     // Sample EML email file to verify email parsing.
 

@@ -1,8 +1,9 @@
 $OrtVersion = $args[0]
-if ([string]::IsNullOrWhiteSpace($OrtVersion)) { throw "Usage: windows.ps1 <ortVersion> [destDir] [archId]" }
+if ([string]::IsNullOrWhiteSpace($OrtVersion)) { throw "Usage: windows.ps1 <ortVersion> [destDir] [archId] [strategy]" }
 
 $DestDir = if ($args.Count -ge 2 -and -not [string]::IsNullOrWhiteSpace($args[1])) { $args[1] } else { "crates/kreuzberg-node" }
 $ArchId = if ($args.Count -ge 3) { $args[2] } else { "" }
+$Strategy = if ($args.Count -ge 4 -and -not [string]::IsNullOrWhiteSpace($args[3])) { $args[3] } else { "system" }
 
 $ExtractRoot = Join-Path $env:TEMP "onnxruntime"
 if ([string]::IsNullOrWhiteSpace($ArchId)) {
@@ -72,14 +73,28 @@ foreach ($Dir in $DllDirs) {
 
 $RustFlags = if ($env:RUSTFLAGS) { "$env:RUSTFLAGS -L $OrtLib" } else { "-L $OrtLib" }
 
-@(
-  "ORT_LIB_LOCATION=$OrtLib"
-  "ORT_PREFER_DYNAMIC_LINK=1"
-  "ORT_SKIP_DOWNLOAD=1"
-  "ORT_STRATEGY=system"
-  "ORT_DYLIB_PATH=$OrtLib\onnxruntime.dll"
-  "RUSTFLAGS=$RustFlags"
-  "LIB=$OrtLib;$env:LIB"
-  "LIBRARY_PATH=$OrtLib;$env:LIBRARY_PATH"
-  "PATH=$Dest;$env:PATH"
-) | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+if ($Strategy -eq "bundled") {
+  # ort-sys has no prebuilt static binaries for x86_64-pc-windows-gnu (MSYS2/MinGW).
+  # Use the pre-downloaded Microsoft ORT with dynamic linking for Windows GNU targets.
+  Write-Host "Using bundled ORT strategy (Windows) - dynamic linking against pre-downloaded ORT (no static binaries for windows-gnu)"
+  @(
+    "ORT_LIB_LOCATION=$OrtLib"
+    "ORT_PREFER_DYNAMIC_LINK=1"
+    "RUSTFLAGS=$RustFlags"
+    "LIB=$OrtLib;$env:LIB"
+    "LIBRARY_PATH=$OrtLib;$env:LIBRARY_PATH"
+    "PATH=$Dest;$env:PATH"
+  ) | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+} else {
+  @(
+    "ORT_LIB_LOCATION=$OrtLib"
+    "ORT_PREFER_DYNAMIC_LINK=1"
+    "ORT_SKIP_DOWNLOAD=1"
+    "ORT_STRATEGY=system"
+    "ORT_DYLIB_PATH=$OrtLib\onnxruntime.dll"
+    "RUSTFLAGS=$RustFlags"
+    "LIB=$OrtLib;$env:LIB"
+    "LIBRARY_PATH=$OrtLib;$env:LIBRARY_PATH"
+    "PATH=$Dest;$env:PATH"
+  ) | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+}
