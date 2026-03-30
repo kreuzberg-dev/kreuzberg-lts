@@ -615,10 +615,7 @@ impl FictionBookExtractor {
                         for attr in e.attributes().flatten() {
                             let attr_name = String::from_utf8_lossy(attr.key.as_ref());
                             // FB2 uses l:href or xlink:href; also check plain href
-                            if attr_name == "l:href"
-                                || attr_name == "xlink:href"
-                                || attr_name == "href"
-                            {
+                            if attr_name == "l:href" || attr_name == "xlink:href" || attr_name == "href" {
                                 href = String::from_utf8_lossy(attr.value.as_ref()).to_string();
                                 break;
                             }
@@ -656,11 +653,7 @@ impl FictionBookExtractor {
                             }
                         }
 
-                        let label = if label_text.is_empty() {
-                            None
-                        } else {
-                            Some(label_text)
-                        };
+                        let label = if label_text.is_empty() { None } else { Some(label_text) };
 
                         uris.push(Uri::hyperlink(&href, label));
                     }
@@ -1153,7 +1146,8 @@ mod tests {
     #[test]
     fn test_fictionbook_binary_images() {
         // A minimal 1x1 red PNG as base64
-        let png_b64 = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwADhQGAWjR9awAAAABJRU5ErkJggg==";
+        let png_b64 =
+            "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwADhQGAWjR9awAAAABJRU5ErkJggg==";
         let fb2 = format!(
             r#"<?xml version="1.0" encoding="UTF-8"?>
 <FictionBook>

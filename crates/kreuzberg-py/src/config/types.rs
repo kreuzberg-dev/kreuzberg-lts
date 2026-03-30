@@ -347,6 +347,7 @@ impl ExtractionConfig {
             kreuzberg::core::config::formats::OutputFormat::Djot => "djot".to_string(),
             kreuzberg::core::config::formats::OutputFormat::Html => "html".to_string(),
             kreuzberg::core::config::formats::OutputFormat::Structured => "structured".to_string(),
+            kreuzberg::core::config::formats::OutputFormat::Custom(ref name) => name.clone(),
         }
     }
 
@@ -2560,6 +2561,7 @@ impl FileExtractionConfig {
             kreuzberg::core::config::formats::OutputFormat::Djot => "djot".to_string(),
             kreuzberg::core::config::formats::OutputFormat::Html => "html".to_string(),
             kreuzberg::core::config::formats::OutputFormat::Structured => "structured".to_string(),
+            kreuzberg::core::config::formats::OutputFormat::Custom(name) => name.clone(),
         })
     }
 

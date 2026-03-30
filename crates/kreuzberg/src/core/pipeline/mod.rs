@@ -75,7 +75,8 @@ pub async fn run_pipeline(doc: InternalDocument, config: &ExtractionConfig) -> R
 
     // 1. Derive ExtractionResult from InternalDocument
     let include_structure = config.include_document_structure;
-    let mut result = crate::extraction::derive::derive_extraction_result(doc, include_structure, config.output_format);
+    let mut result =
+        crate::extraction::derive::derive_extraction_result(doc, include_structure, config.output_format.clone());
 
     // Temporarily store pre-rendered markdown for chunker heading context.
     // Tracked separately so we can remove it after chunking — apply_output_format
@@ -125,7 +126,7 @@ pub async fn run_pipeline(doc: InternalDocument, config: &ExtractionConfig) -> R
     normalize_nfc(&mut result);
 
     // Apply output format conversion as the final step
-    apply_output_format(&mut result, config.output_format);
+    apply_output_format(&mut result, config.output_format.clone());
 
     Ok(result)
 }
@@ -174,7 +175,8 @@ pub fn run_pipeline_sync(doc: InternalDocument, config: &ExtractionConfig) -> Re
 
     // 1. Derive ExtractionResult from InternalDocument
     let include_structure = config.include_document_structure;
-    let mut result = crate::extraction::derive::derive_extraction_result(doc, include_structure, config.output_format);
+    let mut result =
+        crate::extraction::derive::derive_extraction_result(doc, include_structure, config.output_format.clone());
 
     #[cfg(feature = "chunking")]
     let chunker_only_markdown = result.formatted_content.is_none();
@@ -200,7 +202,7 @@ pub fn run_pipeline_sync(doc: InternalDocument, config: &ExtractionConfig) -> Re
     normalize_nfc(&mut result);
 
     // Apply output format conversion as the final step
-    apply_output_format(&mut result, config.output_format);
+    apply_output_format(&mut result, config.output_format.clone());
 
     Ok(result)
 }

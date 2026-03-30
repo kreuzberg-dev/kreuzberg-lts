@@ -116,11 +116,7 @@ async fn test_traversal_blocked() {
     let tmp_dir = std::env::temp_dir().join("kreuzberg_path_test");
     std::fs::create_dir_all(&tmp_dir).unwrap();
     let md_path = tmp_dir.join("traversal.md");
-    std::fs::write(
-        &md_path,
-        "![evil](../../../etc/passwd)\n![ok](images/test_image.png)\n",
-    )
-    .unwrap();
+    std::fs::write(&md_path, "![evil](../../../etc/passwd)\n![ok](images/test_image.png)\n").unwrap();
 
     let config = config_with_images();
     let result = kreuzberg::extract_file(&md_path, Some("text/markdown"), &config)

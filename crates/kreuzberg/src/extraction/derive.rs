@@ -657,6 +657,7 @@ pub fn derive_extraction_result(
         crate::core::config::OutputFormat::Djot => Some(crate::rendering::render_djot(&doc)),
         crate::core::config::OutputFormat::Html => Some(crate::rendering::render_html(&doc)),
         crate::core::config::OutputFormat::Structured => None,
+        crate::core::config::OutputFormat::Custom(_) => None, // TODO: registry lookup
     };
 
     // 4. Build pages and OCR elements BEFORE document structure derivation,

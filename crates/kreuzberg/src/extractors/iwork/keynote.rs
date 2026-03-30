@@ -107,10 +107,7 @@ fn parse_keynote(content: &[u8]) -> Result<KeynoteData> {
         match read_iwa_file(content, path) {
             Ok(decompressed) => {
                 let texts = extract_text_from_proto(&decompressed);
-                let unique: Vec<String> = texts
-                    .into_iter()
-                    .filter(|t| seen_global.insert(t.clone()))
-                    .collect();
+                let unique: Vec<String> = texts.into_iter().filter(|t| seen_global.insert(t.clone())).collect();
                 if !unique.is_empty() {
                     slide_texts.push(unique);
                 }

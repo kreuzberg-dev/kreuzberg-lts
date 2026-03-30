@@ -150,7 +150,8 @@ pub use core::mime::{
 pub use core::formats::{KNOWN_FORMATS, is_valid_format_field};
 
 pub use plugins::registry::{
-    get_document_extractor_registry, get_ocr_backend_registry, get_post_processor_registry, get_validator_registry,
+    get_document_extractor_registry, get_ocr_backend_registry, get_post_processor_registry, get_renderer_registry,
+    get_validator_registry,
 };
 
 #[cfg(feature = "embeddings")]

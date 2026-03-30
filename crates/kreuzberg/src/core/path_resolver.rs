@@ -10,9 +10,9 @@ use std::path::{Path, PathBuf};
 use bytes::Bytes;
 
 use crate::core::config::ExtractionConfig;
+use crate::types::ExtractedImage;
 use crate::types::internal::InternalDocument;
 use crate::types::uri::UriKind;
-use crate::types::ExtractedImage;
 
 /// Maximum image file size: 50 MB.
 const MAX_IMAGE_SIZE: u64 = 50 * 1024 * 1024;
@@ -48,9 +48,7 @@ pub(crate) fn resolve_image_path(base_dir: &Path, image_ref: &str) -> Option<Pat
 
     // Reject absolute paths (Unix or Windows drive letter)
     if path_str.starts_with('/')
-        || (path_str.len() >= 2
-            && path_str.as_bytes()[0].is_ascii_alphabetic()
-            && path_str.as_bytes()[1] == b':')
+        || (path_str.len() >= 2 && path_str.as_bytes()[0].is_ascii_alphabetic() && path_str.as_bytes()[1] == b':')
     {
         return None;
     }
@@ -123,10 +121,7 @@ pub(crate) fn read_image_file(path: &Path, image_index: usize) -> Option<Extract
 /// `base_dir`, reads the file, and appends the result to `doc.images`.
 /// No-op when image extraction is disabled in `config`.
 pub(crate) fn resolve_image_uris(doc: &mut InternalDocument, base_dir: &Path, config: &ExtractionConfig) {
-    let image_extraction_enabled = config
-        .images
-        .as_ref()
-        .is_some_and(|img| img.extract_images);
+    let image_extraction_enabled = config.images.as_ref().is_some_and(|img| img.extract_images);
 
     if !image_extraction_enabled {
         return;
@@ -176,10 +171,7 @@ mod tests {
     fn test_resolve_relative_path() {
         let base = Path::new("/home/user/docs");
         let result = resolve_image_path(base, "images/photo.png");
-        assert_eq!(
-            result,
-            Some(PathBuf::from("/home/user/docs/images/photo.png"))
-        );
+        assert_eq!(result, Some(PathBuf::from("/home/user/docs/images/photo.png")));
     }
 
     #[test]
@@ -213,10 +205,7 @@ mod tests {
     #[test]
     fn test_reject_data_uri() {
         let base = Path::new("/home/user/docs");
-        assert_eq!(
-            resolve_image_path(base, "data:image/png;base64,abc"),
-            None
-        );
+        assert_eq!(resolve_image_path(base, "data:image/png;base64,abc"), None);
     }
 
     #[test]
@@ -224,20 +213,14 @@ mod tests {
         // resolve_image_path only checks structure, not filesystem
         let base = Path::new("/nonexistent/base");
         let result = resolve_image_path(base, "sub/image.jpg");
-        assert_eq!(
-            result,
-            Some(PathBuf::from("/nonexistent/base/sub/image.jpg"))
-        );
+        assert_eq!(result, Some(PathBuf::from("/nonexistent/base/sub/image.jpg")));
     }
 
     #[test]
     fn test_path_with_spaces() {
         let base = Path::new("/home/user/my docs");
         let result = resolve_image_path(base, "my images/photo.png");
-        assert_eq!(
-            result,
-            Some(PathBuf::from("/home/user/my docs/my images/photo.png"))
-        );
+        assert_eq!(result, Some(PathBuf::from("/home/user/my docs/my images/photo.png")));
     }
 
     #[test]
@@ -266,10 +249,7 @@ mod tests {
     fn test_file_uri_stripped() {
         let base = Path::new("/home/user/docs");
         let result = resolve_image_path(base, "file://images/photo.png");
-        assert_eq!(
-            result,
-            Some(PathBuf::from("/home/user/docs/images/photo.png"))
-        );
+        assert_eq!(result, Some(PathBuf::from("/home/user/docs/images/photo.png")));
     }
 
     #[test]

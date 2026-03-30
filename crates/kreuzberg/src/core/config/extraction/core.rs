@@ -349,7 +349,7 @@ impl ExtractionConfig {
             config.result_format = *v;
         }
         if let Some(v) = output_format {
-            config.output_format = *v;
+            config.output_format = v.clone();
         }
         if let Some(v) = include_document_structure {
             config.include_document_structure = *v;

@@ -298,7 +298,9 @@ pub fn extract_metadata_from_zip(content: &[u8]) -> crate::types::metadata::Meta
     // Try to read Metadata/Properties.plist (XML plist with doc metadata)
     if let Ok(mut file) = archive.by_name("Metadata/Properties.plist") {
         let mut buf = Vec::new();
-        if file.read_to_end(&mut buf).is_ok() && let Ok(text) = std::str::from_utf8(&buf) {
+        if file.read_to_end(&mut buf).is_ok()
+            && let Ok(text) = std::str::from_utf8(&buf)
+        {
             parse_plist_metadata(text, &mut metadata);
         }
     }
@@ -307,7 +309,9 @@ pub fn extract_metadata_from_zip(content: &[u8]) -> crate::types::metadata::Meta
     // (some iWork files store the doc title here)
     if let Ok(mut file) = archive.by_name("Metadata/DocumentIdentifier") {
         let mut buf = Vec::new();
-        if file.read_to_end(&mut buf).is_ok() && let Ok(text) = std::str::from_utf8(&buf) {
+        if file.read_to_end(&mut buf).is_ok()
+            && let Ok(text) = std::str::from_utf8(&buf)
+        {
             let trimmed = text.trim();
             if !trimmed.is_empty() && metadata.title.is_none() {
                 metadata.title = Some(trimmed.to_string());
@@ -334,39 +338,41 @@ fn parse_plist_metadata(plist: &str, metadata: &mut crate::types::metadata::Meta
             while j < lines.len() && lines[j].is_empty() {
                 j += 1;
             }
-            if j < lines.len() && let Some(value) = extract_plist_tag(lines[j], "string") {
-                    match key.as_str() {
-                        "title" | "Title" => {
-                            if metadata.title.is_none() {
-                                metadata.title = Some(value);
-                            }
+            if j < lines.len()
+                && let Some(value) = extract_plist_tag(lines[j], "string")
+            {
+                match key.as_str() {
+                    "title" | "Title" => {
+                        if metadata.title.is_none() {
+                            metadata.title = Some(value);
                         }
-                        "author" | "Author" | "creator" | "Creator" => {
-                            let authors = metadata.authors.get_or_insert_with(Vec::new);
-                            if !authors.contains(&value) {
-                                authors.push(value);
-                            }
-                        }
-                        "keywords" | "Keywords" => {
-                            let kw = metadata.keywords.get_or_insert_with(Vec::new);
-                            for word in value.split(',') {
-                                let trimmed = word.trim().to_string();
-                                if !trimmed.is_empty() && !kw.contains(&trimmed) {
-                                    kw.push(trimmed);
-                                }
-                            }
-                        }
-                        "language" | "Language" => {
-                            if metadata.language.is_none() {
-                                metadata.language = Some(value);
-                            }
-                        }
-                        _ => {}
                     }
-                    i = j + 1;
-                    continue;
+                    "author" | "Author" | "creator" | "Creator" => {
+                        let authors = metadata.authors.get_or_insert_with(Vec::new);
+                        if !authors.contains(&value) {
+                            authors.push(value);
+                        }
+                    }
+                    "keywords" | "Keywords" => {
+                        let kw = metadata.keywords.get_or_insert_with(Vec::new);
+                        for word in value.split(',') {
+                            let trimmed = word.trim().to_string();
+                            if !trimmed.is_empty() && !kw.contains(&trimmed) {
+                                kw.push(trimmed);
+                            }
+                        }
+                    }
+                    "language" | "Language" => {
+                        if metadata.language.is_none() {
+                            metadata.language = Some(value);
+                        }
+                    }
+                    _ => {}
                 }
+                i = j + 1;
+                continue;
             }
+        }
         i += 1;
     }
 }

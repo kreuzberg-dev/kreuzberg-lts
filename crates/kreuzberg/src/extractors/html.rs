@@ -215,7 +215,7 @@ impl SyncExtractor for HtmlExtractor {
             crate::extraction::html::convert_html_to_markdown_with_tables(
                 &html,
                 config.html_options.clone(),
-                Some(config.output_format),
+                Some(config.output_format.clone()),
             )?;
 
         let tables: Vec<Table> = table_data

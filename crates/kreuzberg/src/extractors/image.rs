@@ -47,7 +47,7 @@ impl ImageExtractor {
 
         // Thread output_format from ExtractionConfig to OcrConfig
         let mut ocr_config_with_format = ocr_config.clone();
-        ocr_config_with_format.output_format = Some(config.output_format);
+        ocr_config_with_format.output_format = Some(config.output_format.clone());
 
         let ocr_result = backend.process_image(content, &ocr_config_with_format).await?;
 

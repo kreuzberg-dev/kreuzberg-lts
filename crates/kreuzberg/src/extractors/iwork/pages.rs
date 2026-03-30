@@ -83,10 +83,7 @@ fn parse_pages(content: &[u8]) -> Result<PagesData> {
 
     for path in &iwa_paths {
         let filename = path.rsplit('/').next().unwrap_or(path);
-        if filename.starts_with("Document")
-            || filename.starts_with("Section")
-            || filename.starts_with("Text")
-        {
+        if filename.starts_with("Document") || filename.starts_with("Section") || filename.starts_with("Text") {
             doc_paths.push(path);
         } else {
             other_paths.push(path);

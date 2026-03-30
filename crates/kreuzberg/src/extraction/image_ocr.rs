@@ -57,7 +57,7 @@ pub async fn process_images_with_ocr(
 
     let ocr_config = config.ocr.as_ref().unwrap();
     let tess_config = ocr_config.tesseract_config.as_ref().cloned().unwrap_or_default();
-    let output_format = config.output_format;
+    let output_format = config.output_format.clone();
 
     use std::sync::Arc;
     use tokio::sync::Semaphore;
@@ -81,6 +81,7 @@ pub async fn process_images_with_ocr(
         let tess_config_clone = tess_config.clone();
         let span = tracing::Span::current();
         let permit = Arc::clone(&semaphore);
+        let output_format = output_format.clone();
 
         join_set.spawn(async move {
             // Acquire a semaphore permit before starting OCR work.

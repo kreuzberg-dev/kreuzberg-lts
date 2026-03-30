@@ -192,7 +192,7 @@ impl OcrBackend for TesseractBackend {
     async fn process_image(&self, image_bytes: &[u8], config: &OcrConfig) -> Result<ExtractionResult> {
         let tess_config = self.config_to_tesseract(config);
         let tess_config_clone = tess_config.clone();
-        let output_format = config.output_format;
+        let output_format = config.output_format.clone();
 
         let processor = Arc::clone(&self.processor);
         let image_bytes = image_bytes.to_vec();
@@ -294,7 +294,7 @@ impl OcrBackend for TesseractBackend {
     async fn process_image_file(&self, path: &Path, config: &OcrConfig) -> Result<ExtractionResult> {
         let tess_config = self.config_to_tesseract(config);
         let tess_config_clone = tess_config.clone();
-        let output_format = config.output_format;
+        let output_format = config.output_format.clone();
 
         let processor = Arc::clone(&self.processor);
         let path_str = path.to_string_lossy().to_string();

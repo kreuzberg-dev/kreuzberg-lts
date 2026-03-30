@@ -174,10 +174,7 @@ impl SyncExtractor for EmailExtractor {
         // Move fields out of email_result now that all borrows above are complete.
         let subject = email_result.subject;
         let created_at = email_result.date;
-        let from_name = email_result
-            .metadata
-            .get("from_name")
-            .cloned();
+        let from_name = email_result.metadata.get("from_name").cloned();
         let email_metadata = EmailMetadata {
             from_email: email_result.from_email,
             from_name: from_name.clone(),

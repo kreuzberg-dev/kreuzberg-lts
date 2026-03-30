@@ -929,7 +929,7 @@ impl DocumentExtractor for DocxExtractor {
         let output_format = if config.images.as_ref().is_some_and(|i| i.extract_images) {
             crate::core::config::OutputFormat::Markdown
         } else {
-            config.output_format
+            config.output_format.clone()
         };
 
         let include_doc_structure = config.include_document_structure;

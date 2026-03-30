@@ -107,7 +107,7 @@ impl EpubExtractor {
             match crate::extraction::html::convert_html_to_markdown_with_metadata(
                 &document.xhtml,
                 config.html_options.clone(),
-                Some(config.output_format),
+                Some(config.output_format.clone()),
             ) {
                 Ok((converted, _)) => (trim_trailing_newlines(&converted).to_string(), true),
                 Err(err) => {

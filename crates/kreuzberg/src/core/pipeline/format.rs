@@ -32,6 +32,7 @@ pub fn apply_output_format(result: &mut ExtractionResult, output_format: OutputF
         OutputFormat::Djot => "djot",
         OutputFormat::Html => "html",
         OutputFormat::Structured => "structured",
+        OutputFormat::Custom(ref name) => name.as_str(),
     };
     result.metadata.output_format = Some(format_name.to_string());
     // DEPRECATED: kept for backward compatibility; will be removed in next major version.
