@@ -18,6 +18,7 @@
 !crates/kreuzberg-py/
 !crates/kreuzberg-node/
 !crates/kreuzberg-wasm/
+!packages/elixir/native/kreuzberg_rustler/
 !docker/
 
 # Re-exclude build artifacts inside allowed dirs
