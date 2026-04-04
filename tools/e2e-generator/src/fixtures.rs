@@ -16,14 +16,6 @@ pub enum GenerationMode {
 }
 
 impl GenerationMode {
-    /// Returns the version string if in published mode.
-    pub fn version(&self) -> Option<&str> {
-        match self {
-            GenerationMode::Local => None,
-            GenerationMode::Published { version } => Some(version),
-        }
-    }
-
     /// Returns true if this is published mode.
     pub fn is_published(&self) -> bool {
         matches!(self, GenerationMode::Published { .. })

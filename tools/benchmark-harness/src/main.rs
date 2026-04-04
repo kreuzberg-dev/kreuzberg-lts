@@ -755,9 +755,7 @@ async fn main() -> Result<()> {
             threshold_factor,
             output,
         } => {
-            use benchmark_harness::comparison::{
-                ComparisonConfig, Pipeline, generate_guardrails, run_comparison,
-            };
+            use benchmark_harness::comparison::{ComparisonConfig, Pipeline, generate_guardrails, run_comparison};
 
             let selected_pipelines = match pipelines {
                 Some(names) => names.iter().filter_map(|n| Pipeline::parse(n)).collect(),

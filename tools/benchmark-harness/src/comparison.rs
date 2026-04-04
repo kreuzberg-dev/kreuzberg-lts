@@ -859,8 +859,7 @@ pub struct GuardrailContract {
 pub fn load_guardrails(path: &Path) -> Result<GuardrailsConfig> {
     let data = std::fs::read_to_string(path)
         .map_err(|e| crate::Error::Benchmark(format!("Failed to read guardrails file {}: {}", path.display(), e)))?;
-    serde_json::from_str(&data)
-        .map_err(|e| crate::Error::Benchmark(format!("Failed to parse guardrails file: {}", e)))
+    serde_json::from_str(&data).map_err(|e| crate::Error::Benchmark(format!("Failed to parse guardrails file: {}", e)))
 }
 
 /// Generate a guardrails configuration from benchmark results.
