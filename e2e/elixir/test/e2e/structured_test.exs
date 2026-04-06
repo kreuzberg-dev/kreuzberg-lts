@@ -42,11 +42,7 @@ defmodule E2E.StructuredTest do
            ) do
         {:ok, result} ->
           result
-          |> E2E.Helpers.assert_expected_mime([
-            "application/x-endnote-refer",
-            "application/x-endnote+xml",
-            "text/plain"
-          ])
+          |> E2E.Helpers.assert_expected_mime(["application/x-endnote-refer", "application/x-endnote+xml", "text/plain"])
 
         {:skipped, reason} ->
           IO.puts("SKIPPED: #{reason}")

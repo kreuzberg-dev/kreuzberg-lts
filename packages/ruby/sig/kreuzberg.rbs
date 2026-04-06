@@ -12,6 +12,7 @@ module Kreuzberg
   ERROR_CODE_PARSING: Integer
   ERROR_CODE_OCR: Integer
   ERROR_CODE_MISSING_DEPENDENCY: Integer
+  ERROR_CODE_EMBEDDING: Integer
 
   # Semantic element type classification (T.type_alias)
   type element_type = 'title' | 'narrative_text' | 'heading' | 'list_item' | 'table' | 'image' | 'page_break' | 'code_block' | 'block_quote' | 'footer' | 'header'
@@ -1572,6 +1573,10 @@ module Kreuzberg
     ?file_configs: Array[file_config_input]?
   ) -> Array[Result]
 
+  # Standalone embedding
+  def self.embed_sync: (texts: Array[String], ?config: Hash[Symbol, untyped]?) -> Array[Array[Float]]
+  def self.embed: (texts: Array[String], ?config: Hash[Symbol, untyped]?) -> Array[Array[Float]]
+
   # Cache API
   def self.clear_cache: () -> void
   def self.cache_stats: () -> Hash[Symbol | String, Integer]
@@ -1721,6 +1726,9 @@ module Kreuzberg
     end
 
     class UnsupportedFormatError < Error
+    end
+
+    class EmbeddingError < Error
     end
   end
 

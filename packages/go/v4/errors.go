@@ -31,6 +31,7 @@ const (
 	ErrorKindPlugin            ErrorKind = "plugin"
 	ErrorKindUnsupportedFormat ErrorKind = "unsupported_format"
 	ErrorKindRuntime           ErrorKind = "runtime"
+	ErrorKindEmbedding         ErrorKind = "embedding"
 )
 
 // ErrorCode represents FFI error codes from kreuzberg-ffi.
@@ -46,6 +47,7 @@ const (
 	ErrorCodePlugin            ErrorCode = 5
 	ErrorCodeUnsupportedFormat ErrorCode = 6
 	ErrorCodeInternal          ErrorCode = 7
+	ErrorCodeEmbedding         ErrorCode = 8
 )
 
 // String returns the string representation of an ErrorCode.
@@ -83,8 +85,8 @@ func (pc *PanicContext) String() string {
 	return fmt.Sprintf("%s:%d in %s: %s", pc.File, pc.Line, pc.Function, pc.Message)
 }
 
-// KreuzbergError is implemented by all custom error types returned by the Go binding.
-type KreuzbergError interface {
+// Error is implemented by all custom error types returned by the Go binding.
+type Error interface {
 	error
 	Kind() ErrorKind
 	Code() ErrorCode
@@ -166,6 +168,10 @@ type RuntimeError struct {
 	baseError
 }
 
+type EmbeddingError struct {
+	baseError
+}
+
 func makeBaseError(kind ErrorKind, message string, cause error, code ErrorCode, panicCtx *PanicContext) baseError {
 	var msg string
 	if panicCtx != nil {
@@ -235,6 +241,10 @@ func newRuntimeErrorWithContext(message string, cause error, code ErrorCode, pan
 	return &RuntimeError{baseError: makeBaseError(ErrorKindRuntime, message, cause, code, panicCtx)}
 }
 
+func newEmbeddingErrorWithContext(message string, cause error, code ErrorCode, panicCtx *PanicContext) *EmbeddingError {
+	return &EmbeddingError{baseError: makeBaseError(ErrorKindEmbedding, message, cause, code, panicCtx)}
+}
+
 func messageWithFallback(message string, fallback string) string {
 	trimmed := strings.TrimSpace(message)
 	if trimmed != "" {
@@ -262,7 +272,7 @@ func formatErrorMessage(message string) string {
 	return "kreuzberg: " + trimmed
 }
 
-// classifyNativeError converts a native error message and code into a typed Kreuzberg error.
+// classifyNativeError converts a native error message and code into a typed Error.
 // Uses the FFI-provided error code to classify errors instead of string matching.
 func classifyNativeError(message string, code ErrorCode, panicCtx *PanicContext) error {
 	trimmed := strings.TrimSpace(message)
@@ -290,6 +300,8 @@ func classifyNativeError(message string, code ErrorCode, panicCtx *PanicContext)
 		return newUnsupportedFormatErrorWithContext(format, trimmed, nil, code, panicCtx)
 	case ErrorCodeInternal:
 		return newRuntimeErrorWithContext(trimmed, nil, code, panicCtx)
+	case ErrorCodeEmbedding:
+		return newEmbeddingErrorWithContext(trimmed, nil, code, panicCtx)
 	default:
 		return newRuntimeErrorWithContext(trimmed, nil, code, panicCtx)
 	}

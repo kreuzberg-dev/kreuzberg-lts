@@ -72,6 +72,17 @@ type CachedEngine = Arc<EmbeddingEngine>;
 
 static ENGINE_CACHE: Lazy<RwLock<AHashMap<String, CachedEngine>>> = Lazy::new(|| RwLock::new(AHashMap::new()));
 
+/// Global semaphore that limits concurrent ONNX embedding inference calls.
+///
+/// Prevents resource exhaustion when many async callers invoke `embed_texts_async`
+/// simultaneously. The permit count is set once on first access using the thread
+/// budget, matching the pattern used elsewhere (e.g., image OCR, batch extraction).
+#[cfg(feature = "tokio-runtime")]
+static EMBED_SEMAPHORE: Lazy<Arc<tokio::sync::Semaphore>> = Lazy::new(|| {
+    let budget = crate::core::config::concurrency::resolve_thread_budget(None);
+    Arc::new(tokio::sync::Semaphore::new(budget))
+});
+
 /// Preset configurations for common RAG use cases.
 ///
 /// Each preset combines chunk size, overlap, and embedding model
@@ -173,14 +184,6 @@ fn onnx_runtime_install_message() -> String {
     }
 }
 
-/// Create a `KreuzbergError::Plugin` for the embeddings plugin.
-fn embedding_error(message: String) -> crate::KreuzbergError {
-    crate::KreuzbergError::Plugin {
-        message,
-        plugin_name: "embeddings".to_string(),
-    }
-}
-
 /// Resolve the cache directory for embedding models.
 fn resolve_cache_dir(cache_dir: Option<std::path::PathBuf>) -> std::path::PathBuf {
     cache_dir.unwrap_or_else(|| crate::cache_dir::resolve_cache_dir("embeddings"))
@@ -192,8 +195,8 @@ fn resolve_model_info(
 ) -> crate::Result<(&str, &str, engine::Pooling)> {
     match model_type {
         crate::core::config::EmbeddingModelType::Preset { name } => {
-            let preset =
-                get_preset(name).ok_or_else(|| embedding_error(format!("Unknown embedding preset: {name}")))?;
+            let preset = get_preset(name)
+                .ok_or_else(|| crate::KreuzbergError::embedding(format!("Unknown embedding preset: {name}")))?;
             let pooling = match preset.pooling {
                 "cls" => engine::Pooling::Cls,
                 _ => engine::Pooling::Mean,
@@ -221,18 +224,19 @@ fn load_tokenizer(
     use tokenizers::{AddedToken, PaddingParams, PaddingStrategy, TruncationParams};
 
     let config: serde_json::Value = serde_json::from_slice(
-        &std::fs::read(config_path).map_err(|e| embedding_error(format!("Failed to read config.json: {e}")))?,
+        &std::fs::read(config_path)
+            .map_err(|e| crate::KreuzbergError::embedding(format!("Failed to read config.json: {e}")))?,
     )
-    .map_err(|e| embedding_error(format!("Failed to parse config.json: {e}")))?;
+    .map_err(|e| crate::KreuzbergError::embedding(format!("Failed to parse config.json: {e}")))?;
 
     let tokenizer_config: serde_json::Value = serde_json::from_slice(
         &std::fs::read(tokenizer_config_path)
-            .map_err(|e| embedding_error(format!("Failed to read tokenizer_config.json: {e}")))?,
+            .map_err(|e| crate::KreuzbergError::embedding(format!("Failed to read tokenizer_config.json: {e}")))?,
     )
-    .map_err(|e| embedding_error(format!("Failed to parse tokenizer_config.json: {e}")))?;
+    .map_err(|e| crate::KreuzbergError::embedding(format!("Failed to parse tokenizer_config.json: {e}")))?;
 
     let mut tokenizer = tokenizers::Tokenizer::from_file(tokenizer_path)
-        .map_err(|e| embedding_error(format!("Failed to load tokenizer: {e}")))?;
+        .map_err(|e| crate::KreuzbergError::embedding(format!("Failed to load tokenizer: {e}")))?;
 
     let model_max_length = tokenizer_config["model_max_length"].as_f64().unwrap_or(512.0) as usize;
     let max_length = max_length.min(model_max_length);
@@ -250,7 +254,7 @@ fn load_tokenizer(
             max_length,
             ..Default::default()
         }))
-        .map_err(|e| embedding_error(format!("Failed to configure tokenizer: {e}")))?;
+        .map_err(|e| crate::KreuzbergError::embedding(format!("Failed to configure tokenizer: {e}")))?;
 
     // Add special tokens from special_tokens_map.json
     if let Ok(special_tokens_data) = std::fs::read(special_tokens_path)
@@ -305,21 +309,21 @@ fn download_model_files(
         .with_cache_dir(cache_directory.to_path_buf())
         .with_progress(true)
         .build()
-        .map_err(|e| embedding_error(format!("Failed to create HF API client: {e}")))?;
+        .map_err(|e| crate::KreuzbergError::embedding(format!("Failed to create HF API client: {e}")))?;
 
     let repo = api.model(repo_name.to_string());
 
     let model_path = repo
         .get(model_file)
-        .map_err(|e| embedding_error(format!("Failed to download {model_file}: {e}")))?;
+        .map_err(|e| crate::KreuzbergError::embedding(format!("Failed to download {model_file}: {e}")))?;
 
     let tokenizer_path = repo
         .get("tokenizer.json")
-        .map_err(|e| embedding_error(format!("Failed to download tokenizer.json: {e}")))?;
+        .map_err(|e| crate::KreuzbergError::embedding(format!("Failed to download tokenizer.json: {e}")))?;
 
     let config_path = repo
         .get("config.json")
-        .map_err(|e| embedding_error(format!("Failed to download config.json: {e}")))?;
+        .map_err(|e| crate::KreuzbergError::embedding(format!("Failed to download config.json: {e}")))?;
 
     // These are optional — fall back to empty paths that load_tokenizer handles gracefully
     let special_tokens_path = repo
@@ -399,7 +403,7 @@ fn get_or_init_engine(
                         onnx_runtime_install_message()
                     ))
                 } else {
-                    embedding_error(format!("Model download panicked: {panic_msg}"))
+                    crate::KreuzbergError::embedding(format!("Model download panicked: {panic_msg}"))
                 }
             })??;
 
@@ -432,7 +436,7 @@ fn get_or_init_engine(
             if looks_like_ort_error(&panic_msg) {
                 crate::KreuzbergError::MissingDependency(format!("ONNX Runtime - {}", onnx_runtime_install_message()))
             } else {
-                embedding_error(format!("ONNX Runtime initialization panicked: {panic_msg}"))
+                crate::KreuzbergError::embedding(format!("ONNX Runtime initialization panicked: {panic_msg}"))
             }
         })?
         .map_err(|e| {
@@ -440,7 +444,7 @@ fn get_or_init_engine(
             if looks_like_ort_error(&error_msg) {
                 crate::KreuzbergError::MissingDependency(format!("ONNX Runtime - {}", onnx_runtime_install_message()))
             } else {
-                embedding_error(format!("Failed to create ONNX session: {e}"))
+                crate::KreuzbergError::embedding(format!("Failed to create ONNX session: {e}"))
             }
         })?;
 
@@ -520,7 +524,7 @@ pub fn download_model(
         .with_cache_dir(cache_directory)
         .with_progress(true)
         .build()
-        .map_err(|e| embedding_error(format!("Failed to create HF API client: {e}")))?;
+        .map_err(|e| crate::KreuzbergError::embedding(format!("Failed to create HF API client: {e}")))?;
 
     let repo = api.model(repo_name.to_string());
 
@@ -530,7 +534,9 @@ pub fn download_model(
             Err(e) => {
                 // Model and tokenizer are required; others are optional
                 if *file == model_file || *file == "tokenizer.json" {
-                    return Err(embedding_error(format!("Failed to download {file}: {e}")));
+                    return Err(crate::KreuzbergError::embedding(format!(
+                        "Failed to download {file}: {e}"
+                    )));
                 }
                 tracing::debug!(file = %file, error = %e, "Optional file not found, skipping");
             }
@@ -539,6 +545,26 @@ pub fn download_model(
 
     tracing::info!(repo = %repo_name, "Embedding model files downloaded successfully");
     Ok(())
+}
+
+/// Normalize an embedding vector in-place (L2 normalization).
+fn normalize_in_place(embedding: &mut [f32]) {
+    let magnitude: f32 = embedding.iter().map(|x| x * x).sum::<f32>().sqrt();
+    if magnitude > f32::EPSILON {
+        let inv_mag = 1.0 / magnitude;
+        embedding.iter_mut().for_each(|x| *x *= inv_mag);
+    }
+}
+
+/// Apply normalization to a batch of embeddings (parallel for large batches).
+fn normalize_embeddings(embeddings: &mut [Vec<f32>]) {
+    const PARALLEL_THRESHOLD: usize = 64;
+    if embeddings.len() >= PARALLEL_THRESHOLD {
+        use rayon::prelude::*;
+        embeddings.par_iter_mut().for_each(|v| normalize_in_place(v));
+    } else {
+        embeddings.iter_mut().for_each(|v| normalize_in_place(v));
+    }
 }
 
 /// Generate embeddings for text chunks using the specified configuration.
@@ -563,54 +589,8 @@ pub fn generate_embeddings_for_chunks(
         return Ok(());
     }
 
-    let chunk_count = chunks.len();
-
-    let (repo, model_file, pooling) = resolve_model_info(&config.model)?;
-    let engine = get_or_init_engine(repo, model_file, pooling, config.cache_dir.clone())?;
-
     let texts: Vec<&str> = chunks.iter().map(|c| c.content.as_str()).collect();
-    let mut embeddings_result = engine.embed(&texts, config.batch_size).map_err(|e| {
-        embedding_error(format!(
-            "Failed to generate embeddings for {chunk_count} chunks (model={:?}, batch_size={}): {e}",
-            config.model, config.batch_size
-        ))
-    })?;
-
-    // For large batches, normalize in parallel via rayon.
-    if config.normalize {
-        const PARALLEL_THRESHOLD: usize = 64;
-        if embeddings_result.len() >= PARALLEL_THRESHOLD {
-            #[cfg(not(target_arch = "wasm32"))]
-            {
-                use rayon::prelude::*;
-                embeddings_result.par_iter_mut().for_each(|embedding| {
-                    let magnitude: f32 = embedding.iter().map(|x| x * x).sum::<f32>().sqrt();
-                    if magnitude > f32::EPSILON {
-                        let inv_mag = 1.0 / magnitude;
-                        embedding.iter_mut().for_each(|x| *x *= inv_mag);
-                    }
-                });
-            }
-            #[cfg(target_arch = "wasm32")]
-            {
-                for embedding in &mut embeddings_result {
-                    let magnitude: f32 = embedding.iter().map(|x| x * x).sum::<f32>().sqrt();
-                    if magnitude > f32::EPSILON {
-                        let inv_mag = 1.0 / magnitude;
-                        embedding.iter_mut().for_each(|x| *x *= inv_mag);
-                    }
-                }
-            }
-        } else {
-            for embedding in &mut embeddings_result {
-                let magnitude: f32 = embedding.iter().map(|x| x * x).sum::<f32>().sqrt();
-                if magnitude > f32::EPSILON {
-                    let inv_mag = 1.0 / magnitude;
-                    embedding.iter_mut().for_each(|x| *x *= inv_mag);
-                }
-            }
-        }
-    }
+    let embeddings_result = embed_texts(&texts, config)?;
 
     // Assign embeddings to chunks.
     for (chunk, embedding) in chunks.iter_mut().zip(embeddings_result) {
@@ -618,6 +598,132 @@ pub fn generate_embeddings_for_chunks(
     }
 
     Ok(())
+}
+
+/// Generate embeddings for a list of raw text strings (standalone, no chunking pipeline).
+///
+/// Returns one embedding vector per input text, in the same order as the input.
+/// Uses the same model resolution, engine caching, and batch processing as the
+/// chunking pipeline. Normalization is applied if `config.normalize` is true.
+///
+/// # Arguments
+///
+/// * `texts` - Slice of strings to embed
+/// * `config` - Embedding configuration specifying model, batch size, and normalization
+///
+/// # Returns
+///
+/// Returns `Vec<Vec<f32>>` — one `Vec<f32>` per input text. Returns an empty
+/// `Vec` if `texts` is empty (no error).
+///
+/// # Errors
+///
+/// - `KreuzbergError::MissingDependency` if ONNX Runtime is not installed
+/// - `KreuzbergError::Embedding` if the preset name is unknown or model download fails
+///
+/// # Example
+///
+/// ```rust,ignore
+/// use kreuzberg::{embed_texts, EmbeddingConfig, EmbeddingModelType};
+///
+/// let config = EmbeddingConfig {
+///     model: EmbeddingModelType::Preset { name: "balanced".to_string() },
+///     normalize: true,
+///     ..Default::default()
+/// };
+/// let embeddings = embed_texts(&["Hello, world!", "Second text"], &config)?;
+/// assert_eq!(embeddings.len(), 2);
+/// assert_eq!(embeddings[0].len(), 768); // balanced preset = 768 dims
+/// ```
+pub fn embed_texts<T: AsRef<str>>(
+    texts: &[T],
+    config: &crate::core::config::EmbeddingConfig,
+) -> crate::Result<Vec<Vec<f32>>> {
+    if texts.is_empty() {
+        return Ok(Vec::new());
+    }
+
+    // Validate that no individual text is empty — empty strings produce
+    // meaningless embeddings and can cause tokenizer edge-cases.
+    for (i, t) in texts.iter().enumerate() {
+        if t.as_ref().is_empty() {
+            return Err(crate::KreuzbergError::embedding(format!(
+                "Text at position {pos} is empty. All texts must be non-empty.",
+                pos = i + 1
+            )));
+        }
+    }
+
+    let chunk_count = texts.len();
+    let (repo, model_file, pooling) = resolve_model_info(&config.model)?;
+    let engine = get_or_init_engine(repo, model_file, pooling, config.cache_dir.clone())?;
+
+    let text_refs: Vec<&str> = texts.iter().map(|t| t.as_ref()).collect();
+    let mut embeddings = engine.embed(&text_refs, config.batch_size).map_err(|e| {
+        crate::KreuzbergError::embedding(format!(
+            "Failed to generate embeddings for {chunk_count} texts (model={:?}, batch_size={}): {e}",
+            config.model, config.batch_size
+        ))
+    })?;
+
+    if config.normalize {
+        normalize_embeddings(&mut embeddings);
+    }
+
+    Ok(embeddings)
+}
+
+/// Generate embeddings asynchronously for a list of text strings.
+///
+/// This is the async counterpart to [`embed_texts`]. It offloads the blocking
+/// ONNX inference work to a dedicated blocking thread pool via Tokio's
+/// `spawn_blocking`, keeping the async executor free.
+///
+/// Returns one embedding vector per input text in the same order.
+///
+/// # Arguments
+///
+/// * `texts` - Vec of strings to embed (owned, sent to blocking thread)
+/// * `config` - Embedding configuration specifying model, batch size, and normalization
+///
+/// # Errors
+///
+/// - `KreuzbergError::MissingDependency` if ONNX Runtime is not installed
+/// - `KreuzbergError::Embedding` if the preset name is unknown, model download fails,
+///   or the blocking inference task panics
+///
+/// # Example
+///
+/// ```rust,ignore
+/// use kreuzberg::{embed_texts_async, EmbeddingConfig};
+///
+/// let embeddings = embed_texts_async(
+///     vec!["Hello!".to_string()],
+///     &EmbeddingConfig::default(),
+/// ).await?;
+/// ```
+#[cfg(feature = "tokio-runtime")]
+pub async fn embed_texts_async<T: AsRef<str> + Send + 'static>(
+    texts: Vec<T>,
+    config: &crate::core::config::EmbeddingConfig,
+) -> crate::Result<Vec<Vec<f32>>> {
+    if texts.is_empty() {
+        return Ok(Vec::new());
+    }
+
+    // Acquire a permit from the global semaphore to limit concurrent ONNX
+    // inference calls, preventing resource exhaustion under high fan-out.
+    let _permit = EMBED_SEMAPHORE
+        .acquire()
+        .await
+        .map_err(|_| crate::KreuzbergError::embedding("Embedding semaphore closed".to_string()))?;
+
+    // Wrap config in Arc to avoid cloning the entire struct (strings, PathBuf)
+    // into the blocking closure.
+    let config = Arc::new(config.clone());
+    tokio::task::spawn_blocking(move || embed_texts(&texts, &config))
+        .await
+        .map_err(|e| crate::KreuzbergError::embedding(format!("Embedding task panicked: {e}")))?
 }
 
 #[cfg(test)]
@@ -676,5 +782,34 @@ mod tests {
         let balanced = get_preset("balanced").unwrap();
         assert_eq!(balanced.model_repo, "Xenova/bge-base-en-v1.5");
         assert_eq!(balanced.pooling, "cls");
+    }
+
+    #[test]
+    fn test_embed_texts_rejects_empty_string() {
+        let config = crate::core::config::EmbeddingConfig::default();
+        let texts = vec!["valid", ""];
+        let err = embed_texts(&texts, &config).unwrap_err();
+        let msg = err.to_string();
+        assert!(
+            msg.contains("position 2"),
+            "Error should identify the empty text position, got: {msg}"
+        );
+        assert!(msg.contains("empty"), "Error should mention empty text, got: {msg}");
+    }
+
+    #[test]
+    fn test_embed_texts_empty_list_returns_empty() {
+        let config = crate::core::config::EmbeddingConfig::default();
+        let texts: Vec<&str> = vec![];
+        let result = embed_texts(&texts, &config).unwrap();
+        assert!(result.is_empty());
+    }
+
+    #[test]
+    fn test_embed_texts_rejects_first_empty_string() {
+        let config = crate::core::config::EmbeddingConfig::default();
+        let texts = vec![""];
+        let err = embed_texts(&texts, &config).unwrap_err();
+        assert!(err.to_string().contains("position 1"));
     }
 }

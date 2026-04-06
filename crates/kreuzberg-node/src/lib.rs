@@ -56,7 +56,7 @@ pub use metadata::{
     unregister_document_extractor,
 };
 
-pub use embedding_presets::{EmbeddingPreset, get_embedding_preset, list_embedding_presets};
+pub use embedding_presets::{EmbeddingPreset, embed, embed_sync, get_embedding_preset, list_embedding_presets};
 
 pub use plugins::{
     clear_ocr_backends, clear_post_processors, clear_validators, list_ocr_backends, list_post_processors,
@@ -173,7 +173,10 @@ unsafe extern "C" {
     /// Get the internal error code constant (7)
     pub fn kreuzberg_error_code_internal() -> u32;
 
-    /// Get the total count of valid error codes (8)
+    /// Get the embedding error code constant (8)
+    pub fn kreuzberg_error_code_embedding() -> u32;
+
+    /// Get the total count of valid error codes (9)
     pub fn kreuzberg_error_code_count() -> u32;
 }
 

@@ -129,6 +129,12 @@ from kreuzberg._internal_bindings import (
     detect_mime_type_from_path as _detect_mime_type_from_path_impl,
 )
 from kreuzberg._internal_bindings import (
+    embed as _embed_impl,
+)
+from kreuzberg._internal_bindings import (
+    embed_sync as _embed_sync_impl,
+)
+from kreuzberg._internal_bindings import (
     error_code_name as _error_code_name_impl,
 )
 from kreuzberg._internal_bindings import (
@@ -284,6 +290,8 @@ __all__ = [
     "detect_mime_type",
     "detect_mime_type_from_path",
     "discover_extraction_config",
+    "embed",
+    "embed_sync",
     "error_code_name",
     "extract_bytes",
     "extract_bytes_sync",
@@ -642,6 +650,85 @@ async def batch_extract_bytes(
     _ensure_ocr_backend_registered(config, easyocr_kwargs)
 
     return await batch_extract_bytes_impl([bytes(d) for d in data_list], mime_types, config, file_configs)
+
+
+async def embed(
+    texts: list[str],
+    config: EmbeddingConfig | None = None,
+) -> list[list[float]]:
+    """Generate embeddings from a list of strings (asynchronous).
+
+    Args:
+        texts: List of strings to embed
+        config: Embedding configuration (uses defaults if None)
+
+    Returns:
+        list[list[float]]: One embedding vector per input text
+
+    Raises:
+        MissingDependencyError: If ONNX Runtime is not installed
+        EmbeddingError: If the preset name is unknown or model download fails
+        ValidationError: If input texts are invalid (e.g., empty list or contains non-strings)
+
+    Example:
+        >>> import asyncio
+        >>> from kreuzberg import embed, EmbeddingConfig, EmbeddingModelType
+        >>> async def main():
+        ...     config = EmbeddingConfig(model=EmbeddingModelType.preset("balanced"))
+        ...     result = await embed(["Hello, world!"], config=config)
+        ...     print(len(result))  # 1
+        >>> asyncio.run(main())  # doctest: +SKIP
+    """
+    if not texts:
+        raise ValidationError("No texts provided for embedding generation")
+
+    if not all(isinstance(t, str) for t in texts):
+        raise ValidationError("All text entries must be strings")
+
+    if any(not t.strip() for t in texts):
+        raise ValidationError("All text entries must be non-empty strings")
+
+    if config is None:
+        config = EmbeddingConfig()
+    return await _embed_impl(texts, config)
+
+
+def embed_sync(
+    texts: list[str],
+    config: EmbeddingConfig | None = None,
+) -> list[list[float]]:
+    """Generate embeddings from a list of strings (synchronous).
+
+    Args:
+        texts: List of strings to embed
+        config: Embedding configuration (uses defaults if None)
+
+    Returns:
+        list[list[float]]: One embedding vector per input text
+
+    Raises:
+        MissingDependencyError: If ONNX Runtime is not installed
+        EmbeddingError: If the preset name is unknown or model download fails
+        ValidationError: If input texts are invalid (e.g., empty list or contains non-strings)
+
+    Example:
+        >>> from kreuzberg import embed_sync, EmbeddingConfig, EmbeddingModelType
+        >>> config = EmbeddingConfig(model=EmbeddingModelType.preset("balanced"))
+        >>> result = embed_sync(["Hello, world!"], config=config)  # doctest: +SKIP
+        >>> len(result)  # 1  # doctest: +SKIP
+    """
+    if not texts:
+        raise ValidationError("No texts provided for embedding generation")
+
+    if not all(isinstance(t, str) for t in texts):
+        raise ValidationError("All text entries must be strings")
+
+    if any(not t.strip() for t in texts):
+        raise ValidationError("All text entries must be non-empty strings")
+
+    if config is None:
+        config = EmbeddingConfig()
+    return _embed_sync_impl(texts, config)
 
 
 def detect_mime_type(data: bytes | bytearray) -> str:

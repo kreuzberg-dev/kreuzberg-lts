@@ -852,4 +852,36 @@ class Helpers
             sprintf('Expected at least %d bytes, got %d', $minLength, strlen($data))
         );
     }
+
+    public static function assertEmbedResult(array $results, int $count, int $dimensions, bool $noNan, bool $noInf, bool $nonZero): void
+    {
+        Assert::assertNotNull($results);
+        if ($count >= 0) {
+            Assert::assertCount($count, $results, sprintf("Expected %d vectors, got %d", $count, count($results)));
+        }
+        if (count($results) > 0) {
+            foreach ($results as $i => $vector) {
+                Assert::assertNotNull($vector);
+                if ($dimensions > 0) {
+                    Assert::assertCount($dimensions, $vector, sprintf("Vector %d expected length %d, got %d", $i, $dimensions, count($vector)));
+                }
+
+                $hasNonZero = false;
+                foreach ($vector as $j => $v) {
+                    if ($noNan) {
+                        Assert::assertFalse(is_nan($v), sprintf("Vector %d element %d is NaN", $i, $j));
+                    }
+                    if ($noInf) {
+                        Assert::assertFalse(is_infinite($v), sprintf("Vector %d element %d is infinite", $i, $j));
+                    }
+                    if ($v != 0.0) {
+                        $hasNonZero = true;
+                    }
+                }
+                if ($nonZero) {
+                    Assert::assertTrue($hasNonZero, sprintf("Vector %d is all zeros", $i));
+                }
+            }
+        }
+    }
 }

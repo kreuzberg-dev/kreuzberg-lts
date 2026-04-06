@@ -837,9 +837,7 @@ defmodule E2E.OfficeTest do
            ) do
         {:ok, result} ->
           result
-          |> E2E.Helpers.assert_expected_mime([
-            "application/vnd.openxmlformats-officedocument.presentationml.slideshow"
-          ])
+          |> E2E.Helpers.assert_expected_mime(["application/vnd.openxmlformats-officedocument.presentationml.slideshow"])
           |> E2E.Helpers.assert_min_content_length(10)
 
         {:skipped, reason} ->

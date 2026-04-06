@@ -818,4 +818,45 @@ defmodule E2E.Helpers do
     assert byte_size(data) >= min_length,
            "Expected at least #{min_length} bytes, got #{byte_size(data)}"
   end
+
+  def assert_embed_result(results, count, dimensions, no_nan, no_inf, non_zero) do
+    assert is_list(results), "Expected results to be a list"
+
+    if count >= 0 do
+      assert length(results) == count, "Expected #{count} vectors, got #{length(results)}"
+    end
+
+    if length(results) > 0 do
+      Enum.with_index(results)
+      |> Enum.each(fn {vector, i} ->
+        assert is_list(vector) or is_struct(vector, Nx.Tensor), "Expected vector to be list or Tensor"
+        # Convert to list if it's a tensor for easier checks if needed,
+        # but here we assume it's a list for simplicity or we use Enum functions.
+        list_vector =
+          if is_struct(vector, Nx.Tensor), do: Nx.to_flat_list(vector), else: vector
+
+        if dimensions > 0 do
+          assert length(list_vector) == dimensions,
+                 "Vector #{i} expected length #{dimensions}, got #{length(list_vector)}"
+        end
+
+        has_non_zero =
+          Enum.reduce(Enum.with_index(list_vector), false, fn {v, j}, acc ->
+            if no_nan do
+              assert not is_nan(v), "Vector #{i} element #{j} is NaN"
+            end
+
+            if no_inf do
+              assert v != :infinity and v != :neg_infinity, "Vector #{i} element #{j} is infinite"
+            end
+
+            acc or v != 0.0
+          end)
+
+        if non_zero do
+          assert has_non_zero, "Vector #{i} is all zeros"
+        end
+      end)
+    end
+  end
 end

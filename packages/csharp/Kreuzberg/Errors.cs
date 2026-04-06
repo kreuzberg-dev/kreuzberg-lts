@@ -31,6 +31,8 @@ public enum KreuzbergErrorKind
     UnsupportedFormat,
     /// <summary>Runtime error (lock poisoning, unsupported operation, etc.).</summary>
     Runtime,
+    /// <summary>Error during text embedding generation.</summary>
+    Embedding,
 }
 
 /// <summary>
@@ -268,6 +270,22 @@ public class KreuzbergRuntimeException : Exception, IKreuzbergError
 }
 
 /// <summary>
+/// Exception thrown when text embedding generation fails.
+/// </summary>
+public class KreuzbergEmbeddingException : KreuzbergException
+{
+    /// <summary>
+    /// Initializes a new instance of the KreuzbergEmbeddingException class.
+    /// </summary>
+    /// <param name="message">The embedding error message.</param>
+    /// <param name="inner">The inner exception that caused this error, if any.</param>
+    public KreuzbergEmbeddingException(string message, Exception? inner = null)
+        : base(KreuzbergErrorKind.Embedding, ErrorMapper.PrefixMessage(message, "Embedding error"), inner)
+    {
+    }
+}
+
+/// <summary>
 /// Internal utility class for mapping native Kreuzberg errors to .NET exceptions.
 /// This class parses error messages from the Rust FFI layer and creates appropriate exception types.
 /// </summary>
@@ -350,6 +368,11 @@ internal static class ErrorMapper
             trimmed.StartsWith("Unsupported operation:", StringComparison.OrdinalIgnoreCase))
         {
             return new KreuzbergRuntimeException(trimmed);
+        }
+
+        if (trimmed.StartsWith("Embedding error:", StringComparison.OrdinalIgnoreCase))
+        {
+            return new KreuzbergEmbeddingException(trimmed);
         }
 
         return new KreuzbergRuntimeException(trimmed);

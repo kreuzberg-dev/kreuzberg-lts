@@ -448,6 +448,82 @@ public final class Kreuzberg {
 		return future;
 	}
 
+	private static MemorySegment encodeEmbeddingConfig(Arena arena, dev.kreuzberg.config.EmbeddingConfig config) throws KreuzbergException {
+		try {
+			String json = ResultParser.toJsonValue(config.toMap());
+			return KreuzbergFFI.allocateCString(arena, json);
+		} catch (Throwable e) {
+			throw new KreuzbergException("Failed to serialize embedding config", e);
+		}
+	}
+
+	/**
+	 * Generate embeddings from a list of text strings.
+	 *
+	 * <p>Each input text is encoded into a dense floating-point vector using the
+	 * configured ONNX embedding model. The returned array contains one vector per
+	 * input text, in the same order.</p>
+	 *
+	 * @param texts  list of strings to embed; must not be {@code null}
+	 * @param config embedding configuration (model, batch size, normalization), or {@code null} for defaults
+	 * @return a 2-D array where {@code result[i]} is the embedding vector for {@code texts.get(i)}
+	 * @throws KreuzbergException if the embedding model fails or the FFI call returns an error
+	 */
+	public static float[][] embed(List<String> texts, dev.kreuzberg.config.EmbeddingConfig config) throws KreuzbergException {
+		Objects.requireNonNull(texts, "texts must not be null");
+		if (texts.isEmpty()) {
+			return new float[0][0];
+		}
+
+		FFI_LOCK.lock();
+		try (Arena arena = Arena.ofConfined()) {
+			String textsJson = ResultParser.toJsonValue(texts);
+			MemorySegment textsSegment = KreuzbergFFI.allocateCString(arena, textsJson);
+			MemorySegment configSegment = config == null ? MemorySegment.NULL : encodeEmbeddingConfig(arena, config);
+
+			MemorySegment resultPtr = (MemorySegment) KreuzbergFFI.KREUZBERG_EMBED.invoke(textsSegment, configSegment);
+			if (resultPtr == null || resultPtr.address() == 0) {
+				throw KreuzbergFFI.createTypedException("Embedding failed");
+			}
+
+			try {
+				String json = KreuzbergFFI.readCString(resultPtr);
+				return ResultParser.parseFloatArrays(json);
+			} finally {
+				KreuzbergFFI.KREUZBERG_FREE_STRING.invoke(resultPtr);
+			}
+		} catch (KreuzbergException e) {
+			throw e;
+		} catch (Throwable e) {
+			throw new KreuzbergException("Unexpected error during embeddings generation", e);
+		} finally {
+			FFI_LOCK.unlock();
+		}
+	}
+
+	/**
+	 * Generate embeddings asynchronously from a list of text strings.
+	 *
+	 * <p>Delegates to {@link #embed(List, dev.kreuzberg.config.EmbeddingConfig)} on a
+	 * background thread and returns the result as a {@link CompletableFuture}.</p>
+	 *
+	 * @param texts  list of strings to embed; must not be {@code null}
+	 * @param config embedding configuration (model, batch size, normalization), or {@code null} for defaults
+	 * @return a future that completes with a 2-D float array of embedding vectors
+	 */
+	public static CompletableFuture<float[][]> embedAsync(List<String> texts, dev.kreuzberg.config.EmbeddingConfig config) {
+		CompletableFuture<float[][]> future = new CompletableFuture<>();
+		CompletableFuture.runAsync(() -> {
+			try {
+				float[][] results = embed(texts, config);
+				future.complete(results);
+			} catch (Throwable e) {
+				future.completeExceptionally(e);
+			}
+		});
+		return future;
+	}
+
 	public static String detectMimeType(String path) throws KreuzbergException {
 		return detectMimeType(path, true);
 	}
