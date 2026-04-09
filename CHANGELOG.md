@@ -26,6 +26,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - **PPTX: panic on non-char-boundary during page boundary recomputation** — byte offsets could land inside multi-byte UTF-8 characters (e.g. `…` U+2026), causing a panic when slicing content (#674)
+- **PDF: `include_headers` / `include_footers` flags ignored by layout-model furniture stripping** — when a layout-detection model classified paragraphs as `PageHeader` or `PageFooter`, they were unconditionally stripped as furniture regardless of `ContentFilterConfig` flag values. Setting `strip_repeating_text=false` with `include_headers=true` now correctly preserves those regions (#670)
+- **PPTX: `ImageExtractionConfig.inject_placeholders` silently ignored** — setting `inject_placeholders=false` now correctly suppresses `![alt](target)` image references in PPTX markdown output (#671, #677)
+- **DOCX/HTML/DocBook/LaTeX/RST: `inject_placeholders` config ignored** — all extractors now honour `ImageExtractionConfig.inject_placeholders` to suppress image reference injection when set to `false`
+- **PPTX public API cleanup** — `extract_pptx_from_path` and `extract_pptx_from_bytes` now accept `&PptxExtractionOptions` instead of 6 positional parameters
 
 ---
 

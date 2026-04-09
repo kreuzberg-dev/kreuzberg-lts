@@ -427,7 +427,7 @@ impl LatexExtractor {
     ///
     /// Captures `\label{}` as anchors, `\ref{}` as CrossReference relationships,
     /// `\cite{}` as CitationReference relationships, and footnotes.
-    pub fn build_internal_document(source: &str) -> InternalDocument {
+    pub fn build_internal_document(source: &str, inject_placeholders: bool) -> InternalDocument {
         let mut b = InternalDocumentBuilder::new("latex");
         let lines: Vec<&str> = source.lines().collect();
         let mut in_document = false;
@@ -537,13 +537,19 @@ impl LatexExtractor {
                         let label = Self::extract_label(&env_content);
                         if let Some(path) = Self::extract_includegraphics_path(&env_content) {
                             b.push_uri(Uri::image(&path, caption.clone()));
-                            let idx = b.push_paragraph(&format!("[image: {}]", path), vec![], None, None);
-                            if let Some(lbl) = label {
-                                b.set_anchor(idx, &lbl);
-                            }
-                            if let Some(cap) = caption {
-                                let cap_idx = b.push_paragraph(&cap, vec![], None, None);
-                                b.push_relationship(cap_idx, RelationshipTarget::Index(idx), RelationshipKind::Caption);
+                            if inject_placeholders {
+                                let idx = b.push_paragraph(&format!("[image: {}]", path), vec![], None, None);
+                                if let Some(lbl) = label {
+                                    b.set_anchor(idx, &lbl);
+                                }
+                                if let Some(cap) = caption {
+                                    let cap_idx = b.push_paragraph(&cap, vec![], None, None);
+                                    b.push_relationship(
+                                        cap_idx,
+                                        RelationshipTarget::Index(idx),
+                                        RelationshipKind::Caption,
+                                    );
+                                }
                             }
                         }
                         i = new_i;
@@ -577,7 +583,7 @@ impl LatexExtractor {
                         b.push_quote_start();
                         // Recursively process the quote content
                         let inner_lines: Vec<&str> = env_content.lines().collect();
-                        Self::build_internal_body(&mut b, &inner_lines, heading_map);
+                        Self::build_internal_body(&mut b, &inner_lines, heading_map, inject_placeholders);
                         b.push_quote_end();
                         i = new_i;
                         continue;
@@ -606,7 +612,7 @@ impl LatexExtractor {
                         } else {
                             // Process center content normally
                             let inner_lines: Vec<&str> = env_content.lines().collect();
-                            Self::build_internal_body(&mut b, &inner_lines, heading_map);
+                            Self::build_internal_body(&mut b, &inner_lines, heading_map, inject_placeholders);
                         }
                         i = new_i;
                         continue;
@@ -615,14 +621,14 @@ impl LatexExtractor {
                         // For unknown environments, try to extract text content
                         let (env_content, new_i) = collect_environment(&lines, i, &env_name);
                         let inner_lines: Vec<&str> = env_content.lines().collect();
-                        Self::build_internal_body(&mut b, &inner_lines, heading_map);
+                        Self::build_internal_body(&mut b, &inner_lines, heading_map, inject_placeholders);
                         i = new_i;
                         continue;
                     }
                 }
             }
 
-            Self::process_content_line(trimmed, &lines, &mut i, &mut b, heading_map);
+            Self::process_content_line(trimmed, &lines, &mut i, &mut b, heading_map, inject_placeholders);
 
             i += 1;
         }
@@ -635,6 +641,7 @@ impl LatexExtractor {
         b: &mut InternalDocumentBuilder,
         lines: &[&str],
         heading_map: &ahash::AHashMap<&'static str, u8>,
+        inject_placeholders: bool,
     ) {
         let mut i = 0;
         while i < lines.len() {
@@ -686,7 +693,7 @@ impl LatexExtractor {
                         let (env_content, new_i) = collect_environment(lines, i, &env_name);
                         b.push_quote_start();
                         let inner_lines: Vec<&str> = env_content.lines().collect();
-                        Self::build_internal_body(b, &inner_lines, heading_map);
+                        Self::build_internal_body(b, &inner_lines, heading_map, inject_placeholders);
                         b.push_quote_end();
                         i = new_i;
                         continue;
@@ -698,7 +705,7 @@ impl LatexExtractor {
                             b.push_paragraph("---", vec![], None, None);
                         } else {
                             let inner_lines: Vec<&str> = env_content.lines().collect();
-                            Self::build_internal_body(b, &inner_lines, heading_map);
+                            Self::build_internal_body(b, &inner_lines, heading_map, inject_placeholders);
                         }
                         i = new_i;
                         continue;
@@ -706,14 +713,14 @@ impl LatexExtractor {
                     _ => {
                         let (env_content, new_i) = collect_environment(lines, i, &env_name);
                         let inner_lines: Vec<&str> = env_content.lines().collect();
-                        Self::build_internal_body(b, &inner_lines, heading_map);
+                        Self::build_internal_body(b, &inner_lines, heading_map, inject_placeholders);
                         i = new_i;
                         continue;
                     }
                 }
             }
 
-            Self::process_content_line(trimmed, lines, &mut i, b, heading_map);
+            Self::process_content_line(trimmed, lines, &mut i, b, heading_map, inject_placeholders);
 
             i += 1;
         }
@@ -772,6 +779,7 @@ impl LatexExtractor {
         i: &mut usize,
         b: &mut InternalDocumentBuilder,
         heading_map: &ahash::AHashMap<&'static str, u8>,
+        inject_placeholders: bool,
     ) {
         if trimmed.is_empty() || trimmed.starts_with('%') {
             return;
@@ -822,7 +830,9 @@ impl LatexExtractor {
             && let Some(path) = Self::extract_includegraphics_path(trimmed)
         {
             b.push_uri(Uri::image(&path, None));
-            b.push_paragraph(&format!("[image: {}]", path), vec![], None, None);
+            if inject_placeholders {
+                b.push_paragraph(&format!("[image: {}]", path), vec![], None, None);
+            }
             return;
         }
 
@@ -1098,10 +1108,14 @@ impl DocumentExtractor for LatexExtractor {
         config: &ExtractionConfig,
     ) -> Result<InternalDocument> {
         tracing::debug!(format = "latex", size_bytes = content.len(), "extraction starting");
-        let _ = config;
+        let inject_placeholders = config
+            .images
+            .as_ref()
+            .map(|img| img.inject_placeholders)
+            .unwrap_or(true);
         let latex_str = String::from_utf8_lossy(content).into_owned();
         let (_text, metadata, _tables) = Self::extract_from_latex(&latex_str);
-        let mut doc = Self::build_internal_document(&latex_str);
+        let mut doc = Self::build_internal_document(&latex_str, inject_placeholders);
         doc.mime_type = std::borrow::Cow::Owned(mime_type.to_string());
         doc.metadata = metadata;
         tracing::debug!(
@@ -1236,5 +1250,36 @@ mod tests {
         let (content, consumed) = LatexExtractor::read_braced_content("outer {inner} end}rest").unwrap();
         assert_eq!(content, "outer {inner} end");
         assert_eq!(&"outer {inner} end}rest"[consumed..], "rest");
+    }
+
+    #[test]
+    fn test_latex_inject_placeholders_true() {
+        let latex = r#"\documentclass{article}
+\begin{document}
+\begin{figure}
+\includegraphics{photo.png}
+\caption{A photo}
+\end{figure}
+\end{document}"#;
+        let doc = LatexExtractor::build_internal_document(latex, true);
+        let has_image = doc.elements.iter().any(|e| e.text.contains("[image:"));
+        assert!(has_image, "expected image placeholder with inject_placeholders=true");
+    }
+
+    #[test]
+    fn test_latex_inject_placeholders_false() {
+        let latex = r#"\documentclass{article}
+\begin{document}
+\begin{figure}
+\includegraphics{photo.png}
+\caption{A photo}
+\end{figure}
+\end{document}"#;
+        let doc = LatexExtractor::build_internal_document(latex, false);
+        let has_image = doc.elements.iter().any(|e| e.text.contains("[image:"));
+        assert!(
+            !has_image,
+            "expected no image placeholder with inject_placeholders=false"
+        );
     }
 }

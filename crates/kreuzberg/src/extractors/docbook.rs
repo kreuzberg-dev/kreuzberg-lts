@@ -131,7 +131,7 @@ fn ensure_root_element(content: &str) -> std::borrow::Cow<'_, str> {
 }
 
 /// Build an `InternalDocument` from DocBook XML content.
-fn build_docbook_internal_document(content: &str) -> Result<InternalDocument> {
+fn build_docbook_internal_document(content: &str, inject_placeholders: bool) -> Result<InternalDocument> {
     let wrapped = ensure_root_element(content);
     let mut reader = Reader::from_str(&wrapped);
     let mut builder = InternalDocumentBuilder::new("docbook");
@@ -245,10 +245,12 @@ fn build_docbook_internal_document(content: &str) -> Result<InternalDocument> {
                     }
                     "figure" => {
                         let caption = extract_figure_with_caption(&mut reader)?;
-                        if !caption.is_empty() {
-                            builder.push_paragraph(&format!("[Figure: {}]", caption), vec![], None, None);
-                        } else {
-                            builder.push_paragraph("[Figure]", vec![], None, None);
+                        if inject_placeholders {
+                            if !caption.is_empty() {
+                                builder.push_paragraph(&format!("[Figure: {}]", caption), vec![], None, None);
+                            } else {
+                                builder.push_paragraph("[Figure]", vec![], None, None);
+                            }
                         }
                     }
                     "footnote" => {
@@ -997,7 +999,7 @@ impl DocumentExtractor for DocbookExtractor {
     #[cfg_attr(
         feature = "otel",
         tracing::instrument(
-            skip(self, content, _config),
+            skip(self, content, config),
             fields(
                 extractor.name = self.name(),
                 content.size_bytes = content.len(),
@@ -1008,7 +1010,7 @@ impl DocumentExtractor for DocbookExtractor {
         &self,
         content: &[u8],
         mime_type: &str,
-        _config: &ExtractionConfig,
+        config: &ExtractionConfig,
     ) -> Result<InternalDocument> {
         let docbook_content = utf8_validation::from_utf8(content)
             .map(|s| s.to_string())
@@ -1050,7 +1052,12 @@ impl DocumentExtractor for DocbookExtractor {
                 .insert(std::borrow::Cow::Borrowed("copyright"), serde_json::json!(cr_val));
         }
 
-        let mut doc = build_docbook_internal_document(&docbook_content)?;
+        let inject_placeholders = config
+            .images
+            .as_ref()
+            .map(|img| img.inject_placeholders)
+            .unwrap_or(true);
+        let mut doc = build_docbook_internal_document(&docbook_content, inject_placeholders)?;
         doc.mime_type = std::borrow::Cow::Owned(mime_type.to_string());
         doc.metadata = metadata;
 
@@ -1235,5 +1242,34 @@ mod tests {
 
         let (content, _, _, _, _, _, _) = parse_docbook_single_pass(docbook, false).expect("Parse failed");
         assert!(content.contains("[the site]"), "expected link markup, got: {content}");
+    }
+
+    #[test]
+    fn test_docbook_inject_placeholders_true() {
+        let docbook = r#"<article>
+  <figure>
+    <title>Architecture Diagram</title>
+    <mediaobject><imageobject><imagedata fileref="arch.png"/></imageobject></mediaobject>
+  </figure>
+</article>"#;
+        let doc = build_docbook_internal_document(docbook, true).expect("parse failed");
+        let has_figure = doc.elements.iter().any(|e| e.text.contains("[Figure"));
+        assert!(has_figure, "expected figure placeholder with inject_placeholders=true");
+    }
+
+    #[test]
+    fn test_docbook_inject_placeholders_false() {
+        let docbook = r#"<article>
+  <figure>
+    <title>Architecture Diagram</title>
+    <mediaobject><imageobject><imagedata fileref="arch.png"/></imageobject></mediaobject>
+  </figure>
+</article>"#;
+        let doc = build_docbook_internal_document(docbook, false).expect("parse failed");
+        let has_figure = doc.elements.iter().any(|e| e.text.contains("[Figure"));
+        assert!(
+            !has_figure,
+            "expected no figure placeholder with inject_placeholders=false"
+        );
     }
 }

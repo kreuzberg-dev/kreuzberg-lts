@@ -272,7 +272,11 @@ impl Document {
     }
 
     /// Render the document as markdown.
-    pub fn to_markdown(&self) -> String {
+    ///
+    /// When `inject_placeholders` is `true`, drawings that reference an image
+    /// emit `![alt](image)` placeholders. When `false` they are silently
+    /// skipped, which is useful when the caller only wants text.
+    pub fn to_markdown(&self, inject_placeholders: bool) -> String {
         use std::fmt::Write;
 
         let mut output = String::new();
@@ -310,14 +314,16 @@ impl Document {
                         if drawing.image_ref.is_none() {
                             continue;
                         }
-                        let alt = drawing
-                            .doc_properties
-                            .as_ref()
-                            .and_then(|dp| dp.description.as_deref())
-                            .unwrap_or("");
-                        // Ensure blank line separation before image
-                        Self::ensure_blank_line(&mut output);
-                        let _ = writeln!(output, "![{}](image)", alt);
+                        if inject_placeholders {
+                            let alt = drawing
+                                .doc_properties
+                                .as_ref()
+                                .and_then(|dp| dp.description.as_deref())
+                                .unwrap_or("");
+                            // Ensure blank line separation before image
+                            Self::ensure_blank_line(&mut output);
+                            let _ = writeln!(output, "![{}](image)", alt);
+                        }
                         prev_was_list = false;
                     }
                 }
@@ -2273,7 +2279,7 @@ mod tests {
         doc.footers.push(footer);
 
         // Headers/footers should NOT appear in text output
-        let md = doc.to_markdown();
+        let md = doc.to_markdown(true);
         assert!(!md.contains("Header Text"), "Header should not be in markdown output");
         assert!(md.contains("Body content"), "Should contain body content");
         assert!(!md.contains("Footer Text"), "Footer should not be in markdown output");
@@ -2948,7 +2954,7 @@ mod tests {
         let xml = wrap_body(r#"<w:p><w:r><w:rPr><w:b/></w:rPr><w:t>Bold</w:t></w:r></w:p>"#);
         let doc = parse_xml(&xml);
         assert!(doc.paragraphs[0].runs[0].bold);
-        let md = doc.to_markdown();
+        let md = doc.to_markdown(true);
         assert!(md.contains("**Bold**"), "Markdown: {}", md);
     }
 
@@ -2964,7 +2970,7 @@ mod tests {
         let xml = wrap_body(r#"<w:p><w:r><w:rPr><w:i/></w:rPr><w:t>Italic</w:t></w:r></w:p>"#);
         let doc = parse_xml(&xml);
         assert!(doc.paragraphs[0].runs[0].italic);
-        let md = doc.to_markdown();
+        let md = doc.to_markdown(true);
         assert!(md.contains("*Italic*"), "Markdown: {}", md);
     }
 
@@ -2975,7 +2981,7 @@ mod tests {
         let run = &doc.paragraphs[0].runs[0];
         assert!(run.bold);
         assert!(run.italic);
-        let md = doc.to_markdown();
+        let md = doc.to_markdown(true);
         assert!(md.contains("***Both***"), "Markdown: {}", md);
     }
 
@@ -2998,7 +3004,7 @@ mod tests {
         let xml = wrap_body(r#"<w:p><w:r><w:rPr><w:strike/></w:rPr><w:t>Struck</w:t></w:r></w:p>"#);
         let doc = parse_xml(&xml);
         assert!(doc.paragraphs[0].runs[0].strikethrough);
-        let md = doc.to_markdown();
+        let md = doc.to_markdown(true);
         assert!(md.contains("~~Struck~~"), "Markdown: {}", md);
     }
 
@@ -3023,7 +3029,7 @@ mod tests {
         assert_eq!(run.text, "Click here");
         assert_eq!(run.hyperlink_url.as_deref(), Some("https://example.com"));
 
-        let md = doc.to_markdown();
+        let md = doc.to_markdown(true);
         assert!(md.contains("[Click here](https://example.com)"), "Markdown: {}", md);
     }
 
@@ -3051,7 +3057,7 @@ mod tests {
             </w:p>"#,
         );
         let doc = parse_xml_with_rels(&xml, rels);
-        let md = doc.to_markdown();
+        let md = doc.to_markdown(true);
         assert!(md.contains("[First](https://one.com)"), "Markdown: {}", md);
         assert!(md.contains("[Second](https://two.com)"), "Markdown: {}", md);
     }
@@ -3078,7 +3084,7 @@ mod tests {
         assert_eq!(table.rows.len(), 2);
         assert_eq!(table.rows[0].cells.len(), 2);
 
-        let md = doc.to_markdown();
+        let md = doc.to_markdown(true);
         assert!(md.contains("A1"), "Markdown: {}", md);
         assert!(md.contains("B2"), "Markdown: {}", md);
 
@@ -3107,7 +3113,7 @@ mod tests {
         let caption = doc.tables[0].properties.as_ref().and_then(|p| p.caption.as_deref());
         assert_eq!(caption, Some("My Table Caption"));
 
-        let md = doc.to_markdown();
+        let md = doc.to_markdown(true);
         assert!(md.contains("My Table Caption"), "Caption should be in markdown: {}", md);
 
         let plain = doc.to_plain_text();
@@ -3189,7 +3195,7 @@ mod tests {
         let doc = parse_xml(&xml);
         let table = &doc.tables[0];
         assert_eq!(table.rows[0].cells.len(), 2);
-        let md = doc.to_markdown();
+        let md = doc.to_markdown(true);
         assert!(md.contains("Has content"), "Markdown: {}", md);
     }
 
@@ -3224,7 +3230,7 @@ mod tests {
         );
         let doc = parse_xml(&xml);
         assert_eq!(doc.paragraphs[0].style.as_deref(), Some("Heading1"));
-        let md = doc.to_markdown();
+        let md = doc.to_markdown(true);
         assert!(md.contains("# My Heading"), "Markdown: {}", md);
     }
 
@@ -3237,7 +3243,7 @@ mod tests {
             </w:p>"#,
         );
         let doc = parse_xml(&xml);
-        let md = doc.to_markdown();
+        let md = doc.to_markdown(true);
         assert!(md.contains("## Sub Heading"), "Markdown: {}", md);
     }
 
@@ -3250,7 +3256,7 @@ mod tests {
             </w:p>"#,
         );
         let doc = parse_xml(&xml);
-        let md = doc.to_markdown();
+        let md = doc.to_markdown(true);
         // Title maps to heading level (varies by implementation)
         assert!(md.contains("Document Title"), "Markdown: {}", md);
     }
@@ -3287,7 +3293,7 @@ mod tests {
         );
         assert_eq!(drawing.image_ref.as_deref(), Some("rId5"));
 
-        let md = doc.to_markdown();
+        let md = doc.to_markdown(true);
         assert!(md.contains("![A logo image]"), "Markdown: {}", md);
     }
 
@@ -3470,7 +3476,7 @@ mod tests {
         assert!(matches!(doc.elements[2], DocumentElement::Paragraph(1)));
 
         // Verify ordering in output
-        let md = doc.to_markdown();
+        let md = doc.to_markdown(true);
         let para1_pos = md.find("Para 1").unwrap();
         let cell_pos = md.find("Cell").unwrap();
         let para2_pos = md.find("Para 2").unwrap();
@@ -3486,7 +3492,7 @@ mod tests {
         let doc = parse_xml(&xml);
         assert!(doc.paragraphs.is_empty());
         assert!(doc.tables.is_empty());
-        let md = doc.to_markdown();
+        let md = doc.to_markdown(true);
         assert!(md.trim().is_empty(), "Empty doc markdown: '{}'", md);
     }
 
@@ -3570,7 +3576,7 @@ mod tests {
         let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../test_documents/docx/textbox.docx");
         if let Ok(bytes) = std::fs::read(&path) {
             let doc = super::parse_document(&bytes).unwrap();
-            let md = doc.to_markdown();
+            let md = doc.to_markdown(true);
             assert!(
                 !md.contains("****"),
                 "Markdown output should not contain spurious '****' sequences. Got:\n{}",
@@ -3588,5 +3594,70 @@ mod tests {
             assert!(!text.is_empty());
             // After Fix 1: Headers/footers should not appear in text output
         }
+    }
+
+    #[test]
+    fn test_to_markdown_inject_placeholders_true() {
+        use crate::extraction::docx::drawing::{DocProperties, Drawing, DrawingType};
+
+        let mut doc = Document::new();
+
+        let mut para = Paragraph::new();
+        para.add_run(Run::new("Hello world".to_string()));
+        let p_idx = doc.paragraphs.len();
+        doc.paragraphs.push(para);
+        doc.elements.push(DocumentElement::Paragraph(p_idx));
+
+        let drawing = Drawing {
+            drawing_type: DrawingType::Inline,
+            extent: None,
+            doc_properties: Some(DocProperties {
+                id: Some("1".to_string()),
+                name: Some("Pic".to_string()),
+                description: Some("alt text".to_string()),
+            }),
+            image_ref: Some("rId1".to_string()),
+        };
+        let d_idx = doc.drawings.len();
+        doc.drawings.push(drawing);
+        doc.elements.push(DocumentElement::Drawing(d_idx));
+
+        let md = doc.to_markdown(true);
+        assert!(
+            md.contains("![alt text](image)"),
+            "Expected image placeholder, got: {md}"
+        );
+        assert!(md.contains("Hello world"));
+    }
+
+    #[test]
+    fn test_to_markdown_inject_placeholders_false() {
+        use crate::extraction::docx::drawing::{DocProperties, Drawing, DrawingType};
+
+        let mut doc = Document::new();
+
+        let mut para = Paragraph::new();
+        para.add_run(Run::new("Hello world".to_string()));
+        let p_idx = doc.paragraphs.len();
+        doc.paragraphs.push(para);
+        doc.elements.push(DocumentElement::Paragraph(p_idx));
+
+        let drawing = Drawing {
+            drawing_type: DrawingType::Inline,
+            extent: None,
+            doc_properties: Some(DocProperties {
+                id: Some("1".to_string()),
+                name: Some("Pic".to_string()),
+                description: Some("alt text".to_string()),
+            }),
+            image_ref: Some("rId1".to_string()),
+        };
+        let d_idx = doc.drawings.len();
+        doc.drawings.push(drawing);
+        doc.elements.push(DocumentElement::Drawing(d_idx));
+
+        let md = doc.to_markdown(false);
+        assert!(!md.contains("!["), "Should NOT contain image placeholder, got: {md}");
+        assert!(md.contains("Hello world"), "Text content must be preserved");
     }
 }

@@ -796,12 +796,13 @@ fn parse_docx_core(
     content: &[u8],
     include_doc_structure: bool,
     output_format: crate::core::config::OutputFormat,
+    inject_placeholders: bool,
 ) -> crate::error::Result<DocxParseResult> {
     let doc = crate::extraction::docx::parser::parse_document(content)?;
     let text = match output_format {
         crate::core::config::OutputFormat::Markdown
         | crate::core::config::OutputFormat::Djot
-        | crate::core::config::OutputFormat::Html => doc.to_markdown(),
+        | crate::core::config::OutputFormat::Html => doc.to_markdown(inject_placeholders),
         _ => doc.to_plain_text(),
     };
     let tables: Vec<Table> = doc
@@ -935,6 +936,11 @@ impl DocumentExtractor for DocxExtractor {
         };
 
         let include_doc_structure = config.include_document_structure;
+        let inject_placeholders = config
+            .images
+            .as_ref()
+            .map(|img| img.inject_placeholders)
+            .unwrap_or(true);
         let (text, tables, page_boundaries, drawings, image_rels, _doc_structure, mut internal_doc) = {
             #[cfg(feature = "tokio-runtime")]
             if crate::core::batch_mode::is_batch_mode() {
@@ -942,16 +948,21 @@ impl DocumentExtractor for DocxExtractor {
                 let span = tracing::Span::current();
                 tokio::task::spawn_blocking(move || {
                     let _guard = span.entered();
-                    parse_docx_core(&content_owned, include_doc_structure, output_format)
+                    parse_docx_core(
+                        &content_owned,
+                        include_doc_structure,
+                        output_format,
+                        inject_placeholders,
+                    )
                 })
                 .await
                 .map_err(|e| crate::error::KreuzbergError::parsing(format!("DOCX extraction task failed: {}", e)))??
             } else {
-                parse_docx_core(content, include_doc_structure, output_format)?
+                parse_docx_core(content, include_doc_structure, output_format, inject_placeholders)?
             }
 
             #[cfg(not(feature = "tokio-runtime"))]
-            parse_docx_core(content, include_doc_structure, output_format)?
+            parse_docx_core(content, include_doc_structure, output_format, inject_placeholders)?
         };
 
         let mut archive = {
@@ -2309,7 +2320,7 @@ mod tests {
         doc.paragraphs.push(para2);
         doc.elements.push(DocumentElement::Paragraph(p2_idx));
 
-        let md = doc.to_markdown();
+        let md = doc.to_markdown(true);
         assert!(
             md.contains("![A test image](image)"),
             "Should have image placeholder: {}",

@@ -107,7 +107,7 @@ pub use office_metadata::{
 };
 
 #[cfg(feature = "office")]
-pub use pptx::{extract_pptx_from_bytes, extract_pptx_from_path};
+pub use pptx::{PptxExtractionOptions, extract_pptx_from_bytes, extract_pptx_from_path};
 
 #[cfg(feature = "xml")]
 pub use xml::parse_xml;

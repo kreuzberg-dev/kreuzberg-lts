@@ -39,7 +39,10 @@ impl HtmlExtractor {
     /// Walks the flat node array from html-to-markdown and uses `InternalDocumentBuilder`
     /// to construct the equivalent kreuzberg representation. Skips `RawBlock` nodes
     /// (script/style content) and `MetadataBlock` nodes (handled by metadata extraction).
-    fn map_document_structure(doc_structure: &html_to_markdown_rs::types::DocumentStructure) -> InternalDocument {
+    fn map_document_structure(
+        doc_structure: &html_to_markdown_rs::types::DocumentStructure,
+        inject_placeholders: bool,
+    ) -> InternalDocument {
         let mut b = InternalDocumentBuilder::new("html");
 
         // Track which nodes are list containers so we can manage open/close
@@ -55,7 +58,7 @@ impl HtmlExtractor {
             .map(|(i, _)| i)
             .collect();
 
-        Self::walk_nodes(doc_structure, &root_indices, &mut b);
+        Self::walk_nodes(doc_structure, &root_indices, &mut b, inject_placeholders);
 
         b.build()
     }
@@ -65,6 +68,7 @@ impl HtmlExtractor {
         doc: &html_to_markdown_rs::types::DocumentStructure,
         indices: &[usize],
         b: &mut InternalDocumentBuilder,
+        inject_placeholders: bool,
     ) {
         use html_to_markdown_rs::types::NodeContent as HC;
 
@@ -90,7 +94,7 @@ impl HtmlExtractor {
                 HC::List { ordered } => {
                     b.push_list(*ordered);
                     let child_indices: Vec<usize> = node.children.iter().map(|&i| i as usize).collect();
-                    Self::walk_nodes(doc, &child_indices, b);
+                    Self::walk_nodes(doc, &child_indices, b, inject_placeholders);
                     b.end_list();
                 }
                 HC::ListItem { text } => {
@@ -107,7 +111,7 @@ impl HtmlExtractor {
                     // Recurse into children (e.g. nested lists inside this item)
                     if !node.children.is_empty() {
                         let child_indices: Vec<usize> = node.children.iter().map(|&i| i as usize).collect();
-                        Self::walk_nodes(doc, &child_indices, b);
+                        Self::walk_nodes(doc, &child_indices, b, inject_placeholders);
                     }
                 }
                 HC::Table { grid } => {
@@ -121,10 +125,8 @@ impl HtmlExtractor {
                     b.push_table_from_cells(&cells, None, None);
                 }
                 HC::Image { description, src, .. } => {
-                    // Push as a paragraph with image description for now.
-                    // Actual image data extraction is handled separately via extract_html_inline_images.
                     let text = description.as_deref().unwrap_or("");
-                    if !text.is_empty() || src.is_some() {
+                    if inject_placeholders && (!text.is_empty() || src.is_some()) {
                         let display = if let Some(src) = src {
                             if text.is_empty() {
                                 format!("![]({})", src)
@@ -136,7 +138,7 @@ impl HtmlExtractor {
                         };
                         b.push_paragraph(&display, vec![], None, None);
                     }
-                    // Collect image URI reference
+                    // Always collect image URI reference regardless of inject_placeholders
                     if let Some(img_src) = src.as_ref().filter(|s| !s.is_empty()) {
                         b.push_uri(Uri::image(img_src.as_str(), description.clone()));
                     }
@@ -147,13 +149,13 @@ impl HtmlExtractor {
                 HC::Quote => {
                     b.push_quote_start();
                     let child_indices: Vec<usize> = node.children.iter().map(|&i| i as usize).collect();
-                    Self::walk_nodes(doc, &child_indices, b);
+                    Self::walk_nodes(doc, &child_indices, b, inject_placeholders);
                     b.push_quote_end();
                 }
                 HC::DefinitionList => {
                     // Walk children (DefinitionItem nodes)
                     let child_indices: Vec<usize> = node.children.iter().map(|&i| i as usize).collect();
-                    Self::walk_nodes(doc, &child_indices, b);
+                    Self::walk_nodes(doc, &child_indices, b, inject_placeholders);
                 }
                 HC::DefinitionItem { term, definition } => {
                     b.push_definition_term(term, None);
@@ -162,7 +164,7 @@ impl HtmlExtractor {
                 HC::Group { label, .. } => {
                     b.push_group_start(label.as_deref(), None);
                     let child_indices: Vec<usize> = node.children.iter().map(|&i| i as usize).collect();
-                    Self::walk_nodes(doc, &child_indices, b);
+                    Self::walk_nodes(doc, &child_indices, b, inject_placeholders);
                     b.push_group_end();
                 }
                 // Skip RawBlock (script/style content) and MetadataBlock (handled by metadata extraction)
@@ -350,8 +352,14 @@ impl SyncExtractor for HtmlExtractor {
         // Build InternalDocument from html-to-markdown's DocumentStructure.
         // If the structure has nodes, map them to InternalDocument elements.
         // Otherwise, fall back to a single paragraph with the converter's text output.
+        let inject_placeholders = config
+            .images
+            .as_ref()
+            .map(|img| img.inject_placeholders)
+            .unwrap_or(true);
+
         let mut doc = if let Some(ref structure) = doc_structure {
-            let mapped = Self::map_document_structure(structure);
+            let mapped = Self::map_document_structure(structure, inject_placeholders);
             if mapped.elements.is_empty() && !content_text.is_empty() {
                 // Structure collector didn't produce nodes (e.g. only images/lists which
                 // aren't collected yet). Use the converter's text as a paragraph.
@@ -775,7 +783,7 @@ mod tests {
         let (_, _, _, doc_structure) =
             crate::extraction::html::convert_html_to_markdown_with_tables(html, None, None).unwrap();
         let doc_structure = doc_structure.expect("should have document structure");
-        let doc = HtmlExtractor::map_document_structure(&doc_structure);
+        let doc = HtmlExtractor::map_document_structure(&doc_structure, true);
         assert!(!doc.elements.is_empty(), "Should have elements");
     }
 
@@ -823,7 +831,7 @@ mod tests {
                 crate::extraction::html::convert_html_to_markdown_with_tables(html, None, None).unwrap();
             ds.expect("should have document structure")
         };
-        let doc = HtmlExtractor::map_document_structure(&doc_structure);
+        let doc = HtmlExtractor::map_document_structure(&doc_structure, true);
 
         // Check that no element contains CSS or script content
         for elem in &doc.elements {
@@ -844,5 +852,44 @@ mod tests {
                 text
             );
         }
+    }
+
+    #[test]
+    fn test_html_inject_placeholders_true() {
+        let html = r#"<html><body><img src="test.png" alt="test image"></body></html>"#;
+        let (_, _, _, doc_structure) =
+            crate::extraction::html::convert_html_to_markdown_with_tables(html, None, None).unwrap();
+        let doc_structure = doc_structure.expect("should have document structure");
+        let doc = HtmlExtractor::map_document_structure(&doc_structure, true);
+        let content = doc.content();
+        assert!(
+            content.contains("!["),
+            "inject_placeholders=true should produce image markdown placeholder, got: '{}'",
+            content
+        );
+    }
+
+    #[test]
+    fn test_html_inject_placeholders_false() {
+        let html = r#"<html><body><img src="test.png" alt="test image"></body></html>"#;
+        let (_, _, _, doc_structure) =
+            crate::extraction::html::convert_html_to_markdown_with_tables(html, None, None).unwrap();
+        let doc_structure = doc_structure.expect("should have document structure");
+        let doc = HtmlExtractor::map_document_structure(&doc_structure, false);
+        let content = doc.content();
+        assert!(
+            !content.contains("!["),
+            "inject_placeholders=false should not produce image markdown placeholder, got: '{}'",
+            content
+        );
+        // URI should still be collected
+        assert!(
+            !doc.uris.is_empty(),
+            "Image URI should still be collected when inject_placeholders=false"
+        );
+        assert!(
+            doc.uris.iter().any(|u| u.url.contains("test.png")),
+            "Should have URI for test.png"
+        );
     }
 }

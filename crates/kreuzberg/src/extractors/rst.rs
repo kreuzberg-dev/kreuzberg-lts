@@ -715,7 +715,7 @@ impl RstExtractor {
     ///
     /// Handles sections, paragraphs, code blocks, tables, footnotes, citations,
     /// and cross-references.
-    pub fn build_internal_document(content: &str) -> InternalDocument {
+    pub fn build_internal_document(content: &str, inject_placeholders: bool) -> InternalDocument {
         let mut b = InternalDocumentBuilder::new("rst");
         let lines: Vec<&str> = content.lines().collect();
         let mut heading_char_order: Vec<char> = Vec::new();
@@ -857,11 +857,13 @@ impl RstExtractor {
                 if !uri.is_empty() {
                     b.push_uri(Uri::image(uri, alt.clone()));
                 }
-                let idx = b.push_paragraph(&format!("[image: {}]", desc), vec![], None, None);
-                if !uri.is_empty() {
-                    let mut attrs = ahash::AHashMap::new();
-                    attrs.insert("src".to_string(), uri.to_string());
-                    b.set_attributes(idx, attrs);
+                if inject_placeholders {
+                    let idx = b.push_paragraph(&format!("[image: {}]", desc), vec![], None, None);
+                    if !uri.is_empty() {
+                        let mut attrs = ahash::AHashMap::new();
+                        attrs.insert("src".to_string(), uri.to_string());
+                        b.set_attributes(idx, attrs);
+                    }
                 }
                 continue;
             }
@@ -1446,14 +1448,18 @@ impl DocumentExtractor for RstExtractor {
         config: &ExtractionConfig,
     ) -> Result<InternalDocument> {
         tracing::debug!(format = "rst", size_bytes = content.len(), "extraction starting");
-        let _ = config;
+        let inject_placeholders = config
+            .images
+            .as_ref()
+            .map(|img| img.inject_placeholders)
+            .unwrap_or(true);
         let text = String::from_utf8_lossy(content).into_owned();
 
         let (_extracted_text, metadata) = Self::extract_text_and_metadata(&text);
 
         let tables = Self::extract_tables(&text);
 
-        let mut doc = Self::build_internal_document(&text);
+        let mut doc = Self::build_internal_document(&text, inject_placeholders);
         doc.mime_type = Cow::Owned(mime_type.to_string());
         doc.metadata = metadata;
 
@@ -1595,5 +1601,24 @@ Second paragraph.
         let extractor = RstExtractor::new();
         assert!(extractor.initialize().is_ok());
         assert!(extractor.shutdown().is_ok());
+    }
+
+    #[test]
+    fn test_rst_inject_placeholders_true() {
+        let rst = "Some text\n\n.. image:: photo.png\n   :alt: A photo\n\nMore text\n";
+        let doc = RstExtractor::build_internal_document(rst, true);
+        let has_image = doc.elements.iter().any(|e| e.text.contains("[image:"));
+        assert!(has_image, "expected image placeholder with inject_placeholders=true");
+    }
+
+    #[test]
+    fn test_rst_inject_placeholders_false() {
+        let rst = "Some text\n\n.. image:: photo.png\n   :alt: A photo\n\nMore text\n";
+        let doc = RstExtractor::build_internal_document(rst, false);
+        let has_image = doc.elements.iter().any(|e| e.text.contains("[image:"));
+        assert!(
+            !has_image,
+            "expected no image placeholder with inject_placeholders=false"
+        );
     }
 }

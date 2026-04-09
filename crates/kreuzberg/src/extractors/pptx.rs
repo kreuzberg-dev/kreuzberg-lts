@@ -328,47 +328,46 @@ impl DocumentExtractor for PptxExtractor {
         let pptx_result = {
             #[cfg(feature = "tokio-runtime")]
             {
-                let pages_config = config.pages.clone();
                 if crate::core::batch_mode::is_batch_mode() {
                     let content_owned = content.to_vec();
+                    let options = crate::extraction::pptx::PptxExtractionOptions {
+                        extract_images,
+                        page_config: config.pages.clone(),
+                        plain,
+                        include_structure: false, // we build InternalDocument separately
+                        inject_placeholders,
+                    };
                     let span = tracing::Span::current();
                     tokio::task::spawn_blocking(move || {
                         let _guard = span.entered();
-                        crate::extraction::pptx::extract_pptx_from_bytes(
-                            &content_owned,
-                            extract_images,
-                            pages_config.as_ref(),
-                            plain,
-                            false, // include_structure not needed, we build InternalDocument
-                            inject_placeholders,
-                        )
+                        crate::extraction::pptx::extract_pptx_from_bytes(&content_owned, &options)
                     })
                     .await
                     .map_err(|e| {
                         crate::error::KreuzbergError::parsing(format!("PPTX extraction task failed: {}", e))
                     })??
                 } else {
-                    crate::extraction::pptx::extract_pptx_from_bytes(
-                        content,
+                    let options = crate::extraction::pptx::PptxExtractionOptions {
                         extract_images,
-                        config.pages.as_ref(),
+                        page_config: config.pages.clone(),
                         plain,
-                        false,
+                        include_structure: false,
                         inject_placeholders,
-                    )?
+                    };
+                    crate::extraction::pptx::extract_pptx_from_bytes(content, &options)?
                 }
             }
 
             #[cfg(not(feature = "tokio-runtime"))]
             {
-                crate::extraction::pptx::extract_pptx_from_bytes(
-                    content,
+                let options = crate::extraction::pptx::PptxExtractionOptions {
                     extract_images,
-                    config.pages.as_ref(),
+                    page_config: config.pages.clone(),
                     plain,
-                    false,
+                    include_structure: false,
                     inject_placeholders,
-                )?
+                };
+                crate::extraction::pptx::extract_pptx_from_bytes(content, &options)?
             }
         };
 
@@ -416,14 +415,14 @@ impl DocumentExtractor for PptxExtractor {
             .unwrap_or(true);
         let plain = matches!(config.output_format, crate::core::config::OutputFormat::Plain);
 
-        let pptx_result = crate::extraction::pptx::extract_pptx_from_path(
-            path_str,
+        let options = crate::extraction::pptx::PptxExtractionOptions {
             extract_images,
-            config.pages.as_ref(),
+            page_config: config.pages.clone(),
             plain,
-            false,
+            include_structure: false,
             inject_placeholders,
-        )?;
+        };
+        let pptx_result = crate::extraction::pptx::extract_pptx_from_path(path_str, &options)?;
 
         let doc = Self::build_document_from_result(pptx_result, mime_type, extract_images);
         Ok(doc)
