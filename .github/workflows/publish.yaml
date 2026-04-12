@@ -441,7 +441,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     outputs:
-      exists: ${{ steps.check.outputs.exists }}
+      exists: ${{ steps.result.outputs.exists }}
+      formula_exists: ${{ steps.check.outputs.exists }}
+      bottles_exist: ${{ steps.check-bottles.outputs.exists }}
     steps:
       - name: Check Homebrew tap for formula
         id: check
@@ -451,6 +453,34 @@ jobs:
           package: kreuzberg
           version: ${{ needs.prepare.outputs.version }}
           tap-repo: kreuzberg-dev/homebrew-tap
+
+      - name: Check if bottles exist in GitHub release
+        id: check-bottles
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ needs.prepare.outputs.tag }}
+        run: |
+          if gh release view "$TAG" --repo "${{ github.repository }}" --json assets --jq '.assets[].name' 2>/dev/null | grep -q '\.bottle\.tar\.gz$'; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+            echo "Bottle assets found in release $TAG"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+            echo "No bottle assets found in release $TAG"
+          fi
+
+      - name: Determine overall homebrew status
+        id: result
+        env:
+          FORMULA_EXISTS: ${{ steps.check.outputs.exists }}
+          BOTTLES_EXIST: ${{ steps.check-bottles.outputs.exists }}
+        run: |
+          if [[ "$FORMULA_EXISTS" == "true" && "$BOTTLES_EXIST" == "true" ]]; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+            echo "Formula and bottles both exist — skipping homebrew pipeline"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+            echo "Formula exists=$FORMULA_EXISTS, bottles exist=$BOTTLES_EXIST — running homebrew pipeline"
+          fi
 
   python-wheels:
     name: Build Python wheels (${{ matrix.label }})
@@ -593,6 +623,9 @@ jobs:
           docker-options: ${{ steps.tesseract-cache.outputs.docker-options }}
           before-script-linux: |
             set -euo pipefail
+            # Statically link libstdc++/libgcc to avoid GLIBCXX/CXXABI version
+            # symbols that violate manylinux_2_38 compliance.
+            export RUSTFLAGS="${RUSTFLAGS:-} -C link-arg=-static-libstdc++ -C link-arg=-static-libgcc"
             rustup component add rust-src || true
             # Install dependencies based on the container distro
             if command -v yum >/dev/null 2>&1; then
