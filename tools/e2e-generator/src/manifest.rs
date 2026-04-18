@@ -492,6 +492,7 @@ fn sample_extraction_config() -> Value {
         tree_sitter: Some(kreuzberg::TreeSitterConfig::default()),
         structured_extraction: None,
         html_output: None,
+        cancel_token: None,
     };
 
     serde_json::to_value(&config).expect("ExtractionConfig serialization")

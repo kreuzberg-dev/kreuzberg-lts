@@ -2117,8 +2117,7 @@ fn populate_images_from_pdfium(
         // Walk page objects, extracting image data for each matching index.
         let first_idx_on_page = indices.iter().copied().min().unwrap_or(0);
         let mut current_image = 0usize;
-        let mut extracted_on_page: std::collections::BTreeMap<usize, crate::types::ExtractedImage> =
-            std::collections::BTreeMap::new();
+        let mut extracted_on_page: ahash::AHashMap<usize, crate::types::ExtractedImage> = ahash::AHashMap::new();
 
         for obj in page.objects().iter() {
             if let Some(image_obj) = obj.as_image_object() {
@@ -2128,6 +2127,12 @@ fn populate_images_from_pdfium(
                 {
                     let w = dynamic_image.width();
                     let h = dynamic_image.height();
+                    // Skip tiny inline images (e.g., Ghostscript vector decomposition
+                    // artifacts such as 16x16 CCITT masks). These are not content images.
+                    if w < 32 && h < 32 {
+                        current_image += 1;
+                        continue;
+                    }
                     let rgba = dynamic_image.to_rgba8();
                     let mut png_buf: Vec<u8> = Vec::new();
                     if image::codecs::png::PngEncoder::new(&mut png_buf)
@@ -2581,42 +2586,76 @@ mod tests {
         );
     }
 
-    /// Verify that the AHashSet-based index lookup used in `populate_images_from_pdfium`
-    /// correctly identifies which image indices are present.
+    /// Verify that the `first_idx_on_page + current_image` index offset formula
+    /// used in `populate_images_from_pdfium` maps page-local object positions to
+    /// the correct global image indices.
     ///
     /// This is a regression guard for issue #752: the original code used
     /// `Vec::contains` (O(N) per lookup) inside the per-page object loop,
     /// causing O(N²) behaviour with ~1,924 images on Ghostscript-produced PDFs.
-    /// The fix collects indices into an `AHashSet` before the loop for O(1) lookup.
+    /// The fix collects indices into an `AHashSet` before the loop for O(1) lookup,
+    /// and uses `first_idx_on_page + current_image` to compute the global index.
     #[test]
-    fn test_image_index_ahashset_lookup_correctness() {
-        // Simulate a page with 1924 image indices (the Ghostscript repro size).
-        let indices: Vec<usize> = (100..2024).collect();
+    fn test_image_index_offset_mapping() {
+        // Simulate page 2 whose images start at global index 50 (non-zero offset).
+        // Page objects 0..4 are images; we only want indices 50, 52, 54 (every other).
+        let indices: Vec<usize> = vec![50, 52, 54];
         let indices_set: ahash::AHashSet<usize> = indices.iter().copied().collect();
+        let first_idx_on_page = indices.iter().copied().min().unwrap_or(0);
 
-        // Every index in the original vec must be found in the set.
-        for &idx in &indices {
-            assert!(
-                indices_set.contains(&idx),
-                "AHashSet must contain index {idx} that was in the source Vec"
-            );
+        // Simulate walking five image objects on the page (current_image = 0..4).
+        let mut matched: Vec<usize> = Vec::new();
+        for current_image in 0..5usize {
+            let global_idx = first_idx_on_page + current_image;
+            if indices_set.contains(&global_idx) {
+                matched.push(global_idx);
+            }
         }
 
-        // Indices outside the range must not be present.
-        assert!(
-            !indices_set.contains(&99usize),
-            "index 99 must not be in set (range starts at 100)"
-        );
-        assert!(
-            !indices_set.contains(&2024usize),
-            "index 2024 must not be in set (range ends at 2023)"
+        assert_eq!(
+            matched,
+            vec![50, 52, 54],
+            "offset formula must yield exactly the requested global indices"
         );
 
-        // Verify set size matches input.
-        assert_eq!(
-            indices_set.len(),
-            indices.len(),
-            "AHashSet must contain exactly as many elements as the source Vec"
+        // Indices before the page start must not match.
+        assert!(
+            !indices_set.contains(&49usize),
+            "index 49 is before the page range and must not match"
         );
+
+        // An index beyond the requested range on this page must not match.
+        assert!(
+            !indices_set.contains(&55usize),
+            "index 55 was not requested and must not match"
+        );
+    }
+
+    /// Verify that non-contiguous index ranges across pages are handled correctly
+    /// by the `first_idx_on_page` minimum, i.e., each page independently resets
+    /// `current_image` to 0 and derives `first_idx_on_page` from its own slice.
+    #[test]
+    fn test_image_index_offset_non_contiguous_pages() {
+        // Page 1 has global indices [0, 1], page 2 has [100, 101] (large gap).
+        let page1_indices: Vec<usize> = vec![0, 1];
+        let page2_indices: Vec<usize> = vec![100, 101];
+
+        for (indices, expected_first) in [(&page1_indices, 0usize), (&page2_indices, 100usize)] {
+            let first_idx = indices.iter().copied().min().unwrap_or(0);
+            assert_eq!(
+                first_idx, expected_first,
+                "first_idx_on_page must equal the minimum index in the slice"
+            );
+
+            let set: ahash::AHashSet<usize> = indices.iter().copied().collect();
+            // Both objects (current_image 0 and 1) on each page must resolve.
+            for current_image in 0..2usize {
+                let global_idx = first_idx + current_image;
+                assert!(
+                    set.contains(&global_idx),
+                    "global index {global_idx} must be found for page with first_idx={first_idx}"
+                );
+            }
+        }
     }
 }

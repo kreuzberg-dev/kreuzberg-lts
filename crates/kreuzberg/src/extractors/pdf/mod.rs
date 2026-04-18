@@ -384,20 +384,24 @@ impl PdfExtractor {
         ) = {
             #[cfg(target_arch = "wasm32")]
             {
-                let pdfium = crate::pdf::bindings::bind_pdfium(PdfError::MetadataExtractionFailed, "initialize Pdfium")
-                    .map_err(|pdf_err| {
-                        if pdf_err.to_string().contains("WASM") || pdf_err.to_string().contains("Module") {
-                            crate::error::KreuzbergError::Parsing {
-                                message: "PDF extraction requires proper WASM module initialization. \
+                let pdfium = crate::pdf::bindings::bind_pdfium(
+                    PdfError::MetadataExtractionFailed,
+                    "initialize Pdfium",
+                    config.cancel_token.as_ref(),
+                )
+                .map_err(|pdf_err| {
+                    if pdf_err.to_string().contains("WASM") || pdf_err.to_string().contains("Module") {
+                        crate::error::KreuzbergError::Parsing {
+                            message: "PDF extraction requires proper WASM module initialization. \
                                      Ensure your WASM environment is set up with PDFium support. \
                                      See: https://docs.kreuzberg.dev/wasm/pdf"
-                                    .to_string(),
-                                source: None,
-                            }
-                        } else {
-                            pdf_err.into()
+                                .to_string(),
+                            source: None,
                         }
-                    })?;
+                    } else {
+                        pdf_err.into()
+                    }
+                })?;
 
                 let document = load_pdf_from_byte_slice(&pdfium, content, config)?;
 
@@ -419,6 +423,10 @@ impl PdfExtractor {
                 let layout_hints: Option<Vec<Vec<crate::pdf::structure::types::LayoutHint>>> = None;
 
                 if crate::core::batch_mode::is_batch_mode() {
+                    // Check cancellation before dispatching to the blocking thread pool.
+                    if config.cancel_token.as_ref().map(|t| t.is_cancelled()).unwrap_or(false) {
+                        return Err(crate::error::KreuzbergError::Cancelled);
+                    }
                     let content_owned = content.to_vec();
                     let span = tracing::Span::current();
                     let config_owned = config.clone();
@@ -428,8 +436,11 @@ impl PdfExtractor {
                         // Propagate PDF path to spawned thread for pdf_oxide extraction.
                         crate::pdf::oxide_text::set_current_pdf_path(oxide_path);
 
-                        let pdfium =
-                            crate::pdf::bindings::bind_pdfium(PdfError::MetadataExtractionFailed, "initialize Pdfium")?;
+                        let pdfium = crate::pdf::bindings::bind_pdfium(
+                            PdfError::MetadataExtractionFailed,
+                            "initialize Pdfium",
+                            config_owned.cancel_token.as_ref(),
+                        )?;
 
                         let document = load_pdf_from_byte_slice(&pdfium, &content_owned, &config_owned)?;
 
@@ -492,8 +503,11 @@ impl PdfExtractor {
                         Err(e) => return Err(e.into()),
                     }
                 } else {
-                    let pdfium =
-                        crate::pdf::bindings::bind_pdfium(PdfError::MetadataExtractionFailed, "initialize Pdfium")?;
+                    let pdfium = crate::pdf::bindings::bind_pdfium(
+                        PdfError::MetadataExtractionFailed,
+                        "initialize Pdfium",
+                        config.cancel_token.as_ref(),
+                    )?;
 
                     let document = load_pdf_from_byte_slice(&pdfium, content, config)?;
 
@@ -535,8 +549,11 @@ impl PdfExtractor {
                     Option<()>,
                 ) = (None, None, None);
 
-                let pdfium =
-                    crate::pdf::bindings::bind_pdfium(PdfError::MetadataExtractionFailed, "initialize Pdfium")?;
+                let pdfium = crate::pdf::bindings::bind_pdfium(
+                    PdfError::MetadataExtractionFailed,
+                    "initialize Pdfium",
+                    config.cancel_token.as_ref(),
+                )?;
 
                 let document = load_pdf_from_byte_slice(&pdfium, content, config)?;
 
@@ -587,9 +604,10 @@ impl PdfExtractor {
             if !ocr_pages.is_empty() {
                 if let Some(ref bounds) = boundaries {
                     if !bounds.is_empty() {
-                        let mixed =
+                        let (mixed, mixed_llm_usage) =
                             ocr::extract_mixed_ocr_native(&native_text, bounds, ocr_pages, content, config, path)
                                 .await?;
+                        ocr_llm_usage = mixed_llm_usage;
                         (mixed, true)
                     } else {
                         tracing::warn!("force_ocr_pages set but no page boundaries available; using native text");

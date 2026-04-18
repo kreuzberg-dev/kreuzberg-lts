@@ -61,7 +61,6 @@ Kreuzberg provides async/sync APIs, text chunking, language detection, keyword e
 
 ## Migration
 
-- [v3 to v4](https://docs.kreuzberg.dev/migration/v3-to-v4/): Migration guide from v3 to v4
 - [From Unstructured](https://docs.kreuzberg.dev/migration/from-unstructured/): Migrate from the Unstructured library
 
 ## Optional

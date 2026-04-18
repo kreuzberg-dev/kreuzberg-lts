@@ -147,9 +147,9 @@ Kreuzberg supports three OCR backends. You can use one backend, or chain multipl
 | **Languages** | 100+ | 80+ (11 script families) | 80+ |
 | **Best for** | General purpose, broad language coverage | CJK, complex scripts, high accuracy | GPU-accelerated workloads |
 | **Platform** | All bindings including WASM | All non-WASM bindings | Python only |
-| **Install** | System package (`tesseract-ocr`) | Cargo feature `paddle-ocr` or `pip install kreuzberg[paddleocr]` | `pip install kreuzberg[easyocr]` |
+| **Install** | System package (`tesseract-ocr`) | Cargo feature `paddle-ocr` (bundled in Python package since 4.8.5) | `pip install kreuzberg[easyocr]` |
 | **Runtime** | C library (Tesseract 4.0+) | ONNX Runtime (models downloaded on first use) | PyTorch (optional CUDA) |
-| **Python version** | Any | Native: any. Python package: <3.14 | <3.14 |
+| **Python version** | Any | Any | Any |
 
 ### Multi-Backend Pipeline
 
@@ -371,8 +371,7 @@ Rust builds are modular through Cargo features. Nothing is enabled by default --
 === "Python"
 
     ```bash
-    pip install kreuzberg                  # Core + Tesseract
-    pip install kreuzberg[paddleocr]       # + PaddleOCR
+    pip install kreuzberg                  # Core + Tesseract + PaddleOCR
     pip install kreuzberg[easyocr]         # + EasyOCR
     pip install kreuzberg[all]             # Everything
     ```

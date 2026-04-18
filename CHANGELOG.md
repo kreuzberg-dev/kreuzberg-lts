@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.9.0] - 2026-04-18
+
+### Fixed
+
+- **#588**: Suppress C23 glibc symbols (`__isoc23_strtoll` etc.) in manylinux wheels — added CMake flag propagation and CI verification step to prevent incompatible symbols on glibc < 2.38 (Debian 12, Ubuntu 22.04)
+- **#748**: Remove `kreuzberg-cli` from Python wheel to fix `libonnxruntime.so.1` loading failure — CLI is available as standalone release
+- **#749**: Add cancellation token support — cancelled extractions no longer block subsequent calls via `PDFIUM_OPERATION_LOCK`; wired across Python, Node.js, Ruby, WASM, and C FFI bindings
+- **#750**: Fix `kreuzberg[easyocr]` extra silently installing nothing on Python 3.14+; clean up stale `[paddleocr]` references in docs
+- **#752**: Fix ~1000x slowdown on Ghostscript-produced PDFs with structured output — replace O(N²) `Vec::contains` with O(1) `AHashSet` lookup, add minimum dimension filter for tiny inline images
+- **#753**: Fix `llm_usage` returning `None` when using VLM-based OCR — propagate usage through PDF OCR, image OCR, and `force_ocr_pages` paths
+
+### Added
+
+- Cancellation token API available in all language bindings (`CancellationToken` in Python/Node/Ruby/WASM/FFI)
+
+### Changed
+
+- **Breaking**: `kreuzberg-cli` binary is no longer bundled in the Python wheel — install the standalone CLI from GitHub releases
+
+---
+
 ## [Unreleased]
 
 ### Added
@@ -2234,7 +2255,7 @@ First stable release of Kreuzberg v4, a complete rewrite with a Rust core and po
 
 #### Legacy Support
 
-- Completely removed v3 legacy Python package and infrastructure. V3 users should migrate to v4 using the [migration guide](https://docs.kreuzberg.dev/migration/v3-to-v4/).
+- Completely removed v3 legacy Python package and infrastructure.
 
 ---
 
@@ -2698,7 +2719,7 @@ Complete architectural rewrite from Python-only to Rust-core with polyglot bindi
 - TypeScript/Node.js package renamed to `@kreuzberg/node`.
 - `char_start`/`char_end` -> `byte_start`/`byte_end`.
 
-See [Migration Guide](https://docs.kreuzberg.dev/migration/v3-to-v4/) for details.
+See the [API Reference](https://docs.kreuzberg.dev/reference/api-python/) for details.
 
 ---
 
@@ -3077,7 +3098,7 @@ See [Migration Guide](https://docs.kreuzberg.dev/migration/v3-to-v4/) for detail
 ## See Also
 
 - [Configuration Reference](https://docs.kreuzberg.dev/reference/configuration/) - Detailed configuration options
-- [Migration Guide](https://docs.kreuzberg.dev/migration/v3-to-v4/) - v3 to v4 migration instructions
+- [Migration Guides](https://docs.kreuzberg.dev/migration/from-unstructured/) - Migration from other libraries
 - [Format Support](https://docs.kreuzberg.dev/reference/formats/) - Supported file formats
 - [Extraction Guide](https://docs.kreuzberg.dev/guides/extraction/) - Extraction examples
 

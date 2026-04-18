@@ -102,6 +102,8 @@ pub fn map_kreuzberg_error_to_mcp(error: KreuzbergError) -> McpError {
         ),
 
         KreuzbergError::Other(msg) => McpError::internal_error(msg, None),
+
+        KreuzbergError::Cancelled => McpError::internal_error("Extraction cancelled", None),
     }
 }
 

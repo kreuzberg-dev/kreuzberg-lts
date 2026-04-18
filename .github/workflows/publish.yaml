@@ -619,18 +619,12 @@ jobs:
             # Strategy:
             # 1. Set base CFLAGS/CXXFLAGS for direct compilation
             # 2. Propagate to CMake (respects CMAKE_C_FLAGS, CMAKE_CXX_FLAGS)
-            # 3. Export CC/CXX as full compiler commands to override build system defaults
-            # 4. Set CPPFLAGS for autotools-based deps (e.g. libssl)
+            # 3. Set CPPFLAGS for autotools-based deps (e.g. libssl)
             export CFLAGS="-std=gnu11"
             export CXXFLAGS="-std=gnu++17"
-            export CPPFLAGS="-std=gnu11"
             # Propagate C23 suppressions to CMake-based build systems (Tesseract/Leptonica/ORT).
             export CMAKE_C_FLAGS="${CFLAGS}"
             export CMAKE_CXX_FLAGS="${CXXFLAGS}"
-            # Force compiler wrappers to ensure standards are applied at compiler invocation,
-            # even if build systems ignore the above variables (e.g., cargo-tree, vendored deps).
-            export CC="gcc ${CFLAGS}"
-            export CXX="g++ ${CXXFLAGS}"
             rustup component add rust-src || true
             # Install dependencies based on the container distro
             if command -v yum >/dev/null 2>&1; then
@@ -700,7 +694,7 @@ jobs:
         run: ls -lh target/wheels
 
       - name: Verify no C23 glibc symbols in Linux wheels
-        if: matrix.os == 'ubuntu-latest'
+        if: runner.os == 'Linux'
         shell: bash
         run: |
           set -euo pipefail
@@ -710,30 +704,27 @@ jobs:
           for wheel in target/wheels/*.whl; do
             echo "Extracting and checking: $(basename "$wheel")"
             wheel_dir=$(mktemp -d)
-            # Clean up temp dir after checking this wheel
-            cleanup_wheel_dir() {
-              rm -rf "$wheel_dir" 2>/dev/null || true
-            }
-            trap cleanup_wheel_dir EXIT
+            trap 'rm -rf "$wheel_dir" 2>/dev/null || true' EXIT
             unzip -q "$wheel" -d "$wheel_dir"
 
-            # Find all .so files (compiled extensions)
-            find "$wheel_dir" -type f \( -name "*.abi3.so" -o -name "*.so" \) | while read -r so_file; do
+            # Use process substitution to avoid subshell variable scoping issue
+            while IFS= read -r so_file; do
+              [[ -z "$so_file" ]] && continue
               echo "  Scanning: $(basename "$so_file")"
-              # Check for C23 symbols using nm
-              if nm -D "$so_file" 2>/dev/null | grep -E '__isoc23_(strtoll|sscanf|strtoull|strtol|strtoul|strtof|strtod|strtoq|strtouq|wcstombs|mbstowcs|wcsrtombs|mbsrtowcs|wcsnrtombs|mbsnrtowcs)' > /dev/null 2>&1; then
+              if nm -D "$so_file" 2>/dev/null | grep -qE '__isoc23_'; then
                 echo "    ERROR: Found C23 glibc symbol(s) in $so_file:"
                 nm -D "$so_file" 2>/dev/null | grep '__isoc23_' || true
                 failed=1
               else
                 echo "    OK: No C23 glibc symbols found"
               fi
-            done
-            # Reset trap for next wheel
+            done < <(find "$wheel_dir" -type f \( -name "*.abi3.so" -o -name "*.so" \) 2>/dev/null || true)
+
+            rm -rf "$wheel_dir" 2>/dev/null || true
             trap - EXIT
           done
 
-          if [ $failed -eq 1 ]; then
+          if [ "$failed" -eq 1 ]; then
             echo ""
             echo "FAILED: Wheel contains C23 glibc symbols incompatible with glibc < 2.38"
             echo "This breaks compatibility with Debian 12, Ubuntu 22.04, and other systems with glibc 2.36."

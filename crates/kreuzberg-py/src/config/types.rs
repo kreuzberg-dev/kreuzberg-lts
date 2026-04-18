@@ -171,6 +171,7 @@ impl ExtractionConfig {
                 tree_sitter: tree_sitter.map(Into::into),
                 structured_extraction: structured_extraction.map(|s| s.inner),
                 html_output: html_output.map(Into::into),
+                cancel_token: None,
             },
             html_options_dict,
         })
@@ -574,6 +575,23 @@ impl ExtractionConfig {
     #[setter]
     fn set_structured_extraction(&mut self, value: Option<PyStructuredExtractionConfig>) {
         self.inner.structured_extraction = value.map(|s| s.inner);
+    }
+
+    /// Get the cancellation token attached to this config, if any.
+    #[getter]
+    fn cancel_token(&self) -> Option<crate::cancellation::PyCancellationToken> {
+        self.inner
+            .cancel_token
+            .clone()
+            .map(|t| crate::cancellation::PyCancellationToken { inner: t })
+    }
+
+    /// Attach a `CancellationToken` to signal the extraction to stop early.
+    ///
+    /// Set to `None` to remove any previously attached token.
+    #[setter]
+    fn set_cancel_token(&mut self, value: Option<crate::cancellation::PyCancellationToken>) {
+        self.inner.cancel_token = value.map(|t| t.inner);
     }
 
     fn __repr__(&self) -> String {

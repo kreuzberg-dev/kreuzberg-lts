@@ -330,7 +330,7 @@ pub(crate) async fn extract_mixed_ocr_native(
     content: &[u8],
     config: &ExtractionConfig,
     _path: Option<&std::path::Path>,
-) -> crate::Result<String> {
+) -> crate::Result<(String, Vec<crate::types::LlmUsage>)> {
     use std::collections::HashSet;
 
     // Deduplicate and validate page numbers (must be >= 1)
@@ -348,7 +348,7 @@ pub(crate) async fn extract_mixed_ocr_native(
         .collect();
 
     if ocr_set.is_empty() {
-        return Ok(native_text.to_string());
+        return Ok((native_text.to_string(), Vec::new()));
     }
 
     // Convert 1-indexed page numbers to 0-indexed for rendering (sorted + deduplicated)
@@ -357,7 +357,7 @@ pub(crate) async fn extract_mixed_ocr_native(
     let page_images = render_selected_pages_for_ocr(content, &page_indices)?;
 
     if page_images.is_empty() {
-        return Ok(native_text.to_string());
+        return Ok((native_text.to_string(), Vec::new()));
     }
 
     // OCR all selected pages concurrently using the same batched pipeline pattern
@@ -382,6 +382,7 @@ pub(crate) async fn extract_mixed_ocr_native(
     let ocr_config_owned = ocr_config.clone();
     let total = page_images.len();
     let mut ocr_results: ahash::AHashMap<usize, String> = ahash::AHashMap::with_capacity(total);
+    let mut accumulated_llm_usage: Vec<crate::types::LlmUsage> = Vec::new();
 
     // Process in batches to bound peak memory (PNG buffers freed between batches)
     for batch_start in (0..total).step_by(batch_size) {
@@ -424,7 +425,10 @@ pub(crate) async fn extract_mixed_ocr_native(
                 message: format!("OCR task panicked: {}", e),
                 plugin_name: "ocr".to_string(),
             })?;
-            let extraction_result = result?;
+            let mut extraction_result = result?;
+            if let Some(usage) = extraction_result.llm_usage.take() {
+                accumulated_llm_usage.extend(usage);
+            }
             ocr_results.insert(page_idx + 1, extraction_result.content); // 1-indexed
         }
         // encoded PNGs dropped here — memory freed before next batch
@@ -446,7 +450,7 @@ pub(crate) async fn extract_mixed_ocr_native(
         }
     }
 
-    Ok(result)
+    Ok((result, accumulated_llm_usage))
 }
 
 /// Extract text from PDF using OCR on pre-rendered page images.
@@ -1051,8 +1055,11 @@ pub(crate) async fn run_ocr_pipeline(
         Vec<crate::types::Table>,
         Vec<crate::types::OcrElement>,
         Option<crate::types::internal::InternalDocument>,
-        Vec<crate::types::LlmUsage>,
     )> = None;
+
+    // Accumulate LLM usage from ALL attempted stages for accurate billing.
+    // Usage is incurred even when a backend doesn't win the quality race.
+    let mut accumulated_usage: Vec<crate::types::LlmUsage> = Vec::new();
 
     for stage in &available_stages {
         // Build a modified config for this stage
@@ -1107,31 +1114,20 @@ pub(crate) async fn run_ocr_pipeline(
                     "Pipeline: backend produced result"
                 );
 
+                // Always accumulate usage regardless of whether this stage wins.
+                accumulated_usage.extend(stage_llm_usage);
+
                 if score >= pipeline.quality_thresholds.pipeline_min_quality {
-                    return Ok((text, stage_tables, stage_ocr_elements, stage_doc, stage_llm_usage));
+                    return Ok((text, stage_tables, stage_ocr_elements, stage_doc, accumulated_usage));
                 }
 
-                // Track best-so-far
+                // Track best-so-far (without usage, which is in accumulated_usage)
                 match best_result {
-                    Some((_, best_score, _, _, _, _)) if score > best_score => {
-                        best_result = Some((
-                            text,
-                            score,
-                            stage_tables,
-                            stage_ocr_elements,
-                            stage_doc,
-                            stage_llm_usage,
-                        ));
+                    Some((_, best_score, _, _, _)) if score > best_score => {
+                        best_result = Some((text, score, stage_tables, stage_ocr_elements, stage_doc));
                     }
                     None => {
-                        best_result = Some((
-                            text,
-                            score,
-                            stage_tables,
-                            stage_ocr_elements,
-                            stage_doc,
-                            stage_llm_usage,
-                        ));
+                        best_result = Some((text, score, stage_tables, stage_ocr_elements, stage_doc));
                     }
                     _ => {}
                 }
@@ -1148,13 +1144,13 @@ pub(crate) async fn run_ocr_pipeline(
 
     // Return best result (with warning) or error if all backends failed entirely
     match best_result {
-        Some((text, score, tables, elements, doc, llm_usage)) => {
+        Some((text, score, tables, elements, doc)) => {
             tracing::warn!(
                 score,
                 threshold = pipeline.quality_thresholds.pipeline_min_quality,
                 "All OCR pipeline backends produced suboptimal quality, using best result"
             );
-            Ok((text, tables, elements, doc, llm_usage))
+            Ok((text, tables, elements, doc, accumulated_usage))
         }
         None => Err(crate::KreuzbergError::Parsing {
             message: "All OCR pipeline backends failed".to_string(),

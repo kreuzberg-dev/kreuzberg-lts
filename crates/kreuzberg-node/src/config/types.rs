@@ -1591,6 +1591,7 @@ impl TryFrom<JsExtractionConfig> for ExtractionConfig {
             tree_sitter: val.tree_sitter.map(Into::into),
             structured_extraction: val.structured_extraction.map(Into::into),
             html_output: val.html_output.map(Into::into),
+            cancel_token: None,
         })
     }
 }

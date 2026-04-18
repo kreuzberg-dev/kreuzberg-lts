@@ -474,7 +474,7 @@ checksum = "2af50177e190e07a26ab74f8b1efbfe2ef87da2116221318cb1c2e82baf7de06"
 
 [[package]]
 name = "benchmark-harness"
-version = "4.8.6"
+version = "4.9.0"
 dependencies = [
  "ahash",
  "async-trait",
@@ -1836,7 +1836,7 @@ checksum = "d0881ea181b1df73ff77ffaaf9c7544ecc11e82fba9b5f27b262a3c73a332555"
 
 [[package]]
 name = "e2e-rust"
-version = "4.8.6"
+version = "4.9.0"
 dependencies = [
  "kreuzberg",
  "serde_json",
@@ -2721,9 +2721,9 @@ dependencies = [
 
 [[package]]
 name = "html-to-markdown-rs"
-version = "3.2.4"
+version = "3.2.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a6b3a1364542dd038a2bf91e2ead9fc8616eb2902e5534dce2386b76da91a9b8"
+checksum = "bcb619abe81160bba2e2185823e10f6c0793220a266f16791aa715287de322cd"
 dependencies = [
  "ahash",
  "astral-tl",
@@ -3473,7 +3473,7 @@ dependencies = [
 
 [[package]]
 name = "kreuzberg"
-version = "4.8.6"
+version = "4.9.0"
 dependencies = [
  "ahash",
  "anyhow",
@@ -3580,7 +3580,7 @@ dependencies = [
 
 [[package]]
 name = "kreuzberg-cli"
-version = "4.8.6"
+version = "4.9.0"
 dependencies = [
  "anstyle",
  "anyhow",
@@ -3600,7 +3600,7 @@ dependencies = [
 
 [[package]]
 name = "kreuzberg-e2e-generator"
-version = "4.8.6"
+version = "4.9.0"
 dependencies = [
  "anyhow",
  "assert_cmd",
@@ -3617,7 +3617,7 @@ dependencies = [
 
 [[package]]
 name = "kreuzberg-ffi"
-version = "4.8.6"
+version = "4.9.0"
 dependencies = [
  "ahash",
  "async-trait",
@@ -3637,7 +3637,7 @@ dependencies = [
 
 [[package]]
 name = "kreuzberg-node"
-version = "4.8.6"
+version = "4.9.0"
 dependencies = [
  "ahash",
  "async-trait",
@@ -3660,7 +3660,7 @@ dependencies = [
 
 [[package]]
 name = "kreuzberg-paddle-ocr"
-version = "4.8.6"
+version = "4.9.0"
 dependencies = [
  "geo-clipper",
  "geo-types",
@@ -3674,7 +3674,7 @@ dependencies = [
 
 [[package]]
 name = "kreuzberg-pdfium-render"
-version = "4.8.6"
+version = "4.9.0"
 dependencies = [
  "bindgen",
  "bitflags 2.11.1",
@@ -3698,7 +3698,7 @@ dependencies = [
 
 [[package]]
 name = "kreuzberg-php"
-version = "4.8.6"
+version = "4.9.0"
 dependencies = [
  "ahash",
  "ctor",
@@ -3714,7 +3714,7 @@ dependencies = [
 
 [[package]]
 name = "kreuzberg-py"
-version = "4.8.6"
+version = "4.9.0"
 dependencies = [
  "ahash",
  "async-trait",
@@ -3731,7 +3731,7 @@ dependencies = [
 
 [[package]]
 name = "kreuzberg-tesseract"
-version = "4.8.6"
+version = "4.9.0"
 dependencies = [
  "cc",
  "cmake",
@@ -3770,7 +3770,7 @@ dependencies = [
 
 [[package]]
 name = "kreuzberg_rustler"
-version = "4.8.6"
+version = "4.9.0"
 dependencies = [
  "kreuzberg",
  "rustler",
@@ -6415,7 +6415,7 @@ checksum = "1b6b67fb9a61334225b5b790716f609cd58395f895b3fe8b328786812a40bc3b"
 
 [[package]]
 name = "snippet-runner"
-version = "4.8.6"
+version = "4.9.0"
 dependencies = [
  "clap",
  "rayon",
@@ -7258,9 +7258,9 @@ checksum = "009994f150cc0cd50ff54917d5bc8bffe8cad10ca10d81c34da2ec421ae61782"
 
 [[package]]
 name = "tree-sitter-language-pack"
-version = "1.6.1"
+version = "1.6.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "29132264ea6260d2e0cd3ffda284504c09deea1cb7c4a0c63c7a7dde65190dc2"
+checksum = "104c982ba77c77942e81029458eb44524b62cc6f4ddb62ce1397420a08ff3c3b"
 dependencies = [
  "ahash",
  "cc",
@@ -7646,11 +7646,11 @@ checksum = "ccf3ec651a847eb01de73ccad15eb7d99f80485de043efb2f370cd654f4ea44b"
 
 [[package]]
 name = "wasip2"
-version = "1.0.2+wasi-0.2.9"
+version = "1.0.3+wasi-0.2.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9517f9239f02c069db75e65f174b3da828fe5f5b945c4dd26bd25d89c03ebcf5"
+checksum = "20064672db26d7cdc89c7798c48a0fdfac8213434a1186e5ef29fd560ae223d6"
 dependencies = [
- "wit-bindgen",
+ "wit-bindgen 0.57.1",
 ]
 
 [[package]]
@@ -7659,7 +7659,7 @@ version = "0.4.0+wasi-0.3.0-rc-2026-01-06"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5428f8bf88ea5ddc08faddef2ac4a67e390b88186c703ce6dbd955e1c145aca5"
 dependencies = [
- "wit-bindgen",
+ "wit-bindgen 0.51.0",
 ]
 
 [[package]]
@@ -8311,6 +8311,12 @@ checksum = "d7249219f66ced02969388cf2bb044a09756a083d0fab1e566056b04d9fbcaa5"
 dependencies = [
  "wit-bindgen-rust-macro",
 ]
+
+[[package]]
+name = "wit-bindgen"
+version = "0.57.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1ebf944e87a7c253233ad6766e082e3cd714b5d03812acc24c318f549614536e"
 
 [[package]]
 name = "wit-bindgen-core"
