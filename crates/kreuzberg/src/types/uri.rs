@@ -125,6 +125,7 @@ impl Uri {
     }
 
     /// Set the page number.
+    #[cfg(test)]
     #[must_use]
     pub(crate) fn with_page(mut self, page: u32) -> Self {
         self.page = Some(page);

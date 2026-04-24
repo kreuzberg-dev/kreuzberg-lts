@@ -16,13 +16,10 @@
 //! For manual control, use `BatchProcessor` to create pools and manage
 //! extraction with custom pool sizes.
 
-use crate::core::config::ExtractionConfig;
-use crate::types::ExtractionResult;
 use crate::utils::pool::{ByteBufferPool, StringBufferPool, create_byte_buffer_pool, create_string_buffer_pool};
 use crate::utils::pool_sizing::PoolSizeHint;
 use crate::{KreuzbergError, Result};
 use parking_lot::Mutex;
-use std::path::Path;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 
@@ -206,75 +203,6 @@ impl BatchProcessor {
     /// Get the current configuration.
     pub fn config(&self) -> &BatchProcessorConfig {
         &self.config
-    }
-
-    /// Process multiple files with optimized pooling.
-    ///
-    /// This is a convenience method that combines file extraction with
-    /// automatic pool management.
-    ///
-    /// # Arguments
-    ///
-    /// * `paths` - Paths to the files to extract
-    /// * `extraction_config` - Extraction configuration
-    ///
-    /// # Returns
-    ///
-    /// A vector of `ExtractionResult` in the same order as input paths.
-    ///
-    /// # Errors
-    ///
-    /// Returns `KreuzbergError` if any file operation fails.
-    #[cfg(feature = "tokio-runtime")]
-    pub(crate) async fn process_image_files(
-        &self,
-        paths: Vec<impl AsRef<Path>>,
-        extraction_config: &ExtractionConfig,
-    ) -> Result<Vec<ExtractionResult>> {
-        use crate::core::extractor::batch_extract_file;
-
-        let items: Vec<(
-            std::path::PathBuf,
-            Option<crate::core::config::extraction::FileExtractionConfig>,
-        )> = paths.into_iter().map(|p| (p.as_ref().to_path_buf(), None)).collect();
-        batch_extract_file(items, extraction_config).await
-    }
-
-    /// Process multiple byte arrays with optimized pooling.
-    ///
-    /// This is a convenience method that combines bytes extraction with
-    /// automatic pool management.
-    ///
-    /// # Arguments
-    ///
-    /// * `contents` - Vector of (bytes, mime_type) tuples
-    /// * `extraction_config` - Extraction configuration
-    ///
-    /// # Returns
-    ///
-    /// A vector of `ExtractionResult` in the same order as input contents.
-    ///
-    /// # Errors
-    ///
-    /// Returns `KreuzbergError` if extraction fails.
-    #[cfg(feature = "tokio-runtime")]
-    pub(crate) async fn process_bytes(
-        &self,
-        contents: Vec<(&[u8], &str)>,
-        extraction_config: &ExtractionConfig,
-    ) -> Result<Vec<ExtractionResult>> {
-        use crate::core::extractor::batch_extract_bytes;
-
-        let items: Vec<(
-            Vec<u8>,
-            String,
-            Option<crate::core::config::extraction::FileExtractionConfig>,
-        )> = contents
-            .into_iter()
-            .map(|(bytes, mime)| (bytes.to_vec(), mime.to_string(), None))
-            .collect();
-
-        batch_extract_bytes(items, extraction_config).await
     }
 
     /// Get the number of pooled string buffers currently available.

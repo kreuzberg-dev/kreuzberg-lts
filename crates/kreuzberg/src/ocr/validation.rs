@@ -1,4 +1,5 @@
 use super::error::OcrError;
+#[cfg(test)]
 use super::utils::MINIMAL_SUPPORTED_TESSERACT_VERSION;
 use ahash::AHashSet;
 use std::sync::LazyLock;

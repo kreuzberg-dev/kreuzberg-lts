@@ -42,11 +42,6 @@ pub struct NodeIndex(pub u32);
 pub struct NodeId(String);
 
 impl NodeId {
-    /// Create a `NodeId` from a pre-computed hash string.
-    pub(crate) fn new(id: impl Into<String>) -> Self {
-        Self(id.into())
-    }
-
     /// Generate a deterministic `NodeId` from node content.
     ///
     /// Uses wrapping multiplication hashing on the node type discriminant,
@@ -663,6 +658,7 @@ impl DocumentStructure {
     }
 
     /// Get a node by index.
+    #[cfg(test)]
     pub(crate) fn get(&self, index: NodeIndex) -> Option<&DocumentNode> {
         self.nodes.get(index.0 as usize)
     }

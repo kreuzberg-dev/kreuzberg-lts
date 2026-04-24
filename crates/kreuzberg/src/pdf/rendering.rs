@@ -237,6 +237,7 @@ impl PdfPageIterator {
     /// # Errors
     ///
     /// Returns an error if the file cannot be read or the PDF is invalid.
+    #[expect(dead_code, reason = "public API used by vendored kreuzberg in packages/r/ and packages/ruby/")]
     pub(crate) fn from_file(
         path: impl AsRef<std::path::Path>,
         dpi: Option<i32>,
@@ -248,6 +249,7 @@ impl PdfPageIterator {
     }
 
     /// Number of pages in the PDF.
+    #[expect(dead_code, reason = "public API used by vendored kreuzberg in packages/r/ and packages/ruby/")]
     pub(crate) fn page_count(&self) -> usize {
         self.page_count
     }

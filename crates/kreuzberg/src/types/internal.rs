@@ -239,6 +239,7 @@ impl InternalDocument {
     }
 
     /// Concatenate all element text into a single string, separated by newlines.
+    #[cfg(test)]
     pub(crate) fn content(&self) -> String {
         self.elements
             .iter()
@@ -350,12 +351,14 @@ impl InternalElement {
     }
 
     /// Set the anchor key.
+    #[cfg(test)]
     pub(crate) fn with_anchor(mut self, anchor: impl Into<String>) -> Self {
         self.anchor = Some(anchor.into());
         self
     }
 
     /// Set annotations.
+    #[cfg(test)]
     pub(crate) fn with_annotations(mut self, annotations: Vec<TextAnnotation>) -> Self {
         self.annotations = annotations;
         self

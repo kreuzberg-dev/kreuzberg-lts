@@ -20,14 +20,8 @@
 //! }
 //! ```
 
-use ahash::AHashMap;
-use std::sync::OnceLock;
-
-use super::backends;
-
-/// Global language registry instance (lazy initialized)
 #[cfg(test)]
-static LANGUAGE_REGISTRY: OnceLock<LanguageRegistry> = OnceLock::new();
+use ahash::AHashMap;
 
 /// Language support registry for OCR backends.
 ///
@@ -35,8 +29,19 @@ static LANGUAGE_REGISTRY: OnceLock<LanguageRegistry> = OnceLock::new();
 /// This is the single source of truth for language support across all bindings.
 #[derive(Debug, Clone)]
 pub struct LanguageRegistry {
+    #[cfg(test)]
     backends: AHashMap<String, Vec<String>>,
 }
+
+#[cfg(test)]
+use std::sync::OnceLock;
+
+#[cfg(test)]
+use super::backends;
+
+/// Global language registry instance (lazy initialized)
+#[cfg(test)]
+static LANGUAGE_REGISTRY: OnceLock<LanguageRegistry> = OnceLock::new();
 
 #[cfg(test)]
 impl LanguageRegistry {

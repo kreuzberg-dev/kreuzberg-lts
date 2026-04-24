@@ -7,6 +7,7 @@
 /// # Returns
 ///
 /// A vector of 14 language codes supported by PaddleOCR.
+#[cfg(test)]
 pub(in crate::ocr) fn languages() -> Vec<String> {
     vec![
         "ch".to_string(),

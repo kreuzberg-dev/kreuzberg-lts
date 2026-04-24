@@ -61,7 +61,7 @@ use super::{config::load_server_config, router::create_router_with_limits_and_se
 ///
 /// python -m kreuzberg.api
 /// ```
-pub(crate) async fn serve(host: impl AsRef<str>, port: u16) -> Result<()> {
+pub async fn serve(host: impl AsRef<str>, port: u16) -> Result<()> {
     let extraction_config = match ExtractionConfig::discover()? {
         Some(config) => {
             tracing::info!("Loaded extraction config from discovered file");
@@ -108,7 +108,7 @@ pub(crate) async fn serve(host: impl AsRef<str>, port: u16) -> Result<()> {
 ///     Ok(())
 /// }
 /// ```
-pub(crate) async fn serve_with_config(host: impl AsRef<str>, port: u16, config: ExtractionConfig) -> Result<()> {
+pub async fn serve_with_config(host: impl AsRef<str>, port: u16, config: ExtractionConfig) -> Result<()> {
     let limits = ApiSizeLimits::default();
     tracing::info!(
         "Upload size limit: 100 MB (default, {} bytes)",
@@ -144,7 +144,7 @@ pub(crate) async fn serve_with_config(host: impl AsRef<str>, port: u16, config: 
 ///     Ok(())
 /// }
 /// ```
-pub(crate) async fn serve_with_config_and_limits(
+pub async fn serve_with_config_and_limits(
     host: impl AsRef<str>,
     port: u16,
     config: ExtractionConfig,
@@ -255,6 +255,6 @@ pub async fn serve_with_server_config(extraction_config: ExtractionConfig, serve
 ///
 /// Uses config file discovery (searches current/parent directories for kreuzberg.toml/yaml/json).
 /// Validates plugins at startup to help diagnose configuration issues.
-pub(crate) async fn serve_default() -> Result<()> {
+pub async fn serve_default() -> Result<()> {
     serve("127.0.0.1", 8000).await
 }

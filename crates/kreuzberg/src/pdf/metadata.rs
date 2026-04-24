@@ -1,3 +1,4 @@
+#[cfg(test)]
 use super::bindings::bind_pdfium;
 use super::error::{PdfError, Result};
 use crate::types::{PageBoundary, PageInfo, PageStructure, PageUnitType};

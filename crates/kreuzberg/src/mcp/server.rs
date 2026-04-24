@@ -898,7 +898,7 @@ impl Default for KreuzbergMcp {
 ///     Ok(())
 /// }
 /// ```
-pub(crate) async fn start_mcp_server() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+pub async fn start_mcp_server() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let service = KreuzbergMcp::new()?.serve(stdio()).await?;
 
     service.waiting().await?;
@@ -939,7 +939,7 @@ pub async fn start_mcp_server_with_config(
 /// }
 /// ```
 #[cfg(feature = "mcp-http")]
-pub(crate) async fn start_mcp_server_http(
+pub async fn start_mcp_server_http(
     host: impl AsRef<str>,
     port: u16,
 ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {

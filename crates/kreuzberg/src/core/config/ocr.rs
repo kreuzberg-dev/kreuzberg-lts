@@ -6,7 +6,9 @@
 use serde::{Deserialize, Serialize};
 
 use super::formats::OutputFormat;
+#[cfg(test)]
 use crate::core::config_validation::validate_ocr_backend;
+#[cfg(test)]
 use crate::error::KreuzbergError;
 use crate::types::OcrElementConfig;
 

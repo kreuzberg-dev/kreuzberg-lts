@@ -7,6 +7,7 @@
 /// # Returns
 ///
 /// A vector of 100+ language codes supported by Tesseract.
+#[cfg(test)]
 pub(in crate::ocr) fn languages() -> Vec<String> {
     vec![
         "afr".to_string(),

@@ -109,6 +109,7 @@ impl OcrCache {
         Ok(())
     }
 
+    #[cfg(test)]
     pub(crate) fn get_stats(&self) -> Result<OcrCacheStats, OcrError> {
         if !self.cache_dir.exists() {
             return Ok(OcrCacheStats::default());

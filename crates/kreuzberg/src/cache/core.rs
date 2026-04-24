@@ -47,10 +47,12 @@ pub(super) struct CacheScanResult {
 
 pub struct GenericCache {
     cache_dir: PathBuf,
+    #[cfg(test)]
     cache_type: String,
     max_age_days: f64,
     max_cache_size_mb: f64,
     min_free_space_mb: f64,
+    #[cfg(test)]
     processing_locks: Arc<RwLock<AHashSet<String>>>,
     /// Tracks cache keys being deleted to prevent read-during-delete race conditions
     deleting_files: Arc<RwLock<AHashSet<PathBuf>>>,
@@ -75,10 +77,12 @@ impl GenericCache {
 
         Ok(Self {
             cache_dir: cache_dir_path,
+            #[cfg(test)]
             cache_type,
             max_age_days,
             max_cache_size_mb,
             min_free_space_mb,
+            #[cfg(test)]
             processing_locks: Arc::new(RwLock::new(AHashSet::new())),
             deleting_files: Arc::new(RwLock::new(AHashSet::new())),
         })
@@ -87,11 +91,13 @@ impl GenericCache {
     /// Acquire a shared read guard on `processing_locks`.
     ///
     /// `parking_lot::RwLock` is infallible (no poisoning), so this never returns an error.
+    #[cfg(test)]
     fn read_processing_locks(&self) -> parking_lot::RwLockReadGuard<'_, AHashSet<String>> {
         self.processing_locks.read()
     }
 
     /// Acquire an exclusive write guard on `processing_locks`.
+    #[cfg(test)]
     fn write_processing_locks(&self) -> parking_lot::RwLockWriteGuard<'_, AHashSet<String>> {
         self.processing_locks.write()
     }
@@ -102,6 +108,7 @@ impl GenericCache {
     }
 
     /// Acquire an exclusive write guard on `deleting_files`.
+    #[cfg(test)]
     fn write_deleting_files(&self) -> parking_lot::RwLockWriteGuard<'_, AHashSet<PathBuf>> {
         self.deleting_files.write()
     }
@@ -298,6 +305,7 @@ impl GenericCache {
     }
 
     /// Backward-compatible get without namespace/TTL.
+    #[cfg(test)]
     pub(crate) fn get_default(&self, cache_key: &str, source_file: Option<&str>) -> Result<Option<Vec<u8>>> {
         self.get(cache_key, source_file, None, None)
     }
@@ -345,6 +353,7 @@ impl GenericCache {
     }
 
     /// Backward-compatible set without namespace/TTL.
+    #[cfg(test)]
     pub(crate) fn set_default(&self, cache_key: &str, data: Vec<u8>, source_file: Option<&str>) -> Result<()> {
         self.set(cache_key, data, source_file, None, None)
     }
@@ -373,30 +382,36 @@ impl GenericCache {
         let _ = fs::write(&marker, []);
     }
 
+    #[cfg(test)]
     pub(crate) fn is_processing(&self, cache_key: &str) -> Result<bool> {
         Ok(self.read_processing_locks().contains(cache_key))
     }
 
+    #[cfg(test)]
     pub(crate) fn mark_processing(&self, cache_key: String) -> Result<()> {
         self.write_processing_locks().insert(cache_key);
         Ok(())
     }
 
+    #[cfg(test)]
     pub(crate) fn mark_complete(&self, cache_key: &str) -> Result<()> {
         self.write_processing_locks().remove(cache_key);
         Ok(())
     }
 
+    #[cfg(test)]
     fn mark_for_deletion(&self, path: &Path) -> Result<()> {
         self.write_deleting_files().insert(path.to_path_buf());
         Ok(())
     }
 
+    #[cfg(test)]
     fn unmark_deletion(&self, path: &Path) -> Result<()> {
         self.write_deleting_files().remove(&path.to_path_buf());
         Ok(())
     }
 
+    #[cfg(test)]
     pub(crate) fn clear(&self) -> Result<(usize, f64)> {
         let dir_path = &self.cache_dir;
 
@@ -478,12 +493,14 @@ impl GenericCache {
     ///
     /// Removes the namespace subdirectory and all its contents.
     /// Returns (files_removed, mb_freed).
+    #[cfg(test)]
     pub(crate) fn delete_namespace(&self, namespace: &str) -> Result<(usize, f64)> {
         let ns_dir = self.cache_dir.join(namespace);
         self.delete_namespace_inner(&ns_dir)
     }
 
     /// Inner implementation: remove a directory and count its contents.
+    #[cfg(test)]
     fn delete_namespace_inner(&self, dir: &Path) -> Result<(usize, f64)> {
         if !dir.exists() {
             return Ok((0, 0.0));
@@ -510,11 +527,13 @@ impl GenericCache {
         Ok((removed_count, removed_size))
     }
 
+    #[cfg(test)]
     pub(crate) fn get_stats(&self) -> Result<CacheStats> {
         self.get_stats_filtered(None)
     }
 
     /// Get cache stats, optionally filtered to a specific namespace.
+    #[cfg(test)]
     pub(crate) fn get_stats_filtered(&self, namespace: Option<&str>) -> Result<CacheStats> {
         let dir = self.resolve_dir(namespace);
         let dir_str = dir
@@ -523,10 +542,12 @@ impl GenericCache {
         super::cleanup::get_cache_metadata(dir_str)
     }
 
+    #[cfg(test)]
     pub(crate) fn cache_dir(&self) -> &Path {
         &self.cache_dir
     }
 
+    #[cfg(test)]
     pub(crate) fn cache_type(&self) -> &str {
         &self.cache_type
     }

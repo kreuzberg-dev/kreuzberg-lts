@@ -115,6 +115,7 @@ impl NativeTextStats {
     }
 
     /// Convenience method using default thresholds.
+    #[cfg(test)]
     pub(crate) fn from(text: &str) -> Self {
         Self::compute(text, &OcrQualityThresholds::default())
     }

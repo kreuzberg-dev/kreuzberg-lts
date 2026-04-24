@@ -100,6 +100,7 @@ impl ApiSizeLimits {
     /// // 50 MB limits
     /// let limits = ApiSizeLimits::from_mb(50, 50);
     /// ```
+    #[cfg(test)]
     pub(crate) fn from_mb(max_request_body_mb: usize, max_multipart_field_mb: usize) -> Self {
         Self {
             max_request_body_bytes: max_request_body_mb * 1024 * 1024,

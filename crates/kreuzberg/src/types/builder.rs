@@ -293,6 +293,7 @@ impl DocumentStructureBuilder {
     }
 
     /// Push a citation / bibliographic reference.
+    #[expect(dead_code, reason = "called from citation/bibtex/rst extractors behind the office feature gate")]
     pub(crate) fn push_citation(&mut self, key: &str, text: &str, page: Option<u32>) -> NodeIndex {
         let content = NodeContent::Citation {
             key: key.to_string(),
@@ -305,6 +306,7 @@ impl DocumentStructureBuilder {
     ///
     /// Subsequent body nodes will be parented under this admonition until
     /// [`exit_container`](Self::exit_container) is called.
+    #[expect(dead_code, reason = "called from docbook/rst extractors behind the office and xml feature gates")]
     pub(crate) fn push_admonition(&mut self, kind: &str, title: Option<&str>, page: Option<u32>) -> NodeIndex {
         let content = NodeContent::Admonition {
             kind: kind.to_string(),
@@ -358,6 +360,7 @@ impl DocumentStructureBuilder {
     }
 
     /// Add a child node to an existing parent (for container nodes like Quote, Slide, Admonition).
+    #[cfg(test)]
     pub(crate) fn add_child(&mut self, parent: NodeIndex, child: NodeIndex) {
         self.doc.add_child(parent, child);
     }
@@ -391,6 +394,7 @@ impl DocumentStructureBuilder {
     }
 
     /// Reset the section stack (e.g. when starting a new page).
+    #[cfg(test)]
     pub(crate) fn clear_sections(&mut self) {
         self.section_stack.clear();
     }
@@ -399,6 +403,7 @@ impl DocumentStructureBuilder {
     ///
     /// Subsequent body nodes will be parented under this container
     /// until [`exit_container`](Self::exit_container) is called.
+    #[cfg(test)]
     pub(crate) fn enter_container(&mut self, container: NodeIndex) {
         self.container_stack.push(container);
     }

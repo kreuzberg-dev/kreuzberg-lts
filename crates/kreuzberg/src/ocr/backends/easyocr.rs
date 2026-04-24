@@ -7,6 +7,7 @@
 /// # Returns
 ///
 /// A vector of 83 language codes supported by EasyOCR.
+#[cfg(test)]
 pub(in crate::ocr) fn languages() -> Vec<String> {
     vec![
         "abq".to_string(),

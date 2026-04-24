@@ -77,6 +77,8 @@ pub(crate) mod markdown_utils;
 
 #[cfg(feature = "archives")]
 pub mod security;
+#[cfg(all(feature = "archives", test))]
+mod security_tests;
 
 #[cfg(any(feature = "ocr", feature = "ocr-wasm"))]
 pub mod image;

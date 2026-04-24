@@ -20,7 +20,6 @@ pub struct TokenReducer {
     filter_pipeline: FilterPipeline,
     semantic_analyzer: Option<SemanticAnalyzer>,
     word_filter: WordFilter,
-    language: String,
 }
 
 impl TokenReducer {
@@ -46,13 +45,7 @@ impl TokenReducer {
             filter_pipeline,
             semantic_analyzer,
             word_filter: WordFilter::new(),
-            language,
         })
-    }
-
-    /// Get the language code being used for stopwords and semantic analysis.
-    pub(crate) fn language(&self) -> &str {
-        &self.language
     }
 
     pub(crate) fn reduce(&self, text: &str) -> String {

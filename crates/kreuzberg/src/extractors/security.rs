@@ -218,11 +218,13 @@ impl ZipBombValidator {
 }
 
 /// Helper struct for tracking and validating string growth.
+#[cfg(test)]
 pub struct StringGrowthValidator {
     max_size: usize,
     current_size: usize,
 }
 
+#[cfg(test)]
 impl StringGrowthValidator {
     /// Create a new string growth validator.
     pub(crate) fn new(max_size: usize) -> Self {
@@ -256,11 +258,13 @@ impl StringGrowthValidator {
 }
 
 /// Helper struct for validating iteration counts.
+#[cfg(test)]
 pub struct IterationValidator {
     max_iterations: usize,
     current_count: usize,
 }
 
+#[cfg(test)]
 impl IterationValidator {
     /// Create a new iteration validator.
     pub(crate) fn new(max_iterations: usize) -> Self {
@@ -294,11 +298,13 @@ impl IterationValidator {
 }
 
 /// Helper struct for validating nesting depth.
+#[cfg(test)]
 pub struct DepthValidator {
     max_depth: usize,
     current_depth: usize,
 }
 
+#[cfg(test)]
 impl DepthValidator {
     /// Create a new depth validator.
     pub(crate) fn new(max_depth: usize) -> Self {
@@ -339,10 +345,12 @@ impl DepthValidator {
 }
 
 /// Helper struct for validating entity/string length.
+#[cfg(test)]
 pub struct EntityValidator {
     max_length: usize,
 }
 
+#[cfg(test)]
 impl EntityValidator {
     /// Create a new entity validator.
     pub(crate) fn new(max_length: usize) -> Self {
@@ -367,11 +375,13 @@ impl EntityValidator {
 }
 
 /// Helper struct for validating table cell counts.
+#[cfg(test)]
 pub struct TableValidator {
     max_cells: usize,
     current_cells: usize,
 }
 
+#[cfg(test)]
 impl TableValidator {
     /// Create a new table validator.
     pub(crate) fn new(max_cells: usize) -> Self {

@@ -77,7 +77,7 @@ impl LatexExtractor {
     }
 
     /// Parse LaTeX content and extract text.
-    fn extract_from_latex(content: &str) -> (String, Metadata, Vec<Table>) {
+    pub(crate) fn extract_from_latex(content: &str) -> (String, Metadata, Vec<Table>) {
         let mut parser = LatexParser::new(content);
         parser.parse()
     }

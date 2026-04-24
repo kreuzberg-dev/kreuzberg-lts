@@ -16,7 +16,9 @@ use crate::ocr::hocr_parser::parse_hocr_to_internal_document;
 #[cfg(feature = "pdf")]
 use crate::ocr::table::post_process_table;
 use crate::ocr::table::{extract_words_from_tsv, reconstruct_table, table_to_markdown};
-use crate::ocr::types::{BatchItemResult, TesseractConfig};
+use crate::ocr::types::TesseractConfig;
+#[cfg(test)]
+use crate::ocr::types::BatchItemResult;
 use crate::types::internal::{ElementKind, InternalDocument};
 use crate::types::{OcrExtractionResult, OcrTable, OcrTableBoundingBox};
 use kreuzberg_tesseract::{TessPageSegMode, TessPolyBlockType, TesseractAPI};
@@ -1317,6 +1319,7 @@ fn process_image_resolved(
 /// per-image resolution).
 ///
 /// Results are returned in the same order as the input file paths.
+#[cfg(test)]
 pub(super) fn process_image_files_batch(
     file_paths: Vec<String>,
     config: &TesseractConfig,

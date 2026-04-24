@@ -38,6 +38,7 @@ impl BoundingBox {
     /// Returns an error if:
     /// - Width (`right - left`) is less than 1e-10 (near-zero)
     /// - Height (`bottom - top`) is less than 1e-10 (near-zero)
+    #[cfg(test)]
     pub(crate) fn new(left: f32, top: f32, right: f32, bottom: f32) -> std::result::Result<BoundingBox, String> {
         let width = (right - left).abs();
         let height = (bottom - top).abs();
@@ -73,6 +74,7 @@ impl BoundingBox {
     /// # Returns
     ///
     /// A BoundingBox without any validation
+    #[cfg(test)]
     pub(crate) fn new_unchecked(left: f32, top: f32, right: f32, bottom: f32) -> BoundingBox {
         BoundingBox {
             left,
@@ -88,6 +90,7 @@ impl BoundingBox {
     ///
     /// The width (right - left). No absolute value is taken as
     /// the BoundingBox::new() constructor ensures correct ordering.
+    #[cfg(test)]
     pub(crate) fn width(&self) -> f32 {
         self.right - self.left
     }
@@ -98,6 +101,7 @@ impl BoundingBox {
     ///
     /// The height (bottom - top). No absolute value is taken as
     /// the BoundingBox::new() constructor ensures correct ordering.
+    #[cfg(test)]
     pub(crate) fn height(&self) -> f32 {
         self.bottom - self.top
     }

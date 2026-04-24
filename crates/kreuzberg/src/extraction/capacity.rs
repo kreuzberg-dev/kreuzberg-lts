@@ -68,6 +68,7 @@
 /// let docx_cap = estimate_content_capacity(1_000_000, "docx");
 /// assert_eq!(docx_cap, 450_000);
 /// ```
+#[expect(dead_code, reason = "called from docx extractor which is behind the office feature gate")]
 #[inline]
 pub(crate) fn estimate_content_capacity(file_size: u64, format: &str) -> usize {
     let ratio = match format.to_lowercase().as_str() {

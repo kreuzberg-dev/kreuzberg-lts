@@ -264,7 +264,7 @@ mod rtf_security_tests {
     /// Test for extremely large numeric parameters
     #[test]
     fn test_rtf_huge_numeric_params() {
-        let rtf = format!("{{\\rtf1 \\fs{}}", "9".repeat(100));
+        let rtf = format!("{{\\rtf1 \\fs{}}}", "9".repeat(100));
         assert!(rtf.len() > 100);
     }
 

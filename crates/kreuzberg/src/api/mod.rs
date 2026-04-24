@@ -103,7 +103,9 @@ mod types;
 
 pub use error::ApiError;
 #[allow(unused_imports)]
-pub use startup::serve_with_server_config;
+pub use router::{create_router, create_router_with_limits};
+#[allow(unused_imports)]
+pub use startup::{serve, serve_default, serve_with_config, serve_with_config_and_limits, serve_with_server_config};
 pub use types::{
     ApiSizeLimits, ApiState, CacheClearResponse, CacheStatsResponse, ChunkRequest, ChunkResponse, DetectResponse,
     DoclingCompatDocument, DoclingCompatResponse, EmbedRequest, EmbedResponse, ErrorResponse, ExtractResponse,

@@ -11,7 +11,9 @@ mod validation;
 
 use crate::ocr::cache::OcrCache;
 use crate::ocr::error::OcrError;
-use crate::ocr::types::{BatchItemResult, TesseractConfig};
+use crate::ocr::types::TesseractConfig;
+#[cfg(test)]
+use crate::ocr::types::BatchItemResult;
 use crate::types::OcrExtractionResult;
 #[cfg(feature = "otel")]
 use std::time::Instant;

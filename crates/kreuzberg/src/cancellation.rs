@@ -40,6 +40,12 @@ pub struct CancellationToken {
 }
 
 impl CancellationToken {
+    /// Create a new, uncancelled token.
+    #[cfg(test)]
+    pub(crate) fn new() -> Self {
+        Self::default()
+    }
+
     /// Signal cancellation.
     ///
     /// All clones of this token will observe [`is_cancelled`] returning `true`

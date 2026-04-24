@@ -95,6 +95,7 @@ static WHITESPACE_NORMALIZE: Lazy<Regex> = Lazy::new(|| {
 static NEWLINE_NORMALIZE: Lazy<Regex> = Lazy::new(|| {
     Regex::new(r"\n\s*\n\s*\n+").expect("Newline normalization regex pattern is valid and should compile")
 });
+#[cfg(test)]
 static NEWLINE_CLEANUP: Lazy<Regex> =
     Lazy::new(|| Regex::new(r"\n+").expect("Newline cleanup regex pattern is valid and should compile"));
 
@@ -402,6 +403,7 @@ fn clean_navigation_elements_cow<'a>(text: Cow<'a, str>) -> Cow<'a, str> {
     chain_replacements(text, &nav_replacements)
 }
 
+#[cfg(test)]
 pub(crate) fn normalize_spaces(text: &str) -> String {
     if text.is_empty() || text.trim().is_empty() {
         return String::new();

@@ -325,6 +325,7 @@ impl ModelManager {
     }
 
     /// Backward-compatible method that ensures all models for English exist.
+    #[cfg(test)]
     pub(crate) fn ensure_models_exist(&self) -> Result<ModelPaths, KreuzbergError> {
         let shared = self.ensure_shared_models("server")?;
         let rec = self.resolve_rec_model("english", "server")?;
@@ -714,6 +715,7 @@ impl ModelManager {
     }
 
     /// Recursively calculates the size of a directory in bytes.
+    #[cfg(test)]
     fn dir_size(path: &Path) -> std::io::Result<u64> {
         let mut size = 0u64;
         for entry in fs::read_dir(path)? {

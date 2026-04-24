@@ -362,16 +362,7 @@ impl PaddleLanguage {
     /// # Returns
     ///
     /// `Some(PaddleLanguage)` if the code is recognized, `None` otherwise
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use kreuzberg::PaddleLanguage;
-    ///
-    /// assert_eq!(PaddleLanguage::from_code("en"), Some(PaddleLanguage::English));
-    /// assert_eq!(PaddleLanguage::from_code("ch"), Some(PaddleLanguage::Chinese));
-    /// assert_eq!(PaddleLanguage::from_code("unknown"), None);
-    /// ```
+    #[cfg(test)]
     pub(crate) fn from_code(code: &str) -> Option<Self> {
         match code {
             "en" => Some(Self::English),

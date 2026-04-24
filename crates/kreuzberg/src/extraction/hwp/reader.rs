@@ -56,12 +56,6 @@ impl StreamReader {
         }
     }
 
-    pub(crate) fn read_u8(&mut self) -> Result<u8> {
-        let mut buf = [0u8; 1];
-        self.cursor.read_exact(&mut buf)?;
-        Ok(buf[0])
-    }
-
     pub(crate) fn read_u16(&mut self) -> Result<u16> {
         let mut buf = [0u8; 2];
         self.cursor.read_exact(&mut buf)?;
@@ -78,11 +72,6 @@ impl StreamReader {
         let mut buf = vec![0u8; len];
         self.cursor.read_exact(&mut buf)?;
         Ok(buf)
-    }
-
-    /// Current byte position within the stream.
-    pub(crate) fn position(&self) -> u64 {
-        self.cursor.position()
     }
 
     /// Number of bytes remaining from the current position to the end.

@@ -12,6 +12,7 @@ pub enum ReductionLevel {
 }
 
 impl ReductionLevel {
+    #[cfg(test)]
     pub(crate) fn as_str(&self) -> &'static str {
         match self {
             ReductionLevel::Off => "off",
@@ -70,6 +71,7 @@ impl Default for TokenReductionConfig {
 }
 
 impl TokenReductionConfig {
+    #[cfg(test)]
     #[allow(clippy::too_many_arguments)]
     pub(crate) fn new(
         level: ReductionLevel,
