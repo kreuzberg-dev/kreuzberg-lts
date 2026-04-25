@@ -8,7 +8,13 @@
   "repository": "https://github.com/kreuzberg-dev/kreuzberg",
   "homepage": "https://kreuzberg.dev",
   "author": "Na'aman Hirschfeld <naaman@kreuzberg.dev>",
-  "keywords": ["document", "extraction", "pdf", "ocr", "text"],
+  "keywords": [
+    "document",
+    "extraction",
+    "pdf",
+    "ocr",
+    "text"
+  ],
   "files": [
     "index.js",
     "index.d.ts",
@@ -30,6 +36,6 @@
     ]
   },
   "devDependencies": {
-    "@napi-rs/cli": "^3.0.0"
+    "@napi-rs/cli": "^3.6.2"
   }
 }

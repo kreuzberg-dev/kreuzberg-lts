@@ -27,7 +27,7 @@
     "test": "node -e \"console.log('Add test command')\""
   },
   "devDependencies": {
-    "@napi-rs/cli": "^3.0.0"
+    "@napi-rs/cli": "^3.6.2"
   },
   "napi": {
     "name": "kreuzberg",

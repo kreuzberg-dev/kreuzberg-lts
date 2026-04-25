@@ -344,7 +344,7 @@ tracing-opentelemetry = { version = "0.32", optional = true }
 unicode-normalization = { version = "0.1.25", optional = true }
 urlencoding = "2"
 utoipa = { version = "5.4", features = ["axum_extras"], optional = true }
-v_htmlescape = { version = "0.15", optional = true }
+v_htmlescape = { version = "0.17", optional = true }
 whatlang = { version = "0.18.0", optional = true }
 zip = { version = ">=7.0.0", optional = true, default-features = false, features = [
     "deflate-flate2",
