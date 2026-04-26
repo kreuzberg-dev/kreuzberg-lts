@@ -11,7 +11,47 @@ pub(crate) mod instrumented;
 // Re-export trait for backward compatibility
 pub use r#trait::DocumentExtractor;
 
-// Re-export registry functions for backward compatibility
+use std::sync::Arc;
+
+/// Register a document extractor plugin with the global registry.
+pub fn register_extractor(extractor: Arc<dyn DocumentExtractor>) -> crate::Result<()> {
+    use crate::plugins::registry::get_document_extractor_registry;
+
+    let registry = get_document_extractor_registry();
+    let mut registry = registry.write();
+
+    registry.register(extractor)
+}
+
+/// Unregister a document extractor by name.
+pub fn unregister_extractor(name: &str) -> crate::Result<()> {
+    use crate::plugins::registry::get_document_extractor_registry;
+
+    let registry = get_document_extractor_registry();
+    let mut registry = registry.write();
+
+    registry.remove(name)
+}
+
+/// List names of all registered document extractors.
+pub fn list_extractors() -> crate::Result<Vec<String>> {
+    use crate::plugins::registry::get_document_extractor_registry;
+
+    let registry = get_document_extractor_registry();
+    let registry = registry.read();
+
+    Ok(registry.list())
+}
+
+/// Remove all registered document extractors.
+pub fn clear_extractors() -> crate::Result<()> {
+    use crate::plugins::registry::get_document_extractor_registry;
+
+    let registry = get_document_extractor_registry();
+    let mut registry = registry.write();
+
+    registry.shutdown_all()
+}
 
 #[cfg(test)]
 mod tests {

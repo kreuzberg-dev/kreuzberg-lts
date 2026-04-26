@@ -189,16 +189,16 @@ pub use embedding::{
     EmbeddingBackend, clear_embedding_backends, list_embedding_backends, register_embedding_backend,
     unregister_embedding_backend,
 };
-pub use extractor::DocumentExtractor;
+pub use extractor::{DocumentExtractor, clear_extractors, list_extractors, register_extractor, unregister_extractor};
 pub use ocr::{
     OcrBackend, OcrBackendType, clear_ocr_backends, list_ocr_backends, register_ocr_backend, unregister_ocr_backend,
 };
 pub use processor::{
     PostProcessor, ProcessingStage, list_post_processors, register_post_processor, unregister_post_processor,
 };
-pub(crate) use renderer::Renderer;
+pub use renderer::{Renderer, clear_renderers, list_renderers, register_renderer, unregister_renderer};
 pub use traits::Plugin;
-pub use validator::{Validator, register_validator, unregister_validator};
+pub use validator::{Validator, clear_validators, list_validators, register_validator, unregister_validator};
 
 // Re-export registry items for backward compatibility
 pub use registry::{

@@ -32,6 +32,26 @@ pub fn unregister_validator(name: &str) -> crate::Result<()> {
     registry.remove(name)
 }
 
+/// List names of all registered validators.
+pub fn list_validators() -> crate::Result<Vec<String>> {
+    use crate::plugins::registry::get_validator_registry;
+
+    let registry = get_validator_registry();
+    let registry = registry.read();
+
+    Ok(registry.list())
+}
+
+/// Remove all registered validators.
+pub fn clear_validators() -> crate::Result<()> {
+    use crate::plugins::registry::get_validator_registry;
+
+    let registry = get_validator_registry();
+    let mut registry = registry.write();
+
+    registry.shutdown_all()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
