@@ -20,6 +20,16 @@ pub fn discover_snippets(dirs: &[PathBuf], language_filter: Option<&[Language]>)
             .filter(|e| e.file_type().is_file())
         {
             let path = entry.path();
+            // Skip alef-generated API reference docs — code blocks in these are
+            // language signature declarations (not runnable), so syntax-validating
+            // them as standalone programs would always fail.
+            if path
+                .file_name()
+                .and_then(|f| f.to_str())
+                .is_some_and(|n| n.starts_with("api-") && n.ends_with(".md"))
+            {
+                continue;
+            }
             let file_snippets = extract_snippets_from_file(path, dir)?;
 
             for snippet in file_snippets {
