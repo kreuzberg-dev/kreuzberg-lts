@@ -2247,7 +2247,7 @@ wheels = [
 
 [[package]]
 name = "kreuzberg"
-version = "4.10.0rc5"
+version = "4.10.0rc6"
 source = { editable = "packages/python" }
 
 [package.optional-dependencies]

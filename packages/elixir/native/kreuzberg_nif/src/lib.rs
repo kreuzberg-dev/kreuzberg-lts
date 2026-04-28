@@ -4914,12 +4914,13 @@ pub fn batch_reduce_tokens(
     config: Option<String>,
     language_hint: Option<String>,
 ) -> Result<Vec<String>, String> {
+    let texts_refs: Vec<&str> = texts.iter().map(|s| s.as_str()).collect();
     let config_core: Option<kreuzberg::TokenReductionConfig> = config
         .map(|s| serde_json::from_str::<kreuzberg::TokenReductionConfig>(&s))
         .transpose()
         .map_err(|e| e.to_string())?;
     let result = kreuzberg::text::batch_reduce_tokens(
-        &texts,
+        &texts_refs,
         config_core.as_ref().unwrap_or(&Default::default()),
         language_hint.as_deref(),
     )
@@ -5147,11 +5148,12 @@ pub fn serve_default_async() -> Result<(), String> {
 /// ```
 #[rustler::nif]
 pub fn chunk_texts_batch(texts: Vec<String>, config: Option<String>) -> Result<Vec<ChunkingResult>, String> {
+    let texts_refs: Vec<&str> = texts.iter().map(|s| s.as_str()).collect();
     let config_core: Option<kreuzberg::ChunkingConfig> = config
         .map(|s| serde_json::from_str::<kreuzberg::ChunkingConfig>(&s))
         .transpose()
         .map_err(|e| e.to_string())?;
-    let result = kreuzberg::chunk_texts_batch(&texts, config_core.as_ref().unwrap_or(&Default::default()))
+    let result = kreuzberg::chunk_texts_batch(&texts_refs, config_core.as_ref().unwrap_or(&Default::default()))
         .map_err(|e| e.to_string())?;
     Ok(result.into_iter().map(Into::into).collect())
 }

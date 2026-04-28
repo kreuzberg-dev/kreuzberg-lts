@@ -4,7 +4,7 @@
 # Issues & docs: https://github.com/kreuzberg-dev/alef
 """Public API for the conversion library.
 
-Version: 4.10.0-rc.5
+Version: 4.10.0-rc.6
 """
 
 from ._kreuzberg import (
@@ -657,4 +657,4 @@ __all__ = [
     "warm_model",
 ]
 
-__version__ = "4.10.0-rc.5"
+__version__ = "4.10.0-rc.6"
