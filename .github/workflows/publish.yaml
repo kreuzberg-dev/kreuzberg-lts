@@ -2833,7 +2833,14 @@ jobs:
             LIB_NAME="libkreuzberg_nif.so"
           fi
 
-          mkdir -p "${GITHUB_WORKSPACE}/dist/elixir"
+          # Convert GITHUB_WORKSPACE to MSYS-style on Windows so GNU tar in MSYS2 bash
+          # accepts the path (Windows-style "D:\a\..." breaks tar with "Broken pipe").
+          if [[ "${{ runner.os }}" == "Windows" ]]; then
+            WORKSPACE_DIR="$(cygpath -u "${GITHUB_WORKSPACE}")"
+          else
+            WORKSPACE_DIR="${GITHUB_WORKSPACE}"
+          fi
+          mkdir -p "${WORKSPACE_DIR}/dist/elixir"
           ARTIFACT_NAME="libkreuzberg_nif-v${VERSION}-nif-${NIF_VERSION}-${TARGET}.${ARCHIVE_EXT}"
           TARBALL="${ARTIFACT_NAME}.tar.gz"
 
@@ -2855,7 +2862,7 @@ jobs:
           cp "$LIB_PATH" "${ARTIFACT_NAME}"
 
           # Create tarball
-          tar -czf "${GITHUB_WORKSPACE}/dist/elixir/${TARBALL}" "${ARTIFACT_NAME}"
+          tar -czf "${WORKSPACE_DIR}/dist/elixir/${TARBALL}" "${ARTIFACT_NAME}"
           echo "Created: dist/elixir/${TARBALL}"
 
       - name: Package native libraries (NIF 2.17)
@@ -2879,6 +2886,11 @@ jobs:
             LIB_NAME="libkreuzberg_nif.so"
           fi
 
+          if [[ "${{ runner.os }}" == "Windows" ]]; then
+            WORKSPACE_DIR="$(cygpath -u "${GITHUB_WORKSPACE}")"
+          else
+            WORKSPACE_DIR="${GITHUB_WORKSPACE}"
+          fi
           ARTIFACT_NAME="libkreuzberg_nif-v${VERSION}-nif-${NIF_VERSION}-${TARGET}.${ARCHIVE_EXT}"
           TARBALL="${ARTIFACT_NAME}.tar.gz"
 
@@ -2897,7 +2909,7 @@ jobs:
           cp "$LIB_PATH" "${ARTIFACT_NAME}"
 
           # Create tarball
-          tar -czf "${GITHUB_WORKSPACE}/dist/elixir/${TARBALL}" "${ARTIFACT_NAME}"
+          tar -czf "${WORKSPACE_DIR}/dist/elixir/${TARBALL}" "${ARTIFACT_NAME}"
           echo "Created: dist/elixir/${TARBALL}"
 
       - name: Upload artifacts
