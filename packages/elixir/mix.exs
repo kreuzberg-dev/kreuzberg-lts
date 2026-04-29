@@ -4,7 +4,7 @@ defmodule Kreuzberg.MixProject do
   def project do
     [
       app: :kreuzberg,
-      version: "4.10.0-rc.14",
+      version: "4.10.0-rc.15",
       elixir: "~> 1.14",
       rustler_crates: [kreuzberg_nif: [mode: :release]],
       description: "High-performance document intelligence library",
