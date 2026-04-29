@@ -46,22 +46,29 @@ fn directive_target(directive: &str) -> Option<&str> {
 /// * `level_override` — explicit root-level string from a CLI flag (e.g. `"debug"`).
 ///   When `Some`, it replaces `RUST_LOG` entirely for the root level.
 pub fn build_env_filter(level_override: Option<&str>) -> EnvFilter {
+    // Use try_new on user input so a malformed --log-level falls back to info
+    // instead of panicking the CLI.
     let base = level_override
-        .map(EnvFilter::new)
+        .and_then(|level| EnvFilter::try_new(level).ok())
         .or_else(|| EnvFilter::try_from_default_env().ok())
         .unwrap_or_else(|| EnvFilter::new("info"));
 
-    // Snapshot the existing directive string so we can skip quiet directives
+    // Snapshot the existing directive set so we can skip quiet directives
     // whose target the user has already configured explicitly.
-    let existing = base.to_string();
+    let existing_targets: std::collections::HashSet<String> = base
+        .to_string()
+        .split(',')
+        .filter_map(|chunk| directive_target(chunk).map(|t| t.trim().to_string()))
+        .collect();
 
     QUIET_DIRECTIVES
         .iter()
         .filter(|directive| {
             // Only add the quiet directive when no per-target rule for this
-            // crate already exists in the base filter.
+            // exact crate already exists. Word-boundary match via tokenized
+            // target set avoids `hf_hub` colliding with `hf_hub_server`.
             directive_target(directive)
-                .map(|target| !existing.contains(&format!("{target}=")))
+                .map(|target| !existing_targets.contains(target))
                 .unwrap_or(true)
         })
         .fold(base, |filter, directive| {
@@ -200,6 +207,36 @@ mod tests {
         assert!(
             directives.contains("hyper_util=warn"),
             "hyper_util must be suppressed to warn at default; got: {directives}"
+        );
+    }
+
+    #[test]
+    fn malformed_level_override_falls_back_to_info() {
+        // Garbage CLI flag must NOT panic — try_new returns Err and we fall back
+        // to RUST_LOG / info default.
+        let filter = build_env_filter(Some(":::garbage"));
+        let directives = filter_directives(&filter);
+        // Quiet directives should still be layered, proving we recovered.
+        assert!(
+            directives.contains("ureq=warn"),
+            "ureq=warn must still be present after malformed override; got: {directives}"
+        );
+    }
+
+    #[test]
+    fn similar_target_name_does_not_block_suppression() {
+        // A user-supplied directive for `hf_hub_server` must NOT cause the
+        // `hf_hub=info` suppression to be skipped (regression test for the
+        // earlier substring-containment bug).
+        let filter = build_env_filter(Some("info,hf_hub_server=debug"));
+        let directives = filter.to_string();
+        assert!(
+            directives.contains("hf_hub_server=debug"),
+            "user directive for hf_hub_server must survive; got: {directives}"
+        );
+        assert!(
+            directives.contains("hf_hub=info"),
+            "hf_hub=info suppression must still be applied; got: {directives}"
         );
     }
 }

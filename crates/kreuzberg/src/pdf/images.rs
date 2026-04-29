@@ -36,6 +36,7 @@ pub struct PdfImage {
 pub struct PdfImageExtractor {
     pub(crate) document: Document,
     pub(crate) max_images_per_page: Option<u32>,
+    pub(crate) classify_enabled: bool,
 }
 
 /// Decode raw PDF image stream bytes according to PDF filter(s).
@@ -402,6 +403,10 @@ struct ImageCollectState<'a> {
     out: &'a mut Vec<PdfImage>,
     visited: std::collections::HashSet<lopdf::ObjectId>,
     page_image_count: u32,
+    /// When `false`, skip the per-image classifier call entirely (used to honor
+    /// `ImageExtractionConfig.classify == false` so consumers paying for raw
+    /// extraction don't pay the entropy-decode cost).
+    classify_enabled: bool,
 }
 
 #[cfg(feature = "tokio-runtime")]
@@ -425,6 +430,7 @@ impl PdfImageExtractor {
         Ok(Self {
             document: doc,
             max_images_per_page: None,
+            classify_enabled: true,
         })
     }
 
@@ -446,6 +452,7 @@ impl PdfImageExtractor {
                 out: &mut all_images,
                 visited: std::collections::HashSet::new(),
                 page_image_count: 0,
+                classify_enabled: self.classify_enabled,
             };
             self.collect_images_from_resources(resources, *page_num as usize, &mut state, 0);
         }
@@ -582,16 +589,23 @@ impl PdfImageExtractor {
                 state.page_image_count += 1;
                 state.img_index += 1;
 
-                // Classify image based on metadata and visual properties
-                let (image_kind, kind_confidence) = crate::extraction::image_kind::classify(
-                    &data,
-                    &decoded_format,
-                    (width > 0).then_some(width as u32),
-                    (height > 0).then_some(height as u32),
-                    color_space.as_deref(),
-                    bits_per_component.map(|b| b as u32),
-                    false,
-                );
+                // Only classify when enabled — gate at the source so the entropy
+                // decode in `image_kind::classify` is skipped entirely on the
+                // performance-escape-hatch path (`ImageExtractionConfig.classify = false`).
+                let (image_kind, kind_confidence) = if state.classify_enabled {
+                    let (kind, conf) = crate::extraction::image_kind::classify(
+                        &data,
+                        &decoded_format,
+                        (width > 0).then_some(width as u32),
+                        (height > 0).then_some(height as u32),
+                        color_space.as_deref(),
+                        bits_per_component.map(|b| b as u32),
+                        false,
+                    );
+                    (Some(kind), Some(conf))
+                } else {
+                    (None, None)
+                };
 
                 state.out.push(PdfImage {
                     page_number,
@@ -603,8 +617,8 @@ impl PdfImageExtractor {
                     filters,
                     data,
                     decoded_format,
-                    image_kind: Some(image_kind),
-                    kind_confidence: Some(kind_confidence),
+                    image_kind,
+                    kind_confidence,
                     cluster_id: None,
                 });
             } else if subtype == b"Form" {
@@ -618,9 +632,14 @@ impl PdfImageExtractor {
 }
 
 #[cfg(feature = "tokio-runtime")]
-pub(crate) fn extract_images_from_pdf(pdf_bytes: &[u8], max_images_per_page: Option<u32>) -> Result<Vec<PdfImage>> {
+pub(crate) fn extract_images_from_pdf(
+    pdf_bytes: &[u8],
+    max_images_per_page: Option<u32>,
+    classify_enabled: bool,
+) -> Result<Vec<PdfImage>> {
     let mut extractor = PdfImageExtractor::new(pdf_bytes)?;
     extractor.max_images_per_page = max_images_per_page;
+    extractor.classify_enabled = classify_enabled;
     extractor.extract_images()
 }
 
@@ -630,7 +649,11 @@ pub(crate) fn extract_images_from_pdf(pdf_bytes: &[u8], max_images_per_page: Opt
 ///
 /// Returns the number of images successfully re-extracted.
 #[cfg(all(feature = "pdf", feature = "tokio-runtime"))]
-pub(crate) fn reextract_raw_images_via_pdfium(pdf_bytes: &[u8], images: &mut [PdfImage]) -> Result<u32> {
+pub(crate) fn reextract_raw_images_via_pdfium(
+    pdf_bytes: &[u8],
+    images: &mut [PdfImage],
+    classify_enabled: bool,
+) -> Result<u32> {
     use pdfium_render::prelude::*;
 
     let needs_fallback = images
@@ -675,6 +698,7 @@ pub(crate) fn reextract_raw_images_via_pdfium(pdf_bytes: &[u8], images: &mut [Pd
                 img,
                 &mut reextracted,
                 0,
+                classify_enabled,
             ) {
                 found = true;
                 break 'outer;
@@ -708,6 +732,7 @@ fn collect_image_from_pdfium_obj(
     img: &mut PdfImage,
     reextracted: &mut u32,
     depth: usize,
+    classify_enabled: bool,
 ) -> bool {
     const MAX_XOBJECT_DEPTH: usize = 10;
     use image::ImageEncoder;
@@ -731,18 +756,23 @@ fn collect_image_from_pdfium_obj(
                         img.width = w as i64;
                         img.height = h as i64;
 
-                        // Re-classify image after successful pdfium re-extraction
-                        let (image_kind, kind_confidence) = crate::extraction::image_kind::classify(
-                            img.data.as_ref(),
-                            &img.decoded_format,
-                            (img.width > 0).then_some(img.width as u32),
-                            (img.height > 0).then_some(img.height as u32),
-                            img.color_space.as_deref(),
-                            img.bits_per_component.map(|b| b as u32),
-                            false,
-                        );
-                        img.image_kind = Some(image_kind);
-                        img.kind_confidence = Some(kind_confidence);
+                        // Re-classify only when caller has classification enabled.
+                        if classify_enabled {
+                            let (image_kind, kind_confidence) = crate::extraction::image_kind::classify(
+                                img.data.as_ref(),
+                                &img.decoded_format,
+                                (img.width > 0).then_some(img.width as u32),
+                                (img.height > 0).then_some(img.height as u32),
+                                img.color_space.as_deref(),
+                                img.bits_per_component.map(|b| b as u32),
+                                false,
+                            );
+                            img.image_kind = Some(image_kind);
+                            img.kind_confidence = Some(kind_confidence);
+                        } else {
+                            img.image_kind = None;
+                            img.kind_confidence = None;
+                        }
 
                         *reextracted += 1;
                     }
@@ -763,6 +793,7 @@ fn collect_image_from_pdfium_obj(
                     img,
                     reextracted,
                     depth + 1,
+                    classify_enabled,
                 ) {
                     return true;
                 }
@@ -786,13 +817,13 @@ mod tests {
 
     #[test]
     fn test_extract_images_invalid_pdf() {
-        let result = extract_images_from_pdf(b"not a pdf", None);
+        let result = extract_images_from_pdf(b"not a pdf", None, true);
         assert!(result.is_err());
     }
 
     #[test]
     fn test_extract_images_empty_pdf() {
-        let result = extract_images_from_pdf(b"", None);
+        let result = extract_images_from_pdf(b"", None, true);
         assert!(result.is_err());
     }
 
@@ -1002,7 +1033,7 @@ mod tests {
         let mut pdf_bytes = Vec::new();
         doc.save_to(&mut pdf_bytes).unwrap();
 
-        let images = extract_images_from_pdf(&pdf_bytes, None).expect("should parse PDF");
+        let images = extract_images_from_pdf(&pdf_bytes, None, true).expect("should parse PDF");
         assert_eq!(images.len(), 1, "image nested inside Form XObject must be found");
         assert_eq!(images[0].width, 1);
         assert_eq!(images[0].height, 1);
@@ -1079,7 +1110,7 @@ mod tests {
         let mut pdf_bytes = Vec::new();
         doc.save_to(&mut pdf_bytes).unwrap();
 
-        let images = extract_images_from_pdf(&pdf_bytes, None).expect("should parse PDF");
+        let images = extract_images_from_pdf(&pdf_bytes, None, true).expect("should parse PDF");
         assert_eq!(
             images.len(),
             1,
@@ -1177,7 +1208,7 @@ mod tests {
         let mut pdf_bytes = Vec::new();
         doc.save_to(&mut pdf_bytes).unwrap();
 
-        let images = extract_images_from_pdf(&pdf_bytes, None).expect("should parse PDF");
+        let images = extract_images_from_pdf(&pdf_bytes, None, true).expect("should parse PDF");
         assert_eq!(images.len(), 1, "image at depth-2 Form nesting must be extracted");
         assert_eq!(images[0].width, 1);
         assert_eq!(images[0].height, 1);

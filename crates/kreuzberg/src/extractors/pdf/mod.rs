@@ -801,12 +801,18 @@ impl PdfExtractor {
         let (images, image_fallback_warning) = if config.images.as_ref().map(|c| c.extract_images).unwrap_or(false) {
             let content_owned = content.to_vec();
             let max_images_per_page = config.images.as_ref().and_then(|i| i.max_images_per_page);
+            let classify_enabled = config.images.as_ref().map(|c| c.classify).unwrap_or(true);
             let result = tokio::task::spawn_blocking(move || {
-                let mut pdf_images = crate::pdf::images::extract_images_from_pdf(&content_owned, max_images_per_page)?;
+                let mut pdf_images =
+                    crate::pdf::images::extract_images_from_pdf(&content_owned, max_images_per_page, classify_enabled)?;
                 // Fallback: re-extract unusable images via pdfium bitmap rendering.
                 #[cfg(feature = "pdf")]
-                let fallback_count =
-                    crate::pdf::images::reextract_raw_images_via_pdfium(&content_owned, &mut pdf_images).unwrap_or(0);
+                let fallback_count = crate::pdf::images::reextract_raw_images_via_pdfium(
+                    &content_owned,
+                    &mut pdf_images,
+                    classify_enabled,
+                )
+                .unwrap_or(0);
                 #[cfg(not(feature = "pdf"))]
                 let fallback_count = 0u32;
                 Ok::<_, crate::pdf::error::PdfError>((pdf_images, fallback_count))
@@ -1335,8 +1341,9 @@ impl PdfExtractor {
         let (images, image_fallback_warning) = if config.images.as_ref().map(|c| c.extract_images).unwrap_or(false) {
             let content_owned = content.to_vec();
             let max_images_per_page = config.images.as_ref().and_then(|i| i.max_images_per_page);
+            let classify_enabled = config.images.as_ref().map(|c| c.classify).unwrap_or(true);
             let result = tokio::task::spawn_blocking(move || {
-                crate::pdf::images::extract_images_from_pdf(&content_owned, max_images_per_page)
+                crate::pdf::images::extract_images_from_pdf(&content_owned, max_images_per_page, classify_enabled)
             })
             .await
             .map_err(|e| crate::error::KreuzbergError::Other(format!("image extraction task panicked: {e}")))?;

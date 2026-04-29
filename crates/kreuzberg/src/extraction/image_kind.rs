@@ -6,6 +6,29 @@
 use crate::types::{ExtractedImage, ImageKind};
 use std::collections::HashMap;
 
+/// Pixel-area below which the small-image rules (Icon / Decoration) trigger.
+/// Tuned for typical icon sizes (16×16 to 64×64).
+const SMALL_IMAGE_AREA: u64 = 64 * 64;
+/// Aspect-ratio band that distinguishes a near-square Icon from a Decoration strip.
+const ICON_ASPECT_LOW: f64 = 0.8;
+const ICON_ASPECT_HIGH: f64 = 1.2;
+/// A Decoration is a tiny image with an extreme aspect ratio outside this band.
+const DECORATION_ASPECT_LOW: f64 = 0.2;
+const DECORATION_ASPECT_HIGH: f64 = 5.0;
+/// Pixel-area above which a JPEG is biased toward Photograph.
+const LARGE_JPEG_AREA: u64 = 800 * 800;
+/// Pixel-area below which low-entropy images are classified as Chart rather than
+/// Photograph (charts tend to be small, palette-poor compared to photos).
+const SMALL_CHART_AREA: u64 = 400 * 400;
+/// Shannon-entropy threshold (bits / byte) that biases an image toward Photograph.
+const HIGH_ENTROPY_THRESHOLD: f64 = 6.0;
+/// Shannon-entropy threshold below which a small image is classified as Chart.
+const LOW_ENTROPY_THRESHOLD: f64 = 3.0;
+/// Hard cap on the source-image pixel count we are willing to fully decode for
+/// entropy analysis. Beyond this we skip the entropy step rather than risk a
+/// multi-gigabyte allocation in `image::load_from_memory`.
+const MAX_CLASSIFY_PIXELS: u64 = 64 * 1024 * 1024; // 64 megapixels
+
 /// Classify an image based on its metadata and visual properties.
 ///
 /// Uses a rule cascade over already-captured signals: dimensions, aspect ratio,
@@ -48,14 +71,29 @@ pub fn classify(
     // Aspect ratio: prefer f64 for precision
     let aspect = if h > 0 { (w as f64) / (h as f64) } else { 1.0 };
 
+    // Degenerate dimensions (0×0 / 0×N / N×0): skip every dimension-gated rule.
+    // No useful classification can be inferred and entropy decode would fail
+    // anyway. Leave it for the entropy path or fall through to Unknown.
+    if w == 0 || h == 0 {
+        return (ImageKind::Unknown, 0.0);
+    }
+
     // Rule: Tiny square → Icon (small icons are typically 16×16 to 64×64)
-    if area < 64 * 64 && aspect > 0.8 && aspect < 1.2 {
+    if area < SMALL_IMAGE_AREA && aspect > ICON_ASPECT_LOW && aspect < ICON_ASPECT_HIGH {
         return (ImageKind::Icon, 0.85);
     }
 
-    // Rule: Very small strip (extreme aspect) → Decoration
-    if area < 64 * 64 && !(0.2..=5.0).contains(&aspect) {
-        return (ImageKind::Decoration, 0.80);
+    // Rule: Tiny image with anything-but-square aspect → Decoration.
+    // Note: this catches the gap between the Icon band and the prior Decoration
+    // band (e.g. small image with aspect 0.25), which would otherwise reach the
+    // entropy path and end up Unknown.
+    if area < SMALL_IMAGE_AREA && !(ICON_ASPECT_LOW..=ICON_ASPECT_HIGH).contains(&aspect) {
+        let confidence = if (DECORATION_ASPECT_LOW..=DECORATION_ASPECT_HIGH).contains(&aspect) {
+            0.65 // moderate-aspect tiny image: less confident
+        } else {
+            0.80 // extreme-aspect tiny strip: high confidence
+        };
+        return (ImageKind::Decoration, confidence);
     }
 
     // Rule: Gray + 1bpp → TextBlock
@@ -69,7 +107,7 @@ pub fn classify(
     }
 
     // Rule: JPEG + large area → Photograph
-    if format == "jpeg" && area > 800 * 800 {
+    if format == "jpeg" && area > LARGE_JPEG_AREA {
         return (ImageKind::Photograph, 0.85);
     }
 
@@ -83,20 +121,55 @@ pub fn classify(
         return (ImageKind::Mask, 0.85);
     }
 
-    // Entropy-based classification: attempt to load and analyze thumbnail
-    if let Ok(entropy) = compute_entropy_on_thumbnail(bytes, w, h) {
+    // Entropy-based classification: only attempt for images we are willing to
+    // fully decode. Rejecting oversized inputs up front prevents the
+    // `image::load_from_memory` call inside `compute_entropy_on_thumbnail` from
+    // allocating multi-gigabyte buffers for a crafted PDF/DOCX image stream.
+    if area > 0
+        && area <= MAX_CLASSIFY_PIXELS
+        && let Ok(entropy) = compute_entropy_on_thumbnail(bytes, w, h)
+    {
         // High entropy → Photograph
-        if entropy > 6.0 {
+        if entropy > HIGH_ENTROPY_THRESHOLD {
             return (ImageKind::Photograph, 0.65);
         }
         // Low entropy + small → Chart
-        if entropy < 3.0 && area < 400 * 400 {
+        if entropy < LOW_ENTROPY_THRESHOLD && area < SMALL_CHART_AREA {
             return (ImageKind::Chart, 0.60);
         }
     }
 
     // Fallback
     (ImageKind::Unknown, 0.50)
+}
+
+/// Iterative path-compressing find for the cluster_tiles union-find.
+///
+/// Two passes: first walk to the root, then re-walk and rewrite each parent
+/// pointer to that root. Iterative to avoid stack overflow on adversarial
+/// inputs (a chain of N parent pointers would otherwise consume N stack frames).
+fn uf_find(parent: &mut [usize], mut x: usize) -> usize {
+    let mut root = x;
+    while parent[root] != root {
+        root = parent[root];
+    }
+    while parent[x] != root {
+        let next = parent[x];
+        parent[x] = root;
+        x = next;
+    }
+    root
+}
+
+/// Union two nodes in the union-find, rooting at the smaller index for
+/// determinism (so cluster IDs follow document reading order).
+fn uf_union(parent: &mut [usize], x: usize, y: usize) {
+    let px = uf_find(parent, x);
+    let py = uf_find(parent, y);
+    if px != py {
+        let (smaller, larger) = if px < py { (px, py) } else { (py, px) };
+        parent[larger] = smaller;
+    }
 }
 
 /// Compute entropy of a downsampled 64×64 thumbnail.
@@ -244,21 +317,6 @@ pub fn cluster_tiles(images: &mut [ExtractedImage]) {
         let n = candidates.len();
         let mut parent: Vec<usize> = (0..n).collect();
 
-        fn find(parent: &mut [usize], x: usize) -> usize {
-            if parent[x] != x {
-                parent[x] = find(parent, parent[x]);
-            }
-            parent[x]
-        }
-
-        fn union(parent: &mut [usize], x: usize, y: usize) {
-            let px = find(parent, x);
-            let py = find(parent, y);
-            if px != py {
-                parent[px] = py;
-            }
-        }
-
         // Connect spatially adjacent candidates
         for (i, idx_i) in candidates.iter().enumerate() {
             for (j, idx_j) in candidates.iter().enumerate().skip(i + 1) {
@@ -287,13 +345,16 @@ pub fn cluster_tiles(images: &mut [ExtractedImage]) {
                         dist <= threshold
                     }
                 } else {
-                    // Fallback: proximity in image_index + dimension match
-                    // (candidates are already dimension-filtered)
-                    (idx_i as i32 - idx_j as i32).abs() <= n as i32
+                    // Fallback when bounding boxes are unavailable (lopdf path):
+                    // tiles in tile-grids tend to be emitted in a contiguous run
+                    // of image_index values. Cap proximity at a small window so
+                    // dozens of bbox-less images on a page don't all merge.
+                    const NO_BBOX_INDEX_WINDOW: i32 = 3;
+                    (idx_i as i32 - idx_j as i32).abs() <= NO_BBOX_INDEX_WINDOW
                 };
 
                 if should_connect {
-                    union(&mut parent, i, j);
+                    uf_union(&mut parent, i, j);
                 }
             }
         }
@@ -301,7 +362,7 @@ pub fn cluster_tiles(images: &mut [ExtractedImage]) {
         // Group by connected component
         let mut clusters: HashMap<usize, Vec<usize>> = HashMap::new();
         for (i, idx_i) in candidates.iter().enumerate() {
-            let root = find(&mut parent, i);
+            let root = uf_find(&mut parent, i);
             clusters.entry(root).or_default().push(*idx_i);
         }
 
@@ -323,7 +384,9 @@ pub fn cluster_tiles(images: &mut [ExtractedImage]) {
                     images[idx].image_kind = Some(ImageKind::TileFragment);
                 }
             }
-            next_cluster_id += 1;
+            // Saturating to keep cluster_id well-defined even on the
+            // physically-impossible 4 -billion-cluster input.
+            next_cluster_id = next_cluster_id.saturating_add(1);
         }
 
         // Emit info span
@@ -887,5 +950,91 @@ mod tests {
 
         assert_eq!(images1[0].cluster_id, images2[0].cluster_id);
         assert_eq!(images1[1].cluster_id, images2[1].cluster_id);
+    }
+
+    #[test]
+    fn test_classify_skips_entropy_for_oversized_image() {
+        // Reported dimensions exceeding MAX_CLASSIFY_PIXELS must short-circuit
+        // before image::load_from_memory allocates the full source buffer. The
+        // function must never panic and must fall through to Unknown rather
+        // than spending CPU/memory on a thumbnail decode for a hostile input.
+        let bytes = b"\x89PNG\r\n\x1a\nbogus body".to_vec();
+        let (kind, conf) = classify(&bytes, "png", Some(20_000), Some(20_000), None, None, false);
+        assert_eq!(kind, ImageKind::Unknown);
+        assert_eq!(conf, 0.50);
+    }
+
+    #[test]
+    fn test_cluster_tiles_isolates_clusters_per_page() {
+        // Identical adjacent-tile pairs on two different pages must NEVER share
+        // a cluster_id — clustering is page-scoped.
+        let mut images = vec![];
+        for page in 1..=2 {
+            for col in 0..2 {
+                images.push(ExtractedImage {
+                    data: bytes::Bytes::new(),
+                    format: "png".into(),
+                    image_index: ((page - 1) * 2 + col),
+                    page_number: Some(page),
+                    width: Some(100),
+                    height: Some(100),
+                    colorspace: None,
+                    bits_per_component: None,
+                    is_mask: false,
+                    description: None,
+                    ocr_result: None,
+                    bounding_box: Some(crate::types::BoundingBox {
+                        x0: (col as f64) * 101.0,
+                        y0: 0.0,
+                        x1: (col as f64) * 101.0 + 100.0,
+                        y1: 100.0,
+                    }),
+                    source_path: None,
+                    image_kind: Some(ImageKind::Drawing),
+                    kind_confidence: Some(0.7),
+                    cluster_id: None,
+                });
+            }
+        }
+        cluster_tiles(&mut images);
+        // Page 1 tiles share a cluster, page 2 tiles share a different cluster.
+        assert!(images[0].cluster_id.is_some());
+        assert_eq!(images[0].cluster_id, images[1].cluster_id);
+        assert_eq!(images[2].cluster_id, images[3].cluster_id);
+        assert_ne!(images[0].cluster_id, images[2].cluster_id);
+    }
+
+    #[test]
+    fn test_classify_does_not_panic_on_zero_dimensions() {
+        let bytes = b"\x89PNG\r\n\x1a\nbody".to_vec();
+        let (kind, conf) = classify(&bytes, "png", Some(0), Some(0), None, None, false);
+        // Degenerate 0×0 inputs short-circuit to Unknown with zero confidence —
+        // every rule is dimension-gated and there is nothing meaningful to infer.
+        assert_eq!(kind, ImageKind::Unknown);
+        assert_eq!(conf, 0.0);
+    }
+
+    #[test]
+    fn test_image_kind_serde_round_trips_all_variants() {
+        // Pin every variant's JSON spelling so future renames are caught.
+        let variants = [
+            (ImageKind::Photograph, "photograph"),
+            (ImageKind::Diagram, "diagram"),
+            (ImageKind::Chart, "chart"),
+            (ImageKind::Drawing, "drawing"),
+            (ImageKind::TextBlock, "text_block"),
+            (ImageKind::Decoration, "decoration"),
+            (ImageKind::Logo, "logo"),
+            (ImageKind::Icon, "icon"),
+            (ImageKind::TileFragment, "tile_fragment"),
+            (ImageKind::Mask, "mask"),
+            (ImageKind::Unknown, "unknown"),
+        ];
+        for (kind, expected) in variants {
+            let json = serde_json::to_string(&kind).expect("serialize");
+            assert_eq!(json, format!("\"{expected}\""), "wrong wire name for {kind:?}");
+            let round_trip: ImageKind = serde_json::from_str(&json).expect("deserialize");
+            assert_eq!(round_trip, kind);
+        }
     }
 }
