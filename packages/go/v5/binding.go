@@ -7111,13 +7111,13 @@ type DocxMetadata struct {
 type DocxMetadataOption func(*DocxMetadata)
 
 // WithDocxMetadataCoreProperties sets the core_properties field.
-func WithDocxMetadataCoreProperties(v string) DocxMetadataOption {
-	return func(c *DocxMetadata) { c.CoreProperties = &v }
+func WithDocxMetadataCoreProperties(v json.RawMessage) DocxMetadataOption {
+	return func(c *DocxMetadata) { c.CoreProperties = v }
 }
 
 // WithDocxMetadataAppProperties sets the app_properties field.
-func WithDocxMetadataAppProperties(v string) DocxMetadataOption {
-	return func(c *DocxMetadata) { c.AppProperties = &v }
+func WithDocxMetadataAppProperties(v json.RawMessage) DocxMetadataOption {
+	return func(c *DocxMetadata) { c.AppProperties = v }
 }
 
 // WithDocxMetadataCustomProperties sets the custom_properties field.
