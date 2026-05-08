@@ -2219,6 +2219,11 @@ trait_name = "OcrBackend"
 super_trait = "kreuzberg::plugins::Plugin"
 registry_getter = "kreuzberg::plugins::registry::get_ocr_backend_registry"
 register_fn = "register_ocr_backend"
+# extendr trait_bridge codegen produces String error literals where extendr_api::Error
+# is expected (E0308) and calls .map_err() on parking_lot RwLockWriteGuard (which is
+# infallible) — 85 build errors as of alef 0.15.0. Rustler trait_bridge codegen produces
+# 31 errors, including invalid associated trait method signatures. Re-enable once
+# alef-backend-{extendr,rustler}/src/trait_bridge.rs is fixed upstream.
 exclude_languages = ["elixir", "r"]
 
 [[crates.trait_bridges]]
