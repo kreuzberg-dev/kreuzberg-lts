@@ -90,14 +90,8 @@ jobs:
         with:
           build-profile: release
 
-      - name: Build FFI library
-        uses: kreuzberg-dev/actions/build-rust-ffi@v1
-        with:
-          crate-name: kreuzberg-ffi
-          build-profile: release
-
-      - name: Build kreuzberg-extract binary
-        run: cargo build --release -p benchmark-harness --bin kreuzberg-extract
+      - name: Build kreuzberg-cli (release, all features)
+        run: cargo build --release -p kreuzberg-cli --features all
 
       - name: Validate ground truth
         run: cargo run --release -p benchmark-harness -- validate-gt --fixtures tools/benchmark-harness/fixtures/
@@ -105,17 +99,13 @@ jobs:
       - name: Log disk space before artifact upload
         run: scripts/ci/validate/show-disk-space.sh "Disk space before artifact upload"
 
-      - name: Upload build artifacts (harness binary + FFI shared lib)
+      - name: Upload build artifacts (harness binary + kreuzberg-cli)
         uses: actions/upload-artifact@v7
         with:
           name: benchmarks-target
           path: |
             target/release/benchmark-harness
-            target/release/kreuzberg-extract
-            target/release/libkreuzberg_ffi.so
-            target/release/libkreuzberg_ffi.dylib
-            target/release/kreuzberg_ffi.dll
-            target/release/libkreuzberg_ffi.a
+            target/release/kreuzberg
           retention-days: 7
           if-no-files-found: warn
 

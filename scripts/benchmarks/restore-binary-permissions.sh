@@ -18,9 +18,9 @@ fi
 chmod +x "$BINARY_PATH"
 echo "✓ Restored executable permissions on: $BINARY_PATH"
 
-# Also restore kreuzberg-extract if present (used by kreuzberg-rust and kreuzberg-rust-paddle adapters)
-EXTRACT_BINARY="$REPO_ROOT/target/release/kreuzberg-extract"
-if [ -f "$EXTRACT_BINARY" ]; then
-  chmod +x "$EXTRACT_BINARY"
-  echo "✓ Restored executable permissions on: $EXTRACT_BINARY"
+# Also restore kreuzberg-cli if present (used by all kreuzberg adapter pipelines)
+CLI_BINARY="$REPO_ROOT/target/release/kreuzberg"
+if [ -f "$CLI_BINARY" ]; then
+  chmod +x "$CLI_BINARY"
+  echo "✓ Restored executable permissions on: $CLI_BINARY"
 fi
