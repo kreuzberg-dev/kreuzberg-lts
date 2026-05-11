@@ -438,6 +438,7 @@ pubspec_name = "kreuzberg"
 lib_name = "kreuzberg"
 style = "frb"
 features = ["full"]
+stub_methods = ["batch_extract_bytes", "batch_extract_bytes_sync"]
 
 [crates.kotlin]
 package = "dev.kreuzberg"
