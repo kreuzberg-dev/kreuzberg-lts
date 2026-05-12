@@ -908,7 +908,7 @@ impl JsHwpxExtractor {
 
     #[napi(js_name = "supportedMimeTypes")]
     pub fn supported_mime_types(&self) -> Vec<String> {
-        self.inner.supported_mime_types().into_iter().map(Into::into).collect()
+        self.inner.supported_mime_types().iter().map(|s| (*s).to_string()).collect()
     }
 
     #[napi]
