@@ -1,11 +1,35 @@
 name: CI E2E
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - "crates/**"
+      - "packages/**"
+      - "e2e/**"
+      - "fixtures/**"
+      - "alef.toml"
+      - "Cargo.toml"
+      - "Cargo.lock"
+      - "Taskfile.yml"
+      - ".github/workflows/ci-e2e.yaml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "crates/**"
+      - "packages/**"
+      - "e2e/**"
+      - "fixtures/**"
+      - "alef.toml"
+      - "Cargo.toml"
+      - "Cargo.lock"
+      - "Taskfile.yml"
+      - ".github/workflows/ci-e2e.yaml"
   workflow_dispatch:
 
 concurrency:
-  group: ci-e2e-${{ github.run_id }}
-  cancel-in-progress: false
+  group: ci-e2e-${{ github.ref }}
+  cancel-in-progress: true
 
 env:
   CARGO_TERM_COLOR: always

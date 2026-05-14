@@ -1,11 +1,27 @@
 name: CI Rust
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - "crates/**"
+      - "Cargo.toml"
+      - "Cargo.lock"
+      - "rust-toolchain.toml"
+      - ".github/workflows/ci-rust.yaml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "crates/**"
+      - "Cargo.toml"
+      - "Cargo.lock"
+      - "rust-toolchain.toml"
+      - ".github/workflows/ci-rust.yaml"
   workflow_dispatch:
 
 concurrency:
-  group: ci-rust-${{ github.run_id }}
-  cancel-in-progress: false
+  group: ci-rust-${{ github.ref }}
+  cancel-in-progress: true
 
 env:
   CARGO_TERM_COLOR: always

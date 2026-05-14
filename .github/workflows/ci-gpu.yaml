@@ -4,8 +4,8 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: ci-gpu-${{ github.run_id }}
-  cancel-in-progress: false
+  group: ci-gpu-${{ github.ref }}
+  cancel-in-progress: true
 
 env:
   CARGO_TERM_COLOR: always

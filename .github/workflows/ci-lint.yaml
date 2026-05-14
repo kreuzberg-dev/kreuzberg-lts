@@ -4,8 +4,8 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: ci-lint-${{ github.run_id }}
-  cancel-in-progress: false
+  group: ci-lint-${{ github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read

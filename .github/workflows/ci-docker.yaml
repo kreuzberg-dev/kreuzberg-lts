@@ -4,8 +4,8 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: ci-docker-${{ github.run_id }}
-  cancel-in-progress: false
+  group: ci-docker-${{ github.ref }}
+  cancel-in-progress: true
 
 env:
   ORT_VERSION: "1.24.2"
