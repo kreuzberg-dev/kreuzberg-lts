@@ -188,8 +188,10 @@ pub struct ExtractionConfig {
     /// via ONNX Runtime. For PDFs, layout hints override paragraph classification
     /// in the markdown pipeline. For images, per-region OCR is performed with
     /// markdown formatting based on detected layout classes.
-    /// Requires the `layout-detection` feature.
-    #[cfg(feature = "layout-detection")]
+    /// Requires the `layout-detection` feature to run inference; the field is
+    /// present whenever the `layout-types` feature is active (which includes
+    /// `layout-detection` as well as the no-ORT target groups).
+    #[cfg(feature = "layout-types")]
     #[serde(default)]
     pub layout: Option<super::super::layout::LayoutDetectionConfig>,
 
@@ -314,7 +316,7 @@ impl Default for ExtractionConfig {
             extraction_timeout_secs: None,
             max_concurrent_extractions: None,
             security_limits: None,
-            #[cfg(feature = "layout-detection")]
+            #[cfg(feature = "layout-types")]
             layout: None,
             use_layout_for_markdown: false,
             result_format: crate::types::ResultFormat::Unified,
@@ -380,7 +382,7 @@ impl ExtractionConfig {
             ref result_format,
             ref output_format,
             ref include_document_structure,
-            #[cfg(feature = "layout-detection")]
+            #[cfg(feature = "layout-types")]
             ref layout,
             ref timeout_secs,
             #[cfg(feature = "tree-sitter")]
@@ -447,7 +449,7 @@ impl ExtractionConfig {
         if let Some(v) = include_document_structure {
             config.include_document_structure = *v;
         }
-        #[cfg(feature = "layout-detection")]
+        #[cfg(feature = "layout-types")]
         if let Some(v) = layout {
             config.layout = Some(v.clone());
         }
@@ -523,9 +525,9 @@ impl ExtractionConfig {
 
         let image_extraction_enabled = self.images.as_ref().map(|i| i.extract_images).unwrap_or(false);
 
-        #[cfg(feature = "layout-detection")]
+        #[cfg(feature = "layout-types")]
         let layout_enabled = self.layout.is_some();
-        #[cfg(not(feature = "layout-detection"))]
+        #[cfg(not(feature = "layout-types"))]
         let layout_enabled = false;
 
         ocr_enabled || image_extraction_enabled || layout_enabled

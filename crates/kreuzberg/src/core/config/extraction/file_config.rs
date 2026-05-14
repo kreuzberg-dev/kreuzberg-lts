@@ -121,7 +121,7 @@ pub struct FileExtractionConfig {
     pub include_document_structure: Option<bool>,
 
     /// Override layout detection for this file.
-    #[cfg(feature = "layout-detection")]
+    #[cfg(feature = "layout-types")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub layout: Option<super::super::layout::LayoutDetectionConfig>,
 

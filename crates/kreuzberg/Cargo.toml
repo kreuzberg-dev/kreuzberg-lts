@@ -208,6 +208,7 @@ no-ort-target = [
     "email",
     "language-detection",
     "chunking",
+    "chunking-tokenizers",
     "quality",
     "keywords",
     "office",
