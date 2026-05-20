@@ -511,6 +511,8 @@ ExtractionConfig$from_json <- function(json) .Call("wrap__ExtractionConfig__from
 }
 #' @export
 `[[.ExtractionConfig` <- `$.ExtractionConfig`
+#' @export
+needs_image_processing.ExtractionConfig <- function(x, ...) x$needs_image_processing(...)
 #' Per-file extraction configuration overrides for batch processing
 #'
 #' All fields are `Option<T>` — `None` means "use the batch-level default."
@@ -1055,6 +1057,16 @@ ServerConfig$from_json <- function(json) .Call("wrap__ServerConfig__from_json", 
 }
 #' @export
 `[[.ServerConfig` <- `$.ServerConfig`
+#' @export
+listen_addr.ServerConfig <- function(x, ...) x$listen_addr(...)
+#' @export
+cors_allows_all.ServerConfig <- function(x, ...) x$cors_allows_all(...)
+#' @export
+is_origin_allowed.ServerConfig <- function(x, ...) x$is_origin_allowed(...)
+#' @export
+max_request_body_mb.ServerConfig <- function(x, ...) x$max_request_body_mb(...)
+#' @export
+max_multipart_field_mb.ServerConfig <- function(x, ...) x$max_multipart_field_mb(...)
 #' StructuredDataResult
 #' @field content content
 #' @field format format
@@ -1726,6 +1738,8 @@ Metadata$from_json <- function(json) .Call("wrap__Metadata__from_json", json, PA
 }
 #' @export
 `[[.Metadata` <- `$.Metadata`
+#' @export
+is_empty.Metadata <- function(x, ...) x$is_empty(...)
 #' Excel/spreadsheet format metadata
 #'
 #' Identifies the document as a spreadsheet source via the `FormatMetadata::Excel`
@@ -2448,6 +2462,28 @@ PaddleOcrConfig$from_json <- function(json) .Call("wrap__PaddleOcrConfig__from_j
 }
 #' @export
 `[[.PaddleOcrConfig` <- `$.PaddleOcrConfig`
+#' @export
+with_cache_dir.PaddleOcrConfig <- function(x, ...) x$with_cache_dir(...)
+#' @export
+with_table_detection.PaddleOcrConfig <- function(x, ...) x$with_table_detection(...)
+#' @export
+with_angle_cls.PaddleOcrConfig <- function(x, ...) x$with_angle_cls(...)
+#' @export
+with_det_db_thresh.PaddleOcrConfig <- function(x, ...) x$with_det_db_thresh(...)
+#' @export
+with_det_db_box_thresh.PaddleOcrConfig <- function(x, ...) x$with_det_db_box_thresh(...)
+#' @export
+with_det_db_unclip_ratio.PaddleOcrConfig <- function(x, ...) x$with_det_db_unclip_ratio(...)
+#' @export
+with_det_limit_side_len.PaddleOcrConfig <- function(x, ...) x$with_det_limit_side_len(...)
+#' @export
+with_rec_batch_num.PaddleOcrConfig <- function(x, ...) x$with_rec_batch_num(...)
+#' @export
+with_drop_score.PaddleOcrConfig <- function(x, ...) x$with_drop_score(...)
+#' @export
+with_padding.PaddleOcrConfig <- function(x, ...) x$with_padding(...)
+#' @export
+with_model_tier.PaddleOcrConfig <- function(x, ...) x$with_model_tier(...)
 #' Combined paths to all models needed for OCR (backward compatibility)
 #' @field det_model Path to the detection model directory.
 #' @field cls_model Path to the classification model directory.
@@ -2690,3 +2726,39 @@ OcrBoundingGeometry$from_json <- function(json) .Call("wrap__OcrBoundingGeometry
 }
 #' @export
 `[[.OcrBoundingGeometry` <- `$.OcrBoundingGeometry`
+#' @export
+cors_allows_all <- function(x, ...) UseMethod("cors_allows_all")
+#' @export
+is_empty <- function(x, ...) UseMethod("is_empty")
+#' @export
+is_origin_allowed <- function(x, ...) UseMethod("is_origin_allowed")
+#' @export
+listen_addr <- function(x, ...) UseMethod("listen_addr")
+#' @export
+max_multipart_field_mb <- function(x, ...) UseMethod("max_multipart_field_mb")
+#' @export
+max_request_body_mb <- function(x, ...) UseMethod("max_request_body_mb")
+#' @export
+needs_image_processing <- function(x, ...) UseMethod("needs_image_processing")
+#' @export
+with_angle_cls <- function(x, ...) UseMethod("with_angle_cls")
+#' @export
+with_cache_dir <- function(x, ...) UseMethod("with_cache_dir")
+#' @export
+with_det_db_box_thresh <- function(x, ...) UseMethod("with_det_db_box_thresh")
+#' @export
+with_det_db_thresh <- function(x, ...) UseMethod("with_det_db_thresh")
+#' @export
+with_det_db_unclip_ratio <- function(x, ...) UseMethod("with_det_db_unclip_ratio")
+#' @export
+with_det_limit_side_len <- function(x, ...) UseMethod("with_det_limit_side_len")
+#' @export
+with_drop_score <- function(x, ...) UseMethod("with_drop_score")
+#' @export
+with_model_tier <- function(x, ...) UseMethod("with_model_tier")
+#' @export
+with_padding <- function(x, ...) UseMethod("with_padding")
+#' @export
+with_rec_batch_num <- function(x, ...) UseMethod("with_rec_batch_num")
+#' @export
+with_table_detection <- function(x, ...) UseMethod("with_table_detection")

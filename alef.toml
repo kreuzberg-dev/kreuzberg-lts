@@ -1354,7 +1354,7 @@ function = "clear_ocr_backends"
 module = "Kreuzberg"
 
 [crates.e2e.calls.clear_ocr_backends.overrides.php]
-function = "clear_ocr_backends"
+function = "clearOcrBackends"
 module = "Kreuzberg"
 
 [crates.e2e.calls.clear_ocr_backends.overrides.java]
@@ -1423,7 +1423,7 @@ function = "clear_post_processors"
 module = "Kreuzberg"
 
 [crates.e2e.calls.clear_post_processors.overrides.php]
-function = "clear_post_processors"
+function = "clearPostProcessors"
 module = "Kreuzberg"
 
 [crates.e2e.calls.clear_post_processors.overrides.java]
@@ -1492,7 +1492,7 @@ function = "clear_validators"
 module = "Kreuzberg"
 
 [crates.e2e.calls.clear_validators.overrides.php]
-function = "clear_validators"
+function = "clearValidators"
 module = "Kreuzberg"
 
 [crates.e2e.calls.clear_validators.overrides.java]
@@ -1562,7 +1562,7 @@ function = "unregister_ocr_backend"
 module = "Kreuzberg"
 
 [crates.e2e.calls.unregister_ocr_backend.overrides.php]
-function = "unregister_ocr_backend"
+function = "unregisterOcrBackend"
 module = "Kreuzberg"
 
 [crates.e2e.calls.unregister_ocr_backend.overrides.java]
@@ -1631,7 +1631,7 @@ function = "unregister_post_processor"
 module = "Kreuzberg"
 
 [crates.e2e.calls.unregister_post_processor.overrides.php]
-function = "unregister_post_processor"
+function = "unregisterPostProcessor"
 module = "Kreuzberg"
 
 [crates.e2e.calls.unregister_post_processor.overrides.java]
@@ -1700,7 +1700,7 @@ function = "unregister_validator"
 module = "Kreuzberg"
 
 [crates.e2e.calls.unregister_validator.overrides.php]
-function = "unregister_validator"
+function = "unregisterValidator"
 module = "Kreuzberg"
 
 [crates.e2e.calls.unregister_validator.overrides.java]
@@ -1769,7 +1769,7 @@ function = "register_ocr_backend"
 module = "Kreuzberg"
 
 [crates.e2e.calls.register_ocr_backend.overrides.php]
-function = "register_ocr_backend"
+function = "registerOcrBackend"
 module = "Kreuzberg"
 
 [crates.e2e.calls.register_ocr_backend.overrides.java]
@@ -1838,7 +1838,7 @@ function = "register_post_processor"
 module = "Kreuzberg"
 
 [crates.e2e.calls.register_post_processor.overrides.php]
-function = "register_post_processor"
+function = "registerPostProcessor"
 module = "Kreuzberg"
 
 [crates.e2e.calls.register_post_processor.overrides.java]
@@ -1907,7 +1907,7 @@ function = "register_validator"
 module = "Kreuzberg"
 
 [crates.e2e.calls.register_validator.overrides.php]
-function = "register_validator"
+function = "registerValidator"
 module = "Kreuzberg"
 
 [crates.e2e.calls.register_validator.overrides.java]
@@ -1976,7 +1976,7 @@ function = "register_embedding_backend"
 module = "Kreuzberg"
 
 [crates.e2e.calls.register_embedding_backend.overrides.php]
-function = "register_embedding_backend"
+function = "registerEmbeddingBackend"
 module = "Kreuzberg"
 
 [crates.e2e.calls.register_embedding_backend.overrides.java]
@@ -2045,7 +2045,7 @@ function = "unregister_embedding_backend"
 module = "Kreuzberg"
 
 [crates.e2e.calls.unregister_embedding_backend.overrides.php]
-function = "unregister_embedding_backend"
+function = "unregisterEmbeddingBackend"
 module = "Kreuzberg"
 
 [crates.e2e.calls.unregister_embedding_backend.overrides.java]
@@ -2114,7 +2114,7 @@ function = "clear_embedding_backends"
 module = "Kreuzberg"
 
 [crates.e2e.calls.clear_embedding_backends.overrides.php]
-function = "clear_embedding_backends"
+function = "clearEmbeddingBackends"
 module = "Kreuzberg"
 
 [crates.e2e.calls.clear_embedding_backends.overrides.java]
@@ -2183,7 +2183,7 @@ function = "register_document_extractor"
 module = "Kreuzberg"
 
 [crates.e2e.calls.register_document_extractor.overrides.php]
-function = "register_document_extractor"
+function = "registerDocumentExtractor"
 module = "Kreuzberg"
 
 [crates.e2e.calls.register_document_extractor.overrides.java]
@@ -2252,7 +2252,7 @@ function = "unregister_document_extractor"
 module = "Kreuzberg"
 
 [crates.e2e.calls.unregister_document_extractor.overrides.php]
-function = "unregister_document_extractor"
+function = "unregisterDocumentExtractor"
 module = "Kreuzberg"
 
 [crates.e2e.calls.unregister_document_extractor.overrides.java]
@@ -2321,7 +2321,7 @@ function = "clear_document_extractors"
 module = "Kreuzberg"
 
 [crates.e2e.calls.clear_document_extractors.overrides.php]
-function = "clear_document_extractors"
+function = "clearDocumentExtractors"
 module = "Kreuzberg"
 
 [crates.e2e.calls.clear_document_extractors.overrides.java]
@@ -2390,7 +2390,7 @@ function = "register_renderer"
 module = "Kreuzberg"
 
 [crates.e2e.calls.register_renderer.overrides.php]
-function = "register_renderer"
+function = "registerRenderer"
 module = "Kreuzberg"
 
 [crates.e2e.calls.register_renderer.overrides.java]
@@ -2459,7 +2459,7 @@ function = "unregister_renderer"
 module = "Kreuzberg"
 
 [crates.e2e.calls.unregister_renderer.overrides.php]
-function = "unregister_renderer"
+function = "unregisterRenderer"
 module = "Kreuzberg"
 
 [crates.e2e.calls.unregister_renderer.overrides.java]
@@ -2528,7 +2528,7 @@ function = "clear_renderers"
 module = "Kreuzberg"
 
 [crates.e2e.calls.clear_renderers.overrides.php]
-function = "clear_renderers"
+function = "clearRenderers"
 module = "Kreuzberg"
 
 [crates.e2e.calls.clear_renderers.overrides.java]
