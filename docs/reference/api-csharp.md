@@ -11,7 +11,6 @@ title: "C# API Reference"
 Extract content from a byte array.
 
 This is the main entry point for in-memory extraction. It performs the following steps:
-
 1. Validate MIME type
 2. Handle legacy format conversion if needed
 3. Select appropriate extractor from registry
@@ -51,7 +50,6 @@ public static async Task<ExtractionResult> ExtractBytesAsync(byte[] content, str
 Extract content from a file.
 
 This is the main entry point for file-based extraction. It performs the following steps:
-
 1. Check cache for existing result (if caching enabled)
 2. Detect or validate MIME type
 3. Select appropriate extractor from registry
@@ -215,8 +213,7 @@ Batch-level settings like `max_concurrent_extractions` and `use_cache` are alway
 taken from the batch-level `config`.
 
   per-file configuration overrides.
-
-- `config` - Batch-level extraction configuration (provides defaults and batch settings)
+* `config` - Batch-level extraction configuration (provides defaults and batch settings)
 
 **Returns:**
 
@@ -264,8 +261,7 @@ fields from the batch-level `config`. Pass `null` as the config to use
 the batch-level defaults for that item.
 
   MIME type, and optional per-item configuration overrides.
-
-- `config` - Batch-level extraction configuration
+* `config` - Batch-level extraction configuration
 
 **Returns:**
 
@@ -1098,7 +1094,6 @@ Page-level detection result containing all detections and page metadata.
 Comprehensive Djot document structure with semantic preservation.
 
 This type captures the full richness of Djot markup, including:
-
 - Block-level structures (headings, lists, blockquotes, code blocks, etc.)
 - Inline formatting (emphasis, strong, highlight, subscript, superscript, etc.)
 - Attributes (classes, IDs, key-value pairs)
@@ -1170,7 +1165,6 @@ derivation step.
 
 When multiple extractors support the same MIME type, the registry selects
 the extractor with the highest priority value. Use this to:
-
 - Override built-in extractors (priority > 50)
 - Provide fallback extractors (priority < 50)
 - Implement specialized extractors for specific use cases
@@ -1233,7 +1227,6 @@ public async Task<InternalDocument> ExtractFileAsync(string path, string mimeTyp
 Get the list of MIME types supported by this extractor.
 
 Can include exact MIME types and prefix patterns:
-
 - Exact: `"application/pdf"`, `"text/plain"`
 - Prefix: `"image/*"` (matches any image type)
 
@@ -1900,7 +1893,6 @@ Returns `false` if both are disabled, allowing optimization to skip unnecessary
 image decompression for text-only extraction workflows.
 
 ### Optimization Impact
-
 For text-only extractions (no OCR, no image extraction), skipping image
 decompression can improve CPU utilization by 5-10% by avoiding wasteful
 image I/O and processing when results won't be used.
@@ -1990,7 +1982,6 @@ extraction settings within a single batch.
 
 The following `ExtractionConfig` fields are batch-level only and
 cannot be overridden per file:
-
 - `max_concurrent_extractions` — controls batch parallelism
 - `use_cache` — global caching policy
 - `acceleration` — shared ONNX execution provider
@@ -2638,7 +2629,6 @@ Combined paths to all models needed for OCR (backward compatibility).
 Trait for OCR backend plugins.
 
 Implement this trait to add custom OCR capabilities. OCR backends can be:
-
 - Native Rust implementations (like Tesseract)
 - FFI bridges to Python libraries (like EasyOCR, PaddleOCR)
 - Cloud-based OCR services (Google Vision, AWS Textract, etc.)
@@ -2811,7 +2801,7 @@ OCR configuration.
 | `TesseractConfig` | `TesseractConfig?` | `null` | Tesseract-specific configuration (optional) |
 | `OutputFormat` | `OutputFormat?` | `null` | Output format for OCR results (optional, for format conversion) |
 | `PaddleOcrConfig` | `object?` | `null` | PaddleOCR-specific configuration (optional, JSON passthrough) |
-| `BackendOptions` | `object?` | `null` | Arbitrary per-call options passed through to the backend unchanged. Custom OCR backends and built-in backends that support runtime tuning can read this value and deserialize the keys they care about. Keys unknown to the backend are silently ignored. This is the recommended extension point for per-call parameters that are not covered by the typed fields above (e.g. mode switching, preprocessing flags, inference batch size). **Scope:** when `pipeline` is `null`, this value is propagated to the primary stage of the auto-constructed pipeline. When `pipeline` is explicitly set, this field has **no effect** — the caller must set `OcrPipelineStage.backend_options` directly on the relevant stage(s) instead. Example: ```json { "mode": "fast", "enable_layout": true, "timeout_ms": 5000 }``` |
+| `BackendOptions` | `object?` | `null` | Arbitrary per-call options passed through to the backend unchanged. Custom OCR backends and built-in backends that support runtime tuning can read this value and deserialize the keys they care about. Keys unknown to the backend are silently ignored. This is the recommended extension point for per-call parameters that are not covered by the typed fields above (e.g. mode switching, preprocessing flags, inference batch size). **Scope:** when `pipeline` is `null`, this value is propagated to the primary stage of the auto-constructed pipeline. When `pipeline` is explicitly set, this field has **no effect** — the caller must set `OcrPipelineStage.backend_options` directly on the relevant stage(s) instead. Example: ```json { "mode": "fast", "enable_layout": true, "timeout_ms": 5000 } ``` |
 | `ElementConfig` | `OcrElementConfig?` | `null` | OCR element extraction configuration |
 | `QualityThresholds` | `OcrQualityThresholds?` | `null` | Quality thresholds for the native-text-to-OCR fallback decision. When None, uses compiled defaults (matching previous hardcoded behavior). |
 | `Pipeline` | `OcrPipelineConfig?` | `null` | Multi-backend OCR pipeline configuration. When set, enables weighted fallback across multiple OCR backends based on output quality. When None, uses the single `backend` field (same as today). |
@@ -2942,7 +2932,7 @@ A single backend stage in the OCR pipeline.
 | `TesseractConfig` | `TesseractConfig?` | `null` | Tesseract-specific config override for this stage. |
 | `PaddleOcrConfig` | `object?` | `null` | PaddleOCR-specific config for this stage. |
 | `VlmConfig` | `LlmConfig?` | `null` | VLM config override for this pipeline stage. |
-| `BackendOptions` | `object?` | `null` | Arbitrary per-call options passed through to the backend unchanged. Backends that support runtime tuning (mode switching, preprocessing flags, inference parameters, etc.) read this value and deserialize the keys they care about. Keys unknown to the backend are silently ignored, so options from different backends can coexist in the same config without conflict. Example (custom backend): ```json { "mode": "fast", "enable_layout": true }``` |
+| `BackendOptions` | `object?` | `null` | Arbitrary per-call options passed through to the backend unchanged. Backends that support runtime tuning (mode switching, preprocessing flags, inference parameters, etc.) read this value and deserialize the keys they care about. Keys unknown to the backend are silently ignored, so options from different backends can coexist in the same config without conflict. Example (custom backend): ```json { "mode": "fast", "enable_layout": true } ``` |
 
 
 ---
@@ -3226,7 +3216,7 @@ when page boundaries are available and chunking is configured.
 |-------|------|---------|-------------|
 | `ExtractPages` | `bool` | `false` | Extract pages as separate array (ExtractionResult.pages) |
 | `InsertPageMarkers` | `bool` | `false` | Insert page markers in main content string |
-| `MarkerFormat` | `string` | `" |  |
+| `MarkerFormat` | `string` | `"
 
 <!-- PAGE {page_num} -->
 
@@ -3255,7 +3245,6 @@ with associated tables and images mapped to each page.
 ### Performance
 
 Uses Arc-wrapped tables and images for memory efficiency:
-
 - `Vec<Arc<Table>>` enables zero-copy sharing of table data
 - `Vec<Arc<ExtractedImage>>` enables zero-copy sharing of image data
 - Maintains exact JSON compatibility via custom Serialize/Deserialize
@@ -3418,7 +3407,6 @@ All plugins must be `Send + Sync` to support concurrent usage across threads.
 Returns the unique name/identifier for this plugin.
 
 The name should be:
-
 - Unique across all plugins
 - Lowercase with hyphens (e.g., "my-custom-plugin")
 - URL-safe characters only
@@ -3448,7 +3436,6 @@ public string Version()
 Initialize the plugin.
 
 Called once when the plugin is registered. Use this to:
-
 - Load configuration
 - Initialize resources (connections, caches, etc.)
 - Validate dependencies
@@ -3478,7 +3465,6 @@ Shutdown the plugin.
 
 Called when the plugin is being unregistered or the application is shutting down.
 Use this to:
-
 - Close connections
 - Flush caches
 - Release resources
@@ -3534,7 +3520,6 @@ Trait for post-processor plugins.
 
 Post-processors transform or enrich extraction results after the initial
 extraction is complete. They can:
-
 - Clean and normalize text
 - Add metadata (language, keywords, entities)
 - Split content into chunks
@@ -3544,7 +3529,6 @@ extraction is complete. They can:
 ### Processing Order
 
 Post-processors are executed in stage order:
-
 1. **Early** - Language detection, entity extraction
 2. **Middle** - Keyword extraction, token reduction
 3. **Late** - Custom hooks, final validation
@@ -3567,7 +3551,6 @@ Post-processors must be thread-safe (`Send + Sync`).
 Process an extraction result.
 
 Transform or enrich the extraction result. Can modify:
-
 - `content` - The extracted text
 - `metadata` - Add or update metadata fields
 - `tables` - Modify or enhance table data
@@ -3829,7 +3812,7 @@ public RakeParams CreateDefault()
 Pre-computed table markdown for a table detection region.
 
 Produced by the TATR-based table structure recognizer and surfaced as part of
-layout-aware OCR results. The struct lives here (under `layout-types`, pure-Rust)
+layout-aware OCR results.  The struct lives here (under `layout-types`, pure-Rust)
 so that consumers who do not enable `layout-detection` (ORT) can still reference
 the type in their own code.
 
@@ -3979,7 +3962,6 @@ public bool CorsAllowsAll()
 Check if a given origin is allowed by CORS configuration.
 
 Returns `true` if:
-
 - CORS allows all origins (empty origins list), or
 - The given origin is in the allowed origins list
 
@@ -4704,12 +4686,12 @@ YAML).
 
 Type of text chunker to use.
 
-## Variants
+# Variants
 
-- `Text` - Generic text splitter, splits on whitespace and punctuation
-- `Markdown` - Markdown-aware splitter, preserves formatting and structure
-- `Yaml` - YAML-aware splitter, creates one chunk per top-level key
-- `Semantic` - Topic-aware chunker. With an `EmbeddingConfig`, splits at
+* `Text` - Generic text splitter, splits on whitespace and punctuation
+* `Markdown` - Markdown-aware splitter, preserves formatting and structure
+* `Yaml` - YAML-aware splitter, creates one chunk per top-level key
+* `Semantic` - Topic-aware chunker. With an `EmbeddingConfig`, splits at
   embedding-based topic shifts tuned by `topic_threshold` (default 0.75,
   lower = more splits). Without an embedding, falls back to a
   structural-boundary heuristic (ALL-CAPS headers, numbered sections,
@@ -4727,7 +4709,7 @@ Type of text chunker to use.
 
 ---
 
-### ChunkSizing
+#### ChunkSizing
 
 How chunk size is measured.
 
@@ -4760,7 +4742,7 @@ Embedding model types supported by Kreuzberg.
 
 ---
 
-##### CodeContentMode
+#### CodeContentMode
 
 Content rendering mode for code extraction.
 
@@ -4776,7 +4758,7 @@ of `ExtractionResult`.
 
 ---
 
-##### ListType
+#### ListType
 
 Type of list detection.
 
@@ -4790,7 +4772,7 @@ Type of list detection.
 
 ---
 
-##### DrawingType
+#### DrawingType
 
 Whether the drawing is inline or anchored.
 
@@ -4802,7 +4784,7 @@ Whether the drawing is inline or anchored.
 
 ---
 
-##### FracType
+#### FracType
 
 | Value | Description |
 |-------|-------------|
@@ -4814,7 +4796,7 @@ Whether the drawing is inline or anchored.
 
 ---
 
-##### OcrBackendType
+#### OcrBackendType
 
 OCR backend types.
 
@@ -4828,7 +4810,7 @@ OCR backend types.
 
 ---
 
-##### ProcessingStage
+#### ProcessingStage
 
 Processing stages for post-processors.
 
@@ -4844,7 +4826,7 @@ Use stages to control the order of post-processing operations.
 
 ---
 
-##### ReductionLevel
+#### ReductionLevel
 
 | Value | Description |
 |-------|-------------|
@@ -4857,7 +4839,7 @@ Use stages to control the order of post-processing operations.
 
 ---
 
-##### PdfAnnotationType
+#### PdfAnnotationType
 
 Type of PDF annotation.
 
@@ -4874,7 +4856,7 @@ Type of PDF annotation.
 
 ---
 
-##### BlockType
+#### BlockType
 
 Types of block-level elements in Djot.
 
@@ -4900,7 +4882,7 @@ Types of block-level elements in Djot.
 
 ---
 
-##### InlineType
+#### InlineType
 
 Types of inline elements in Djot.
 
@@ -4926,7 +4908,7 @@ Types of inline elements in Djot.
 
 ---
 
-##### RelationshipKind
+#### RelationshipKind
 
 Semantic kind of a relationship between document elements.
 
@@ -4943,7 +4925,7 @@ Semantic kind of a relationship between document elements.
 
 ---
 
-##### ContentLayer
+#### ContentLayer
 
 Content layer classification for document nodes.
 
@@ -4959,7 +4941,7 @@ Replaces separate body/furniture arrays with per-node granularity.
 
 ---
 
-##### NodeContent
+#### NodeContent
 
 Tagged enum for node content. Each variant carries only type-specific data.
 
@@ -4992,7 +4974,7 @@ Go/Java/TypeScript bindings.
 
 ---
 
-##### AnnotationKind
+#### AnnotationKind
 
 Types of inline text annotations.
 
@@ -5014,7 +4996,7 @@ Types of inline text annotations.
 
 ---
 
-##### ExtractionMethod
+#### ExtractionMethod
 
 How the extracted text was produced.
 
@@ -5027,7 +5009,7 @@ How the extracted text was produced.
 
 ---
 
-##### ChunkType
+#### ChunkType
 
 Semantic structural classification of a text chunk.
 
@@ -5054,7 +5036,7 @@ Designed to be extended in future versions without breaking changes.
 
 ---
 
-##### ImageKind
+#### ImageKind
 
 Heuristic classification of what an image likely depicts.
 
@@ -5075,7 +5057,7 @@ Heuristic classification of what an image likely depicts.
 
 ---
 
-##### ResultFormat
+#### ResultFormat
 
 Result-shape selection for extraction results.
 
@@ -5091,7 +5073,7 @@ blob vs. an element-based decomposition.
 
 ---
 
-##### ElementType
+#### ElementType
 
 Semantic element type classification.
 
@@ -5115,7 +5097,7 @@ Supports the element types commonly found in Unstructured documents.
 
 ---
 
-##### FormatMetadata
+#### FormatMetadata
 
 Format-specific metadata (discriminated union).
 
@@ -5148,7 +5130,7 @@ type-safe, clean metadata without nested optionals.
 
 ---
 
-##### TextDirection
+#### TextDirection
 
 Text direction enumeration for HTML documents.
 
@@ -5161,7 +5143,7 @@ Text direction enumeration for HTML documents.
 
 ---
 
-##### LinkType
+#### LinkType
 
 Link type classification.
 
@@ -5177,7 +5159,7 @@ Link type classification.
 
 ---
 
-##### ImageType
+#### ImageType
 
 Image type classification.
 
@@ -5191,7 +5173,7 @@ Image type classification.
 
 ---
 
-##### StructuredDataType
+#### StructuredDataType
 
 Structured data type classification.
 
@@ -5204,7 +5186,7 @@ Structured data type classification.
 
 ---
 
-##### OcrBoundingGeometry
+#### OcrBoundingGeometry
 
 Bounding geometry for an OCR element.
 
@@ -5219,7 +5201,7 @@ Supports both axis-aligned rectangles (from Tesseract) and 4-point quadrilateral
 
 ---
 
-##### OcrElementLevel
+#### OcrElementLevel
 
 Hierarchical level of an OCR element.
 
@@ -5236,7 +5218,7 @@ equivalent semantics for PaddleOCR.
 
 ---
 
-##### PageUnitType
+#### PageUnitType
 
 Type of paginated unit in a document.
 
@@ -5251,7 +5233,7 @@ Distinguishes between different types of "pages" (PDF pages, presentation slides
 
 ---
 
-##### UriKind
+#### UriKind
 
 Semantic classification of an extracted URI.
 
@@ -5267,7 +5249,7 @@ Semantic classification of an extracted URI.
 
 ---
 
-##### KeywordAlgorithm
+#### KeywordAlgorithm
 
 Keyword algorithm selection.
 
@@ -5279,7 +5261,7 @@ Keyword algorithm selection.
 
 ---
 
-##### PsmMode
+#### PsmMode
 
 Page Segmentation Mode for Tesseract OCR
 
@@ -5300,7 +5282,7 @@ Page Segmentation Mode for Tesseract OCR
 
 ---
 
-##### PaddleLanguage
+#### PaddleLanguage
 
 Supported languages in PaddleOCR.
 
@@ -5328,7 +5310,7 @@ Maps user-friendly language codes to paddle-ocr-rs language identifiers.
 
 ---
 
-##### LayoutClass
+#### LayoutClass
 
 The 17 canonical document layout classes.
 
@@ -5361,16 +5343,16 @@ Wire format is snake_case in all serializers (JSON, TOML, YAML).
 
 ---
 
-#### Errors
+### Errors
 
-##### KreuzbergError
+#### KreuzbergError
 
 Main error type for all Kreuzberg operations.
 
 All errors in Kreuzberg use this enum, which preserves error chains
 and provides context for debugging.
 
-## Variants
+# Variants
 
 - `Io` - File system and I/O errors (always bubble up)
 - `Parsing` - Document parsing errors (corrupt files, unsupported features)

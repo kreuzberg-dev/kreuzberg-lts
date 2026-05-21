@@ -59,10 +59,7 @@ private class ChunkSizingDeserializer : com.fasterxml.jackson.databind.deser.std
             "characters" -> ChunkSizing.Characters
             "tokenizer" -> ctx.readTreeAsValue<ChunkSizing.Tokenizer>(payload, ChunkSizing.Tokenizer::class.java)
             else -> throw com.fasterxml.jackson.databind.exc.InvalidFormatException(
-                parser,
-                "Unknown ChunkSizing tag",
-                tag,
-                ChunkSizing::class.java,
+                parser, "Unknown ChunkSizing tag", tag, ChunkSizing::class.java,
             )
         }
     }
@@ -76,9 +73,7 @@ private class ChunkSizingSerializer : com.fasterxml.jackson.databind.ser.std.Std
         provider: com.fasterxml.jackson.databind.SerializerProvider,
     ) {
         @Suppress("UNCHECKED_CAST")
-        val mapper =
-            (gen.codec as? com.fasterxml.jackson.databind.ObjectMapper)
-                ?: com.fasterxml.jackson.databind.ObjectMapper().findAndRegisterModules()
+        val mapper = (gen.codec as? com.fasterxml.jackson.databind.ObjectMapper) ?: com.fasterxml.jackson.databind.ObjectMapper().findAndRegisterModules()
         val node: com.fasterxml.jackson.databind.node.ObjectNode = when (value) {
             is ChunkSizing.Characters -> {
                 val n = mapper.createObjectNode()
@@ -87,9 +82,7 @@ private class ChunkSizingSerializer : com.fasterxml.jackson.databind.ser.std.Std
             }
             is ChunkSizing.Tokenizer -> {
                 @Suppress("UNCHECKED_CAST")
-                val n = mapper.valueToTree<com.fasterxml.jackson.databind.node.ObjectNode>(
-                    value as ChunkSizing.Tokenizer
-                ) as com.fasterxml.jackson.databind.node.ObjectNode
+                val n = mapper.valueToTree<com.fasterxml.jackson.databind.node.ObjectNode>(value as ChunkSizing.Tokenizer) as com.fasterxml.jackson.databind.node.ObjectNode
                 n.put("type", "tokenizer")
                 n
             }

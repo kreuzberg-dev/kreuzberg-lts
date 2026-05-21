@@ -3,21 +3,13 @@
   "version": "5.0.0-rc.1",
   "description": "High-performance document intelligence library",
   "license": "Elastic-2.0",
-  "files": [
-    "index.js",
-    "index.d.ts",
-    "*.node"
-  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kreuzberg-dev/kreuzberg.git"
+  },
   "main": "index.js",
   "types": "index.d.ts",
-  "scripts": {
-    "build": "napi build --platform --release",
-    "artifacts": "napi artifacts",
-    "prepublishOnly": "napi prepublish -t npm --skip-optional-publish"
-  },
-  "devDependencies": {
-    "@napi-rs/cli": "^3.6.2"
-  },
+  "files": ["index.js", "index.d.ts", "*.node"],
   "napi": {
     "binaryName": "kreuzberg-node",
     "targets": [
@@ -29,7 +21,11 @@
       "aarch64-pc-windows-msvc"
     ]
   },
-  "engines": {
-    "node": ">= 18"
-  }
+  "scripts": {
+    "build": "napi build --platform --release",
+    "artifacts": "napi artifacts",
+    "prepublishOnly": "napi prepublish -t npm --skip-optional-publish"
+  },
+  "engines": { "node": ">= 18" },
+  "devDependencies": { "@napi-rs/cli": "^3.6.2" }
 }

@@ -221,6 +221,10 @@ pub fn detect_mime_type(path: String, check_exists: bool) -> crate::Result<Strin
 pub use pdf::render::render_pdf_page_to_png;
 
 // ── Plugin Lifecycle — public API ────────────────────────────────────────────
+// Alef extracts plugin-lifecycle fns via the `plugins::{trait_snake}::` alias modules
+// (see plugins/mod.rs) so they emit with their fully-qualified path. Skip this
+// top-level re-export to avoid generating duplicate bindings.
+#[cfg_attr(alef, alef(skip))]
 pub use plugins::{
     clear_document_extractors, clear_embedding_backends, clear_ocr_backends, clear_post_processors, clear_renderers,
     clear_validators, list_document_extractors, list_embedding_backends, list_ocr_backends, list_post_processors,
