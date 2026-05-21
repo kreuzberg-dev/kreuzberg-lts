@@ -2607,7 +2607,7 @@ returns_result = true
 skip_languages = ["wasm"]
 args = [
   { name = "texts", field = "input.texts", type = "json_object", owned = true, element_type = "String" },
-  { name = "config", field = "input.config", type = "json_object", optional = true },
+  { name = "config", field = "input.config", type = "json_object" },
 ]
 
 [crates.e2e.calls.embed_texts_async.overrides.csharp]
@@ -2625,7 +2625,6 @@ options_type = "EmbeddingConfig"
 
 [crates.e2e.calls.embed_texts_async.overrides.php]
 result_is_simple = true
-options_type = "EmbeddingConfig"
 
 [crates.e2e.calls.embed_texts_async.overrides.dart]
 result_is_simple = true
