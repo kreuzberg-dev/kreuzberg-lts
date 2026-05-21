@@ -2,10 +2,6 @@
 description: "Kreuzberg – Extract text, tables, and metadata from 91+ file formats with a Rust core and native bindings for 17 languages. No GPU required."
 ---
 
-<div class="hero-banner" markdown>
-![Kreuzberg](assets/Kreuzberg.svg)
-</div>
-
 # Kreuzberg
 
 Document intelligence with a Rust core and native bindings for 17 languages. Extract text, tables, and metadata from 91+ formats with optional OCR — usable as an SDK, CLI, REST API, MCP server, or Docker image.
