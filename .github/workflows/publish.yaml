@@ -1895,8 +1895,8 @@ jobs:
         env:
           HEX_API_KEY: ${{ secrets.HEX_API_KEY }}
 
-  publish-pub:
-    name: Publish Dart package to pub.dev
+  assemble-dart-bundle:
+    name: Assemble Dart package with native artifacts
     needs:
       [
         prepare,
@@ -1908,9 +1908,6 @@ jobs:
       ]
     if: ${{ needs.prepare.outputs.release_dart == 'true' && needs.prepare.outputs.is_tag == 'true' && needs.check-pub.outputs.exists != 'true' }}
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      id-token: write
     steps:
       - uses: actions/download-artifact@v8.0.1
         with:
@@ -1980,10 +1977,31 @@ jobs:
             [[ -f "$src" ]] && cp -v "$src" "$dest/"
           done
 
-      - uses: kreuzberg-dev/actions/publish-pub@v1
+      - uses: actions/upload-artifact@v7.0.1
         with:
-          package-dir: packages/dart
-          dry-run: ${{ needs.prepare.outputs.dry_run }}
+          name: dart-package-assembled
+          path: packages/dart
+          retention-days: 7
+
+  trigger-pubdev:
+    name: Trigger pub.dev publish workflow
+    needs: [prepare, assemble-dart-bundle]
+    # pub.dev OIDC rejects tokens from `release` events. We dispatch a separate
+    # workflow whose `workflow_dispatch` event produces an accepted token, then
+    # have it download the assembled Dart package artifact from this run.
+    if: ${{ needs.prepare.outputs.release_dart == 'true' && needs.prepare.outputs.is_tag == 'true' && needs.prepare.outputs.dry_run != 'true' }}
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+    steps:
+      - name: Dispatch publish-pubdev workflow
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          gh workflow run publish-pubdev.yaml \
+            --ref ${{ github.ref_name }} \
+            -f run_id=${{ github.run_id }}
 
   publish-swift:
     name: Notify Swift Package Index
@@ -2199,7 +2217,7 @@ jobs:
       - publish-kotlin-android
       - publish-nuget
       - publish-hex
-      - publish-pub
+      - trigger-pubdev
       - publish-swift
       - publish-zig
       - publish-homebrew-formula
@@ -2236,7 +2254,7 @@ jobs:
       - publish-kotlin-android
       - publish-nuget
       - publish-hex
-      - publish-pub
+      - trigger-pubdev
       - publish-swift
       - publish-zig
       - publish-homebrew-formula

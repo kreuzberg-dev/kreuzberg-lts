@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **ci**: Split pub.dev publishing into a dedicated `publish-pubdev.yaml` workflow. pub.dev OIDC trusted publishing rejects tokens from `release` events; only `push` and `workflow_dispatch` are accepted. The Dart package embeds platform-specific native binaries (Android JNI, iOS XCFramework, server libs), so the main workflow now assembles them into a `dart-package-assembled` artifact and dispatches `publish-pubdev.yaml` via `workflow_dispatch` with the run ID; that workflow downloads the artifact and publishes. One-time setup required: configure pub.dev → kreuzberg package → Admin → Automated publishing with workflow path `.github/workflows/publish-pubdev.yaml`.
+
 ### Fixed
 
 - **Taskfile**: `kotlin:e2e` now passes `--lang kotlin_android` to `alef test`, matching the language key declared in `alef.toml`. Previously the task invoked `alef test --e2e --lang kotlin` which produced `Language 'kotlin' not in config languages list or test configuration`. (`Taskfile.yml`)
