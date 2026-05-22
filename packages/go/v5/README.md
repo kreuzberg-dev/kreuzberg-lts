@@ -324,7 +324,7 @@ func init() {
 
 ## API Reference
 
-- **Source**: [packages/go/v5](https://github.com/kreuzberg-dev/kreuzberg/tree/main/packages/go/v5)
+- **GoDoc**: [pkg.go.dev/github.com/kreuzberg-dev/kreuzberg/v5](<https://pkg.go.dev/github.com/kreuzberg-dev/kreuzberg/v5>)
 - **Full documentation**: [kreuzberg.dev](https://kreuzberg.dev) (configuration, formats, OCR backends)
 
 ## Troubleshooting

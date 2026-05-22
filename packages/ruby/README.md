@@ -87,7 +87,7 @@
   </a>
 </div>
 
-Extract text, tables, images, and metadata from 91+ file formats and 248 programming languages including PDF, Office documents, and images. Ruby bindings with idiomatic Ruby API and native performance.
+Extract text, tables, images, and metadata from 90+ file formats and 300+ programming languages including PDF, Office documents, and images. Ruby bindings with idiomatic Ruby API and native performance.
 
 ## What This Package Provides
 

@@ -87,7 +87,7 @@
   </a>
 </div>
 
-Extract text, tables, images, and metadata from 91+ file formats and 248 programming languages including PDF, Office documents, and images. Android library (AAR) with bundled jniLibs/arm64-v8a and jniLibs/x86_64 — Gradle automatically picks up the native cdylib for emulator and device builds. Server-side Kotlin/JVM consumers can use the Java binding directly via standard Kotlin/Java interop.
+Extract text, tables, images, and metadata from 90+ file formats and 300+ programming languages including PDF, Office documents, and images. Android library (AAR) with bundled jniLibs/arm64-v8a and jniLibs/x86_64 — Gradle automatically picks up the native cdylib for emulator and device builds. Server-side Kotlin/JVM consumers can use the Java binding directly via standard Kotlin/Java interop.
 
 ## What This Package Provides
 
@@ -173,9 +173,9 @@ For non-blocking document processing:
 
 ## Features
 
-### Supported File Formats (91+)
+### Supported File Formats (90+)
 
-91+ file formats across 8 major categories with intelligent format detection and comprehensive metadata extraction.
+90+ file formats across 8 major categories with intelligent format detection and comprehensive metadata extraction.
 
 #### Office Documents
 
@@ -220,7 +220,7 @@ For non-blocking document processing:
 | **Scientific** | `.tex`, `.latex`, `.typst`, `.jats`, `.ipynb`, `.docbook` | LaTeX, Jupyter notebooks, PubMed JATS |
 | **Documentation** | `.opml`, `.pod`, `.mdoc`, `.troff` | Technical documentation formats |
 
-#### Code Intelligence (248 Languages)
+#### Code Intelligence (300+ Languages)
 
 | Feature | Description |
 |---------|-------------|
@@ -248,7 +248,7 @@ Powered by [tree-sitter-language-pack](https://github.com/kreuzberg-dev/tree-sit
 - **Batch Processing** - Efficiently process multiple documents in parallel
 - **Memory Efficient** - Stream large files without loading entirely into memory
 - **Language Detection** - Detect and support multiple languages in documents
-- **Code Intelligence** - Extract structure, imports, exports, symbols, and docstrings from [248 programming languages](https://docs.tree-sitter-language-pack.kreuzberg.dev) via tree-sitter
+- **Code Intelligence** - Extract structure, imports, exports, symbols, and docstrings from [300+ programming languages](https://docs.tree-sitter-language-pack.kreuzberg.dev) via tree-sitter
 - **Configuration** - Fine-grained control over extraction behavior
 
 ### Performance Characteristics

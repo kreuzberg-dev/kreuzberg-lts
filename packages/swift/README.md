@@ -87,7 +87,7 @@
   </a>
 </div>
 
-Extract text, tables, images, and metadata from 91+ file formats and 248 programming languages including PDF, Office documents, and images. Swift bindings via swift-bridge for macOS, iOS, and Linux, with native Swift types and async/await support.
+Extract text, tables, images, and metadata from 90+ file formats and 300+ programming languages including PDF, Office documents, and images. Swift bindings via swift-bridge for macOS, iOS, and Linux, with native Swift types and async/await support.
 
 ## What This Package Provides
 
@@ -238,9 +238,9 @@ struct App {
 
 ## Features
 
-### Supported File Formats (91+)
+### Supported File Formats (90+)
 
-91+ file formats across 8 major categories with intelligent format detection and comprehensive metadata extraction.
+90+ file formats across 8 major categories with intelligent format detection and comprehensive metadata extraction.
 
 #### Office Documents
 
@@ -285,7 +285,7 @@ struct App {
 | **Scientific** | `.tex`, `.latex`, `.typst`, `.jats`, `.ipynb`, `.docbook` | LaTeX, Jupyter notebooks, PubMed JATS |
 | **Documentation** | `.opml`, `.pod`, `.mdoc`, `.troff` | Technical documentation formats |
 
-#### Code Intelligence (248 Languages)
+#### Code Intelligence (300+ Languages)
 
 | Feature | Description |
 |---------|-------------|
@@ -313,7 +313,7 @@ Powered by [tree-sitter-language-pack](https://github.com/kreuzberg-dev/tree-sit
 - **Batch Processing** - Efficiently process multiple documents in parallel
 - **Memory Efficient** - Stream large files without loading entirely into memory
 - **Language Detection** - Detect and support multiple languages in documents
-- **Code Intelligence** - Extract structure, imports, exports, symbols, and docstrings from [248 programming languages](https://docs.tree-sitter-language-pack.kreuzberg.dev) via tree-sitter
+- **Code Intelligence** - Extract structure, imports, exports, symbols, and docstrings from [300+ programming languages](https://docs.tree-sitter-language-pack.kreuzberg.dev) via tree-sitter
 - **Configuration** - Fine-grained control over extraction behavior
 
 ### Performance Characteristics

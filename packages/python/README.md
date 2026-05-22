@@ -87,7 +87,7 @@
   </a>
 </div>
 
-Extract text, tables, images, and metadata from 91+ file formats and 248 programming languages including PDF, Office documents, and images. Native Python bindings with async/await support, multiple OCR backends (Tesseract, EasyOCR, PaddleOCR), and extensible plugin system.
+Extract text, tables, images, and metadata from 90+ file formats and 300+ programming languages including PDF, Office documents, and images. Native Python bindings with async/await support, multiple OCR backends (Tesseract, EasyOCR, PaddleOCR), and extensible plugin system.
 
 ## What This Package Provides
 
