@@ -11664,10 +11664,8 @@ pub fn list_validators() -> Result<Vec<String>, String> {
 }
 
 pub fn calculate_quality_score(text: String, metadata: Option<String>) -> f64 {
-    let __metadata_ahash = metadata.map(|json_str| {
-        let hm = ::serde_json::from_str::<std::collections::HashMap<String, String>>(&json_str)
-            .expect("valid JSON for metadata");
-        hm.into_iter()
+    let __metadata_ahash = metadata.map(|m| {
+        m.into_iter()
             .map(|(k, v)| (std::borrow::Cow::Owned(k), serde_json::Value::String(v)))
             .collect::<ahash::AHashMap<std::borrow::Cow<'static, str>, serde_json::Value>>()
     });
