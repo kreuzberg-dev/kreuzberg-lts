@@ -431,6 +431,7 @@ tasks:
     desc: "Run Swift e2e tests (after build)"
     internal: true
     cmds:
+      - cd e2e/swift_e2e && rm -rf .build
       - cd e2e/swift_e2e && swift test
 
   zig:e2e:
