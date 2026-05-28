@@ -231,7 +231,7 @@ public sealed class OcrBackendBridge : IDisposable {
         }
     }
 
-    private int ProcessImageFnCallback(IntPtr userData, IntPtr imageBytes, UIntPtr imageBytesLen, IntPtr config, out IntPtr outResult, out IntPtr outError) {
+    private int ProcessImageFnCallback(IntPtr userData, IntPtr imageBytes, UIntPtr imageBytesLen, IntPtr config, , out IntPtr outResult, out IntPtr outError) {
         try {
             var managed_imageBytes = new byte[(int)imageBytesLen];
             Marshal.Copy(imageBytes, managed_imageBytes, 0, (int)imageBytesLen);
@@ -248,7 +248,7 @@ public sealed class OcrBackendBridge : IDisposable {
         }
     }
 
-    private int ProcessImageFileFnCallback(IntPtr userData, IntPtr path, IntPtr config, out IntPtr outResult, out IntPtr outError) {
+    private int ProcessImageFileFnCallback(IntPtr userData, IntPtr path, IntPtr config, , out IntPtr outResult, out IntPtr outError) {
         try {
             var json_path = global::System.Runtime.InteropServices.Marshal.PtrToStringUTF8(path) ?? "{}";
             var managed_path = JsonSerializer.Deserialize<string>(json_path)!;
@@ -319,7 +319,7 @@ public sealed class OcrBackendBridge : IDisposable {
         }
     }
 
-    private int ProcessDocumentFnCallback(IntPtr userData, IntPtr path, IntPtr config, out IntPtr outResult, out IntPtr outError) {
+    private int ProcessDocumentFnCallback(IntPtr userData, IntPtr path, IntPtr config, , out IntPtr outResult, out IntPtr outError) {
         try {
             var json_path = global::System.Runtime.InteropServices.Marshal.PtrToStringUTF8(path) ?? "{}";
             var managed_path = JsonSerializer.Deserialize<string>(json_path)!;
@@ -1374,7 +1374,7 @@ public sealed class EmbeddingBackendBridge : IDisposable {
         }
     }
 
-    private int EmbedFnCallback(IntPtr userData, IntPtr texts, out IntPtr outResult, out IntPtr outError) {
+    private int EmbedFnCallback(IntPtr userData, IntPtr texts, , out IntPtr outResult, out IntPtr outError) {
         try {
             var json_texts = global::System.Runtime.InteropServices.Marshal.PtrToStringUTF8(texts) ?? "{}";
             var managed_texts = JsonSerializer.Deserialize<List<string>>(json_texts)!;
@@ -1730,7 +1730,7 @@ public sealed class DocumentExtractorBridge : IDisposable {
         }
     }
 
-    private int ExtractBytesFnCallback(IntPtr userData, IntPtr content, UIntPtr contentLen, IntPtr mimeType, IntPtr config, out IntPtr outResult, out IntPtr outError) {
+    private int ExtractBytesFnCallback(IntPtr userData, IntPtr content, UIntPtr contentLen, IntPtr mimeType, IntPtr config, , out IntPtr outResult, out IntPtr outError) {
         try {
             var managed_content = new byte[(int)contentLen];
             Marshal.Copy(content, managed_content, 0, (int)contentLen);
@@ -1748,7 +1748,7 @@ public sealed class DocumentExtractorBridge : IDisposable {
         }
     }
 
-    private int ExtractFileFnCallback(IntPtr userData, IntPtr path, IntPtr mimeType, IntPtr config, out IntPtr outResult, out IntPtr outError) {
+    private int ExtractFileFnCallback(IntPtr userData, IntPtr path, IntPtr mimeType, IntPtr config, , out IntPtr outResult, out IntPtr outError) {
         try {
             var json_path = global::System.Runtime.InteropServices.Marshal.PtrToStringUTF8(path) ?? "{}";
             var managed_path = JsonSerializer.Deserialize<string>(json_path)!;
@@ -2099,7 +2099,7 @@ public sealed class RendererBridge : IDisposable {
         }
     }
 
-    private int RenderFnCallback(IntPtr userData, IntPtr doc, out IntPtr outResult, out IntPtr outError) {
+    private int RenderFnCallback(IntPtr userData, IntPtr doc, , out IntPtr outResult, out IntPtr outError) {
         try {
             var json_doc = global::System.Runtime.InteropServices.Marshal.PtrToStringUTF8(doc) ?? "{}";
             var methodResult = _impl.Render(json_doc);

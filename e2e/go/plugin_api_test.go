@@ -52,14 +52,14 @@ func Test_RegisterEmbeddingBackendTraitBridge(t *testing.T) {
 
 type testStub_register_ocr_backend_trait_bridge struct{}
 
-func (testStub_register_ocr_backend_trait_bridge) ProcessImage(imageBytes []byte, config kreuzberg.OcrConfig) (kreuzberg.ExtractionResult, error) { return nil, nil }
-func (testStub_register_ocr_backend_trait_bridge) ProcessImageFile(path string, config kreuzberg.OcrConfig) (kreuzberg.ExtractionResult, error) { return nil, nil }
+func (testStub_register_ocr_backend_trait_bridge) ProcessImage(imageBytes []byte, config kreuzberg.OcrConfig) (kreuzberg.ExtractionResult, error) { return kreuzberg.ExtractionResult{}, nil }
+func (testStub_register_ocr_backend_trait_bridge) ProcessImageFile(path string, config kreuzberg.OcrConfig) (kreuzberg.ExtractionResult, error) { return kreuzberg.ExtractionResult{}, nil }
 func (testStub_register_ocr_backend_trait_bridge) SupportsLanguage(lang string) bool { return false }
 func (testStub_register_ocr_backend_trait_bridge) BackendType() kreuzberg.OcrBackendType { return "" }
 func (testStub_register_ocr_backend_trait_bridge) SupportedLanguages() []string { return nil }
 func (testStub_register_ocr_backend_trait_bridge) SupportsTableDetection() bool { return false }
 func (testStub_register_ocr_backend_trait_bridge) SupportsDocumentProcessing() bool { return false }
-func (testStub_register_ocr_backend_trait_bridge) ProcessDocument(path string, config kreuzberg.OcrConfig) (kreuzberg.ExtractionResult, error) { return nil, nil }
+func (testStub_register_ocr_backend_trait_bridge) ProcessDocument(path string, config kreuzberg.OcrConfig) (kreuzberg.ExtractionResult, error) { return kreuzberg.ExtractionResult{}, nil }
 func (testStub_register_ocr_backend_trait_bridge) Name() string { return "" }
 func (testStub_register_ocr_backend_trait_bridge) Version() string { return "" }
 func (testStub_register_ocr_backend_trait_bridge) Initialize() error { return nil }
