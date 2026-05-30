@@ -3,6 +3,7 @@
 ## BINDING_BUG: Handle Lifetime Management in Trait Bridge Callbacks
 
 ### Issue
+
 When trait implementations (DocumentExtractor, OcrBackend, EmbeddingBackend, PostProcessor, Renderer, Validator) are registered via `Register*()` functions, the Go `cgo.Handle` is created and passed to Rust as `userData`. However, when `Unregister*()` is called, **the Go handle is NEVER deleted**, causing use-after-free crashes when:
 
 1. First extractor registered → handle stored in Go's cgo handle table
@@ -10,13 +11,16 @@ When trait implementations (DocumentExtractor, OcrBackend, EmbeddingBackend, Pos
 3. Second test calls the first extractor's methods → crashes with SIGBUS on callback
 
 ### Root Cause
+
 - `RegisterDocumentExtractor()` calls `handle.Delete()` only on **registration error** (line 1616), not on success
 - `UnregisterDocumentExtractor()` has **no way to delete the handle** because it doesn't track which handle name corresponds to
 - All trait bridge exports (`goDocumentExtractorPriority`, `goDocumentExtractorCanHandle`, etc.) dereference `userData` as a `cgo.Handle` without validation
 
 ### Evidence
+
 **Stack trace** (test: `Test_RegisterDocumentExtractorTraitBridge`):
-```
+
+```text
 panic: runtime error: cgo/go interop SIGBUS at 0x1043999ac
 ...
 github.com/kreuzberg-dev/kreuzberg/v5.goDocumentExtractorPriority(0x..., 0x1043999ac, ...) // <- bad pointer
@@ -26,29 +30,37 @@ github.com/kreuzberg-dev/kreuzberg/v5.goDocumentExtractorPriority(0x..., 0x10439
 **Root cause**: Handle was deleted in between callback invocations, or pointer became invalid.
 
 ### Affected Functions
+
 All trait bridge exports in `packages/go/v5/trait_bridges.go`:
 
 **DocumentExtractor** (11 callbacks):
+
 - goDocumentExtractorName, goDocumentExtractorVersion, goDocumentExtractorDescription, goDocumentExtractorAuthor, goDocumentExtractorInitialize, goDocumentExtractorShutdown, goDocumentExtractorPriority, goDocumentExtractorCanHandle, goDocumentExtractorSupportedMimeTypes, goDocumentExtractorExtractBytes, goDocumentExtractorExtractFile
 
 **OcrBackend** (10 callbacks):
+
 - goOcrBackendName, goOcrBackendVersion, goOcrBackendDescription, goOcrBackendAuthor, goOcrBackendInitialize, goOcrBackendShutdown, goOcrBackendProcessImage, goOcrBackendProcessImageFile, goOcrBackendSupportsLanguage, goOcrBackendBackendType, goOcrBackendSupportedLanguages, goOcrBackendSupportsTableDetection, goOcrBackendSupportsDocumentProcessing, goOcrBackendProcessDocument
 
 **EmbeddingBackend** (8 callbacks):
+
 - goEmbeddingBackendName, goEmbeddingBackendVersion, goEmbeddingBackendDescription, goEmbeddingBackendAuthor, goEmbeddingBackendInitialize, goEmbeddingBackendShutdown, goEmbeddingBackendDimensions, goEmbeddingBackendEmbed
 
 **PostProcessor** (6 callbacks):
+
 - goPostProcessorName, goPostProcessorVersion, goPostProcessorDescription, goPostProcessorAuthor, goPostProcessorInitialize, goPostProcessorShutdown, goPostProcessorProcessingStage, goPostProcessorShouldProcess, goPostProcessorEstimatedDurationMs, goPostProcessorPriority, goPostProcessorProcess
 
 **Renderer** (4 callbacks):
+
 - goRendererName, goRendererVersion, goRendererDescription, goRendererAuthor, goRendererInitialize, goRendererShutdown, goRendererRender
 
 **Validator** (6 callbacks):
+
 - goValidatorName, goValidatorVersion, goValidatorDescription, goValidatorAuthor, goValidatorInitialize, goValidatorShutdown, goValidatorPriority, goValidatorShouldValidate, goValidatorValidate
 
 ### Fix Strategy
 
 **1. Track handles in a global map** (implementation.go):
+
 ```go
 var (
     extractorHandles = make(map[string]cgo.Handle)  // name -> handle
@@ -62,6 +74,7 @@ var (
 ```
 
 **2. Store handle on register:**
+
 ```go
 func RegisterDocumentExtractor(impl DocumentExtractor) error {
     handle := cgo.NewHandle(impl)
@@ -83,6 +96,7 @@ func RegisterDocumentExtractor(impl DocumentExtractor) error {
 ```
 
 **3. Delete handle on unregister:**
+
 ```go
 func UnregisterDocumentExtractor(name string) error {
     // unregister from Rust first...
@@ -100,6 +114,7 @@ func UnregisterDocumentExtractor(name string) error {
 ```
 
 **4. Clear all handles on clear operations:**
+
 ```go
 func ClearDocumentExtractors() error {
     // clear from Rust...
@@ -119,15 +134,19 @@ func ClearDocumentExtractors() error {
 ### Secondary Issues Found
 
 **MEMORY_LEAK**: C.CString allocations in trait bridge callbacks
+
 - Functions like `goDocumentExtractorName()` at line 125 do:
+
   ```go
   cName := C.CString(name)
   *outResult = cName
   ```
+
 - The string is allocated by `C.CString()` but Rust must free it after reading
 - **Status**: This is expected design (Rust owns the result pointer and must free), but worth documenting
 
 **ERROR_HANDLING**: Missing error propagation in callbacks
+
 - If `json.Marshal()` fails in trait bridge callback (line 121), the error is silently dropped
 - Result is empty JSON "null" or "{}", causing semantic issues
 - **Fix**: Check marshal error and return via outError pointer
