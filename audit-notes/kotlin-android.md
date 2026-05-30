@@ -505,6 +505,7 @@ No binding bugs or test fixture issues were found. The hand-edits are production
 
 ### Testing Status
 
-- **Target**: 82/82 kotlin-android e2e tests (unchanged)
+- **Target**: 82/82 kotlin-android e2e tests per variant (debug + release = 164 total)
 - **Build**: JNI shim compiles cleanly with no clippy warnings
-- **Pending Verification**: Full e2e test suite (gradle test running)
+- **Verification**: ✓ Full e2e test suite passed (164/164 tests, 0 failures)
+- **Commit**: All cleanup applied and committed to HEAD (c5f192f3ff)
