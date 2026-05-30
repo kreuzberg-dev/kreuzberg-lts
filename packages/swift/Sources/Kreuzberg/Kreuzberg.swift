@@ -7253,11 +7253,10 @@ public func extractBytesSync(content: [UInt8], mimeType: String, config: Extract
 /// ```
 public func batchExtractFilesSync(items: [BatchFileItem], config: ExtractionConfig) throws -> [ExtractionResult] {
     let _rb_items: RustVec<BatchFileItem> = { let v = RustVec<BatchFileItem>(); for x in items { v.push(value: x) }; return v }()
-    return try RustBridge.batchExtractFilesSync(_rb_items, config).map { ref in
-        let item = (ref as! ExtractionResult)
-        item.isOwned = false
-        return item
-    }
+    let result = try RustBridge.batchExtractFilesSync(_rb_items, config)
+    var out: [ExtractionResult] = []
+    while let item = result.pop() { out.append(item) }
+    return out.reversed()
 }
 
 /// Synchronous wrapper for `batch_extract_bytes`.
@@ -7286,11 +7285,10 @@ public func batchExtractFilesSync(items: [BatchFileItem], config: ExtractionConf
 /// ```
 public func batchExtractBytesSync(items: [BatchBytesItem], config: ExtractionConfig) throws -> [ExtractionResult] {
     let _rb_items: RustVec<BatchBytesItem> = { let v = RustVec<BatchBytesItem>(); for x in items { v.push(value: x) }; return v }()
-    return try RustBridge.batchExtractBytesSync(_rb_items, config).map { ref in
-        let item = (ref as! ExtractionResult)
-        item.isOwned = false
-        return item
-    }
+    let result = try RustBridge.batchExtractBytesSync(_rb_items, config)
+    var out: [ExtractionResult] = []
+    while let item = result.pop() { out.append(item) }
+    return out.reversed()
 }
 
 /// Extract content from multiple files concurrently.
