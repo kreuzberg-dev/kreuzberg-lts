@@ -506,7 +506,17 @@ impl PdfExtractor {
         }
 
         if let Some(imgs) = images {
-            if !use_structured_doc {
+            // Only interleave image elements into the flat document when:
+            //   1. The structured-doc assembly pipeline hasn't already interleaved them.
+            //   2. The caller explicitly opted in via `config.images.inject_placeholders`.
+            //
+            // Without the inject_placeholders gate, a caller that sets only
+            // `pdf_options.extract_images = true` (and leaves `config.images` as None)
+            // would receive unexpected `![](image_N.jpeg)` placeholders in Markdown output.
+            // The OCR path has its own guarded injection block below (see the `#[cfg(feature = "ocr")]`
+            // block); this gate ensures the native/flat path is consistent with it.
+            let inject_placeholders = config.images.as_ref().is_some_and(|c| c.inject_placeholders);
+            if !use_structured_doc && inject_placeholders {
                 for (idx, img) in imgs.iter().enumerate() {
                     let mut elem = InternalElement::text(
                         ElementKind::Image {

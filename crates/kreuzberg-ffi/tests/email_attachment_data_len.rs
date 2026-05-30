@@ -165,8 +165,7 @@ fn email_attachment_data_null_out_len_is_safe() {
 
     // SAFETY: handle is valid; passing null for out_len is a defined contract
     // (the accessor null-checks before writing).
-    let data_ptr =
-        unsafe { kreuzberg_ffi::kreuzberg_email_attachment_data(handle, std::ptr::null_mut()) };
+    let data_ptr = unsafe { kreuzberg_ffi::kreuzberg_email_attachment_data(handle, std::ptr::null_mut()) };
 
     assert!(
         !data_ptr.is_null(),
