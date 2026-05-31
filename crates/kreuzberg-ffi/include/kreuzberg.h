@@ -76,6 +76,7 @@ typedef struct KREUZBERGBlockType KREUZBERGBlockType;
  * Bounding box coordinates for element positioning.
  */
 typedef struct KREUZBERGBoundingBox KREUZBERGBoundingBox;
+typedef struct KREUZBERGCacheStats KREUZBERGCacheStats;
 /**
  * A text chunk with optional embedding and metadata.
  *
@@ -480,10 +481,6 @@ typedef struct KREUZBERGExecutionProviderType KREUZBERGExecutionProviderType;
  */
 typedef struct KREUZBERGExtractedImage KREUZBERGExtractedImage;
 /**
- * Image metadata extracted from an image file.
- */
-typedef struct KREUZBERGExtractedImageMetadata KREUZBERGExtractedImageMetadata;
-/**
  * A URI extracted from a document.
  *
  * Represents any link, reference, or resource pointer found during extraction.
@@ -565,7 +562,6 @@ typedef struct KREUZBERGFormatMetadata KREUZBERGFormatMetadata;
  * Represents structural elements like headings, paragraphs, lists, code blocks, etc.
  */
 typedef struct KREUZBERGFormattedBlock KREUZBERGFormattedBlock;
-typedef struct KREUZBERGFracType KREUZBERGFracType;
 /**
  * Individual grid cell with position and span metadata.
  */
@@ -841,7 +837,6 @@ typedef struct KREUZBERGOcrBackendType KREUZBERGOcrBackendType;
  * (from PaddleOCR and rotated text detection).
  */
 typedef struct KREUZBERGOcrBoundingGeometry KREUZBERGOcrBoundingGeometry;
-typedef struct KREUZBERGOcrCacheStats KREUZBERGOcrCacheStats;
 /**
  * Confidence scores for an OCR element.
  *
@@ -2324,6 +2319,64 @@ void kreuzberg_free_bytes(uint8_t *ptr,
  * Returned pointers must be freed with the appropriate free function.
  */
 const char *kreuzberg_version(void);
+
+/**
+ * Create a `CacheStats` from a JSON string. Returns null on failure.
+ * # Safety
+ * JSON string must be valid UTF-8 and null-terminated.
+ * Returned handle must be freed with `kreuzberg_cache_stats_free`.
+ */
+KREUZBERGCacheStats *kreuzberg_cache_stats_from_json(const char *json);
+
+/**
+ * Serialize a `CacheStats` to a JSON string. Returns null on failure.
+ * # Safety
+ * `ptr` must be a valid, non-null pointer returned by a `kreuzberg` function.
+ * The returned string must be freed with `kreuzberg_free_string`.
+ */
+char *kreuzberg_cache_stats_to_json(const KREUZBERGCacheStats *ptr);
+
+/**
+ * Free a `CacheStats` handle.
+ * # Safety
+ * Pointer must have been returned by this library, or be null.
+ */
+void kreuzberg_cache_stats_free(KREUZBERGCacheStats *ptr);
+
+/**
+ * Get the `total_files` field from a `CacheStats`.
+ * # Safety
+ * Pointer must be a valid handle returned by this library.
+ */
+uintptr_t kreuzberg_cache_stats_total_files(const KREUZBERGCacheStats *ptr);
+
+/**
+ * Get the `total_size_mb` field from a `CacheStats`.
+ * # Safety
+ * Pointer must be a valid handle returned by this library.
+ */
+double kreuzberg_cache_stats_total_size_mb(const KREUZBERGCacheStats *ptr);
+
+/**
+ * Get the `available_space_mb` field from a `CacheStats`.
+ * # Safety
+ * Pointer must be a valid handle returned by this library.
+ */
+double kreuzberg_cache_stats_available_space_mb(const KREUZBERGCacheStats *ptr);
+
+/**
+ * Get the `oldest_file_age_days` field from a `CacheStats`.
+ * # Safety
+ * Pointer must be a valid handle returned by this library.
+ */
+double kreuzberg_cache_stats_oldest_file_age_days(const KREUZBERGCacheStats *ptr);
+
+/**
+ * Get the `newest_file_age_days` field from a `CacheStats`.
+ * # Safety
+ * Pointer must be a valid handle returned by this library.
+ */
+double kreuzberg_cache_stats_newest_file_age_days(const KREUZBERGCacheStats *ptr);
 
 /**
  * Create a `AccelerationConfig` from a JSON string. Returns null on failure.
@@ -4647,41 +4700,6 @@ char *kreuzberg_structured_data_result_metadata(const KREUZBERGStructuredDataRes
  * Pointer must be a valid handle returned by this library.
  */
 char *kreuzberg_structured_data_result_text_fields(const KREUZBERGStructuredDataResult *ptr);
-
-/**
- * Free a `ExtractedImageMetadata` handle.
- * # Safety
- * Pointer must have been returned by this library, or be null.
- */
-void kreuzberg_extracted_image_metadata_free(KREUZBERGExtractedImageMetadata *ptr);
-
-/**
- * Get the `width` field from a `ExtractedImageMetadata`.
- * # Safety
- * Pointer must be a valid handle returned by this library.
- */
-uint32_t kreuzberg_extracted_image_metadata_width(const KREUZBERGExtractedImageMetadata *ptr);
-
-/**
- * Get the `height` field from a `ExtractedImageMetadata`.
- * # Safety
- * Pointer must be a valid handle returned by this library.
- */
-uint32_t kreuzberg_extracted_image_metadata_height(const KREUZBERGExtractedImageMetadata *ptr);
-
-/**
- * Get the `format` field from a `ExtractedImageMetadata`.
- * # Safety
- * Pointer must be a valid handle returned by this library.
- */
-char *kreuzberg_extracted_image_metadata_format(const KREUZBERGExtractedImageMetadata *ptr);
-
-/**
- * Get the `exif_data` field from a `ExtractedImageMetadata`.
- * # Safety
- * Pointer must be a valid handle returned by this library.
- */
-char *kreuzberg_extracted_image_metadata_exif_data(const KREUZBERGExtractedImageMetadata *ptr);
 
 /**
  * Create a `DocxAppProperties` from a JSON string. Returns null on failure.
@@ -10529,27 +10547,6 @@ KREUZBERGKeywordAlgorithm *kreuzberg_keyword_algorithm(const KREUZBERGKeyword *p
 char *kreuzberg_keyword_positions(const KREUZBERGKeyword *ptr);
 
 /**
- * Free a `OcrCacheStats` handle.
- * # Safety
- * Pointer must have been returned by this library, or be null.
- */
-void kreuzberg_ocr_cache_stats_free(KREUZBERGOcrCacheStats *ptr);
-
-/**
- * Get the `total_files` field from a `OcrCacheStats`.
- * # Safety
- * Pointer must be a valid handle returned by this library.
- */
-uintptr_t kreuzberg_ocr_cache_stats_total_files(const KREUZBERGOcrCacheStats *ptr);
-
-/**
- * Get the `total_size_mb` field from a `OcrCacheStats`.
- * # Safety
- * Pointer must be a valid handle returned by this library.
- */
-double kreuzberg_ocr_cache_stats_total_size_mb(const KREUZBERGOcrCacheStats *ptr);
-
-/**
  * Create a `PaddleOcrConfig` from a JSON string. Returns null on failure.
  * # Safety
  * JSON string must be valid UTF-8 and null-terminated.
@@ -11291,21 +11288,6 @@ int32_t kreuzberg_list_type_from_i32(int32_t value);
  * Caller must ensure `ptr` is a valid pointer to a `c_char` or null.
  */
 int32_t kreuzberg_list_type_from_str(const char *name);
-
-/**
- * Convert an integer to a `FracType` variant. Returns -1 on invalid input.
- * # Safety
- * Caller must ensure all pointer arguments are valid or null.
- * Returned pointers must be freed with the appropriate free function.
- */
-int32_t kreuzberg_frac_type_from_i32(int32_t value);
-
-/**
- * Convert a `FracType` variant name (C string) to its integer value. Returns -1 on invalid input.
- * # Safety
- * Caller must ensure `ptr` is a valid pointer to a `c_char` or null.
- */
-int32_t kreuzberg_frac_type_from_str(const char *name);
 
 /**
  * Convert an integer to a `OcrBackendType` variant. Returns -1 on invalid input.

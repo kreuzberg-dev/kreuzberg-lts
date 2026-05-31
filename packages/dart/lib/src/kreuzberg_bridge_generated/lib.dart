@@ -8,9 +8,8 @@ import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 import 'package:freezed_annotation/freezed_annotation.dart' hide protected;
 part 'lib.freezed.dart';
 
-// These types are ignored because they are neither used by any `pub` functions nor (for structs and enums) marked `#[frb(unignore)]`: `DocumentExtractorDartCallbacks`, `EmbeddingBackendDartCallbacks`, `InternalDocumentBridge`, `KreuzbergError`, `ListType`, `OcrBackendDartCallbacks`, `OcrBackendType`, `PSMMode`, `PaddleLanguage`, `PostProcessorDartCallbacks`, `ProcessingStage`, `RendererDartCallbacks`, `ValidatorDartCallbacks`
+// These types are ignored because they are neither used by any `pub` functions nor (for structs and enums) marked `#[frb(unignore)]`: `DocumentExtractorDartCallbacks`, `EmbeddingBackendDartCallbacks`, `KreuzbergError`, `ListType`, `OcrBackendDartCallbacks`, `PSMMode`, `PaddleLanguage`, `PostProcessorDartCallbacks`, `RendererDartCallbacks`, `ValidatorDartCallbacks`
 // These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `backend_type`, `can_handle`, `dimensions`, `embed`, `estimated_duration_ms`, `extract_bytes`, `extract_file`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `initialize`, `initialize`, `initialize`, `initialize`, `initialize`, `initialize`, `name`, `name`, `name`, `name`, `name`, `name`, `priority`, `priority`, `priority`, `process_document`, `process_image_file`, `process_image`, `process`, `processing_stage`, `render`, `should_process`, `should_validate`, `shutdown`, `shutdown`, `shutdown`, `shutdown`, `shutdown`, `shutdown`, `supported_languages`, `supported_mime_types`, `supports_document_processing`, `supports_language`, `supports_table_detection`, `validate`, `version`, `version`, `version`, `version`, `version`, `version`
-// These functions have error during generation (see debug logs or enable `stop_on_error: true` for more details): `create_document_extractor_dart_impl`, `create_embedding_backend_dart_impl`, `create_ocr_backend_dart_impl`, `create_post_processor_dart_impl`, `create_renderer_dart_impl`, `create_validator_dart_impl`
 
 /// Extract content from a byte array.
 ///
@@ -776,6 +775,41 @@ Future<EmbeddedFile> createEmbeddedFileFromJson({required String json}) =>
 Future<PdfMetadata> createPdfMetadataFromJson({required String json}) =>
     RustLib.instance.api.crateCreatePdfMetadataFromJson(json: json);
 
+/// Construct a `OcrBackendDartImpl` from Dart callback closures.
+/// FRB synthesises a Dart-callable function type for each closure parameter,
+/// which is the whole point of taking them as `impl Fn(...) -> DartFnFuture<R>`
+/// parameters rather than storing them as `Box<dyn Fn(...)>` fields on an opaque
+/// struct (FRB v2 silently drops factories that return opaque structs whose fields
+/// it cannot bridge). The returned wrapper holds an `Arc<dyn Trait + Send + Sync>`
+/// whose backing object carries the supplied callbacks privately.
+/// `plugin_name` and `plugin_version` are required for the Plugin super-trait.
+Future<OcrBackendDartImpl> createOcrBackendDartImpl({
+  required String pluginName,
+  required String pluginVersion,
+  required FutureOr<ExtractionResult> Function(Uint8List, OcrConfig)
+  processImage,
+  required FutureOr<ExtractionResult> Function(String, OcrConfig)
+  processImageFile,
+  required FutureOr<bool> Function(String) supportsLanguage,
+  required FutureOr<OcrBackendType> Function() backendType,
+  required FutureOr<List<String>> Function() supportedLanguages,
+  required FutureOr<bool> Function() supportsTableDetection,
+  required FutureOr<bool> Function() supportsDocumentProcessing,
+  required FutureOr<ExtractionResult> Function(String, OcrConfig)
+  processDocument,
+}) => RustLib.instance.api.crateCreateOcrBackendDartImpl(
+  pluginName: pluginName,
+  pluginVersion: pluginVersion,
+  processImage: processImage,
+  processImageFile: processImageFile,
+  supportsLanguage: supportsLanguage,
+  backendType: backendType,
+  supportedLanguages: supportedLanguages,
+  supportsTableDetection: supportsTableDetection,
+  supportsDocumentProcessing: supportsDocumentProcessing,
+  processDocument: processDocument,
+);
+
 /// Register a Dart implementation as a `OcrBackend` plugin.
 ///
 /// Forwards the `Arc<dyn OcrBackend>` wrapped by `OcrBackendDartImpl` to
@@ -792,6 +826,34 @@ Future<void> unregisterOcrBackend({required String name}) =>
 /// Clear all registered `OcrBackend` plugins.
 /// Removes every plugin from `kreuzberg::plugins::registry::get_ocr_backend_registry()` and stringifies any host error.
 Future<void> clearOcrBackends() => RustLib.instance.api.crateClearOcrBackends();
+
+/// Construct a `PostProcessorDartImpl` from Dart callback closures.
+/// FRB synthesises a Dart-callable function type for each closure parameter,
+/// which is the whole point of taking them as `impl Fn(...) -> DartFnFuture<R>`
+/// parameters rather than storing them as `Box<dyn Fn(...)>` fields on an opaque
+/// struct (FRB v2 silently drops factories that return opaque structs whose fields
+/// it cannot bridge). The returned wrapper holds an `Arc<dyn Trait + Send + Sync>`
+/// whose backing object carries the supplied callbacks privately.
+/// `plugin_name` and `plugin_version` are required for the Plugin super-trait.
+Future<PostProcessorDartImpl> createPostProcessorDartImpl({
+  required String pluginName,
+  required String pluginVersion,
+  required FutureOr<void> Function(ExtractionResult, ExtractionConfig) process,
+  required FutureOr<ProcessingStage> Function() processingStage,
+  required FutureOr<bool> Function(ExtractionResult, ExtractionConfig)
+  shouldProcess,
+  required FutureOr<PlatformInt64> Function(ExtractionResult)
+  estimatedDurationMs,
+  required FutureOr<PlatformInt64> Function() priority,
+}) => RustLib.instance.api.crateCreatePostProcessorDartImpl(
+  pluginName: pluginName,
+  pluginVersion: pluginVersion,
+  process: process,
+  processingStage: processingStage,
+  shouldProcess: shouldProcess,
+  estimatedDurationMs: estimatedDurationMs,
+  priority: priority,
+);
 
 /// Register a Dart implementation as a `PostProcessor` plugin.
 ///
@@ -811,6 +873,29 @@ Future<void> unregisterPostProcessor({required String name}) =>
 Future<void> clearPostProcessors() =>
     RustLib.instance.api.crateClearPostProcessors();
 
+/// Construct a `ValidatorDartImpl` from Dart callback closures.
+/// FRB synthesises a Dart-callable function type for each closure parameter,
+/// which is the whole point of taking them as `impl Fn(...) -> DartFnFuture<R>`
+/// parameters rather than storing them as `Box<dyn Fn(...)>` fields on an opaque
+/// struct (FRB v2 silently drops factories that return opaque structs whose fields
+/// it cannot bridge). The returned wrapper holds an `Arc<dyn Trait + Send + Sync>`
+/// whose backing object carries the supplied callbacks privately.
+/// `plugin_name` and `plugin_version` are required for the Plugin super-trait.
+Future<ValidatorDartImpl> createValidatorDartImpl({
+  required String pluginName,
+  required String pluginVersion,
+  required FutureOr<void> Function(ExtractionResult, ExtractionConfig) validate,
+  required FutureOr<bool> Function(ExtractionResult, ExtractionConfig)
+  shouldValidate,
+  required FutureOr<PlatformInt64> Function() priority,
+}) => RustLib.instance.api.crateCreateValidatorDartImpl(
+  pluginName: pluginName,
+  pluginVersion: pluginVersion,
+  validate: validate,
+  shouldValidate: shouldValidate,
+  priority: priority,
+);
+
 /// Register a Dart implementation as a `Validator` plugin.
 ///
 /// Forwards the `Arc<dyn Validator>` wrapped by `ValidatorDartImpl` to
@@ -827,6 +912,26 @@ Future<void> unregisterValidator({required String name}) =>
 /// Clear all registered `Validator` plugins.
 /// Removes every plugin from `kreuzberg::plugins::registry::get_validator_registry()` and stringifies any host error.
 Future<void> clearValidators() => RustLib.instance.api.crateClearValidators();
+
+/// Construct a `EmbeddingBackendDartImpl` from Dart callback closures.
+/// FRB synthesises a Dart-callable function type for each closure parameter,
+/// which is the whole point of taking them as `impl Fn(...) -> DartFnFuture<R>`
+/// parameters rather than storing them as `Box<dyn Fn(...)>` fields on an opaque
+/// struct (FRB v2 silently drops factories that return opaque structs whose fields
+/// it cannot bridge). The returned wrapper holds an `Arc<dyn Trait + Send + Sync>`
+/// whose backing object carries the supplied callbacks privately.
+/// `plugin_name` and `plugin_version` are required for the Plugin super-trait.
+Future<EmbeddingBackendDartImpl> createEmbeddingBackendDartImpl({
+  required String pluginName,
+  required String pluginVersion,
+  required FutureOr<PlatformInt64> Function() dimensions,
+  required FutureOr<List<Float64List>> Function(List<String>) embed,
+}) => RustLib.instance.api.crateCreateEmbeddingBackendDartImpl(
+  pluginName: pluginName,
+  pluginVersion: pluginVersion,
+  dimensions: dimensions,
+  embed: embed,
+);
 
 /// Register a Dart implementation as a `EmbeddingBackend` plugin.
 ///
@@ -847,6 +952,42 @@ Future<void> unregisterEmbeddingBackend({required String name}) =>
 Future<void> clearEmbeddingBackends() =>
     RustLib.instance.api.crateClearEmbeddingBackends();
 
+/// Construct a `DocumentExtractorDartImpl` from Dart callback closures.
+/// FRB synthesises a Dart-callable function type for each closure parameter,
+/// which is the whole point of taking them as `impl Fn(...) -> DartFnFuture<R>`
+/// parameters rather than storing them as `Box<dyn Fn(...)>` fields on an opaque
+/// struct (FRB v2 silently drops factories that return opaque structs whose fields
+/// it cannot bridge). The returned wrapper holds an `Arc<dyn Trait + Send + Sync>`
+/// whose backing object carries the supplied callbacks privately.
+/// `plugin_name` and `plugin_version` are required for the Plugin super-trait.
+Future<DocumentExtractorDartImpl> createDocumentExtractorDartImpl({
+  required String pluginName,
+  required String pluginVersion,
+  required FutureOr<InternalDocumentBridge> Function(
+    Uint8List,
+    String,
+    ExtractionConfig,
+  )
+  extractBytes,
+  required FutureOr<InternalDocumentBridge> Function(
+    String,
+    String,
+    ExtractionConfig,
+  )
+  extractFile,
+  required FutureOr<List<String>> Function() supportedMimeTypes,
+  required FutureOr<PlatformInt64> Function() priority,
+  required FutureOr<bool> Function(String, String) canHandle,
+}) => RustLib.instance.api.crateCreateDocumentExtractorDartImpl(
+  pluginName: pluginName,
+  pluginVersion: pluginVersion,
+  extractBytes: extractBytes,
+  extractFile: extractFile,
+  supportedMimeTypes: supportedMimeTypes,
+  priority: priority,
+  canHandle: canHandle,
+);
+
 /// Register a Dart implementation as a `DocumentExtractor` plugin.
 ///
 /// Forwards the `Arc<dyn DocumentExtractor>` wrapped by `DocumentExtractorDartImpl` to
@@ -865,6 +1006,24 @@ Future<void> unregisterDocumentExtractor({required String name}) =>
 /// Removes every plugin from `kreuzberg::plugins::registry::get_document_extractor_registry()` and stringifies any host error.
 Future<void> clearDocumentExtractors() =>
     RustLib.instance.api.crateClearDocumentExtractors();
+
+/// Construct a `RendererDartImpl` from Dart callback closures.
+/// FRB synthesises a Dart-callable function type for each closure parameter,
+/// which is the whole point of taking them as `impl Fn(...) -> DartFnFuture<R>`
+/// parameters rather than storing them as `Box<dyn Fn(...)>` fields on an opaque
+/// struct (FRB v2 silently drops factories that return opaque structs whose fields
+/// it cannot bridge). The returned wrapper holds an `Arc<dyn Trait + Send + Sync>`
+/// whose backing object carries the supplied callbacks privately.
+/// `plugin_name` and `plugin_version` are required for the Plugin super-trait.
+Future<RendererDartImpl> createRendererDartImpl({
+  required String pluginName,
+  required String pluginVersion,
+  required FutureOr<String> Function(InternalDocumentBridge) render,
+}) => RustLib.instance.api.crateCreateRendererDartImpl(
+  pluginName: pluginName,
+  pluginVersion: pluginVersion,
+  render: render,
+);
 
 /// Register a Dart implementation as a `Renderer` plugin.
 ///
@@ -5296,6 +5455,25 @@ enum InlineType {
   symbol,
 }
 
+/// Opaque JSON carrier for Rust's internal `InternalDocument` trait contract.
+/// Dart code should pass this value back to Alef-generated bridge APIs rather
+/// than treating it as the public `ExtractionResult` DTO.
+class InternalDocumentBridge {
+  final String json;
+
+  const InternalDocumentBridge({required this.json});
+
+  @override
+  int get hashCode => json.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is InternalDocumentBridge &&
+          runtimeType == other.runtimeType &&
+          json == other.json;
+}
+
 /// JATS (Journal Article Tag Suite) metadata.
 class JatsMetadata {
   final String? copyright;
@@ -6137,6 +6315,21 @@ sealed class NodeContent with _$NodeContent {
   const factory NodeContent.metadataBlock({
     required List<List<String>> entries,
   }) = NodeContent_MetadataBlock;
+}
+
+/// OCR backend types.
+enum OcrBackendType {
+  /// Tesseract OCR (native Rust binding)
+  tesseract,
+
+  /// EasyOCR (Python-based, via FFI)
+  easyOcr,
+
+  /// PaddleOCR (Python-based, via FFI)
+  paddleOcr,
+
+  /// Custom/third-party OCR backend
+  custom,
 }
 
 @freezed
@@ -7908,6 +8101,39 @@ class PptxMetadata {
           slideNames == other.slideNames &&
           imageCount == other.imageCount &&
           tableCount == other.tableCount;
+}
+
+/// Processing stages for post-processors.
+///
+/// Post-processors are executed in stage order (Early → Middle → Late).
+/// Use stages to control the order of post-processing operations.
+enum ProcessingStage {
+  /// Early stage - foundational processing.
+  ///
+  /// Use for:
+  /// - Language detection
+  /// - Character encoding normalization
+  /// - Entity extraction (NER)
+  /// - Text quality scoring
+  early,
+
+  /// Middle stage - content transformation.
+  ///
+  /// Use for:
+  /// - Keyword extraction
+  /// - Token reduction
+  /// - Text summarization
+  /// - Semantic analysis
+  middle,
+
+  /// Late stage - final enrichment.
+  ///
+  /// Use for:
+  /// - Custom user hooks
+  /// - Analytics/logging
+  /// - Final validation
+  /// - Output formatting
+  late_,
 }
 
 /// A non-fatal warning from a processing pipeline stage.

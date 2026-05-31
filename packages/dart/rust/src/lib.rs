@@ -9742,16 +9742,14 @@ struct OcrBackendDartCallbacks {
     plugin_name: String,
     /// Plugin version used by the Plugin super-trait impl.
     plugin_version: String,
-    process_image: Box<dyn Fn(Vec<u8>, OcrConfig) -> flutter_rust_bridge::DartFnFuture<ExtractionResult> + Send + Sync>,
-    process_image_file:
-        Box<dyn Fn(String, OcrConfig) -> flutter_rust_bridge::DartFnFuture<ExtractionResult> + Send + Sync>,
-    supports_language: Box<dyn Fn(String) -> flutter_rust_bridge::DartFnFuture<bool> + Send + Sync>,
-    backend_type: Box<dyn Fn() -> flutter_rust_bridge::DartFnFuture<OcrBackendType> + Send + Sync>,
-    supported_languages: Box<dyn Fn() -> flutter_rust_bridge::DartFnFuture<Vec<String>> + Send + Sync>,
-    supports_table_detection: Box<dyn Fn() -> flutter_rust_bridge::DartFnFuture<bool> + Send + Sync>,
-    supports_document_processing: Box<dyn Fn() -> flutter_rust_bridge::DartFnFuture<bool> + Send + Sync>,
-    process_document:
-        Box<dyn Fn(String, OcrConfig) -> flutter_rust_bridge::DartFnFuture<ExtractionResult> + Send + Sync>,
+    process_image: Box<dyn Fn(Vec<u8>, OcrConfig) -> DartFnFuture<ExtractionResult> + Send + Sync>,
+    process_image_file: Box<dyn Fn(String, OcrConfig) -> DartFnFuture<ExtractionResult> + Send + Sync>,
+    supports_language: Box<dyn Fn(String) -> DartFnFuture<bool> + Send + Sync>,
+    backend_type: Box<dyn Fn() -> DartFnFuture<OcrBackendType> + Send + Sync>,
+    supported_languages: Box<dyn Fn() -> DartFnFuture<Vec<String>> + Send + Sync>,
+    supports_table_detection: Box<dyn Fn() -> DartFnFuture<bool> + Send + Sync>,
+    supports_document_processing: Box<dyn Fn() -> DartFnFuture<bool> + Send + Sync>,
+    process_document: Box<dyn Fn(String, OcrConfig) -> DartFnFuture<ExtractionResult> + Send + Sync>,
 }
 impl ::std::fmt::Debug for OcrBackendDartCallbacks {
     fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
@@ -9877,23 +9875,14 @@ pub struct OcrBackendDartImpl {
 pub fn create_ocr_backend_dart_impl(
     plugin_name: String,
     plugin_version: String,
-    process_image: impl Fn(Vec<u8>, OcrConfig) -> flutter_rust_bridge::DartFnFuture<ExtractionResult>
-    + Send
-    + Sync
-    + 'static,
-    process_image_file: impl Fn(String, OcrConfig) -> flutter_rust_bridge::DartFnFuture<ExtractionResult>
-    + Send
-    + Sync
-    + 'static,
-    supports_language: impl Fn(String) -> flutter_rust_bridge::DartFnFuture<bool> + Send + Sync + 'static,
-    backend_type: impl Fn() -> flutter_rust_bridge::DartFnFuture<OcrBackendType> + Send + Sync + 'static,
-    supported_languages: impl Fn() -> flutter_rust_bridge::DartFnFuture<Vec<String>> + Send + Sync + 'static,
-    supports_table_detection: impl Fn() -> flutter_rust_bridge::DartFnFuture<bool> + Send + Sync + 'static,
-    supports_document_processing: impl Fn() -> flutter_rust_bridge::DartFnFuture<bool> + Send + Sync + 'static,
-    process_document: impl Fn(String, OcrConfig) -> flutter_rust_bridge::DartFnFuture<ExtractionResult>
-    + Send
-    + Sync
-    + 'static,
+    process_image: impl Fn(Vec<u8>, OcrConfig) -> DartFnFuture<ExtractionResult> + Send + Sync + 'static,
+    process_image_file: impl Fn(String, OcrConfig) -> DartFnFuture<ExtractionResult> + Send + Sync + 'static,
+    supports_language: impl Fn(String) -> DartFnFuture<bool> + Send + Sync + 'static,
+    backend_type: impl Fn() -> DartFnFuture<OcrBackendType> + Send + Sync + 'static,
+    supported_languages: impl Fn() -> DartFnFuture<Vec<String>> + Send + Sync + 'static,
+    supports_table_detection: impl Fn() -> DartFnFuture<bool> + Send + Sync + 'static,
+    supports_document_processing: impl Fn() -> DartFnFuture<bool> + Send + Sync + 'static,
+    process_document: impl Fn(String, OcrConfig) -> DartFnFuture<ExtractionResult> + Send + Sync + 'static,
 ) -> OcrBackendDartImpl {
     let __impl = OcrBackendDartCallbacks {
         plugin_name,
@@ -9950,12 +9939,11 @@ struct PostProcessorDartCallbacks {
     plugin_name: String,
     /// Plugin version used by the Plugin super-trait impl.
     plugin_version: String,
-    process: Box<dyn Fn(ExtractionResult, ExtractionConfig) -> flutter_rust_bridge::DartFnFuture<()> + Send + Sync>,
-    processing_stage: Box<dyn Fn() -> flutter_rust_bridge::DartFnFuture<ProcessingStage> + Send + Sync>,
-    should_process:
-        Box<dyn Fn(ExtractionResult, ExtractionConfig) -> flutter_rust_bridge::DartFnFuture<bool> + Send + Sync>,
-    estimated_duration_ms: Box<dyn Fn(ExtractionResult) -> flutter_rust_bridge::DartFnFuture<i64> + Send + Sync>,
-    priority: Box<dyn Fn() -> flutter_rust_bridge::DartFnFuture<i64> + Send + Sync>,
+    process: Box<dyn Fn(ExtractionResult, ExtractionConfig) -> DartFnFuture<()> + Send + Sync>,
+    processing_stage: Box<dyn Fn() -> DartFnFuture<ProcessingStage> + Send + Sync>,
+    should_process: Box<dyn Fn(ExtractionResult, ExtractionConfig) -> DartFnFuture<bool> + Send + Sync>,
+    estimated_duration_ms: Box<dyn Fn(ExtractionResult) -> DartFnFuture<i64> + Send + Sync>,
+    priority: Box<dyn Fn() -> DartFnFuture<i64> + Send + Sync>,
 }
 impl ::std::fmt::Debug for PostProcessorDartCallbacks {
     fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
@@ -10055,14 +10043,11 @@ pub struct PostProcessorDartImpl {
 pub fn create_post_processor_dart_impl(
     plugin_name: String,
     plugin_version: String,
-    process: impl Fn(ExtractionResult, ExtractionConfig) -> flutter_rust_bridge::DartFnFuture<()> + Send + Sync + 'static,
-    processing_stage: impl Fn() -> flutter_rust_bridge::DartFnFuture<ProcessingStage> + Send + Sync + 'static,
-    should_process: impl Fn(ExtractionResult, ExtractionConfig) -> flutter_rust_bridge::DartFnFuture<bool>
-    + Send
-    + Sync
-    + 'static,
-    estimated_duration_ms: impl Fn(ExtractionResult) -> flutter_rust_bridge::DartFnFuture<i64> + Send + Sync + 'static,
-    priority: impl Fn() -> flutter_rust_bridge::DartFnFuture<i64> + Send + Sync + 'static,
+    process: impl Fn(ExtractionResult, ExtractionConfig) -> DartFnFuture<()> + Send + Sync + 'static,
+    processing_stage: impl Fn() -> DartFnFuture<ProcessingStage> + Send + Sync + 'static,
+    should_process: impl Fn(ExtractionResult, ExtractionConfig) -> DartFnFuture<bool> + Send + Sync + 'static,
+    estimated_duration_ms: impl Fn(ExtractionResult) -> DartFnFuture<i64> + Send + Sync + 'static,
+    priority: impl Fn() -> DartFnFuture<i64> + Send + Sync + 'static,
 ) -> PostProcessorDartImpl {
     let __impl = PostProcessorDartCallbacks {
         plugin_name,
@@ -10116,10 +10101,9 @@ struct ValidatorDartCallbacks {
     plugin_name: String,
     /// Plugin version used by the Plugin super-trait impl.
     plugin_version: String,
-    validate: Box<dyn Fn(ExtractionResult, ExtractionConfig) -> flutter_rust_bridge::DartFnFuture<()> + Send + Sync>,
-    should_validate:
-        Box<dyn Fn(ExtractionResult, ExtractionConfig) -> flutter_rust_bridge::DartFnFuture<bool> + Send + Sync>,
-    priority: Box<dyn Fn() -> flutter_rust_bridge::DartFnFuture<i64> + Send + Sync>,
+    validate: Box<dyn Fn(ExtractionResult, ExtractionConfig) -> DartFnFuture<()> + Send + Sync>,
+    should_validate: Box<dyn Fn(ExtractionResult, ExtractionConfig) -> DartFnFuture<bool> + Send + Sync>,
+    priority: Box<dyn Fn() -> DartFnFuture<i64> + Send + Sync>,
 }
 impl ::std::fmt::Debug for ValidatorDartCallbacks {
     fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
@@ -10202,12 +10186,9 @@ pub struct ValidatorDartImpl {
 pub fn create_validator_dart_impl(
     plugin_name: String,
     plugin_version: String,
-    validate: impl Fn(ExtractionResult, ExtractionConfig) -> flutter_rust_bridge::DartFnFuture<()> + Send + Sync + 'static,
-    should_validate: impl Fn(ExtractionResult, ExtractionConfig) -> flutter_rust_bridge::DartFnFuture<bool>
-    + Send
-    + Sync
-    + 'static,
-    priority: impl Fn() -> flutter_rust_bridge::DartFnFuture<i64> + Send + Sync + 'static,
+    validate: impl Fn(ExtractionResult, ExtractionConfig) -> DartFnFuture<()> + Send + Sync + 'static,
+    should_validate: impl Fn(ExtractionResult, ExtractionConfig) -> DartFnFuture<bool> + Send + Sync + 'static,
+    priority: impl Fn() -> DartFnFuture<i64> + Send + Sync + 'static,
 ) -> ValidatorDartImpl {
     let __impl = ValidatorDartCallbacks {
         plugin_name,
@@ -10259,8 +10240,8 @@ struct EmbeddingBackendDartCallbacks {
     plugin_name: String,
     /// Plugin version used by the Plugin super-trait impl.
     plugin_version: String,
-    dimensions: Box<dyn Fn() -> flutter_rust_bridge::DartFnFuture<i64> + Send + Sync>,
-    embed: Box<dyn Fn(Vec<String>) -> flutter_rust_bridge::DartFnFuture<Vec<Vec<f64>>> + Send + Sync>,
+    dimensions: Box<dyn Fn() -> DartFnFuture<i64> + Send + Sync>,
+    embed: Box<dyn Fn(Vec<String>) -> DartFnFuture<Vec<Vec<f64>>> + Send + Sync>,
 }
 impl ::std::fmt::Debug for EmbeddingBackendDartCallbacks {
     fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
@@ -10331,8 +10312,8 @@ pub struct EmbeddingBackendDartImpl {
 pub fn create_embedding_backend_dart_impl(
     plugin_name: String,
     plugin_version: String,
-    dimensions: impl Fn() -> flutter_rust_bridge::DartFnFuture<i64> + Send + Sync + 'static,
-    embed: impl Fn(Vec<String>) -> flutter_rust_bridge::DartFnFuture<Vec<Vec<f64>>> + Send + Sync + 'static,
+    dimensions: impl Fn() -> DartFnFuture<i64> + Send + Sync + 'static,
+    embed: impl Fn(Vec<String>) -> DartFnFuture<Vec<Vec<f64>>> + Send + Sync + 'static,
 ) -> EmbeddingBackendDartImpl {
     let __impl = EmbeddingBackendDartCallbacks {
         plugin_name,
@@ -10383,19 +10364,11 @@ struct DocumentExtractorDartCallbacks {
     plugin_name: String,
     /// Plugin version used by the Plugin super-trait impl.
     plugin_version: String,
-    extract_bytes: Box<
-        dyn Fn(Vec<u8>, String, ExtractionConfig) -> flutter_rust_bridge::DartFnFuture<InternalDocumentBridge>
-            + Send
-            + Sync,
-    >,
-    extract_file: Box<
-        dyn Fn(String, String, ExtractionConfig) -> flutter_rust_bridge::DartFnFuture<InternalDocumentBridge>
-            + Send
-            + Sync,
-    >,
-    supported_mime_types: Box<dyn Fn() -> flutter_rust_bridge::DartFnFuture<Vec<String>> + Send + Sync>,
-    priority: Box<dyn Fn() -> flutter_rust_bridge::DartFnFuture<i64> + Send + Sync>,
-    can_handle: Box<dyn Fn(String, String) -> flutter_rust_bridge::DartFnFuture<bool> + Send + Sync>,
+    extract_bytes: Box<dyn Fn(Vec<u8>, String, ExtractionConfig) -> DartFnFuture<InternalDocumentBridge> + Send + Sync>,
+    extract_file: Box<dyn Fn(String, String, ExtractionConfig) -> DartFnFuture<InternalDocumentBridge> + Send + Sync>,
+    supported_mime_types: Box<dyn Fn() -> DartFnFuture<Vec<String>> + Send + Sync>,
+    priority: Box<dyn Fn() -> DartFnFuture<i64> + Send + Sync>,
+    can_handle: Box<dyn Fn(String, String) -> DartFnFuture<bool> + Send + Sync>,
 }
 impl ::std::fmt::Debug for DocumentExtractorDartCallbacks {
     fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
@@ -10510,17 +10483,14 @@ pub struct DocumentExtractorDartImpl {
 pub fn create_document_extractor_dart_impl(
     plugin_name: String,
     plugin_version: String,
-    extract_bytes: impl Fn(Vec<u8>, String, ExtractionConfig) -> flutter_rust_bridge::DartFnFuture<InternalDocumentBridge>
+    extract_bytes: impl Fn(Vec<u8>, String, ExtractionConfig) -> DartFnFuture<InternalDocumentBridge>
     + Send
     + Sync
     + 'static,
-    extract_file: impl Fn(String, String, ExtractionConfig) -> flutter_rust_bridge::DartFnFuture<InternalDocumentBridge>
-    + Send
-    + Sync
-    + 'static,
-    supported_mime_types: impl Fn() -> flutter_rust_bridge::DartFnFuture<Vec<String>> + Send + Sync + 'static,
-    priority: impl Fn() -> flutter_rust_bridge::DartFnFuture<i64> + Send + Sync + 'static,
-    can_handle: impl Fn(String, String) -> flutter_rust_bridge::DartFnFuture<bool> + Send + Sync + 'static,
+    extract_file: impl Fn(String, String, ExtractionConfig) -> DartFnFuture<InternalDocumentBridge> + Send + Sync + 'static,
+    supported_mime_types: impl Fn() -> DartFnFuture<Vec<String>> + Send + Sync + 'static,
+    priority: impl Fn() -> DartFnFuture<i64> + Send + Sync + 'static,
+    can_handle: impl Fn(String, String) -> DartFnFuture<bool> + Send + Sync + 'static,
 ) -> DocumentExtractorDartImpl {
     let __impl = DocumentExtractorDartCallbacks {
         plugin_name,
@@ -10574,7 +10544,7 @@ struct RendererDartCallbacks {
     plugin_name: String,
     /// Plugin version used by the Plugin super-trait impl.
     plugin_version: String,
-    render: Box<dyn Fn(InternalDocumentBridge) -> flutter_rust_bridge::DartFnFuture<String> + Send + Sync>,
+    render: Box<dyn Fn(InternalDocumentBridge) -> DartFnFuture<String> + Send + Sync>,
 }
 impl ::std::fmt::Debug for RendererDartCallbacks {
     fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
@@ -10640,7 +10610,7 @@ pub struct RendererDartImpl {
 pub fn create_renderer_dart_impl(
     plugin_name: String,
     plugin_version: String,
-    render: impl Fn(InternalDocumentBridge) -> flutter_rust_bridge::DartFnFuture<String> + Send + Sync + 'static,
+    render: impl Fn(InternalDocumentBridge) -> DartFnFuture<String> + Send + Sync + 'static,
 ) -> RendererDartImpl {
     let __impl = RendererDartCallbacks {
         plugin_name,

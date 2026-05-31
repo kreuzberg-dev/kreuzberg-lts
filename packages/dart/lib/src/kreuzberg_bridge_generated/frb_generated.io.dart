@@ -67,6 +67,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
       ._rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerValidatorDartImplPtr;
 
   @protected
+  AnyhowException dco_decode_AnyhowException(dynamic raw);
+
+  @protected
   ArcDocumentExtractor
   dco_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerArcdynDocumentExtractorSendSync(
     dynamic raw,
@@ -209,6 +212,97 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   dco_decode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerValidatorDartImpl(
     dynamic raw,
   );
+
+  @protected
+  FutureOr<bool> Function(String)
+  dco_decode_DartFn_Inputs_String_Output_bool_AnyhowException(dynamic raw);
+
+  @protected
+  FutureOr<bool> Function(String, String)
+  dco_decode_DartFn_Inputs_String_String_Output_bool_AnyhowException(
+    dynamic raw,
+  );
+
+  @protected
+  FutureOr<InternalDocumentBridge> Function(String, String, ExtractionConfig)
+  dco_decode_DartFn_Inputs_String_String_extraction_config_Output_internal_document_bridge_AnyhowException(
+    dynamic raw,
+  );
+
+  @protected
+  FutureOr<ExtractionResult> Function(String, OcrConfig)
+  dco_decode_DartFn_Inputs_String_ocr_config_Output_extraction_result_AnyhowException(
+    dynamic raw,
+  );
+
+  @protected
+  FutureOr<bool> Function()
+  dco_decode_DartFn_Inputs__Output_bool_AnyhowException(dynamic raw);
+
+  @protected
+  FutureOr<PlatformInt64> Function()
+  dco_decode_DartFn_Inputs__Output_i_64_AnyhowException(dynamic raw);
+
+  @protected
+  FutureOr<List<String>> Function()
+  dco_decode_DartFn_Inputs__Output_list_String_AnyhowException(dynamic raw);
+
+  @protected
+  FutureOr<OcrBackendType> Function()
+  dco_decode_DartFn_Inputs__Output_ocr_backend_type_AnyhowException(
+    dynamic raw,
+  );
+
+  @protected
+  FutureOr<ProcessingStage> Function()
+  dco_decode_DartFn_Inputs__Output_processing_stage_AnyhowException(
+    dynamic raw,
+  );
+
+  @protected
+  FutureOr<PlatformInt64> Function(ExtractionResult)
+  dco_decode_DartFn_Inputs_extraction_result_Output_i_64_AnyhowException(
+    dynamic raw,
+  );
+
+  @protected
+  FutureOr<bool> Function(ExtractionResult, ExtractionConfig)
+  dco_decode_DartFn_Inputs_extraction_result_extraction_config_Output_bool_AnyhowException(
+    dynamic raw,
+  );
+
+  @protected
+  FutureOr<void> Function(ExtractionResult, ExtractionConfig)
+  dco_decode_DartFn_Inputs_extraction_result_extraction_config_Output_unit_AnyhowException(
+    dynamic raw,
+  );
+
+  @protected
+  FutureOr<String> Function(InternalDocumentBridge)
+  dco_decode_DartFn_Inputs_internal_document_bridge_Output_String_AnyhowException(
+    dynamic raw,
+  );
+
+  @protected
+  FutureOr<List<Float64List>> Function(List<String>)
+  dco_decode_DartFn_Inputs_list_String_Output_list_list_prim_f_64_strict_AnyhowException(
+    dynamic raw,
+  );
+
+  @protected
+  FutureOr<InternalDocumentBridge> Function(Uint8List, String, ExtractionConfig)
+  dco_decode_DartFn_Inputs_list_prim_u_8_strict_String_extraction_config_Output_internal_document_bridge_AnyhowException(
+    dynamic raw,
+  );
+
+  @protected
+  FutureOr<ExtractionResult> Function(Uint8List, OcrConfig)
+  dco_decode_DartFn_Inputs_list_prim_u_8_strict_ocr_config_Output_extraction_result_AnyhowException(
+    dynamic raw,
+  );
+
+  @protected
+  Object dco_decode_DartOpaque(dynamic raw);
 
   @protected
   Map<String, String> dco_decode_Map_String_String_None(dynamic raw);
@@ -794,6 +888,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   InlineType dco_decode_inline_type(dynamic raw);
 
   @protected
+  InternalDocumentBridge dco_decode_internal_document_bridge(dynamic raw);
+
+  @protected
+  PlatformInt64 dco_decode_isize(dynamic raw);
+
+  @protected
   JatsMetadata dco_decode_jats_metadata(dynamic raw);
 
   @protected
@@ -997,6 +1097,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   NodeContent dco_decode_node_content(dynamic raw);
+
+  @protected
+  OcrBackendType dco_decode_ocr_backend_type(dynamic raw);
 
   @protected
   OcrBoundingGeometry dco_decode_ocr_bounding_geometry(dynamic raw);
@@ -1351,6 +1454,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   PptxMetadata dco_decode_pptx_metadata(dynamic raw);
 
   @protected
+  ProcessingStage dco_decode_processing_stage(dynamic raw);
+
+  @protected
   ProcessingWarning dco_decode_processing_warning(dynamic raw);
 
   @protected
@@ -1473,6 +1579,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   YearRange dco_decode_year_range(dynamic raw);
+
+  @protected
+  AnyhowException sse_decode_AnyhowException(SseDeserializer deserializer);
 
   @protected
   ArcDocumentExtractor
@@ -1617,6 +1726,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   sse_decode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerValidatorDartImpl(
     SseDeserializer deserializer,
   );
+
+  @protected
+  Object sse_decode_DartOpaque(SseDeserializer deserializer);
 
   @protected
   Map<String, String> sse_decode_Map_String_String_None(
@@ -2318,6 +2430,14 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   InlineType sse_decode_inline_type(SseDeserializer deserializer);
 
   @protected
+  InternalDocumentBridge sse_decode_internal_document_bridge(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  PlatformInt64 sse_decode_isize(SseDeserializer deserializer);
+
+  @protected
   JatsMetadata sse_decode_jats_metadata(SseDeserializer deserializer);
 
   @protected
@@ -2583,6 +2703,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   NodeContent sse_decode_node_content(SseDeserializer deserializer);
+
+  @protected
+  OcrBackendType sse_decode_ocr_backend_type(SseDeserializer deserializer);
 
   @protected
   OcrBoundingGeometry sse_decode_ocr_bounding_geometry(
@@ -3053,6 +3176,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   PptxMetadata sse_decode_pptx_metadata(SseDeserializer deserializer);
 
   @protected
+  ProcessingStage sse_decode_processing_stage(SseDeserializer deserializer);
+
+  @protected
   ProcessingWarning sse_decode_processing_warning(SseDeserializer deserializer);
 
   @protected
@@ -3197,6 +3323,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   YearRange sse_decode_year_range(SseDeserializer deserializer);
+
+  @protected
+  void sse_encode_AnyhowException(
+    AnyhowException self,
+    SseSerializer serializer,
+  );
 
   @protected
   void
@@ -3365,6 +3497,119 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
     ValidatorDartImpl self,
     SseSerializer serializer,
   );
+
+  @protected
+  void sse_encode_DartFn_Inputs_String_Output_bool_AnyhowException(
+    FutureOr<bool> Function(String) self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_DartFn_Inputs_String_String_Output_bool_AnyhowException(
+    FutureOr<bool> Function(String, String) self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void
+  sse_encode_DartFn_Inputs_String_String_extraction_config_Output_internal_document_bridge_AnyhowException(
+    FutureOr<InternalDocumentBridge> Function(String, String, ExtractionConfig)
+    self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void
+  sse_encode_DartFn_Inputs_String_ocr_config_Output_extraction_result_AnyhowException(
+    FutureOr<ExtractionResult> Function(String, OcrConfig) self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_DartFn_Inputs__Output_bool_AnyhowException(
+    FutureOr<bool> Function() self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_DartFn_Inputs__Output_i_64_AnyhowException(
+    FutureOr<PlatformInt64> Function() self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_DartFn_Inputs__Output_list_String_AnyhowException(
+    FutureOr<List<String>> Function() self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_DartFn_Inputs__Output_ocr_backend_type_AnyhowException(
+    FutureOr<OcrBackendType> Function() self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_DartFn_Inputs__Output_processing_stage_AnyhowException(
+    FutureOr<ProcessingStage> Function() self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_DartFn_Inputs_extraction_result_Output_i_64_AnyhowException(
+    FutureOr<PlatformInt64> Function(ExtractionResult) self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void
+  sse_encode_DartFn_Inputs_extraction_result_extraction_config_Output_bool_AnyhowException(
+    FutureOr<bool> Function(ExtractionResult, ExtractionConfig) self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void
+  sse_encode_DartFn_Inputs_extraction_result_extraction_config_Output_unit_AnyhowException(
+    FutureOr<void> Function(ExtractionResult, ExtractionConfig) self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void
+  sse_encode_DartFn_Inputs_internal_document_bridge_Output_String_AnyhowException(
+    FutureOr<String> Function(InternalDocumentBridge) self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void
+  sse_encode_DartFn_Inputs_list_String_Output_list_list_prim_f_64_strict_AnyhowException(
+    FutureOr<List<Float64List>> Function(List<String>) self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void
+  sse_encode_DartFn_Inputs_list_prim_u_8_strict_String_extraction_config_Output_internal_document_bridge_AnyhowException(
+    FutureOr<InternalDocumentBridge> Function(
+      Uint8List,
+      String,
+      ExtractionConfig,
+    )
+    self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void
+  sse_encode_DartFn_Inputs_list_prim_u_8_strict_ocr_config_Output_extraction_result_AnyhowException(
+    FutureOr<ExtractionResult> Function(Uint8List, OcrConfig) self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_DartOpaque(Object self, SseSerializer serializer);
 
   @protected
   void sse_encode_Map_String_String_None(
@@ -4285,6 +4530,15 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   void sse_encode_inline_type(InlineType self, SseSerializer serializer);
 
   @protected
+  void sse_encode_internal_document_bridge(
+    InternalDocumentBridge self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_isize(PlatformInt64 self, SseSerializer serializer);
+
+  @protected
   void sse_encode_jats_metadata(JatsMetadata self, SseSerializer serializer);
 
   @protected
@@ -4613,6 +4867,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   void sse_encode_node_content(NodeContent self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_ocr_backend_type(
+    OcrBackendType self,
+    SseSerializer serializer,
+  );
 
   @protected
   void sse_encode_ocr_bounding_geometry(
@@ -5186,6 +5446,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   void sse_encode_pptx_metadata(PptxMetadata self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_processing_stage(
+    ProcessingStage self,
+    SseSerializer serializer,
+  );
 
   @protected
   void sse_encode_processing_warning(

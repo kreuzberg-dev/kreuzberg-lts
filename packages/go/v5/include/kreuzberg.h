@@ -76,6 +76,7 @@ typedef struct KREUZBERGBlockType KREUZBERGBlockType;
  * Bounding box coordinates for element positioning.
  */
 typedef struct KREUZBERGBoundingBox KREUZBERGBoundingBox;
+typedef struct KREUZBERGCacheStats KREUZBERGCacheStats;
 /**
  * A text chunk with optional embedding and metadata.
  *
@@ -480,10 +481,6 @@ typedef struct KREUZBERGExecutionProviderType KREUZBERGExecutionProviderType;
  */
 typedef struct KREUZBERGExtractedImage KREUZBERGExtractedImage;
 /**
- * Image metadata extracted from an image file.
- */
-typedef struct KREUZBERGExtractedImageMetadata KREUZBERGExtractedImageMetadata;
-/**
  * A URI extracted from a document.
  *
  * Represents any link, reference, or resource pointer found during extraction.
@@ -565,7 +562,6 @@ typedef struct KREUZBERGFormatMetadata KREUZBERGFormatMetadata;
  * Represents structural elements like headings, paragraphs, lists, code blocks, etc.
  */
 typedef struct KREUZBERGFormattedBlock KREUZBERGFormattedBlock;
-typedef struct KREUZBERGFracType KREUZBERGFracType;
 /**
  * Individual grid cell with position and span metadata.
  */
@@ -841,7 +837,6 @@ typedef struct KREUZBERGOcrBackendType KREUZBERGOcrBackendType;
  * (from PaddleOCR and rotated text detection).
  */
 typedef struct KREUZBERGOcrBoundingGeometry KREUZBERGOcrBoundingGeometry;
-typedef struct KREUZBERGOcrCacheStats KREUZBERGOcrCacheStats;
 /**
  * Confidence scores for an OCR element.
  *
@@ -2286,15 +2281,15 @@ typedef struct KREUZBERGKreuzbergRendererVTable {
  * Return the last error code (0 means no error).
  * # Safety
  * Caller must ensure all pointer arguments are valid or null.
- * Returned pointers must be freed with the appropriate free function.
+ * This function does not allocate and returns no owned pointer.
  */
 int32_t kreuzberg_last_error_code(void);
 
 /**
- * Return the last error message. The pointer is valid until the next FFI call on this thread.
+ * Return the last error message. The pointer is borrowed and valid until the next FFI call on this thread.
  * # Safety
  * Caller must ensure all pointer arguments are valid or null.
- * Returned pointers must be freed with the appropriate free function.
+ * The returned pointer is borrowed from thread-local storage and must NOT be freed.
  */
 const char *kreuzberg_last_error_context(void);
 
@@ -2324,6 +2319,64 @@ void kreuzberg_free_bytes(uint8_t *ptr,
  * Returned pointers must be freed with the appropriate free function.
  */
 const char *kreuzberg_version(void);
+
+/**
+ * Create a `CacheStats` from a JSON string. Returns null on failure.
+ * # Safety
+ * JSON string must be valid UTF-8 and null-terminated.
+ * Returned handle must be freed with `kreuzberg_cache_stats_free`.
+ */
+KREUZBERGCacheStats *kreuzberg_cache_stats_from_json(const char *json);
+
+/**
+ * Serialize a `CacheStats` to a JSON string. Returns null on failure.
+ * # Safety
+ * `ptr` must be a valid, non-null pointer returned by a `kreuzberg` function.
+ * The returned string must be freed with `kreuzberg_free_string`.
+ */
+char *kreuzberg_cache_stats_to_json(const KREUZBERGCacheStats *ptr);
+
+/**
+ * Free a `CacheStats` handle.
+ * # Safety
+ * Pointer must have been returned by this library, or be null.
+ */
+void kreuzberg_cache_stats_free(KREUZBERGCacheStats *ptr);
+
+/**
+ * Get the `total_files` field from a `CacheStats`.
+ * # Safety
+ * Pointer must be a valid handle returned by this library.
+ */
+uintptr_t kreuzberg_cache_stats_total_files(const KREUZBERGCacheStats *ptr);
+
+/**
+ * Get the `total_size_mb` field from a `CacheStats`.
+ * # Safety
+ * Pointer must be a valid handle returned by this library.
+ */
+double kreuzberg_cache_stats_total_size_mb(const KREUZBERGCacheStats *ptr);
+
+/**
+ * Get the `available_space_mb` field from a `CacheStats`.
+ * # Safety
+ * Pointer must be a valid handle returned by this library.
+ */
+double kreuzberg_cache_stats_available_space_mb(const KREUZBERGCacheStats *ptr);
+
+/**
+ * Get the `oldest_file_age_days` field from a `CacheStats`.
+ * # Safety
+ * Pointer must be a valid handle returned by this library.
+ */
+double kreuzberg_cache_stats_oldest_file_age_days(const KREUZBERGCacheStats *ptr);
+
+/**
+ * Get the `newest_file_age_days` field from a `CacheStats`.
+ * # Safety
+ * Pointer must be a valid handle returned by this library.
+ */
+double kreuzberg_cache_stats_newest_file_age_days(const KREUZBERGCacheStats *ptr);
 
 /**
  * Create a `AccelerationConfig` from a JSON string. Returns null on failure.
@@ -4647,41 +4700,6 @@ char *kreuzberg_structured_data_result_metadata(const KREUZBERGStructuredDataRes
  * Pointer must be a valid handle returned by this library.
  */
 char *kreuzberg_structured_data_result_text_fields(const KREUZBERGStructuredDataResult *ptr);
-
-/**
- * Free a `ExtractedImageMetadata` handle.
- * # Safety
- * Pointer must have been returned by this library, or be null.
- */
-void kreuzberg_extracted_image_metadata_free(KREUZBERGExtractedImageMetadata *ptr);
-
-/**
- * Get the `width` field from a `ExtractedImageMetadata`.
- * # Safety
- * Pointer must be a valid handle returned by this library.
- */
-uint32_t kreuzberg_extracted_image_metadata_width(const KREUZBERGExtractedImageMetadata *ptr);
-
-/**
- * Get the `height` field from a `ExtractedImageMetadata`.
- * # Safety
- * Pointer must be a valid handle returned by this library.
- */
-uint32_t kreuzberg_extracted_image_metadata_height(const KREUZBERGExtractedImageMetadata *ptr);
-
-/**
- * Get the `format` field from a `ExtractedImageMetadata`.
- * # Safety
- * Pointer must be a valid handle returned by this library.
- */
-char *kreuzberg_extracted_image_metadata_format(const KREUZBERGExtractedImageMetadata *ptr);
-
-/**
- * Get the `exif_data` field from a `ExtractedImageMetadata`.
- * # Safety
- * Pointer must be a valid handle returned by this library.
- */
-char *kreuzberg_extracted_image_metadata_exif_data(const KREUZBERGExtractedImageMetadata *ptr);
 
 /**
  * Create a `DocxAppProperties` from a JSON string. Returns null on failure.
@@ -10529,27 +10547,6 @@ KREUZBERGKeywordAlgorithm *kreuzberg_keyword_algorithm(const KREUZBERGKeyword *p
 char *kreuzberg_keyword_positions(const KREUZBERGKeyword *ptr);
 
 /**
- * Free a `OcrCacheStats` handle.
- * # Safety
- * Pointer must have been returned by this library, or be null.
- */
-void kreuzberg_ocr_cache_stats_free(KREUZBERGOcrCacheStats *ptr);
-
-/**
- * Get the `total_files` field from a `OcrCacheStats`.
- * # Safety
- * Pointer must be a valid handle returned by this library.
- */
-uintptr_t kreuzberg_ocr_cache_stats_total_files(const KREUZBERGOcrCacheStats *ptr);
-
-/**
- * Get the `total_size_mb` field from a `OcrCacheStats`.
- * # Safety
- * Pointer must be a valid handle returned by this library.
- */
-double kreuzberg_ocr_cache_stats_total_size_mb(const KREUZBERGOcrCacheStats *ptr);
-
-/**
  * Create a `PaddleOcrConfig` from a JSON string. Returns null on failure.
  * # Safety
  * JSON string must be valid UTF-8 and null-terminated.
@@ -11291,21 +11288,6 @@ int32_t kreuzberg_list_type_from_i32(int32_t value);
  * Caller must ensure `ptr` is a valid pointer to a `c_char` or null.
  */
 int32_t kreuzberg_list_type_from_str(const char *name);
-
-/**
- * Convert an integer to a `FracType` variant. Returns -1 on invalid input.
- * # Safety
- * Caller must ensure all pointer arguments are valid or null.
- * Returned pointers must be freed with the appropriate free function.
- */
-int32_t kreuzberg_frac_type_from_i32(int32_t value);
-
-/**
- * Convert a `FracType` variant name (C string) to its integer value. Returns -1 on invalid input.
- * # Safety
- * Caller must ensure `ptr` is a valid pointer to a `c_char` or null.
- */
-int32_t kreuzberg_frac_type_from_str(const char *name);
 
 /**
  * Convert an integer to a `OcrBackendType` variant. Returns -1 on invalid input.
@@ -12668,14 +12650,15 @@ char *kreuzberg_batch_extract_files_sync(const char *items,
                                          const KREUZBERGExtractionConfig *config);
 
 /**
- * Return the byte length of the C string that `kreuzberg_batch_extract_files_sync` would return for
- * the same arguments, without allocating. Returns 0 when the underlying value is None or an error
- * occurs. Enables safe slice construction in Zig and Java FFM Panama without a NUL-scan.
- * \note SAFETY: All pointer parameters obey the same validity rules as
- * `kreuzberg_batch_extract_files_sync`.
+ * Return the byte length of the C string most recently returned by
+ * `kreuzberg_batch_extract_files_sync` on this thread. Returns 0 when the primary call returned null
+ * or failed before producing a string. Enables safe slice construction in Zig and Java FFM Panama
+ * without a NUL-scan.
+ * \note SAFETY: Pointer arguments are ignored and are present only to keep the companion ABI aligned
+ * with `kreuzberg_batch_extract_files_sync`.
  */
-uintptr_t kreuzberg_batch_extract_files_sync_len(const char *items,
-                                                 const KREUZBERGExtractionConfig *config);
+uintptr_t kreuzberg_batch_extract_files_sync_len(const char *_items,
+                                                 const KREUZBERGExtractionConfig *_config);
 
 /**
  * Synchronous wrapper for `batch_extract_bytes`.
@@ -12706,14 +12689,15 @@ char *kreuzberg_batch_extract_bytes_sync(const char *items,
                                          const KREUZBERGExtractionConfig *config);
 
 /**
- * Return the byte length of the C string that `kreuzberg_batch_extract_bytes_sync` would return for
- * the same arguments, without allocating. Returns 0 when the underlying value is None or an error
- * occurs. Enables safe slice construction in Zig and Java FFM Panama without a NUL-scan.
- * \note SAFETY: All pointer parameters obey the same validity rules as
- * `kreuzberg_batch_extract_bytes_sync`.
+ * Return the byte length of the C string most recently returned by
+ * `kreuzberg_batch_extract_bytes_sync` on this thread. Returns 0 when the primary call returned null
+ * or failed before producing a string. Enables safe slice construction in Zig and Java FFM Panama
+ * without a NUL-scan.
+ * \note SAFETY: Pointer arguments are ignored and are present only to keep the companion ABI aligned
+ * with `kreuzberg_batch_extract_bytes_sync`.
  */
-uintptr_t kreuzberg_batch_extract_bytes_sync_len(const char *items,
-                                                 const KREUZBERGExtractionConfig *config);
+uintptr_t kreuzberg_batch_extract_bytes_sync_len(const char *_items,
+                                                 const KREUZBERGExtractionConfig *_config);
 
 /**
  * Extract content from multiple files concurrently.
@@ -12771,14 +12755,14 @@ char *kreuzberg_batch_extract_files(const char *items,
                                     const KREUZBERGExtractionConfig *config);
 
 /**
- * Return the byte length of the C string that `kreuzberg_batch_extract_files` would return for the
- * same arguments, without allocating. Returns 0 when the underlying value is None or an error occurs.
+ * Return the byte length of the C string most recently returned by `kreuzberg_batch_extract_files` on
+ * this thread. Returns 0 when the primary call returned null or failed before producing a string.
  * Enables safe slice construction in Zig and Java FFM Panama without a NUL-scan.
- * \note SAFETY: All pointer parameters obey the same validity rules as
- * `kreuzberg_batch_extract_files`.
+ * \note SAFETY: Pointer arguments are ignored and are present only to keep the companion ABI aligned
+ * with `kreuzberg_batch_extract_files`.
  */
-uintptr_t kreuzberg_batch_extract_files_len(const char *items,
-                                            const KREUZBERGExtractionConfig *config);
+uintptr_t kreuzberg_batch_extract_files_len(const char *_items,
+                                            const KREUZBERGExtractionConfig *_config);
 
 /**
  * Extract content from multiple byte arrays concurrently.
@@ -12832,14 +12816,14 @@ char *kreuzberg_batch_extract_bytes(const char *items,
                                     const KREUZBERGExtractionConfig *config);
 
 /**
- * Return the byte length of the C string that `kreuzberg_batch_extract_bytes` would return for the
- * same arguments, without allocating. Returns 0 when the underlying value is None or an error occurs.
+ * Return the byte length of the C string most recently returned by `kreuzberg_batch_extract_bytes` on
+ * this thread. Returns 0 when the primary call returned null or failed before producing a string.
  * Enables safe slice construction in Zig and Java FFM Panama without a NUL-scan.
- * \note SAFETY: All pointer parameters obey the same validity rules as
- * `kreuzberg_batch_extract_bytes`.
+ * \note SAFETY: Pointer arguments are ignored and are present only to keep the companion ABI aligned
+ * with `kreuzberg_batch_extract_bytes`.
  */
-uintptr_t kreuzberg_batch_extract_bytes_len(const char *items,
-                                            const KREUZBERGExtractionConfig *config);
+uintptr_t kreuzberg_batch_extract_bytes_len(const char *_items,
+                                            const KREUZBERGExtractionConfig *_config);
 
 /**
  * Detect MIME type from raw file bytes.
@@ -12859,14 +12843,15 @@ char *kreuzberg_detect_mime_type_from_bytes(const uint8_t *content,
                                             uintptr_t content_len);
 
 /**
- * Return the byte length of the C string that `kreuzberg_detect_mime_type_from_bytes` would return for
- * the same arguments, without allocating. Returns 0 when the underlying value is None or an error
- * occurs. Enables safe slice construction in Zig and Java FFM Panama without a NUL-scan.
- * \note SAFETY: All pointer parameters obey the same validity rules as
- * `kreuzberg_detect_mime_type_from_bytes`.
+ * Return the byte length of the C string most recently returned by
+ * `kreuzberg_detect_mime_type_from_bytes` on this thread. Returns 0 when the primary call returned
+ * null or failed before producing a string. Enables safe slice construction in Zig and Java FFM Panama
+ * without a NUL-scan.
+ * \note SAFETY: Pointer arguments are ignored and are present only to keep the companion ABI aligned
+ * with `kreuzberg_detect_mime_type_from_bytes`.
  */
-uintptr_t kreuzberg_detect_mime_type_from_bytes_len(const uint8_t *content,
-                                                    uintptr_t content_len);
+uintptr_t kreuzberg_detect_mime_type_from_bytes_len(const uint8_t *_content,
+                                                    uintptr_t _content_len);
 
 /**
  * Get file extensions for a given MIME type.
@@ -12889,13 +12874,13 @@ uintptr_t kreuzberg_detect_mime_type_from_bytes_len(const uint8_t *content,
 char *kreuzberg_get_extensions_for_mime(const char *mime_type);
 
 /**
- * Return the byte length of the C string that `kreuzberg_get_extensions_for_mime` would return for the
- * same arguments, without allocating. Returns 0 when the underlying value is None or an error occurs.
+ * Return the byte length of the C string most recently returned by `kreuzberg_get_extensions_for_mime`
+ * on this thread. Returns 0 when the primary call returned null or failed before producing a string.
  * Enables safe slice construction in Zig and Java FFM Panama without a NUL-scan.
- * \note SAFETY: All pointer parameters obey the same validity rules as
- * `kreuzberg_get_extensions_for_mime`.
+ * \note SAFETY: Pointer arguments are ignored and are present only to keep the companion ABI aligned
+ * with `kreuzberg_get_extensions_for_mime`.
  */
-uintptr_t kreuzberg_get_extensions_for_mime_len(const char *mime_type);
+uintptr_t kreuzberg_get_extensions_for_mime_len(const char *_mime_type);
 
 /**
  * List the names of all registered embedding backends.
@@ -12908,11 +12893,11 @@ uintptr_t kreuzberg_get_extensions_for_mime_len(const char *mime_type);
 char *kreuzberg_list_embedding_backends(void);
 
 /**
- * Return the byte length of the C string that `kreuzberg_list_embedding_backends` would return for the
- * same arguments, without allocating. Returns 0 when the underlying value is None or an error occurs.
+ * Return the byte length of the C string most recently returned by `kreuzberg_list_embedding_backends`
+ * on this thread. Returns 0 when the primary call returned null or failed before producing a string.
  * Enables safe slice construction in Zig and Java FFM Panama without a NUL-scan.
- * \note SAFETY: All pointer parameters obey the same validity rules as
- * `kreuzberg_list_embedding_backends`.
+ * \note SAFETY: Pointer arguments are ignored and are present only to keep the companion ABI aligned
+ * with `kreuzberg_list_embedding_backends`.
  */
 uintptr_t kreuzberg_list_embedding_backends_len(void);
 
@@ -12924,11 +12909,12 @@ uintptr_t kreuzberg_list_embedding_backends_len(void);
 char *kreuzberg_list_document_extractors(void);
 
 /**
- * Return the byte length of the C string that `kreuzberg_list_document_extractors` would return for
- * the same arguments, without allocating. Returns 0 when the underlying value is None or an error
- * occurs. Enables safe slice construction in Zig and Java FFM Panama without a NUL-scan.
- * \note SAFETY: All pointer parameters obey the same validity rules as
- * `kreuzberg_list_document_extractors`.
+ * Return the byte length of the C string most recently returned by
+ * `kreuzberg_list_document_extractors` on this thread. Returns 0 when the primary call returned null
+ * or failed before producing a string. Enables safe slice construction in Zig and Java FFM Panama
+ * without a NUL-scan.
+ * \note SAFETY: Pointer arguments are ignored and are present only to keep the companion ABI aligned
+ * with `kreuzberg_list_document_extractors`.
  */
 uintptr_t kreuzberg_list_document_extractors_len(void);
 
@@ -12951,10 +12937,11 @@ uintptr_t kreuzberg_list_document_extractors_len(void);
 char *kreuzberg_list_ocr_backends(void);
 
 /**
- * Return the byte length of the C string that `kreuzberg_list_ocr_backends` would return for the same
- * arguments, without allocating. Returns 0 when the underlying value is None or an error occurs.
+ * Return the byte length of the C string most recently returned by `kreuzberg_list_ocr_backends` on
+ * this thread. Returns 0 when the primary call returned null or failed before producing a string.
  * Enables safe slice construction in Zig and Java FFM Panama without a NUL-scan.
- * \note SAFETY: All pointer parameters obey the same validity rules as `kreuzberg_list_ocr_backends`.
+ * \note SAFETY: Pointer arguments are ignored and are present only to keep the companion ABI aligned
+ * with `kreuzberg_list_ocr_backends`.
  */
 uintptr_t kreuzberg_list_ocr_backends_len(void);
 
@@ -12979,11 +12966,11 @@ uintptr_t kreuzberg_list_ocr_backends_len(void);
 char *kreuzberg_list_post_processors(void);
 
 /**
- * Return the byte length of the C string that `kreuzberg_list_post_processors` would return for the
- * same arguments, without allocating. Returns 0 when the underlying value is None or an error occurs.
+ * Return the byte length of the C string most recently returned by `kreuzberg_list_post_processors` on
+ * this thread. Returns 0 when the primary call returned null or failed before producing a string.
  * Enables safe slice construction in Zig and Java FFM Panama without a NUL-scan.
- * \note SAFETY: All pointer parameters obey the same validity rules as
- * `kreuzberg_list_post_processors`.
+ * \note SAFETY: Pointer arguments are ignored and are present only to keep the companion ABI aligned
+ * with `kreuzberg_list_post_processors`.
  */
 uintptr_t kreuzberg_list_post_processors_len(void);
 
@@ -12996,10 +12983,11 @@ uintptr_t kreuzberg_list_post_processors_len(void);
 char *kreuzberg_list_renderers(void);
 
 /**
- * Return the byte length of the C string that `kreuzberg_list_renderers` would return for the same
- * arguments, without allocating. Returns 0 when the underlying value is None or an error occurs.
- * Enables safe slice construction in Zig and Java FFM Panama without a NUL-scan.
- * \note SAFETY: All pointer parameters obey the same validity rules as `kreuzberg_list_renderers`.
+ * Return the byte length of the C string most recently returned by `kreuzberg_list_renderers` on this
+ * thread. Returns 0 when the primary call returned null or failed before producing a string. Enables
+ * safe slice construction in Zig and Java FFM Panama without a NUL-scan.
+ * \note SAFETY: Pointer arguments are ignored and are present only to keep the companion ABI aligned
+ * with `kreuzberg_list_renderers`.
  */
 uintptr_t kreuzberg_list_renderers_len(void);
 
@@ -13011,10 +12999,11 @@ uintptr_t kreuzberg_list_renderers_len(void);
 char *kreuzberg_list_validators(void);
 
 /**
- * Return the byte length of the C string that `kreuzberg_list_validators` would return for the same
- * arguments, without allocating. Returns 0 when the underlying value is None or an error occurs.
- * Enables safe slice construction in Zig and Java FFM Panama without a NUL-scan.
- * \note SAFETY: All pointer parameters obey the same validity rules as `kreuzberg_list_validators`.
+ * Return the byte length of the C string most recently returned by `kreuzberg_list_validators` on this
+ * thread. Returns 0 when the primary call returned null or failed before producing a string. Enables
+ * safe slice construction in Zig and Java FFM Panama without a NUL-scan.
+ * \note SAFETY: Pointer arguments are ignored and are present only to keep the companion ABI aligned
+ * with `kreuzberg_list_validators`.
  */
 uintptr_t kreuzberg_list_validators_len(void);
 
@@ -13046,13 +13035,14 @@ char *kreuzberg_embed_texts_async(const char *texts,
                                   const KREUZBERGEmbeddingConfig *config);
 
 /**
- * Return the byte length of the C string that `kreuzberg_embed_texts_async` would return for the same
- * arguments, without allocating. Returns 0 when the underlying value is None or an error occurs.
+ * Return the byte length of the C string most recently returned by `kreuzberg_embed_texts_async` on
+ * this thread. Returns 0 when the primary call returned null or failed before producing a string.
  * Enables safe slice construction in Zig and Java FFM Panama without a NUL-scan.
- * \note SAFETY: All pointer parameters obey the same validity rules as `kreuzberg_embed_texts_async`.
+ * \note SAFETY: Pointer arguments are ignored and are present only to keep the companion ABI aligned
+ * with `kreuzberg_embed_texts_async`.
  */
-uintptr_t kreuzberg_embed_texts_async_len(const char *texts,
-                                          const KREUZBERGEmbeddingConfig *config);
+uintptr_t kreuzberg_embed_texts_async_len(const char *_texts,
+                                          const KREUZBERGEmbeddingConfig *_config);
 
 /**
  * Render a single PDF page to PNG bytes.
@@ -13089,13 +13079,14 @@ char *kreuzberg_detect_mime_type(const char *path,
                                  int32_t check_exists);
 
 /**
- * Return the byte length of the C string that `kreuzberg_detect_mime_type` would return for the same
- * arguments, without allocating. Returns 0 when the underlying value is None or an error occurs.
+ * Return the byte length of the C string most recently returned by `kreuzberg_detect_mime_type` on
+ * this thread. Returns 0 when the primary call returned null or failed before producing a string.
  * Enables safe slice construction in Zig and Java FFM Panama without a NUL-scan.
- * \note SAFETY: All pointer parameters obey the same validity rules as `kreuzberg_detect_mime_type`.
+ * \note SAFETY: Pointer arguments are ignored and are present only to keep the companion ABI aligned
+ * with `kreuzberg_detect_mime_type`.
  */
-uintptr_t kreuzberg_detect_mime_type_len(const char *path,
-                                         int32_t check_exists);
+uintptr_t kreuzberg_detect_mime_type_len(const char *_path,
+                                         int32_t _check_exists);
 
 /**
  * Embed a list of texts using the configured embedding model.
@@ -13108,13 +13099,14 @@ char *kreuzberg_embed_texts(const char *texts,
                             const KREUZBERGEmbeddingConfig *config);
 
 /**
- * Return the byte length of the C string that `kreuzberg_embed_texts` would return for the same
- * arguments, without allocating. Returns 0 when the underlying value is None or an error occurs.
- * Enables safe slice construction in Zig and Java FFM Panama without a NUL-scan.
- * \note SAFETY: All pointer parameters obey the same validity rules as `kreuzberg_embed_texts`.
+ * Return the byte length of the C string most recently returned by `kreuzberg_embed_texts` on this
+ * thread. Returns 0 when the primary call returned null or failed before producing a string. Enables
+ * safe slice construction in Zig and Java FFM Panama without a NUL-scan.
+ * \note SAFETY: Pointer arguments are ignored and are present only to keep the companion ABI aligned
+ * with `kreuzberg_embed_texts`.
  */
-uintptr_t kreuzberg_embed_texts_len(const char *texts,
-                                    const KREUZBERGEmbeddingConfig *config);
+uintptr_t kreuzberg_embed_texts_len(const char *_texts,
+                                    const KREUZBERGEmbeddingConfig *_config);
 
 /**
  * Get an embedding preset by name.
@@ -13136,11 +13128,11 @@ KREUZBERGEmbeddingPreset *kreuzberg_get_embedding_preset(const char *name);
 char *kreuzberg_list_embedding_presets(void);
 
 /**
- * Return the byte length of the C string that `kreuzberg_list_embedding_presets` would return for the
- * same arguments, without allocating. Returns 0 when the underlying value is None or an error occurs.
+ * Return the byte length of the C string most recently returned by `kreuzberg_list_embedding_presets`
+ * on this thread. Returns 0 when the primary call returned null or failed before producing a string.
  * Enables safe slice construction in Zig and Java FFM Panama without a NUL-scan.
- * \note SAFETY: All pointer parameters obey the same validity rules as
- * `kreuzberg_list_embedding_presets`.
+ * \note SAFETY: Pointer arguments are ignored and are present only to keep the companion ABI aligned
+ * with `kreuzberg_list_embedding_presets`.
  */
 uintptr_t kreuzberg_list_embedding_presets_len(void);
 

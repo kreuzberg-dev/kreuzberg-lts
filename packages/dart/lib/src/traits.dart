@@ -472,7 +472,7 @@ abstract class Validator {
 ///   @override
 ///   Future<int> dimensions(...) async { ... }
 ///   @override
-///   Future<List<List<double>>> embed(...) async { ... }
+///   Future<List<Float64List>> embed(...) async { ... }
 /// }
 ///
 /// final impl = createEmbeddingBackendDartImpl(
@@ -493,7 +493,7 @@ abstract class EmbeddingBackend {
   /// backend-specific failures. The dispatcher layers its own validation
   /// (length, per-vector dimension) on top.
   /// throws anyhow::Error on failure
-  Future<List<List<double>>> embed(List<String> texts);
+  Future<List<Float64List>> embed(List<String> texts);
 }
 
 /// Abstract class for the `DocumentExtractor` Rust trait.
@@ -641,18 +641,6 @@ abstract class Renderer {
   Future<String> render(InternalDocumentBridge doc);
 }
 
-
-/// Opaque JSON carrier for Rust's internal InternalDocument trait contract.
-final class InternalDocumentBridge {
-  const InternalDocumentBridge({required this.json});
-  final String json;
-}
-
-/// OCR backend type identifier — used by e2e test plugin_api stubs.
-enum OcrBackendType { tesseract, easyocr, paddleocr, rapidocr }
-
-/// Processing stage for post-processors — used by e2e test plugin_api stubs.
-enum ProcessingStage { preProcessing, processing, postProcessing }
 
 /// Synchronous extractor trait stub — used by e2e test plugin_api stubs.
 abstract class SyncExtractor {}

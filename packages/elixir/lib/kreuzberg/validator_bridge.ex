@@ -32,9 +32,11 @@ defmodule KreuzbergValidatorBridge do
   def handle_info({:trait_call, method, args_json, reply_id}, impl_module) do
     try do
       args = Jason.decode!(args_json)
+      method_name = to_string(method)
+      ordered_args = ordered_args(impl_module, method_name, args)
 
       # Dispatch to the implementation module
-      result = apply(impl_module, String.to_existing_atom(method), args)
+      result = apply(impl_module, String.to_existing_atom(method_name), ordered_args)
 
       # Send result back to Rust
       Kreuzberg.Native.complete_trait_call(reply_id, Jason.encode!(result))
@@ -47,11 +49,26 @@ defmodule KreuzbergValidatorBridge do
     {:noreply, impl_module}
   end
 
+  defp ordered_args(impl_module, method_name, args) when is_map(args) do
+    if function_exported?(impl_module, :__alef_arg_order__, 1) do
+      impl_module.__alef_arg_order__(method_name)
+      |> Enum.map(&Map.fetch!(args, &1))
+    else
+      args
+      |> Map.keys()
+      |> Enum.sort()
+      |> Enum.map(&Map.fetch!(args, &1))
+    end
+  end
+
+  defp ordered_args(_impl_module, _method_name, args) when is_list(args), do: args
+
   @doc """
   Register an implementation module, starting a GenServer to handle trait calls.
   """
   def register(impl_module) do
-    {:ok, _pid} = start_link(impl_module)
-    Kreuzberg.Native.register_validator(self(), Atom.to_string(impl_module))
+    plugin_name = impl_module.name()
+    {:ok, pid} = start_link(impl_module)
+    Kreuzberg.Native.register_validator(pid, plugin_name)
   end
 end

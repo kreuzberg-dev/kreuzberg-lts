@@ -925,9 +925,10 @@ args = [
 ]
 
 [crates.e2e.calls.extract_file.overrides.dart]
-# Dart cannot pass file paths through the FFI bridge; use extractBytes instead.
-# Missing mime_type will be inferred from the file extension by the e2e generator.
-function = "extract_bytes"
+# Dart can pass file paths through FRB as plain strings. The dart e2e generator
+# routes source-code paths (e.g. `code/hello.py`) through extractFile so
+# CodeExtractor's path-based extension detection runs; everything else is
+# remapped to extractBytes automatically.
 async = true
 
 [crates.e2e.calls.extract_file.overrides.swift]
@@ -1017,9 +1018,11 @@ async = false
 result_is_json_struct = true
 
 [crates.e2e.calls.extract_file_sync.overrides.dart]
-# Dart cannot pass file paths through the FFI bridge; use extractBytesSync instead.
-# Missing mime_type will be inferred from the file extension by the e2e generator.
-function = "extract_bytes_sync"
+# Dart can pass file paths through FRB as plain strings — extractFileSync(path,
+# mimeType?, config) is the supported facade. The dart e2e generator detects
+# `text/x-source-code` paths (e.g. `code/hello.py`) and keeps the path-based call
+# so CodeExtractor's extract_file (extension-based language detection) runs.
+# For everything else the generator remaps to extractBytesSync.
 async = false
 
 [crates.e2e.calls.extract_bytes_sync]

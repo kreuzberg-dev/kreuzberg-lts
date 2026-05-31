@@ -482,7 +482,7 @@ class KreuzbergBridge {
   /// ).await?;
   /// ```
   /// throws anyhow::Error on failure
-  static Future<List<List<double>>> embedTextsAsync(List<String> texts, EmbeddingConfig config) async {
+  static Future<List<Float64List>> embedTextsAsync(List<String> texts, EmbeddingConfig config) async {
     return await rust_bridge.embedTextsAsync(texts: texts, config: config);
   }
 
@@ -520,7 +520,7 @@ class KreuzbergBridge {
   ///
   /// Returns a 2D vector where each inner vector is the embedding for the corresponding text.
   /// throws anyhow::Error on failure
-  static Future<List<List<double>>> embedTexts(List<String> texts, EmbeddingConfig config) async {
+  static Future<List<Float64List>> embedTexts(List<String> texts, EmbeddingConfig config) async {
     return await rust_bridge.embedTexts(texts: texts, config: config);
   }
 

@@ -3,6 +3,7 @@ package dev.kreuzberg;
 import java.lang.foreign.Arena;
 import java.lang.foreign.FunctionDescriptor;
 import java.lang.foreign.Linker;
+import java.lang.foreign.MemoryLayout;
 import java.lang.foreign.MemorySegment;
 import java.lang.foreign.ValueLayout;
 import java.lang.invoke.MethodHandles;
@@ -27,7 +28,8 @@ public final class OcrBackendBridge implements AutoCloseable {
             OCR_BACKEND_BRIDGES = new ConcurrentHashMap<>();
 
     // C vtable: 13 fields (4 plugin methods + 8 trait methods + free_user_data)
-    private static final long VTABLE_SIZE = (long) ValueLayout.ADDRESS.byteSize() * 13L;
+    private static final MemoryLayout VTABLE_LAYOUT = MemoryLayout.structLayout(ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS);
+    private static final long VTABLE_SIZE = VTABLE_LAYOUT.byteSize();
 
     private final Arena arena;
     private final MemorySegment vtable;
