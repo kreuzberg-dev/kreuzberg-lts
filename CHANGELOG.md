@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **types**: bidirectional `From` impls between `InternalDocument` (rich pipeline type) and `ExtractionResult` (public output type). Lossy conversions used at FFI/trait-bridge boundaries where foreign-language plugins return `ExtractionResult` but the canonical Rust trait signature requires `InternalDocument`. `ExtractionResult → InternalDocument` stashes content in `pre_rendered_content`; `InternalDocument → ExtractionResult` runs `derive_extraction_result` with `OutputFormat::Plain`.
+
+### Fixed
+
+- **core/extractor**: fix `let validated_mime = if ... else { ... }` arm-type mismatch when `tree-sitter` feature is disabled. The octet-stream branch was wrapped in `#[cfg(feature = "tree-sitter")]` with no `#[cfg(not(...))]` fallback, causing the arm to evaluate to `()` under default features (which don't include tree-sitter) while the else arm produced `String`. Added an explicit `#[cfg(not(feature = "tree-sitter"))]` fallback that calls `mime::detect_mime_type_from_bytes`.
+
 ### Changed
 
 - **kotlin-android (e2e)**: added trait-bridge e2e test generation. alef.toml now includes `class` field overrides for register/unregister/clear trait-bridge calls (e.g., `class = "OcrBackendBridge"`) to properly route e2e tests through the Bridge object methods instead of the Kreuzberg main class. kotlin_android e2e test count increased from 21 to 22 files (PluginApiTest.kt added).

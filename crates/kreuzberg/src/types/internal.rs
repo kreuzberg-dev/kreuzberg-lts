@@ -213,6 +213,32 @@ pub struct InternalDocument {
     pub append_ocr_text: bool,
 }
 
+impl From<crate::types::extraction::ExtractionResult> for InternalDocument {
+    /// Lossy conversion used at FFI/trait-bridge boundaries where a foreign-language
+    /// plugin returns the public `ExtractionResult` shape but the canonical Rust trait
+    /// signature requires an `InternalDocument`. The text content is stashed in
+    /// `pre_rendered_content` so the pipeline returns it verbatim instead of trying
+    /// to re-render from a non-existent element tree.
+    fn from(result: crate::types::extraction::ExtractionResult) -> Self {
+        let mut doc = Self::new(result.mime_type.as_ref());
+        doc.mime_type = result.mime_type.into_owned();
+        doc.metadata = result.metadata;
+        doc.tables = result.tables;
+        doc.images = result.images.unwrap_or_default();
+        doc.pre_rendered_content = if result.content.is_empty() { None } else { Some(result.content) };
+        doc
+    }
+}
+
+impl From<InternalDocument> for crate::types::extraction::ExtractionResult {
+    /// Run the canonical derivation pipeline with `OutputFormat::Plain` and no document
+    /// structure derivation. Used at FFI/trait-bridge boundaries where the rich
+    /// `InternalDocument` must be converted to the public `ExtractionResult` shape.
+    fn from(doc: InternalDocument) -> Self {
+        crate::extraction::derive::derive_extraction_result(doc, false, crate::core::config::OutputFormat::Plain)
+    }
+}
+
 impl InternalDocument {
     /// Create a new empty document with the given source format.
     pub fn new(source_format: impl Into<String>) -> Self {
