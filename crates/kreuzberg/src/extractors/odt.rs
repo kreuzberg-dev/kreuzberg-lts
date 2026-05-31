@@ -11,6 +11,7 @@ use crate::types::ExtractedImage;
 use crate::types::Metadata;
 use crate::types::internal::InternalDocument;
 use crate::types::internal_builder::InternalDocumentBuilder;
+use crate::types::revisions::{DiffLine, DocumentRevision, RevisionAnchor, RevisionDelta, RevisionKind};
 use crate::types::uri::{ExtractedUri, UriKind};
 use ahash::AHashMap;
 use async_trait::async_trait;
@@ -163,6 +164,119 @@ fn build_style_map(root: roxmltree::Node) -> AHashMap<String, OdtStyleProps> {
         }
     }
     styles
+}
+
+// ── ODT tracked-changes support ───────────────────────────────────────────────
+
+/// Parsed metadata for a single `<text:changed-region>` from `<text:tracked-changes>`.
+struct OdtChangeRegion {
+    author: Option<String>,
+    timestamp: Option<String>,
+    kind: RevisionKind,
+    /// Text content for insertion/deletion regions; empty for format changes.
+    content_text: String,
+}
+
+/// Parse every `<text:changed-region>` element inside a `<text:tracked-changes>`
+/// node and return a map from `text:id` → `OdtChangeRegion`.
+///
+/// The function looks for `<text:tracked-changes>` as a direct child of `text_node`
+/// (the `<office:text>` element). If no tracked-changes element is present the map
+/// is empty.
+fn parse_odt_tracked_changes(text_node: roxmltree::Node) -> AHashMap<String, OdtChangeRegion> {
+    let mut map = AHashMap::new();
+
+    // Find the <text:tracked-changes> child.
+    let tracked_changes = text_node.children().find(|n| n.tag_name().name() == "tracked-changes");
+    let Some(tc) = tracked_changes else {
+        return map;
+    };
+
+    for region in tc.children() {
+        if region.tag_name().name() != "changed-region" {
+            continue;
+        }
+
+        // text:id is in the text: namespace, but roxmltree resolves it by local name.
+        let id = region
+            .attribute(("urn:oasis:names:tc:opendocument:xmlns:text:1.0", "id"))
+            .or_else(|| region.attribute("text:id"));
+        let Some(id) = id else { continue };
+
+        // Determine kind and content text from the first recognised child element.
+        let mut kind = RevisionKind::FormatChange;
+        let mut content_text = String::new();
+        let mut author: Option<String> = None;
+        let mut timestamp: Option<String> = None;
+
+        for child in region.children() {
+            match child.tag_name().name() {
+                "change-info" => {
+                    // <office:change-info> contains <dc:creator> and <dc:date>.
+                    for info_child in child.children() {
+                        match info_child.tag_name().name() {
+                            "creator" => {
+                                if let Some(t) = info_child.text() {
+                                    let trimmed = t.trim();
+                                    if !trimmed.is_empty() {
+                                        author = Some(trimmed.to_string());
+                                    }
+                                }
+                            }
+                            "date" => {
+                                if let Some(t) = info_child.text() {
+                                    let trimmed = t.trim();
+                                    if !trimmed.is_empty() {
+                                        timestamp = Some(trimmed.to_string());
+                                    }
+                                }
+                            }
+                            _ => {}
+                        }
+                    }
+                }
+                "insertion" => {
+                    kind = RevisionKind::Insertion;
+                    content_text = collect_region_text(child);
+                }
+                "deletion" => {
+                    kind = RevisionKind::Deletion;
+                    content_text = collect_region_text(child);
+                }
+                "format-change" => {
+                    kind = RevisionKind::FormatChange;
+                }
+                _ => {}
+            }
+        }
+
+        map.insert(
+            id.to_string(),
+            OdtChangeRegion {
+                author,
+                timestamp,
+                kind,
+                content_text,
+            },
+        );
+    }
+
+    map
+}
+
+/// Collect all text content from the children of a changed-region variant element
+/// (`<text:insertion>` or `<text:deletion>`).
+fn collect_region_text(node: roxmltree::Node) -> String {
+    let mut parts = Vec::new();
+    for desc in node.descendants() {
+        if desc.is_text() {
+            let t = desc.text().unwrap_or("");
+            if !t.trim().is_empty() {
+                parts.push(t.to_string());
+            }
+        }
+    }
+    parts.join("")
 }
 
 /// Pre-extract all images from the ODT ZIP archive into a map keyed by href path.
@@ -404,11 +518,28 @@ fn build_internal_document(
     let style_map = build_style_map(root);
     let mut builder = InternalDocumentBuilder::new("odt");
 
+    // Collect tracked-changes metadata and revision accumulator before the body walk.
+    let mut tracked_changes_present = false;
+    let mut revisions: Vec<DocumentRevision> = Vec::new();
+
     for body_child in root.children() {
         if body_child.tag_name().name() == "body" {
             for text_elem in body_child.children() {
                 if text_elem.tag_name().name() == "text" {
-                    build_internal_elements(text_elem, &mut builder, &style_map, &image_data, &formula_data, budget)?;
+                    // Check whether a <text:tracked-changes> child exists.
+                    tracked_changes_present = text_elem.children().any(|n| n.tag_name().name() == "tracked-changes");
+
+                    let change_map = parse_odt_tracked_changes(text_elem);
+                    build_internal_elements(
+                        text_elem,
+                        &mut builder,
+                        &style_map,
+                        &image_data,
+                        &formula_data,
+                        budget,
+                        &change_map,
+                        &mut revisions,
+                    )?;
                 }
             }
         }
@@ -417,14 +548,30 @@ fn build_internal_document(
     // Extract headers/footers from styles.xml
     extract_odt_internal_headers_footers(archive, &mut builder);
 
-    Ok(builder.build())
+    let mut internal_doc = builder.build();
+
+    // None  -> no <text:tracked-changes> present in document.
+    // Some(vec![]) -> element present but empty (no changed regions matched body markers).
+    internal_doc.revisions = if tracked_changes_present { Some(revisions) } else { None };
+
+    Ok(internal_doc)
 }
 
 /// Recursively walk ODT XML elements and populate the `InternalDocumentBuilder`.
 ///
+/// `change_map` contains every `<text:changed-region>` parsed from
+/// `<text:tracked-changes>`. When the walker encounters a `<text:change-start>`
+/// or `<text:change>` body marker it looks up the region in `change_map` and
+/// appends a `DocumentRevision` to `revisions`.
+///
+/// **Accepted-changes view** (matches DOCX behaviour): inserted text is emitted
+/// into the extracted content as live text; deleted text is *not* emitted. The
+/// revision list is the separate audit trail for deleted content.
+///
 /// Returns `Err` when any `SecurityBudget` limit is violated. Each top-level
 /// child element consumes one `budget.step()` and emitted text bytes are
 /// charged to `budget.account_text()`.
+#[allow(clippy::too_many_arguments)]
 fn build_internal_elements(
     parent: roxmltree::Node,
     builder: &mut InternalDocumentBuilder,
@@ -432,15 +579,73 @@ fn build_internal_elements(
     image_data: &AHashMap<String, (Vec<u8>, String)>,
     formula_data: &AHashMap<String, String>,
     budget: &mut SecurityBudget,
+    change_map: &AHashMap<String, OdtChangeRegion>,
+    revisions: &mut Vec<DocumentRevision>,
 ) -> crate::error::Result<()> {
     use crate::types::document_structure::ContentLayer;
     use crate::types::internal::{ElementKind, InternalElement};
 
     let mut footnote_counter = 0u32;
+    // Zero-based paragraph index in document order, used for RevisionAnchor::Paragraph.
+    let mut paragraph_index: usize = 0;
 
     for node in parent.children() {
         budget.step()?;
         match node.tag_name().name() {
+            // Body-level change markers that reference a <text:changed-region>.
+            //
+            // <text:change-start text:change-id="ct1"/> marks where an insertion
+            // begins in the flow. <text:change text:change-id="ct1"/> is a single-
+            // point deletion marker. Both map to a revision using the current
+            // paragraph_index as the anchor.
+            //
+            // Accepted-changes view: insertions are already present in the body as
+            // live paragraphs/runs that follow the change-start marker, so no
+            // extra text is added here. Deleted content is kept only in the revision
+            // audit trail — it is intentionally absent from the extracted text.
+            "change-start" | "change" => {
+                let change_id = node
+                    .attribute(("urn:oasis:names:tc:opendocument:xmlns:text:1.0", "change-id"))
+                    .or_else(|| node.attribute("text:change-id"));
+                if let Some(id) = change_id {
+                    if let Some(region) = change_map.get(id) {
+                        let delta = match region.kind {
+                            RevisionKind::Insertion => RevisionDelta {
+                                content: if region.content_text.is_empty() {
+                                    vec![]
+                                } else {
+                                    vec![DiffLine::Added(region.content_text.clone())]
+                                },
+                                table_changes: vec![],
+                            },
+                            RevisionKind::Deletion => RevisionDelta {
+                                content: if region.content_text.is_empty() {
+                                    vec![]
+                                } else {
+                                    vec![DiffLine::Removed(region.content_text.clone())]
+                                },
+                                table_changes: vec![],
+                            },
+                            RevisionKind::FormatChange | RevisionKind::Comment => RevisionDelta::default(),
+                        };
+                        revisions.push(DocumentRevision {
+                            revision_id: id.to_string(),
+                            author: region.author.clone(),
+                            timestamp: region.timestamp.clone(),
+                            kind: region.kind,
+                            anchor: Some(RevisionAnchor::Paragraph { index: paragraph_index }),
+                            delta,
+                        });
+                    } else {
+                        tracing::warn!(
+                            change_id = id,
+                            "ODT body marker references unknown changed-region; skipping"
+                        );
+                    }
+                }
+            }
+            // change-end markers carry no data; nothing to record.
+            "change-end" => {}
             "h" => {
                 let (text, _annotations, uris) = collect_odt_annotations(node, style_map);
                 for uri in uris {
@@ -455,6 +660,7 @@ fn build_internal_elements(
                         .unwrap_or(1);
                     builder.push_heading(level, trimmed, None, None);
                 }
+                paragraph_index += 1;
             }
             "p" => {
                 // Collect footnote markers for inline injection
@@ -634,6 +840,7 @@ fn build_internal_elements(
                     budget.account_text(trimmed.len())?;
                     builder.push_paragraph(trimmed, annotations, None, None);
                 }
+                paragraph_index += 1;
             }
             "table" => {
                 let cells = extract_table_cells(node);
@@ -648,7 +855,16 @@ fn build_internal_elements(
                 build_internal_list(node, builder);
             }
             "section" => {
-                build_internal_elements(node, builder, style_map, image_data, formula_data, budget)?;
+                build_internal_elements(
+                    node,
+                    builder,
+                    style_map,
+                    image_data,
+                    formula_data,
+                    budget,
+                    change_map,
+                    revisions,
+                )?;
             }
             _ => {}
         }

@@ -2829,7 +2829,9 @@ mod tests {
             crate::core::config::OutputFormat::Plain,
         );
 
-        let revisions = result.revisions.expect("revisions should be Some for a doc with track changes");
+        let revisions = result
+            .revisions
+            .expect("revisions should be Some for a doc with track changes");
         assert_eq!(revisions.len(), 3, "expected 3 revisions (1 ins + 1 del + 1 rPrChange)");
     }
 
@@ -2928,7 +2930,10 @@ mod tests {
         let revisions = result.revisions.unwrap();
         let ins = revisions.iter().find(|r| r.kind == RevisionKind::Insertion).unwrap();
         assert!(
-            ins.delta.content.iter().any(|l| matches!(l, DiffLine::Added(t) if t == "inserted content")),
+            ins.delta
+                .content
+                .iter()
+                .any(|l| matches!(l, DiffLine::Added(t) if t == "inserted content")),
             "insertion delta should contain Added(\"inserted content\")"
         );
     }
@@ -2955,9 +2960,15 @@ mod tests {
         );
 
         let revisions = result.revisions.unwrap();
-        let del = revisions.iter().find(|r| r.kind == crate::types::revisions::RevisionKind::Deletion).unwrap();
+        let del = revisions
+            .iter()
+            .find(|r| r.kind == crate::types::revisions::RevisionKind::Deletion)
+            .unwrap();
         assert!(
-            del.delta.content.iter().any(|l| matches!(l, DiffLine::Removed(t) if t == "deleted text")),
+            del.delta
+                .content
+                .iter()
+                .any(|l| matches!(l, DiffLine::Removed(t) if t == "deleted text")),
             "deletion delta should contain Removed(\"deleted text\")"
         );
     }

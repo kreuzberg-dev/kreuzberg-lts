@@ -96,6 +96,7 @@ impl ExtractedUri {
 
     /// Create a new anchor/cross-reference URI.
     #[cfg(any(feature = "pdf", feature = "xml"))]
+    #[allow(dead_code)]
     pub(crate) fn anchor(url: impl Into<String>, label: Option<String>) -> Self {
         Self {
             url: url.into(),

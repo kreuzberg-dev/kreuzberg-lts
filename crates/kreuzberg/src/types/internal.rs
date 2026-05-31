@@ -421,6 +421,7 @@ impl InternalElement {
         feature = "xml",
         feature = "hwpx"
     ))]
+    #[allow(dead_code)]
     pub(crate) fn with_page(mut self, page: u32) -> Self {
         self.page = Some(page);
         self

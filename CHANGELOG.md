@@ -11,6 +11,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **odt/revisions**: ODT extraction now surfaces internal track-changes in
+  `ExtractionResult.revisions` — insertions, deletions, and format changes from
+  `<text:tracked-changes>`. Author + timestamp captured from `<office:change-info>`.
+  Anchor is `RevisionAnchor::Paragraph { index }` matching DOCX ergonomics. Extracted
+  text follows the accepted-changes view (insertions live, deletions removed). Orphan
+  body markers referencing unknown change-ids are logged and skipped, not fatal.
+
 - **pptx/revisions**: PPTX extraction now surfaces slide comments in
   `ExtractionResult.revisions` — one `DocumentRevision { kind: Comment }` per `<p:cm>` element
   with author (resolved via `commentAuthors.xml`), timestamp, and slide-index anchor.

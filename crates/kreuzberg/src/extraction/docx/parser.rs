@@ -202,18 +202,14 @@ fn collect_revision_attrs(e: &BytesStart) -> (Option<String>, Option<String>, Op
             }
             b"w:author" => {
                 author = std::str::from_utf8(&attr.value).ok().map(String::from);
-                if let Some(ref a) = author {
-                    if a.is_empty() {
-                        author = None;
-                    }
+                if author.as_deref() == Some("") {
+                    author = None;
                 }
             }
             b"w:date" => {
                 date = std::str::from_utf8(&attr.value).ok().map(String::from);
-                if let Some(ref d) = date {
-                    if d.is_empty() {
-                        date = None;
-                    }
+                if date.as_deref() == Some("") {
+                    date = None;
                 }
             }
             _ => {}
@@ -1604,12 +1600,10 @@ impl<R: Read + Seek> DocxParser<R> {
                         // No text delta — the format details are carried in the OOXML attributes.
                         // We record the revision with an empty delta for now.
                         // TODO: enrich with before/after property diff in a follow-up.
-                        b"w:rPrChange" => {
-                            if revision_kind.is_none() {
-                                revision_kind = Some(RevisionKind::FormatChange);
-                                revision_attrs = collect_revision_attrs(e);
-                                revision_text.clear();
-                            }
+                        b"w:rPrChange" if revision_kind.is_none() => {
+                            revision_kind = Some(RevisionKind::FormatChange);
+                            revision_attrs = collect_revision_attrs(e);
+                            revision_text.clear();
                         }
                         // Deleted text content — inside `w:del` → `w:r` → `w:delText`.
                         b"w:delText" => {
@@ -1799,8 +1793,11 @@ impl<R: Read + Seek> DocxParser<R> {
                         }
                         // Commit an insertion revision when the w:ins element closes.
                         b"w:ins" if revision_kind == Some(RevisionKind::Insertion) => {
-                            let (id_opt, author_opt, date_opt) =
-                                (revision_attrs.0.take(), revision_attrs.1.take(), revision_attrs.2.take());
+                            let (id_opt, author_opt, date_opt) = (
+                                revision_attrs.0.take(),
+                                revision_attrs.1.take(),
+                                revision_attrs.2.take(),
+                            );
                             let revision_id = id_opt.unwrap_or_else(|| {
                                 let fallback = format!("docx-ins-{}", revision_id_counter);
                                 revision_id_counter += 1;
@@ -1819,7 +1816,9 @@ impl<R: Read + Seek> DocxParser<R> {
                                 author: author_opt,
                                 timestamp: date_opt,
                                 kind: RevisionKind::Insertion,
-                                anchor: Some(RevisionAnchor::Paragraph { index: current_paragraph_index }),
+                                anchor: Some(RevisionAnchor::Paragraph {
+                                    index: current_paragraph_index,
+                                }),
                                 delta,
                             });
                             revision_kind = None;
@@ -1827,8 +1826,11 @@ impl<R: Read + Seek> DocxParser<R> {
                         }
                         // Commit a deletion revision when the w:del element closes.
                         b"w:del" if revision_kind == Some(RevisionKind::Deletion) => {
-                            let (id_opt, author_opt, date_opt) =
-                                (revision_attrs.0.take(), revision_attrs.1.take(), revision_attrs.2.take());
+                            let (id_opt, author_opt, date_opt) = (
+                                revision_attrs.0.take(),
+                                revision_attrs.1.take(),
+                                revision_attrs.2.take(),
+                            );
                             let revision_id = id_opt.unwrap_or_else(|| {
                                 let fallback = format!("docx-del-{}", revision_id_counter);
                                 revision_id_counter += 1;
@@ -1847,7 +1849,9 @@ impl<R: Read + Seek> DocxParser<R> {
                                 author: author_opt,
                                 timestamp: date_opt,
                                 kind: RevisionKind::Deletion,
-                                anchor: Some(RevisionAnchor::Paragraph { index: current_paragraph_index }),
+                                anchor: Some(RevisionAnchor::Paragraph {
+                                    index: current_paragraph_index,
+                                }),
                                 delta,
                             });
                             revision_kind = None;
@@ -1855,8 +1859,11 @@ impl<R: Read + Seek> DocxParser<R> {
                         }
                         // Commit a format-change revision when w:rPrChange closes.
                         b"w:rPrChange" if revision_kind == Some(RevisionKind::FormatChange) => {
-                            let (id_opt, author_opt, date_opt) =
-                                (revision_attrs.0.take(), revision_attrs.1.take(), revision_attrs.2.take());
+                            let (id_opt, author_opt, date_opt) = (
+                                revision_attrs.0.take(),
+                                revision_attrs.1.take(),
+                                revision_attrs.2.take(),
+                            );
                             let revision_id = id_opt.unwrap_or_else(|| {
                                 let fallback = format!("docx-fmt-{}", revision_id_counter);
                                 revision_id_counter += 1;
@@ -1868,7 +1875,9 @@ impl<R: Read + Seek> DocxParser<R> {
                                 author: author_opt,
                                 timestamp: date_opt,
                                 kind: RevisionKind::FormatChange,
-                                anchor: Some(RevisionAnchor::Paragraph { index: current_paragraph_index }),
+                                anchor: Some(RevisionAnchor::Paragraph {
+                                    index: current_paragraph_index,
+                                }),
                                 delta: RevisionDelta::default(),
                             });
                             revision_kind = None;
