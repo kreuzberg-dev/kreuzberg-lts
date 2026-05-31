@@ -137,8 +137,12 @@ pub struct ExtractionConfig {
     ///
     /// When set, each file in a batch will be canceled after this duration
     /// unless overridden by [`FileExtractionConfig::timeout_secs`].
-    /// `None` means no timeout (unbounded extraction time).
-    #[serde(default)]
+    ///
+    /// Defaults to `Some(60)` to prevent pathological files (e.g. deeply
+    /// nested archives, documents with millions of cells) from running
+    /// indefinitely and exhausting caller resources. Set to `None` to
+    /// disable the timeout for trusted input or long-running workloads.
+    #[serde(default = "default_extraction_timeout")]
     pub extraction_timeout_secs: Option<u64>,
 
     /// Maximum concurrent extractions in batch operations (None = (num_cpus × 1.5).ceil()).
@@ -313,7 +317,7 @@ impl Default for ExtractionConfig {
             html_options: None,
             #[cfg(feature = "html")]
             html_output: None,
-            extraction_timeout_secs: None,
+            extraction_timeout_secs: default_extraction_timeout(),
             max_concurrent_extractions: None,
             security_limits: None,
             #[cfg(feature = "layout-types")]
@@ -542,6 +546,16 @@ fn default_archive_depth() -> usize {
     3
 }
 
+/// Default extraction timeout: 60 seconds.
+///
+/// Pathological files (deeply nested archives, sheets with millions of cells,
+/// adversarial PDFs) can otherwise run indefinitely and exhaust caller
+/// resources. 60 s is generous for legitimate documents while bounding the
+/// worst-case cost of a single untrusted input.
+fn default_extraction_timeout() -> Option<u64> {
+    Some(60)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -642,5 +656,49 @@ mod tests {
         let json = r#"{}"#;
         let config: ExtractionConfig = serde_json::from_str(json).unwrap();
         assert!(!config.use_layout_for_markdown);
+    }
+
+    // --- extraction_timeout_secs defaults ----------------------------------
+
+    #[test]
+    fn test_default_extraction_timeout_is_sixty_seconds() {
+        let config = ExtractionConfig::default();
+        assert_eq!(
+            config.extraction_timeout_secs,
+            Some(60),
+            "default timeout must be Some(60) to prevent unbounded extraction"
+        );
+    }
+
+    #[test]
+    fn test_extraction_timeout_can_be_disabled_by_setting_none() {
+        let config = ExtractionConfig {
+            extraction_timeout_secs: None,
+            ..Default::default()
+        };
+        assert_eq!(config.extraction_timeout_secs, None);
+    }
+
+    #[test]
+    fn test_extraction_timeout_serde_round_trip() {
+        let config = ExtractionConfig {
+            extraction_timeout_secs: Some(120),
+            ..Default::default()
+        };
+        let json = serde_json::to_string(&config).unwrap();
+        let deserialized: ExtractionConfig = serde_json::from_str(&json).unwrap();
+        assert_eq!(deserialized.extraction_timeout_secs, Some(120));
+    }
+
+    #[test]
+    fn test_extraction_timeout_serde_absent_field_defaults_to_sixty() {
+        // When the JSON field is absent the serde default function must fire.
+        let json = r#"{}"#;
+        let config: ExtractionConfig = serde_json::from_str(json).unwrap();
+        assert_eq!(
+            config.extraction_timeout_secs,
+            Some(60),
+            "absent field must use default_extraction_timeout() -> Some(60)"
+        );
     }
 }
