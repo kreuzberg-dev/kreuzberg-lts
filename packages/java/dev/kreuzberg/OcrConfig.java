@@ -6,6 +6,7 @@
 package dev.kreuzberg;
 
 import java.util.Map;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
@@ -47,7 +48,7 @@ public record OcrConfig(
     /**
      * PaddleOCR-specific configuration (optional, JSON passthrough)
      */
-    @Nullable @JsonProperty("paddle_ocr_config") String paddleOcrConfig,
+    @JsonProperty("paddle_ocr_config") com.fasterxml.jackson.databind.@Nullable JsonNode paddleOcrConfig,
     /**
      * Arbitrary per-call options passed through to the backend unchanged.
      *
@@ -70,7 +71,7 @@ public record OcrConfig(
      * { "mode": "fast", "enable_layout": true, "timeout_ms": 5000 }
      *
      */
-    @Nullable @JsonProperty("backend_options") String backendOptions,
+    @JsonProperty("backend_options") com.fasterxml.jackson.databind.@Nullable JsonNode backendOptions,
     /**
      * OCR element extraction configuration
      */
@@ -146,9 +147,9 @@ private String language = null;
         @JsonProperty("output_format")
         @Nullable private OutputFormat outputFormat = null;
         @JsonProperty("paddle_ocr_config")
-private String paddleOcrConfig = null;
+private com.fasterxml.jackson.databind.JsonNode paddleOcrConfig = null;
         @JsonProperty("backend_options")
-private String backendOptions = null;
+private com.fasterxml.jackson.databind.JsonNode backendOptions = null;
         @JsonProperty("element_config")
         @Nullable private OcrElementConfig elementConfig = null;
         @JsonProperty("quality_thresholds")
@@ -201,14 +202,14 @@ private Map<String, byte[]> tessdataBytes = null;
 
         /** Sets the paddleOcrConfig field. */
         @JsonProperty("paddle_ocr_config")
-        public Builder withPaddleOcrConfig(final @Nullable String value) {
+        public Builder withPaddleOcrConfig(final com.fasterxml.jackson.databind.@Nullable JsonNode value) {
             this.paddleOcrConfig = value;
             return this;
         }
 
         /** Sets the backendOptions field. */
         @JsonProperty("backend_options")
-        public Builder withBackendOptions(final @Nullable String value) {
+        public Builder withBackendOptions(final com.fasterxml.jackson.databind.@Nullable JsonNode value) {
             this.backendOptions = value;
             return this;
         }

@@ -28,10 +28,7 @@ public final class EmbeddingBackendBridge implements AutoCloseable {
             EMBEDDING_BACKEND_BRIDGES = new ConcurrentHashMap<>();
 
     // C vtable: 8 fields (4 plugin methods + 2 trait methods + free_string + free_user_data)
-    private static final MemoryLayout VTABLE_LAYOUT = MemoryLayout.structLayout(
-            ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS,
-            ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS,
-            ValueLayout.ADDRESS, ValueLayout.ADDRESS);
+    private static final MemoryLayout VTABLE_LAYOUT = MemoryLayout.structLayout(ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS);
     private static final long VTABLE_SIZE = VTABLE_LAYOUT.byteSize();
 
     private final Arena arena;

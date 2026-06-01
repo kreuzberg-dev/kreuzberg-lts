@@ -7,6 +7,7 @@ package dev.kreuzberg;
 
 import java.util.List;
 import java.util.Map;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
@@ -33,7 +34,7 @@ public record OcrExtractionResult(
     /**
      * OCR processing metadata (confidence scores, language, etc.)
      */
-    @JsonProperty("metadata") Map<String, String> metadata,
+    @JsonProperty("metadata") Map<String, com.fasterxml.jackson.databind.JsonNode> metadata,
     /**
      * Tables detected and extracted via OCR
      */
@@ -61,7 +62,7 @@ public record OcrExtractionResult(
 private String content = "";
         @JsonProperty("mime_type")
 private String mimeType = "";
-private Map<String, String> metadata = Map.of();
+private Map<String, com.fasterxml.jackson.databind.JsonNode> metadata = Map.of();
 private List<OcrTable> tables = List.of();
         @JsonProperty("ocr_elements")
 private List<OcrElement> ocrElements = null;
@@ -84,7 +85,7 @@ private String internalDocument = null;
 
         /** Sets the metadata field. */
         @JsonProperty("metadata")
-        public Builder withMetadata(final Map<String, String> value) {
+        public Builder withMetadata(final Map<String, com.fasterxml.jackson.databind.JsonNode> value) {
             this.metadata = value;
             return this;
         }

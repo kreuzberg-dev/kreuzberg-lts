@@ -6,6 +6,7 @@
 package dev.kreuzberg;
 
 import java.util.Map;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
@@ -54,7 +55,7 @@ public record OcrElement(
     /**
      * Backend-specific metadata that doesn't fit the unified schema.
      */
-    @Nullable @JsonProperty("backend_metadata") Map<String, String> backendMetadata
+    @JsonProperty("backend_metadata") Map<String, com.fasterxml.jackson.databind.@Nullable JsonNode> backendMetadata
 ) {
     public static Builder builder() {
         return new Builder();
@@ -74,7 +75,7 @@ private Integer pageNumber = null;
         @JsonProperty("parent_id")
 private String parentId = null;
         @JsonProperty("backend_metadata")
-private Map<String, String> backendMetadata = null;
+private Map<String, com.fasterxml.jackson.databind.JsonNode> backendMetadata = null;
 
         /** Sets the text field. */
         @JsonProperty("text")
@@ -127,7 +128,7 @@ private Map<String, String> backendMetadata = null;
 
         /** Sets the backendMetadata field. */
         @JsonProperty("backend_metadata")
-        public Builder withBackendMetadata(final @Nullable Map<String, String> value) {
+        public Builder withBackendMetadata(final Map<String, com.fasterxml.jackson.databind.@Nullable JsonNode> value) {
             this.backendMetadata = value;
             return this;
         }

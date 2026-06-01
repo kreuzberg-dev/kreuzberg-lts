@@ -5,6 +5,7 @@
 // Issues & docs: https://github.com/kreuzberg-dev/alef
 package dev.kreuzberg;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
@@ -23,7 +24,7 @@ public record StructuredExtractionConfig(
     /**
      * JSON Schema defining the desired output structure.
      */
-    @JsonProperty("schema") String schema,
+    @JsonProperty("schema") com.fasterxml.jackson.databind.JsonNode schema,
     /**
      * Schema name passed to the LLM's structured output mode.
      */
@@ -59,7 +60,7 @@ public record StructuredExtractionConfig(
     @JsonPOJOBuilder(withPrefix = "with", buildMethodName = "build")
     public static final class Builder {
 
-private String schema = null;
+private com.fasterxml.jackson.databind.JsonNode schema = null;
         @JsonProperty("schema_name")
 private String schemaName = null;
         @JsonProperty("schema_description")
@@ -70,7 +71,7 @@ private LlmConfig llm = null;
 
         /** Sets the schema field. */
         @JsonProperty("schema")
-        public Builder withSchema(final String value) {
+        public Builder withSchema(final com.fasterxml.jackson.databind.JsonNode value) {
             this.schema = value;
             return this;
         }

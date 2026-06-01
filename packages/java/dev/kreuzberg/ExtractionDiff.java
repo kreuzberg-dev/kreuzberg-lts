@@ -6,6 +6,7 @@
 package dev.kreuzberg;
 
 import java.util.List;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
@@ -46,7 +47,7 @@ public record ExtractionDiff(
      * (with JSON Pointer paths) feed {@code a.metadata} and {@code b.metadata} to your
      * preferred json-patch impl directly.
      */
-    @JsonProperty("metadata_changed") String metadataChanged,
+    @JsonProperty("metadata_changed") com.fasterxml.jackson.databind.JsonNode metadataChanged,
     /**
      * Changes to embedded archive children.
      */
@@ -69,7 +70,7 @@ private List<Table> tablesRemoved = List.of();
         @JsonProperty("tables_changed")
 private List<TableDiff> tablesChanged = List.of();
         @JsonProperty("metadata_changed")
-private String metadataChanged = null;
+private com.fasterxml.jackson.databind.JsonNode metadataChanged = null;
         @JsonProperty("embedded_changes")
 private EmbeddedChanges embeddedChanges = null;
 
@@ -103,7 +104,7 @@ private EmbeddedChanges embeddedChanges = null;
 
         /** Sets the metadataChanged field. */
         @JsonProperty("metadata_changed")
-        public Builder withMetadataChanged(final String value) {
+        public Builder withMetadataChanged(final com.fasterxml.jackson.databind.JsonNode value) {
             this.metadataChanged = value;
             return this;
         }

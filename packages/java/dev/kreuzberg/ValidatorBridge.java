@@ -27,10 +27,7 @@ public final class ValidatorBridge implements AutoCloseable {
             VALIDATOR_BRIDGES = new ConcurrentHashMap<>();
 
     // C vtable: 9 fields (4 plugin methods + 3 trait methods + free_string + free_user_data)
-    private static final MemoryLayout VTABLE_LAYOUT = MemoryLayout.structLayout(
-            ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS,
-            ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS,
-            ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS);
+    private static final MemoryLayout VTABLE_LAYOUT = MemoryLayout.structLayout(ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS);
     private static final long VTABLE_SIZE = VTABLE_LAYOUT.byteSize();
 
     private final Arena arena;

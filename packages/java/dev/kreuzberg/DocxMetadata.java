@@ -6,6 +6,7 @@
 package dev.kreuzberg;
 
 import java.util.Map;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
@@ -41,7 +42,7 @@ public record DocxMetadata(
      * Contains key-value pairs defined by users or applications.
      * Values can be strings, numbers, booleans, or dates.
      */
-    @Nullable @JsonProperty("custom_properties") Map<String, String> customProperties
+    @JsonProperty("custom_properties") Map<String, com.fasterxml.jackson.databind.@Nullable JsonNode> customProperties
 ) {
     public static Builder builder() {
         return new Builder();
@@ -56,7 +57,7 @@ private CoreProperties coreProperties = null;
         @JsonProperty("app_properties")
 private DocxAppProperties appProperties = null;
         @JsonProperty("custom_properties")
-private Map<String, String> customProperties = null;
+private Map<String, com.fasterxml.jackson.databind.JsonNode> customProperties = null;
 
         /** Sets the coreProperties field. */
         @JsonProperty("core_properties")
@@ -74,7 +75,7 @@ private Map<String, String> customProperties = null;
 
         /** Sets the customProperties field. */
         @JsonProperty("custom_properties")
-        public Builder withCustomProperties(final @Nullable Map<String, String> value) {
+        public Builder withCustomProperties(final Map<String, com.fasterxml.jackson.databind.@Nullable JsonNode> value) {
             this.customProperties = value;
             return this;
         }
