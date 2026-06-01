@@ -523,6 +523,7 @@ final class NativeLib {
                 ValueLayout.ADDRESS,
                 ValueLayout.ADDRESS,
                 ValueLayout.ADDRESS,
+                ValueLayout.ADDRESS,
                 ValueLayout.ADDRESS
             ), ValueLayout.ADDRESS, ValueLayout.ADDRESS)))
         .orElse(null);
@@ -546,6 +547,7 @@ final class NativeLib {
         .find("kreuzberg_register_post_processor")
         .map(s -> LINKER.downcallHandle(s, FunctionDescriptor.of(ValueLayout.JAVA_INT,
             ValueLayout.ADDRESS, MemoryLayout.structLayout(
+                ValueLayout.ADDRESS,
                 ValueLayout.ADDRESS,
                 ValueLayout.ADDRESS,
                 ValueLayout.ADDRESS,
@@ -585,6 +587,7 @@ final class NativeLib {
                 ValueLayout.ADDRESS,
                 ValueLayout.ADDRESS,
                 ValueLayout.ADDRESS,
+                ValueLayout.ADDRESS,
                 ValueLayout.ADDRESS
             ), ValueLayout.ADDRESS, ValueLayout.ADDRESS)))
         .orElse(null);
@@ -608,6 +611,7 @@ final class NativeLib {
         .find("kreuzberg_register_embedding_backend")
         .map(s -> LINKER.downcallHandle(s, FunctionDescriptor.of(ValueLayout.JAVA_INT,
             ValueLayout.ADDRESS, MemoryLayout.structLayout(
+                ValueLayout.ADDRESS,
                 ValueLayout.ADDRESS,
                 ValueLayout.ADDRESS,
                 ValueLayout.ADDRESS,
@@ -646,6 +650,7 @@ final class NativeLib {
                 ValueLayout.ADDRESS,
                 ValueLayout.ADDRESS,
                 ValueLayout.ADDRESS,
+                ValueLayout.ADDRESS,
                 ValueLayout.ADDRESS
             ), ValueLayout.ADDRESS, ValueLayout.ADDRESS)))
         .orElse(null);
@@ -669,6 +674,7 @@ final class NativeLib {
         .find("kreuzberg_register_renderer")
         .map(s -> LINKER.downcallHandle(s, FunctionDescriptor.of(ValueLayout.JAVA_INT,
             ValueLayout.ADDRESS, MemoryLayout.structLayout(
+                ValueLayout.ADDRESS,
                 ValueLayout.ADDRESS,
                 ValueLayout.ADDRESS,
                 ValueLayout.ADDRESS,
