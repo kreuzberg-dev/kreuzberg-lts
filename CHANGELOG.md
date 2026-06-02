@@ -11,6 +11,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **types**: Result-shape scaffolding for the OSS v5 follow-up roadmap. New optional
+  fields land on `ExtractionResult` (`entities`, `summary`, `translation`,
+  `page_classifications`, `redaction_report`) and `ExtractedImage` (`caption`,
+  `qr_codes`), each with `#[serde(skip_serializing_if = "Option::is_none", default)]`
+  so existing serialised payloads are unchanged. Each field has a dedicated module under
+  `crates/kreuzberg/src/types/` (`entity`, `summary`, `translation`, `classification`,
+  `redaction`, `qr`) with `Entity`, `EntityCategory`, `DocumentSummary`, `SummaryStrategy`,
+  `Translation`, `PageClassification`, `ClassificationLabel`, `RedactionReport`,
+  `RedactionFinding`, `RedactionStrategy`, `PiiCategory`, `QrCode`, `QrBoundingBox`. The
+  fields are populated in subsequent commits by the per-feature post-processors (NER,
+  redaction, summarisation, translation, page classification, VLM captions, QR detection).
+- **types**: `ExtractedImage` now derives `Default`.
+
 - **benchmark-harness**: Dataset loaders for public structured-extraction corpora (CORD, SROIE, FUNSD, DocILE, VRDU) with manifest-based discovery and JSON-Schema validation via `datasets` module.
 - **benchmark-harness**: JSON-extraction quality metrics (`json_quality` module) including schema validity rate, field-level precision/recall/F1, type correctness, numeric tolerance matching, and exact-match comparison.
 

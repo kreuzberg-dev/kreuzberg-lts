@@ -148,6 +148,8 @@ fn build_hwpx_internal_document(doc: unhwp::model::Document, mime_type: &str) ->
                                 image_kind: None,
                                 kind_confidence: None,
                                 cluster_id: None,
+                                caption: None,
+                                qr_codes: None,
                             };
                             builder.push_image(img_ref.alt_text.as_deref(), image, None, None);
                             image_index += 1;

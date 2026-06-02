@@ -1332,6 +1332,8 @@ impl DocumentExtractor for DocxExtractor {
                 image_kind: Some(image_kind),
                 kind_confidence: Some(kind_confidence),
                 cluster_id: None,
+                caption: None,
+                qr_codes: None,
             });
         }
 

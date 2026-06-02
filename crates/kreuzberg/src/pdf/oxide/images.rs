@@ -244,6 +244,8 @@ pub(crate) fn extract_images_with_data(
                 image_kind: None,
                 kind_confidence: None,
                 cluster_id: None,
+                caption: None,
+                qr_codes: None,
             };
 
             all_images.push(extracted_img);

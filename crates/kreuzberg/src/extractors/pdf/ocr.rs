@@ -1055,6 +1055,8 @@ pub(crate) fn build_page_raster_image(
         image_kind: Some(crate::types::ImageKind::PageRaster),
         kind_confidence: None,
         cluster_id: None,
+        caption: None,
+        qr_codes: None,
     }
 }
 

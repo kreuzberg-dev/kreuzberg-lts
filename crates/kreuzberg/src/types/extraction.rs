@@ -248,6 +248,47 @@ pub struct ExtractionResult {
     #[serde(default)]
     pub llm_usage: Option<Vec<LlmUsage>>,
 
+    /// Named entities detected in `content` by the NER post-processor.
+    ///
+    /// `None` when no NER backend is configured. Populated by the gline-rs ONNX
+    /// backend or the LLM-driven backend (see `crates/kreuzberg/src/text/ner/`).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default)]
+    pub entities: Option<Vec<super::entity::Entity>>,
+
+    /// Summary of `content` produced by the summarisation post-processor.
+    ///
+    /// `None` when summarisation is not configured. Populated by the TextRank
+    /// extractive backend (deterministic, no external service) or by the
+    /// liter-llm-driven abstractive backend.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default)]
+    pub summary: Option<super::summary::DocumentSummary>,
+
+    /// Translation of `content` produced by the translation post-processor.
+    ///
+    /// `None` when translation is not configured.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default)]
+    pub translation: Option<super::translation::Translation>,
+
+    /// Per-page classifications produced by the page-classification post-processor.
+    ///
+    /// `None` when classification is not configured.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default)]
+    pub page_classifications: Option<Vec<super::classification::PageClassification>>,
+
+    /// Audit report of redactions applied by the redaction post-processor.
+    ///
+    /// The redaction processor rewrites `content`, `formatted_content`, every
+    /// chunk's text, and the textual fields of `entities` / `summary` / `translation` /
+    /// `page_classifications` in place. This report describes what was found and how it
+    /// was replaced. `None` when redaction is not configured.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default)]
+    pub redaction_report: Option<super::redaction::RedactionReport>,
+
     /// Pre-rendered content in the requested output format.
     ///
     /// Populated during `derive_extraction_result` before tree derivation consumes
@@ -501,7 +542,7 @@ pub enum ImageKind {
 /// Contains raw image data, metadata, and optional nested OCR results.
 /// Raw bytes allow cross-language compatibility - users can convert to
 /// PIL.Image (Python), Sharp (Node.js), or other formats as needed.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 #[cfg_attr(feature = "api", derive(utoipa::ToSchema))]
 pub struct ExtractedImage {
     /// Raw image data (PNG, JPEG, WebP, etc. bytes).
@@ -578,6 +619,23 @@ pub struct ExtractedImage {
     /// (e.g. all raster tiles of one technical drawing). `None` for singletons.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub cluster_id: Option<u32>,
+
+    /// VLM-generated caption describing the image, when captioning is configured.
+    ///
+    /// Populated by the captioning post-processor
+    /// (`crates/kreuzberg/src/plugins/processor/builtin/captioning.rs`), which routes
+    /// each image through `crate::llm::region_extractor::extract_region_with_vlm` in
+    /// caption mode. `None` when captioning is disabled or the VLM declined to caption.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub caption: Option<String>,
+
+    /// QR codes decoded from this image, when QR detection is enabled.
+    ///
+    /// Populated by the QR post-processor (`crates/kreuzberg/src/extractors/qr.rs`) via
+    /// the pure-Rust `rqrr` decoder. `None` when QR detection is disabled; an empty
+    /// `Some(vec![])` when detection ran but found nothing.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub qr_codes: Option<Vec<super::qr::QrCode>>,
 }
 
 // ============================================================================

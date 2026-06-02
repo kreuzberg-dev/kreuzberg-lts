@@ -3,8 +3,10 @@
 // Module declarations
 pub mod annotations;
 pub mod builder;
+pub mod classification;
 pub mod djot;
 pub mod document_structure;
+pub mod entity;
 pub mod extraction;
 pub mod formats;
 pub mod internal;
@@ -12,26 +14,36 @@ pub mod internal_builder;
 pub mod metadata;
 pub mod ocr_elements;
 pub mod page;
+pub mod qr;
+pub mod redaction;
 pub mod revisions;
 pub mod serde_helpers;
+pub mod summary;
 pub mod tables;
+pub mod translation;
 pub mod uri;
 
 // Re-export all types for backward compatibility
 pub use annotations::*;
+pub use classification::{ClassificationLabel, PageClassification};
 pub use djot::*;
 pub use document_structure::{
     AnnotationKind, ContentLayer, DocumentNode, DocumentRelationship, DocumentStructure, GridCell, NodeContent, NodeId,
     NodeIndex, RelationshipKind, TableGrid, TextAnnotation,
 };
+pub use entity::{Entity, EntityCategory};
 pub use extraction::*;
 pub use formats::*;
 pub use internal::InternalDocument;
 pub use metadata::*;
 pub use ocr_elements::*;
 pub use page::*;
+pub use qr::{QrBoundingBox, QrCode};
+pub use redaction::{PiiCategory, RedactionFinding, RedactionReport, RedactionStrategy};
 pub use revisions::{CellChange, DiffLine, DocumentRevision, RevisionAnchor, RevisionDelta, RevisionKind};
+pub use summary::{DocumentSummary, SummaryStrategy};
 pub use tables::*;
+pub use translation::Translation;
 pub use uri::*;
 
 #[cfg(test)]

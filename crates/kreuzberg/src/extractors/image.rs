@@ -461,6 +461,8 @@ impl DocumentExtractor for ImageExtractor {
             image_kind: Some(image_kind),
             kind_confidence: Some(kind_confidence),
             cluster_id: None,
+            caption: None,
+            qr_codes: None,
         };
 
         // When disable_ocr is set (or ocr.enabled = false), skip OCR and return metadata only

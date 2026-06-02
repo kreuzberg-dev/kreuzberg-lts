@@ -733,6 +733,8 @@ fn build_internal_elements(
                                             image_kind: Some(image_kind),
                                             kind_confidence: Some(kind_confidence),
                                             cluster_id: None,
+                                            caption: None,
+                                            qr_codes: None,
                                         };
                                         let idx = builder.push_image(description.as_deref(), image, None, None);
                                         if let Some(h) = href {
