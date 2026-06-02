@@ -20,7 +20,31 @@
 pub mod backend;
 #[cfg(feature = "ner-onnx")]
 pub mod gline;
-#[cfg(feature = "ner-llm")]
+#[cfg(all(feature = "ner-llm", not(target_os = "windows")))]
 pub mod llm;
 
 pub use backend::NerBackend;
+
+#[cfg(feature = "ner-onnx")]
+use std::path::PathBuf;
+
+/// Eagerly download a NER model into the kreuzberg cache.
+///
+/// `name` is a HuggingFace repo id (e.g. `urchade/gliner_multi-v2.1`). The
+/// CLI flag `kreuzberg warm --ner` delegates here.
+#[cfg(feature = "ner-onnx")]
+pub fn download_model(name: &str, cache_dir: Option<PathBuf>) -> crate::Result<PathBuf> {
+    gline::download_model(name, cache_dir)
+}
+
+/// Pinned default NER model identifier.
+#[cfg(feature = "ner-onnx")]
+pub fn default_model_name() -> &'static str {
+    gline::DEFAULT_MODEL_REPO
+}
+
+/// All NER models kreuzberg knows about (used by `--all-ner-models`).
+#[cfg(feature = "ner-onnx")]
+pub fn known_models() -> &'static [&'static str] {
+    gline::KNOWN_MODELS
+}

@@ -581,6 +581,8 @@ mod tests {
                 image_kind: Some(ImageKind::Drawing),
                 kind_confidence: Some(0.7),
                 cluster_id: None,
+                caption: None,
+                qr_codes: None,
             },
             ExtractedImage {
                 data: bytes::Bytes::new(),
@@ -604,6 +606,8 @@ mod tests {
                 image_kind: Some(ImageKind::Drawing),
                 kind_confidence: Some(0.7),
                 cluster_id: None,
+                caption: None,
+                qr_codes: None,
             },
         ];
 
@@ -634,6 +638,8 @@ mod tests {
             image_kind: Some(ImageKind::Photograph),
             kind_confidence: Some(0.8),
             cluster_id: None,
+            caption: None,
+            qr_codes: None,
         }];
 
         cluster_tiles(&mut images);
@@ -667,6 +673,8 @@ mod tests {
                 image_kind: Some(ImageKind::Drawing),
                 kind_confidence: Some(0.7),
                 cluster_id: None,
+                caption: None,
+                qr_codes: None,
             },
             ExtractedImage {
                 data: bytes::Bytes::new(),
@@ -690,6 +698,8 @@ mod tests {
                 image_kind: Some(ImageKind::Drawing),
                 kind_confidence: Some(0.7),
                 cluster_id: None,
+                caption: None,
+                qr_codes: None,
             },
         ];
 
@@ -719,6 +729,8 @@ mod tests {
                 image_kind: Some(ImageKind::Photograph),
                 kind_confidence: Some(0.8),
                 cluster_id: None,
+                caption: None,
+                qr_codes: None,
             },
             ExtractedImage {
                 data: bytes::Bytes::new(),
@@ -737,6 +749,8 @@ mod tests {
                 image_kind: Some(ImageKind::Photograph),
                 kind_confidence: Some(0.8),
                 cluster_id: None,
+                caption: None,
+                qr_codes: None,
             },
         ];
 
@@ -766,6 +780,8 @@ mod tests {
                 image_kind: Some(ImageKind::Drawing),
                 kind_confidence: Some(0.7),
                 cluster_id: None,
+                caption: None,
+                qr_codes: None,
             },
             ExtractedImage {
                 data: bytes::Bytes::new(),
@@ -784,6 +800,8 @@ mod tests {
                 image_kind: Some(ImageKind::Drawing),
                 kind_confidence: Some(0.7),
                 cluster_id: None,
+                caption: None,
+                qr_codes: None,
             },
         ];
 
@@ -820,6 +838,8 @@ mod tests {
                 image_kind: Some(ImageKind::Drawing),
                 kind_confidence: Some(0.7),
                 cluster_id: None,
+                caption: None,
+                qr_codes: None,
             },
             ExtractedImage {
                 data: bytes::Bytes::new(),
@@ -843,6 +863,8 @@ mod tests {
                 image_kind: Some(ImageKind::Drawing),
                 kind_confidence: Some(0.7),
                 cluster_id: None,
+                caption: None,
+                qr_codes: None,
             },
             // Cluster 2
             ExtractedImage {
@@ -867,6 +889,8 @@ mod tests {
                 image_kind: Some(ImageKind::Diagram),
                 kind_confidence: Some(0.65),
                 cluster_id: None,
+                caption: None,
+                qr_codes: None,
             },
             ExtractedImage {
                 data: bytes::Bytes::new(),
@@ -890,6 +914,8 @@ mod tests {
                 image_kind: Some(ImageKind::Diagram),
                 kind_confidence: Some(0.65),
                 cluster_id: None,
+                caption: None,
+                qr_codes: None,
             },
         ];
 
@@ -922,6 +948,8 @@ mod tests {
                     image_kind: Some(ImageKind::Drawing),
                     kind_confidence: Some(0.7),
                     cluster_id: None,
+                    caption: None,
+                    qr_codes: None,
                 },
                 ExtractedImage {
                     data: bytes::Bytes::new(),
@@ -940,6 +968,8 @@ mod tests {
                     image_kind: Some(ImageKind::Drawing),
                     kind_confidence: Some(0.7),
                     cluster_id: None,
+                    caption: None,
+                    qr_codes: None,
                 },
             ]
         };
@@ -995,6 +1025,8 @@ mod tests {
                     image_kind: Some(ImageKind::Drawing),
                     kind_confidence: Some(0.7),
                     cluster_id: None,
+                    caption: None,
+                    qr_codes: None,
                 });
             }
         }

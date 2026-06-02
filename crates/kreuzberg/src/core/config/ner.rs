@@ -26,6 +26,17 @@ pub struct NerConfig {
     /// for LLM backends is recorded in `ExtractionResult::llm_usage`.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub llm: Option<super::llm::LlmConfig>,
+    /// Arbitrary user-supplied entity labels for zero-shot detection.
+    ///
+    /// gline-rs natively supports zero-shot inference over caller-supplied labels —
+    /// this is the primary value of GLiNER. The LLM backend also honours these
+    /// labels by including them in the structured-output schema. Custom labels
+    /// surface as [`EntityCategory::Custom`] in the resulting `Entity` stream.
+    ///
+    /// Use this when you need domain-specific entity types (e.g. `"Treatment"`,
+    /// `"Product"`, `"Vessel"`) without forking GLiNER's taxonomy.
+    #[serde(default)]
+    pub custom_labels: Vec<String>,
 }
 
 impl Default for NerConfig {
@@ -35,6 +46,7 @@ impl Default for NerConfig {
             categories: Vec::new(),
             model: None,
             llm: None,
+            custom_labels: Vec::new(),
         }
     }
 }

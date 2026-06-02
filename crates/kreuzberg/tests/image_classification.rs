@@ -33,6 +33,8 @@ fn test_cluster_tiles_basic() {
             image_kind: Some(ImageKind::Drawing),
             kind_confidence: Some(0.7),
             cluster_id: None,
+            caption: None,
+            qr_codes: None,
         },
         ExtractedImage {
             data: Bytes::new(),
@@ -51,6 +53,8 @@ fn test_cluster_tiles_basic() {
             image_kind: Some(ImageKind::Drawing),
             kind_confidence: Some(0.7),
             cluster_id: None,
+            caption: None,
+            qr_codes: None,
         },
     ];
 
@@ -125,6 +129,8 @@ fn test_extracted_image_with_classification_none() {
         image_kind: None,
         kind_confidence: None,
         cluster_id: None,
+        caption: None,
+        qr_codes: None,
     };
 
     let json = serde_json::to_string(&image).unwrap();

@@ -115,6 +115,14 @@ pub struct ExtractionOverrides {
     #[arg(long)]
     pub vlm_api_key: Option<String>,
 
+    /// Default LLM API key shared across every LLM-backed feature
+    /// (VLM OCR, structured extraction, translation, classification, captioning,
+    /// summarisation, NER). Lower precedence than `--vlm-api-key` and any
+    /// `api_key` set in the loaded config file, higher precedence than the
+    /// `KREUZBERG_LLM_API_KEY` environment variable.
+    #[arg(long, value_name = "KEY")]
+    pub api_key: Option<String>,
+
     /// Custom VLM OCR prompt template (Jinja2)
     #[arg(long)]
     pub vlm_prompt: Option<String>,
@@ -399,6 +407,11 @@ impl ExtractionOverrides {
     /// Only fields that were explicitly provided on the command line take
     /// effect; everything else is left untouched.
     pub fn apply(self, config: &mut ExtractionConfig) {
+        // Resolve the shared LLM API key once at startup so every downstream
+        // `create_client` call sees a populated value. Precedence (highest
+        // first): `--api-key`, `KREUZBERG_LLM_API_KEY`, existing config value,
+        // liter-llm's per-provider env-var fallback (i.e. leave `None`).
+        let resolved_api_key = resolve_llm_api_key(self.api_key.as_deref());
         self.apply_ocr(config);
         self.apply_vlm_ocr(config);
         self.apply_chunking(config);
@@ -415,6 +428,9 @@ impl ExtractionOverrides {
         self.apply_email(config);
         self.apply_cache(config);
         self.apply_html_styled(config);
+        if let Some(key) = resolved_api_key {
+            apply_llm_api_key(config, &key);
+        }
     }
 
     // ── Private helpers ──────────────────────────────────────────────
@@ -793,6 +809,95 @@ impl ExtractionOverrides {
                 config.html_output = Some(html_cfg);
             }
         }
+    }
+}
+
+/// Resolve the LLM API key the CLI should propagate to every `LlmConfig` slot.
+///
+/// Precedence (highest first):
+/// 1. The `--api-key` CLI flag (`cli_api_key`).
+/// 2. The `KREUZBERG_LLM_API_KEY` environment variable.
+/// 3. `None` — keep whatever the loaded config / inline JSON / overrides set.
+///
+/// Returns `None` when neither the CLI flag nor the environment variable
+/// supplies a non-empty value. In that case [`apply_llm_api_key`] is not
+/// called and liter-llm's per-provider env-var fallback runs at request time.
+///
+/// The resolved source is logged at `info!` level; the key value itself is
+/// never logged.
+pub(crate) fn resolve_llm_api_key(cli_api_key: Option<&str>) -> Option<String> {
+    if let Some(key) = cli_api_key.map(str::trim).filter(|s| !s.is_empty()) {
+        tracing::info!(source = "cli_flag", "Resolved LLM API key from --api-key flag");
+        return Some(key.to_string());
+    }
+    if let Ok(value) = std::env::var("KREUZBERG_LLM_API_KEY")
+        && !value.is_empty()
+    {
+        tracing::info!(
+            source = "kreuzberg_env",
+            "Resolved LLM API key from KREUZBERG_LLM_API_KEY"
+        );
+        return Some(value);
+    }
+    // Source is either "config" (when a slot already had a key — handled by
+    // `apply_llm_api_key` not overwriting it) or "provider_env" (liter-llm
+    // reads e.g. OPENAI_API_KEY at request time). Both cases are observable
+    // downstream, so we don't log here.
+    None
+}
+
+/// Write `key` into every [`LlmConfig`] field of `config` whose `api_key` is
+/// `None`. Existing non-`None` values (from the loaded config file or inline
+/// JSON) take precedence over the resolved key — the CLI never silently
+/// overrides explicit configuration.
+pub(crate) fn apply_llm_api_key(config: &mut ExtractionConfig, key: &str) {
+    fn fill(slot: &mut LlmConfig, key: &str) {
+        if slot.api_key.is_none() {
+            slot.api_key = Some(key.to_string());
+        }
+    }
+
+    if let Some(ocr) = config.ocr.as_mut()
+        && let Some(vlm) = ocr.vlm_config.as_mut()
+    {
+        fill(vlm, key);
+    }
+
+    if let Some(ext) = config.structured_extraction.as_mut() {
+        fill(&mut ext.llm, key);
+    }
+
+    // Embedding via LLM provider — the model lives behind the
+    // `EmbeddingModelType::Llm { llm }` variant in chunking config.
+    if let Some(chunking) = config.chunking.as_mut()
+        && let Some(embedding) = chunking.embedding.as_mut()
+        && let kreuzberg::EmbeddingModelType::Llm { llm } = &mut embedding.model
+    {
+        fill(llm, key);
+    }
+
+    if let Some(translation) = config.translation.as_mut() {
+        fill(&mut translation.llm, key);
+    }
+
+    if let Some(pc) = config.page_classification.as_mut() {
+        fill(&mut pc.llm, key);
+    }
+
+    if let Some(cap) = config.captioning.as_mut() {
+        fill(&mut cap.llm, key);
+    }
+
+    if let Some(sum) = config.summarization.as_mut()
+        && let Some(llm) = sum.llm.as_mut()
+    {
+        fill(llm, key);
+    }
+
+    if let Some(ner) = config.ner.as_mut()
+        && let Some(llm) = ner.llm.as_mut()
+    {
+        fill(llm, key);
     }
 }
 
@@ -1301,6 +1406,133 @@ mod tests {
             err.to_string()
                 .contains("--chunking-tokenizer requires the chunking-tokenizers feature")
         );
+    }
+
+    // ── LLM API key resolution tests ────────────────────────────────
+
+    /// Lock around the `KREUZBERG_LLM_API_KEY` env var to keep the resolution
+    /// tests deterministic in the multi-threaded test runner. Tests that touch
+    /// the environment must hold this guard for their full duration.
+    static ENV_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
+
+    #[allow(unsafe_code)]
+    fn with_env_var<R>(key: &str, value: Option<&str>, f: impl FnOnce() -> R) -> R {
+        let _guard = ENV_LOCK.lock().unwrap_or_else(|e| e.into_inner());
+        let previous = std::env::var(key).ok();
+        // SAFETY: tests are serialized via ENV_LOCK; no other thread observes
+        // the mutation during the closure.
+        unsafe {
+            match value {
+                Some(v) => std::env::set_var(key, v),
+                None => std::env::remove_var(key),
+            }
+        }
+        let result = f();
+        unsafe {
+            match previous {
+                Some(v) => std::env::set_var(key, v),
+                None => std::env::remove_var(key),
+            }
+        }
+        result
+    }
+
+    #[test]
+    fn cli_flag_takes_precedence_over_env_var() {
+        with_env_var("KREUZBERG_LLM_API_KEY", Some("env-value"), || {
+            let resolved = resolve_llm_api_key(Some("cli-value"));
+            assert_eq!(resolved.as_deref(), Some("cli-value"));
+        });
+    }
+
+    #[test]
+    fn env_var_used_when_cli_flag_absent() {
+        with_env_var("KREUZBERG_LLM_API_KEY", Some("env-value"), || {
+            let resolved = resolve_llm_api_key(None);
+            assert_eq!(resolved.as_deref(), Some("env-value"));
+        });
+    }
+
+    #[test]
+    fn returns_none_when_neither_source_is_set() {
+        with_env_var("KREUZBERG_LLM_API_KEY", None, || {
+            let resolved = resolve_llm_api_key(None);
+            assert!(resolved.is_none());
+        });
+    }
+
+    #[test]
+    fn empty_cli_flag_does_not_count() {
+        with_env_var("KREUZBERG_LLM_API_KEY", Some("env-value"), || {
+            // Empty / whitespace-only flag values fall through to the env var.
+            let resolved = resolve_llm_api_key(Some("   "));
+            assert_eq!(resolved.as_deref(), Some("env-value"));
+        });
+    }
+
+    #[test]
+    fn apply_llm_api_key_fills_translation_slot() {
+        use kreuzberg::core::config::{LlmConfig, TranslationConfig};
+        let mut config = ExtractionConfig {
+            translation: Some(TranslationConfig {
+                target_lang: "de".to_string(),
+                source_lang: None,
+                preserve_markup: false,
+                llm: LlmConfig {
+                    model: "openai/gpt-4o-mini".to_string(),
+                    ..Default::default()
+                },
+            }),
+            ..Default::default()
+        };
+        apply_llm_api_key(&mut config, "resolved");
+        let t = config.translation.unwrap();
+        assert_eq!(t.llm.api_key.as_deref(), Some("resolved"));
+    }
+
+    #[test]
+    fn apply_llm_api_key_preserves_existing_key() {
+        use kreuzberg::core::config::{LlmConfig, TranslationConfig};
+        let mut config = ExtractionConfig {
+            translation: Some(TranslationConfig {
+                target_lang: "de".to_string(),
+                source_lang: None,
+                preserve_markup: false,
+                llm: LlmConfig {
+                    model: "openai/gpt-4o-mini".to_string(),
+                    api_key: Some("explicit".to_string()),
+                    ..Default::default()
+                },
+            }),
+            ..Default::default()
+        };
+        apply_llm_api_key(&mut config, "resolved");
+        let t = config.translation.unwrap();
+        assert_eq!(
+            t.llm.api_key.as_deref(),
+            Some("explicit"),
+            "explicit config keys take precedence over the resolved value"
+        );
+    }
+
+    #[test]
+    fn apply_llm_api_key_fills_page_classification_slot() {
+        use kreuzberg::core::config::{LlmConfig, PageClassificationConfig};
+        let mut config = ExtractionConfig {
+            page_classification: Some(PageClassificationConfig {
+                prompt_template: None,
+                labels: vec!["a".to_string()],
+                multi_label: false,
+                llm: LlmConfig {
+                    model: "openai/gpt-4o-mini".to_string(),
+                    ..Default::default()
+                },
+            }),
+            ..Default::default()
+        };
+        apply_llm_api_key(&mut config, "resolved");
+        let pc = config.page_classification.unwrap();
+        assert_eq!(pc.llm.api_key.as_deref(), Some("resolved"));
     }
 
     // ── No-op when no flags provided ─────────────────────────────────

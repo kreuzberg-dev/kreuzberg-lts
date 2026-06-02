@@ -9,6 +9,7 @@
 
 use super::vlm_ocr::vlm_ocr;
 use crate::core::config::LlmConfig;
+use crate::types::LlmUsage;
 
 /// Classification of a detected layout region that warrants VLM extraction.
 ///
@@ -34,6 +35,14 @@ pub enum RegionKind {
     /// VLM prompt: extract all text and structure as markdown, preserving
     /// reading order.
     ComplexLayout,
+
+    /// A standalone image to be captioned (not extracted as figure markdown).
+    ///
+    /// VLM prompt: produce a single-sentence alt-text-style caption suitable
+    /// for accessibility tooling and downstream indexing. Used by the
+    /// captioning post-processor to populate
+    /// [`ExtractedImage::caption`](crate::types::ExtractedImage::caption).
+    Caption,
 }
 
 impl RegionKind {
@@ -47,6 +56,7 @@ impl RegionKind {
             Self::Figure => REGION_FIGURE_TEMPLATE,
             Self::DenseTable => REGION_DENSE_TABLE_TEMPLATE,
             Self::ComplexLayout => REGION_COMPLEX_LAYOUT_TEMPLATE,
+            Self::Caption => REGION_CAPTION_TEMPLATE,
         }
     }
 }
@@ -79,6 +89,17 @@ Extract all text and structured content from this image region as Markdown.
 - Use appropriate Markdown elements: paragraphs, lists, code blocks, tables.
 - Do not add commentary or explanations beyond what the image contains.
 - If the region contains no meaningful text, return an empty string.";
+
+/// Default prompt for image captioning (per-image alt-text style).
+const REGION_CAPTION_TEMPLATE: &str = "\
+Write a concise, factual caption for this image suitable for use as alt text \
+or a search-index entry.
+- One or two sentences at most.
+- Describe what is visible: subject, action, setting, notable text.
+- Do not speculate about intent, mood, or context that is not visible.
+- Do not start the caption with phrases like \"This image shows\" or \
+\"A picture of\" — lead with the subject.
+- If the image has no recognisable content, return an empty string.";
 
 /// Extract content from a pre-cropped image region using a VLM.
 ///
@@ -136,21 +157,43 @@ pub async fn extract_region_with_vlm(
     llm_config: &LlmConfig,
     custom_prompt: Option<&str>,
 ) -> crate::Result<String> {
+    let (text, _usage) =
+        extract_region_with_vlm_usage(image_bytes, image_mime, region_kind, llm_config, custom_prompt).await?;
+    Ok(text)
+}
+
+/// Same as [`extract_region_with_vlm`], but also returns the [`LlmUsage`] data captured
+/// from the underlying VLM call.
+///
+/// Callers that need to track token / cost data per call (for example the captioning
+/// post-processor, which appends every call's usage to
+/// [`ExtractionResult::llm_usage`](crate::types::ExtractionResult::llm_usage)) should
+/// prefer this variant. The plain [`extract_region_with_vlm`] is kept for callers that
+/// only care about the markdown output (PDF region splicing).
+///
+/// # Errors
+///
+/// Same as [`extract_region_with_vlm`].
+pub async fn extract_region_with_vlm_usage(
+    image_bytes: &[u8],
+    image_mime: &str,
+    region_kind: RegionKind,
+    llm_config: &LlmConfig,
+    custom_prompt: Option<&str>,
+) -> crate::Result<(String, Option<LlmUsage>)> {
     let prompt = custom_prompt.unwrap_or_else(|| region_kind.default_prompt());
 
     // vlm_ocr re-uses the language=eng path (no language hint for region extraction).
     // The prompt is passed as `vlm_prompt`; `language` is set to a neutral value that
     // suppresses the language-hint suffix in the VLM OCR template.
-    let (text, _usage) = vlm_ocr(
+    vlm_ocr(
         image_bytes,
         image_mime,
         "eng", // language hint unused — prompt is self-contained
         llm_config,
         Some(prompt),
     )
-    .await?;
-
-    Ok(text)
+    .await
 }
 
 #[cfg(test)]
@@ -186,12 +229,26 @@ mod tests {
 
     #[test]
     fn test_region_kind_prompts_are_non_empty() {
-        for kind in [RegionKind::Figure, RegionKind::DenseTable, RegionKind::ComplexLayout] {
+        for kind in [
+            RegionKind::Figure,
+            RegionKind::DenseTable,
+            RegionKind::ComplexLayout,
+            RegionKind::Caption,
+        ] {
             assert!(
                 !kind.default_prompt().is_empty(),
                 "{kind:?} default prompt must not be empty"
             );
         }
+    }
+
+    #[test]
+    fn test_region_kind_default_prompt_caption() {
+        let prompt = RegionKind::Caption.default_prompt();
+        assert!(
+            prompt.contains("caption") || prompt.contains("alt text"),
+            "caption prompt must mention captions/alt text; got: {prompt}"
+        );
     }
 
     #[test]

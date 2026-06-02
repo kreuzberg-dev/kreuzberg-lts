@@ -50,6 +50,8 @@ fn make_image(description: Option<String>, source_path: Option<String>, data: By
         image_kind: None,
         kind_confidence: None,
         cluster_id: None,
+        caption: None,
+        qr_codes: None,
     }
 }
 

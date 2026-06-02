@@ -350,6 +350,8 @@ mod tests {
             image_kind: None,
             kind_confidence: None,
             cluster_id: None,
+            caption: None,
+            qr_codes: None,
         };
         b.push_image(Some("A nice photo"), image, None, None);
         let doc = b.build();

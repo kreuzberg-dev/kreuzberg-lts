@@ -1279,6 +1279,8 @@ mod tests {
             image_kind: None,
             kind_confidence: None,
             cluster_id: None,
+            caption: None,
+            qr_codes: None,
         });
         let out = render(&doc);
         assert!(out.contains("image_0.png"), "image link must appear; got: {}", out);
@@ -1316,6 +1318,8 @@ mod tests {
             image_kind: None,
             kind_confidence: None,
             cluster_id: None,
+            caption: None,
+            qr_codes: None,
         });
         let out = render(&doc);
         assert!(

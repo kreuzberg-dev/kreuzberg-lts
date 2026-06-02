@@ -339,6 +339,8 @@ mod tests {
             image_kind: None,
             kind_confidence: None,
             cluster_id: None,
+            caption: None,
+            qr_codes: None,
         };
 
         let json = serde_json::to_string(&image).unwrap();
@@ -378,6 +380,8 @@ mod tests {
             image_kind: None,
             kind_confidence: None,
             cluster_id: None,
+            caption: None,
+            qr_codes: None,
         };
 
         let json = serde_json::to_string(&image).unwrap();
@@ -431,6 +435,8 @@ mod tests {
             image_kind: None,
             kind_confidence: None,
             cluster_id: None,
+            caption: None,
+            qr_codes: None,
         };
 
         let json_value = serde_json::to_value(&image).unwrap();
@@ -475,6 +481,8 @@ mod tests {
             image_kind: None,
             kind_confidence: None,
             cluster_id: None,
+            caption: None,
+            qr_codes: None,
         };
 
         let cloned = image.clone();

@@ -178,7 +178,7 @@
 pub(crate) mod embedding;
 pub(crate) mod extractor;
 mod ocr;
-mod processor;
+pub mod processor;
 pub mod registry;
 pub mod renderer;
 pub mod startup_validation;

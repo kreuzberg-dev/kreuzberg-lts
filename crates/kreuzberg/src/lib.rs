@@ -104,7 +104,12 @@ pub mod ocr;
 ))]
 pub mod ort_discovery;
 
-#[cfg(any(feature = "paddle-ocr", feature = "layout-detection", feature = "auto-rotate"))]
+#[cfg(any(
+    feature = "paddle-ocr",
+    feature = "layout-detection",
+    feature = "auto-rotate",
+    feature = "ner-onnx"
+))]
 pub(crate) mod model_download;
 
 #[cfg(any(feature = "paddle-ocr", feature = "paddle-ocr-types"))]

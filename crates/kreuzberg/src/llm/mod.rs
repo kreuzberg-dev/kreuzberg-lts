@@ -12,6 +12,8 @@ pub mod region_extractor;
 #[cfg(all(feature = "liter-llm", not(target_os = "windows")))]
 pub mod structured;
 #[cfg(all(feature = "liter-llm", not(target_os = "windows")))]
+pub mod text_completion;
+#[cfg(all(feature = "liter-llm", not(target_os = "windows")))]
 pub mod usage;
 #[cfg(all(feature = "liter-llm", not(target_os = "windows")))]
 pub mod vlm_embeddings;

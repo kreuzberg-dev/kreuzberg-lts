@@ -1,3 +1,19 @@
 //! Document summarisation.
 //!
-//! Implementation lands in Stream D. Placeholder so the feature gate compiles.
+//! Two backends are exposed:
+//!
+//! - [`textrank::summarize`] — pure-Rust extractive summary that builds a TF-IDF
+//!   cosine-similarity graph over sentences and runs PageRank. Deterministic and
+//!   compiled into every target (including WASM and Android).
+//! - [`llm::summarize_with_llm`] — abstractive summary produced by an LLM via
+//!   the shared [`crate::llm::text_completion`] helper. Gated on the
+//!   `summarization-llm` feature.
+//!
+//! The post-processor that ties both backends to
+//! [`crate::types::ExtractionResult::summary`] lives in
+//! `crate::plugins::processor::builtin::summarization`.
+
+pub mod textrank;
+
+#[cfg(all(feature = "summarization-llm", not(target_os = "windows")))]
+pub mod llm;

@@ -44,6 +44,7 @@ chunking-tokenizers = ["kreuzberg/chunking-tokenizers"]
 html = ["kreuzberg/html"]
 liter-llm = ["kreuzberg/liter-llm"]
 tree-sitter = ["kreuzberg/tree-sitter", "dep:tree-sitter-language-pack"]
+ner-onnx = ["kreuzberg/ner-onnx"]
 all = [
     "default",
     "api",

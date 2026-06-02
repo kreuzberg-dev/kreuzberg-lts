@@ -196,18 +196,28 @@ diff = ["dep:similar"]
 # post-processor under `crates/kreuzberg/src/plugins/processor/builtin/`.
 ner = []                                  # NER result types only; safe on every target.
 ner-llm = ["ner", "liter-llm"]            # LLM-driven zero-shot NER (no ORT).
-ner-onnx = ["ner"]                        # gline-rs ONNX backend; subagent will add deps.
+ner-onnx = [                              # gline-rs ONNX backend (kreuzberg-gliner-rs fork) with HuggingFace model download.
+    "ner",
+    "dep:kreuzberg-gliner-rs",
+    "dep:kreuzberg-orp",
+    "dep:ort",
+    "dep:ndarray",
+    "dep:hf-hub",
+    "dep:tokenizers",
+    "dep:sha2",
+    "tokio-runtime",
+]
 
-redaction = []                            # Pattern-based PII engine; pure-Rust.
+redaction = ["dep:sha2"]                  # Pattern-based PII engine; pure-Rust.
 redaction-ml = ["redaction", "ner"]       # Couple in NER for PERSON/ORG/LOC redaction.
 
-summarization = []                        # TextRank extractive only; pure-Rust.
+summarization = ["stopwords"]             # TextRank extractive only; pure-Rust (uses stopword tables).
 summarization-llm = ["summarization", "liter-llm"]
 
 translation = ["liter-llm"]
 classification = ["liter-llm"]
 captioning = ["liter-llm"]
-qr-codes = []                             # Subagent adds `rqrr` dep.
+qr-codes = ["dep:rqrr", "dep:image"]      # Pure-Rust QR decoding via rqrr.
 
 tower-service = ["dep:tower", "tokio-runtime"]
 
@@ -391,6 +401,8 @@ itertools = { workspace = true, optional = true }
 jotdown = "0.10"
 kamadak-exif = { version = "0.6.1", optional = true }
 
+kreuzberg-gliner-rs = { version = "0.1.0", optional = true }
+kreuzberg-orp = { version = "0.1.0", optional = true }
 kreuzberg-tesseract = { path = "../kreuzberg-tesseract", version = "5.0.0-rc.3", optional = true }
 libc = { workspace = true }
 # liter-llm is declared in the platform-conditional dependencies block below — it must be
@@ -435,6 +447,7 @@ rmcp = { version = "1.7.0", features = [
 rmp-serde = "1.3"
 
 roxmltree = { version = "0.21.1", optional = true }
+rqrr = { version = "0.10", optional = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 serde_toon_format = { workspace = true }
@@ -537,6 +550,7 @@ dotenvy = "0.15"
 filetime = "0.2"
 image = { workspace = true, default-features = false, features = ["png"] }
 jsonschema = "0.46"
+qrcode = { version = "0.14", default-features = false, features = ["image"] }
 serial_test = "3.5.0"
 tar = "^0.4"
 tempfile = { workspace = true }

@@ -766,6 +766,8 @@ mod tests {
             image_kind: None,
             kind_confidence: None,
             cluster_id: None,
+            caption: None,
+            qr_codes: None,
         });
         doc.push_element(crate::types::internal::InternalElement::text(
             crate::types::internal::ElementKind::Image { image_index: idx },

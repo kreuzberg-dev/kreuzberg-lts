@@ -83,6 +83,9 @@ mod security_tests;
 #[cfg(any(feature = "ocr", feature = "ocr-wasm", feature = "ocr-pipeline"))]
 pub mod image;
 
+#[cfg(feature = "qr-codes")]
+pub mod qr;
+
 #[cfg(feature = "archives")]
 pub mod archive;
 

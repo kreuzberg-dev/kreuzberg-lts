@@ -465,6 +465,21 @@ enum CacheCommands {
         /// Download specific tree-sitter grammars by language name (comma-separated)
         #[arg(long, value_name = "LANGUAGES", value_delimiter = ',')]
         grammars: Option<Vec<String>>,
+
+        /// Download the default GLiNER NER model (urchade/gliner_multi-v2.1)
+        #[cfg(feature = "ner-onnx")]
+        #[arg(long)]
+        ner: bool,
+
+        /// Download a specific GLiNER NER model by HuggingFace repo id
+        #[cfg(feature = "ner-onnx")]
+        #[arg(long, value_name = "MODEL")]
+        ner_model: Option<String>,
+
+        /// Download every GLiNER NER model variant kreuzberg knows about
+        #[cfg(feature = "ner-onnx")]
+        #[arg(long)]
+        all_ner_models: bool,
     },
 }
 
@@ -873,9 +888,15 @@ fn main() -> Result<()> {
                 all_grammars,
                 grammar_groups,
                 grammars,
+                #[cfg(feature = "ner-onnx")]
+                ner,
+                #[cfg(feature = "ner-onnx")]
+                ner_model,
+                #[cfg(feature = "ner-onnx")]
+                all_ner_models,
             } => {
                 warm_command(
-                    cache_dir,
+                    cache_dir.clone(),
                     format,
                     all_embeddings,
                     embedding_model,
@@ -884,6 +905,13 @@ fn main() -> Result<()> {
                     grammar_groups,
                     grammars,
                 )?;
+                #[cfg(feature = "ner-onnx")]
+                {
+                    let ner_models: Vec<String> = ner_model.into_iter().collect();
+                    if ner || !ner_models.is_empty() || all_ner_models {
+                        commands::ner::download_command(ner, ner_models, all_ner_models, cache_dir, format)?;
+                    }
+                }
             }
         },
 

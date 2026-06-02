@@ -20,12 +20,13 @@ pub struct DocumentSummary {
 }
 
 /// Summarisation strategy.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[cfg_attr(feature = "api", derive(utoipa::ToSchema))]
 #[serde(rename_all = "snake_case")]
 pub enum SummaryStrategy {
     /// Pure-Rust extractive summary (TextRank over the chunk graph). Deterministic,
     /// fast, no external service required.
+    #[default]
     Extractive,
     /// Abstractive summary produced by liter-llm. Requires `liter-llm` feature and
     /// a configured `LlmConfig`. Token usage is captured in

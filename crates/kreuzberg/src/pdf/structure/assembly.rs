@@ -906,6 +906,8 @@ mod tests {
             bounding_box: None,
             source_path: None,
             cluster_id: None,
+            caption: None,
+            qr_codes: None,
             image_kind: None,
             kind_confidence: None,
         }];

@@ -8,7 +8,7 @@ use crate::types::summary::SummaryStrategy;
 use serde::{Deserialize, Serialize};
 
 /// Configuration for the summarisation post-processor.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 #[cfg_attr(feature = "api", derive(utoipa::ToSchema))]
 pub struct SummarizationConfig {
     /// Summarisation strategy.
@@ -21,20 +21,4 @@ pub struct SummarizationConfig {
     /// `strategy = Extractive`. Required when `strategy = Abstractive`.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub llm: Option<super::llm::LlmConfig>,
-}
-
-impl Default for SummarizationConfig {
-    fn default() -> Self {
-        Self {
-            strategy: SummaryStrategy::default(),
-            max_tokens: None,
-            llm: None,
-        }
-    }
-}
-
-impl Default for SummaryStrategy {
-    fn default() -> Self {
-        Self::Extractive
-    }
 }

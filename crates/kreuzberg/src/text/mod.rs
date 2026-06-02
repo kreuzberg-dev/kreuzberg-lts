@@ -26,7 +26,7 @@ pub mod ner;
 pub mod redaction;
 #[cfg(feature = "summarization")]
 pub mod summarization;
-#[cfg(feature = "translation")]
+#[cfg(all(feature = "translation", not(target_os = "windows")))]
 pub mod translation;
-#[cfg(feature = "classification")]
+#[cfg(all(feature = "classification", not(target_os = "windows")))]
 pub mod classification;

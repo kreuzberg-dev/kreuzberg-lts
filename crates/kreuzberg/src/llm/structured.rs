@@ -4,8 +4,104 @@
 //! from document content. The LLM is constrained to produce output conforming
 //! to the caller's JSON schema.
 
+use crate::core::config::LlmConfig;
 use crate::core::config::llm::StructuredExtractionConfig;
+use crate::types::LlmUsage;
 use serde_json::Value;
+
+/// Send a free-form prompt to the configured LLM with a JSON-schema response
+/// constraint and return the parsed JSON value plus captured usage.
+///
+/// This is the shared helper used by LLM-backed post-processors (page
+/// classification, LLM-driven NER, etc.) that need structured output but do not
+/// want to depend on [`StructuredExtractionConfig`]'s schema/prompt machinery.
+///
+/// # Arguments
+///
+/// * `llm_config` — provider/model configuration.
+/// * `prompt` — fully-rendered user prompt (no Jinja substitution performed).
+/// * `schema_name` — name for the JSON schema (passed to providers that
+///   distinguish multiple structured outputs).
+/// * `schema` — the JSON schema the LLM is required to obey.
+/// * `source` — label used for the returned [`LlmUsage`] entry.
+///
+/// # Errors
+///
+/// Returns an error if the LLM client cannot be constructed, the request fails,
+/// the response contains no content, or the response is not parseable JSON.
+// `stream` is pub(crate) in liter-llm, preventing struct literal initialisation.
+#[allow(clippy::field_reassign_with_default)]
+pub async fn complete_with_json_schema(
+    llm_config: &LlmConfig,
+    prompt: &str,
+    schema_name: &str,
+    schema: &Value,
+    source: &str,
+) -> crate::Result<(Value, Option<LlmUsage>)> {
+    use liter_llm::LlmClient;
+
+    let client = super::client::create_client(llm_config)?;
+
+    let sanitized_schema = sanitize_schema_for_provider(schema, &llm_config.model);
+
+    let mut request = liter_llm::ChatCompletionRequest::default();
+    request.model = llm_config.model.clone();
+    request.messages = vec![liter_llm::Message::User(liter_llm::UserMessage {
+        content: liter_llm::UserContent::Text(prompt.to_string()),
+        name: None,
+    })];
+    request.temperature = llm_config.temperature;
+    request.max_tokens = llm_config.max_tokens;
+    request.response_format = Some(liter_llm::ResponseFormat::JsonSchema {
+        json_schema: liter_llm::JsonSchemaFormat {
+            name: schema_name.to_string(),
+            description: None,
+            schema: sanitized_schema,
+            strict: Some(false),
+        },
+    });
+
+    let response = client
+        .chat(request)
+        .await
+        .map_err(|e| crate::KreuzbergError::parsing(format!("LLM JSON-schema request failed ({source}): {e}")))?;
+
+    let usage = super::usage::extract_usage_from_chat(&response, source);
+
+    let text = response
+        .choices
+        .first()
+        .and_then(|c| c.message.content.as_deref())
+        .ok_or_else(|| {
+            crate::KreuzbergError::parsing(format!(
+                "LLM JSON-schema response ({source}) returned no content (model={}, {} choices)",
+                llm_config.model,
+                response.choices.len()
+            ))
+        })?;
+
+    let cleaned = strip_markdown_fence(text);
+    let value = serde_json::from_str(cleaned).map_err(|e| {
+        crate::KreuzbergError::parsing(format!(
+            "LLM JSON-schema response ({source}) returned invalid JSON (model={}): {e}\nRaw response: {}",
+            llm_config.model,
+            &text[..text.floor_char_boundary(text.len().min(200))]
+        ))
+    })?;
+
+    Ok((value, usage))
+}
+
+/// Strip ```json ... ``` markdown code fences some providers wrap JSON in.
+fn strip_markdown_fence(text: &str) -> &str {
+    let trimmed = text.trim();
+    let stripped = trimmed
+        .strip_prefix("```json")
+        .or_else(|| trimmed.strip_prefix("```"))
+        .and_then(|s| s.strip_suffix("```"))
+        .map(str::trim);
+    stripped.unwrap_or(trimmed)
+}
 
 /// Strip JSON Schema fields that some providers don't support.
 ///

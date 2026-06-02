@@ -4,7 +4,6 @@
 //! required for pipeline execution.
 
 use crate::Result;
-#[cfg(feature = "quality")]
 use std::sync::OnceLock;
 
 use super::cache::{PROCESSOR_CACHE, ProcessorCache};
@@ -42,6 +41,14 @@ pub(super) fn initialize_features() {
             let _ = reg.register(std::sync::Arc::new(crate::text::QualityProcessor));
         });
     }
+
+    // Single umbrella registration for every OSS v5 follow-up built-in post-processor
+    // (classification, translation, captioning, qr, ner, redaction, summarization).
+    // Each per-feature `register()` is feature-gated so this is safe on any target.
+    static BUILTIN_INIT: OnceLock<()> = OnceLock::new();
+    BUILTIN_INIT.get_or_init(|| {
+        let _ = crate::plugins::processor::builtin::register_builtin();
+    });
 }
 
 /// Initialize the processor cache if not already initialized.

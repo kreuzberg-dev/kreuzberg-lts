@@ -83,5 +83,13 @@ pub enum PiiCategory {
     /// Location, surfaced by the optional NER backend.
     Location,
     /// Caller-supplied custom category (e.g. internal employee IDs).
+    ///
+    /// Surfaced by the redaction engine when a hit comes from
+    /// [`RedactionConfig::custom_terms`](crate::core::config::redaction::RedactionConfig::custom_terms)
+    /// or [`RedactionConfig::custom_patterns`](crate::core::config::redaction::RedactionConfig::custom_patterns).
+    /// The string is the label passed alongside the term/pattern. Use those
+    /// fields rather than constructing `Custom` directly via the
+    /// `categories` filter — the pattern engine cannot detect arbitrary text
+    /// from a category name alone.
     Custom(String),
 }

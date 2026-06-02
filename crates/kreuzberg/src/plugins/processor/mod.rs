@@ -2,6 +2,7 @@
 //!
 //! This module provides the trait and registry for implementing custom post-processors.
 
+pub mod builtin;
 mod registry;
 mod r#trait;
 
