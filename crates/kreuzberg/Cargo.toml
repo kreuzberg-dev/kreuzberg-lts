@@ -153,6 +153,13 @@ candle-ocr = [
 candle-trocr = ["candle-ocr", "kreuzberg-candle-ocr/trocr"]
 # PaddleOCR-VL backend: aggregate feature enabling candle-ocr with paddleocr-vl sub-feature
 candle-paddleocr-vl = ["candle-ocr", "kreuzberg-candle-ocr/paddleocr-vl"]
+# Candle GPU acceleration pass-throughs. Enable alongside any candle-* backend
+# to compile the corresponding candle backend (CUDA / Metal / Accelerate /
+# MKL) — CPU decode of the larger VLM backends is impractically slow.
+candle-cuda = ["candle-ocr", "kreuzberg-candle-ocr/cuda"]
+candle-metal = ["candle-ocr", "kreuzberg-candle-ocr/metal"]
+candle-accelerate = ["candle-ocr", "kreuzberg-candle-ocr/accelerate"]
+candle-mkl = ["candle-ocr", "kreuzberg-candle-ocr/mkl"]
 # PaddleOCR via ONNX Runtime
 # Requires 'ocr' feature for shared conversion utilities and table reconstruction
 paddle-ocr = [
