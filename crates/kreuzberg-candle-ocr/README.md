@@ -13,3 +13,8 @@ Supported models (per-model sub-features):
   directly.
 
 Device pass-through features mirror candle's own: `cuda`, `metal`, `mkl`, `accelerate`.
+
+When depending on `kreuzberg`, the equivalent aggregate features are
+`candle-cuda`, `candle-metal`, `candle-mkl`, `candle-accelerate`. Enable
+alongside any candle-* backend — without one of them the candle build
+remains CPU-only, and PaddleOCR-VL CPU decode is impractically slow.
