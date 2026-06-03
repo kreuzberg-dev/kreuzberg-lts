@@ -174,6 +174,7 @@ pub async fn extract_region_with_vlm(
 /// # Errors
 ///
 /// Same as [`extract_region_with_vlm`].
+#[cfg_attr(alef, alef(skip))]
 pub async fn extract_region_with_vlm_usage(
     image_bytes: &[u8],
     image_mime: &str,

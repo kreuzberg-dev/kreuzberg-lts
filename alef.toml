@@ -200,6 +200,7 @@ exclude_types = [
   # Arc<Mutex<T>> opaque types — codegen doesn't generate .lock() for methods
   "PooledString",
 ]
+exclude_fields = ["FormatMetadata.Code"]
 exclude_functions = [
   "calculate_quality_score",
 ]

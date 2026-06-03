@@ -5,10 +5,10 @@
 use base64::Engine;
 use base64::engine::general_purpose::STANDARD;
 use jni::JNIEnv;
+use jni::errors::{Error as JniError, ThrowRuntimeExAndDefault};
 use jni::objects::{JClass, JString};
-use jni::sys::{jboolean, jbyteArray, jint, jlong, jstring};
-use jni::errors::{ThrowRuntimeExAndDefault, Error as JniError};
 use jni::strings::JNIString;
+use jni::sys::{jboolean, jbyteArray, jint, jlong, jstring};
 use std::ffi::{CStr, CString};
 
 // Pull in kreuzberg-ffi by Rust path. The `use` keeps the rlib's
@@ -31,7 +31,6 @@ use kreuzberg_ffi::{
     kreuzberg_list_embedding_presets, kreuzberg_list_ocr_backends, kreuzberg_list_post_processors,
     kreuzberg_list_renderers, kreuzberg_list_validators, kreuzberg_render_pdf_page_to_png,
 };
-
 
 // ============================================================================
 // Helper Functions
@@ -81,9 +80,9 @@ fn get_ffi_error_message() -> String {
 
 /// Convert JString to Rust String, returning an error message if conversion fails
 fn jstring_to_string<'local>(env: &mut JNIEnv<'local>, jstr: &JString<'local>) -> Result<String, String> {
-    let s = env.with_env(|env| -> Result<String, JniError> {
-        jstr.try_to_string(env)
-    }).resolve::<ThrowRuntimeExAndDefault>();
+    let s = env
+        .with_env(|env| -> Result<String, JniError> { jstr.try_to_string(env) })
+        .resolve::<ThrowRuntimeExAndDefault>();
     Ok(s)
 }
 
@@ -109,10 +108,8 @@ fn cstring_or_none(s: String) -> Result<Option<CString>, String> {
 
 /// Convert Rust String to jstring, returning null if allocation fails
 fn string_to_jstring(env: &mut JNIEnv, s: &str) -> jstring {
-    env.with_env(|env| -> Result<jstring, JniError> {
-        env.new_string(s)
-            .map(|js| js.into_raw())
-    }).resolve::<ThrowRuntimeExAndDefault>()
+    env.with_env(|env| -> Result<jstring, JniError> { env.new_string(s).map(|js| js.into_raw()) })
+        .resolve::<ThrowRuntimeExAndDefault>()
 }
 
 /// Convert a C string pointer to JString, reading the result from FFI
@@ -1192,7 +1189,7 @@ pub extern "system" fn Java_dev_kreuzberg_KreuzbergBridge_nativeRenderPdfPageToP
     }
 
     env.with_env(|env| -> Result<jbyteArray, JniError> {
-        env.byte_array_from_slice(&png_bytes)
-            .map(|ba| ba.into_raw())
-    }).resolve::<ThrowRuntimeExAndDefault>()
+        env.byte_array_from_slice(&png_bytes).map(|ba| ba.into_raw())
+    })
+    .resolve::<ThrowRuntimeExAndDefault>()
 }
