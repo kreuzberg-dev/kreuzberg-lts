@@ -1,12 +1,14 @@
 // JNI bindings for kreuzberg library.
 // Delegates to FFI (kreuzberg-ffi) for all operations.
-#![allow(non_snake_case, unsafe_code, unsafe_attr_outside_unsafe)]
+#![allow(non_snake_case, unsafe_code, unsafe_attr_outside_unsafe, deprecated)]
 
 use base64::Engine;
 use base64::engine::general_purpose::STANDARD;
 use jni::JNIEnv;
 use jni::objects::{JClass, JString};
 use jni::sys::{jboolean, jbyteArray, jint, jlong, jstring};
+use jni::errors::{ThrowRuntimeExAndDefault, Error as JniError};
+use jni::strings::JNIString;
 use std::ffi::{CStr, CString};
 
 // Pull in kreuzberg-ffi by Rust path. The `use` keeps the rlib's
@@ -30,6 +32,7 @@ use kreuzberg_ffi::{
     kreuzberg_list_renderers, kreuzberg_list_validators, kreuzberg_render_pdf_page_to_png,
 };
 
+
 // ============================================================================
 // Helper Functions
 // ============================================================================
@@ -41,13 +44,23 @@ fn base64_decode(input: &str) -> Result<Vec<u8>, String> {
 
 /// Helper to throw a KreuzbergBridgeException and return null/0
 fn throw_exception<'local>(env: &mut JNIEnv<'local>, message: &str) -> jstring {
-    let _ = env.throw_new("dev/kreuzberg/KreuzbergBridgeException", message);
+    let msg_jni = JNIString::from(message.to_string());
+    let exc_class_name = JNIString::from("dev/kreuzberg/KreuzbergBridgeException");
+    let _result = env.with_env(|env| -> Result<(), JniError> {
+        let exc_class = env.find_class(exc_class_name.as_ref())?;
+        env.throw_new(exc_class, msg_jni.as_ref())
+    });
     std::ptr::null_mut()
 }
 
 /// Helper for void functions that throw
 fn throw_exception_void(env: &mut JNIEnv, message: &str) {
-    let _ = env.throw_new("dev/kreuzberg/KreuzbergBridgeException", message);
+    let msg_jni = JNIString::from(message.to_string());
+    let exc_class_name = JNIString::from("dev/kreuzberg/KreuzbergBridgeException");
+    let _result = env.with_env(|env| -> Result<(), JniError> {
+        let exc_class = env.find_class(exc_class_name.as_ref())?;
+        env.throw_new(exc_class, msg_jni.as_ref())
+    });
 }
 
 /// Get FFI error message from last error context
@@ -68,9 +81,10 @@ fn get_ffi_error_message() -> String {
 
 /// Convert JString to Rust String, returning an error message if conversion fails
 fn jstring_to_string<'local>(env: &mut JNIEnv<'local>, jstr: &JString<'local>) -> Result<String, String> {
-    env.get_string(jstr)
-        .map(|j| j.into())
-        .map_err(|e| format!("Failed to convert JString: {}", e))
+    let s = env.with_env(|env| -> Result<String, JniError> {
+        jstr.try_to_string(env)
+    }).resolve::<ThrowRuntimeExAndDefault>();
+    Ok(s)
 }
 
 /// Pointer-to-c_char that's null when the underlying string is empty.
@@ -95,9 +109,10 @@ fn cstring_or_none(s: String) -> Result<Option<CString>, String> {
 
 /// Convert Rust String to jstring, returning null if allocation fails
 fn string_to_jstring(env: &mut JNIEnv, s: &str) -> jstring {
-    env.new_string(s)
-        .map(|js| js.into_raw())
-        .unwrap_or(std::ptr::null_mut())
+    env.with_env(|env| -> Result<jstring, JniError> {
+        env.new_string(s)
+            .map(|js| js.into_raw())
+    }).resolve::<ThrowRuntimeExAndDefault>()
 }
 
 /// Convert a C string pointer to JString, reading the result from FFI
@@ -116,7 +131,6 @@ fn cstring_ptr_to_jstring(env: &mut JNIEnv, ptr: *mut std::ffi::c_char) -> jstri
     }
 }
 
-// ============================================================================
 // Extraction Functions
 // ============================================================================
 
@@ -1177,7 +1191,8 @@ pub extern "system" fn Java_dev_kreuzberg_KreuzbergBridge_nativeRenderPdfPageToP
         kreuzberg_free_bytes(out_ptr, out_len, out_cap);
     }
 
-    env.byte_array_from_slice(&png_bytes)
-        .map(|ba| ba.into_raw())
-        .unwrap_or(std::ptr::null_mut())
+    env.with_env(|env| -> Result<jbyteArray, JniError> {
+        env.byte_array_from_slice(&png_bytes)
+            .map(|ba| ba.into_raw())
+    }).resolve::<ThrowRuntimeExAndDefault>()
 }
