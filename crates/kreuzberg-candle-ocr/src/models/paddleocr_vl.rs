@@ -147,7 +147,11 @@ impl PaddleOcrVlEngine {
             .or_else(|| tokenizer.token_to_id("<|end_of_sentence|>"))
             .or_else(|| tokenizer.token_to_id("<|endoftext|>"))
             .unwrap_or(2);
-        tracing::debug!(bos_token_id, eos_token_id, "Resolved PaddleOCR-VL special tokens from tokenizer");
+        tracing::debug!(
+            bos_token_id,
+            eos_token_id,
+            "Resolved PaddleOCR-VL special tokens from tokenizer"
+        );
 
         Ok(PaddleOcrVlEngine {
             model: Arc::new(Mutex::new(model)),

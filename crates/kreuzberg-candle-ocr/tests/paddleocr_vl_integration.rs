@@ -51,9 +51,8 @@ fn paddleocr_vl_ocr_task_recognises_full_page_fixture() {
         panic!("failed to read fixture {}: {e}", fixture.display());
     });
 
-    let engine = PaddleOcrVlEngine::new(PaddleOcrVlTask::Ocr, Device::Cpu, DType::F32).expect(
-        "PaddleOcrVlEngine::new should succeed with weights cached in $HOME/.cache/huggingface",
-    );
+    let engine = PaddleOcrVlEngine::new(PaddleOcrVlTask::Ocr, Device::Cpu, DType::F32)
+        .expect("PaddleOcrVlEngine::new should succeed with weights cached in $HOME/.cache/huggingface");
 
     let output = engine
         .process_image(&bytes)
