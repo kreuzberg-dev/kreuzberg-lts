@@ -74,6 +74,27 @@ pub mod diff;
 #[cfg(all(feature = "liter-llm", not(target_os = "windows"), not(target_arch = "wasm32")))]
 pub mod llm;
 
+// Stub `llm::region_extractor` for Windows (no liter-llm available) so the alef-generated
+// FFI wrapper `kreuzberg_extract_region_with_vlm` compiles. Returns a runtime error.
+#[cfg(target_os = "windows")]
+pub mod llm {
+    pub mod region_extractor {
+        pub use crate::RegionKind;
+
+        pub async fn extract_region_with_vlm(
+            _image_bytes: &[u8],
+            _image_mime: &str,
+            _region_kind: RegionKind,
+            _llm_config: &crate::LlmConfig,
+            _custom_prompt: Option<&str>,
+        ) -> crate::Result<String> {
+            Err(crate::KreuzbergError::Other(
+                "liter-llm not available on Windows".into(),
+            ))
+        }
+    }
+}
+
 #[cfg(feature = "embedding-presets")]
 pub mod embeddings;
 
