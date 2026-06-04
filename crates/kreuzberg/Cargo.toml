@@ -199,7 +199,9 @@ diff = ["dep:similar"]
 # `crates/kreuzberg/src/extractors/` for QR) and is wired through a built-in
 # post-processor under `crates/kreuzberg/src/plugins/processor/builtin/`.
 ner = [] # NER result types only; safe on every target.
-ner-llm-types = ["ner"] # LlmBackend stub for targets without full ner-llm (Windows, Android x86_64, WASM).
+ner-llm-types = [
+    "ner",
+] # LlmBackend stub for targets without full ner-llm (Windows, Android x86_64, WASM).
 ner-llm = ["ner", "liter-llm"] # LLM-driven zero-shot NER (no ORT).
 ner-onnx = [
     # gline-rs ONNX backend (kreuzberg-gliner-rs fork) with HuggingFace model download.
