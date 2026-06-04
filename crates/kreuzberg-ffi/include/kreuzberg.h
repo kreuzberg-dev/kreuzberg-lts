@@ -15593,43 +15593,6 @@ uintptr_t kreuzberg_extract_region_with_vlm_len(const uint8_t *_image_bytes,
                                                 const char *_custom_prompt);
 
 /**
- * Generate embeddings asynchronously for a list of text strings.
- *
- * This is the async counterpart to [`embed_texts`]. It offloads the blocking
- * ONNX inference work to a dedicated blocking thread pool via Tokio's
- * `spawn_blocking`, keeping the async executor free.
- *
- * Returns one embedding vector per input text in the same order.
- * \param texts Vec of strings to embed (owned, sent to blocking thread)
- * \param config Embedding configuration specifying model, batch size, and normalization
- * \note - `KreuzbergError::MissingDependency` if ONNX Runtime is not installed
- * - `KreuzbergError::Embedding` if the preset name is unknown, model download fails,
- *   or the blocking inference task panics
- * \note SAFETY: Caller must ensure all pointer arguments are valid or null. Returned pointers must be
- * freed with the appropriate free function.
- * \code
- * use kreuzberg::{embed_texts_async, EmbeddingConfig};
- *
- * let embeddings = embed_texts_async(
- *     vec!["Hello!".to_string()],
- *     &EmbeddingConfig::default(),
- * ).await?;
- * \endcode
- */
-char *kreuzberg_embed_texts_async(const char *texts,
-                                  const KREUZBERGEmbeddingConfig *config);
-
-/**
- * Return the byte length of the C string most recently returned by `kreuzberg_embed_texts_async` on
- * this thread. Returns 0 when the primary call returned null or failed before producing a string.
- * Enables safe slice construction in Zig and Java FFM Panama without a NUL-scan.
- * \note SAFETY: Pointer arguments are ignored and are present only to keep the companion ABI aligned
- * with `kreuzberg_embed_texts_async`.
- */
-uintptr_t kreuzberg_embed_texts_async_len(const char *_texts,
-                                          const KREUZBERGEmbeddingConfig *_config);
-
-/**
  * Render a single PDF page to PNG bytes.
  *
  * Returns raw PNG-encoded bytes for the specified page at the given DPI.
@@ -15692,6 +15655,23 @@ char *kreuzberg_embed_texts(const char *texts,
  */
 uintptr_t kreuzberg_embed_texts_len(const char *_texts,
                                     const KREUZBERGEmbeddingConfig *_config);
+
+/**
+ * \note SAFETY: Caller must ensure all pointer arguments are valid or null. Returned pointers must be
+ * freed with the appropriate free function.
+ */
+char *kreuzberg_embed_texts_async(const char *_texts,
+                                  const KREUZBERGEmbeddingConfig *_config);
+
+/**
+ * Return the byte length of the C string most recently returned by `kreuzberg_embed_texts_async` on
+ * this thread. Returns 0 when the primary call returned null or failed before producing a string.
+ * Enables safe slice construction in Zig and Java FFM Panama without a NUL-scan.
+ * \note SAFETY: Pointer arguments are ignored and are present only to keep the companion ABI aligned
+ * with `kreuzberg_embed_texts_async`.
+ */
+uintptr_t kreuzberg_embed_texts_async_len(const char *__texts,
+                                          const KREUZBERGEmbeddingConfig *__config);
 
 /**
  * Get an embedding preset by name.

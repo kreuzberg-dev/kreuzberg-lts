@@ -959,40 +959,6 @@ public static function extractRegionWithVlm(string $imageBytes, string $imageMim
 
 ---
 
-#### embedTextsAsync()
-
-Generate embeddings asynchronously for a list of text strings.
-
-This is the async counterpart to `embed_texts`. It offloads the blocking
-ONNX inference work to a dedicated blocking thread pool via Tokio's
-`spawn_blocking`, keeping the async executor free.
-
-Returns one embedding vector per input text in the same order.
-
-**Errors:**
-
-- `KreuzbergError::MissingDependency` if ONNX Runtime is not installed
-- `KreuzbergError::Embedding` if the preset name is unknown, model download fails,
-  or the blocking inference task panics
-
-**Signature:**
-
-```php
-public static function embedTextsAsync(array<string> $texts, EmbeddingConfig $config): array<array<float>>
-```
-
-**Parameters:**
-
-| Name | Type | Required | Description |
-|------|------|----------|-------------|
-| `texts` | `array<string>` | Yes | Vec of strings to embed (owned, sent to blocking thread) |
-| `config` | `EmbeddingConfig` | Yes | Embedding configuration specifying model, batch size, and normalization |
-
-**Returns:** `array<array<float>>`
-**Errors:** Throws `Error`.
-
----
-
 #### renderPdfPageToPng()
 
 Render a single PDF page to PNG bytes.
@@ -1068,6 +1034,26 @@ public static function embedTexts(array<string> $texts, EmbeddingConfig $config)
 |------|------|----------|-------------|
 | `texts` | `array<string>` | Yes | The texts |
 | `config` | `EmbeddingConfig` | Yes | The configuration options |
+
+**Returns:** `array<array<float>>`
+**Errors:** Throws `Error`.
+
+---
+
+#### embedTextsAsync()
+
+**Signature:**
+
+```php
+public static function embedTextsAsync(array<string> $texts, EmbeddingConfig $config): array<array<float>>
+```
+
+**Parameters:**
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| `texts` | `array<string>` | Yes | The  texts |
+| `config` | `EmbeddingConfig` | Yes | The embedding config |
 
 **Returns:** `array<array<float>>`
 **Errors:** Throws `Error`.

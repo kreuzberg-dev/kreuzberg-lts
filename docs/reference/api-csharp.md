@@ -959,40 +959,6 @@ public static async Task<string> ExtractRegionWithVlmAsync(byte[] imageBytes, st
 
 ---
 
-#### EmbedTextsAsync()
-
-Generate embeddings asynchronously for a list of text strings.
-
-This is the async counterpart to `embed_texts`. It offloads the blocking
-ONNX inference work to a dedicated blocking thread pool via Tokio's
-`spawn_blocking`, keeping the async executor free.
-
-Returns one embedding vector per input text in the same order.
-
-**Errors:**
-
-- `KreuzbergError.MissingDependency` if ONNX Runtime is not installed
-- `KreuzbergError.Embedding` if the preset name is unknown, model download fails,
-  or the blocking inference task panics
-
-**Signature:**
-
-```csharp
-public static async Task<List<List<float>>> EmbedTextsAsync(List<string> texts, EmbeddingConfig config)
-```
-
-**Parameters:**
-
-| Name | Type | Required | Description |
-|------|------|----------|-------------|
-| `Texts` | `List<string>` | Yes | Vec of strings to embed (owned, sent to blocking thread) |
-| `Config` | `EmbeddingConfig` | Yes | Embedding configuration specifying model, batch size, and normalization |
-
-**Returns:** `List<List<float>>`
-**Errors:** Throws `Error`.
-
----
-
 #### RenderPdfPageToPng()
 
 Render a single PDF page to PNG bytes.
@@ -1068,6 +1034,26 @@ public static List<List<float>> EmbedTexts(List<string> texts, EmbeddingConfig c
 |------|------|----------|-------------|
 | `Texts` | `List<string>` | Yes | The texts |
 | `Config` | `EmbeddingConfig` | Yes | The configuration options |
+
+**Returns:** `List<List<float>>`
+**Errors:** Throws `Error`.
+
+---
+
+#### EmbedTextsAsync()
+
+**Signature:**
+
+```csharp
+public static async Task<List<List<float>>> EmbedTextsAsync(List<string> texts, EmbeddingConfig config)
+```
+
+**Parameters:**
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| `Texts` | `List<string>` | Yes | The  texts |
+| `Config` | `EmbeddingConfig` | Yes | The embedding config |
 
 **Returns:** `List<List<float>>`
 **Errors:** Throws `Error`.

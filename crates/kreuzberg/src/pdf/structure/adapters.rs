@@ -229,11 +229,7 @@ mod tests {
         // Lines array should have only 2 non-blank lines
         assert_eq!(para.lines.len(), 2);
 
-        // Check vertical spacing: should be at correct y-positions
-        let line_height = 80.0 / 3.0;  // total_height / num_lines
-        let base_y = 90.0 - 10.0;  // pdf_top = page_h - y0; but y0 is 10, page_h is 1000, so pdf_top = 990
-
-        // Wait, let me recalculate: y0=10, y1=90, page_h=1000
+        // y0=10, y1=90, page_h=1000
         // pdf_bottom = 1000 - 90 = 910
         // pdf_top = 1000 - 10 = 990
         // total_height = 990 - 910 = 80

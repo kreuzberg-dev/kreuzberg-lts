@@ -1,5 +1,5 @@
 [workspace]
-alef_version = "0.22.33"
+alef_version = "0.23.0"
 languages = [
   "python",
   "node",
@@ -581,6 +581,11 @@ methods = [
   # Deprecated Rust-only aliases — excluded from bindings
   "LayoutDetection.class",
   "LayoutRegion.class",
+
+  # Generic impl methods — cannot be represented without monomorphization metadata
+  "ModelCache.new",
+  "MetricsLayer.layer",
+  "MultipartApi.from_request",
 ]
 
 [crates.lint.python]

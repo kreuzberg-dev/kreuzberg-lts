@@ -11,11 +11,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **chore(alef)**: pin to alef v0.23.0 + post-release fixes. Pulls v0.22.33→v0.23.0 (input DTO sequence collect target-inference, opaque-type wrapper re-emission, AsRef<str/Path/[u8]> monomorphisation, per-language scaffold fixes for php/ruby/zig/swift/kotlin) plus the post-0.23.0 unreleased fixes (php Vec<Named> let-binding, swift From<String> enum params + mut bindings + excluded-variant wildcard, wasm Vec→HashSet conv, FFI opaque allocators, swift name-shadow in shims, swift+wasm unreachable_patterns allow, swift hoisted Vec ref binding, wasm Option<Vec<T>> Some-wrap).
 - **feat(core)**: expose `LlmBackend` (gated on `ner-llm`, non-Windows, non-WASM) and `TokenCounter` (gated on `redaction`) at crate root for binding re-use.
-- **chore(alef)**: pin to alef v0.22.33 (covers v0.22.20-33 cumulative fixes: scaffold/swift Package.swift binaryTarget, wasm cfg-feature serde-skip, scaffold/ruby rb_sys cargo pin, napi std::result::Result qualification, swift e2e import dedup, dart/frb async-injection multi-line guard, wasm conditional `::default()` in serde templates, swift enum params in methods/traits + unreachable() for excluded variants, swift Vec→slice in trait calls, swift PathBuf Display via `.display()`).
 - **feat(windows)**: re-include liter-llm in Windows FFI feature set — VLM extraction now compiles on Windows after upstream aws-lc-sys MSVC fix.
 
 ### Fixed
+
+- **fix(api)**: relax stale Windows cfg gates on `extract_structured_handler` / `extract_structured_impl` / structured-extraction fallback. Five sites in `api/handlers.rs`, `core/pipeline/mod.rs`, `embeddings/mod.rs`, `mcp/server.rs` had `cfg(any(not(feature = "liter-llm"), target_os = "windows", target_arch = "wasm32"))` stubs created when liter-llm did not build on Windows. With liter-llm now active on Windows, the stub overlapped the real implementation, producing E0428 duplicate definitions and E0119 conflicting trait impls. Dropped the redundant `target_os = "windows"` clause from each stub cfg so they only activate when liter-llm is absent or the target is wasm32.
+
+- **fix(test)**: remove dead local bindings `line_height`/`base_y` in `pdf/structure/adapters.rs` test (kept `expected_line_height` which is referenced). Resolves CI Lint `cargo clippy -D warnings` failure.
 
 - **fix(ocr)**: add unit tests to verify OCR elements with mixed content and blank lines preserve all text during paragraph conversion. Tests confirm whitespace-only elements are correctly filtered, blank lines within elements don't drop content (full text preserved in `PdfParagraph.text`), and word counts are accurate. This ensures quality metrics (TF1) don't degrade when layout detection is applied to OCR-extracted documents.
 - **fix(types)**: feature-gate `CodeMetadataInner` (tree-sitter wrapper) with `#[cfg(feature = "tree-sitter")]`. The enum variant `FormatMetadata::Code` was already gated, but the inner struct referenced `tree_sitter_language_pack::ProcessResult` unconditionally, breaking `cargo check -p kreuzberg --no-default-features` which CI Rust runs as a separate step after tests. This was the persistent CI Rust failure previously mis-classified as "infra flake".

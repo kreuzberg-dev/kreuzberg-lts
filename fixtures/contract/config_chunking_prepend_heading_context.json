@@ -8,6 +8,7 @@
     "heading-context"
   ],
   "call": "extract_file_sync",
+  "assertion_recipes": ["chunks"],
   "input": {
     "path": "markdown/extraction_test.md",
     "config": {

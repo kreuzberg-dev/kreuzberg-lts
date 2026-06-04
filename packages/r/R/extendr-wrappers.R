@@ -344,23 +344,6 @@ compare <- function(a = ExtractionResult$default(), b = ExtractionResult$default
 #'   be initialised.
 #' @export
 extract_region_with_vlm <- function(image_bytes, image_mime, region_kind, llm_config = LlmConfig$default(), custom_prompt = NULL) .Call("wrap__extract_region_with_vlm", image_bytes, image_mime, region_kind, llm_config, custom_prompt, PACKAGE = "kreuzberg")
-#' Generate embeddings asynchronously for a list of text strings
-#'
-#' This is the async counterpart to [`embed_texts`]. It offloads the blocking
-#' ONNX inference work to a dedicated blocking thread pool via Tokio's
-#' `spawn_blocking`, keeping the async executor free.
-#'
-#' Returns one embedding vector per input text in the same order.
-#' @param texts Vec of strings to embed (owned, sent to blocking thread).
-#' @param config Embedding configuration specifying model, batch size, and normalization.
-#' @return List of list of numeric.
-#'
-#' @section Errors:
-#' - `KreuzbergError::MissingDependency` if ONNX Runtime is not installed
-#' - `KreuzbergError::Embedding` if the preset name is unknown, model download fails,
-#'   or the blocking inference task panics
-#' @export
-embed_texts_async <- function(texts, config = EmbeddingConfig$default()) .Call("wrap__embed_texts_async", texts, config, PACKAGE = "kreuzberg")
 #' Render a single PDF page to PNG bytes
 #'
 #' Returns raw PNG-encoded bytes for the specified page at the given DPI.
@@ -393,6 +376,12 @@ detect_mime_type <- function(path, check_exists) .Call("wrap__detect_mime_type",
 #' @return List of list of numeric.
 #' @export
 embed_texts <- function(texts, config = EmbeddingConfig$default()) .Call("wrap__embed_texts", texts, config, PACKAGE = "kreuzberg")
+#' embed_texts_async
+#' @param _texts List of character string.
+#' @param _config EmbeddingConfig object (list with class attribute).
+#' @return List of list of numeric.
+#' @export
+embed_texts_async <- function(_texts, _config = EmbeddingConfig$default()) .Call("wrap__embed_texts_async", _texts, _config, PACKAGE = "kreuzberg")
 #' Get an embedding preset by name
 #'
 #' Returns `None` if no preset with the given name exists. Returns an owned

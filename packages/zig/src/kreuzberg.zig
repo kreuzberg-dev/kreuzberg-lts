@@ -5321,44 +5321,6 @@ pub fn extract_region_with_vlm(image_bytes: []const u8, image_mime: []const u8, 
     };
 }
 
-/// Generate embeddings asynchronously for a list of text strings.
-///
-/// This is the async counterpart to `embed_texts`. It offloads the blocking
-/// ONNX inference work to a dedicated blocking thread pool via Tokio's
-/// `spawn_blocking`, keeping the async executor free.
-///
-/// Returns one embedding vector per input text in the same order.
-///
-/// **Errors:**
-///
-/// - `KreuzbergError.MissingDependency` if ONNX Runtime is not installed
-/// - `KreuzbergError.Embedding` if the preset name is unknown, model download fails,
-///   or the blocking inference task panics
-pub fn embed_texts_async(texts: []const u8, config: []const u8) KreuzbergError![]u8 {
-    // Vec/Map parameters are passed as JSON strings across the FFI boundary.
-    const texts_z = try std.fmt.allocPrintSentinel(
-        std.heap.c_allocator, "{s}", .{texts}, 0);
-    defer std.heap.c_allocator.free(texts_z);
-    const config_z = try std.fmt.allocPrintSentinel(
-        std.heap.c_allocator, "{s}", .{config}, 0);
-    defer std.heap.c_allocator.free(config_z);
-    const config_handle = c.kreuzberg_embedding_config_from_json(config_z);
-    if (config_handle == null) return _first_error(KreuzbergError);
-    defer c.kreuzberg_embedding_config_free(config_handle);
-    const _result = c.kreuzberg_embed_texts_async(texts_z, config_handle);
-    if (c.kreuzberg_last_error_code() != 0) {
-        return _first_error(KreuzbergError);
-    }
-    const _result_len = c.kreuzberg_embed_texts_async_len(texts_z, config_handle);
-    return blk: {
-        if (_result == null) return _first_error(KreuzbergError);
-        const slice = _result[0.._result_len];
-        const owned = try std.heap.c_allocator.dupe(u8, slice);
-        _free_string(_result);
-        break :blk owned;
-    };
-}
-
 /// Render a single PDF page to PNG bytes.
 ///
 /// Returns raw PNG-encoded bytes for the specified page at the given DPI.
@@ -5425,6 +5387,31 @@ pub fn embed_texts(texts: []const u8, config: []const u8) KreuzbergError![]u8 {
         return _first_error(KreuzbergError);
     }
     const _result_len = c.kreuzberg_embed_texts_len(texts_z, config_handle);
+    return blk: {
+        if (_result == null) return _first_error(KreuzbergError);
+        const slice = _result[0.._result_len];
+        const owned = try std.heap.c_allocator.dupe(u8, slice);
+        _free_string(_result);
+        break :blk owned;
+    };
+}
+
+pub fn embed_texts_async(_texts: []const u8, _config: []const u8) KreuzbergError![]u8 {
+    // Vec/Map parameters are passed as JSON strings across the FFI boundary.
+    const _texts_z = try std.fmt.allocPrintSentinel(
+        std.heap.c_allocator, "{s}", .{_texts}, 0);
+    defer std.heap.c_allocator.free(_texts_z);
+    const _config_z = try std.fmt.allocPrintSentinel(
+        std.heap.c_allocator, "{s}", .{_config}, 0);
+    defer std.heap.c_allocator.free(_config_z);
+    const _config_handle = c.kreuzberg_embedding_config_from_json(_config_z);
+    if (_config_handle == null) return _first_error(KreuzbergError);
+    defer c.kreuzberg_embedding_config_free(_config_handle);
+    const _result = c.kreuzberg_embed_texts_async(_texts_z, _config_handle);
+    if (c.kreuzberg_last_error_code() != 0) {
+        return _first_error(KreuzbergError);
+    }
+    const _result_len = c.kreuzberg_embed_texts_async_len(_texts_z, _config_handle);
     return blk: {
         if (_result == null) return _first_error(KreuzbergError);
         const slice = _result[0.._result_len];

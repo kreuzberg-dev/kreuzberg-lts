@@ -414,7 +414,7 @@ libc = { workspace = true }
 # excluded on Windows because it pulls reqwest/rustls -> aws-lc-rs -> aws-lc-sys, which fails
 # to build on Windows MSVC.
 log = { workspace = true }
-lopdf = { version = "0.40.0", optional = true }
+lopdf = { version = "0.41.0", optional = true }
 mail-parser = { version = "0.11.3", optional = true }
 memchr = "2.8.1"
 memmap2 = { workspace = true }

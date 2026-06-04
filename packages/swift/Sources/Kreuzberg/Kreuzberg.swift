@@ -7742,14 +7742,14 @@ public func extractRegionWithVlm(_ imageBytes: [UInt8], _ imageMime: String, _ r
     return try await extractRegionWithVlm(imageBytes: imageBytes, imageMime: imageMime, regionKind: regionKind, llmConfig: config, customPrompt: customPrompt)
 }
 
-public func embedTextsAsync(_ texts: [String], _ configJson: String) async throws -> [[Float]] {
-    let config = try embeddingConfigFromJson(configJson)
-    return try await embedTextsAsync(texts: texts, config: config)
-}
-
 public func embedTexts(_ texts: [String], _ configJson: String) throws -> [[Float]] {
     let config = try embeddingConfigFromJson(configJson)
     return try embedTexts(texts: texts, config: config)
+}
+
+public func embedTextsAsync(_ texts: [String], _ configJson: String) async throws -> [[Float]] {
+    let config = try embeddingConfigFromJson(configJson)
+    return try await embedTextsAsync(texts: texts, config: config)
 }
 
 // MARK: - From-JSON Helpers
@@ -9313,44 +9313,6 @@ public func extractRegionWithVlm(imageBytes: [UInt8], imageMime: String, regionK
     }.value
 }
 
-/// Generate embeddings asynchronously for a list of text strings.
-///
-/// This is the async counterpart to [`embed_texts`]. It offloads the blocking
-/// ONNX inference work to a dedicated blocking thread pool via Tokio's
-/// `spawn_blocking`, keeping the async executor free.
-///
-/// Returns one embedding vector per input text in the same order.
-///
-/// # Arguments
-///
-/// * `texts` - Vec of strings to embed (owned, sent to blocking thread)
-/// * `config` - Embedding configuration specifying model, batch size, and normalization
-///
-/// # Errors
-///
-/// - `KreuzbergError::MissingDependency` if ONNX Runtime is not installed
-/// - `KreuzbergError::Embedding` if the preset name is unknown, model download fails,
-///   or the blocking inference task panics
-///
-/// # Example
-///
-/// ```rust,ignore
-/// use kreuzberg::{embed_texts_async, EmbeddingConfig};
-///
-/// let embeddings = embed_texts_async(
-///     vec!["Hello!".to_string()],
-///     &EmbeddingConfig::default(),
-/// ).await?;
-/// ```
-public func embedTextsAsync(texts: [String], config: EmbeddingConfig) async throws -> [[Float]] {
-    return try await Task.detached(priority: .userInitiated) {
-        let _rb_texts: RustVec<RustString> = { let v = RustVec<RustString>(); for s in texts { v.push(value: RustString(s)) }; return v }()
-        let _rb_result = try RustBridge.embedTextsAsync(_rb_texts, config).toString()
-        let _rb_data = _rb_result.data(using: .utf8) ?? Data()
-        return try JSONDecoder().decode([[Float]].self, from: _rb_data)
-    }.value
-}
-
 /// Render a single PDF page to PNG bytes.
 ///
 /// Returns raw PNG-encoded bytes for the specified page at the given DPI.
@@ -9388,6 +9350,15 @@ public func embedTexts(texts: [String], config: EmbeddingConfig) throws -> [[Flo
     let _rb_json = try RustBridge.embedTexts(_rb_texts, config).toString()
     let _rb_data = _rb_json.data(using: .utf8) ?? Data()
     return try JSONDecoder().decode([[Float]].self, from: _rb_data)
+}
+
+public func embedTextsAsync(texts: [String], config: EmbeddingConfig) async throws -> [[Float]] {
+    return try await Task.detached(priority: .userInitiated) {
+        let _rb_texts: RustVec<RustString> = { let v = RustVec<RustString>(); for s in texts { v.push(value: RustString(s)) }; return v }()
+        let _rb_result = try RustBridge.embedTextsAsync(_rb_texts, config).toString()
+        let _rb_data = _rb_result.data(using: .utf8) ?? Data()
+        return try JSONDecoder().decode([[Float]].self, from: _rb_data)
+    }.value
 }
 
 /// Get an embedding preset by name.

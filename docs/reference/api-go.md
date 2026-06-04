@@ -959,40 +959,6 @@ func ExtractRegionWithVlm(imageBytes []byte, imageMime string, regionKind Region
 
 ---
 
-#### EmbedTextsAsync()
-
-Generate embeddings asynchronously for a list of text strings.
-
-This is the async counterpart to `embed_texts`. It offloads the blocking
-ONNX inference work to a dedicated blocking thread pool via Tokio's
-`spawn_blocking`, keeping the async executor free.
-
-Returns one embedding vector per input text in the same order.
-
-**Errors:**
-
-- `KreuzbergError.MissingDependency` if ONNX Runtime is not installed
-- `KreuzbergError.Embedding` if the preset name is unknown, model download fails,
-  or the blocking inference task panics
-
-**Signature:**
-
-```go
-func EmbedTextsAsync(texts []string, config EmbeddingConfig) ([][]float32, error)
-```
-
-**Parameters:**
-
-| Name | Type | Required | Description |
-|------|------|----------|-------------|
-| `Texts` | `[]string` | Yes | Vec of strings to embed (owned, sent to blocking thread) |
-| `Config` | `EmbeddingConfig` | Yes | Embedding configuration specifying model, batch size, and normalization |
-
-**Returns:** `[][]float32`
-**Errors:** Returns `error`.
-
----
-
 #### RenderPdfPageToPng()
 
 Render a single PDF page to PNG bytes.
@@ -1068,6 +1034,26 @@ func EmbedTexts(texts []string, config EmbeddingConfig) ([][]float32, error)
 |------|------|----------|-------------|
 | `Texts` | `[]string` | Yes | The texts |
 | `Config` | `EmbeddingConfig` | Yes | The configuration options |
+
+**Returns:** `[][]float32`
+**Errors:** Returns `error`.
+
+---
+
+#### EmbedTextsAsync()
+
+**Signature:**
+
+```go
+func EmbedTextsAsync(texts []string, config EmbeddingConfig) ([][]float32, error)
+```
+
+**Parameters:**
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| `Texts` | `[]string` | Yes | The  texts |
+| `Config` | `EmbeddingConfig` | Yes | The embedding config |
 
 **Returns:** `[][]float32`
 **Errors:** Returns `error`.

@@ -848,41 +848,6 @@ def extract_region_with_vlm(image_bytes, image_mime, region_kind, llm_config, cu
 
 ---
 
-#### embed_texts_async()
-
-Generate embeddings asynchronously for a list of text strings.
-
-This is the async counterpart to `embed_texts`. It offloads the blocking
-ONNX inference work to a dedicated blocking thread pool via Tokio's
-`spawn_blocking`, keeping the async executor free.
-
-Returns one embedding vector per input text in the same order.
-
-**Errors:**
-
-- `KreuzbergError.MissingDependency` if ONNX Runtime is not installed
-- `KreuzbergError.Embedding` if the preset name is unknown, model download fails,
-  or the blocking inference task panics
-
-**Signature:**
-
-```elixir
-@spec embed_texts_async(texts, config) :: {:ok, term()} | {:error, term()}
-def embed_texts_async(texts, config)
-```
-
-**Parameters:**
-
-| Name | Type | Required | Description |
-|------|------|----------|-------------|
-| `texts` | `list(String.t())` | Yes | Vec of strings to embed (owned, sent to blocking thread) |
-| `config` | `EmbeddingConfig` | Yes | Embedding configuration specifying model, batch size, and normalization |
-
-**Returns:** `list(list(float()))`
-**Errors:** Returns `{:error, reason}`
-
----
-
 #### render_pdf_page_to_png()
 
 Render a single PDF page to PNG bytes.
@@ -961,6 +926,27 @@ def embed_texts(texts, config)
 |------|------|----------|-------------|
 | `texts` | `list(String.t())` | Yes | The texts |
 | `config` | `EmbeddingConfig` | Yes | The configuration options |
+
+**Returns:** `list(list(float()))`
+**Errors:** Returns `{:error, reason}`
+
+---
+
+#### embed_texts_async()
+
+**Signature:**
+
+```elixir
+@spec embed_texts_async(texts, config) :: {:ok, term()} | {:error, term()}
+def embed_texts_async(texts, config)
+```
+
+**Parameters:**
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| `texts` | `list(String.t())` | Yes | The  texts |
+| `config` | `EmbeddingConfig` | Yes | The embedding config |
 
 **Returns:** `list(list(float()))`
 **Errors:** Returns `{:error, reason}`

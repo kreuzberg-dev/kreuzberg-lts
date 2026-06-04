@@ -61,6 +61,23 @@ impl RegionKind {
     }
 }
 
+impl From<String> for RegionKind {
+    /// Converts a string variant name to a [`RegionKind`].
+    ///
+    /// Accepted values (case-sensitive): `"Figure"`, `"DenseTable"`,
+    /// `"ComplexLayout"`, `"Caption"`. Any other value maps to
+    /// [`RegionKind::Figure`] as the safe default.
+    fn from(s: String) -> Self {
+        match s.as_str() {
+            "Figure" => Self::Figure,
+            "DenseTable" => Self::DenseTable,
+            "ComplexLayout" => Self::ComplexLayout,
+            "Caption" => Self::Caption,
+            _ => Self::Figure,
+        }
+    }
+}
+
 /// Default prompt for figure / diagram regions.
 const REGION_FIGURE_TEMPLATE: &str = "\
 Describe this figure or diagram in detail. Include:
