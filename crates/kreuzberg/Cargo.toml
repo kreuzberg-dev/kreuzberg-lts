@@ -497,9 +497,6 @@ zip = { version = ">=7.0.0", optional = true, default-features = false, features
 hf-hub = { version = "0.5", default-features = false, features = ["ureq"], optional = true }
 # PaddleOCR via ONNX Runtime - not available on WASM (vendored from paddle-ocr-rs)
 kreuzberg-paddle-ocr = { path = "../kreuzberg-paddle-ocr", version = "5.0.0-rc.3", optional = true }
-# liter-llm pulls reqwest/rustls -> aws-lc-rs -> aws-lc-sys. aws-lc-sys 0.40 fails to build on
-# Windows MSVC (stdalign feature detection treats `-WX` warnings as errors). Until upstream ships
-# a fix, restrict liter-llm to non-Windows targets so Windows FFI/CLI builds don't pull aws-lc-sys.
 liter-llm = { workspace = true, optional = true, features = ["native-http"] }
 pprof = { version = "0.15.0", features = ["flamegraph"], optional = true }
 # Enable tokenizers `http` feature on native targets so model downloads work via hf-hub.
@@ -511,6 +508,8 @@ ureq = { version = "3.3", default-features = false, features = ["rustls", "json"
 # Use native-tls on Windows to avoid aws-lc-sys CMake build issues with MinGW
 [target.'cfg(all(target_os = "windows", not(target_arch = "wasm32")))'.dependencies]
 hf-hub = { version = "0.5", default-features = false, features = ["ureq"], optional = true }
+# liter-llm: aws-lc-sys MSVC fix shipped in kreuzberg-dev/liter-llm; track via git patch.
+liter-llm = { workspace = true, optional = true, features = ["native-http"] }
 # PaddleOCR via ONNX Runtime - not available on WASM (vendored from paddle-ocr-rs)
 kreuzberg-paddle-ocr = { path = "../kreuzberg-paddle-ocr", version = "5.0.0-rc.3", optional = true }
 # Enable tokenizers `http` feature on Windows so model downloads work via hf-hub.

@@ -71,29 +71,8 @@ pub mod diff;
 // TODO(wasm-llm): `liter-llm` stays in no-ORT/wasm target presets because the
 // dependency supports hosted HTTP providers on wasm. The runtime module remains
 // disabled until the wasm request/runtime integration is wired and tested.
-#[cfg(all(feature = "liter-llm", not(target_os = "windows"), not(target_arch = "wasm32")))]
+#[cfg(all(feature = "liter-llm", not(target_arch = "wasm32")))]
 pub mod llm;
-
-// Stub `llm::region_extractor` for Windows (no liter-llm available) so the alef-generated
-// FFI wrapper `kreuzberg_extract_region_with_vlm` compiles. Returns a runtime error.
-#[cfg(target_os = "windows")]
-pub mod llm {
-    pub mod region_extractor {
-        pub use crate::RegionKind;
-
-        pub async fn extract_region_with_vlm(
-            _image_bytes: &[u8],
-            _image_mime: &str,
-            _region_kind: RegionKind,
-            _llm_config: &crate::LlmConfig,
-            _custom_prompt: Option<&str>,
-        ) -> crate::Result<String> {
-            Err(crate::KreuzbergError::Other(
-                "liter-llm not available on Windows".into(),
-            ))
-        }
-    }
-}
 
 #[cfg(feature = "embedding-presets")]
 pub mod embeddings;
@@ -186,15 +165,13 @@ pub use text::{ReductionLevel, TokenReductionConfig};
 
 #[cfg(all(
     feature = "ner-llm",
-    not(target_os = "windows"),
     not(target_arch = "wasm32"),
     not(all(target_os = "android", target_arch = "x86_64"))
 ))]
 pub use text::ner::llm::LlmBackend;
 
-// Stub for targets without ner-llm (Android x86_64, Windows, WASM), so alef-generated bindings compile.
+// Stub for targets without ner-llm (Android x86_64, WASM), so alef-generated bindings compile.
 #[cfg(any(
-    all(not(feature = "ner-llm"), target_os = "windows"),
     all(not(feature = "ner-llm"), target_arch = "wasm32"),
     all(not(feature = "ner-llm"), all(target_os = "android", target_arch = "x86_64"))
 ))]
@@ -204,7 +181,6 @@ pub struct LlmBackend {
 }
 
 #[cfg(any(
-    all(not(feature = "ner-llm"), target_os = "windows"),
     all(not(feature = "ner-llm"), target_arch = "wasm32"),
     all(not(feature = "ner-llm"), all(target_os = "android", target_arch = "x86_64"))
 ))]
@@ -280,12 +256,11 @@ impl GlineBackend {
     }
 }
 
-#[cfg(all(feature = "liter-llm", not(target_os = "windows")))]
+#[cfg(all(feature = "liter-llm", not(target_arch = "wasm32")))]
 pub use llm::region_extractor::RegionKind;
 
-// Stub for Windows (no liter-llm `llm` module compiled) so alef-generated FFI bindings
-// compile. RegionKind methods return errors at runtime if called.
-#[cfg(any(not(feature = "liter-llm"), target_os = "windows"))]
+// Stub for targets without liter-llm (WASM) so alef-generated FFI bindings compile.
+#[cfg(not(all(feature = "liter-llm", not(target_arch = "wasm32"))))]
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum RegionKind {
     Figure,
@@ -294,7 +269,7 @@ pub enum RegionKind {
     Caption,
 }
 
-#[cfg(any(not(feature = "liter-llm"), target_os = "windows"))]
+#[cfg(not(all(feature = "liter-llm", not(target_arch = "wasm32"))))]
 impl RegionKind {
     pub fn default_prompt(self) -> &'static str {
         ""

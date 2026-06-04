@@ -20,11 +20,11 @@ pub use token_reduction::{ReductionLevel, TokenReductionConfig};
 
 // OSS v5 follow-up text-analysis modules. Each subsystem is feature-gated so the
 // non-OSS targets (no-ort-target, wasm-target, android-target) compile out cleanly.
-#[cfg(all(feature = "classification", not(target_os = "windows")))]
+#[cfg(feature = "classification")]
 pub mod classification;
 
-// Stub module for Android x86_64 when classification feature is disabled (android-target has no ORT).
-#[cfg(not(all(feature = "classification", not(target_os = "windows"))))]
+// Stub module when classification feature is disabled (wasm-target, android-target have no ORT).
+#[cfg(not(feature = "classification"))]
 pub mod classification {
     use crate::{ExtractionResult, PageClassificationConfig, Result};
 
@@ -72,11 +72,11 @@ pub mod redaction;
 #[cfg(feature = "summarization")]
 pub mod summarization;
 
-#[cfg(all(feature = "translation", not(target_os = "windows")))]
+#[cfg(feature = "translation")]
 pub mod translation;
 
-// Stub module for Android x86_64 when translation feature is disabled (android-target has no ORT).
-#[cfg(not(all(feature = "translation", not(target_os = "windows"))))]
+// Stub module when translation feature is disabled (wasm-target, android-target have no ORT).
+#[cfg(not(feature = "translation"))]
 pub mod translation {
     use crate::{ExtractionResult, Result, TranslationConfig};
 

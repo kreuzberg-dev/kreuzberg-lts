@@ -910,7 +910,7 @@ pub fn embed_texts<T: AsRef<str>>(
     match &config.model {
         // TODO(wasm-llm): liter-llm has a wasm-http backend, but embedding
         // dispatch still needs a wasm runtime path before this cfg can include wasm32.
-        #[cfg(all(feature = "liter-llm", not(target_os = "windows"), not(target_arch = "wasm32")))]
+        #[cfg(all(feature = "liter-llm", not(target_arch = "wasm32")))]
         crate::core::config::EmbeddingModelType::Llm { llm } => {
             let normalize = config.normalize;
             // If we're already inside an async runtime (e.g. server mode),
@@ -1079,7 +1079,7 @@ pub async fn embed_texts_async<T: AsRef<str> + Send + 'static>(
     match &config.model {
         // TODO(wasm-llm): liter-llm has a wasm-http backend, but embedding
         // dispatch still needs a wasm runtime path before this cfg can include wasm32.
-        #[cfg(all(feature = "liter-llm", not(target_os = "windows"), not(target_arch = "wasm32")))]
+        #[cfg(all(feature = "liter-llm", not(target_arch = "wasm32")))]
         crate::core::config::EmbeddingModelType::Llm { llm } => {
             return crate::llm::vlm_embeddings::embed_via_llm(&texts, llm, config.normalize)
                 .await
@@ -1235,7 +1235,7 @@ mod tests {
     /// (e.g. server mode) must not panic with "cannot block inside runtime".
     /// The LLM path will fail with MissingDependency or a connection error,
     /// but it must NOT panic.
-    #[cfg(all(feature = "liter-llm", not(target_os = "windows"), not(target_arch = "wasm32")))]
+    #[cfg(all(feature = "liter-llm", not(target_arch = "wasm32")))]
     #[tokio::test]
     async fn test_embed_texts_llm_inside_runtime_does_not_panic() {
         let config = crate::core::config::EmbeddingConfig {

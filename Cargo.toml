@@ -64,7 +64,7 @@ kreuzberg = { path = "./crates/kreuzberg", version = "5.0.0-rc.3", default-featu
 
 lazy_static = "1.5.0"
 libc = "0.2.186"
-liter-llm = { version = "1.4.0-rc.50", default-features = false, features = ["tracing"] }
+liter-llm = { version = "1.4.0-rc.57", default-features = false, features = ["tracing"] }
 log = "0.4"
 lzma-rust2 = { version = "0.16.4" }
 memmap2 = "0.9"
@@ -117,6 +117,7 @@ web-sys = { version = "0.3", features = [
 kreuzberg = { path = "crates/kreuzberg" }
 kreuzberg-tesseract = { path = "crates/kreuzberg-tesseract" }
 kreuzberg-paddle-ocr = { path = "crates/kreuzberg-paddle-ocr" }
+liter-llm = { git = "https://github.com/kreuzberg-dev/liter-llm", branch = "main" }
 
 [profile.release]
 lto = "thin"

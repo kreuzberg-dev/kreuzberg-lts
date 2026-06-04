@@ -10,7 +10,7 @@ mod layout_hints;
 mod layout_runner;
 mod ocr;
 mod pages;
-#[cfg(all(feature = "liter-llm", feature = "layout-detection", not(target_os = "windows")))]
+#[cfg(all(feature = "liter-llm", feature = "layout-detection"))]
 mod region_vlm;
 
 use crate::Result;
@@ -712,7 +712,7 @@ impl PdfExtractor {
         // crop each region from the page raster and send it to the VLM. Results are
         // appended to the assembled document. VLM failures per region are suppressed
         // with warnings so that one bad crop cannot abort the whole extraction.
-        #[cfg(all(feature = "liter-llm", feature = "layout-detection", not(target_os = "windows")))]
+        #[cfg(all(feature = "liter-llm", feature = "layout-detection"))]
         {
             let vlm_enabled = config
                 .ocr

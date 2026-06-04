@@ -555,7 +555,7 @@ pub(crate) async fn embed_handler(JsonApi(_request): JsonApi<EmbedRequest>) -> R
         (status = 500, description = "Internal server error", body = crate::api::types::ErrorResponse),
     )
 )]
-#[cfg(all(feature = "liter-llm", not(target_os = "windows"), not(target_arch = "wasm32")))]
+#[cfg(all(feature = "liter-llm", not(target_arch = "wasm32")))]
 #[cfg_attr(
     feature = "otel",
     tracing::instrument(name = "api.extract_structured", skip(state, multipart),)

@@ -22,7 +22,6 @@ pub mod backend;
 pub mod gline;
 #[cfg(all(
     feature = "ner-llm",
-    not(target_os = "windows"),
     not(all(target_os = "android", target_arch = "x86_64"))
 ))]
 pub mod llm;

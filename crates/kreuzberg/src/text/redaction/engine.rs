@@ -424,7 +424,6 @@ fn make_ner_backend(
         NerBackendKind::Llm => {
             #[cfg(all(
                 feature = "ner-llm",
-                not(target_os = "windows"),
                 not(all(target_os = "android", target_arch = "x86_64"))
             ))]
             {
@@ -436,7 +435,6 @@ fn make_ner_backend(
             }
             #[cfg(not(all(
                 feature = "ner-llm",
-                not(target_os = "windows"),
                 not(all(target_os = "android", target_arch = "x86_64"))
             )))]
             {
