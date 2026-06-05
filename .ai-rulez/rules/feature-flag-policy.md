@@ -14,10 +14,6 @@ All features in `crates/kreuzberg/Cargo.toml`.
 - `tree-sitter` — uses dynamic loading; use `tree-sitter-wasm` on WASM
 - `wasm-target` feature composes the complete safe WASM-compatible set
 
-## Experimental (NOT in `full`)
-
-- `pdf-oxide` — pure-Rust PDF text extraction; opt-in only, excluded from both `full` and `formats`
-
 ## ORT Variants (Mutually Exclusive)
 
 - `ort-bundled` — downloads official Microsoft ORT binaries; default when OCR/ML features active
@@ -33,7 +29,7 @@ All features in `crates/kreuzberg/Cargo.toml`.
 | Feature | Description |
 |---------|-------------|
 | `formats` | All document formats + api/mcp/otel/chunking; no OCR, no ML |
-| `full` | `formats` + ocr + paddle-ocr + layout + embeddings + tree-sitter + liter-llm; excludes `pdf-oxide` |
+| `full` | `formats` + ocr + paddle-ocr + layout + embeddings + tree-sitter + liter-llm |
 | `wasm-target` | Full safe WASM-compatible set |
 
 ## Build Profiles

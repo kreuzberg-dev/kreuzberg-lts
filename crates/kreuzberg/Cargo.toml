@@ -39,10 +39,6 @@ simd-utf8 = ["dep:simdutf8"]
 tokio-runtime = ["dep:tokio"]
 
 pdf = ["dep:pdfium-render", "dep:lopdf", "dep:image", "dep:flate2", "html"]
-# Experimental: use pdf_oxide for text extraction (pure Rust, no C++ deps).
-# Provides cleaner word spacing for PDFs with broken font CMaps.
-# Requires 'pdf' feature. Not included in 'full' — opt-in only.
-pdf-oxide = ["pdf", "dep:pdf_oxide"]
 static-pdfium = ["pdf"]
 bundled-pdfium = ["pdf"]
 system-pdfium = ["pdf"]
@@ -314,7 +310,6 @@ ort = { version = "2.0.0-rc.12", default-features = false, features = [
 outlook-pst = { version = "1.2.0", optional = true }
 parking_lot = { workspace = true }
 pastey = "0.2"
-pdf_oxide = { workspace = true, optional = true }
 pdfium-render = { workspace = true, features = ["thread_safe", "image_latest"], optional = true }
 pulldown-cmark = { version = "0.13" }
 quick-xml = { version = "0.40.1", features = ["serialize"], optional = true }

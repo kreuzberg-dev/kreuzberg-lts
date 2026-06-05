@@ -23,7 +23,7 @@ echo "  CARGO_TERM_COLOR: ${CARGO_TERM_COLOR:-not set}"
 
 echo "Workspace information:"
 echo "  Repository: $REPO_ROOT"
-echo "  Excluded packages: kreuzberg-e2e-generator, kreuzberg-py, kreuzberg-node (+ benchmark-harness on Windows)"
+echo "  Excluded packages: kreuzberg-py, kreuzberg-node"
 
 if [ ! -d "$TESSDATA_PREFIX" ]; then
   echo "WARNING: TESSDATA_PREFIX directory not found: $TESSDATA_PREFIX"
@@ -64,9 +64,6 @@ if ! {
 
   echo "=== cargo test --workspace (all features, excluding kreuzberg) ==="
   extra_excludes=()
-  if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "cygwin" || "$OSTYPE" == "win32" ]]; then
-    extra_excludes+=(--exclude benchmark-harness)
-  fi
   # pdfium-render must be excluded from the main workspace test and run separately
   # with --test-threads=1 because pdfium's FFI bindings use global state and are not thread-safe.
   # On ARM64 Linux we skip pdfium-render entirely due to pdfium binary incompatibility.

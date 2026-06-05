@@ -143,38 +143,6 @@ task e2e:test:all
 
 ---
 
-## Benchmarking
-
-Measure extraction performance with the benchmark harness in `tools/benchmark-harness/`. Use it to track regressions, compare against alternatives, and identify bottlenecks with flamegraphs.
-
-### Quick Start
-
-```bash title="Terminal"
-task benchmark:run FRAMEWORK=kreuzberg MODE=single-file
-task benchmark:run FRAMEWORK=kreuzberg MODE=batch
-```
-
-### Common Modes
-
-| Mode | What it measures |
-|------|-----------------|
-| `single-file` | Latency — one file at a time |
-| `batch` | Throughput — multiple files in parallel |
-
-### With Profiling
-
-Generate flamegraphs to see where time is spent:
-
-```bash title="Terminal"
-task benchmark:profile FRAMEWORK=kreuzberg MODE=single-file
-```
-
-Results appear in the `flamegraphs/` directory as interactive SVGs.
-
-View live benchmark results at <https://kreuzberg.dev/benchmarks>.
-
----
-
 ## Linting and Pre-commit
 
 ```bash title="Terminal"

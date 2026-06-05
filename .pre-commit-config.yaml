@@ -80,7 +80,7 @@ repos:
         args: ["--fix", "--allow-dirty", "--allow-staged", "--workspace",
                "--exclude=kreuzberg-php", "--exclude=kreuzberg-wasm",
                "--all-features", "--all-targets", "--", "-D", "warnings"]
-        files: ^(crates/|tools/|e2e/rust/|Cargo\.(toml|lock))
+        files: ^(crates/|e2e/rust/|Cargo\.(toml|lock))
         types_or: [rust, toml]
       - id: cargo-clippy
         name: clippy (kreuzberg-php)
@@ -111,7 +111,6 @@ repos:
     rev: v2.4.16
     hooks:
       - id: biome-format
-        exclude: ^tools/benchmark-harness/fixtures/
       - id: biome-lint
 
   - repo: https://github.com/oxc-project/mirrors-oxlint
@@ -119,7 +118,7 @@ repos:
     hooks:
       - id: oxlint
         args: ["--fix"]
-        exclude: ^(tools/benchmark-harness/fixtures/|docs/snippets/)
+        exclude: ^docs/snippets/
 
   # C/C++: formatting and linting
   - repo: https://github.com/pocc/pre-commit-hooks
@@ -127,7 +126,7 @@ repos:
     hooks:
       - id: clang-format
         args: [--style=file]
-        files: (^crates/kreuzberg-ffi/tests/c/|^tools/benchmark-harness/scripts/.*\.c$)
+        files: ^crates/kreuzberg-ffi/tests/c/
       - id: cppcheck
         args:
           [
@@ -137,7 +136,7 @@ repos:
             "--suppress=unusedStructMember",
             "--suppress=normalCheckLevelMaxBranches",
           ]
-        files: (^crates/kreuzberg-ffi/tests/c/|^tools/benchmark-harness/scripts/.*\.c$)
+        files: ^crates/kreuzberg-ffi/tests/c/
 
   - repo: https://github.com/checkmake/checkmake
     rev: v0.3.2
@@ -173,7 +172,7 @@ repos:
     rev: "v0.2.7"
     hooks:
       - id: rumdl-fmt
-        exclude: '^(test_apps/|tools/benchmark-harness/vendored/|docs/index\.md|docs/getting-started/installation\.md)'
+        exclude: '^(test_apps/|docs/index\.md|docs/getting-started/installation\.md)'
 
   # Markdown prose linting: textlint
   - repo: local
@@ -203,7 +202,7 @@ repos:
     rev: v0.6.37
     hooks:
       - id: cpd
-        exclude: ^(\.mvn/wrapper/|e2e/|test_apps/|tools/e2e-generator/e2e/|crates/kreuzberg-wasm/e2e/)
+        exclude: ^(\.mvn/wrapper/|e2e/|test_apps/|crates/kreuzberg-wasm/e2e/)
       - id: checkstyle
         args:
           [
@@ -212,7 +211,7 @@ repos:
             "-p",
             "packages/java/checkstyle.properties",
           ]
-        exclude: ^(\.mvn/wrapper/|e2e/|test_apps/|tools/e2e-generator/e2e/|crates/kreuzberg-wasm/e2e/)
+        exclude: ^(\.mvn/wrapper/|e2e/|test_apps/|crates/kreuzberg-wasm/e2e/)
 
   # Version sync: keep vendored headers and package versions in sync
   - repo: local

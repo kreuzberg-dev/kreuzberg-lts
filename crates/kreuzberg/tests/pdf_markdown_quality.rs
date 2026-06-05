@@ -1,7 +1,6 @@
 //! PDF markdown quality smoke tests: verify extraction produces structural elements.
 //!
-//! These are lightweight assertions — detailed quality scoring and A/B comparisons
-//! live in `tools/benchmark-harness` (subcommands: `compare`, `pipeline-benchmark`).
+//! These are lightweight assertions for PDF structure extraction quality.
 //!
 //! Usage:
 //!   cargo test -p kreuzberg --features "pdf,bundled-pdfium" \

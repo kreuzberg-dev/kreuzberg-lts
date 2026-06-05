@@ -57,10 +57,6 @@ pub mod images;
 pub mod layout_runner;
 #[cfg(feature = "pdf")]
 pub mod metadata;
-#[cfg(feature = "pdf-oxide")]
-pub(crate) mod oxide;
-#[cfg(feature = "pdf-oxide")]
-pub(crate) mod oxide_text;
 #[cfg(feature = "pdf")]
 pub mod rendering;
 #[cfg(feature = "pdf")]
@@ -73,18 +69,6 @@ pub mod table_reconstruct;
 pub mod text;
 #[cfg(feature = "pdf")]
 pub(crate) mod text_data;
-// Stub for when pdf-oxide is disabled — provides set/get for thread-local path
-#[cfg(all(feature = "pdf", not(feature = "pdf-oxide")))]
-#[allow(dead_code)]
-pub(crate) mod oxide_text {
-    #[allow(dead_code)]
-    pub(crate) fn set_current_pdf_path(_path: Option<std::path::PathBuf>) {}
-    #[allow(dead_code)]
-    pub(crate) fn current_pdf_path() -> Option<std::path::PathBuf> {
-        None
-    }
-}
-
 #[cfg(feature = "pdf")]
 pub use crate::core::config::HierarchyConfig;
 #[cfg(feature = "pdf")]

@@ -12,9 +12,6 @@ members = [
     "crates/kreuzberg-wasm",
     "e2e/rust",
     "packages/elixir/native/kreuzberg_rustler",
-    "tools/benchmark-harness",
-    "tools/e2e-generator",
-    "tools/snippet-runner",
 ]
 exclude = [
     "packages/r/src/rust",
@@ -70,7 +67,6 @@ once_cell = "1.21.4"
 
 ort = { version = "2.0.0-rc.12", default-features = false, features = ["std", "api-18"] }
 parking_lot = "0.12.5"
-pdf_oxide = { version = "0.3.60", default-features = false }
 pdfium-render = { package = "kreuzberg-pdfium-render", path = "crates/kreuzberg-pdfium-render", version = "4.3" }
 rayon = "1.12.0"
 reqwest = { version = "0.13.4", default-features = false }

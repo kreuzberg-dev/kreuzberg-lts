@@ -30,9 +30,3 @@ Version source of truth: root `Cargo.toml` `[workspace.package] version`.
 - `packages/csharp/` — NuGet; P/Invoke over kreuzberg-ffi
 - `packages/elixir/` — Hex; Rustler NIF (workspace member at `packages/elixir/native/kreuzberg_rustler`)
 - `packages/r/` — CRAN; extendr (excluded from workspace)
-
-## Tools (`tools/`)
-
-- `tools/e2e-generator` — reads JSON fixtures, generates runnable test suites per language into `e2e/`
-- `tools/benchmark-harness` — criterion-based benchmark runner
-- `tools/snippet-runner` — executes code snippets from `docs/snippets/` to verify they compile

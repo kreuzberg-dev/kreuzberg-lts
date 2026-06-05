@@ -270,11 +270,13 @@ fn load_tokenizer(
     {
         for (_, value) in &map {
             if let Some(content) = value.as_str() {
-                tokenizer.add_special_tokens(&[AddedToken {
-                    content: content.to_string(),
-                    special: true,
-                    ..Default::default()
-                }]);
+                tokenizer
+                    .add_special_tokens([AddedToken {
+                        content: content.to_string(),
+                        special: true,
+                        ..Default::default()
+                    }])
+                    .map_err(|e| crate::KreuzbergError::embedding(format!("Failed to add special token: {e}")))?;
             } else if value.is_object()
                 && let (Some(content), Some(single_word), Some(lstrip), Some(rstrip), Some(normalized)) = (
                     value["content"].as_str(),
@@ -284,14 +286,16 @@ fn load_tokenizer(
                     value["normalized"].as_bool(),
                 )
             {
-                tokenizer.add_special_tokens(&[AddedToken {
-                    content: content.to_string(),
-                    special: true,
-                    single_word,
-                    lstrip,
-                    rstrip,
-                    normalized,
-                }]);
+                tokenizer
+                    .add_special_tokens([AddedToken {
+                        content: content.to_string(),
+                        special: true,
+                        single_word,
+                        lstrip,
+                        rstrip,
+                        normalized,
+                    }])
+                    .map_err(|e| crate::KreuzbergError::embedding(format!("Failed to add special token: {e}")))?;
             }
         }
     }

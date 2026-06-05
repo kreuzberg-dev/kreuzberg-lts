@@ -27,8 +27,6 @@ pub use ocr::{NativeTextStats, OcrFallbackDecision, evaluate_native_text_for_ocr
 use pdfium_render::prelude::{PdfDocument, Pdfium};
 
 use extraction::extract_all_from_document;
-#[cfg(feature = "pdf-oxide")]
-use extraction::extract_all_from_oxide_document;
 #[cfg(feature = "ocr")]
 use ocr::extract_with_ocr;
 use pages::assign_tables_and_images_to_pages;
@@ -279,14 +277,8 @@ impl DocumentExtractor for PdfExtractor {
 
     #[cfg(feature = "tokio-runtime")]
     async fn extract_file(&self, path: &Path, mime_type: &str, config: &ExtractionConfig) -> Result<InternalDocument> {
-        // Set the PDF file path for pdf_oxide text extraction (thread-local).
-        #[cfg(feature = "pdf")]
-        crate::pdf::oxide_text::set_current_pdf_path(Some(path.to_path_buf()));
         let bytes = tokio::fs::read(path).await?;
-        let result = self.extract_core(&bytes, mime_type, config, Some(path)).await;
-        #[cfg(feature = "pdf")]
-        crate::pdf::oxide_text::set_current_pdf_path(None);
-        result
+        self.extract_core(&bytes, mime_type, config, Some(path)).await
     }
 
     fn supported_mime_types(&self) -> &[&str] {
@@ -308,57 +300,6 @@ impl PdfExtractor {
     ) -> Result<InternalDocument> {
         tracing::debug!(format = "pdf", size_bytes = content.len(), "extraction starting");
         let _ = &path; // used only when `ocr` feature is enabled
-
-        // --- pdf_oxide backend dispatch ---
-        // PdfOxide: prefer oxide, fall back to pdfium on document open/parse failures.
-        // Auto: try oxide first, fall back to pdfium on any error.
-        // Pdfium: skip oxide entirely.
-        #[cfg(feature = "pdf-oxide")]
-        {
-            use crate::core::config::pdf::PdfBackend;
-            let backend = config
-                .pdf_options
-                .as_ref()
-                .map(|p| &p.backend)
-                .unwrap_or(&PdfBackend::Pdfium);
-
-            match backend {
-                PdfBackend::PdfOxide => {
-                    match self.extract_core_oxide(content, mime_type, config, path).await {
-                        Ok(doc) => return Ok(doc),
-                        Err(oxide_err) => {
-                            // Fall back to pdfium on document open/parse failures.
-                            // These are Parsing errors from pdf_oxide indicating the
-                            // document could not be opened or its structure could not
-                            // be parsed (e.g. password-protected, corrupt, complex
-                            // structure). Other error kinds (OCR, IO, etc.) propagate.
-                            if matches!(&oxide_err, crate::error::KreuzbergError::Parsing { .. }) {
-                                tracing::debug!(
-                                    error = %oxide_err,
-                                    "pdf_oxide could not parse document, falling back to pdfium"
-                                );
-                                // Fall through to pdfium path below
-                            } else {
-                                return Err(oxide_err);
-                            }
-                        }
-                    }
-                }
-                PdfBackend::Auto => {
-                    match self.extract_core_oxide(content, mime_type, config, path).await {
-                        Ok(doc) => return Ok(doc),
-                        Err(oxide_err) => {
-                            tracing::debug!(
-                                error = %oxide_err,
-                                "pdf_oxide extraction failed, falling back to pdfium"
-                            );
-                            // Fall through to pdfium path below
-                        }
-                    }
-                }
-                PdfBackend::Pdfium => { /* fall through to pdfium path */ }
-            }
-        }
 
         // Strip /Rotate from page dicts to work around pdfium text extraction bug
         // where FPDFText_CountChars returns 0 for 90°/270° rotated pages.
@@ -427,11 +368,8 @@ impl PdfExtractor {
                     let content_owned = content.to_vec();
                     let span = tracing::Span::current();
                     let config_owned = config.clone();
-                    let oxide_path = crate::pdf::oxide_text::current_pdf_path();
                     let result = tokio::task::spawn_blocking(move || {
                         let _guard = span.entered();
-                        // Propagate PDF path to spawned thread for pdf_oxide extraction.
-                        crate::pdf::oxide_text::set_current_pdf_path(oxide_path);
 
                         let pdfium = crate::pdf::bindings::bind_pdfium(
                             PdfError::MetadataExtractionFailed,
@@ -508,10 +446,8 @@ impl PdfExtractor {
                     let content_owned = content.to_vec();
                     let span = tracing::Span::current();
                     let config_owned = config.clone();
-                    let oxide_path = crate::pdf::oxide_text::current_pdf_path();
                     let result = tokio::task::spawn_blocking(move || {
                         let _guard = span.entered();
-                        crate::pdf::oxide_text::set_current_pdf_path(oxide_path);
 
                         let pdfium = crate::pdf::bindings::bind_pdfium(
                             PdfError::MetadataExtractionFailed,
@@ -1182,351 +1118,6 @@ impl PdfExtractor {
             tables = doc.tables.len(),
             has_pages = doc.prebuilt_pages.is_some(),
             "InternalDocument finalized"
-        );
-
-        Ok(doc)
-    }
-
-    /// Core extraction via the pdf_oxide backend.
-    ///
-    /// Runs text + metadata, tables, and annotation extraction through the oxide
-    /// modules, then builds an `InternalDocument` using the same post-processing
-    /// pipeline (OCR evaluation, page assembly, image extraction, bookmarks, etc.).
-    ///
-    /// This method mirrors the shape of `extract_core` but skips pdfium entirely.
-    #[cfg(feature = "pdf-oxide")]
-    async fn extract_core_oxide(
-        &self,
-        content: &[u8],
-        mime_type: &str,
-        config: &ExtractionConfig,
-        path: Option<&std::path::Path>,
-    ) -> Result<InternalDocument> {
-        let _ = &path; // used only when `ocr` feature is enabled
-
-        // Run layout detection on raw PDF bytes (uses pdfium for rendering internally).
-        // Layout hints drive furniture marking, heading overrides, and table region
-        // detection in the structure pipeline — same as the pdfium path.
-        #[cfg(feature = "layout-detection")]
-        let layout_bundle = run_layout_detection(content, config);
-        #[cfg(feature = "layout-detection")]
-        let (layout_hints, layout_images, layout_results) = match layout_bundle {
-            Some(ref bundle) => (
-                Some(bundle.hints.as_slice()),
-                Some(bundle.images.as_slice()),
-                Some(bundle.results.as_slice()),
-            ),
-            None => (None, None, None),
-        };
-        #[cfg(not(feature = "layout-detection"))]
-        let layout_hints: Option<&[Vec<crate::pdf::structure::types::LayoutHint>]> = None;
-
-        #[allow(unused_variables, unused_mut)]
-        let (
-            pdf_metadata,
-            native_text,
-            mut tables,
-            page_contents,
-            boundaries,
-            pre_rendered_doc,
-            _has_font_encoding_issues,
-            pdf_annotations,
-        ) = extract_all_from_oxide_document(
-            content,
-            config,
-            layout_hints,
-            #[cfg(feature = "layout-detection")]
-            layout_images,
-            #[cfg(not(feature = "layout-detection"))]
-            None,
-            #[cfg(feature = "layout-detection")]
-            layout_results,
-            #[cfg(not(feature = "layout-detection"))]
-            None,
-        )?;
-
-        // --- OCR evaluation (reuses the same logic as the pdfium path) ---
-        #[cfg(feature = "ocr")]
-        let mut ocr_tables: Vec<crate::types::Table> = Vec::new();
-        #[cfg(feature = "ocr")]
-        #[allow(unused_assignments)]
-        let mut ocr_elements: Vec<crate::types::OcrElement> = Vec::new();
-        #[cfg(feature = "ocr")]
-        let mut ocr_internal_doc: Option<InternalDocument> = None;
-        #[cfg(feature = "ocr")]
-        let mut ocr_llm_usage: Vec<crate::types::LlmUsage> = Vec::new();
-
-        #[cfg(feature = "ocr")]
-        let (text, _used_ocr) = if config.effective_disable_ocr() {
-            (native_text, false)
-        } else if config.force_ocr {
-            let (ocr_text, ocr_tbls, ocr_elems, ocr_doc, llm_usage) =
-                run_ocr_with_layout(content, config, path).await?;
-            ocr_tables = ocr_tbls;
-            ocr_elements = ocr_elems;
-            ocr_internal_doc = ocr_doc;
-            ocr_llm_usage = llm_usage;
-            (ocr_text, true)
-        } else if let Some(ocr_config) = config.ocr.as_ref() {
-            let thresholds = ocr_config.effective_thresholds();
-            let decision = evaluate_per_page_ocr(
-                &native_text,
-                boundaries.as_deref(),
-                pdf_metadata.pdf_specific.page_count,
-                &thresholds,
-            );
-
-            if decision.fallback {
-                match run_ocr_with_layout(content, config, path).await {
-                    Ok((ocr_text, ocr_tbls, ocr_elems, ocr_doc, llm_usage)) => {
-                        ocr_tables = ocr_tbls;
-                        ocr_elements = ocr_elems;
-                        ocr_internal_doc = ocr_doc;
-                        ocr_llm_usage = llm_usage;
-                        (ocr_text, true)
-                    }
-                    Err(e) => {
-                        tracing::warn!(
-                            error = %e,
-                            "OCR fallback failed on oxide path; using native text"
-                        );
-                        (native_text, false)
-                    }
-                }
-            } else {
-                (native_text, false)
-            }
-        } else {
-            (native_text, false)
-        };
-
-        #[cfg(not(feature = "ocr"))]
-        let (text, _used_ocr) = (native_text, false);
-
-        #[cfg(feature = "ocr")]
-        if !ocr_tables.is_empty() {
-            tables.extend(ocr_tables);
-            tables.sort_by_key(|t| t.page_number);
-        }
-
-        // --- Image extraction (shared with pdfium path) ---
-        let (images, image_fallback_warning) = if config.images.as_ref().map(|c| c.extract_images).unwrap_or(false) {
-            let content_owned = content.to_vec();
-            let max_images_per_page = config.images.as_ref().and_then(|i| i.max_images_per_page);
-            let extract = move || crate::pdf::images::extract_images_from_pdf(&content_owned, max_images_per_page);
-            #[cfg(feature = "tokio-runtime")]
-            let result = tokio::task::spawn_blocking(extract)
-                .await
-                .map_err(|e| crate::error::KreuzbergError::Other(format!("image extraction task panicked: {e}")))?;
-            #[cfg(not(feature = "tokio-runtime"))]
-            let result = extract();
-
-            match result {
-                Ok(pdf_images) => {
-                    let extracted: Vec<crate::types::ExtractedImage> = pdf_images
-                        .into_iter()
-                        .enumerate()
-                        .map(|(idx, img)| {
-                            let format = std::borrow::Cow::Owned(img.decoded_format.clone());
-                            crate::types::ExtractedImage {
-                                data: img.data,
-                                format,
-                                image_index: idx,
-                                page_number: Some(img.page_number),
-                                width: Some(img.width as u32),
-                                height: Some(img.height as u32),
-                                colorspace: img.color_space,
-                                bits_per_component: img.bits_per_component.map(|b| b as u32),
-                                is_mask: false,
-                                description: None,
-                                ocr_result: None,
-                                bounding_box: None,
-                                source_path: None,
-                            }
-                        })
-                        .collect();
-                    (Some(extracted), None)
-                }
-                Err(e) => {
-                    tracing::warn!(error = %e, "oxide path: image extraction failed");
-                    (None, None)
-                }
-            }
-        } else {
-            (None, None)
-        };
-
-        // --- Page assembly ---
-        let mut final_pages = assign_tables_and_images_to_pages(page_contents, &tables, &[]);
-
-        #[cfg(feature = "layout-detection")]
-        if let Some(ref bundle) = layout_bundle {
-            pages::assign_layout_regions_to_pages(&mut final_pages, &bundle.results);
-        }
-
-        // --- Build InternalDocument ---
-        let pre_formatted_output: Option<String> = None;
-
-        // When a pre-rendered structured document is available (headings, paragraphs from
-        // font-size clustering), use it directly. Otherwise fall back to flat paragraph splitting.
-        let used_ocr;
-        #[cfg(feature = "ocr")]
-        {
-            used_ocr = ocr_internal_doc.is_some();
-        }
-        #[cfg(not(feature = "ocr"))]
-        {
-            used_ocr = false;
-        }
-
-        let use_structured_doc = !used_ocr && pre_rendered_doc.is_some();
-
-        #[cfg(feature = "ocr")]
-        let mut doc = if let Some(mut ocr_doc) = ocr_internal_doc.take() {
-            ocr_doc.mime_type = std::borrow::Cow::Owned(mime_type.to_string());
-            ocr_doc
-        } else if let Some(mut pre_doc) = pre_rendered_doc {
-            pre_doc.mime_type = std::borrow::Cow::Owned(mime_type.to_string());
-            pre_doc
-        } else {
-            let mut d = InternalDocument::new("pdf");
-            d.mime_type = std::borrow::Cow::Owned(mime_type.to_string());
-            for paragraph in text.split("\n\n") {
-                let trimmed = paragraph.trim();
-                if !trimmed.is_empty() {
-                    d.push_element(InternalElement::text(ElementKind::Paragraph, trimmed, 0));
-                }
-            }
-            d
-        };
-        #[cfg(not(feature = "ocr"))]
-        let mut doc = if let Some(mut pre_doc) = pre_rendered_doc {
-            pre_doc.mime_type = std::borrow::Cow::Owned(mime_type.to_string());
-            pre_doc
-        } else {
-            let mut d = InternalDocument::new("pdf");
-            d.mime_type = std::borrow::Cow::Owned(mime_type.to_string());
-            for paragraph in text.split("\n\n") {
-                let trimmed = paragraph.trim();
-                if !trimmed.is_empty() {
-                    d.push_element(InternalElement::text(ElementKind::Paragraph, trimmed, 0));
-                }
-            }
-            d
-        };
-
-        doc.metadata = Metadata {
-            output_format: pre_formatted_output,
-            title: pdf_metadata.title.clone(),
-            subject: pdf_metadata.subject.clone(),
-            authors: pdf_metadata.authors.clone(),
-            keywords: pdf_metadata.keywords.clone(),
-            created_at: pdf_metadata.created_at.clone(),
-            modified_at: pdf_metadata.modified_at.clone(),
-            created_by: pdf_metadata.created_by.clone(),
-            pages: pdf_metadata.page_structure.clone(),
-            format: Some(crate::types::FormatMetadata::Pdf(pdf_metadata.pdf_specific)),
-            ..Default::default()
-        };
-
-        // When using the structured doc, tables are already interleaved by the assembly pipeline.
-        // Only add tables separately for the flat-text fallback path.
-        if !use_structured_doc {
-            for table in tables {
-                let table_index = doc.push_table(table);
-                doc.push_element(InternalElement::text(ElementKind::Table { table_index }, "", 0));
-            }
-        }
-
-        if let Some(imgs) = images {
-            doc.images = imgs;
-        }
-        if let Some(warning) = image_fallback_warning {
-            doc.processing_warnings.push(warning);
-        }
-        doc.annotations = pdf_annotations;
-        #[cfg(feature = "ocr")]
-        if !ocr_elements.is_empty() {
-            doc.prebuilt_ocr_elements = Some(ocr_elements);
-        }
-
-        // Extract URIs from annotations (links).
-        {
-            use crate::types::annotations::PdfAnnotationType;
-            use crate::types::uri::{Uri, UriKind};
-
-            let uris: Vec<Uri> = doc
-                .annotations
-                .as_ref()
-                .map(|annotations| {
-                    annotations
-                        .iter()
-                        .filter(|a| a.annotation_type == PdfAnnotationType::Link)
-                        .filter_map(|a| {
-                            a.content.as_ref().map(|url| {
-                                let kind = if url.starts_with('#') {
-                                    UriKind::Anchor
-                                } else if url.starts_with("mailto:") {
-                                    UriKind::Email
-                                } else {
-                                    UriKind::Hyperlink
-                                };
-                                Uri {
-                                    url: url.clone(),
-                                    label: Some(url.clone()),
-                                    page: Some(a.page_number as u32),
-                                    kind,
-                                }
-                            })
-                        })
-                        .collect()
-                })
-                .unwrap_or_default();
-            for uri in uris {
-                doc.push_uri(uri);
-            }
-        }
-
-        // Extract bookmarks/outlines.
-        #[cfg(feature = "pdf")]
-        {
-            if let Ok(lopdf_doc) = lopdf::Document::load_mem(content) {
-                let bookmark_uris = crate::pdf::bookmarks::extract_bookmarks(&lopdf_doc);
-                for uri in bookmark_uris {
-                    doc.push_uri(uri);
-                }
-            }
-        }
-
-        // Extract embedded files.
-        #[cfg(all(feature = "pdf", feature = "tokio-runtime"))]
-        {
-            let (embedded_children, embedded_warnings) =
-                crate::pdf::embedded_files::extract_and_process_embedded_files(content, config).await;
-            if !embedded_children.is_empty() {
-                match doc.children {
-                    Some(ref mut existing) => existing.extend(embedded_children),
-                    None => doc.children = Some(embedded_children),
-                }
-            }
-            for warning in embedded_warnings {
-                doc.processing_warnings.push(warning);
-            }
-        }
-
-        doc.prebuilt_pages = final_pages;
-
-        // Attach LLM usage accumulated during OCR so derive_extraction_result can transfer it.
-        #[cfg(feature = "ocr")]
-        if !ocr_llm_usage.is_empty() {
-            doc.llm_usage = Some(ocr_llm_usage);
-        }
-
-        tracing::debug!(
-            elements = doc.elements.len(),
-            tables = doc.tables.len(),
-            has_pages = doc.prebuilt_pages.is_some(),
-            "InternalDocument finalized (oxide path)"
         );
 
         Ok(doc)

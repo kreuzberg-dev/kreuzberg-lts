@@ -20,10 +20,6 @@ includes:
     source: https://github.com/kreuzberg-dev/ai-rulez.git
     path: modules/infrastructure
     merge_strategy: local-override
-  - name: kreuzberg-e2e-generator
-    source: https://github.com/kreuzberg-dev/ai-rulez.git
-    path: modules/e2e-generator
-    merge_strategy: local-override
 builtins:
   - rust
   - python

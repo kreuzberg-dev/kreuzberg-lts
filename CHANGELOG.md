@@ -171,9 +171,7 @@ restructured `pdf::structure`):
 - **Cross-format parity test failure** — HTML extractor now normalizes setext headings to ATX and strips trailing whitespace from html-to-markdown-rs output.
 - **Broken wasm-deno/wasm-workers e2e tasks** — removed non-functional deno and workers e2e generate/lint/test tasks that referenced invalid generator lang values.
 - **oxlint path in node e2e lint** — `oxlint --fix typescript` changed to `oxlint --fix .` (was looking for nonexistent `typescript/` directory).
-- **Clippy warnings in benchmark-harness** — `sort_by` replaced with `sort_by_key` + `Reverse`.
 - **Clippy warnings and compilation errors across workspace** — added missing `max_images_per_page` field to `ImageExtractionConfig` in node and Python bindings; added missing `vlm_prompt` argument to VLM OCR test calls; collapsed nested `if-let` in WASM embeddings; added `embeddings` and `tree-sitter` passthrough features to `kreuzberg-ffi` to silence `unexpected_cfgs` warnings.
-- **Cancellation token not wired in oxide segment structure pipeline** — `cancel_token` was passed into `SegmentStructureConfig` but never checked, meaning cancellation/timeout had no effect during pdf-oxide table extraction or paragraph building. Added cancellation checks at table page prep, heuristic table extraction loops, and a pre-flight guard before parallel paragraph extraction.
 - **#771**: `OcrConfig.vlm_prompt` is now correctly honored in VLM OCR requests. Previously, it was documented but never forwarded to the underlying VLM calls, causing the default template to be used regardless of configuration.
 - **#762**: PDF image links are no longer silently dropped from markdown output. Image extraction now correctly preserves correspondence between pdfium objects and lopdf data, and respects the `inject_placeholders` configuration.
 - **#769**: Downgraded `pre-commit-shfmt` to `v3.13.1-1` (fixes broken CI due to non-existent version in `main`).
@@ -229,7 +227,7 @@ restructured `pdf::structure`):
 
 ### Changed
 
-- Updated all dependencies including html-to-markdown-rs 3.1→3.2, pdf_oxide 0.3.30→0.3.32, tokio 1.51→1.52.
+- Updated all dependencies including html-to-markdown-rs 3.1→3.2 and tokio 1.51→1.52.
 
 ---
 
@@ -879,7 +877,6 @@ restructured `pdf::structure`):
 - **`EmailConfig` for MSG fallback codepage** (#505): Configurable fallback codepage for MSG files lacking a codepage property (default: windows-1252). Set e.g. `1251` for Cyrillic. Typed across all bindings.
 - **Per-file extraction configuration (`FileExtractionConfig`)**: Per-file config overrides in batch operations. Each file can specify its own OCR, chunking, output format settings. CLI supports `--file-configs`, MCP supports `file_configs` parameter.
 - **Opt-in single-column pseudo tables** (#449): New `allow_single_column_tables` on `PdfConfig` (default: false). Allows single-column structured data (glossaries, itemized lists) to be emitted as tables.
-- **Experimental: `pdf_oxide` text extraction backend** (`pdf-oxide` feature): Pure Rust PDF text extraction as an alternative to pdfium. Opt-in only, not included in `full` feature set.
 - **CLI `cache warm` command**: Eagerly downloads all PaddleOCR and layout detection models. Supports `--all-embeddings` or `--embedding-model <preset>`. Useful for containerized or offline deployments.
 - **CLI `cache manifest` command**: Outputs a JSON manifest of all expected model files with SHA256 checksums, sizes, and source URLs for scripted cache verification.
 - **ChunkSizing configuration**: `sizing_type`, `sizing_model`, and `sizing_cache_dir` fields exposed in `ChunkingConfig` across all bindings.

@@ -8,17 +8,14 @@ use serde::{Deserialize, Serialize};
 /// PDF extraction backend selection.
 ///
 /// Controls which PDF library is used for text extraction:
-/// - `Pdfium`: pdfium-render (default, C++ based, mature)
-/// - `PdfOxide`: pdf_oxide (pure Rust, faster, requires `pdf-oxide` feature)
-/// - `Auto`: automatically select based on available features
+/// - `Pdfium`: pdfium-render (default, mature)
+/// - `Auto`: automatically select the default available backend
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum PdfBackend {
     /// Use pdfium-render backend (default).
     #[default]
     Pdfium,
-    /// Use pdf_oxide backend (pure Rust). Requires `pdf-oxide` feature.
-    PdfOxide,
     /// Automatically select the best available backend.
     Auto,
 }

@@ -14,7 +14,6 @@ export LD_LIBRARY_PATH="$root/target/debug:${LD_LIBRARY_PATH:-}"
 workspace_dirs=(
   packages/go/v4
   e2e/go
-  tools/benchmark-harness/scripts
 )
 
 # Standalone modules NOT in go.work (duplicate module paths, need GOWORK=off)
