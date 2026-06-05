@@ -37,10 +37,19 @@ fn recompute_boundaries_from_pages(content: &str, pages: &[crate::types::PageCon
             continue;
         }
 
-        // Try exact match first
-        if let Some(pos) = content[search_offset..].find(&page.content) {
+        let normalized: String = page
+            .content
+            .split("\n\n")
+            .map(str::trim)
+            .filter(|s| !s.is_empty())
+            .collect::<Vec<_>>()
+            .join("\n\n");
+
+        // Try normalized exact match first. PDF page text can contain trailing
+        // spaces that render_plain strips before chunking.
+        if let Some(pos) = content[search_offset..].find(normalized.as_str()) {
             let byte_start = search_offset + pos;
-            let byte_end = content.floor_char_boundary(byte_start + page.content.len());
+            let byte_end = content.floor_char_boundary(byte_start + normalized.len());
             boundaries.push(PageBoundary {
                 page_number: page.page_number,
                 byte_start,
@@ -50,12 +59,12 @@ fn recompute_boundaries_from_pages(content: &str, pages: &[crate::types::PageCon
             continue;
         }
 
-        // Fallback: search for first non-empty line of page content
+        // Fallback: search for first non-empty line of page content.
         if let Some(line) = page.content.lines().find(|l| !l.trim().is_empty()).map(|l| l.trim())
             && let Some(pos) = content[search_offset..].find(line)
         {
             let byte_start = search_offset + pos;
-            let raw_end = (byte_start + page.content.len()).min(content.len());
+            let raw_end = (byte_start + normalized.len()).min(content.len());
             let byte_end = content.floor_char_boundary(raw_end);
             boundaries.push(PageBoundary {
                 page_number: page.page_number,
@@ -176,25 +185,27 @@ pub(super) fn execute_chunking(result: &mut ExtractionResult, config: &Extractio
         let resolved_config = chunking_config.resolve_preset();
         let chunking_config = &resolved_config;
 
-        // Recompute page boundaries against `result.content` (rendered by `render_plain`)
-        // if per-page content is available.  The boundaries stored in
-        // `result.metadata.pages.boundaries` were computed against the raw extractor text
-        // and may have different byte offsets than the rendered content (fix for #636).
+        let (chunk_input, heading_source) = if config.output_format != crate::core::config::OutputFormat::Plain {
+            (
+                result.formatted_content.as_deref().unwrap_or(result.content.as_str()),
+                None,
+            )
+        } else {
+            (result.content.as_str(), result.formatted_content.as_deref())
+        };
+
         let recomputed_boundaries: Option<Vec<PageBoundary>> = result
             .pages
             .as_deref()
-            .map(|pages| recompute_boundaries_from_pages(&result.content, pages));
+            .map(|pages| recompute_boundaries_from_pages(chunk_input, pages))
+            .filter(|boundaries| !boundaries.is_empty());
 
         let page_boundaries: Option<&[PageBoundary]> = recomputed_boundaries
             .as_deref()
             .or_else(|| result.metadata.pages.as_ref().and_then(|ps| ps.boundaries.as_deref()));
 
-        // Pass formatted_content (markdown) for heading context resolution when available.
-        // Plain-text rendering strips heading markers, but the markdown chunker needs them
-        // to build the heading hierarchy for chunk metadata.
-        let heading_source = result.formatted_content.as_deref();
         match crate::chunking::chunk_text_with_heading_source(
-            &result.content,
+            chunk_input,
             chunking_config,
             page_boundaries,
             heading_source,
@@ -313,4 +324,93 @@ pub(super) fn execute_token_reduction(result: &mut ExtractionResult, config: &Ex
     }
 
     Ok(())
+}
+
+#[cfg(test)]
+#[cfg(feature = "chunking")]
+mod tests {
+    use super::*;
+    use crate::core::config::{ChunkerType, ChunkingConfig, OutputFormat};
+    use crate::types::PageContent;
+
+    fn make_page(page_number: usize, content: &str) -> PageContent {
+        PageContent {
+            page_number,
+            content: content.to_string(),
+            tables: Vec::new(),
+            images: Vec::new(),
+            hierarchy: None,
+            is_blank: None,
+            layout_regions: None,
+        }
+    }
+
+    fn markdown_chunking_config() -> ExtractionConfig {
+        ExtractionConfig {
+            output_format: OutputFormat::Markdown,
+            chunking: Some(ChunkingConfig {
+                max_characters: 2000,
+                overlap: 0,
+                trim: true,
+                chunker_type: ChunkerType::Markdown,
+                ..Default::default()
+            }),
+            ..Default::default()
+        }
+    }
+
+    #[test]
+    fn chunks_content_is_markdown_when_output_format_is_markdown() {
+        let mut result = ExtractionResult {
+            content: "SH-001 Luca Bianchi Common Germany 3500000".to_string(),
+            formatted_content: Some("| SH-001 | Luca Bianchi | Common | Germany | 3,500,000 |".to_string()),
+            mime_type: Cow::Borrowed("application/pdf"),
+            ..Default::default()
+        };
+
+        execute_chunking(&mut result, &markdown_chunking_config()).unwrap();
+
+        let chunks = result.chunks.expect("chunks must be populated");
+        assert!(!chunks.is_empty());
+        assert!(chunks.iter().any(|chunk| chunk.content.contains('|')));
+        assert!(chunks.iter().all(|chunk| !chunk.content.starts_with("SH-001 Luca")));
+        assert!(result.formatted_content.is_some());
+    }
+
+    #[test]
+    fn markdown_chunks_preserve_page_metadata_when_formatted_pages_match() {
+        let mut result = ExtractionResult {
+            content: "Page one text\n\nPage two text".to_string(),
+            formatted_content: Some("# Page one\n\nPage one text\n\n# Page two\n\nPage two text".to_string()),
+            pages: Some(vec![make_page(1, "Page one text"), make_page(2, "Page two text")]),
+            mime_type: Cow::Borrowed("application/pdf"),
+            ..Default::default()
+        };
+
+        execute_chunking(&mut result, &markdown_chunking_config()).unwrap();
+
+        let chunks = result.chunks.expect("chunks must be populated");
+        assert!(!chunks.is_empty());
+        assert!(chunks.iter().any(|chunk| chunk.metadata.first_page.is_some()));
+        assert!(chunks.iter().any(|chunk| chunk.metadata.last_page.is_some()));
+    }
+
+    #[test]
+    fn recompute_boundaries_trailing_space_pages_all_resolve() {
+        let p1_raw = "Heading \n\nBody paragraph one. ";
+        let p2_raw = "Second heading \n\nBody paragraph two. ";
+        let p3_raw = "Conclusion. ";
+        let p1_norm = "Heading\n\nBody paragraph one.";
+        let p2_norm = "Second heading\n\nBody paragraph two.";
+        let p3_norm = "Conclusion.";
+        let content = format!("{p1_norm}\n\n{p2_norm}\n\n{p3_norm}");
+
+        let pages = vec![make_page(1, p1_raw), make_page(2, p2_raw), make_page(3, p3_raw)];
+        let boundaries = recompute_boundaries_from_pages(&content, &pages);
+
+        assert_eq!(boundaries.len(), 3);
+        assert_eq!(&content[boundaries[0].byte_start..boundaries[0].byte_end], p1_norm);
+        assert_eq!(&content[boundaries[1].byte_start..boundaries[1].byte_end], p2_norm);
+        assert_eq!(&content[boundaries[2].byte_start..boundaries[2].byte_end], p3_norm);
+    }
 }

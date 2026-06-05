@@ -533,6 +533,26 @@ pub fn extract_images_from_pdf_with_password(
     extractor.extract_images(max_images_per_page)
 }
 
+#[cfg(feature = "pdf")]
+fn image_needs_pdfium_fallback(img: &PdfImage) -> bool {
+    if img.data.is_empty() {
+        return true;
+    }
+
+    if matches!(
+        img.decoded_format.as_str(),
+        "raw" | "ccitt" | "jbig2" | "jpeg2000" | "jpx" | "unknown"
+    ) {
+        return true;
+    }
+
+    let cursor = std::io::Cursor::new(img.data.as_ref());
+    image::ImageReader::new(cursor)
+        .with_guessed_format()
+        .and_then(|reader| reader.into_dimensions().map_err(std::io::Error::other))
+        .is_err()
+}
+
 /// Re-extract images that have unusable formats (`"raw"`, `"ccitt"`, `"jbig2"`) by
 /// rendering them through pdfium's bitmap pipeline, which handles all PDF filter
 /// chains internally.
@@ -543,9 +563,7 @@ pub fn reextract_raw_images_via_pdfium(pdf_bytes: &[u8], images: &mut [PdfImage]
     use image::ImageEncoder;
     use pdfium_render::prelude::*;
 
-    let needs_fallback = images
-        .iter()
-        .any(|img| matches!(img.decoded_format.as_str(), "raw" | "ccitt" | "jbig2"));
+    let needs_fallback = images.iter().any(image_needs_pdfium_fallback);
 
     if !needs_fallback {
         return Ok(0);
@@ -559,7 +577,7 @@ pub fn reextract_raw_images_via_pdfium(pdf_bytes: &[u8], images: &mut [PdfImage]
     let mut reextracted = 0u32;
 
     for img in images.iter_mut() {
-        if !matches!(img.decoded_format.as_str(), "raw" | "ccitt" | "jbig2") {
+        if !image_needs_pdfium_fallback(img) {
             continue;
         }
 

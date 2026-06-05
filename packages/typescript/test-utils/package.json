@@ -1,6 +1,6 @@
 {
 	"name": "@kreuzberg/test-utils",
-	"version": "4.9.8",
+	"version": "4.9.9",
 	"description": "Shared test utilities for Kreuzberg e2e and integration tests",
 	"author": {
 		"name": "Na'aman Hirschfeld",

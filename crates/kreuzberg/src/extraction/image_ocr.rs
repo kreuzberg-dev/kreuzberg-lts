@@ -20,6 +20,30 @@
 use crate::ocr::OcrProcessor;
 use crate::types::{ExtractedImage, ExtractionResult};
 
+#[cfg(all(feature = "ocr", feature = "tokio-runtime"))]
+fn is_ocr_decodable_image(image: &ExtractedImage) -> std::result::Result<(), String> {
+    if image.data.is_empty() {
+        return Err("image data is empty".to_string());
+    }
+
+    let format = image.format.as_ref().to_ascii_lowercase();
+    if matches!(
+        format.as_str(),
+        "raw" | "ccitt" | "jbig2" | "jpeg2000" | "jpx" | "unknown"
+    ) {
+        return Err(format!("unsupported image format for OCR: {format}"));
+    }
+
+    let cursor = std::io::Cursor::new(image.data.as_ref());
+    image::ImageReader::new(cursor)
+        .with_guessed_format()
+        .map_err(|e| format!("image format probe failed: {e}"))?
+        .into_dimensions()
+        .map_err(|e| format!("image dimensions could not be decoded: {e}"))?;
+
+    Ok(())
+}
+
 /// Process extracted images with OCR if configured.
 ///
 /// For each image, spawns a blocking OCR task and stores the result
@@ -72,6 +96,14 @@ pub async fn process_images_with_ocr(
     let mut join_set: JoinSet<OcrTaskResult> = JoinSet::new();
 
     for (idx, image) in images.iter().enumerate() {
+        if let Err(reason) = is_ocr_decodable_image(image) {
+            warnings.push(crate::types::ProcessingWarning {
+                source: std::borrow::Cow::Borrowed("image_ocr"),
+                message: std::borrow::Cow::Owned(format!("Image {} skipped before OCR: {}", idx, reason)),
+            });
+            continue;
+        }
+
         let image_data = image.data.clone();
         let tess_config_clone = tess_config.clone();
         let span = tracing::Span::current();
@@ -137,4 +169,44 @@ pub async fn process_images_with_ocr(
     }
 
     Ok(images)
+}
+
+#[cfg(test)]
+#[cfg(all(feature = "ocr", feature = "tokio-runtime"))]
+mod tests {
+    use super::*;
+    use bytes::Bytes;
+    use std::borrow::Cow;
+
+    fn image_with(format: &'static str, data: Bytes) -> ExtractedImage {
+        ExtractedImage {
+            data,
+            format: Cow::Borrowed(format),
+            image_index: 0,
+            page_number: Some(1),
+            width: None,
+            height: None,
+            colorspace: None,
+            bits_per_component: None,
+            is_mask: false,
+            description: None,
+            ocr_result: None,
+            bounding_box: None,
+            source_path: None,
+        }
+    }
+
+    #[test]
+    fn raw_pdf_image_stream_is_skipped_before_ocr() {
+        let image = image_with("raw", Bytes::from_static(b"not a raster"));
+        let reason = is_ocr_decodable_image(&image).expect_err("raw streams must be rejected");
+        assert!(reason.contains("unsupported image format"));
+    }
+
+    #[test]
+    fn empty_image_is_skipped_before_ocr() {
+        let image = image_with("png", Bytes::new());
+        let reason = is_ocr_decodable_image(&image).expect_err("empty images must be rejected");
+        assert!(reason.contains("empty"));
+    }
 }

@@ -83,12 +83,19 @@ pub fn discover_config_as_json() -> Option<String> {
 /// # Returns
 ///
 /// JSON array of preset names, or error message.
-#[cfg(feature = "embeddings")]
 pub fn list_embedding_presets() -> Result<String, String> {
-    let presets = kreuzberg::embeddings::list_presets();
-    match serde_json::to_string(&presets) {
-        Ok(json) => Ok(json),
-        Err(e) => Err(format!("Failed to serialize presets: {}", e)),
+    #[cfg(not(feature = "embeddings"))]
+    {
+        return Ok("[]".to_string());
+    }
+
+    #[cfg(feature = "embeddings")]
+    {
+        let presets = kreuzberg::embeddings::list_presets();
+        match serde_json::to_string(&presets) {
+            Ok(json) => Ok(json),
+            Err(e) => Err(format!("Failed to serialize presets: {}", e)),
+        }
     }
 }
 
@@ -101,28 +108,36 @@ pub fn list_embedding_presets() -> Result<String, String> {
 /// # Returns
 ///
 /// JSON representation of the preset, or error message.
-#[cfg(feature = "embeddings")]
 pub fn get_embedding_preset(preset_name: &str) -> Result<String, String> {
-    let preset = match kreuzberg::embeddings::get_preset(preset_name) {
-        Some(preset) => preset,
-        None => {
-            return Err(format!("Unknown embedding preset: {}", preset_name));
+    #[cfg(not(feature = "embeddings"))]
+    {
+        let _ = preset_name;
+        return Err("Embedding presets require the `embeddings` feature".to_string());
+    }
+
+    #[cfg(feature = "embeddings")]
+    {
+        let preset = match kreuzberg::embeddings::get_preset(preset_name) {
+            Some(preset) => preset,
+            None => {
+                return Err(format!("Unknown embedding preset: {}", preset_name));
+            }
+        };
+
+        let model_name = preset.model_repo.to_string();
+        let serializable = super::serialize::SerializableEmbeddingPreset {
+            name: preset.name,
+            chunk_size: preset.chunk_size,
+            overlap: preset.overlap,
+            model_name,
+            dimensions: preset.dimensions,
+            description: preset.description,
+        };
+
+        match serde_json::to_string(&serializable) {
+            Ok(json) => Ok(json),
+            Err(e) => Err(format!("Failed to serialize embedding preset: {}", e)),
         }
-    };
-
-    let model_name = preset.model_repo.to_string();
-    let serializable = super::serialize::SerializableEmbeddingPreset {
-        name: preset.name,
-        chunk_size: preset.chunk_size,
-        overlap: preset.overlap,
-        model_name,
-        dimensions: preset.dimensions,
-        description: preset.description,
-    };
-
-    match serde_json::to_string(&serializable) {
-        Ok(json) => Ok(json),
-        Err(e) => Err(format!("Failed to serialize embedding preset: {}", e)),
     }
 }
 

@@ -272,11 +272,42 @@ pub fn evaluate_per_page_ocr(
 /// `page_indices` are 0-indexed. Only the requested pages are rendered,
 /// returned as `(page_index, image)` pairs.
 #[cfg(feature = "ocr")]
+fn render_pdf_page_for_ocr(
+    renderer: &crate::pdf::rendering::PdfRenderer<'_>,
+    content: &[u8],
+    page_index: usize,
+) -> crate::Result<image::DynamicImage> {
+    let render_options = crate::pdf::rendering::PageRenderOptions::for_ocr();
+    match renderer.render_page_to_image(content, page_index, &render_options) {
+        Ok(image) => Ok(image),
+        Err(first_error) => {
+            tracing::warn!(
+                page = page_index + 1,
+                error = %first_error,
+                "OCR PDF page render failed at primary cap, retrying with lower cap"
+            );
+            let retry_options = crate::pdf::rendering::PageRenderOptions::for_ocr_retry();
+            renderer
+                .render_page_to_image(content, page_index, &retry_options)
+                .map_err(|retry_error| crate::KreuzbergError::Parsing {
+                    message: format!(
+                        "Failed to render page {} for OCR after retry: {}; first attempt: {}",
+                        page_index + 1,
+                        retry_error,
+                        first_error
+                    ),
+                    source: None,
+                })
+        }
+    }
+}
+
+#[cfg(feature = "ocr")]
 pub(crate) fn render_selected_pages_for_ocr(
     content: &[u8],
     page_indices: &[usize],
 ) -> crate::Result<Vec<(usize, image::DynamicImage)>> {
-    use crate::pdf::rendering::{PageRenderOptions, PdfRenderer};
+    use crate::pdf::rendering::PdfRenderer;
 
     let renderer = PdfRenderer::new().map_err(|e| crate::KreuzbergError::Parsing {
         message: format!("Failed to initialize PDF renderer: {}", e),
@@ -290,7 +321,6 @@ pub(crate) fn render_selected_pages_for_ocr(
             source: None,
         })?;
 
-    let render_options = PageRenderOptions::default();
     let mut images = Vec::with_capacity(page_indices.len());
     for &idx in page_indices {
         if idx >= page_count {
@@ -303,12 +333,7 @@ pub(crate) fn render_selected_pages_for_ocr(
             );
             continue;
         }
-        let image = renderer
-            .render_page_to_image(content, idx, &render_options)
-            .map_err(|e| crate::KreuzbergError::Parsing {
-                message: format!("Failed to render PDF page {}: {}", idx + 1, e),
-                source: None,
-            })?;
+        let image = render_pdf_page_for_ocr(&renderer, content, idx)?;
         images.push((idx, image));
     }
 
@@ -671,7 +696,6 @@ pub(crate) async fn extract_with_ocr(
                         message: format!("Failed to initialize PDF renderer for OCR batch: {:?}", e),
                         source: None,
                     })?;
-                let render_opts = crate::pdf::rendering::PageRenderOptions::default();
                 let mut batch_encoded: Vec<(usize, Arc<Vec<u8>>, u32, u32)> =
                     Vec::with_capacity(batch_end - batch_start);
                 for i in batch_start..batch_end {
@@ -679,12 +703,14 @@ pub(crate) async fn extract_with_ocr(
                         message: "PDF content is required for OCR rendering but was not provided".to_string(),
                         source: None,
                     })?;
-                    let image = renderer.render_page_to_image(pdf_bytes, i, &render_opts).map_err(|e| {
-                        crate::KreuzbergError::Parsing {
-                            message: format!("Failed to render page {} for OCR: {:?}", i, e),
-                            source: None,
-                        }
-                    })?;
+                    let image = render_pdf_page_for_ocr(&renderer, pdf_bytes, i).unwrap_or_else(|e| {
+                        tracing::warn!(
+                            page = i + 1,
+                            error = %e,
+                            "Failed to render page for OCR after retry; using blank placeholder"
+                        );
+                        image::DynamicImage::ImageRgb8(image::RgbImage::new(1, 1))
+                    });
                     // Encode immediately so the DynamicImage can be dropped.
                     let rgb_image = image.to_rgb8();
                     let (width, height) = rgb_image.dimensions();

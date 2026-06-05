@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.9.9] - 2026-06-05
+
+LTS patch release with PDF/OCR robustness fixes and selected stability
+backports from main.
+
+### Fixed
+
+- **#1078**: OCR rendering for very wide, vector-heavy single-page PDFs now uses a bounded render profile, enforces the long-edge cap before Pdfium allocation, and retries failed OCR renders at a lower cap instead of surfacing `PdfiumLibraryInternalError(Unknown)` as a top-level parsing failure.
+- **#1077**: Embedded PDF image streams are validated before generic image OCR. Raw, CCITT, JBIG2, JPEG 2000, empty, unknown, and probe-failed image streams are re-extracted through Pdfium when possible or skipped with a specific warning instead of repeated `image dimension probe failed` noise.
+- **#1058**: Cap the initial allocation hint for compressed RTF decompression so a crafted MSG/RTF stream cannot request a multi-gigabyte `Vec` allocation from an untrusted `raw_size` header.
+- **#1057**: Make table row sorting NaN-safe by avoiding `partial_cmp(...).unwrap()`.
+- **#998, #1055**: Export FFI embedding preset symbols even when embeddings are disabled, returning empty/null-compatible results instead of letting Java/native binding startup fail with missing symbols.
+- **#1073, #1074, #1013, #1004**: Chunking now uses formatted content for non-plain output formats, preserves page metadata where formatted page text can be matched, and normalizes trailing-space page artifacts before boundary matching.
+- **#910**: Tighten UTF-16 email transcoding heuristics so short binary inputs are not misclassified as UTF-16.
+- **#911**: Return a validation error when `extraction_timeout_secs` is configured without `tokio-runtime`, including the legacy synchronous extraction path.
+
+### Tooling
+
+- Exclude the generated ai-rulez manifest from Biome formatting so `prek run --all-files` is idempotent.
+
+### Removed
+
+- Removed the unused alternate PDF implementation from the v4 LTS branch and removed the obsolete root `tools/` folder.
+
 ## [4.9.8] - 2026-05-17
 
 LTS patch release. Four targeted bug fixes plus dependency pinning so the

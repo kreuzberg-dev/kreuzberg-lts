@@ -27,6 +27,25 @@ impl Default for PageRenderOptions {
     }
 }
 
+impl PageRenderOptions {
+    pub const OCR_MAX_IMAGE_DIMENSION: i32 = 8192;
+    pub const OCR_RETRY_MAX_IMAGE_DIMENSION: i32 = 4096;
+
+    pub fn for_ocr() -> Self {
+        Self {
+            max_image_dimension: Self::OCR_MAX_IMAGE_DIMENSION,
+            ..Self::default()
+        }
+    }
+
+    pub fn for_ocr_retry() -> Self {
+        Self {
+            max_image_dimension: Self::OCR_RETRY_MAX_IMAGE_DIMENSION,
+            ..Self::default()
+        }
+    }
+}
+
 pub struct PdfRenderer<'a> {
     pdfium: PdfiumHandle<'a>,
 }
@@ -101,10 +120,16 @@ impl PdfRenderer<'_> {
         };
 
         let scale = dpi as f64 / PDF_POINTS_PER_INCH;
+        let (target_width, target_height) = clamp_render_dimensions(
+            width_points as f64,
+            height_points as f64,
+            scale,
+            options.max_image_dimension,
+        );
 
         let config = PdfRenderConfig::new()
-            .set_target_width(((width_points * scale as f32) as i32).max(1))
-            .set_target_height(((height_points * scale as f32) as i32).max(1))
+            .set_target_width(target_width)
+            .set_target_height(target_height)
             .rotate_if_landscape(PdfPageRenderRotation::None, false);
 
         let bitmap = page
@@ -344,7 +369,22 @@ fn calculate_optimal_dpi(
     let width_limited_dpi = (max_dimension as f64 / width_inches) as i32;
     let height_limited_dpi = (max_dimension as f64 / height_inches) as i32;
 
-    width_limited_dpi.min(height_limited_dpi).clamp(min_dpi, max_dpi)
+    width_limited_dpi.min(height_limited_dpi).clamp(1, max_dpi.max(min_dpi))
+}
+
+fn clamp_render_dimensions(page_width: f64, page_height: f64, scale: f64, max_dimension: i32) -> (i32, i32) {
+    let max_dimension = max_dimension.max(1) as f64;
+    let mut width = (page_width * scale).ceil().max(1.0);
+    let mut height = (page_height * scale).ceil().max(1.0);
+    let long_edge = width.max(height);
+
+    if long_edge > max_dimension {
+        let factor = max_dimension / long_edge;
+        width = (width * factor).floor().max(1.0);
+        height = (height * factor).floor().max(1.0);
+    }
+
+    (width as i32, height as i32)
 }
 
 #[cfg(test)]
@@ -394,8 +434,15 @@ mod tests {
     #[test]
     fn test_calculate_optimal_dpi_oversized_page() {
         let dpi = calculate_optimal_dpi(10000.0, 10000.0, 300, 4096, 72, 600);
-        assert!(dpi >= 72);
         assert!(dpi < 300);
+    }
+
+    #[test]
+    fn test_calculate_optimal_dpi_respects_huge_page_cap_before_min_dpi() {
+        let dpi = calculate_optimal_dpi(27315.0, 4955.0, 300, 4096, 72, 600);
+        let (width, height) = clamp_render_dimensions(27315.0, 4955.0, dpi as f64 / PDF_POINTS_PER_INCH, 4096);
+        assert!(width <= 4096, "width {width} must be capped");
+        assert!(height <= 4096, "height {height} must be capped");
     }
 
     #[test]
@@ -455,13 +502,13 @@ mod tests {
     #[test]
     fn test_calculate_optimal_dpi_tall_page() {
         let dpi = calculate_optimal_dpi(612.0, 10000.0, 300, 4096, 72, 600);
-        assert!((72..=600).contains(&dpi));
+        assert!((1..=600).contains(&dpi));
     }
 
     #[test]
     fn test_calculate_optimal_dpi_wide_page() {
         let dpi = calculate_optimal_dpi(10000.0, 612.0, 300, 4096, 72, 600);
-        assert!((72..=600).contains(&dpi));
+        assert!((1..=600).contains(&dpi));
     }
 
     #[test]

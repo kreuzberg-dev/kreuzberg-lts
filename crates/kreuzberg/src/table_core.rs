@@ -139,7 +139,7 @@ pub fn detect_rows(words: &[HocrWord], row_threshold_ratio: f64) -> Vec<u32> {
         .filter(|group| !group.is_empty())
         .map(|group| {
             let mut sorted = group.clone();
-            sorted.sort_by(|a, b| a.partial_cmp(b).unwrap());
+            sorted.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
             let mid = sorted.len() / 2;
             sorted[mid] as u32
         })
@@ -396,6 +396,13 @@ mod tests {
 
         let rows = detect_rows(&words, 0.5);
         assert_eq!(rows.len(), 2);
+    }
+
+    #[test]
+    fn test_nan_safe_sort_does_not_panic() {
+        let mut values = [1.0, f64::NAN, 2.0];
+        values.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
+        assert_eq!(values.len(), 3);
     }
 
     #[test]

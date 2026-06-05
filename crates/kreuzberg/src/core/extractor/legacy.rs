@@ -35,6 +35,13 @@ pub(super) fn extract_bytes_sync_impl(
     let cfg = config.cloned().unwrap_or_default();
     let cfg = cfg.normalized().into_owned();
 
+    if cfg.extraction_timeout_secs.is_some() {
+        return Err(crate::KreuzbergError::Validation {
+            message: "extraction_timeout_secs requires the 'tokio-runtime' feature to be enabled".to_string(),
+            source: None,
+        });
+    }
+
     let validated_mime = if let Some(mime) = mime_type {
         if mime == "application/octet-stream" {
             mime::detect_mime_type_from_bytes(content)?

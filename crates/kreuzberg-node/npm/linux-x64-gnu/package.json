@@ -1,6 +1,6 @@
 {
 	"name": "@kreuzberg/node-linux-x64-gnu",
-	"version": "4.9.8",
+	"version": "4.9.9",
 	"cpu": [
 		"x64"
 	],

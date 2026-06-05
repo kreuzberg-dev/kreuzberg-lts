@@ -74,12 +74,23 @@ fn maybe_transcode_utf16(data: &[u8]) -> Option<Vec<u8>> {
         (true, 2)
     } else if data[0] == 0xFE && data[1] == 0xFF {
         (false, 2)
-    } else if data[1] == 0x00 && data[3] == 0x00 && data[0] != 0x00 && data[2] != 0x00 {
-        // No BOM, but looks like UTF-16 LE (e.g. "M\0I\0M\0E\0")
-        (true, 0)
-    } else if data[0] == 0x00 && data[2] == 0x00 && data[1] != 0x00 && data[3] != 0x00 {
-        // No BOM, but looks like UTF-16 BE (e.g. "\0M\0I\0M\0E")
-        (false, 0)
+    } else if data.len() >= 16 {
+        let is_le_heuristic = data[1] == 0x00 && data[3] == 0x00 && data[5] == 0x00 && data[7] == 0x00;
+        let is_be_heuristic = data[0] == 0x00 && data[2] == 0x00 && data[4] == 0x00 && data[6] == 0x00;
+
+        if is_le_heuristic || is_be_heuristic {
+            let mut detector = chardetng::EncodingDetector::new(chardetng::Iso2022JpDetection::Allow);
+            detector.feed(data, true);
+            let guess = detector.guess(None, chardetng::Utf8Detection::Allow);
+
+            if guess.name() == "UTF-8" || guess.name() == "windows-1252" {
+                (is_le_heuristic, 0)
+            } else {
+                return None;
+            }
+        } else {
+            return None;
+        }
     } else {
         return None;
     };
@@ -553,6 +564,8 @@ Courier{\\colortbl\\red0\\green0\\blue0\r\n\\par \\pard\\plain\\f0\\fs20\\b\\i\\
 \\scaps\\outline\\shadow\\imprint\\emboss\\lang1024\\sbasedon1033\\fcharset0 {\\*\\cs10 \\additive \
 Default Paragraph Font}";
 
+const MAX_RTF_DECOMPRESSED_CAPACITY: usize = 16 * 1024 * 1024;
+
 /// Decompress a PR_RTF_COMPRESSED stream per the MS-OXRTFCP specification.
 ///
 /// Returns `None` when the data is too short, has a bad magic number, or
@@ -585,7 +598,7 @@ fn decompress_rtf_compressed(data: &[u8]) -> Option<Vec<u8>> {
     // comp_size includes the 12 bytes after the first u32, so input length should be comp_size - 12.
     let end = (comp_size.saturating_sub(12)).min(input.len());
 
-    let mut output = Vec::with_capacity(raw_size as usize);
+    let mut output = Vec::with_capacity((raw_size as usize).min(MAX_RTF_DECOMPRESSED_CAPACITY));
     let mut pos = 0usize;
 
     while pos < end {
@@ -2103,6 +2116,44 @@ mod tests {
         assert_eq!(headers.get("mime_version").unwrap(), "1.0");
         assert_eq!(headers.get("x_mailer").unwrap(), "MyApp/2.0");
         assert_eq!(headers.get("user_agent").unwrap(), "MyAgent/1.0");
+    }
+
+    #[test]
+    fn test_maybe_transcode_utf16_short_binary_does_not_trigger_heuristic() {
+        assert!(maybe_transcode_utf16(&[b'M', 0, b'I', 0]).is_none());
+    }
+
+    #[test]
+    fn test_decompress_rtf_compressed_crafted_raw_size_does_not_over_allocate() {
+        let mut data = Vec::with_capacity(20);
+        data.extend_from_slice(&16u32.to_le_bytes());
+        data.extend_from_slice(&0xFFFF_FFFFu32.to_le_bytes());
+        data.extend_from_slice(&0x75465a4cu32.to_le_bytes());
+        data.extend_from_slice(&0u32.to_le_bytes());
+        data.extend_from_slice(&[0x00, b'A', b'B', b'C']);
+
+        let out = decompress_rtf_compressed(&data).expect("crafted size should not force OOM");
+        assert!(out.len() < 16, "output should stay tiny");
+    }
+
+    #[test]
+    fn test_decompress_rtf_compressed_cap_is_hint_only() {
+        let payload: &[u8] = &[
+            0x00, b'A', b'B', b'C', b'D', b'E', b'F', b'G', b'H', 0x00, b'I', b'J', b'K', b'L', b'M', b'N', b'O', b'P',
+            0x00, b'Q', b'R', b'S', b'T', b'U', b'V', b'W', b'X',
+        ];
+        let comp_size = (12 + payload.len()) as u32;
+        let raw_size = 1u32;
+        let mut data = Vec::new();
+        data.extend_from_slice(&comp_size.to_le_bytes());
+        data.extend_from_slice(&raw_size.to_le_bytes());
+        data.extend_from_slice(&0x75465a4cu32.to_le_bytes());
+        data.extend_from_slice(&0u32.to_le_bytes());
+        data.extend_from_slice(payload);
+
+        let out = decompress_rtf_compressed(&data).expect("should decompress");
+        assert_eq!(out.len(), 24);
+        assert_eq!(&out[..8], b"ABCDEFGH");
     }
 
     #[test]
