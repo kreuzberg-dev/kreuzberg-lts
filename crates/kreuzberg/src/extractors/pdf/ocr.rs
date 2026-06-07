@@ -461,10 +461,10 @@ pub(crate) async fn extract_mixed_ocr_native(
     // as extract_with_ocr: rayon-parallel PNG encoding + tokio JoinSet OCR calls.
     use image::ImageEncoder;
     use image::codecs::png::PngEncoder;
+    #[cfg(feature = "tokio-runtime")]
+    use rayon::prelude::*;
     use std::io::Cursor;
     use std::sync::Arc;
-    #[cfg(not(target_arch = "wasm32"))]
-    use rayon::prelude::*;
 
     let default_ocr_config = crate::core::config::OcrConfig::default();
     let mut ocr_config_resolved = config.ocr.as_ref().unwrap_or(&default_ocr_config).clone();
@@ -496,7 +496,7 @@ pub(crate) async fn extract_mixed_ocr_native(
         // Encode this batch's images to PNG. On native targets this runs in parallel
         // via rayon (CPU-bound); on wasm32 it falls back to a sequential iterator
         // because rayon's thread pool is unavailable without the `wasm-threads` feature.
-        #[cfg(not(target_arch = "wasm32"))]
+        #[cfg(feature = "tokio-runtime")]
         let encoded: crate::Result<Vec<EncodedPage>> = batch_slice
             .par_iter()
             .map(|(page_idx, image)| {
@@ -512,7 +512,7 @@ pub(crate) async fn extract_mixed_ocr_native(
                 Ok((*page_idx, Arc::new(buf.into_inner()), w, h))
             })
             .collect();
-        #[cfg(target_arch = "wasm32")]
+        #[cfg(not(feature = "tokio-runtime"))]
         let encoded: crate::Result<Vec<EncodedPage>> = batch_slice
             .iter()
             .map(|(page_idx, image)| {
@@ -533,7 +533,7 @@ pub(crate) async fn extract_mixed_ocr_native(
         // OCR this batch. On native targets tasks run concurrently via tokio::task::JoinSet
         // (requires the multi-threaded runtime). On wasm32 futures are awaited sequentially
         // because JoinSet::spawn requires thread-spawning, which is unavailable there.
-        #[cfg(not(target_arch = "wasm32"))]
+        #[cfg(feature = "tokio-runtime")]
         {
             let mut join_set = tokio::task::JoinSet::new();
             for (page_idx, data, _w, _h) in &encoded {
@@ -558,7 +558,7 @@ pub(crate) async fn extract_mixed_ocr_native(
                 ocr_results.insert((page_idx + 1) as u32, extraction_result.content); // 1-indexed
             }
         }
-        #[cfg(target_arch = "wasm32")]
+        #[cfg(not(feature = "tokio-runtime"))]
         {
             for (page_idx, data, _w, _h) in &encoded {
                 let mut extraction_result = backend.process_image(data.as_slice(), &ocr_config_owned).await?;
@@ -747,10 +747,10 @@ pub(crate) async fn extract_with_ocr(
     // batch_size * (encoded_PNG + OCR working set) instead of
     // page_count * that amount. Images are rendered and encoded one at a time
     // within each batch to avoid holding multiple decoded RGB buffers.
-    use std::sync::Arc;
-    #[cfg(not(target_arch = "wasm32"))]
+    #[cfg(feature = "tokio-runtime")]
     use rayon::prelude::*;
-    #[cfg(not(target_arch = "wasm32"))]
+    use std::sync::Arc;
+    #[cfg(feature = "tokio-runtime")]
     use tokio::task::JoinSet;
 
     let configured_batch_size = crate::core::config::concurrency::resolve_thread_budget(config.concurrency.as_ref());
@@ -812,7 +812,7 @@ pub(crate) async fn extract_with_ocr(
             // (CPU-bound); on wasm32 it falls back to a sequential iterator because
             // rayon's thread pool is unavailable without the `wasm-threads` feature.
             #[allow(clippy::type_complexity)]
-            #[cfg(not(target_arch = "wasm32"))]
+            #[cfg(feature = "tokio-runtime")]
             let encoded: crate::Result<Vec<(usize, Arc<Vec<u8>>, u32, u32)>> = slice
                 .par_iter()
                 .enumerate()
@@ -832,7 +832,7 @@ pub(crate) async fn extract_with_ocr(
                 })
                 .collect();
             #[allow(clippy::type_complexity)]
-            #[cfg(target_arch = "wasm32")]
+            #[cfg(not(feature = "tokio-runtime"))]
             let encoded: crate::Result<Vec<(usize, Arc<Vec<u8>>, u32, u32)>> = slice
                 .iter()
                 .enumerate()
@@ -897,7 +897,7 @@ pub(crate) async fn extract_with_ocr(
         let batch_count = encoded_batch.len();
         let mut batch_ocr_results: Vec<Option<crate::types::ExtractionResult>> = vec![None; batch_count];
 
-        #[cfg(not(target_arch = "wasm32"))]
+        #[cfg(feature = "tokio-runtime")]
         {
             let mut join_set: JoinSet<(usize, crate::Result<crate::types::ExtractionResult>)> = JoinSet::new();
             for (page_idx, image_data, _width, _height) in &encoded_batch {
@@ -918,7 +918,7 @@ pub(crate) async fn extract_with_ocr(
                 batch_ocr_results[page_idx - batch_start] = Some(ocr_result?);
             }
         }
-        #[cfg(target_arch = "wasm32")]
+        #[cfg(not(feature = "tokio-runtime"))]
         {
             for (page_idx, image_data, _width, _height) in &encoded_batch {
                 let ocr_result = backend.process_image(image_data.as_slice(), &ocr_config_owned).await?;

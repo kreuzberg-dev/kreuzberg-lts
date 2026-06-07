@@ -77,6 +77,15 @@ packages/php/tests.xml
 packages/php/var/
 .php-cs-fixer.cache
 
+# Swift / SwiftPM / Xcode
+.build/
+.swiftpm/
+Packages/
+Package.resolved
+*.xcodeproj/
+*.xcworkspace/
+DerivedData/
+
 # Java / C# / .NET
 *.suo
 *.user
@@ -138,6 +147,8 @@ packages/*/TestResults/
 *.temp
 *.tmp
 *.log
+**/logs/
+**/test_output.log
 .mvn/
 .tox/
 .artifacts/

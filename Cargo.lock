@@ -3897,6 +3897,7 @@ dependencies = [
  "serde",
  "serde_json",
  "serde_with",
+ "tokio-util",
 ]
 
 [[package]]
@@ -7627,6 +7628,7 @@ dependencies = [
  "bytes",
  "futures-core",
  "futures-sink",
+ "futures-util",
  "pin-project-lite",
  "tokio",
 ]

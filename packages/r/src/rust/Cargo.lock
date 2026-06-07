@@ -2952,7 +2952,7 @@ dependencies = [
 
 [[package]]
 name = "kreuzberg"
-version = "5.0.0-rc.3"
+version = "5.0.0-rc.4"
 dependencies = [
  "ahash",
  "async-trait",
@@ -3057,7 +3057,7 @@ dependencies = [
  "uuid",
  "v_htmlescape",
  "whatlang",
- "zip 8.6.0",
+ "zip 7.2.0",
 ]
 
 [[package]]
@@ -3091,7 +3091,7 @@ dependencies = [
 
 [[package]]
 name = "kreuzberg-paddle-ocr"
-version = "5.0.0-rc.3"
+version = "5.0.0-rc.4"
 dependencies = [
  "geo-clipper",
  "geo-types",
@@ -3105,7 +3105,7 @@ dependencies = [
 
 [[package]]
 name = "kreuzberg-r"
-version = "5.0.0-rc.3"
+version = "5.0.0-rc.4"
 dependencies = [
  "async-trait",
  "extendr-api",
@@ -3117,13 +3117,13 @@ dependencies = [
 
 [[package]]
 name = "kreuzberg-tesseract"
-version = "5.0.0-rc.3"
+version = "5.0.0-rc.4"
 dependencies = [
  "cc",
  "cmake",
  "reqwest",
  "thiserror 2.0.18",
- "zip 8.6.0",
+ "zip 7.2.0",
 ]
 
 [[package]]

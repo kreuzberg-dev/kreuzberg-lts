@@ -46,7 +46,8 @@ let package = Package(
     ),
     .target(
       name: "Kreuzberg", dependencies: ["RustBridge"],
-      path: "Sources/Kreuzberg"),
+      path: "Sources/Kreuzberg",
+      exclude: ["LICENSE"]),
     .testTarget(
       name: "KreuzbergTests", dependencies: ["Kreuzberg"],
       path: "Tests/KreuzbergTests"),

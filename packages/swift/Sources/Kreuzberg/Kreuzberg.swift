@@ -8833,7 +8833,8 @@ public func layoutClassFromJson(_ json: String) throws -> LayoutClass {
 /// println!("Content: {}", result.content);
 /// ```
 public func extractFileSync(path: String, mimeType: String? = nil, config: ExtractionConfig) throws -> ExtractionResult {
-    return try RustBridge.extractFileSync(path, mimeType, config)
+        let _rb_mimeType = mimeType.map { RustString($0) }
+    return try RustBridge.extractFileSync(path, _rb_mimeType, config)
 }
 /// Synchronous wrapper for `extract_bytes`.
 ///
@@ -8856,7 +8857,8 @@ public func extractFileSync(path: String, mimeType: String? = nil, config: Extra
 /// ```
 public func extractBytesSync(content: [UInt8], mimeType: String, config: ExtractionConfig) throws -> ExtractionResult {
         let _rb_content: RustVec<UInt8> = { let v = RustVec<UInt8>(); for b in content { v.push(value: b) }; return v }()
-    return try RustBridge.extractBytesSync(_rb_content, mimeType, config)
+        let _rb_mimeType = RustString(mimeType)
+    return try RustBridge.extractBytesSync(_rb_content, _rb_mimeType, config)
 }
 /// Synchronous wrapper for `batch_extract_files`.
 ///
@@ -9103,7 +9105,8 @@ public func detectMimeTypeFromBytes(content: [UInt8]) throws -> String {
 /// assert!(doc_extensions.contains(&"docx".to_string()));
 /// ```
 public func getExtensionsForMime(mimeType: String) throws -> [String] {
-    return try RustBridge.getExtensionsForMime(mimeType).map { $0.as_str().toString() }
+        let _rb_mimeType = RustString(mimeType)
+    return try RustBridge.getExtensionsForMime(_rb_mimeType).map { $0.as_str().toString() }
 }
 /// Detect QR codes in the bytes of an [`ExtractedImage`].
 ///
@@ -9125,7 +9128,8 @@ public func getExtensionsForMime(mimeType: String) throws -> [String] {
 /// from the four corner points of the grid.
 public func detectQrCodes(imageBytes: [UInt8], formatHint: String? = nil) throws -> [QrCode] {
         let _rb_imageBytes: RustVec<UInt8> = { let v = RustVec<UInt8>(); for b in imageBytes { v.push(value: b) }; return v }()
-    return try RustBridge.detectQrCodes(_rb_imageBytes, formatHint).map { ref in try QrCode(ref) }
+        let _rb_formatHint = formatHint.map { RustString($0) }
+    return try RustBridge.detectQrCodes(_rb_imageBytes, _rb_formatHint).map { ref in try QrCode(ref) }
 }
 /// List the names of all registered embedding backends.
 ///
@@ -9245,14 +9249,17 @@ public func redact(result: ExtractionResult, config: RedactionConfig) async thro
 /// `max_tokens` bounds the summary length by whitespace-separated tokens;
 /// `None` falls back to [`DEFAULT_MAX_TOKENS`].
 public func summarize(text: String, language: String? = nil, maxTokens: UInt32? = nil) -> String? {
-    let _rb_json = RustBridge.summarize(text, language, maxTokens).toString()
+        let _rb_text = RustString(text)
+        let _rb_language = language.map { RustString($0) }
+    let _rb_json = RustBridge.summarize(_rb_text, _rb_language, maxTokens).toString()
     let _rb_data = _rb_json.data(using: .utf8) ?? Data()
     return (try? JSONDecoder().decode(String?.self, from: _rb_data)) ?? nil
 }
 /// Count whitespace-separated tokens (used for token-budget bookkeeping by
 /// callers).
 public func tokenCount(text: String) -> UInt32 {
-    return RustBridge.tokenCount(text)
+        let _rb_text = RustString(text)
+    return RustBridge.tokenCount(_rb_text)
 }
 /// Translate the extraction result in place.
 ///
@@ -9344,9 +9351,11 @@ public func compare(a: ExtractionResult, b: ExtractionResult, opts: DiffOptions)
 public func extractRegionWithVlm(imageBytes: [UInt8], imageMime: String, regionKind: RegionKind, llmConfig: LlmConfig, customPrompt: String? = nil) async throws -> String {
     return try await Task.detached(priority: .userInitiated) {
         let _rb_imageBytes: RustVec<UInt8> = { let v = RustVec<UInt8>(); for b in imageBytes { v.push(value: b) }; return v }()
+        let _rb_imageMime = RustString(imageMime)
         let _rb_regionKind = try String(data: JSONEncoder().encode(regionKind), encoding: .utf8) ?? "null"
         let _rb_llmConfig = try llmConfig.intoRust()
-        let result = try RustBridge.extractRegionWithVlm(_rb_imageBytes, imageMime, _rb_regionKind, _rb_llmConfig, customPrompt)
+        let _rb_customPrompt = customPrompt.map { RustString($0) }
+        let result = try RustBridge.extractRegionWithVlm(_rb_imageBytes, _rb_imageMime, _rb_regionKind, _rb_llmConfig, _rb_customPrompt)
         return result.toString()
     }.value
 }
@@ -9373,14 +9382,16 @@ public func extractRegionWithVlm(imageBytes: [UInt8], imageMime: String, regionK
 /// or rendered, or if `page_index` is out of range.
 public func renderPdfPageToPng(pdfBytes: [UInt8], pageIndex: UInt, dpi: Int32? = nil, password: String? = nil) throws -> [UInt8] {
         let _rb_pdfBytes: RustVec<UInt8> = { let v = RustVec<UInt8>(); for b in pdfBytes { v.push(value: b) }; return v }()
-    return try RustBridge.renderPdfPageToPng(_rb_pdfBytes, pageIndex, dpi, password).map { $0 }
+        let _rb_password = password.map { RustString($0) }
+    return try RustBridge.renderPdfPageToPng(_rb_pdfBytes, pageIndex, dpi, _rb_password).map { $0 }
 }
 /// Detect the MIME type of a file at the given path.
 ///
 /// Uses the file extension and optionally the file content to determine the MIME type.
 /// Set `check_exists` to `true` to verify the file exists before detection.
 public func detectMimeType(path: String, checkExists: Bool) throws -> String {
-    return try RustBridge.detectMimeType(path, checkExists).toString()
+        let _rb_path = RustString(path)
+    return try RustBridge.detectMimeType(_rb_path, checkExists).toString()
 }
 public func embedTextsAsync(texts: [String], config: EmbeddingConfig) async throws -> [[Float]] {
     return try await Task.detached(priority: .userInitiated) {
@@ -9396,7 +9407,8 @@ public func embedTextsAsync(texts: [String], config: EmbeddingConfig) async thro
 /// Returns `None` if no preset with the given name exists. Returns an owned
 /// clone so the value is safe to pass across FFI boundaries.
 public func getEmbeddingPreset(name: String) -> EmbeddingPreset? {
-    return RustBridge.getEmbeddingPreset(name)
+        let _rb_name = RustString(name)
+    return RustBridge.getEmbeddingPreset(_rb_name)
 }
 /// List the names of all available embedding presets.
 ///

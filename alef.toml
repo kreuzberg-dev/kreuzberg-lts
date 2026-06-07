@@ -1,5 +1,5 @@
 [workspace]
-alef_version = "0.23.23"
+alef_version = "0.23.26"
 languages = [
   "python",
   "node",
@@ -543,6 +543,21 @@ package_name = "kreuzberg"
 exclude_functions = [
   "calculate_quality_score",
   "embed_texts",
+  # Vec<NamedStruct> param/return: alef does not emit the element-wise Into conversion
+  # for Vec<T> where T is a binding-only DTO. Excluded until alef adds Vec<NamedStruct>
+  # round-trip support for extendr.
+  "batch_extract_files_sync",
+  "batch_extract_bytes_sync",
+  "batch_extract_files",
+  "batch_extract_bytes",
+  # Vec<NamedStruct> return: extendr has no `From<Vec<T>> for Robj` for opaque struct
+  # types. Excluded until alef emits a manual list-based From impl.
+  "detect_qr_codes",
+  "find_all",
+  # Vec<EnumVariant> param + Result<Vec<NamedStruct>> return: extendr cannot derive
+  # `TryFrom<&Robj> for Vec<E>` or `From<Result<Vec<S>>> for Robj`. Excluded until alef
+  # emits manual list-based conversions for these shapes.
+  "scan_text",
 ]
 
 [crates.zig]

@@ -74,61 +74,6 @@ extract_file_sync <- function(path, mime_type = NULL, config = ExtractionConfig$
 #' @return ExtractionResult object (list with class attribute).
 #' @export
 extract_bytes_sync <- function(content, mime_type, config = ExtractionConfig$default()) .Call("wrap__extract_bytes_sync", content, mime_type, config, PACKAGE = "kreuzberg")
-#' Synchronous wrapper for `batch_extract_files`
-#'
-#' Uses the global Tokio runtime for optimal performance.
-#' Only available with `tokio-runtime` (WASM has no filesystem).
-#' @param items List of batchfileitem object (list with class attribute).
-#' @param config ExtractionConfig object (list with class attribute).
-#' @return List of extractionresult object (list with class attribute).
-#' @export
-batch_extract_files_sync <- function(items, config = ExtractionConfig$default()) .Call("wrap__batch_extract_files_sync", items, config, PACKAGE = "kreuzberg")
-#' Synchronous wrapper for `batch_extract_bytes`
-#'
-#' Uses the global Tokio runtime for optimal performance.
-#' With the `tokio-runtime` feature, this blocks the current thread using the global
-#' Tokio runtime. Without it (WASM), this calls a truly synchronous implementation
-#' that iterates through items and calls `extract_bytes_sync()`.
-#' @param items List of batchbytesitem object (list with class attribute).
-#' @param config ExtractionConfig object (list with class attribute).
-#' @return List of extractionresult object (list with class attribute).
-#' @export
-batch_extract_bytes_sync <- function(items, config = ExtractionConfig$default()) .Call("wrap__batch_extract_bytes_sync", items, config, PACKAGE = "kreuzberg")
-#' Extract content from multiple files concurrently
-#'
-#' This function processes multiple files in parallel, automatically managing
-#' concurrency to prevent resource exhaustion. The concurrency limit can be
-#' configured via `ExtractionConfig::max_concurrent_extractions` or defaults
-#' to `(num_cpus * 1.5).ceil()`.
-#'
-#' Each file can optionally specify a [`FileExtractionConfig`] that overrides specific
-#' fields from the batch-level `config`. Pass `None` for a file to use the batch defaults.
-#' Batch-level settings like `max_concurrent_extractions` and `use_cache` are always
-#' taken from the batch-level `config`.
-#' @param items Vector of `BatchFileItem` structs, each containing a path and optional per-file configuration overrides.
-#' @param config Batch-level extraction configuration (provides defaults and batch settings).
-#' @return A vector of `ExtractionResult` in the same order as the input items.
-#'
-#' @section Errors:
-#' Individual file errors are captured in the result metadata. System errors
-#' (IO, RuntimeError equivalents) will bubble up and fail the entire batch.
-#' @export
-batch_extract_files <- function(items, config = ExtractionConfig$default()) .Call("wrap__batch_extract_files", items, config, PACKAGE = "kreuzberg")
-#' Extract content from multiple byte arrays concurrently
-#'
-#' This function processes multiple byte arrays in parallel, automatically managing
-#' concurrency to prevent resource exhaustion. The concurrency limit can be
-#' configured via `ExtractionConfig::max_concurrent_extractions` or defaults
-#' to `(num_cpus * 1.5).ceil()`.
-#'
-#' Each item can optionally specify a [`FileExtractionConfig`] that overrides specific
-#' fields from the batch-level `config`. Pass `None` as the config to use
-#' the batch-level defaults for that item.
-#' @param items Vector of `BatchBytesItem` structs, each containing content bytes, MIME type, and optional per-item configuration overrides.
-#' @param config Batch-level extraction configuration.
-#' @return A vector of `ExtractionResult` in the same order as the input items.
-#' @export
-batch_extract_bytes <- function(items, config = ExtractionConfig$default()) .Call("wrap__batch_extract_bytes", items, config, PACKAGE = "kreuzberg")
 #' Detect MIME type from raw file bytes
 #'
 #' Uses magic byte signatures to detect file type from content.
@@ -150,29 +95,6 @@ detect_mime_type_from_bytes <- function(content) .Call("wrap__detect_mime_type_f
 #' @return A vector of file extensions (without leading dot) for the MIME type.
 #' @export
 get_extensions_for_mime <- function(mime_type) .Call("wrap__get_extensions_for_mime", mime_type, PACKAGE = "kreuzberg")
-#' Detect QR codes in the bytes of an [`ExtractedImage`]
-#'
-#' `format_hint` is currently unused — the `image` crate auto-detects the
-#' container format from magic bytes — but the parameter is retained so future
-#' backends (e.g. a WebP-via-`webp-decoder` variant) can use it without an API
-#' break.
-#'
-#' Returns an empty vector on any of:
-#'
-#' - Empty input.
-#' - Image-decode failure.
-#' - No QR grids detected.
-#' - All detected grids fail to decode.
-#'
-#' Successfully decoded QR codes carry their payload, a confidence of `1.0`
-#' (rqrr does not expose per-grid confidence; a successful decode is treated
-#' as high-confidence by convention), and the pixel-space bounding box derived
-#' from the four corner points of the grid.
-#' @param image_bytes Raw vector of bytes.
-#' @param _format_hint Character string.
-#' @return List of qrcode object (list with class attribute).
-#' @export
-detect_qr_codes <- function(image_bytes, format_hint = NULL) .Call("wrap__detect_qr_codes", image_bytes, format_hint, PACKAGE = "kreuzberg")
 #' List the names of all registered embedding backends
 #'
 #' Used by `kreuzberg-cli`, the api/mcp endpoints, and generated language
@@ -258,23 +180,6 @@ known_models <- function() .Call("wrap__known_models", PACKAGE = "kreuzberg")
 #' @return Invisible NULL.
 #' @export
 redact <- function(result = ExtractionResult$default(), config = RedactionConfig$default()) .Call("wrap__redact", result, config, PACKAGE = "kreuzberg")
-#' find_all
-#' @param text Character string.
-#' @return List of patternmatch object (list with class attribute).
-#' @export
-find_all <- function(text) .Call("wrap__find_all", text, PACKAGE = "kreuzberg")
-#' Scan `text` for every PII category in `categories` and return all matches
-#'
-#' in source-byte order.
-#'
-#' When `categories` is empty every supported regex-detectable category fires.
-#' Person / Organization / Location are *not* covered by the pattern engine —
-#' they must be supplied by a NER backend through the redaction engine.
-#' @param text Character string.
-#' @param categories List of piicategory object (list with class attribute).
-#' @return List of patternmatch object (list with class attribute).
-#' @export
-scan_text <- function(text, categories) .Call("wrap__scan_text", text, categories, PACKAGE = "kreuzberg")
 #' Score and return the top-N sentences from `text`, joined in original order
 #'
 #' `language` is an ISO 639 (or locale) code used to pick a stopword list;
