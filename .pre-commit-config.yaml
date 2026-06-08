@@ -209,12 +209,6 @@ repos:
       exclude: ^templates/
     - id: cargo-fmt
       args: ["--all"]
-      # flutter_rust_bridge emits frb_generated.rs with its own import order
-      # (`transform_result_dco` before `Lifetimeable`). rustfmt's reorder_imports
-      # rewrites that, but `task alef:generate` regens the file from FRB on every
-      # run, reverting any fmt fixes. The `ignore` rustfmt.toml key that would fix
-      # this is nightly-only, so exclude the file at the hook layer.
-      exclude: ^packages/dart/rust/src/frb_generated\.rs$
     - id: pyproject-fmt
     - id: ruff-format
     - id: oxfmt
