@@ -12,6 +12,7 @@ on:
       - "Cargo.toml"
       - "Cargo.lock"
       - "Taskfile.yml"
+      - "pnpm-workspace.yaml"
       - ".github/workflows/ci-e2e.yaml"
   pull_request:
     branches: [main]
@@ -24,6 +25,7 @@ on:
       - "Cargo.toml"
       - "Cargo.lock"
       - "Taskfile.yml"
+      - "pnpm-workspace.yaml"
       - ".github/workflows/ci-e2e.yaml"
   workflow_dispatch:
 
