@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [5.0.0-rc.9] - 2026-06-09
+
 ### Changed
 
 - **Publish and benchmark workflows now mint tokens via the `kreuzberg-dev-publisher` GitHub App.**
@@ -18,6 +20,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   scoped per-job and (for `homebrew-tap` writes) per-repository. Job-level `contents: write`
   permission blocks are removed; OIDC publishers (PyPI, npm, hex, Maven, NuGet, crates) are
   untouched.
+- **Bump alef pin to 0.23.55.** Picks up Java POM `cpd.skip`/`pmd.skip` emission in the publish
+  profile (fixes Maven Central `maven-pmd-plugin:cpd-check` deployment blocks on alef-generated
+  stream-method shims), Ruby platform gemspec now lists all `.rb` wrapper files in `spec.files`
+  (fixes `invalid gem structure` on RubyGems publish), Zig `to_json` NULL-guard returns the
+  function's declared error variant via `_first_error(<ErrorSet>)` instead of hardcoded
+  `error.Serialization` (fixes compile failures on user error sets that don't declare
+  `Serialization`), and napi `strip_typescript_annotations` correctly preserves method-body
+  opening braces for function-type return annotations plus drops overload signatures and
+  optional-parameter markers in emitted `service.cjs`.
+
+### Fixed
+
+- **`@kreuzberg/node-linux-x64-musl` and `@kreuzberg/node-linux-arm64-musl` placeholder publishes.**
+  Both platform packages now exist on npm with trusted-publisher rules pointing at
+  `kreuzberg-dev/kreuzberg` `publish.yaml`. rc.8 publish hit `npm error 404` on the very first
+  publish for these two packages because npm trusted publishing requires the package to exist
+  before the TP rule can bind to it. Placeholder version `5.0.0-placeholder.0` published under
+  `placeholder` dist-tag; the rc.9 publish workflow ships real binaries via OIDC.
+- **`kreuzberg-dev/actions@v1` bumped to v1.8.47.** Three composite-action fixes consumed by this
+  publish: `build-python-wheels` no longer pre-installs Rust on macOS (cibuildwheel handles it,
+  removes `clippy-preview` conflict), `build-python-sdist` uses an absolute `--out` path for
+  split-layout maturin sdist builds (fixes `pyproject.toml not found` after `cd`), and
+  `publish-pub` gains an OIDC-token plumbing step (currently inert pending pub.dev-side TP
+  diagnostics, but does not regress h2m's working flow).
 
 ## [5.0.0-rc.8] - 2026-06-08
 

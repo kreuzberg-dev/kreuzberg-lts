@@ -1,13 +1,13 @@
 {
   "name": "kreuzberg-root",
-  "version": "5.0.0-rc.8",
+  "version": "5.0.0-rc.9",
   "private": true,
   "scripts": {
     "typecheck": "pnpm -r --if-present run typecheck"
   },
   "devDependencies": {
-    "@emnapi/core": "^1.10.0",
-    "@emnapi/runtime": "1.10.0",
+    "@emnapi/core": "^1.11.0",
+    "@emnapi/runtime": "1.11.0",
     "@vitest/coverage-v8": "^4.1.8",
     "tsx": "^4.22.4",
     "typescript": "^6.0.3",

@@ -1,6 +1,0 @@
-.build/
-Packages/
-xcuserdata/
-DerivedData/
-.swiftpm/
-*.xcodeproj

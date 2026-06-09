@@ -506,7 +506,7 @@ checksum = "2af50177e190e07a26ab74f8b1efbfe2ef87da2116221318cb1c2e82baf7de06"
 
 [[package]]
 name = "benchmark-harness"
-version = "5.0.0-rc.8"
+version = "5.0.0-rc.9"
 dependencies = [
  "ahash",
  "anyhow",
@@ -2955,9 +2955,9 @@ dependencies = [
 
 [[package]]
 name = "http"
-version = "1.4.1"
+version = "1.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8be7462df143984c4598a256ef469b251d7d7f9e271135073e78fc535414f3d0"
+checksum = "6970f50e31d6fc17d3fa27329444bfa74e196cf62e95052a3f6fee181dba6425"
 dependencies = [
  "bytes",
  "itoa",
@@ -3643,13 +3643,12 @@ dependencies = [
 
 [[package]]
 name = "js-sys"
-version = "0.3.99"
+version = "0.3.100"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "142bc4740e452c1e57ade0cbc129f139c9093e354346f0872ef985f4f5cf5f11"
+checksum = "f2025f20d7a4fa7785846e7b63d10a76d3f1cee98ee5cb79ea59703f95e42162"
 dependencies = [
  "cfg-if",
  "futures-util",
- "once_cell",
  "wasm-bindgen",
 ]
 
@@ -3693,7 +3692,7 @@ dependencies = [
 
 [[package]]
 name = "kreuzberg"
-version = "5.0.0-rc.8"
+version = "5.0.0-rc.9"
 dependencies = [
  "ahash",
  "anyhow",
@@ -3814,7 +3813,7 @@ dependencies = [
 
 [[package]]
 name = "kreuzberg-cli"
-version = "5.0.0-rc.8"
+version = "5.0.0-rc.9"
 dependencies = [
  "anstyle",
  "anyhow",
@@ -3836,7 +3835,7 @@ dependencies = [
 
 [[package]]
 name = "kreuzberg-dart"
-version = "5.0.0-rc.8"
+version = "5.0.0-rc.9"
 dependencies = [
  "async-trait",
  "flutter_rust_bridge",
@@ -3848,7 +3847,7 @@ dependencies = [
 
 [[package]]
 name = "kreuzberg-ffi"
-version = "5.0.0-rc.8"
+version = "5.0.0-rc.9"
 dependencies = [
  "ahash",
  "async-trait",
@@ -3879,7 +3878,7 @@ dependencies = [
 
 [[package]]
 name = "kreuzberg-jni"
-version = "5.0.0-rc.8"
+version = "5.0.0-rc.9"
 dependencies = [
  "base64 0.22.1",
  "jni 0.22.4",
@@ -3888,7 +3887,7 @@ dependencies = [
 
 [[package]]
 name = "kreuzberg-node"
-version = "5.0.0-rc.8"
+version = "5.0.0-rc.9"
 dependencies = [
  "async-trait",
  "kreuzberg",
@@ -3914,7 +3913,7 @@ dependencies = [
 
 [[package]]
 name = "kreuzberg-paddle-ocr"
-version = "5.0.0-rc.8"
+version = "5.0.0-rc.9"
 dependencies = [
  "geo-clipper",
  "geo-types",
@@ -3928,7 +3927,7 @@ dependencies = [
 
 [[package]]
 name = "kreuzberg-php"
-version = "5.0.0-rc.8"
+version = "5.0.0-rc.9"
 dependencies = [
  "async-trait",
  "ext-php-rs",
@@ -3940,7 +3939,7 @@ dependencies = [
 
 [[package]]
 name = "kreuzberg-py"
-version = "5.0.0-rc.8"
+version = "5.0.0-rc.9"
 dependencies = [
  "async-trait",
  "kreuzberg",
@@ -3953,7 +3952,7 @@ dependencies = [
 
 [[package]]
 name = "kreuzberg-swift"
-version = "5.0.0-rc.8"
+version = "5.0.0-rc.9"
 dependencies = [
  "ahash",
  "async-trait",
@@ -3968,7 +3967,7 @@ dependencies = [
 
 [[package]]
 name = "kreuzberg-tesseract"
-version = "5.0.0-rc.8"
+version = "5.0.0-rc.9"
 dependencies = [
  "cc",
  "cmake",
@@ -3980,7 +3979,7 @@ dependencies = [
 
 [[package]]
 name = "kreuzberg-wasm"
-version = "5.0.0-rc.8"
+version = "5.0.0-rc.9"
 dependencies = [
  "async-trait",
  "futures",
@@ -4098,9 +4097,9 @@ checksum = "92daf443525c4cce67b150400bc2316076100ce0b3686209eb8cf3c31612e6f0"
 
 [[package]]
 name = "liter-llm"
-version = "1.4.1"
+version = "1.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "11ef45cb14a67adc575face64f727c8b95ca9444960f6582b67b61ead8d55841"
+checksum = "442609bd522ffd20983c7c9b852c1f33a6490d8dddb1b566f2c40960026db1e8"
 dependencies = [
  "base64 0.22.1",
  "bytes",
@@ -4118,6 +4117,7 @@ dependencies = [
  "tokio",
  "toml 1.1.2+spec-1.1.0",
  "tracing",
+ "url",
 ]
 
 [[package]]
@@ -5127,9 +5127,9 @@ dependencies = [
 
 [[package]]
 name = "pdf_oxide"
-version = "0.3.60"
+version = "0.3.61"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9fe6f0b96883f92c6e958a14114a530263b893913a57d1783515982c0472dd16"
+checksum = "f5b2e1871e9ab73de8873f9cb57f7f5e66cd072ea1361d5dfbbe89c52d6affa2"
 dependencies = [
  "aes 0.9.1",
  "base64 0.22.1",
@@ -7861,9 +7861,9 @@ checksum = "009994f150cc0cd50ff54917d5bc8bffe8cad10ca10d81c34da2ec421ae61782"
 
 [[package]]
 name = "tree-sitter-language-pack"
-version = "1.9.0-rc.23"
+version = "1.9.0-rc.28"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0f8b7262add101100c4d8651d55d890c061cb304833378e1cfa3a6da505a42e5"
+checksum = "425e4881ee713bb462b2d770523d4af6f03eb820e06deda3b9d74291d360574c"
 dependencies = [
  "ahash",
  "cc",
@@ -8298,9 +8298,9 @@ dependencies = [
 
 [[package]]
 name = "wasm-bindgen"
-version = "0.2.122"
+version = "0.2.123"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3ed04576f974d2b2fba0f38c51dbc5518011e38c36bf1143164be765528fd409"
+checksum = "a254a4b10c19a76f09a27640e7ffbf9bc30bf67e16a3bf28aaefa4920fe81563"
 dependencies = [
  "cfg-if",
  "once_cell",
@@ -8311,9 +8311,9 @@ dependencies = [
 
 [[package]]
 name = "wasm-bindgen-futures"
-version = "0.4.72"
+version = "0.4.73"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9473dbd2991ae90b6291c3c32c30c6187ac49aa32f9905d1cce280ec1e110b0f"
+checksum = "54568702fabf5d4849ce2b90fadfa64168a097eaf4b351ce9df8b687a0086aaf"
 dependencies = [
  "js-sys",
  "wasm-bindgen",
@@ -8321,9 +8321,9 @@ dependencies = [
 
 [[package]]
 name = "wasm-bindgen-macro"
-version = "0.2.122"
+version = "0.2.123"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "916151b09da36bd82f6615cbf3a419e2f0ba23a03c6160e8e92eb6bd4aa1dec6"
+checksum = "24a40fc75b0ec6f3746ceb10d36f53a93dcd68a93b11b6445983945d79eba0dc"
 dependencies = [
  "quote",
  "wasm-bindgen-macro-support",
@@ -8331,9 +8331,9 @@ dependencies = [
 
 [[package]]
 name = "wasm-bindgen-macro-support"
-version = "0.2.122"
+version = "0.2.123"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "299047362ccbfce148b67ab7e73349f77748e00c8296f9542adfad2ad82c5c5e"
+checksum = "908f34bd9b9ce3d4caf07b72dfab63d61504d156856c6bd3cd87fa350cf3985b"
 dependencies = [
  "bumpalo",
  "proc-macro2",
@@ -8356,9 +8356,9 @@ dependencies = [
 
 [[package]]
 name = "wasm-bindgen-shared"
-version = "0.2.122"
+version = "0.2.123"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9a929b2c61f11ba3e9bc35b50c1f25cb38e0e892c0c231ae2b8cf78d5dad4437"
+checksum = "7acbf7616c27b194bbb550bf77ed0c2c3e5b7fd1260a93082b95fb7f47959b92"
 dependencies = [
  "unicode-ident",
 ]
@@ -8423,9 +8423,9 @@ dependencies = [
 
 [[package]]
 name = "web-sys"
-version = "0.3.99"
+version = "0.3.100"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6d621441cfc37b84979402712047321980c178f299193a3589d05b99e8763436"
+checksum = "6e0871acf327f283dc6da28a1696cdc64fb355ba9f935d052021fa77f35cce69"
 dependencies = [
  "js-sys",
  "wasm-bindgen",
@@ -8503,9 +8503,9 @@ dependencies = [
 
 [[package]]
 name = "which"
-version = "8.0.2"
+version = "8.0.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "81995fafaaaf6ae47a7d0cc83c67caf92aeb7e5331650ae6ff856f7c0c60c459"
+checksum = "c789537cf2f7f55be8e6192f92e464174ee55f91af622777f7f1ceb0dbccd03e"
 dependencies = [
  "libc",
 ]
