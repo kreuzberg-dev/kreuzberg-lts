@@ -1,5 +1,5 @@
 [workspace]
-alef_version = "0.23.65"
+alef_version = "0.23.68"
 languages = [
   "python",
   "node",
@@ -752,7 +752,7 @@ e2e = "cd e2e/python && uv run --no-sync pytest tests/ -q"
 
 [crates.test.node]
 precondition = "command -v pnpm >/dev/null 2>&1"
-before = "cd crates/kreuzberg-node && pnpm install && pnpm exec napi build --output-dir . --release --platform"
+before = "cd crates/kreuzberg-node && pnpm install && pnpm exec napi build --output-dir . --release --platform --jobs 1"
 e2e = "cd e2e/node && CI=true pnpm install && pnpm test"
 
 [crates.test.go]
