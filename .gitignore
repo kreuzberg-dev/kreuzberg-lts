@@ -80,7 +80,12 @@ packages/php/var/
 # Swift / SwiftPM / Xcode
 .build/
 .swiftpm/
-Packages/
+# Legacy SwiftPM resolved-packages dir — anchored to packages/swift/ so it
+# does NOT match our top-level packages/ directory on macOS case-insensitive
+# filesystems (where the bare `Packages/` pattern previously matched and
+# silently dropped packages/dart/pubspec.yaml + 9 other scaffold files from
+# the index during regen).
+packages/swift/**/Packages/
 Package.resolved
 *.xcodeproj/
 *.xcworkspace/
@@ -299,6 +304,7 @@ packages/r/src/*.o
 
 # BEGIN ai-rulez (DO NOT EDIT - managed by ai-rulez)
 .agents/
+.ai-rulez/.generated-manifest.json
 .cursor/
 .github/agents/
 .github/commands/
