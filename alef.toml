@@ -1072,7 +1072,10 @@ args = [
 async = true
 
 [crates.e2e.calls.extract_file.overrides.swift]
-async = false
+# Kreuzberg.extractFile(_:_:_:) is async; matching the base call's async=true
+# keeps the generated tests' async/await usage consistent regardless of
+# whether the fixture has an explicit "call": "extract_file" or relies on
+# the default route (which always uses the base [crates.e2e.call]).
 unnamed_arg_indices = [0, 1, 2]
 
 [crates.e2e.calls.extract_file.overrides.zig]

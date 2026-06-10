@@ -17,6 +17,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **swift e2e: removed erroneous `async = false` override on `extract_file` for swift.** `Kreuzberg.extractFile(_:_:_:)` is async in the Swift binding. The override in `alef.toml` forced `is_async = false` for fixtures that explicitly set `"call": "extract_file"` (e.g. `api_batch_bytes_async`), generating non-async test methods that called the async binding without `await` — compile errors. Fixtures without an explicit `call` fall through `resolve_call_for_fixture` to the global default and got `is_async = true` correctly, which is why `testApiExtractFileAsync` compiled but `testApiBatchBytesAsync` and 4 siblings did not. Dropping the override aligns both code paths.
+
 - **r**: fix macOS dylib rpath so ORT loads at R extension runtime. `packages/r/src/rust/build.rs` now adds `-Wl,-rpath,@loader_path` linker flag on macOS, enabling the final R extension `.so` to locate transitively-linked dylibs like `libonnxruntime.dylib` at load time. Without this, R's `dyn.load` via `library.dynam2` failed with `undefined symbol: OrtGetApiBase` in CI on arm64-apple-darwin, blocking all R e2e tests. This matches the pattern applied to C# FFI in commit b5bc5d7791.
 
 - **Publish Release WASM job now non-blocking via `continue-on-error`.** Build WASM package job
