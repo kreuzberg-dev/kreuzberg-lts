@@ -319,6 +319,7 @@ fn test_extraction_config_needs_image_processing() {
         run_ocr_on_images: true,
         ocr_text_only: false,
         append_ocr_text: false,
+        output_format: kreuzberg::core::config::extraction::ImageOutputFormat::Native,
     });
     assert!(
         config.needs_image_processing(),

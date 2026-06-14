@@ -184,6 +184,7 @@ export type {
   ImageExtractionConfig,
   ImageMetadata,
   ImageMetadataType,
+  ImageOutputFormat,
   ImagePreprocessingConfig,
   ImagePreprocessingMetadata,
   InlineElement,

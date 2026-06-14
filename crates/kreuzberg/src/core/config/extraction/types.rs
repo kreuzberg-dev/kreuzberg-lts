@@ -9,6 +9,83 @@
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 
+/// Target format for re-encoding extracted images.
+///
+/// Controls whether and how extracted images are normalised to a uniform
+/// container format before being returned in `ExtractionResult.images`.
+/// The default (`Native`) preserves the format produced by each extractor
+/// without any additional encode pass.
+///
+/// Callers that need uniform output — e.g. cloud pipelines that always store
+/// WebP thumbnails — set this once on `ImageExtractionConfig.output_format`
+/// rather than re-encoding downstream.
+///
+/// # Serde shape
+///
+/// Uses a tagged enum: `{"type": "native"}`, `{"type": "png"}`,
+/// `{"type": "jpeg", "quality": 90}`, etc.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "api", derive(utoipa::ToSchema))]
+#[serde(tag = "type", rename_all = "snake_case")]
+pub enum ImageOutputFormat {
+    /// Preserve whatever format the extractor produced (default).
+    ///
+    /// No re-encode pass is performed. `ExtractedImage.format` reflects the
+    /// source format: JPEG for embedded PDF images, PNG for rasterised content,
+    /// or the native container format from office documents.
+    #[default]
+    Native,
+
+    /// Re-encode all extracted images as PNG (lossless).
+    Png,
+
+    /// Re-encode all extracted images as JPEG at the given quality level.
+    ///
+    /// `quality` must be in `1..=100`. Values outside this range are clamped
+    /// and a warning is emitted. Higher values produce larger files with less
+    /// artefacting; 85 is a reasonable default.
+    Jpeg {
+        /// JPEG quality (1–100, default 85).
+        #[serde(default = "default_jpeg_quality")]
+        quality: u8,
+    },
+
+    /// Re-encode all extracted images as WebP at the given quality level.
+    ///
+    /// `quality` must be in `1..=100`. Values outside this range are clamped
+    /// and a warning is emitted. 80 is a reasonable default.
+    WebP {
+        /// WebP quality (1–100, default 80).
+        #[serde(default = "default_webp_quality")]
+        quality: u8,
+    },
+
+    /// Re-encode all extracted images as HEIF/HEIC at the given quality level.
+    ///
+    /// Requires the `heic` feature. `quality` must be in `1..=100`. Values
+    /// outside this range are clamped and a warning is emitted. 80 is a
+    /// reasonable default.
+    #[cfg(feature = "heic")]
+    Heif {
+        /// HEIF quality (1–100, default 80).
+        #[serde(default = "default_heif_quality")]
+        quality: u8,
+    },
+}
+
+const fn default_jpeg_quality() -> u8 {
+    85
+}
+
+const fn default_webp_quality() -> u8 {
+    80
+}
+
+#[cfg(feature = "heic")]
+const fn default_heif_quality() -> u8 {
+    80
+}
+
 /// Batch item for byte array extraction.
 ///
 /// Used with [`crate::batch_extract_bytes`] and [`crate::batch_extract_bytes_sync`]
@@ -122,6 +199,18 @@ pub struct ImageExtractionConfig {
     /// the image placeholder in the rendered output.
     #[serde(default)]
     pub append_ocr_text: bool,
+
+    /// Target format for re-encoding extracted images.
+    ///
+    /// When set to anything other than `Native`, each extracted image is
+    /// re-encoded to the requested format before being returned. This lets
+    /// callers receive uniform output without duplicating encode logic
+    /// downstream.
+    ///
+    /// Defaults to `Native` — no re-encode pass is performed and
+    /// `ExtractedImage.format` reflects the source extractor's output.
+    #[serde(default)]
+    pub output_format: ImageOutputFormat,
 }
 
 /// Token reduction configuration.
@@ -168,6 +257,7 @@ impl Default for ImageExtractionConfig {
             run_ocr_on_images: true,
             ocr_text_only: false,
             append_ocr_text: false,
+            output_format: ImageOutputFormat::Native,
         }
     }
 }
@@ -341,5 +431,102 @@ mod tests {
         let json = serde_json::to_string(&config).unwrap();
         let back: ImageExtractionConfig = serde_json::from_str(&json).unwrap();
         assert!(back.include_page_rasters);
+    }
+
+    // --- ImageOutputFormat tests ---
+
+    #[test]
+    fn test_image_output_format_default_is_native() {
+        assert_eq!(ImageOutputFormat::default(), ImageOutputFormat::Native);
+    }
+
+    #[test]
+    fn test_image_extraction_config_default_output_format_is_native() {
+        let cfg = ImageExtractionConfig::default();
+        assert_eq!(cfg.output_format, ImageOutputFormat::Native);
+    }
+
+    #[test]
+    fn test_image_extraction_config_empty_json_gives_native_output_format() {
+        let cfg: ImageExtractionConfig = serde_json::from_str("{}").unwrap();
+        assert_eq!(cfg.output_format, ImageOutputFormat::Native);
+    }
+
+    #[test]
+    fn test_output_format_native_roundtrips_via_json() {
+        let fmt = ImageOutputFormat::Native;
+        let json = serde_json::to_string(&fmt).unwrap();
+        assert_eq!(json, r#"{"type":"native"}"#);
+        let back: ImageOutputFormat = serde_json::from_str(&json).unwrap();
+        assert_eq!(back, ImageOutputFormat::Native);
+    }
+
+    #[test]
+    fn test_output_format_png_roundtrips_via_json() {
+        let fmt = ImageOutputFormat::Png;
+        let json = serde_json::to_string(&fmt).unwrap();
+        assert_eq!(json, r#"{"type":"png"}"#);
+        let back: ImageOutputFormat = serde_json::from_str(&json).unwrap();
+        assert_eq!(back, ImageOutputFormat::Png);
+    }
+
+    #[test]
+    fn test_output_format_jpeg_roundtrips_via_json() {
+        let fmt = ImageOutputFormat::Jpeg { quality: 90 };
+        let json = serde_json::to_string(&fmt).unwrap();
+        let back: ImageOutputFormat = serde_json::from_str(&json).unwrap();
+        assert_eq!(back, ImageOutputFormat::Jpeg { quality: 90 });
+    }
+
+    #[test]
+    fn test_output_format_jpeg_default_quality_applied_when_field_absent() {
+        // Omitting "quality" from the JSON object should yield the default (85).
+        let json = r#"{"type":"jpeg"}"#;
+        let fmt: ImageOutputFormat = serde_json::from_str(json).unwrap();
+        assert_eq!(fmt, ImageOutputFormat::Jpeg { quality: 85 });
+    }
+
+    #[test]
+    fn test_output_format_webp_roundtrips_via_json() {
+        let fmt = ImageOutputFormat::WebP { quality: 75 };
+        let json = serde_json::to_string(&fmt).unwrap();
+        let back: ImageOutputFormat = serde_json::from_str(&json).unwrap();
+        assert_eq!(back, ImageOutputFormat::WebP { quality: 75 });
+    }
+
+    #[test]
+    fn test_output_format_webp_default_quality_applied_when_field_absent() {
+        // Omitting "quality" from the JSON object should yield the default (80).
+        let json = r#"{"type":"web_p"}"#;
+        let fmt: ImageOutputFormat = serde_json::from_str(json).unwrap();
+        assert_eq!(fmt, ImageOutputFormat::WebP { quality: 80 });
+    }
+
+    #[cfg(feature = "heic")]
+    #[test]
+    fn test_output_format_heif_roundtrips_via_json() {
+        let fmt = ImageOutputFormat::Heif { quality: 70 };
+        let json = serde_json::to_string(&fmt).unwrap();
+        let back: ImageOutputFormat = serde_json::from_str(&json).unwrap();
+        assert_eq!(back, ImageOutputFormat::Heif { quality: 70 });
+    }
+
+    #[cfg(feature = "heic")]
+    #[test]
+    fn test_output_format_heif_default_quality_applied_when_field_absent() {
+        let json = r#"{"type":"heif"}"#;
+        let fmt: ImageOutputFormat = serde_json::from_str(json).unwrap();
+        assert_eq!(fmt, ImageOutputFormat::Heif { quality: 80 });
+    }
+
+    #[test]
+    fn test_output_format_in_image_extraction_config_roundtrips_via_json() {
+        let config = ImageExtractionConfig {
+            output_format: ImageOutputFormat::Jpeg { quality: 92 },
+            ..Default::default()
+        };
+        let json = serde_json::to_string(&config).unwrap();
+        let back: ImageExtractionConfig = serde_json::from_str(&json).unwrap();
+        assert_eq!(back.output_format, ImageOutputFormat::Jpeg { quality: 92 });
     }
 }

@@ -910,6 +910,7 @@ BatchFileItem <- new.env(parent = emptyenv())
 #' @field run_ocr_on_images Run OCR on extracted images and include the recognized text in the document content.
 #' @field ocr_text_only When `true`, image OCR results are rendered as plain text without the `![...](...)` markdown
 #' @field append_ocr_text When `true` and `ocr_text_only` is `false`, append the OCR text after the image placeholder
+#' @field output_format Target format for re-encoding extracted images.
 #' @export
 ImageExtractionConfig <- new.env(parent = emptyenv())
 ImageExtractionConfig$default <- function() .Call("wrap__ImageExtractionConfig__default", PACKAGE = "kreuzberg")
@@ -3670,6 +3671,39 @@ PdfMetadata$from_json <- function(json) {
 }
 #' @export
 `[[.PdfMetadata` <- `$.PdfMetadata`
+#' Target format for re-encoding extracted images
+#'
+#' Controls whether and how extracted images are normalised to a uniform
+#' container format before being returned in `ExtractionResult.images`.
+#' The default (`Native`) preserves the format produced by each extractor
+#' without any additional encode pass.
+#'
+#' Callers that need uniform output — e.g. cloud pipelines that always store
+#' WebP thumbnails — set this once on `ImageExtractionConfig.output_format`
+#' rather than re-encoding downstream.
+#'
+#' # Serde shape
+#'
+#' Uses a tagged enum: `{"type": "native"}`, `{"type": "png"}`,
+#' `{"type": "jpeg", "quality": 90}`, etc.
+#' @field Native Preserve whatever format the extractor produced (default).
+#' @field Png Re-encode all extracted images as PNG (lossless).
+#' @field Jpeg Re-encode all extracted images as JPEG at the given quality level.
+#' @field WebP Re-encode all extracted images as WebP at the given quality level.
+#' @field Heif Re-encode all extracted images as HEIF/HEIC at the given quality level.
+#' @export
+ImageOutputFormat <- new.env(parent = emptyenv())
+#' @export
+`$.ImageOutputFormat` <- function(self, name) {
+  func <- ImageOutputFormat[[name]]
+  if (identical(names(formals(func))[1], "self")) {
+    function(...) func(self, ...)
+  } else {
+    func
+  }
+}
+#' @export
+`[[.ImageOutputFormat` <- `$.ImageOutputFormat`
 #' Output format for extraction results
 #'
 #' Controls the format of the `content` field in `ExtractionResult`.

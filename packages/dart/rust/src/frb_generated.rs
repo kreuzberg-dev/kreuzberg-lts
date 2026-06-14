@@ -8218,6 +8218,7 @@ const _: fn() = || {
         let _: bool = ImageExtractionConfig.run_ocr_on_images;
         let _: bool = ImageExtractionConfig.ocr_text_only;
         let _: bool = ImageExtractionConfig.append_ocr_text;
+        let _: crate::ImageOutputFormat = ImageExtractionConfig.output_format;
     }
     {
         let ImageMetadata = None::<crate::ImageMetadata>.unwrap();
@@ -8232,6 +8233,19 @@ const _: fn() = || {
         let _: Option<String> = ImageMetadataType.alt;
         let _: Option<String> = ImageMetadataType.title;
         let _: crate::ImageType = ImageMetadataType.image_type;
+    }
+    match None::<crate::ImageOutputFormat>.unwrap() {
+        crate::ImageOutputFormat::Native => {}
+        crate::ImageOutputFormat::Png => {}
+        crate::ImageOutputFormat::Jpeg { quality } => {
+            let _: i64 = quality;
+        }
+        crate::ImageOutputFormat::WebP { quality } => {
+            let _: i64 = quality;
+        }
+        crate::ImageOutputFormat::Heif { quality } => {
+            let _: i64 = quality;
+        }
     }
     {
         let ImagePreprocessingConfig = None::<crate::ImagePreprocessingConfig>.unwrap();
@@ -11994,6 +12008,7 @@ impl SseDecode for crate::ImageExtractionConfig {
         let mut var_runOcrOnImages = <bool>::sse_decode(deserializer);
         let mut var_ocrTextOnly = <bool>::sse_decode(deserializer);
         let mut var_appendOcrText = <bool>::sse_decode(deserializer);
+        let mut var_outputFormat = <crate::ImageOutputFormat>::sse_decode(deserializer);
         return crate::ImageExtractionConfig {
             extract_images: var_extractImages,
             target_dpi: var_targetDpi,
@@ -12008,6 +12023,7 @@ impl SseDecode for crate::ImageExtractionConfig {
             run_ocr_on_images: var_runOcrOnImages,
             ocr_text_only: var_ocrTextOnly,
             append_ocr_text: var_appendOcrText,
+            output_format: var_outputFormat,
         };
     }
 }
@@ -12063,6 +12079,36 @@ impl SseDecode for crate::ImageMetadataType {
             title: var_title,
             image_type: var_imageType,
         };
+    }
+}
+
+impl SseDecode for crate::ImageOutputFormat {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut tag_ = <i32>::sse_decode(deserializer);
+        match tag_ {
+            0 => {
+                return crate::ImageOutputFormat::Native;
+            }
+            1 => {
+                return crate::ImageOutputFormat::Png;
+            }
+            2 => {
+                let mut var_quality = <i64>::sse_decode(deserializer);
+                return crate::ImageOutputFormat::Jpeg { quality: var_quality };
+            }
+            3 => {
+                let mut var_quality = <i64>::sse_decode(deserializer);
+                return crate::ImageOutputFormat::WebP { quality: var_quality };
+            }
+            4 => {
+                let mut var_quality = <i64>::sse_decode(deserializer);
+                return crate::ImageOutputFormat::Heif { quality: var_quality };
+            }
+            _ => {
+                unimplemented!("");
+            }
+        }
     }
 }
 
@@ -18790,6 +18836,7 @@ impl flutter_rust_bridge::IntoDart for FrbWrapper<crate::ImageExtractionConfig> 
             self.0.run_ocr_on_images.into_into_dart().into_dart(),
             self.0.ocr_text_only.into_into_dart().into_dart(),
             self.0.append_ocr_text.into_into_dart().into_dart(),
+            self.0.output_format.into_into_dart().into_dart(),
         ]
         .into_dart()
     }
@@ -18859,6 +18906,33 @@ impl flutter_rust_bridge::IntoDart for FrbWrapper<crate::ImageMetadataType> {
 impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive for FrbWrapper<crate::ImageMetadataType> {}
 impl flutter_rust_bridge::IntoIntoDart<FrbWrapper<crate::ImageMetadataType>> for crate::ImageMetadataType {
     fn into_into_dart(self) -> FrbWrapper<crate::ImageMetadataType> {
+        self.into()
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for FrbWrapper<crate::ImageOutputFormat> {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        match self.0 {
+            crate::ImageOutputFormat::Native => [0.into_dart()].into_dart(),
+            crate::ImageOutputFormat::Png => [1.into_dart()].into_dart(),
+            crate::ImageOutputFormat::Jpeg { quality } => {
+                [2.into_dart(), quality.into_into_dart().into_dart()].into_dart()
+            }
+            crate::ImageOutputFormat::WebP { quality } => {
+                [3.into_dart(), quality.into_into_dart().into_dart()].into_dart()
+            }
+            crate::ImageOutputFormat::Heif { quality } => {
+                [4.into_dart(), quality.into_into_dart().into_dart()].into_dart()
+            }
+            _ => {
+                unimplemented!("");
+            }
+        }
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive for FrbWrapper<crate::ImageOutputFormat> {}
+impl flutter_rust_bridge::IntoIntoDart<FrbWrapper<crate::ImageOutputFormat>> for crate::ImageOutputFormat {
+    fn into_into_dart(self) -> FrbWrapper<crate::ImageOutputFormat> {
         self.into()
     }
 }
@@ -23130,6 +23204,7 @@ impl SseEncode for crate::ImageExtractionConfig {
         <bool>::sse_encode(self.run_ocr_on_images, serializer);
         <bool>::sse_encode(self.ocr_text_only, serializer);
         <bool>::sse_encode(self.append_ocr_text, serializer);
+        <crate::ImageOutputFormat>::sse_encode(self.output_format, serializer);
     }
 }
 
@@ -23176,6 +23251,35 @@ impl SseEncode for crate::ImageMetadataType {
         <Option<String>>::sse_encode(self.alt, serializer);
         <Option<String>>::sse_encode(self.title, serializer);
         <crate::ImageType>::sse_encode(self.image_type, serializer);
+    }
+}
+
+impl SseEncode for crate::ImageOutputFormat {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        match self {
+            crate::ImageOutputFormat::Native => {
+                <i32>::sse_encode(0, serializer);
+            }
+            crate::ImageOutputFormat::Png => {
+                <i32>::sse_encode(1, serializer);
+            }
+            crate::ImageOutputFormat::Jpeg { quality } => {
+                <i32>::sse_encode(2, serializer);
+                <i64>::sse_encode(quality, serializer);
+            }
+            crate::ImageOutputFormat::WebP { quality } => {
+                <i32>::sse_encode(3, serializer);
+                <i64>::sse_encode(quality, serializer);
+            }
+            crate::ImageOutputFormat::Heif { quality } => {
+                <i32>::sse_encode(4, serializer);
+                <i64>::sse_encode(quality, serializer);
+            }
+            _ => {
+                unimplemented!("");
+            }
+        }
     }
 }
 

@@ -36,6 +36,8 @@ pub mod config;
 pub mod config_validation;
 pub mod extractor;
 pub mod formats;
+#[cfg(feature = "image-encode")]
+pub(crate) mod image_encode;
 pub mod io;
 pub mod mime;
 pub(crate) mod path_resolver;

@@ -4090,6 +4090,449 @@ String toString() {
 
 
 /// @nodoc
+mixin _$ImageOutputFormat {
+
+
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ImageOutputFormat);
+}
+
+
+@override
+int get hashCode => runtimeType.hashCode;
+
+@override
+String toString() {
+  return 'ImageOutputFormat()';
+}
+
+
+}
+
+/// @nodoc
+class $ImageOutputFormatCopyWith<$Res>  {
+$ImageOutputFormatCopyWith(ImageOutputFormat _, $Res Function(ImageOutputFormat) __);
+}
+
+
+/// Adds pattern-matching-related methods to [ImageOutputFormat].
+extension ImageOutputFormatPatterns on ImageOutputFormat {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( ImageOutputFormat_Native value)?  native,TResult Function( ImageOutputFormat_Png value)?  png,TResult Function( ImageOutputFormat_Jpeg value)?  jpeg,TResult Function( ImageOutputFormat_WebP value)?  webP,TResult Function( ImageOutputFormat_Heif value)?  heif,required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case ImageOutputFormat_Native() when native != null:
+return native(_that);case ImageOutputFormat_Png() when png != null:
+return png(_that);case ImageOutputFormat_Jpeg() when jpeg != null:
+return jpeg(_that);case ImageOutputFormat_WebP() when webP != null:
+return webP(_that);case ImageOutputFormat_Heif() when heif != null:
+return heif(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( ImageOutputFormat_Native value)  native,required TResult Function( ImageOutputFormat_Png value)  png,required TResult Function( ImageOutputFormat_Jpeg value)  jpeg,required TResult Function( ImageOutputFormat_WebP value)  webP,required TResult Function( ImageOutputFormat_Heif value)  heif,}){
+final _that = this;
+switch (_that) {
+case ImageOutputFormat_Native():
+return native(_that);case ImageOutputFormat_Png():
+return png(_that);case ImageOutputFormat_Jpeg():
+return jpeg(_that);case ImageOutputFormat_WebP():
+return webP(_that);case ImageOutputFormat_Heif():
+return heif(_that);}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( ImageOutputFormat_Native value)?  native,TResult? Function( ImageOutputFormat_Png value)?  png,TResult? Function( ImageOutputFormat_Jpeg value)?  jpeg,TResult? Function( ImageOutputFormat_WebP value)?  webP,TResult? Function( ImageOutputFormat_Heif value)?  heif,}){
+final _that = this;
+switch (_that) {
+case ImageOutputFormat_Native() when native != null:
+return native(_that);case ImageOutputFormat_Png() when png != null:
+return png(_that);case ImageOutputFormat_Jpeg() when jpeg != null:
+return jpeg(_that);case ImageOutputFormat_WebP() when webP != null:
+return webP(_that);case ImageOutputFormat_Heif() when heif != null:
+return heif(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  native,TResult Function()?  png,TResult Function( PlatformInt64 quality)?  jpeg,TResult Function( PlatformInt64 quality)?  webP,TResult Function( PlatformInt64 quality)?  heif,required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case ImageOutputFormat_Native() when native != null:
+return native();case ImageOutputFormat_Png() when png != null:
+return png();case ImageOutputFormat_Jpeg() when jpeg != null:
+return jpeg(_that.quality);case ImageOutputFormat_WebP() when webP != null:
+return webP(_that.quality);case ImageOutputFormat_Heif() when heif != null:
+return heif(_that.quality);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  native,required TResult Function()  png,required TResult Function( PlatformInt64 quality)  jpeg,required TResult Function( PlatformInt64 quality)  webP,required TResult Function( PlatformInt64 quality)  heif,}) {final _that = this;
+switch (_that) {
+case ImageOutputFormat_Native():
+return native();case ImageOutputFormat_Png():
+return png();case ImageOutputFormat_Jpeg():
+return jpeg(_that.quality);case ImageOutputFormat_WebP():
+return webP(_that.quality);case ImageOutputFormat_Heif():
+return heif(_that.quality);}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  native,TResult? Function()?  png,TResult? Function( PlatformInt64 quality)?  jpeg,TResult? Function( PlatformInt64 quality)?  webP,TResult? Function( PlatformInt64 quality)?  heif,}) {final _that = this;
+switch (_that) {
+case ImageOutputFormat_Native() when native != null:
+return native();case ImageOutputFormat_Png() when png != null:
+return png();case ImageOutputFormat_Jpeg() when jpeg != null:
+return jpeg(_that.quality);case ImageOutputFormat_WebP() when webP != null:
+return webP(_that.quality);case ImageOutputFormat_Heif() when heif != null:
+return heif(_that.quality);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+
+
+class ImageOutputFormat_Native extends ImageOutputFormat {
+  const ImageOutputFormat_Native(): super._();
+  
+
+
+
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ImageOutputFormat_Native);
+}
+
+
+@override
+int get hashCode => runtimeType.hashCode;
+
+@override
+String toString() {
+  return 'ImageOutputFormat.native()';
+}
+
+
+}
+
+
+
+
+/// @nodoc
+
+
+class ImageOutputFormat_Png extends ImageOutputFormat {
+  const ImageOutputFormat_Png(): super._();
+  
+
+
+
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ImageOutputFormat_Png);
+}
+
+
+@override
+int get hashCode => runtimeType.hashCode;
+
+@override
+String toString() {
+  return 'ImageOutputFormat.png()';
+}
+
+
+}
+
+
+
+
+/// @nodoc
+
+
+class ImageOutputFormat_Jpeg extends ImageOutputFormat {
+  const ImageOutputFormat_Jpeg({required this.quality}): super._();
+  
+
+/// JPEG quality (1–100, default 85).
+ final  PlatformInt64 quality;
+
+/// Create a copy of ImageOutputFormat
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$ImageOutputFormat_JpegCopyWith<ImageOutputFormat_Jpeg> get copyWith => _$ImageOutputFormat_JpegCopyWithImpl<ImageOutputFormat_Jpeg>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ImageOutputFormat_Jpeg&&(identical(other.quality, quality) || other.quality == quality));
+}
+
+
+@override
+int get hashCode => Object.hash(runtimeType,quality);
+
+@override
+String toString() {
+  return 'ImageOutputFormat.jpeg(quality: $quality)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $ImageOutputFormat_JpegCopyWith<$Res> implements $ImageOutputFormatCopyWith<$Res> {
+  factory $ImageOutputFormat_JpegCopyWith(ImageOutputFormat_Jpeg value, $Res Function(ImageOutputFormat_Jpeg) _then) = _$ImageOutputFormat_JpegCopyWithImpl;
+@useResult
+$Res call({
+ PlatformInt64 quality
+});
+
+
+
+
+}
+/// @nodoc
+class _$ImageOutputFormat_JpegCopyWithImpl<$Res>
+    implements $ImageOutputFormat_JpegCopyWith<$Res> {
+  _$ImageOutputFormat_JpegCopyWithImpl(this._self, this._then);
+
+  final ImageOutputFormat_Jpeg _self;
+  final $Res Function(ImageOutputFormat_Jpeg) _then;
+
+/// Create a copy of ImageOutputFormat
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? quality = null,}) {
+  return _then(ImageOutputFormat_Jpeg(
+quality: null == quality ? _self.quality : quality // ignore: cast_nullable_to_non_nullable
+as PlatformInt64,
+  ));
+}
+
+
+}
+
+/// @nodoc
+
+
+class ImageOutputFormat_WebP extends ImageOutputFormat {
+  const ImageOutputFormat_WebP({required this.quality}): super._();
+  
+
+/// WebP quality (1–100, default 80).
+ final  PlatformInt64 quality;
+
+/// Create a copy of ImageOutputFormat
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$ImageOutputFormat_WebPCopyWith<ImageOutputFormat_WebP> get copyWith => _$ImageOutputFormat_WebPCopyWithImpl<ImageOutputFormat_WebP>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ImageOutputFormat_WebP&&(identical(other.quality, quality) || other.quality == quality));
+}
+
+
+@override
+int get hashCode => Object.hash(runtimeType,quality);
+
+@override
+String toString() {
+  return 'ImageOutputFormat.webP(quality: $quality)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $ImageOutputFormat_WebPCopyWith<$Res> implements $ImageOutputFormatCopyWith<$Res> {
+  factory $ImageOutputFormat_WebPCopyWith(ImageOutputFormat_WebP value, $Res Function(ImageOutputFormat_WebP) _then) = _$ImageOutputFormat_WebPCopyWithImpl;
+@useResult
+$Res call({
+ PlatformInt64 quality
+});
+
+
+
+
+}
+/// @nodoc
+class _$ImageOutputFormat_WebPCopyWithImpl<$Res>
+    implements $ImageOutputFormat_WebPCopyWith<$Res> {
+  _$ImageOutputFormat_WebPCopyWithImpl(this._self, this._then);
+
+  final ImageOutputFormat_WebP _self;
+  final $Res Function(ImageOutputFormat_WebP) _then;
+
+/// Create a copy of ImageOutputFormat
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? quality = null,}) {
+  return _then(ImageOutputFormat_WebP(
+quality: null == quality ? _self.quality : quality // ignore: cast_nullable_to_non_nullable
+as PlatformInt64,
+  ));
+}
+
+
+}
+
+/// @nodoc
+
+
+class ImageOutputFormat_Heif extends ImageOutputFormat {
+  const ImageOutputFormat_Heif({required this.quality}): super._();
+  
+
+/// HEIF quality (1–100, default 80).
+ final  PlatformInt64 quality;
+
+/// Create a copy of ImageOutputFormat
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$ImageOutputFormat_HeifCopyWith<ImageOutputFormat_Heif> get copyWith => _$ImageOutputFormat_HeifCopyWithImpl<ImageOutputFormat_Heif>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ImageOutputFormat_Heif&&(identical(other.quality, quality) || other.quality == quality));
+}
+
+
+@override
+int get hashCode => Object.hash(runtimeType,quality);
+
+@override
+String toString() {
+  return 'ImageOutputFormat.heif(quality: $quality)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $ImageOutputFormat_HeifCopyWith<$Res> implements $ImageOutputFormatCopyWith<$Res> {
+  factory $ImageOutputFormat_HeifCopyWith(ImageOutputFormat_Heif value, $Res Function(ImageOutputFormat_Heif) _then) = _$ImageOutputFormat_HeifCopyWithImpl;
+@useResult
+$Res call({
+ PlatformInt64 quality
+});
+
+
+
+
+}
+/// @nodoc
+class _$ImageOutputFormat_HeifCopyWithImpl<$Res>
+    implements $ImageOutputFormat_HeifCopyWith<$Res> {
+  _$ImageOutputFormat_HeifCopyWithImpl(this._self, this._then);
+
+  final ImageOutputFormat_Heif _self;
+  final $Res Function(ImageOutputFormat_Heif) _then;
+
+/// Create a copy of ImageOutputFormat
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? quality = null,}) {
+  return _then(ImageOutputFormat_Heif(
+quality: null == quality ? _self.quality : quality // ignore: cast_nullable_to_non_nullable
+as PlatformInt64,
+  ));
+}
+
+
+}
+
+/// @nodoc
 mixin _$KreuzbergError {
 
 

@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Image output format normalisation via `ImageExtractionConfig.output_format`.** New opt-in pass that re-encodes extracted images to a single output format after OCR but before post-processors, so OCR backends see source bytes (correct probing) while captioning and QR detection consume normalized bytes (correct MIME). Variants: `Native` (default, no behaviour change), `Png`, `Jpeg { quality }` (default 85), `WebP { quality }` (default 80, lossless-only; quality value accepted for forward-compatibility), `Heif { quality }` (default 80, requires `heic` feature). Source formats the `image` crate cannot decode (`svg`, `emf`, `wmf`, `jp2`/`jpeg2000`) are skipped with `ProcessingWarning { source: "image_encoder" }` and source bytes are preserved. Gated by new `image-encode` Cargo feature pulled in automatically by `pdf`, `ocr-pipeline`, `heic`, and `paddle-ocr`.
+
+### Notes
+
+- WebP normalization uses lossless encoding only due to `image` crate 0.25 limitations; the quality field on `WebP` is accepted for forward-compatibility but not yet applied.
+
 ## [5.0.0-rc.12] - 2026-06-14
 
 ### Added

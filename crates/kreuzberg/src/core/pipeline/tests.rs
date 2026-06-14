@@ -1009,6 +1009,135 @@ fn test_append_ocr_text_for_pptx_images() {
     assert!(rendered.contains("OCR text here"));
 }
 
+/// Smoke tests for `apply_output_format_pass`.
+///
+/// These operate directly on `ExtractionResult` without invoking the full extractor,
+/// proving the pass executes correctly when called at the pipeline level.
+#[cfg(feature = "image-encode")]
+mod output_format_pass_tests {
+    use std::borrow::Cow;
+    use std::io::Cursor;
+
+    use bytes::Bytes;
+    use image::{DynamicImage, ImageFormat};
+
+    use crate::core::config::extraction::{ImageExtractionConfig, ImageOutputFormat};
+    use crate::types::{ExtractedImage, ExtractionResult};
+
+    use super::apply_output_format_pass;
+
+    fn make_jpeg_bytes() -> Bytes {
+        use image::codecs::jpeg::JpegEncoder;
+        let img = image::RgbImage::new(8, 8);
+        let mut buf: Vec<u8> = Vec::new();
+        JpegEncoder::new_with_quality(&mut buf, 85)
+            .encode_image(&DynamicImage::ImageRgb8(img))
+            .expect("test JPEG encode");
+        Bytes::from(buf)
+    }
+
+    fn make_png_bytes() -> Bytes {
+        let img = image::RgbImage::new(8, 8);
+        let mut buf: Vec<u8> = Vec::new();
+        DynamicImage::ImageRgb8(img)
+            .write_to(&mut Cursor::new(&mut buf), ImageFormat::Png)
+            .expect("test PNG encode");
+        Bytes::from(buf)
+    }
+
+    fn make_image(data: Bytes, format: &'static str) -> ExtractedImage {
+        ExtractedImage {
+            data,
+            format: Cow::Borrowed(format),
+            ..Default::default()
+        }
+    }
+
+    /// Both decodable images are re-encoded to PNG; no warnings are pushed.
+    #[test]
+    fn both_images_re_encoded_to_png_no_warnings() {
+        let mut result = ExtractionResult {
+            images: Some(vec![
+                make_image(make_jpeg_bytes(), "jpeg"),
+                make_image(make_png_bytes(), "png"),
+            ]),
+            ..Default::default()
+        };
+
+        let cfg = ImageExtractionConfig {
+            output_format: ImageOutputFormat::Png,
+            ..Default::default()
+        };
+
+        apply_output_format_pass(&mut result, &cfg);
+
+        let images = result.images.as_ref().expect("images must be present");
+        assert_eq!(images[0].format.as_ref(), "png", "jpeg must be re-encoded to png");
+        assert_eq!(images[1].format.as_ref(), "png", "already-png must remain png");
+        assert!(
+            result.processing_warnings.is_empty(),
+            "no warnings expected for decodable images; got: {:?}",
+            result.processing_warnings
+        );
+    }
+
+    /// An SVG image is left untouched and a ProcessingWarning is pushed for it.
+    #[test]
+    fn svg_image_skipped_with_warning() {
+        let svg_bytes = Bytes::from_static(b"<svg xmlns=\"http://www.w3.org/2000/svg\"/>");
+        let original_svg = svg_bytes.clone();
+
+        let mut result = ExtractionResult {
+            images: Some(vec![
+                make_image(make_jpeg_bytes(), "jpeg"),
+                make_image(svg_bytes, "svg"),
+            ]),
+            ..Default::default()
+        };
+
+        let cfg = ImageExtractionConfig {
+            output_format: ImageOutputFormat::Png,
+            ..Default::default()
+        };
+
+        apply_output_format_pass(&mut result, &cfg);
+
+        let images = result.images.as_ref().expect("images must be present");
+        assert_eq!(images[0].format.as_ref(), "png", "jpeg must be re-encoded");
+        assert_eq!(images[1].format.as_ref(), "svg", "svg must be untouched");
+        assert_eq!(images[1].data, original_svg, "svg bytes must be untouched");
+
+        assert_eq!(result.processing_warnings.len(), 1, "one warning for svg");
+        assert_eq!(
+            result.processing_warnings[0].source.as_ref(),
+            "image_encoder",
+            "warning source must be image_encoder"
+        );
+    }
+
+    /// When output_format is Native the pass is a no-op.
+    #[test]
+    fn native_target_is_no_op() {
+        let original = make_jpeg_bytes();
+        let mut result = ExtractionResult {
+            images: Some(vec![make_image(original.clone(), "jpeg")]),
+            ..Default::default()
+        };
+
+        let cfg = ImageExtractionConfig {
+            output_format: ImageOutputFormat::Native,
+            ..Default::default()
+        };
+
+        apply_output_format_pass(&mut result, &cfg);
+
+        let images = result.images.as_ref().expect("images must be present");
+        assert_eq!(images[0].data, original, "bytes must be untouched for Native");
+        assert_eq!(images[0].format.as_ref(), "jpeg", "format must be untouched");
+        assert!(result.processing_warnings.is_empty());
+    }
+}
+
 #[tokio::test]
 #[serial]
 async fn test_pdf_run_fallback_not_suppressed_without_images_config() {

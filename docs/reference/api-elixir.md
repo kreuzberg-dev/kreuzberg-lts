@@ -2970,6 +2970,7 @@ Image extraction configuration.
 | `run_ocr_on_images` | `boolean()` | `true` | Run OCR on extracted images and include the recognized text in the document content. When `true` (default) and `ExtractionConfig.ocr` is configured, extracted images are processed with the configured OCR backend. Set to `false` to extract images without OCR processing, even when OCR is enabled. |
 | `ocr_text_only` | `boolean()` | `false` | When `true`, image OCR results are rendered as plain text without the `![...](...)` markdown placeholder. Only takes effect when `run_ocr_on_images` is also `true`. |
 | `append_ocr_text` | `boolean()` | `false` | When `true` and `ocr_text_only` is `false`, append the OCR text after the image placeholder in the rendered output. |
+| `output_format` | `ImageOutputFormat` | `:native` | Target format for re-encoding extracted images. When set to anything other than `Native`, each extracted image is re-encoded to the requested format before being returned. This lets callers receive uniform output without duplicating encode logic downstream. Defaults to `Native` — no re-encode pass is performed and `ExtractedImage.format` reflects the source extractor's output. |
 
 ### Functions
 
@@ -5730,6 +5731,34 @@ Determines which hardware backend is used for model inference.
 | `core_ml` | Apple CoreML (macOS/iOS Neural Engine + GPU). |
 | `cuda` | NVIDIA CUDA GPU acceleration. |
 | `tensor_rt` | NVIDIA TensorRT (optimized CUDA inference). |
+
+---
+
+#### ImageOutputFormat
+
+Target format for re-encoding extracted images.
+
+Controls whether and how extracted images are normalised to a uniform
+container format before being returned in `ExtractionResult.images`.
+The default (`Native`) preserves the format produced by each extractor
+without any additional encode pass.
+
+Callers that need uniform output — e.g. cloud pipelines that always store
+WebP thumbnails — set this once on `ImageExtractionConfig.output_format`
+rather than re-encoding downstream.
+
+### Serde shape
+
+Uses a tagged enum: `{"type": "native"}`, `{"type": "png"}`,
+`{"type": "jpeg", "quality": 90}`, etc.
+
+| Value | Description |
+|-------|-------------|
+| `native` | Preserve whatever format the extractor produced (default). No re-encode pass is performed. `ExtractedImage.format` reflects the source format: JPEG for embedded PDF images, PNG for rasterised content, or the native container format from office documents. |
+| `png` | Re-encode all extracted images as PNG (lossless). |
+| `jpeg` | Re-encode all extracted images as JPEG at the given quality level. `quality` must be in `1..=100`. Values outside this range are clamped and a warning is emitted. Higher values produce larger files with less artefacting; 85 is a reasonable default. — Fields: `quality`: `integer()` |
+| `web_p` | Re-encode all extracted images as WebP at the given quality level. `quality` must be in `1..=100`. Values outside this range are clamped and a warning is emitted. 80 is a reasonable default. — Fields: `quality`: `integer()` |
+| `heif` | Re-encode all extracted images as HEIF/HEIC at the given quality level. Requires the `heic` feature. `quality` must be in `1..=100`. Values outside this range are clamped and a warning is emitted. 80 is a reasonable default. — Fields: `quality`: `integer()` |
 
 ---
 

@@ -50,7 +50,14 @@ tokio-runtime = ["dep:tokio"]
 
 # PDF extraction is currently backed by pdf_oxide. Keep this as the canonical
 # `pdf` feature until/unless a second PDF backend is introduced.
-pdf = ["dep:pdf_oxide", "dep:lopdf", "dep:image", "dep:flate2", "html"]
+pdf = [
+    "dep:pdf_oxide",
+    "dep:lopdf",
+    "dep:image",
+    "dep:flate2",
+    "html",
+    "image-encode",
+]
 excel = ["dep:calamine", "tokio-runtime"]
 excel-wasm = ["dep:calamine"]
 office = [
@@ -82,11 +89,17 @@ mdx = []
 
 liter-llm = ["dep:liter-llm", "dep:minijinja", "ocr-pipeline"]
 
+# Gate for the centralised image re-encode pass (image_encode module).
+# Enabled by every feature that activates `dep:image` so the module is always
+# available when image processing is possible.  This is the only feature that
+# the module declaration in `core/mod.rs` checks.
+image-encode = ["dep:image"]
+
 # Lightweight marker feature: shared OCR pipeline infrastructure (quality scoring,
 # page rendering, multi-backend pipeline) usable without the Tesseract binary.
 # Implied by `liter-llm` so VLM-only OCR works without enabling the full `ocr` feature.
 # Also implied by `ocr` and `ocr-wasm` (see those feature definitions).
-ocr-pipeline = ["dep:image"]
+ocr-pipeline = ["dep:image", "image-encode"]
 
 tree-sitter = ["dep:tree-sitter-language-pack"]
 tree-sitter-wasm = ["tree-sitter"]
@@ -115,7 +128,7 @@ ocr-wasm = [
 # HEIF / HEIC / AVIF / HEICS / AVCS decoding via vendored libheif bindings.
 # Native-only — libheif is a C library with no working WASM/Android story.
 # Pulls in `nom-exif` so HEIC EXIF blocks are readable even without the full `ocr` feature.
-heic = ["dep:kreuzberg-libheif", "dep:image", "dep:nom-exif"]
+heic = ["dep:kreuzberg-libheif", "dep:image", "dep:nom-exif", "image-encode"]
 # PaddleOCR type definitions only — pure-Rust config structs, no ORT dependency.
 # Exposes PaddleOcrConfig, PaddleLanguage, ModelPaths. Safe on Android/WASM.
 paddle-ocr-types = []
@@ -129,6 +142,7 @@ paddle-ocr = [
     "dep:hf-hub",
     "dep:ureq",
     "dep:ort",
+    "image-encode",
     "dep:ndarray",
     "html",
     "tokio-runtime",

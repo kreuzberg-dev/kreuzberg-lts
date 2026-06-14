@@ -12958,8 +12958,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   ImageExtractionConfig dco_decode_image_extraction_config(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     final arr = raw as List<dynamic>;
-    if (arr.length != 13)
-      throw Exception('unexpected arr length: expect 13 but see ${arr.length}');
+    if (arr.length != 14)
+      throw Exception('unexpected arr length: expect 14 but see ${arr.length}');
     return ImageExtractionConfig(
       extractImages: dco_decode_bool(arr[0]),
       targetDpi: dco_decode_i_64(arr[1]),
@@ -12974,6 +12974,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       runOcrOnImages: dco_decode_bool(arr[10]),
       ocrTextOnly: dco_decode_bool(arr[11]),
       appendOcrText: dco_decode_bool(arr[12]),
+      outputFormat: dco_decode_image_output_format(arr[13]),
     );
   }
 
@@ -13009,6 +13010,25 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       title: dco_decode_opt_String(arr[2]),
       imageType: dco_decode_image_type(arr[3]),
     );
+  }
+
+  @protected
+  ImageOutputFormat dco_decode_image_output_format(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    switch (raw[0]) {
+      case 0:
+        return ImageOutputFormat_Native();
+      case 1:
+        return ImageOutputFormat_Png();
+      case 2:
+        return ImageOutputFormat_Jpeg(quality: dco_decode_i_64(raw[1]));
+      case 3:
+        return ImageOutputFormat_WebP(quality: dco_decode_i_64(raw[1]));
+      case 4:
+        return ImageOutputFormat_Heif(quality: dco_decode_i_64(raw[1]));
+      default:
+        throw Exception("unreachable");
+    }
   }
 
   @protected
@@ -18965,6 +18985,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     var var_runOcrOnImages = sse_decode_bool(deserializer);
     var var_ocrTextOnly = sse_decode_bool(deserializer);
     var var_appendOcrText = sse_decode_bool(deserializer);
+    var var_outputFormat = sse_decode_image_output_format(deserializer);
     return ImageExtractionConfig(
       extractImages: var_extractImages,
       targetDpi: var_targetDpi,
@@ -18979,6 +19000,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       runOcrOnImages: var_runOcrOnImages,
       ocrTextOnly: var_ocrTextOnly,
       appendOcrText: var_appendOcrText,
+      outputFormat: var_outputFormat,
     );
   }
 
@@ -19019,6 +19041,32 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       title: var_title,
       imageType: var_imageType,
     );
+  }
+
+  @protected
+  ImageOutputFormat sse_decode_image_output_format(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    var tag_ = sse_decode_i_32(deserializer);
+    switch (tag_) {
+      case 0:
+        return ImageOutputFormat_Native();
+      case 1:
+        return ImageOutputFormat_Png();
+      case 2:
+        var var_quality = sse_decode_i_64(deserializer);
+        return ImageOutputFormat_Jpeg(quality: var_quality);
+      case 3:
+        var var_quality = sse_decode_i_64(deserializer);
+        return ImageOutputFormat_WebP(quality: var_quality);
+      case 4:
+        var var_quality = sse_decode_i_64(deserializer);
+        return ImageOutputFormat_Heif(quality: var_quality);
+      default:
+        throw UnimplementedError('');
+    }
   }
 
   @protected
@@ -26265,6 +26313,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     sse_encode_bool(self.runOcrOnImages, serializer);
     sse_encode_bool(self.ocrTextOnly, serializer);
     sse_encode_bool(self.appendOcrText, serializer);
+    sse_encode_image_output_format(self.outputFormat, serializer);
   }
 
   @protected
@@ -26292,6 +26341,29 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     sse_encode_opt_String(self.alt, serializer);
     sse_encode_opt_String(self.title, serializer);
     sse_encode_image_type(self.imageType, serializer);
+  }
+
+  @protected
+  void sse_encode_image_output_format(
+    ImageOutputFormat self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    switch (self) {
+      case ImageOutputFormat_Native():
+        sse_encode_i_32(0, serializer);
+      case ImageOutputFormat_Png():
+        sse_encode_i_32(1, serializer);
+      case ImageOutputFormat_Jpeg(quality: final quality):
+        sse_encode_i_32(2, serializer);
+        sse_encode_i_64(quality, serializer);
+      case ImageOutputFormat_WebP(quality: final quality):
+        sse_encode_i_32(3, serializer);
+        sse_encode_i_64(quality, serializer);
+      case ImageOutputFormat_Heif(quality: final quality):
+        sse_encode_i_32(4, serializer);
+        sse_encode_i_64(quality, serializer);
+    }
   }
 
   @protected

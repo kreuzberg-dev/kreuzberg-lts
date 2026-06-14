@@ -1048,6 +1048,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   ImageMetadataType dco_decode_image_metadata_type(dynamic raw);
 
   @protected
+  ImageOutputFormat dco_decode_image_output_format(dynamic raw);
+
+  @protected
   ImagePreprocessingConfig dco_decode_image_preprocessing_config(dynamic raw);
 
   @protected
@@ -2972,6 +2975,11 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   ImageMetadataType sse_decode_image_metadata_type(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  ImageOutputFormat sse_decode_image_output_format(
     SseDeserializer deserializer,
   );
 
@@ -5574,6 +5582,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   @protected
   void sse_encode_image_metadata_type(
     ImageMetadataType self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_image_output_format(
+    ImageOutputFormat self,
     SseSerializer serializer,
   );
 

@@ -154,6 +154,14 @@ pub async fn run_pipeline(mut doc: InternalDocument, config: &ExtractionConfig) 
         result.formatted_content = Some(md);
     }
 
+    // Re-encode extracted images to the caller-requested output format.
+    // Runs after OCR (which needed the source bytes) and before post-processors
+    // (captioning, QR) that consume `data` + `format` together.
+    #[cfg(feature = "image-encode")]
+    if let Some(ref image_cfg) = config.images {
+        apply_output_format_pass(&mut result, image_cfg);
+    }
+
     // 2. Run post-processing pipeline
     let pp_config = config.postprocessor.as_ref();
     let postprocessing_enabled = pp_config.is_none_or(|c| c.enabled);
@@ -332,6 +340,38 @@ pub fn run_pipeline_sync(doc: InternalDocument, config: &ExtractionConfig) -> Re
     result = apply_output_format(result, config.output_format.clone());
 
     Ok(result)
+}
+
+/// Re-encode all images in `result` to the format requested by `config.output_format`.
+///
+/// Runs after OCR has completed and before post-processors so that downstream
+/// consumers (captioning, QR) always see coherent `data` + `format` pairs.
+/// Images whose source format cannot be decoded (e.g. SVG, EMF) are left untouched;
+/// a `ProcessingWarning` is pushed for each failure.
+#[cfg(feature = "image-encode")]
+fn apply_output_format_pass(
+    result: &mut ExtractionResult,
+    config: &crate::core::config::extraction::ImageExtractionConfig,
+) {
+    use crate::core::config::extraction::ImageOutputFormat;
+    use crate::core::image_encode::re_encode;
+
+    if matches!(config.output_format, ImageOutputFormat::Native) {
+        return;
+    }
+
+    let target = config.output_format;
+    for image in result.images.iter_mut().flatten() {
+        match re_encode(image, target) {
+            Ok(_) => {}
+            Err(warning) => {
+                result.processing_warnings.push(crate::types::ProcessingWarning {
+                    source: std::borrow::Cow::Borrowed("image_encoder"),
+                    message: std::borrow::Cow::Owned(warning.to_string()),
+                });
+            }
+        }
+    }
 }
 
 /// Transform to element-based output if requested by the config.
