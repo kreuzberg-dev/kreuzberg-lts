@@ -24,11 +24,7 @@ use super::{CitationEnvelope, CitationSource, CitedField};
 /// The returned [`CitationEnvelope`] carries:
 /// - `structured_output` — the citation-annotated tree (leaves are [`CitedField`] objects).
 /// - `flat` — value-only projection (strips the citation envelope, keeping just `.value`).
-pub fn fuse(
-    merged: Value,
-    ocr_elements: &[crate::types::OcrElement],
-    emit_citations: bool,
-) -> CitationEnvelope {
+pub fn fuse(merged: Value, ocr_elements: &[crate::types::OcrElement], emit_citations: bool) -> CitationEnvelope {
     if !emit_citations {
         return CitationEnvelope {
             structured_output: merged.clone(),
@@ -40,7 +36,10 @@ pub fn fuse(
     let structured_output = envelope_with_citations(&merged, &ocr_values);
     let flat = flatten_cited(&structured_output);
 
-    CitationEnvelope { structured_output, flat }
+    CitationEnvelope {
+        structured_output,
+        flat,
+    }
 }
 
 // ── OcrElement adapter ────────────────────────────────────────────────────────
@@ -55,9 +54,12 @@ fn ocr_element_to_value(el: &crate::types::OcrElement) -> Value {
     use crate::types::OcrBoundingGeometry;
 
     let (x, y, w, h): (f64, f64, f64, f64) = match &el.geometry {
-        OcrBoundingGeometry::Rectangle { left, top, width, height } => {
-            (*left as f64, *top as f64, *width as f64, *height as f64)
-        }
+        OcrBoundingGeometry::Rectangle {
+            left,
+            top,
+            width,
+            height,
+        } => (*left as f64, *top as f64, *width as f64, *height as f64),
         OcrBoundingGeometry::Quadrilateral { points } => {
             let min_x = points.iter().map(|(px, _)| *px).min().unwrap_or(0);
             let max_x = points.iter().map(|(px, _)| *px).max().unwrap_or(0);
@@ -92,10 +94,7 @@ fn envelope_with_citations(value: &Value, ocr_values: &[Value]) -> Value {
             Value::Object(result)
         }
         Value::Array(arr) => {
-            let items: Vec<Value> = arr
-                .iter()
-                .map(|v| envelope_with_citations(v, ocr_values))
-                .collect();
+            let items: Vec<Value> = arr.iter().map(|v| envelope_with_citations(v, ocr_values)).collect();
             Value::Array(items)
         }
         leaf => {
@@ -141,10 +140,7 @@ fn try_fuse_with_ocr(value: &Value, ocr_values: &[Value]) -> CitedField {
             let ocr_text = ocr_lower.trim();
 
             if text_similarity(value_trimmed, ocr_text) > 0.8 {
-                let page = ocr
-                    .get("page_number")
-                    .and_then(|p| p.as_u64())
-                    .map(|p| p as u32);
+                let page = ocr.get("page_number").and_then(|p| p.as_u64()).map(|p| p as u32);
                 let bbox = extract_bbox(ocr);
                 return CitedField {
                     value: value.clone(),
@@ -190,8 +186,7 @@ fn extract_bbox(ocr: &Value) -> Option<[f64; 4]> {
     ocr.get("bbox").and_then(|b| {
         if let Value::Array(arr) = b {
             if arr.len() >= 4 {
-                let coords: Option<Vec<f64>> =
-                    arr.iter().take(4).map(|v| v.as_f64()).collect();
+                let coords: Option<Vec<f64>> = arr.iter().take(4).map(|v| v.as_f64()).collect();
                 coords.map(|c| [c[0], c[1], c[2], c[3]])
             } else {
                 None
@@ -208,7 +203,9 @@ fn extract_bbox(ocr: &Value) -> Option<[f64; 4]> {
 fn flatten_cited(value: &Value) -> Value {
     match value {
         Value::Object(obj) => {
-            if is_citation_envelope(value) && let Some(inner) = obj.get("value") {
+            if is_citation_envelope(value)
+                && let Some(inner) = obj.get("value")
+            {
                 return flatten_cited(inner);
             }
             let mut result = serde_json::Map::new();
@@ -235,8 +232,16 @@ mod tests {
     fn make_rect_element(text: &str, page: u32, left: u32, top: u32, w: u32, h: u32) -> OcrElement {
         OcrElement {
             text: text.to_owned(),
-            geometry: OcrBoundingGeometry::Rectangle { left, top, width: w, height: h },
-            confidence: OcrConfidence { recognition: 0.95, detection: None },
+            geometry: OcrBoundingGeometry::Rectangle {
+                left,
+                top,
+                width: w,
+                height: h,
+            },
+            confidence: OcrConfidence {
+                recognition: 0.95,
+                detection: None,
+            },
             page_number: page,
             ..Default::default()
         }
@@ -272,8 +277,7 @@ mod tests {
         let envelope = fuse(merged, &[el], true);
 
         let cited: CitedField =
-            serde_json::from_value(envelope.structured_output["field"].clone())
-                .expect("field should be a CitedField");
+            serde_json::from_value(envelope.structured_output["field"].clone()).expect("field should be a CitedField");
 
         assert_eq!(cited.source, CitationSource::Fused);
         assert_eq!(cited.page, Some(3));
@@ -289,8 +293,7 @@ mod tests {
         let envelope = fuse(merged, &[el], true);
 
         let cited: CitedField =
-            serde_json::from_value(envelope.structured_output["field"].clone())
-                .expect("field should be a CitedField");
+            serde_json::from_value(envelope.structured_output["field"].clone()).expect("field should be a CitedField");
         assert_eq!(cited.source, CitationSource::Fused);
     }
 
@@ -303,8 +306,7 @@ mod tests {
         let envelope = fuse(merged, &[el], true);
 
         let cited: CitedField =
-            serde_json::from_value(envelope.structured_output["field"].clone())
-                .expect("field should be a CitedField");
+            serde_json::from_value(envelope.structured_output["field"].clone()).expect("field should be a CitedField");
 
         assert_eq!(cited.source, CitationSource::None);
         assert!(cited.page.is_none());
@@ -318,8 +320,7 @@ mod tests {
         let envelope = fuse(merged, &[], true);
 
         let cited: CitedField =
-            serde_json::from_value(envelope.structured_output["field"].clone())
-                .expect("field should be a CitedField");
+            serde_json::from_value(envelope.structured_output["field"].clone()).expect("field should be a CitedField");
         assert_eq!(cited.source, CitationSource::None);
     }
 
@@ -351,8 +352,7 @@ mod tests {
         let envelope = fuse(merged, &[], true);
 
         let name_field = &envelope.structured_output["person"]["name"];
-        let cited: CitedField =
-            serde_json::from_value(name_field.clone()).expect("should be CitedField");
+        let cited: CitedField = serde_json::from_value(name_field.clone()).expect("should be CitedField");
         assert_eq!(cited.value, serde_json::json!("Bob"));
         assert_eq!(cited.source, CitationSource::None);
     }
@@ -366,16 +366,19 @@ mod tests {
             geometry: OcrBoundingGeometry::Quadrilateral {
                 points: [(10, 22), (108, 20), (110, 72), (12, 74)],
             },
-            confidence: OcrConfidence { recognition: 0.9, detection: None },
+            confidence: OcrConfidence {
+                recognition: 0.9,
+                detection: None,
+            },
             page_number: 2,
             ..Default::default()
         };
         let v = ocr_element_to_value(&el);
         let bbox = v["bbox"].as_array().expect("bbox must be array");
-        assert_eq!(bbox[0].as_f64(), Some(10.0));  // min_x
-        assert_eq!(bbox[1].as_f64(), Some(20.0));  // min_y
+        assert_eq!(bbox[0].as_f64(), Some(10.0)); // min_x
+        assert_eq!(bbox[1].as_f64(), Some(20.0)); // min_y
         assert_eq!(bbox[2].as_f64(), Some(100.0)); // width = 110 - 10
-        assert_eq!(bbox[3].as_f64(), Some(54.0));  // height = 74 - 20
+        assert_eq!(bbox[3].as_f64(), Some(54.0)); // height = 74 - 20
     }
 
     // ── pre-existing envelope: object traversal ──────────────────────────────
@@ -399,8 +402,7 @@ mod tests {
         assert!(envelope.structured_output.get("name").is_some());
         // The inner "value" leaf "Alice" should itself become a CitedField.
         let inner_value = &envelope.structured_output["name"]["value"];
-        let cited: CitedField =
-            serde_json::from_value(inner_value.clone()).expect("leaf should be CitedField");
+        let cited: CitedField = serde_json::from_value(inner_value.clone()).expect("leaf should be CitedField");
         assert_eq!(cited.value, serde_json::json!("Alice"));
         assert_eq!(cited.source, CitationSource::None);
     }
@@ -414,10 +416,8 @@ mod tests {
         let envelope = fuse(merged, &[el], true);
 
         let tags = envelope.structured_output["tags"].as_array().expect("array");
-        let first: CitedField =
-            serde_json::from_value(tags[0].clone()).expect("CitedField");
-        let second: CitedField =
-            serde_json::from_value(tags[1].clone()).expect("CitedField");
+        let first: CitedField = serde_json::from_value(tags[0].clone()).expect("CitedField");
+        let second: CitedField = serde_json::from_value(tags[1].clone()).expect("CitedField");
 
         assert_eq!(first.source, CitationSource::Fused);
         assert_eq!(second.source, CitationSource::None);

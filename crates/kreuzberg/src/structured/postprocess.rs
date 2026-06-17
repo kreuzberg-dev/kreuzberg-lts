@@ -103,10 +103,7 @@ pub fn validate_and_merge(
         if errors.is_empty() {
             validated_batches.push(value);
         } else {
-            per_batch_errors.push(format!(
-                "batch {idx}: schema validation failed: {}",
-                errors.join("; ")
-            ));
+            per_batch_errors.push(format!("batch {idx}: schema validation failed: {}", errors.join("; ")));
         }
     }
 
@@ -174,10 +171,7 @@ fn merge_validated(batches: Vec<serde_json::Value>, merge_mode: MergeMode) -> se
             }
             serde_json::Value::Array(result)
         }
-        MergeMode::ObjectFirst => batches
-            .into_iter()
-            .next()
-            .unwrap_or(serde_json::Value::Null),
+        MergeMode::ObjectFirst => batches.into_iter().next().unwrap_or(serde_json::Value::Null),
     }
 }
 
@@ -211,14 +205,8 @@ mod tests {
         assert_eq!(result.outcome, Outcome::Success);
         assert_eq!(result.schema_compliance, SchemaCompliance::AllValid);
         assert!(result.per_batch_errors.is_empty());
-        assert_eq!(
-            result.merged.get("name").and_then(|v| v.as_str()),
-            Some("Alice")
-        );
-        assert_eq!(
-            result.merged.get("age").and_then(|v| v.as_u64()),
-            Some(30)
-        );
+        assert_eq!(result.merged.get("name").and_then(|v| v.as_str()), Some("Alice"));
+        assert_eq!(result.merged.get("age").and_then(|v| v.as_u64()), Some(30));
     }
 
     // -------------------------------------------------------------------------
@@ -270,10 +258,7 @@ mod tests {
             result.per_batch_errors[0].contains("batch 1"),
             "error must identify the failing batch"
         );
-        assert_eq!(
-            result.merged.get("name").and_then(|v| v.as_str()),
-            Some("Alice")
-        );
+        assert_eq!(result.merged.get("name").and_then(|v| v.as_str()), Some("Alice"));
     }
 
     // -------------------------------------------------------------------------
@@ -340,10 +325,7 @@ mod tests {
         let result = validate_and_merge(vec![batch1, batch2], &schema, MergeMode::ObjectFirst);
 
         assert_eq!(result.outcome, Outcome::Success);
-        assert_eq!(
-            result.merged.get("value").and_then(|v| v.as_str()),
-            Some("first")
-        );
+        assert_eq!(result.merged.get("value").and_then(|v| v.as_str()), Some("first"));
     }
 
     // -------------------------------------------------------------------------
@@ -371,11 +353,7 @@ mod tests {
         // A JSON value that is not a valid JSON Schema.
         let bad_schema = serde_json::json!({"type": "not-a-valid-type-value-xxxxx"});
 
-        let result = validate_and_merge(
-            vec![serde_json::json!({"x": 1})],
-            &bad_schema,
-            MergeMode::ObjectMerge,
-        );
+        let result = validate_and_merge(vec![serde_json::json!({"x": 1})], &bad_schema, MergeMode::ObjectMerge);
 
         assert_eq!(result.outcome, Outcome::Error);
         assert_eq!(result.schema_compliance, SchemaCompliance::AllInvalid);
@@ -403,14 +381,10 @@ mod tests {
         // A JSON *string* whose content is a JSON object.
         let batch_as_string = serde_json::json!(r#"{"key": "value"}"#);
 
-        let result =
-            validate_and_merge(vec![batch_as_string], &schema, MergeMode::ObjectMerge);
+        let result = validate_and_merge(vec![batch_as_string], &schema, MergeMode::ObjectMerge);
 
         assert_eq!(result.outcome, Outcome::Success);
-        assert_eq!(
-            result.merged.get("key").and_then(|v| v.as_str()),
-            Some("value")
-        );
+        assert_eq!(result.merged.get("key").and_then(|v| v.as_str()), Some("value"));
     }
 
     // -------------------------------------------------------------------------
@@ -429,11 +403,7 @@ mod tests {
         let valid = serde_json::json!({"n": 1});
         let invalid = serde_json::json!({"n": "wrong"});
 
-        let result = validate_and_merge(
-            vec![valid, invalid],
-            &schema,
-            MergeMode::ObjectMerge,
-        );
+        let result = validate_and_merge(vec![valid, invalid], &schema, MergeMode::ObjectMerge);
 
         assert_eq!(result.per_batch_errors.len(), 1);
         assert!(

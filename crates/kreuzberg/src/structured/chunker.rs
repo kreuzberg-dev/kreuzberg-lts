@@ -44,11 +44,7 @@ pub struct Batch {
 ///
 /// If a single page exceeds the limit on its own it is still emitted as a
 /// one-page batch (never dropped).
-pub fn batch_pages(
-    pages: Vec<PageImage>,
-    user_text: Option<String>,
-    config: &ChunkerConfig,
-) -> Vec<Batch> {
+pub fn batch_pages(pages: Vec<PageImage>, user_text: Option<String>, config: &ChunkerConfig) -> Vec<Batch> {
     if pages.is_empty() {
         return vec![Batch {
             pages: vec![],
@@ -67,18 +63,13 @@ pub fn batch_pages(
     let mut is_first_batch = true;
 
     for page in pages {
-        let page_tokens =
-            (page.png_bytes.len() / CHARS_PER_TOKEN).max(1) as u32 + config.avg_tokens_per_image;
+        let page_tokens = (page.png_bytes.len() / CHARS_PER_TOKEN).max(1) as u32 + config.avg_tokens_per_image;
         let new_total = current_tokens + page_tokens;
 
         if !current_pages.is_empty() && new_total > config.max_input_tokens {
             batches.push(Batch {
                 pages: current_pages,
-                user_text: if is_first_batch {
-                    user_text.clone()
-                } else {
-                    None
-                },
+                user_text: if is_first_batch { user_text.clone() } else { None },
             });
             current_pages = Vec::new();
             current_tokens = 0;
@@ -94,11 +85,7 @@ pub fn batch_pages(
             );
             batches.push(Batch {
                 pages: vec![page],
-                user_text: if is_first_batch {
-                    user_text.clone()
-                } else {
-                    None
-                },
+                user_text: if is_first_batch { user_text.clone() } else { None },
             });
             is_first_batch = false;
         } else {

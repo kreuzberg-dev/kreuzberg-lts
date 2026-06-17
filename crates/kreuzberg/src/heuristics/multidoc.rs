@@ -271,13 +271,10 @@ fn detect_signature_block(text: &str) -> bool {
     }
 
     // Require at least one short, non-empty trailing line typical of a closing.
-    text.lines()
-        .rev()
-        .take(10)
-        .any(|line| {
-            let len = line.trim().len();
-            (SIGNATURE_SHORT_LINE_MIN..=SIGNATURE_SHORT_LINE_MAX).contains(&len)
-        })
+    text.lines().rev().take(10).any(|line| {
+        let len = line.trim().len();
+        (SIGNATURE_SHORT_LINE_MIN..=SIGNATURE_SHORT_LINE_MAX).contains(&len)
+    })
 }
 
 /// Derive document boundaries from an already-produced [`ExtractionResult`].
@@ -338,7 +335,13 @@ pub fn boundaries_from_extraction_result(
         })
         .collect();
 
-    detect_boundaries(&MultidocInput { page_count, pages: signals }, thresholds)
+    detect_boundaries(
+        &MultidocInput {
+            page_count,
+            pages: signals,
+        },
+        thresholds,
+    )
 }
 
 /// Approximate text density as the fraction of non-whitespace characters.
@@ -532,20 +535,14 @@ mod tests {
     fn from_page_text_detects_page_one_marker() {
         let text = "Page 1 of 5\nThis is a document.";
         let signals = PageSignals::from_page_text(2, text, 0.5);
-        assert!(
-            signals.has_page_number_one_marker,
-            "Expected page-one marker detection"
-        );
+        assert!(signals.has_page_number_one_marker, "Expected page-one marker detection");
     }
 
     #[test]
     fn from_page_text_page_one_marker_one_of_n() {
         let text = "1 of 10\nDocument content here.";
         let signals = PageSignals::from_page_text(3, text, 0.5);
-        assert!(
-            signals.has_page_number_one_marker,
-            "Expected '1 of N' marker detection"
-        );
+        assert!(signals.has_page_number_one_marker, "Expected '1 of N' marker detection");
     }
 
     #[test]
@@ -563,20 +560,14 @@ mod tests {
     fn from_page_text_detects_signature_block() {
         let text = "Thank you for your business.\n\nSincerely,\nJohn Smith\n2024-01-15";
         let signals = PageSignals::from_page_text(1, text, 0.5);
-        assert!(
-            signals.has_signature_block,
-            "Expected signature block detection"
-        );
+        assert!(signals.has_signature_block, "Expected signature block detection");
     }
 
     #[test]
     fn from_page_text_detects_signature_slash_s() {
         let text = "Agreement is hereby acknowledged.\n\n/s/ Jane Doe\nChief Executive Officer";
         let signals = PageSignals::from_page_text(1, text, 0.5);
-        assert!(
-            signals.has_signature_block,
-            "Expected /s/ signature detection"
-        );
+        assert!(signals.has_signature_block, "Expected /s/ signature detection");
     }
 
     #[test]
@@ -637,10 +628,7 @@ mod tests {
         // Page 2 starts a new document (has a page-one marker).
         let result = make_extraction_result(vec![
             ("First document body text for page one.", 1),
-            (
-                "Page 1 of 3\nACME CORP\nSecond document header content.",
-                2,
-            ),
+            ("Page 1 of 3\nACME CORP\nSecond document header content.", 2),
             ("Continuation of second document.", 3),
         ]);
 
@@ -652,10 +640,7 @@ mod tests {
             page_2_boundary.is_some(),
             "Expected a boundary at page 2 (new document starts)"
         );
-        assert_eq!(
-            page_2_boundary.unwrap().reason,
-            BoundaryReason::PageOneMarker
-        );
+        assert_eq!(page_2_boundary.unwrap().reason, BoundaryReason::PageOneMarker);
         assert!(
             (page_2_boundary.unwrap().confidence - 0.9).abs() < f32::EPSILON,
             "Page-one marker should have confidence 0.9"
@@ -711,10 +696,7 @@ mod tests {
     #[test]
     fn boundaries_from_result_letterhead_after_signature_detected() {
         let result = make_extraction_result(vec![
-            (
-                "Dear Customer,\n\nPlease review our offer.\n\nSincerely,\nAlice",
-                1,
-            ),
+            ("Dear Customer,\n\nPlease review our offer.\n\nSincerely,\nAlice", 1),
             ("ACME CORP\nINVOICE DEPT\nNew document starts here.", 2),
         ]);
 
@@ -726,10 +708,7 @@ mod tests {
             page_2_boundary.is_some(),
             "Expected boundary at page 2 (letterhead after signature)"
         );
-        assert_eq!(
-            page_2_boundary.unwrap().reason,
-            BoundaryReason::LetterheadReset
-        );
+        assert_eq!(page_2_boundary.unwrap().reason, BoundaryReason::LetterheadReset);
     }
 
     #[test]

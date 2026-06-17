@@ -120,10 +120,7 @@ pub async fn call(
 
     // ── Send request ─────────────────────────────────────────────────────────
     let response = client.chat(chat_request).await.map_err(|e| {
-        super::StructuredError::Vision(format!(
-            "vision call transport error (model={}): {e}",
-            request.model
-        ))
+        super::StructuredError::Vision(format!("vision call transport error (model={}): {e}", request.model))
     })?;
 
     // ── Extract usage ────────────────────────────────────────────────────────

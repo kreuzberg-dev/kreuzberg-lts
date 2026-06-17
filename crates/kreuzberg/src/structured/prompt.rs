@@ -209,14 +209,8 @@ pub fn build_vision_fallback(
     if let Some(ocr) = confidence.ocr_aggregate {
         content.push_str(&format!("  - OCR confidence: {:.2}%\n", ocr * 100.0));
     }
-    content.push_str(&format!(
-        "  - Schema compliance: {:?}\n",
-        confidence.schema_compliance
-    ));
-    content.push_str(&format!(
-        "  - Combined score: {:.2}%\n",
-        confidence.combined * 100.0
-    ));
+    content.push_str(&format!("  - Schema compliance: {:?}\n", confidence.schema_compliance));
+    content.push_str(&format!("  - Combined score: {:.2}%\n", confidence.combined * 100.0));
 
     content.push_str(
         "\nPlease review the source page images directly and produce a corrected/completed \
@@ -290,7 +284,7 @@ fn truncate_to_char_boundary(s: &str, max_chars: usize) -> &str {
 mod tests {
     use super::*;
     use crate::heuristics::confidence::SchemaCompliance;
-    use crate::heuristics::{score_confidence, ConfidenceSignals, ConfidenceWeights};
+    use crate::heuristics::{ConfidenceSignals, ConfidenceWeights, score_confidence};
     use crate::presets::types::{CallMode, MergeMode, PresetCategory};
 
     const DEFAULT_MAX_EXCERPT: usize = 200_000;
@@ -392,11 +386,7 @@ mod tests {
             DEFAULT_MAX_EXCERPT,
         );
 
-        assert!(
-            prompt
-                .system
-                .contains("Extract invoice from {{missing_var}}.")
-        );
+        assert!(prompt.system.contains("Extract invoice from {{missing_var}}."));
     }
 
     #[test]
@@ -547,7 +537,10 @@ mod tests {
         );
 
         let user_text = prompt.user_text.unwrap();
-        assert!(user_text.contains("INV-001"), "prior JSON value must appear in user_text");
+        assert!(
+            user_text.contains("INV-001"),
+            "prior JSON value must appear in user_text"
+        );
         assert!(
             user_text.contains("Prior text-only extraction"),
             "low-confidence note must appear"
@@ -560,14 +553,7 @@ mod tests {
         let prior = serde_json::json!({});
         let confidence = stub_confidence(0.35);
 
-        let prompt = build_vision_fallback(
-            &preset,
-            &empty_context(),
-            "",
-            &prior,
-            &confidence,
-            DEFAULT_MAX_EXCERPT,
-        );
+        let prompt = build_vision_fallback(&preset, &empty_context(), "", &prior, &confidence, DEFAULT_MAX_EXCERPT);
 
         let user_text = prompt.user_text.unwrap();
         // The combined score is rendered as a percentage in the breakdown.
@@ -583,14 +569,7 @@ mod tests {
         let prior = serde_json::json!({});
         let confidence = stub_confidence(0.3);
 
-        let prompt = build_vision_fallback(
-            &preset,
-            &empty_context(),
-            "",
-            &prior,
-            &confidence,
-            DEFAULT_MAX_EXCERPT,
-        );
+        let prompt = build_vision_fallback(&preset, &empty_context(), "", &prior, &confidence, DEFAULT_MAX_EXCERPT);
 
         let user_text = prompt.user_text.unwrap();
         assert!(
@@ -607,14 +586,7 @@ mod tests {
         let prior = serde_json::json!({});
         let confidence = stub_confidence(0.2);
 
-        let prompt = build_vision_fallback(
-            &preset,
-            &empty_context(),
-            &long_excerpt,
-            &prior,
-            &confidence,
-            max_chars,
-        );
+        let prompt = build_vision_fallback(&preset, &empty_context(), &long_excerpt, &prior, &confidence, max_chars);
 
         let user_text = prompt.user_text.unwrap();
         // The fenced excerpt must not contain more than max_chars 'x' characters.

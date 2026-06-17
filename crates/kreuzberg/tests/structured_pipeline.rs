@@ -11,11 +11,11 @@ use serde_json::json;
 use wiremock::matchers::method;
 use wiremock::{Mock, MockServer, ResponseTemplate};
 
-use kreuzberg::presets::types::{CallMode, MergeMode, PresetCategory};
 use kreuzberg::presets::Preset;
+use kreuzberg::presets::types::{CallMode, MergeMode, PresetCategory};
 use kreuzberg::structured::{
-    MokaVisionCache, PresetSpec, StructuredError, StructuredOptions, StructuredThresholds,
-    VisionCallCache, VisionConfig,
+    MokaVisionCache, PresetSpec, StructuredError, StructuredOptions, StructuredThresholds, VisionCallCache,
+    VisionConfig,
 };
 use kreuzberg::{LlmConfig, extract_structured, split_and_extract};
 
@@ -254,8 +254,7 @@ async fn citation_envelope_shape_respects_emit_citations_flag() {
 
         // When emit_citations is false, structured_output == flat (no citation wrappers).
         assert_eq!(
-            output.structured_output.flat,
-            output.structured_output.structured_output,
+            output.structured_output.flat, output.structured_output.structured_output,
             "without citations, flat and structured_output must be equal"
         );
         // Direct string access (no wrapper).
@@ -348,8 +347,7 @@ async fn cache_hit_skips_second_llm_call() {
 
     // Both outputs must agree on the extracted values.
     assert_eq!(
-        out1.structured_output_flat["invoice_number"],
-        out2.structured_output_flat["invoice_number"],
+        out1.structured_output_flat["invoice_number"], out2.structured_output_flat["invoice_number"],
         "both extractions must return the same invoice_number"
     );
 
@@ -393,10 +391,9 @@ async fn split_and_extract_non_pdf_returns_single_element() {
     let spec = PresetSpec::Inline(Box::new(inline_preset(false)));
     let options = options_for_server(&server.uri());
 
-    let outputs =
-        split_and_extract(PLAIN_TEXT_CONTENT, "text/plain", spec, options)
-            .await
-            .expect("split_and_extract must succeed for plain text");
+    let outputs = split_and_extract(PLAIN_TEXT_CONTENT, "text/plain", spec, options)
+        .await
+        .expect("split_and_extract must succeed for plain text");
 
     assert_eq!(
         outputs.len(),
@@ -432,10 +429,7 @@ async fn named_preset_generic_document_resolves_and_succeeds() {
 
     assert_eq!(output.preset_id, "generic_document");
     // The flat output must contain the title field returned by the stub.
-    assert_eq!(
-        output.structured_output_flat["title"].as_str(),
-        Some("Test Doc"),
-    );
+    assert_eq!(output.structured_output_flat["title"].as_str(), Some("Test Doc"),);
 }
 
 /// Preset not found: `Named("nonexistent_preset_xyz")` → `StructuredError::PresetNotFound`.

@@ -100,8 +100,7 @@ pub fn extract_structured_json(
     let spec = parse_preset_spec(preset_spec_json)?;
     let options = parse_options(options_json)?;
     let output = super::extract_structured_sync(bytes, mime, spec, options)?;
-    serde_json::to_string(&output)
-        .map_err(|e| StructuredError::InvalidJson(format!("failed to serialise output: {e}")))
+    serde_json::to_string(&output).map_err(|e| StructuredError::InvalidJson(format!("failed to serialise output: {e}")))
 }
 
 /// Split a multi-document PDF and extract structured JSON from each segment,
@@ -138,14 +137,12 @@ pub fn split_and_extract_json(
 // ── Private helpers ───────────────────────────────────────────────────────────
 
 fn parse_preset_spec(json: &str) -> Result<super::PresetSpec, StructuredError> {
-    serde_json::from_str(json)
-        .map_err(|e| StructuredError::InvalidJson(format!("preset_spec_json: {e}")))
+    serde_json::from_str(json).map_err(|e| StructuredError::InvalidJson(format!("preset_spec_json: {e}")))
 }
 
 fn parse_options(json: &str) -> Result<StructuredOptions, StructuredError> {
-    let mirror: StructuredOptionsJson = serde_json::from_str(json)
-        .map_err(|e| StructuredError::InvalidJson(format!("options_json: {e}")))
-        ?;
+    let mirror: StructuredOptionsJson =
+        serde_json::from_str(json).map_err(|e| StructuredError::InvalidJson(format!("options_json: {e}")))?;
     Ok(StructuredOptions::from(mirror))
 }
 
@@ -237,15 +234,11 @@ mod tests {
 
         let response_body = r#"{"invoice_number":"INV-001","vendor":"Acme Corp"}"#;
         Mock::given(method("POST"))
-            .respond_with(
-                ResponseTemplate::new(200)
-                    .set_body_json(stub_openai_response(response_body)),
-            )
+            .respond_with(ResponseTemplate::new(200).set_body_json(stub_openai_response(response_body)))
             .mount(&server)
             .await;
 
-        let preset_spec_json =
-            json!({"inline": two_field_preset_json()}).to_string();
+        let preset_spec_json = json!({"inline": two_field_preset_json()}).to_string();
         let options_json = options_json_for_server(&server.uri());
         let bytes = PLAIN_TEXT_CONTENT.to_vec();
         let mime = PLAIN_TEXT_MIME.to_string();
@@ -260,8 +253,7 @@ mod tests {
         .expect("spawn_blocking must not panic")
         .expect("extract_structured_json must succeed");
 
-        let parsed: serde_json::Value =
-            serde_json::from_str(&json_str).expect("result must be valid JSON");
+        let parsed: serde_json::Value = serde_json::from_str(&json_str).expect("result must be valid JSON");
 
         assert_eq!(
             parsed["structured_output_flat"]["invoice_number"].as_str(),
@@ -328,15 +320,11 @@ mod tests {
 
         let response_body = r#"{"invoice_number":"INV-002","vendor":"Widget Co"}"#;
         Mock::given(method("POST"))
-            .respond_with(
-                ResponseTemplate::new(200)
-                    .set_body_json(stub_openai_response(response_body)),
-            )
+            .respond_with(ResponseTemplate::new(200).set_body_json(stub_openai_response(response_body)))
             .mount(&server)
             .await;
 
-        let preset_spec_json =
-            json!({"inline": two_field_preset_json()}).to_string();
+        let preset_spec_json = json!({"inline": two_field_preset_json()}).to_string();
         let options_json = options_json_for_server(&server.uri());
         let bytes = PLAIN_TEXT_CONTENT.to_vec();
         let mime = PLAIN_TEXT_MIME.to_string();
@@ -351,8 +339,7 @@ mod tests {
         .expect("spawn_blocking must not panic")
         .expect("split_and_extract_json must succeed for text/plain");
 
-        let parsed: serde_json::Value =
-            serde_json::from_str(&json_str).expect("result must be valid JSON");
+        let parsed: serde_json::Value = serde_json::from_str(&json_str).expect("result must be valid JSON");
 
         let arr = parsed.as_array().expect("result must be a JSON array");
         assert_eq!(

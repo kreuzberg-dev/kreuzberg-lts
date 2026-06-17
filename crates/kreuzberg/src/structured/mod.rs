@@ -42,12 +42,11 @@ use sha2::{Digest as _, Sha256};
 use tokio::sync::Semaphore;
 
 use crate::core::config::{ExtractionConfig, LlmConfig, PageConfig};
-use crate::heuristics::{
-    ConfidenceSignals, ConfidenceWeights, ExtractionConfidence, MultidocThresholds,
-    StructuredCallMode, StructuredInput, boundaries_from_extraction_result, choose_call_mode,
-    score_confidence,
-};
 pub use crate::heuristics::StructuredThresholds;
+use crate::heuristics::{
+    ConfidenceSignals, ConfidenceWeights, ExtractionConfidence, MultidocThresholds, StructuredCallMode,
+    StructuredInput, boundaries_from_extraction_result, choose_call_mode, score_confidence,
+};
 use crate::llm::client::create_client;
 use crate::presets::{Registry, resolve};
 use crate::types::LlmUsage;
@@ -327,8 +326,7 @@ pub fn split_and_extract_sync(
 
 // ── Global runtime (mirrors core/extractor/sync.rs pattern) ─────────────────
 
-static GLOBAL_RUNTIME: once_cell::sync::OnceCell<tokio::runtime::Runtime> =
-    once_cell::sync::OnceCell::new();
+static GLOBAL_RUNTIME: once_cell::sync::OnceCell<tokio::runtime::Runtime> = once_cell::sync::OnceCell::new();
 
 fn global_runtime() -> crate::Result<&'static tokio::runtime::Runtime> {
     GLOBAL_RUNTIME.get_or_try_init(|| {
@@ -377,8 +375,7 @@ async fn orchestrate(
     } else {
         result.content.len() as f64 / page_count as f64
     };
-    let embedded_image_count =
-        result.images.as_deref().map_or(0, |i| i.len()) as u32;
+    let embedded_image_count = result.images.as_deref().map_or(0, |i| i.len()) as u32;
     let user_force_vision = matches!(
         options.force_call_mode,
         Some(StructuredCallMode::VisionOnly | StructuredCallMode::TextPlusVision)
@@ -394,8 +391,9 @@ async fn orchestrate(
     };
 
     // ── 4. Choose call mode ──────────────────────────────────────────────────
-    let call_mode =
-        options.force_call_mode.unwrap_or_else(|| choose_call_mode(&input, &options.thresholds));
+    let call_mode = options
+        .force_call_mode
+        .unwrap_or_else(|| choose_call_mode(&input, &options.thresholds));
 
     // ── 5. Skip? ─────────────────────────────────────────────────────────────
     if call_mode == StructuredCallMode::Skip {
@@ -423,8 +421,7 @@ async fn orchestrate(
 
     // ── 9. Create client ─────────────────────────────────────────────────────
     let client = Arc::new(
-        create_client(&options.llm)
-            .map_err(|e| StructuredError::Vision(format!("failed to build LLM client: {e}")))?,
+        create_client(&options.llm).map_err(|e| StructuredError::Vision(format!("failed to build LLM client: {e}")))?,
     );
 
     // ── 10. Rasterize lazily ─────────────────────────────────────────────────
@@ -438,15 +435,7 @@ async fn orchestrate(
     let batches = batch_pages(pages, prompt.user_text.clone(), &chunker_config);
 
     // ── 12. Run batches ──────────────────────────────────────────────────────
-    let (responses, usages) = run_batches(
-        batches,
-        &client,
-        &model,
-        &prompt,
-        &resolved,
-        &options,
-    )
-    .await?;
+    let (responses, usages) = run_batches(batches, &client, &model, &prompt, &resolved, &options).await?;
 
     // ── 13. Merge ────────────────────────────────────────────────────────────
     let merged = validate_and_merge(responses, &resolved.schema, resolved.merge_mode);
@@ -468,8 +457,7 @@ async fn orchestrate(
         && confidence.combined < options.vision.fallback_threshold
     {
         let fallback_pages =
-            rasterize::pages_for_call(bytes, mime, StructuredCallMode::VisionOnly, &options.vision)
-                .await?;
+            rasterize::pages_for_call(bytes, mime, StructuredCallMode::VisionOnly, &options.vision).await?;
 
         if !fallback_pages.is_empty() {
             let fallback_prompt = build_vision_fallback(
@@ -481,24 +469,14 @@ async fn orchestrate(
                 options.vision.max_excerpt_chars,
             );
 
-            let fallback_batches =
-                batch_pages(fallback_pages, fallback_prompt.user_text.clone(), &chunker_config);
+            let fallback_batches = batch_pages(fallback_pages, fallback_prompt.user_text.clone(), &chunker_config);
 
-            let (fb_responses, fb_usages) = run_batches(
-                fallback_batches,
-                &client,
-                &model,
-                &fallback_prompt,
-                &resolved,
-                &options,
-            )
-            .await?;
+            let (fb_responses, fb_usages) =
+                run_batches(fallback_batches, &client, &model, &fallback_prompt, &resolved, &options).await?;
 
-            let fb_merged =
-                validate_and_merge(fb_responses, &resolved.schema, resolved.merge_mode);
+            let fb_merged = validate_and_merge(fb_responses, &resolved.schema, resolved.merge_mode);
 
-            let fb_ocr_agg =
-                result.ocr_elements.as_deref().and_then(compute_ocr_aggregate);
+            let fb_ocr_agg = result.ocr_elements.as_deref().and_then(compute_ocr_aggregate);
             let fb_signals = ConfidenceSignals {
                 text_coverage: text_coverage as f32,
                 ocr_aggregate: fb_ocr_agg,
@@ -559,8 +537,7 @@ async fn split_and_orchestrate(
         .await
         .map_err(|e| StructuredError::Extraction(e.to_string()))?;
 
-    let boundaries =
-        boundaries_from_extraction_result(&result, &MultidocThresholds::default());
+    let boundaries = boundaries_from_extraction_result(&result, &MultidocThresholds::default());
 
     // If there is only one boundary (or no boundaries), fall back to single extraction.
     if boundaries.len() <= 1 {
@@ -589,16 +566,10 @@ async fn split_and_orchestrate(
                 .await
                 .map_err(|e| StructuredError::Extraction(format!("semaphore closed: {e}")))?;
 
-            let slice_bytes = tokio::task::spawn_blocking(move || {
-                slice_pdf_pages(&bytes_clone, start, end)
-            })
-            .await
-            .map_err(|e| StructuredError::Extraction(format!("spawn_blocking panicked: {e}")))?
-            .map_err(|e| {
-                StructuredError::Extraction(format!(
-                    "PDF slice failed (pages {start}..{end}): {e}"
-                ))
-            })?;
+            let slice_bytes = tokio::task::spawn_blocking(move || slice_pdf_pages(&bytes_clone, start, end))
+                .await
+                .map_err(|e| StructuredError::Extraction(format!("spawn_blocking panicked: {e}")))?
+                .map_err(|e| StructuredError::Extraction(format!("PDF slice failed (pages {start}..{end}): {e}")))?;
 
             extract_structured(
                 &slice_bytes,
@@ -634,14 +605,14 @@ fn resolve_spec(
                 .get(&id)
                 .ok_or_else(|| StructuredError::PresetNotFound(id.clone()))?
                 .clone();
-            let resolved = resolve(&preset, None, &options.context)
-                .map_err(|e| StructuredError::Resolve(e.to_string()))?;
+            let resolved =
+                resolve(&preset, None, &options.context).map_err(|e| StructuredError::Resolve(e.to_string()))?;
             Ok((preset, resolved))
         }
         PresetSpec::Inline(boxed) => {
             let preset = *boxed;
-            let resolved = resolve(&preset, None, &options.context)
-                .map_err(|e| StructuredError::Resolve(e.to_string()))?;
+            let resolved =
+                resolve(&preset, None, &options.context).map_err(|e| StructuredError::Resolve(e.to_string()))?;
             Ok((preset, resolved))
         }
     }
@@ -810,19 +781,16 @@ fn compute_ocr_aggregate(elements: &[crate::types::OcrElement]) -> Option<f32> {
 ///
 /// All other pages are deleted; the mutated document is serialised back to bytes.
 fn slice_pdf_pages(bytes: &[u8], start: u32, end: u32) -> Result<Vec<u8>, String> {
-    let mut doc = lopdf::Document::load_mem(bytes)
-        .map_err(|e| format!("lopdf load_mem failed: {e}"))?;
+    let mut doc = lopdf::Document::load_mem(bytes).map_err(|e| format!("lopdf load_mem failed: {e}"))?;
 
     let all_pages: Vec<u32> = doc.get_pages().keys().copied().collect();
-    let to_delete: Vec<u32> = all_pages
-        .into_iter()
-        .filter(|&p| p < start || p > end)
-        .collect();
+    let to_delete: Vec<u32> = all_pages.into_iter().filter(|&p| p < start || p > end).collect();
 
     doc.delete_pages(&to_delete);
 
     let mut out: Vec<u8> = Vec::new();
-    doc.save_to(&mut out).map_err(|e| format!("lopdf save_to failed: {e}"))?;
+    doc.save_to(&mut out)
+        .map_err(|e| format!("lopdf save_to failed: {e}"))?;
 
     Ok(out)
 }

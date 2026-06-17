@@ -32,9 +32,9 @@ pub async fn pages_for_call(
     vision: &VisionConfig,
 ) -> Result<Vec<PageImage>, StructuredError> {
     match mode {
-        StructuredCallMode::Skip
-        | StructuredCallMode::TextOnly
-        | StructuredCallMode::TextOnlyWithVisionFallback => Ok(vec![]),
+        StructuredCallMode::Skip | StructuredCallMode::TextOnly | StructuredCallMode::TextOnlyWithVisionFallback => {
+            Ok(vec![])
+        }
 
         StructuredCallMode::VisionOnly | StructuredCallMode::TextPlusVision => {
             let mime_lc = mime.to_ascii_lowercase();
@@ -79,14 +79,8 @@ fn render_pdf_blocking(bytes: &[u8], dpi: u32) -> Result<Vec<PageImage>, Structu
 
     let mut pages = Vec::with_capacity(page_count);
     for page_index in 0..page_count {
-        let png_bytes =
-            crate::pdf::render::render_pdf_page_to_png(bytes, page_index, Some(dpi as i32), None)
-                .map_err(|e| {
-                    StructuredError::Rasterize(format!(
-                        "failed to render page {}: {e}",
-                        page_index + 1
-                    ))
-                })?;
+        let png_bytes = crate::pdf::render::render_pdf_page_to_png(bytes, page_index, Some(dpi as i32), None)
+            .map_err(|e| StructuredError::Rasterize(format!("failed to render page {}: {e}", page_index + 1)))?;
 
         pages.push(PageImage {
             page_number: (page_index + 1) as u32,
@@ -150,19 +144,17 @@ mod tests {
 
     #[tokio::test]
     async fn skip_mode_returns_empty_vec() {
-        let pages =
-            pages_for_call(&[], "application/pdf", StructuredCallMode::Skip, &default_vision())
-                .await
-                .unwrap();
+        let pages = pages_for_call(&[], "application/pdf", StructuredCallMode::Skip, &default_vision())
+            .await
+            .unwrap();
         assert!(pages.is_empty());
     }
 
     #[tokio::test]
     async fn text_only_mode_returns_empty_vec() {
-        let pages =
-            pages_for_call(&[], "application/pdf", StructuredCallMode::TextOnly, &default_vision())
-                .await
-                .unwrap();
+        let pages = pages_for_call(&[], "application/pdf", StructuredCallMode::TextOnly, &default_vision())
+            .await
+            .unwrap();
         assert!(pages.is_empty());
     }
 
@@ -182,10 +174,9 @@ mod tests {
     #[tokio::test]
     async fn png_image_in_vision_only_returns_one_page() {
         let png = one_pixel_png();
-        let pages =
-            pages_for_call(&png, "image/png", StructuredCallMode::VisionOnly, &default_vision())
-                .await
-                .unwrap();
+        let pages = pages_for_call(&png, "image/png", StructuredCallMode::VisionOnly, &default_vision())
+            .await
+            .unwrap();
         assert_eq!(pages.len(), 1);
         assert_eq!(pages[0].page_number, 1);
         // Verify PNG magic bytes: 0x89 P N G
@@ -219,9 +210,13 @@ mod tests {
 
     #[tokio::test]
     async fn unsupported_mime_returns_error() {
-        let result =
-            pages_for_call(&[], "application/zip", StructuredCallMode::VisionOnly, &default_vision())
-                .await;
+        let result = pages_for_call(
+            &[],
+            "application/zip",
+            StructuredCallMode::VisionOnly,
+            &default_vision(),
+        )
+        .await;
         assert!(
             matches!(result, Err(StructuredError::UnsupportedMime(ref m)) if m == "application/zip"),
             "expected UnsupportedMime(application/zip), got: {result:?}"
@@ -230,13 +225,7 @@ mod tests {
 
     #[tokio::test]
     async fn unsupported_mime_in_text_plus_vision_returns_error() {
-        let result = pages_for_call(
-            &[],
-            "text/plain",
-            StructuredCallMode::TextPlusVision,
-            &default_vision(),
-        )
-        .await;
+        let result = pages_for_call(&[], "text/plain", StructuredCallMode::TextPlusVision, &default_vision()).await;
         assert!(matches!(result, Err(StructuredError::UnsupportedMime(_))));
     }
 
@@ -245,10 +234,14 @@ mod tests {
     #[tokio::test]
     async fn minimal_pdf_vision_only_returns_one_page() {
         let pdf = crate::pdf::render::build_minimal_pdf_with_mediabox(612.0, 792.0);
-        let pages =
-            pages_for_call(&pdf, "application/pdf", StructuredCallMode::VisionOnly, &default_vision())
-                .await
-                .unwrap();
+        let pages = pages_for_call(
+            &pdf,
+            "application/pdf",
+            StructuredCallMode::VisionOnly,
+            &default_vision(),
+        )
+        .await
+        .unwrap();
         assert_eq!(pages.len(), 1, "single-page PDF should yield one PageImage");
         assert_eq!(pages[0].page_number, 1);
         assert!(

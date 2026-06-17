@@ -54,15 +54,14 @@ impl TesseractBackend {
     /// Allocates the native FFI handle on first call; subsequent calls reuse
     /// the cached processor.
     fn processor(&self) -> Result<&Arc<OcrProcessor>> {
-        self.processor
-            .get_or_try_init(|| {
-                OcrProcessor::new(None)
-                    .map(Arc::new)
-                    .map_err(|e| crate::KreuzbergError::Ocr {
-                        message: format!("Failed to create Tesseract processor: {}", e),
-                        source: Some(Box::new(e)),
-                    })
-            })
+        self.processor.get_or_try_init(|| {
+            OcrProcessor::new(None)
+                .map(Arc::new)
+                .map_err(|e| crate::KreuzbergError::Ocr {
+                    message: format!("Failed to create Tesseract processor: {}", e),
+                    source: Some(Box::new(e)),
+                })
+        })
     }
 
     #[cfg(test)]
