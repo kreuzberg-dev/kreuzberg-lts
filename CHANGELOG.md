@@ -40,6 +40,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **benchmark-harness**: JSON-extraction quality metrics (`json_quality` module) including schema validity rate, field-level precision/recall/F1, type correctness, numeric tolerance matching, and exact-match comparison.
 - **ocr**: `candle-glm-ocr` backend exposing zai-org/GLM-OCR through candle. Selectable via `--ocr-backend candle-glm-ocr`. Default layout mode is `paired` (uses PP-DocLayout-V3 for per-region dispatch); set `backend_options.layout_mode = "whole_page"` to disable.
 
+## [5.0.0-rc.19] - 2026-06-17
+
+### Changed
+
+- Regenerated polyglot bindings with alef 0.25.24 (transcription surface follow-up, kotlin-android `alef(skip)` honored, wasm e2e env block emitted, Swift opaque-handle triples).
+
+### Fixed
+
+- **DOCX: `result.elements` now preserves document reading order (#1112).** When the element-based result format was enabled, the pipeline reassembled elements from per-page reconstruction, which scrambled DOCX element order because DOCX has no native page boundaries. The pipeline now stores the InternalDocument from the extractor before derivation, and the element-format transformation walks it directly in document order whenever available.
+
+- **PDF: page boundaries in metadata now recomputed after OCR fills scanned PDF content (#1110).** After OCR writes text into previously-empty page_contents, the original page_structure.boundaries (computed against native extraction) become invalid byte offsets. The PDF extractor now recomputes boundaries against the OCR-filled content so byte offsets remain valid for downstream consumers like the chunker.
+- **PDF heuristic path: merged continuation paragraphs now emit complete text.** `blocks_to_paragraphs` splits segments on font changes >1.5pt; when an embedded figure interrupts a paragraph the split left each fragment as a separate element. The struct-tree path already called `merge_continuation_paragraphs` to re-join these; the heuristic path did not. Fix applies the same merge after `blocks_to_paragraphs` and clears the pre-computed `text` field on merged paragraphs so assembly derives the full combined text from segments rather than returning only the first fragment.
+- **PDF: Widget annotation field values now included in extraction output (#1120).**
+  Interactive (non-flattened) PDFs store form field values only in Widget annotation
+  `/V` entries, not in the page content stream. The extraction path previously read spans
+  exclusively via `extract_spans_raw()`, which ignores Widget annotations, so filled form
+  values were entirely absent from the output. After assembling span text per page,
+  kreuzberg now reads Widget annotations via `PdfDocument::get_annotations()` and appends
+  any field values not already present in the assembled text. Values already in the text
+  (flattened PDFs where form content is rendered into the content stream) are skipped to
+  prevent duplication. Values are appended in top-to-bottom page order (descending PDF Y).
+- **chunking: `chunks[*].firstPage` / `lastPage` now populated for `markdown` and `djot` output.**
+  Page boundaries were computed against `result.content` (plain text) and then unconditionally
+  dropped for non-plain output formats, because those offsets are invalid for the formatted string.
+  The pipeline now re-runs `recompute_boundaries_from_pages` against `formatted_content` directly —
+  page text substrings appear verbatim in markdown/djot output, so the substring search returns
+  valid byte offsets. Chunks therefore carry accurate `firstPage`/`lastPage` provenance whenever
+  `result.pages` is populated.
+  **Limitation:** `output_format = html` uses verbatim substring search on the HTML-escaped string.
+  Pages whose text contains `&`, `<`, or `>` will not match (e.g. `"AT&T"` becomes `"AT&amp;T"`)
+  and silently produce no provenance for that page.
+  ([#1105](https://github.com/kreuzberg-dev/kreuzberg/issues/1105))
+
 ## [5.0.0-rc.18] - 2026-06-16
 
 ### Fixed
