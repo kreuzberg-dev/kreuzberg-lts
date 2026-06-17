@@ -327,7 +327,7 @@ presets = ["dep:include_dir", "dep:jsonschema", "dep:sha2"] # Preset format + re
 # schema-validate+merge → citation-fuse. Needs native http (liter-llm) + pdf rendering, so it is
 # excluded from no-ort-target/wasm-target and joins full/android-target/windows-target instead.
 # The module is additionally gated `#[cfg(not(target_arch = "wasm32"))]` in source.
-structured = ["liter-llm", "presets", "heuristics", "pdf", "ocr-pipeline", "dep:moka"]
+structured = ["liter-llm", "presets", "heuristics", "pdf", "ocr-pipeline", "dep:moka", "tokio-runtime"]
 
 redaction = ["dep:sha2"] # Pattern-based PII engine; pure-Rust.
 redaction-ml = ["redaction", "ner"] # Couple in NER for PERSON/ORG/LOC redaction.
@@ -768,6 +768,10 @@ tokio-test = "0.4"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 wiremock = "0.6"
 zip = { version = ">=7.0.0, <8.7.0", default-features = false, features = ["deflate-flate2"] }
+
+[[test]]
+name = "structured_pipeline"
+required-features = ["structured"]
 
 [[bench]]
 name = "text_quality"

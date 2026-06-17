@@ -120,6 +120,13 @@ pub mod presets;
 #[cfg(all(feature = "structured", not(target_arch = "wasm32")))]
 pub mod structured;
 
+#[cfg(all(feature = "structured", not(target_arch = "wasm32")))]
+pub use structured::{
+    extract_structured, extract_structured_sync, split_and_extract, split_and_extract_sync,
+    CacheKey, CitationEnvelope, CitedField, CitationSource, MokaVisionCache, PageImage,
+    PresetSpec, StructuredError, StructuredOptions, StructuredOutput, VisionCallCache, VisionConfig,
+};
+
 #[cfg(any(feature = "ocr", feature = "ocr-wasm"))]
 pub mod ocr;
 

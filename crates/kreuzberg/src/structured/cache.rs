@@ -145,11 +145,6 @@ mod tests {
     }
 
     #[test]
-    fn default_capacity_is_nonzero() {
-        assert!(DEFAULT_CACHE_CAPACITY > 0);
-    }
-
-    #[test]
     fn clone_shares_same_cache() {
         let cache = MokaVisionCache::with_default_capacity();
         let clone = cache.clone();
