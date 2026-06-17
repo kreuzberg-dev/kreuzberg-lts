@@ -134,9 +134,19 @@ pub async fn run_pipeline(mut doc: InternalDocument, config: &ExtractionConfig) 
     };
 
     // 2. Derive ExtractionResult from InternalDocument
+    // Clone the document before derivation consumes it so that downstream steps
+    // (element-based result format) can walk the native reading order instead of
+    // reassembling from per-page reconstruction. DOCX in particular has no native
+    // page boundaries, so per-page reconstruction scrambles element order.
+    let doc_for_elements = if config.result_format == crate::types::ResultFormat::ElementBased {
+        Some(doc.clone())
+    } else {
+        None
+    };
     let include_structure = config.include_document_structure;
     let mut result =
         crate::extraction::derive::derive_extraction_result(doc, include_structure, config.output_format.clone());
+    result.internal_document = doc_for_elements;
 
     // Inject pre-rendered styled HTML (overrides the default render_html output).
     #[cfg(feature = "html")]
@@ -305,9 +315,17 @@ pub fn run_pipeline_sync(doc: InternalDocument, config: &ExtractionConfig) -> Re
     };
 
     // 1. Derive ExtractionResult from InternalDocument
+    // Clone the document before derivation so element-based transformation can use
+    // the native reading order. Mirrors the async pipeline.
+    let doc_for_elements = if config.result_format == crate::types::ResultFormat::ElementBased {
+        Some(doc.clone())
+    } else {
+        None
+    };
     let include_structure = config.include_document_structure;
     let mut result =
         crate::extraction::derive::derive_extraction_result(doc, include_structure, config.output_format.clone());
+    result.internal_document = doc_for_elements;
 
     // Inject pre-rendered styled HTML.
     #[cfg(feature = "html")]

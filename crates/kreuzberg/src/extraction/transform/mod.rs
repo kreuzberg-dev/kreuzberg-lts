@@ -16,12 +16,105 @@ mod types;
 // Re-export public API
 pub use types::{ListItemMetadata, ListType};
 
+use crate::types::internal::{ElementKind, InternalDocument};
 use crate::types::{Element, ExtractionResult};
 use content::{
     add_page_break, format_table_as_text, process_content, process_hierarchy, process_images, process_tables,
 };
 #[cfg(test)]
 use std::borrow::Cow;
+
+/// Walk an `InternalDocument` in document reading order and convert to `Element`s.
+///
+/// This preserves the extractor's native element order, which is critical for formats
+/// like DOCX that have no native page boundaries: per-page reconstruction reorders
+/// elements by page, but the flat `InternalDocument.elements` list is always in
+/// reading order as the extractor encountered the content.
+///
+/// Container markers (`ListStart`, `ListEnd`, `QuoteStart`, `QuoteEnd`, `GroupStart`,
+/// `GroupEnd`) are structural bookkeeping and are skipped — they carry no text content.
+///
+/// # Arguments
+///
+/// * `doc` - The `InternalDocument` from the extractor, before per-page reconstruction
+/// * `filename` - Document title for element metadata, forwarded from `result.metadata.title`
+///
+/// # Returns
+///
+/// A vector of `Element`s in the extractor's native reading order.
+pub fn convert_internal_elements_to_elements(doc: &InternalDocument, filename: &Option<String>) -> Vec<Element> {
+    let mut elements: Vec<Element> = Vec::with_capacity(doc.elements.len());
+
+    for internal_elem in &doc.elements {
+        // Skip container-marker elements — they have no displayable content.
+        if internal_elem.kind.is_container_start() || internal_elem.kind.is_container_end() {
+            continue;
+        }
+
+        let page_number = internal_elem.page;
+        let coordinates = internal_elem.bbox.map(|b| crate::types::BoundingBox {
+            x0: b.x0,
+            y0: b.y0,
+            x1: b.x1,
+            y1: b.y1,
+        });
+
+        let element_type = match internal_elem.kind {
+            ElementKind::Title => crate::types::ElementType::Title,
+            ElementKind::Heading { level: 1 } => crate::types::ElementType::Title,
+            ElementKind::Heading { .. } => crate::types::ElementType::Heading,
+            ElementKind::ListItem { .. } => crate::types::ElementType::ListItem,
+            ElementKind::Table { .. } => crate::types::ElementType::Table,
+            ElementKind::Image { .. } => crate::types::ElementType::Image,
+            ElementKind::PageBreak => crate::types::ElementType::PageBreak,
+            ElementKind::Code => crate::types::ElementType::CodeBlock,
+            _ => crate::types::ElementType::NarrativeText,
+        };
+
+        let text = match internal_elem.kind {
+            ElementKind::Table { table_index } => {
+                if let Some(table) = doc.tables.get(table_index as usize) {
+                    format_table_as_text(table)
+                } else {
+                    internal_elem.text.clone()
+                }
+            }
+            ElementKind::Image { image_index } => {
+                if let Some(img) = doc.images.get(image_index as usize) {
+                    format!(
+                        "Image: {} ({}x{})",
+                        img.format,
+                        img.width.unwrap_or(0),
+                        img.height.unwrap_or(0)
+                    )
+                } else {
+                    internal_elem.text.clone()
+                }
+            }
+            _ => internal_elem.text.clone(),
+        };
+
+        if text.trim().is_empty() && !matches!(internal_elem.kind, ElementKind::PageBreak) {
+            continue;
+        }
+
+        let element_id = elements::generate_element_id(&text, element_type, page_number);
+        elements.push(Element {
+            element_id,
+            element_type,
+            text,
+            metadata: crate::types::ElementMetadata {
+                page_number,
+                filename: filename.clone(),
+                coordinates,
+                element_index: Some(elements.len()),
+                additional: std::collections::HashMap::new(),
+            },
+        });
+    }
+
+    elements
+}
 
 /// Transform an extraction result into semantic elements.
 ///
@@ -38,6 +131,10 @@ use std::borrow::Cow;
 /// - Bounding box coordinates
 /// - Paragraph detection for NarrativeText
 ///
+/// When `result.internal_document` is `Some`, walks it directly in document reading
+/// order instead of reassembling from `result.pages`. This preserves DOCX element
+/// order, which is otherwise scrambled by per-page reconstruction.
+///
 /// # Arguments
 ///
 /// * `result` - Reference to the ExtractionResult to transform
@@ -47,6 +144,15 @@ use std::borrow::Cow;
 /// A vector of Elements with proper semantic types and metadata.
 #[cfg_attr(alef, alef(skip))]
 pub fn transform_extraction_result_to_elements(result: &ExtractionResult) -> Vec<Element> {
+    // When the pipeline stored the original InternalDocument before derivation, use it
+    // directly to preserve the extractor's native reading order. This is the primary
+    // fix for DOCX (#1112): DOCX has no native page boundaries, so per-page
+    // reconstruction scrambles element order. The InternalDocument element list is
+    // always in reading order as the extractor produced it.
+    if let Some(ref doc) = result.internal_document {
+        return convert_internal_elements_to_elements(doc, &result.metadata.title);
+    }
+
     let mut elements = Vec::new();
 
     // If pages are available, process per-page with hierarchy, tables, images

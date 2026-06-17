@@ -315,6 +315,22 @@ pub struct ExtractionResult {
     #[serde(skip)]
     #[cfg_attr(alef, alef(skip))]
     pub ocr_internal_document: Option<super::internal::InternalDocument>,
+
+    /// The original `InternalDocument` from the extractor, preserved before derivation.
+    ///
+    /// Stored by the pipeline before `derive_extraction_result` consumes the document, so
+    /// that downstream transformation steps (element-based result format) can walk the
+    /// extractor's native reading order instead of reassembling from per-page content.
+    /// This is especially important for DOCX, which has no native page boundaries: the
+    /// per-page reconstruction scrambles element order, but the flat element list in the
+    /// `InternalDocument` is always in reading order.
+    ///
+    /// `None` for extraction paths that do not go through the async/sync pipeline
+    /// (e.g., direct `ExtractionResult::from_ocr` construction).
+    #[serde(skip)]
+    #[allow(dead_code)]
+    #[cfg_attr(alef, alef(skip))]
+    pub internal_document: Option<super::internal::InternalDocument>,
 }
 
 /// A single file extracted from an archive.
