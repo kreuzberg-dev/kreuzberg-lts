@@ -4,7 +4,7 @@
 //! optional CLI flags for extraction configuration. Call `validate()` then
 //! `apply()` to layer these overrides onto an `ExtractionConfig`.
 
-use anyhow::{Result, bail};
+use anyhow::{Context as _, Result, bail};
 use kreuzberg::{
     ChunkingConfig, ExecutionProviderType, ExtractionConfig, LanguageDetectionConfig, LlmConfig, OcrConfig,
 };
@@ -116,6 +116,10 @@ pub struct ExtractionOverrides {
     /// Enable automatic image rotation before OCR based on detected orientation.
     #[arg(long)]
     pub ocr_auto_rotate: Option<bool>,
+
+    /// JSON object of per-backend OCR options (e.g. `{"layout_mode":"whole_page"}`).
+    #[arg(long, value_name = "JSON")]
+    pub ocr_backend_options: Option<String>,
 
     /// VLM model for OCR (implies --ocr-backend vlm). Uses liter-llm routing format
     /// (e.g., "openai/gpt-4o", "anthropic/claude-sonnet-4-20250514").
@@ -385,6 +389,9 @@ impl ExtractionOverrides {
             );
         }
 
+        // OCR backend options validation — parse here to surface errors early
+        self.parsed_backend_options()?;
+
         // VLM OCR validation
         if self.vlm_api_key.is_some() && self.vlm_model.is_none() {
             bail!("--vlm-api-key requires --vlm-model to be specified");
@@ -469,6 +476,8 @@ impl ExtractionOverrides {
                 let existing_paddle_config = config.ocr.as_ref().and_then(|o| o.paddle_ocr_config.clone());
                 let existing_element_config = config.ocr.as_ref().and_then(|o| o.element_config.clone());
                 let auto_rotate = self.ocr_auto_rotate.unwrap_or(false);
+                // validated in validate(); unwrap is safe here
+                let backend_options = self.parsed_backend_options().ok().flatten();
                 config.ocr = Some(OcrConfig {
                     enabled: true,
                     backend: backend.to_string(),
@@ -485,7 +494,7 @@ impl ExtractionOverrides {
                     vlm_prompt: None,
                     acceleration: None,
                     tessdata_bytes: None,
-                    backend_options: None,
+                    backend_options,
                 });
             } else {
                 config.ocr = None;
@@ -532,6 +541,8 @@ impl ExtractionOverrides {
             };
 
             // If OCR config already exists, update it; otherwise create a new one
+            // validated in validate(); unwrap is safe here
+            let backend_options = self.parsed_backend_options().ok().flatten();
             let ocr = config.ocr.get_or_insert_with(|| OcrConfig {
                 enabled: true,
                 backend: "vlm".to_string(),
@@ -548,7 +559,7 @@ impl ExtractionOverrides {
                 vlm_prompt: None,
                 acceleration: None,
                 tessdata_bytes: None,
-                backend_options: None,
+                backend_options,
             });
 
             ocr.backend = "vlm".to_string();
@@ -558,6 +569,19 @@ impl ExtractionOverrides {
                 ocr.vlm_prompt = Some(prompt.clone());
             }
         }
+    }
+
+    /// Parse `--ocr-backend-options` into a `serde_json::Value`, enforcing that it is a JSON object.
+    fn parsed_backend_options(&self) -> Result<Option<serde_json::Value>> {
+        let Some(ref s) = self.ocr_backend_options else {
+            return Ok(None);
+        };
+        let value: serde_json::Value = serde_json::from_str(s)
+            .with_context(|| format!("invalid --ocr-backend-options JSON: {s}"))?;
+        if !value.is_object() {
+            bail!("--ocr-backend-options must be a JSON object");
+        }
+        Ok(Some(value))
     }
 
     fn apply_chunking(&self, config: &mut ExtractionConfig) {
@@ -920,6 +944,7 @@ pub(crate) fn apply_llm_api_key(config: &mut ExtractionConfig, key: &str) {
 mod tests {
     use super::*;
     use kreuzberg::ExtractionConfig;
+    use serde_json::json;
 
     fn default_overrides() -> ExtractionOverrides {
         ExtractionOverrides::default()
@@ -1358,6 +1383,63 @@ mod tests {
             };
             assert!(overrides.validate().is_ok(), "Expected backend '{backend}' to be valid");
         }
+    }
+
+    // ── OCR backend options tests ────────────────────────────────────
+
+    #[test]
+    fn test_ocr_backend_options_threaded_into_config() {
+        let mut config = ExtractionConfig::default();
+        let overrides = ExtractionOverrides {
+            ocr: Some(true),
+            ocr_backend: Some("candle-glm-ocr".to_string()),
+            ocr_backend_options: Some(r#"{"layout_mode":"whole_page"}"#.to_string()),
+            ..default_overrides()
+        };
+        overrides.apply(&mut config);
+        let ocr = config.ocr.unwrap();
+        assert_eq!(ocr.backend, "candle-glm-ocr");
+        let opts = ocr.backend_options.expect("backend_options should be Some");
+        assert_eq!(opts, serde_json::json!({"layout_mode": "whole_page"}));
+    }
+
+    #[test]
+    fn test_validate_rejects_non_object_backend_options() {
+        let overrides = ExtractionOverrides {
+            ocr_backend_options: Some(r#"["not","an","object"]"#.to_string()),
+            ..default_overrides()
+        };
+        let err = overrides.validate().unwrap_err();
+        assert!(
+            err.to_string().contains("--ocr-backend-options must be a JSON object"),
+            "unexpected error: {err}"
+        );
+    }
+
+    #[test]
+    fn test_validate_rejects_invalid_json_backend_options() {
+        let overrides = ExtractionOverrides {
+            ocr_backend_options: Some("not-json".to_string()),
+            ..default_overrides()
+        };
+        let err = overrides.validate().unwrap_err();
+        assert!(
+            err.to_string().contains("invalid --ocr-backend-options JSON"),
+            "unexpected error: {err}"
+        );
+    }
+
+    #[test]
+    fn test_ocr_backend_options_none_when_absent() {
+        let mut config = ExtractionConfig::default();
+        let overrides = ExtractionOverrides {
+            ocr: Some(true),
+            ocr_backend: Some("candle-glm-ocr".to_string()),
+            ..default_overrides()
+        };
+        overrides.apply(&mut config);
+        let ocr = config.ocr.unwrap();
+        assert!(ocr.backend_options.is_none());
     }
 
     // ── No-op when no flags provided ─────────────────────────────────
