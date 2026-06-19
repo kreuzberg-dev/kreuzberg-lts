@@ -17,6 +17,7 @@ static META_SCHEMA: &str = include_str!("preset.schema.json");
 static GLOBAL: OnceLock<Registry> = OnceLock::new();
 
 /// Sorted map of preset id → [`Preset`].
+#[derive(Debug, Clone)]
 pub struct Registry {
     by_id: BTreeMap<String, Preset>,
 }
