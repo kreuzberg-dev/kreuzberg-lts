@@ -93,6 +93,7 @@ repos:
     - id: shellcheck
       args:
       - -x
+      exclude: ^(test_apps/kotlin_android|packages/kotlin-android)/gradlew$
 
     - id: markdownlint-rumdl-strict
       # Strict 120-char hard limit (incl. code blocks + tables) is too aggressive
@@ -153,8 +154,10 @@ repos:
       args:
       - --build-upon-default-config
       files: ^packages/kotlin-android/.*\.kts?$
-    - id: ktlint
-      files: ^packages/kotlin-android/.*\.kts?$
+    # NOTE: ktlint is intentionally NOT run on alef-generated kotlin-android.
+    # ktfmt (--kotlinlang-style) is the canonical formatter (matches alef:format);
+    # ktlint's always-format mode conflicts with ktfmt (blank-line-after-brace) and
+    # mangles alef's `///` doc comments into `// /`. detekt covers static analysis.
     - id: kotlin-dokka
 
     - id: rubocop-lint

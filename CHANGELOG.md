@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **chore(precommit,alef): standardize kotlin-android formatting on ktfmt --kotlinlang-style.** Drop the conflicting prek ktlint hook (its always-format mode fought ktfmt and rewrote alef's `///` doc comments to `// /`, breaking `alef verify`), switch `alef.toml` kotlin-android format/check from gradle-ktlintFormat to ktfmt so alef and prek agree, and exclude the vendored Gradle wrapper from shellcheck. detekt remains for static analysis. Generated kotlin-android is reformatted to ktfmt on the next `alef generate`. (`.pre-commit-config.yaml`, `alef.toml`)
 - **alef**: bump `alef_version` to 0.25.49 and regenerate all bindings. Picks up the FFI `Option<&[u8]>` optional-bytes param conversion (`analyze_document` documentBytes), trait-flagged method delegation on `Arc<Mutex<T>>` opaques (`Registry::get`), and the pyo3/napi data-enum `Default` gating.
 - **alef.toml**: add `enrichment`, `heuristics`, `presets`, and `structured` to the global `features` list so the FFI and Python binding crates compile the newly-wired heuristics/presets/structured/enrichment surface (resolves ~214 `unexpected cfg condition value` errors).
 
