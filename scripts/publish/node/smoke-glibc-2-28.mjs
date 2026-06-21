@@ -11,7 +11,7 @@
 //
 // Required env: NODE_PATH — absolute path to the .node file inside the unpacked tar.
 
-import { readFileSync, existsSync } from "node:fs";
+import { existsSync } from "node:fs";
 import { createRequire } from "node:module";
 
 const nodePath = process.env.NODE_PATH;
