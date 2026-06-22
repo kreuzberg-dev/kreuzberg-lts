@@ -65,6 +65,9 @@ pub mod processor;
 /// TSV and hOCR table reconstruction utilities.
 pub mod table;
 #[cfg(feature = "ocr")]
+/// Runtime tessdata language pack download utilities.
+pub mod tessdata_download;
+#[cfg(feature = "ocr")]
 /// Tessdata language-pack download and management utilities.
 pub mod tessdata_manager;
 #[cfg(feature = "ocr")]

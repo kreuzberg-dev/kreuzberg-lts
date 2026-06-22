@@ -201,15 +201,11 @@ pub use leptonica::Pix;
 /// `bundle-tessdata-eng` feature is enabled, otherwise `None`.
 ///
 /// The bundled data is the `tessdata_fast` variant (~4 MB) downloaded by
-/// `build.rs` to `TESSDATA_PREFIX_BUNDLED/tessdata/eng.traineddata`. Embedding
-/// it lets WASM builds drive Tesseract OCR without filesystem access or
-/// runtime fetches.
+/// `build.rs` to `$OUT_DIR/eng.traineddata`. Embedding it lets WASM builds
+/// drive Tesseract OCR without filesystem access or runtime fetches.
 #[cfg(feature = "bundle-tessdata-eng")]
 pub fn bundled_eng_traineddata() -> Option<&'static [u8]> {
-    Some(include_bytes!(concat!(
-        env!("TESSDATA_PREFIX_BUNDLED"),
-        "/tessdata/eng.traineddata"
-    )))
+    Some(include_bytes!(concat!(env!("OUT_DIR"), "/eng.traineddata")))
 }
 
 /// Returns `None` when the `bundle-tessdata-eng` feature is disabled.

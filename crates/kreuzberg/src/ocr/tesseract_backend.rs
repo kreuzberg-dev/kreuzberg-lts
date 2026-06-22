@@ -103,6 +103,7 @@ impl TesseractBackend {
                 .as_ref()
                 .map(|p| p.auto_rotate)
                 .unwrap_or(false),
+            tessdata_path: None,
         }
     }
 
@@ -122,6 +123,8 @@ impl TesseractBackend {
         if config.auto_rotate {
             internal.auto_rotate = true;
         }
+        // Propagate the runtime tessdata directory override, if any.
+        internal.tessdata_path = config.tessdata_path.clone();
         internal
     }
 

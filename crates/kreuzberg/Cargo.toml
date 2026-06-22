@@ -115,8 +115,13 @@ ocr = [
     "dep:nom-exif",
     "dep:hayro-jpeg2000",
     "dep:hayro-jbig2",
+    "dep:ureq",
     "html",
 ]
+# Embed the English `eng.traineddata` blob (tessdata_fast, ~4 MB) at compile time
+# so the runtime tessdata resolver can materialize English OCR offline without a
+# network download. Forwarded to kreuzberg-tesseract.
+bundle-tessdata-eng = ["kreuzberg-tesseract/bundle-tessdata-eng"]
 # WASM OCR: Minimal Tesseract backend without html-to-markdown (which has WASI imports)
 # Includes only the core OCR processing dependencies needed for Tesseract on WASM
 ocr-wasm = [
@@ -130,6 +135,8 @@ ocr-wasm = [
 # HEIF / HEIC / AVIF / HEICS / AVCS decoding via vendored libheif bindings.
 # Native-only — libheif is a C library with no working WASM/Android story.
 # Pulls in `nom-exif` so HEIC EXIF blocks are readable even without the full `ocr` feature.
+# On non-Windows platforms (Linux, macOS, etc.), uses embedded-libheif to build libheif from source
+# (avoids pkg-config dependency). Windows uses vcpkg integration.
 heic = ["dep:kreuzberg-libheif", "dep:image", "dep:nom-exif", "image-encode"]
 # PaddleOCR type definitions only — pure-Rust config structs, no ORT dependency.
 # Exposes PaddleOcrConfig, PaddleLanguage, ModelPaths. Safe on Android/WASM.
@@ -617,7 +624,7 @@ itertools = { workspace = true, optional = true }
 jotdown = "0.10"
 jsonschema = { version = "0.46", optional = true }
 kreuzberg-gliner-rs = { version = "0.2.0", optional = true }
-kreuzberg-libheif = { path = "../kreuzberg-libheif", version = "5.0.0-rc.28", optional = true }
+kreuzberg-libheif = { path = "../kreuzberg-libheif", version = "5.0.0-rc.28", optional = true, default-features = false }
 kreuzberg-orp = { version = "0.1.1", optional = true }
 kreuzberg-tesseract = { path = "../kreuzberg-tesseract", optional = true }
 libc = { workspace = true }
@@ -729,7 +736,13 @@ zip = { version = ">=7.0.0", optional = true, default-features = false, features
 # webpki-roots, breaking downloads behind corporate TLS-MITM proxies (#1146).
 hf-hub = { version = "0.5", default-features = false, features = ["ureq", "native-tls"], optional = true }
 # Candle-based VLM OCR backends - pure-Rust transformer inference, not on WASM yet.
+# Note: candle-core unconditionally links platform-specific deps (cudarc on Linux, metal-kernels on macOS).
+# To avoid conflicts during feature unification, GPU features (candle-cuda/metal/mkl/accelerate) should
+# only be explicitly enabled with platform awareness. CI uses `--features full` which excludes GPU accel.
 kreuzberg-candle-ocr = { path = "../kreuzberg-candle-ocr", version = "5.0.0-rc.28", optional = true }
+# HEIF/HEIC: on non-Windows platforms, enable embedded-libheif to statically build libheif from source.
+# Avoids pkg-config dependency for CI environments without system libheif >=1.21 (e.g., android-check, mobile).
+kreuzberg-libheif = { path = "../kreuzberg-libheif", version = "5.0.0-rc.28", optional = true, features = ["embedded-libheif"] }
 # PaddleOCR via ONNX Runtime - not available on WASM (vendored from paddle-ocr-rs)
 kreuzberg-paddle-ocr = { path = "../kreuzberg-paddle-ocr", version = "5.0.0-rc.28", optional = true }
 liter-llm = { workspace = true, optional = true, features = ["native-http"] }

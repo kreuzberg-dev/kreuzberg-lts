@@ -33,9 +33,13 @@ hunyuan-ocr = []
 deepseek-ocr = []
 
 # Device acceleration pass-throughs to candle.
+# CUDA: Linux/Unix only (requires nvcc compiler); not available on macOS, Windows, or WASM.
 cuda = ["candle-core/cuda", "candle-nn/cuda", "candle-transformers/cuda"]
+# Metal: macOS only (Apple GPU support via Metal Framework).
 metal = ["candle-core/metal", "candle-nn/metal", "candle-transformers/metal"]
+# MKL: Intel Math Kernel Library (all platforms, but typically Linux/Windows).
 mkl = ["candle-core/mkl", "candle-nn/mkl", "candle-transformers/mkl"]
+# Accelerate: macOS only (Apple's Accelerate Framework for SIMD/BLAS).
 accelerate = [
     "candle-core/accelerate",
     "candle-nn/accelerate",

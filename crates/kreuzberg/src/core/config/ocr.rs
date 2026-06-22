@@ -4,6 +4,7 @@
 //! Tesseract-specific parameters, quality thresholds, and multi-backend pipeline config.
 
 use serde::{Deserialize, Deserializer, Serialize};
+use std::path::PathBuf;
 
 use super::formats::OutputFormat;
 #[cfg(test)]
@@ -494,6 +495,15 @@ pub struct OcrConfig {
     /// at runtime.
     #[serde(skip)]
     pub tessdata_bytes: Option<std::collections::HashMap<String, Vec<u8>>>,
+
+    /// Runtime override for tessdata directory path.
+    ///
+    /// When set, uses this path as the highest-priority tessdata location,
+    /// bypassing environment variables and cache directories. Useful for
+    /// embedding pre-installed tessdata in applications. When `None`, uses
+    /// the standard resolution chain: TESSDATA_PREFIX env, cache dir, system paths.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub tessdata_path: Option<PathBuf>,
 }
 
 impl Default for OcrConfig {
@@ -515,6 +525,7 @@ impl Default for OcrConfig {
             vlm_prompt: None,
             acceleration: None,
             tessdata_bytes: None,
+            tessdata_path: None,
         }
     }
 }

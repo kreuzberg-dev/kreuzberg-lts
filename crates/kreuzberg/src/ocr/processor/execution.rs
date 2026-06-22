@@ -618,7 +618,9 @@ pub(super) fn perform_ocr(
     let bytes_per_pixel: u32 = 3;
     let bytes_per_line = width * bytes_per_pixel;
 
-    let tessdata_path = resolve_tessdata_path();
+    // Parse language string (may contain "+" separators for multi-language)
+    let languages: Vec<String> = config.language.split('+').map(|lang| lang.trim().to_string()).collect();
+    let tessdata_path = resolve_tessdata_path(&languages, config.tessdata_path.as_deref())?;
 
     log_ci_debug(ci_debug_enabled, "tessdata", || {
         let path_preview = env::var_os("PATH").map(|paths| {
@@ -1230,7 +1232,9 @@ fn is_all_languages(lang: &str) -> bool {
 /// Otherwise returns `None`, indicating the original config should be used as-is.
 fn resolve_config_language(config: &TesseractConfig) -> Result<Option<TesseractConfig>, OcrError> {
     if is_all_languages(&config.language) {
-        let tessdata_path = resolve_tessdata_path();
+        // For "all" wildcard, resolve tessdata for English as a bootstrap language
+        let bootstrap_langs = vec!["eng".to_string()];
+        let tessdata_path = resolve_tessdata_path(&bootstrap_langs, config.tessdata_path.as_deref())?;
         let resolved = resolve_all_installed_languages(&tessdata_path)?;
         let mut resolved_config = config.clone();
         resolved_config.language = resolved;

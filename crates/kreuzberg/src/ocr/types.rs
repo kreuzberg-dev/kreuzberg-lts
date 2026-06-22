@@ -109,6 +109,12 @@ pub struct TesseractConfig {
     /// page orientation (0/90/180/270 degrees) before OCR. If the page is
     /// rotated with high confidence, the image is corrected before recognition.
     pub auto_rotate: bool,
+
+    /// Highest-priority override for the tessdata directory.
+    ///
+    /// When set, [`resolve_tessdata_path`](crate::ocr::processor) uses this path
+    /// before consulting `TESSDATA_PREFIX`, cache, or system locations.
+    pub tessdata_path: Option<std::path::PathBuf>,
 }
 
 impl Default for TesseractConfig {
@@ -141,6 +147,7 @@ impl Default for TesseractConfig {
             textord_space_size_is_variable: true,
             thresholding_method: false,
             auto_rotate: false,
+            tessdata_path: None,
         }
     }
 }
@@ -188,6 +195,7 @@ impl From<&crate::types::TesseractConfig> for TesseractConfig {
             textord_space_size_is_variable: config.textord_space_size_is_variable,
             thresholding_method: config.thresholding_method,
             auto_rotate: config.preprocessing.as_ref().map(|p| p.auto_rotate).unwrap_or(false),
+            tessdata_path: None,
         }
     }
 }

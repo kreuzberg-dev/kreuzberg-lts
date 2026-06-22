@@ -496,6 +496,7 @@ impl ExtractionOverrides {
                     vlm_prompt: None,
                     acceleration: None,
                     tessdata_bytes: None,
+                    tessdata_path: None,
                     backend_options,
                 });
             } else {
@@ -561,6 +562,7 @@ impl ExtractionOverrides {
                 vlm_prompt: None,
                 acceleration: None,
                 tessdata_bytes: None,
+                tessdata_path: None,
                 backend_options,
             });
 
@@ -1054,6 +1056,7 @@ mod tests {
                 vlm_prompt: None,
                 acceleration: None,
                 tessdata_bytes: None,
+                tessdata_path: None,
                 backend_options: None,
             }),
             ..Default::default()

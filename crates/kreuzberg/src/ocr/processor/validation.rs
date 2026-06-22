@@ -53,39 +53,30 @@ pub(super) fn validate_language_and_traineddata(language: &str, tessdata_path: &
     Ok(())
 }
 
-/// Resolve tessdata path from environment or fallback locations.
+/// Resolve tessdata path with runtime fallback chain and language validation.
 ///
-/// Checks TESSDATA_PREFIX environment variable first, then tries common
-/// installation paths for macOS, Linux, and Windows.
+/// Implements a multi-step resolution order. The first location that contains
+/// every requested language wins:
+/// 1. `OcrConfig.tessdata_path` override (`override_path` argument)
+/// 2. `TESSDATA_PREFIX` environment variable
+/// 3. `KREUZBERG_CACHE_DIR/tessdata`
+/// 4. `crate::cache_dir::resolve_cache_base().join("tessdata")`
+/// 5. System fallback paths (macOS, Linux, Windows)
+/// 6. If languages are still missing, materialize bundled `eng` bytes and
+///    download any others from the GitHub `tessdata_fast` repo into the cache
+///
+/// # Arguments
+///
+/// * `languages` - List of language codes to resolve (e.g., `["eng", "fra"]`)
+/// * `override_path` - Optional explicit tessdata directory from `OcrConfig.tessdata_path`,
+///   checked before any environment or system location.
 ///
 /// # Returns
 ///
-/// Path to tessdata directory if found, otherwise empty string
-pub(super) fn resolve_tessdata_path() -> String {
-    // 1. TESSDATA_PREFIX env var (explicit override)
-    if let Ok(path) = env::var("TESSDATA_PREFIX")
-        && !path.is_empty()
-    {
-        return path;
-    }
-
-    // 2. KREUZBERG_CACHE_DIR/tessdata (downloaded by `cache warm` command)
-    if let Ok(cache_dir) = env::var("KREUZBERG_CACHE_DIR") {
-        let tessdata = PathBuf::from(cache_dir).join("tessdata");
-        if tessdata.exists() {
-            return tessdata.to_string_lossy().into_owned();
-        }
-    }
-
-    // 3. Bundled tessdata (compiled-in path from build.rs)
-    if let Some(bundled) = option_env!("TESSDATA_PREFIX_BUNDLED") {
-        let tessdata = PathBuf::from(bundled).join("tessdata");
-        if tessdata.exists() {
-            return tessdata.to_string_lossy().into_owned();
-        }
-    }
-
-    // 4. System fallback paths
+/// `Ok(String)` with the path to a valid tessdata directory containing all
+/// requested languages, or `Err(OcrError)` if resolution fails.
+pub(super) fn resolve_tessdata_path(languages: &[String], override_path: Option<&Path>) -> Result<String, OcrError> {
+    // System fallback paths to check (in order)
     let fallback_paths = [
         "/opt/homebrew/share/tessdata",
         "/opt/homebrew/opt/tesseract/share/tessdata",
@@ -98,11 +89,133 @@ pub(super) fn resolve_tessdata_path() -> String {
         r#"C:\ProgramData\Tesseract-OCR\tessdata"#,
     ];
 
-    fallback_paths
-        .iter()
-        .find(|p| Path::new(p).exists())
-        .map(|p| (*p).to_string())
-        .unwrap_or_default()
+    // Step 0: explicit OcrConfig.tessdata_path override (highest priority).
+    if let Some(path) = override_path
+        && let Some(path_str) = path.to_str()
+        && !path_str.is_empty()
+        && all_languages_exist(path_str, languages)?
+    {
+        return Ok(path_str.to_string());
+    }
+
+    // Step 1: TESSDATA_PREFIX env var (explicit override)
+    if let Ok(path) = env::var("TESSDATA_PREFIX")
+        && !path.is_empty()
+        && all_languages_exist(&path, languages)?
+    {
+        return Ok(path);
+    }
+
+    // Step 2: KREUZBERG_CACHE_DIR/tessdata (downloaded by `cache warm` command)
+    if let Ok(cache_dir) = env::var("KREUZBERG_CACHE_DIR") {
+        let tessdata = PathBuf::from(cache_dir).join("tessdata");
+        if tessdata.exists() && all_languages_exist(tessdata.to_str().unwrap_or(""), languages)? {
+            return Ok(tessdata.to_string_lossy().into_owned());
+        }
+    }
+
+    // Step 3: Check cache_dir::resolve_cache_base()
+    let cache_base = crate::cache_dir::resolve_cache_base().join("tessdata");
+    if cache_base.exists() && all_languages_exist(cache_base.to_str().unwrap_or(""), languages)? {
+        return Ok(cache_base.to_string_lossy().into_owned());
+    }
+
+    // Step 4: System fallback paths
+    for path in &fallback_paths {
+        if Path::new(path).exists() && all_languages_exist(path, languages)? {
+            return Ok(path.to_string());
+        }
+    }
+
+    // Step 5: If no complete path found, attempt to materialize missing languages
+    // Try the cache_base path first for download destination
+    let download_dest = cache_base;
+    std::fs::create_dir_all(&download_dest).map_err(|e| {
+        OcrError::TesseractInitializationFailed(format!(
+            "Failed to create tessdata cache directory '{}': {}",
+            download_dest.display(),
+            e
+        ))
+    })?;
+
+    materialize_missing_languages(&download_dest, languages)?;
+
+    // Verify all languages exist after materialization
+    let dest_str = download_dest
+        .to_str()
+        .ok_or_else(|| OcrError::TesseractInitializationFailed("Tessdata path is not valid UTF-8".to_string()))?;
+
+    if all_languages_exist(dest_str, languages)? {
+        Ok(dest_str.to_string())
+    } else {
+        Err(OcrError::TesseractInitializationFailed(format!(
+            "Failed to resolve all requested languages: {:?}",
+            languages
+        )))
+    }
+}
+
+/// Check if all languages in the list exist as traineddata files in the given directory.
+fn all_languages_exist(tessdata_path: &str, languages: &[String]) -> Result<bool, OcrError> {
+    if tessdata_path.is_empty() || languages.is_empty() {
+        return Ok(false);
+    }
+
+    let tessdata_dir = Path::new(tessdata_path);
+    if !tessdata_dir.exists() {
+        return Ok(false);
+    }
+
+    for lang in languages {
+        let traineddata_path = tessdata_dir.join(format!("{}.traineddata", lang));
+        if !traineddata_path.exists() {
+            return Ok(false);
+        }
+    }
+
+    Ok(true)
+}
+
+/// Materialize missing language files by attempting to use bundled 'eng' or download from GitHub.
+#[cfg(not(target_arch = "wasm32"))]
+fn materialize_missing_languages(tessdata_path: &Path, languages: &[String]) -> Result<(), OcrError> {
+    use crate::ocr::tessdata_download::download_language_pack;
+
+    for lang in languages {
+        let traineddata_path = tessdata_path.join(format!("{}.traineddata", lang));
+        if traineddata_path.exists() {
+            continue;
+        }
+
+        // Special case: 'eng' can be materialized from bundled bytes
+        if lang == "eng"
+            && let Some(bundled_bytes) = kreuzberg_tesseract::bundled_eng_traineddata()
+        {
+            std::fs::write(&traineddata_path, bundled_bytes).map_err(|e| {
+                OcrError::TesseractInitializationFailed(format!(
+                    "Failed to write bundled eng.traineddata to '{}': {}",
+                    traineddata_path.display(),
+                    e
+                ))
+            })?;
+            tracing::info!("Materialized bundled eng.traineddata to '{}'", tessdata_path.display());
+            continue;
+        }
+
+        // Download from GitHub for other languages
+        download_language_pack(lang, tessdata_path)?;
+    }
+
+    Ok(())
+}
+
+/// WASM stub: no network access, no file writes.
+#[cfg(target_arch = "wasm32")]
+fn materialize_missing_languages(_tessdata_path: &Path, languages: &[String]) -> Result<(), OcrError> {
+    Err(OcrError::TesseractInitializationFailed(format!(
+        "Cannot download language packs on WASM. Requested: {:?}",
+        languages
+    )))
 }
 
 /// Resolve all installed Tesseract languages from the tessdata directory.
@@ -261,6 +374,80 @@ mod tests {
     fn test_resolve_all_installed_languages_empty_path() {
         let result = resolve_all_installed_languages("");
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_all_languages_exist_returns_true_when_present() {
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::write(dir.path().join("eng.traineddata"), b"x").unwrap();
+        std::fs::write(dir.path().join("fra.traineddata"), b"x").unwrap();
+
+        let langs = vec!["eng".to_string(), "fra".to_string()];
+        assert!(all_languages_exist(dir.path().to_str().unwrap(), &langs).unwrap());
+    }
+
+    #[test]
+    fn test_all_languages_exist_returns_false_when_one_missing() {
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::write(dir.path().join("eng.traineddata"), b"x").unwrap();
+
+        let langs = vec!["eng".to_string(), "deu".to_string()];
+        assert!(!all_languages_exist(dir.path().to_str().unwrap(), &langs).unwrap());
+    }
+
+    #[test]
+    fn test_all_languages_exist_false_for_empty_path_or_langs() {
+        assert!(!all_languages_exist("", &["eng".to_string()]).unwrap());
+        let dir = tempfile::tempdir().unwrap();
+        assert!(!all_languages_exist(dir.path().to_str().unwrap(), &[]).unwrap());
+    }
+
+    #[test]
+    fn test_all_languages_exist_false_for_missing_dir() {
+        let langs = vec!["eng".to_string()];
+        assert!(!all_languages_exist("/nonexistent/path/xyz", &langs).unwrap());
+    }
+
+    #[test]
+    fn test_resolve_tessdata_path_prefers_override() {
+        // The override path containing all languages must win without touching
+        // env vars, cache, or system locations.
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::write(dir.path().join("eng.traineddata"), b"x").unwrap();
+
+        let langs = vec!["eng".to_string()];
+        let resolved = resolve_tessdata_path(&langs, Some(dir.path())).unwrap();
+        assert_eq!(resolved, dir.path().to_str().unwrap());
+    }
+
+    #[test]
+    fn test_resolve_tessdata_path_skips_override_missing_lang() {
+        // An override that lacks a requested language must not be returned;
+        // resolution falls through to later steps.
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::write(dir.path().join("eng.traineddata"), b"x").unwrap();
+
+        // Request a language the override does not have. With no network and no
+        // bundled data for "deu", resolution should fail rather than return the
+        // incomplete override directory.
+        let langs = vec!["deu".to_string()];
+        let result = resolve_tessdata_path(&langs, Some(dir.path()));
+        if let Ok(path) = result {
+            assert_ne!(path, dir.path().to_str().unwrap());
+        }
+    }
+
+    #[cfg(feature = "bundle-tessdata-eng")]
+    #[test]
+    fn test_materialize_eng_from_bundled_bytes() {
+        // With the bundled eng feature, "eng" materializes offline into a fresh
+        // cache directory without any network access.
+        let dir = tempfile::tempdir().unwrap();
+        let langs = vec!["eng".to_string()];
+
+        materialize_missing_languages(dir.path(), &langs).unwrap();
+        assert!(dir.path().join("eng.traineddata").exists());
+        assert!(all_languages_exist(dir.path().to_str().unwrap(), &langs).unwrap());
     }
 
     #[test]

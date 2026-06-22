@@ -700,12 +700,12 @@ mod build_tesseract {
                 tesseract_config.build();
             });
 
-        // Bundle eng.traineddata (tessdata_fast, ~4MB) so English OCR works out of the box.
-        // Tesseract looks for traineddata at {TESSDATA_PREFIX}/tessdata/{lang}.traineddata.
-        let bundled_tessdata_dir = tessdata_prefix.join("tessdata");
-        let eng_traineddata = bundled_tessdata_dir.join("eng.traineddata");
+        // Bundle eng.traineddata (tessdata_fast, ~4MB) directly to OUT_DIR so English OCR
+        // works out of the box. The include_bytes! path in lib.rs will reference OUT_DIR/eng.traineddata
+        // instead of a machine-specific path.
+        let out_dir = env::var("OUT_DIR").expect("OUT_DIR not set");
+        let eng_traineddata = PathBuf::from(&out_dir).join("eng.traineddata");
         if !eng_traineddata.exists() {
-            fs::create_dir_all(&bundled_tessdata_dir).expect("Failed to create tessdata directory");
             download_file_with_fallback(
                 &[
                     "https://github.com/tesseract-ocr/tessdata_fast/raw/main/eng.traineddata",
@@ -715,8 +715,9 @@ mod build_tesseract {
                 "eng.traineddata",
             );
         }
-        println!("cargo:rustc-env=TESSDATA_PREFIX_BUNDLED={}", tessdata_prefix.display());
-        eprintln!("Bundled tessdata dir: {:?}", bundled_tessdata_dir);
+        // Note: OUT_DIR is set automatically by Cargo for crates with a build
+        // script, so `env!("OUT_DIR")` in lib.rs resolves without re-emitting it.
+        eprintln!("Bundled eng.traineddata: {:?}", eng_traineddata);
 
         println!("cargo:rerun-if-changed=build.rs");
         println!("cargo:rerun-if-changed=src/shim.cpp");
@@ -1677,12 +1678,11 @@ Installation instructions:
         // Bundle eng.traineddata for the optional `bundle-tessdata-eng` feature.
         // Tesseract on WASM has no filesystem, so the kreuzberg-tesseract crate
         // ships the language data as a `&'static [u8]` via include_bytes! when
-        // this feature is on. We always populate the path so include_bytes!
-        // resolves at compile time.
-        let bundled_tessdata_dir = project_dir.join("tessdata");
-        let eng_traineddata = bundled_tessdata_dir.join("eng.traineddata");
+        // this feature is on. Write it directly to OUT_DIR so `include_bytes!`
+        // in lib.rs resolves at compile time without leaking a machine path.
+        let out_dir = env::var("OUT_DIR").expect("OUT_DIR not set");
+        let eng_traineddata = PathBuf::from(&out_dir).join("eng.traineddata");
         if !eng_traineddata.exists() {
-            fs::create_dir_all(&bundled_tessdata_dir).expect("Failed to create tessdata directory");
             download_file_with_fallback(
                 &[
                     "https://github.com/tesseract-ocr/tessdata_fast/raw/main/eng.traineddata",
@@ -1692,7 +1692,6 @@ Installation instructions:
                 "eng.traineddata",
             );
         }
-        println!("cargo:rustc-env=TESSDATA_PREFIX_BUNDLED={}", project_dir.display());
 
         eprintln!("WASM build completed successfully!");
         eprintln!("Leptonica install dir: {:?}", leptonica_install_dir);
