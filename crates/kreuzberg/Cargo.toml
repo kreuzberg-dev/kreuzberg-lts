@@ -587,7 +587,12 @@ auto_enums = { version = "0.8", optional = true }
 axum = { version = "0.8", features = ["macros", "json", "multipart"], optional = true }
 base64 = { workspace = true }
 biblatex = { version = "0.12", optional = true }
-biblib = { version = "0.4", default-features = false, features = [
+# Pinned to =0.4.3: biblib 0.4.4 bumped to quick-xml ^0.39.2 but still calls
+# the removed `Attribute::unescape_value`, so it fails to compile. The exact
+# pin stops out-of-workspace builds (PHP/Python sdist run `cargo
+# generate-lockfile`, which would re-resolve to the broken 0.4.4). 0.5.x drops
+# the `regex` feature we use, so it is not an option yet.
+biblib = { version = "=0.4.3", default-features = false, features = [
     "ris",
     "pubmed",
     "xml",
