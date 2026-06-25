@@ -260,6 +260,7 @@ jobs:
       paddle_exists: ${{ steps.check.outputs.paddle_exists }}
       candle_exists: ${{ steps.check.outputs.candle_exists }}
       libheif_exists: ${{ steps.check.outputs.libheif_exists }}
+      gliner_exists: ${{ steps.check.outputs.gliner_exists }}
       cli_exists: ${{ steps.check.outputs.cli_exists }}
       all_exist: ${{ steps.derive.outputs.all_exist }}
     steps:
@@ -274,10 +275,11 @@ jobs:
             paddle_exists=xberg-paddle-ocr
             candle_exists=xberg-candle-ocr
             libheif_exists=xberg-libheif
+            gliner_exists=xberg-gliner
             cli_exists=xberg-cli
 
       - id: derive
-        # Inline: aggregate four check-registry outputs into a single boolean
+        # Inline: aggregate the check-registry outputs into a single boolean
         # the publish-crates job can guard on. No shared action equivalent.
         run: |
           if [[ "${{ steps.check.outputs.exists }}" == "true" \
@@ -285,6 +287,7 @@ jobs:
             && "${{ steps.check.outputs.paddle_exists }}" == "true" \
             && "${{ steps.check.outputs.candle_exists }}" == "true" \
             && "${{ steps.check.outputs.libheif_exists }}" == "true" \
+            && "${{ steps.check.outputs.gliner_exists }}" == "true" \
             && "${{ steps.check.outputs.cli_exists }}" == "true" ]]; then
             echo "all_exist=true" >> "$GITHUB_OUTPUT"
           else
@@ -2069,7 +2072,7 @@ jobs:
 
       - uses: xberg-io/actions/publish-crates@v1
         with:
-          crates: xberg-libheif xberg-tesseract xberg-paddle-ocr xberg-candle-ocr xberg xberg-cli
+          crates: xberg-libheif xberg-tesseract xberg-paddle-ocr xberg-candle-ocr xberg-gliner xberg xberg-cli
           version: ${{ needs.prepare.outputs.version }}
           dry-run: ${{ needs.prepare.outputs.dry_run }}
 
