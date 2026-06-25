@@ -9,7 +9,7 @@ Xberg and Docling are both open-source document extraction libraries, but they c
 | **Written in**   | Rust                                                              | Python                                               |
 | **File formats** | 96                                                                | ~38 extensions (15+ types)                           |
 | **Use from**     | Python, TypeScript, Go, Ruby, Java, C#, PHP, Elixir, Rust, Wasm   | Python                                               |
-| **License**      | Apache-2.0                                                        | Elastic-2.0                                          |
+| **License**      | Apache-2.0                                                        | MIT                                          |
 | **OCR**          | Tesseract + PaddleOCR (local, multi-backend fallback)             | Tesseract + EasyOCR                                  |
 | **Sweet spot**   | High-throughput pipelines, polyglot stacks, broad format coverage | ML-powered document understanding, scientific papers |
 

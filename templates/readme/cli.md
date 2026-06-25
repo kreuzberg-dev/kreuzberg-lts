@@ -1027,4 +1027,4 @@ We welcome contributions! Please see the main Xberg repository for contribution 
 
 ## License
 
-Elastic License 2.0 (ELv2)
+MIT License (MIT)

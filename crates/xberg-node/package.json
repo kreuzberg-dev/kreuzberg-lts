@@ -2,7 +2,7 @@
   "name": "@xberg/node",
   "version": "1.0.0-rc.1",
   "description": "High-performance document intelligence library",
-  "license": "Elastic-2.0",
+  "license": "MIT",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/xberg-io/xberg.git"

@@ -83,6 +83,6 @@ COPY --from=builder /build/xberg /usr/local/bin/xberg
 
 LABEL org.opencontainers.image.source="https://github.com/xberg-io/xberg"
 LABEL org.opencontainers.image.description="Xberg document intelligence - CLI variant"
-LABEL org.opencontainers.image.licenses="Elastic-2.0"
+LABEL org.opencontainers.image.licenses="MIT"
 
 ENTRYPOINT ["xberg"]

@@ -26,7 +26,7 @@ defmodule Xberg.MixProject do
 
   defp package do
     [
-      licenses: ["Elastic-2.0"],
+      licenses: ["MIT"],
       links: %{"GitHub" => "https://github.com/xberg-io/xberg"},
       files:
         ~w(lib .formatter.exs mix.exs README* checksum-*.exs native/xberg_nif/Cargo.toml native/xberg_nif/Cargo.lock native/xberg_nif/src)

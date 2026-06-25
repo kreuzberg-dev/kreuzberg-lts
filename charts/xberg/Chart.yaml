@@ -23,7 +23,7 @@ maintainers:
     url: https://github.com/xberg-io
 icon: https://raw.githubusercontent.com/xberg-io/xberg/main/docs/assets/logo.svg
 annotations:
-  artifacthub.io/license: Elastic-2.0
+  artifacthub.io/license: MIT
   artifacthub.io/links: |
     - name: Documentation
       url: https://xberg.io

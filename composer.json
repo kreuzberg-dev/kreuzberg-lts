@@ -1,7 +1,7 @@
 {
   "name": "xberg-io/xberg",
   "description": "High-performance document intelligence library",
-  "license": "Elastic-2.0",
+  "license": "MIT",
   "type": "php-ext",
   "require": {
     "php": ">=8.2"

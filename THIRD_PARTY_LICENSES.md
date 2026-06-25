@@ -1,6 +1,6 @@
 # Third-Party Licenses
 
-Xberg itself is licensed under [Elastic-2.0](LICENSE). This file documents
+Xberg itself is licensed under [MIT](LICENSE). This file documents
 notable third-party **native** libraries that Xberg links against or that are
 redistributed in the published container images, with an emphasis on copyleft
 (LGPL/GPL) components and how Xberg stays compliant.

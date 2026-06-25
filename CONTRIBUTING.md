@@ -108,6 +108,6 @@ We use [Conventional Commits](https://www.conventionalcommits.org/). Prefix your
 - **Documentation:** [docs.xberg.io](https://docs.xberg.io)
 - **Discord:** [Join our community](https://discord.gg/xt9WY3GnKR)
 - **Issues:** [GitHub Issues](https://github.com/xberg-io/xberg/issues)
-- **License:** [Elastic License 2.0 (ELv2)](LICENSE)
+- **License:** [MIT License (MIT)](LICENSE)
 
 Thank you for helping make Xberg better!

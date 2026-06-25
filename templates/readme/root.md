@@ -347,4 +347,4 @@ Join our [Discord community](https://discord.gg/xt9WY3GnKR) for questions and di
 
 ## License
 
-Elastic License 2.0 (ELv2) — see [LICENSE](LICENSE) for details. See [the Elastic License](https://www.elastic.co/licensing/elastic-license) for the full text.
+MIT License (MIT) — see [LICENSE](LICENSE) for details. See [the MIT License](https://www.opensource.org/licenses/MIT) for the full text.

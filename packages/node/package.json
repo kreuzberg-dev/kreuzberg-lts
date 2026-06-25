@@ -10,7 +10,7 @@
 		"text"
 	],
 	"homepage": "https://xberg.io",
-	"license": "Elastic-2.0",
+	"license": "MIT",
 	"author": "Na'aman Hirschfeld <naaman@xberg.io>",
 	"repository": "https://github.com/xberg-io/xberg",
 	"files": [

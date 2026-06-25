@@ -62,7 +62,7 @@
 
   <!-- Project Info -->
   <a href="https://github.com/xberg-io/xberg/blob/main/LICENSE">
-    <img src="https://img.shields.io/badge/License-Elastic--2.0-007ec6" alt="License">
+    <img src="https://img.shields.io/badge/License-MIT-007ec6" alt="License">
   </a>
   <a href="https://docs.xberg.io">
     <img src="https://img.shields.io/badge/Docs-xberg-007ec6" alt="Documentation">
@@ -429,4 +429,4 @@ Join our [Discord community](https://discord.gg/xt9WY3GnKR) for questions and di
 
 ## License
 
-Elastic License 2.0 (ELv2) — see [LICENSE](LICENSE) for details. See [the Elastic License](https://www.elastic.co/licensing/elastic-license) for the full text.
+MIT License (MIT) — see [LICENSE](LICENSE) for details. See [the MIT License](https://www.opensource.org/licenses/MIT) for the full text.

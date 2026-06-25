@@ -4,7 +4,7 @@
 name = "xberg-swift"
 version = "1.0.0-rc.1"
 edition = "2024"
-license = "Elastic-2.0"
+license = "MIT"
 
 # `ahash`, `async-trait`, `libc`, `serde`, `serde_json`, and `tokio` are all
 # conditionally referenced by alef-emitted code: `ahash` only when the

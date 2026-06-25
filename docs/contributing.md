@@ -226,6 +226,6 @@ If a check is reporting "expected check missing" rather than failing outright, t
 - **Star the repo:** [Give us a star on GitHub](https://github.com/xberg-io/xberg) — it helps others discover Xberg!
 - **Discord:** [Join our community](https://discord.gg/xt9WY3GnKR)
 - **Issues:** [GitHub Issues](https://github.com/xberg-io/xberg/issues)
-- **License:** [Elastic License 2.0 (ELv2)](https://github.com/xberg-io/xberg/blob/main/LICENSE)
+- **License:** [MIT License (MIT)](https://github.com/xberg-io/xberg/blob/main/LICENSE)
 
 Thank you for contributing to Xberg!

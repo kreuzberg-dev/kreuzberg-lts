@@ -11,7 +11,7 @@
 [![Go](https://img.shields.io/github/v/tag/xberg-io/xberg?label=Go&color=007ec6)](https://github.com/xberg-io/xberg/tree/main/packages/go)
 [![C#](https://img.shields.io/nuget/v/Xberg?label=C%23&color=007ec6)](https://www.nuget.org/packages/Xberg/)
 
-[![License: Elastic-2.0](https://img.shields.io/badge/License-Elastic--2.0-007ec6)](https://www.elastic.co/licensing/elastic-license)
+[![License: MIT](https://img.shields.io/badge/License-MIT-007ec6)](https://www.opensource.org/licenses/MIT)
 [![Documentation](https://img.shields.io/badge/Docs-xberg-007ec6)](https://xberg.io/)
 [![Hugging Face](https://img.shields.io/badge/Hugging%20Face-Xberg-007ec6)](https://huggingface.co/xberg-io)
 [![Discord](https://img.shields.io/badge/Discord-Chat-007ec6)](https://discord.gg/xt9WY3GnKR)
@@ -293,4 +293,4 @@ No native libraries required. Works on all platforms including musl, Docker, and
 
 ## License
 
-Elastic License 2.0 (ELv2) - see [LICENSE](../../LICENSE) for details.
+MIT License (MIT) - see [LICENSE](../../LICENSE) for details.

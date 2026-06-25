@@ -8,7 +8,7 @@ Gem::Specification.new do |spec|
   spec.description   = "High-performance document intelligence library"
   spec.homepage      = "https://github.com/xberg-io/xberg"
 
-  spec.license       = "Elastic-2.0"
+  spec.license       = "MIT"
 
   spec.required_ruby_version = [">= 3.2.0", "< 4.0"]
   spec.metadata["keywords"] = %w[document extraction ocr pdf text].join(",")

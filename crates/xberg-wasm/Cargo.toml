@@ -7,7 +7,7 @@
 name = "xberg-wasm"
 version = "1.0.0-rc.1"
 edition = "2024"
-license = "Elastic-2.0"
+license = "MIT"
 description = "High-performance document intelligence library"
 repository = "https://github.com/xberg-io/xberg"
 keywords = ["document", "extraction", "pdf", "ocr", "text"]

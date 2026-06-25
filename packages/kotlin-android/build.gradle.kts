@@ -186,8 +186,8 @@ mavenPublishing {
         url.set("https://github.com/xberg-io/xberg")
         licenses {
             license {
-                name.set("Elastic-2.0")
-                url.set("https://www.elastic.co/licensing/elastic-license")
+                name.set("MIT")
+                url.set("https://www.opensource.org/licenses/MIT")
             }
         }
         developers {
