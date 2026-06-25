@@ -26,8 +26,9 @@ from audio and video files.
 | `Medium`  | Large           | High memory      | 80       |
 | `LargeV3` | Largest         | Highest memory   | 128      |
 
-Models are downloaded from `onnx-community/whisper-{size}` on HuggingFace Hub
-on first use and cached under `{XBERG_CACHE_DIR}/whisper/{size}/` when
+Models are downloaded from HuggingFace Hub on first use — `Tiny`, `Base`, and
+`Small` from `onnx-community/whisper-{size}`, and `Medium` and `LargeV3` from
+`Xenova/whisper-{size}` — and cached under `{XBERG_CACHE_DIR}/whisper/{size}/` when
 `XBERG_CACHE_DIR` is set, or under the platform cache directory such as
 `~/.cache/xberg/whisper/{size}/` on Linux.
 

@@ -96,6 +96,7 @@ nav = [
     { "File Size Limits" = "reference/file-size-limits.md" },
     { "Format Support" = "reference/formats.md" },
     { "OCR Languages" = "reference/ocr-languages.md" },
+    { "Model Sources" = "reference/model-sources.md" },
     { "Benchmarks" = "https://xberg.io/benchmarks" },
   ] },
 
