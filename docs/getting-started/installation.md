@@ -125,7 +125,7 @@ No SDK, no code — just your terminal.
   ***
 
   ```gradle
-  implementation 'dev.xberg:xberg:5.0.0-rc.17'
+  implementation 'io.xberg:xberg:5.0.0-rc.17'
   ```
 
   [API Reference](../reference/api-java.md){ .install-api-link }
@@ -136,7 +136,7 @@ No SDK, no code — just your terminal.
   ***
 
   ```kotlin
-  implementation("dev.xberg:xberg-android:5.0.0-rc.17")
+  implementation("io.xberg:xberg-android:5.0.0-rc.17")
   ```
 
   [API Reference](../reference/api-kotlin-android.md){ .install-api-link }
@@ -389,7 +389,7 @@ Both work with **pnpm** (`pnpm add`) and **Yarn** (`yarn add`) as well.
 
     ```xml
     <dependency>
-        <groupId>dev.xberg</groupId>
+        <groupId>io.xberg</groupId>
         <artifactId>xberg</artifactId>
         <version>5.0.0-rc.17</version>
     </dependency>
@@ -398,7 +398,7 @@ Both work with **pnpm** (`pnpm add`) and **Yarn** (`yarn add`) as well.
 === "Gradle"
 
     ```gradle
-    implementation 'dev.xberg:xberg:5.0.0-rc.17'
+    implementation 'io.xberg:xberg:5.0.0-rc.17'
     ```
 
 Requires Java 25+ (FFM/Panama API). Native libraries are bundled in the JAR.
@@ -488,9 +488,9 @@ Pure-Dart and Flutter consumers share the same package. Dart SDK 3.0 or higher i
 
 ### Kotlin { #kotlin }
 
-Kotlin/JVM consumers use the Java artifact (`dev.xberg:xberg`) directly; Kotlin interoperates with the generated Java records and static facade.
+Kotlin/JVM consumers use the Java artifact (`io.xberg:xberg`) directly; Kotlin interoperates with the generated Java records and static facade.
 
-Kotlin Android uses the Android AAR (`dev.xberg:xberg-android`). It embeds JNI libraries for `arm64-v8a` and `x86_64`, targets Android API 21+, and uses the `android-target` feature set, which excludes ORT-dependent inference features.
+Kotlin Android uses the Android AAR (`io.xberg:xberg-android`). It embeds JNI libraries for `arm64-v8a` and `x86_64`, targets Android API 21+, and uses the `android-target` feature set, which excludes ORT-dependent inference features.
 
 ### Swift { #swift }
 

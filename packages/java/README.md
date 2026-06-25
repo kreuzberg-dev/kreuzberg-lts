@@ -17,8 +17,8 @@
   <a href="https://www.npmjs.com/package/@xberg/wasm">
     <img src="https://img.shields.io/npm/v/@xberg/wasm?label=WASM&color=007ec6" alt="WASM">
   </a>
-  <a href="https://central.sonatype.com/artifact/dev.xberg/xberg">
-    <img src="https://img.shields.io/maven-central/v/dev.xberg/xberg?label=Java&color=007ec6" alt="Java">
+  <a href="https://central.sonatype.com/artifact/io.xberg/xberg">
+    <img src="https://img.shields.io/maven-central/v/io.xberg/xberg?label=Java&color=007ec6" alt="Java">
   </a>
   <a href="https://github.com/xberg-io/xberg/tree/main/packages/go">
     <img src="https://img.shields.io/github/v/tag/xberg-io/xberg?label=Go&color=007ec6&filter=v1*" alt="Go">
@@ -41,8 +41,8 @@
   <a href="https://pub.dev/packages/xberg">
     <img src="https://img.shields.io/pub/v/xberg?label=Dart&color=007ec6" alt="Dart">
   </a>
-  <a href="https://central.sonatype.com/artifact/dev.xberg/xberg-android">
-    <img src="https://img.shields.io/maven-central/v/dev.xberg/xberg-android?label=Kotlin&color=007ec6" alt="Kotlin">
+  <a href="https://central.sonatype.com/artifact/io.xberg/xberg-android">
+    <img src="https://img.shields.io/maven-central/v/io.xberg/xberg-android?label=Kotlin&color=007ec6" alt="Kotlin">
   </a>
   <a href="https://github.com/xberg-io/xberg/tree/main/packages/swift">
     <img src="https://img.shields.io/badge/Swift-SPM-007ec6" alt="Swift">
@@ -102,7 +102,7 @@ Add to your `pom.xml`:
 
 ```xml
 <dependency>
-    <groupId>dev.xberg</groupId>
+    <groupId>io.xberg</groupId>
     <artifactId>xberg</artifactId>
     <version>1.0.0-rc.1</version>
 </dependency>
@@ -111,13 +111,13 @@ Add to your `pom.xml`:
 Kotlin DSL (`build.gradle.kts`):
 
 ```kotlin
-implementation("dev.xberg:xberg:1.0.0-rc.1")
+implementation("io.xberg:xberg:1.0.0-rc.1")
 ```
 
 Groovy DSL (`build.gradle`):
 
 ```groovy
-implementation 'dev.xberg:xberg:1.0.0-rc.1'
+implementation 'io.xberg:xberg:1.0.0-rc.1'
 ```
 
 ### System Requirements
@@ -133,8 +133,8 @@ implementation 'dev.xberg:xberg:1.0.0-rc.1'
 Extract text, metadata, and structure from any supported document format:
 
 ```java title="Java"
-import dev.xberg.Xberg;
-import dev.xberg.ExtractionResult;
+import io.xberg.Xberg;
+import io.xberg.ExtractionResult;
 import java.io.IOException;
 import java.util.Map;
 
@@ -167,11 +167,11 @@ Most use cases benefit from configuration to control extraction behavior:
 **With OCR (for scanned documents):**
 
 ```java title="Java"
-import dev.xberg.Xberg;
-import dev.xberg.ExtractionResult;
-import dev.xberg.XbergException;
-import dev.xberg.ExtractionConfig;
-import dev.xberg.OcrConfig;
+import io.xberg.Xberg;
+import io.xberg.ExtractionResult;
+import io.xberg.XbergException;
+import io.xberg.ExtractionConfig;
+import io.xberg.OcrConfig;
 import java.io.IOException;
 
 public class Main {
@@ -200,10 +200,10 @@ See [Configuration Guide](https://docs.xberg.io/guides/configuration/) for table
 #### Processing Multiple Files
 
 ```java title="Java"
-import dev.xberg.Xberg;
-import dev.xberg.ExtractionResult;
-import dev.xberg.BatchFileItem;
-import dev.xberg.ExtractionConfig;
+import io.xberg.Xberg;
+import io.xberg.ExtractionResult;
+import io.xberg.BatchFileItem;
+import io.xberg.ExtractionConfig;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.Arrays;
@@ -227,9 +227,9 @@ for (ExtractionResult result : results) {
 For non-blocking document processing:
 
 ```java title="Java"
-import dev.xberg.Xberg;
-import dev.xberg.ExtractionResult;
-import dev.xberg.ExtractionConfig;
+import io.xberg.Xberg;
+import io.xberg.ExtractionResult;
+import io.xberg.ExtractionConfig;
 import java.nio.file.Paths;
 
 ExtractionConfig config = ExtractionConfig.builder().build();
@@ -357,11 +357,11 @@ Xberg supports multiple OCR backends for extracting text from scanned documents 
 ### OCR Configuration Example
 
 ```java title="Java"
-import dev.xberg.Xberg;
-import dev.xberg.ExtractionResult;
-import dev.xberg.XbergException;
-import dev.xberg.ExtractionConfig;
-import dev.xberg.OcrConfig;
+import io.xberg.Xberg;
+import io.xberg.ExtractionResult;
+import io.xberg.XbergException;
+import io.xberg.ExtractionConfig;
+import io.xberg.OcrConfig;
 import java.io.IOException;
 
 public class Main {
@@ -388,9 +388,9 @@ public class Main {
 This binding provides full async/await support for non-blocking document processing:
 
 ```java title="Java"
-import dev.xberg.Xberg;
-import dev.xberg.ExtractionResult;
-import dev.xberg.ExtractionConfig;
+import io.xberg.Xberg;
+import io.xberg.ExtractionResult;
+import io.xberg.ExtractionConfig;
 import java.nio.file.Paths;
 
 ExtractionConfig config = ExtractionConfig.builder().build();
@@ -417,10 +417,10 @@ Generate vector embeddings for extracted text using the built-in ONNX Runtime su
 Process multiple documents efficiently:
 
 ```java title="Java"
-import dev.xberg.Xberg;
-import dev.xberg.ExtractionResult;
-import dev.xberg.BatchFileItem;
-import dev.xberg.ExtractionConfig;
+import io.xberg.Xberg;
+import io.xberg.ExtractionResult;
+import io.xberg.BatchFileItem;
+import io.xberg.ExtractionConfig;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.Arrays;

@@ -1,5 +1,5 @@
 ```kotlin title="Kotlin"
-import dev.xberg.*
+import io.xberg.*
 
 // Wrap a host-language embedding model so xberg can call back into it
 // during chunking and standalone embed requests.

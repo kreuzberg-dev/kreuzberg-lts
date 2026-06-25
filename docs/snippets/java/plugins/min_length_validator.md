@@ -1,9 +1,9 @@
 ```java title="Java"
-import dev.xberg.Xberg;
-import dev.xberg.ExtractionResult;
-import dev.xberg.Validator;
-import dev.xberg.ValidationException;
-import dev.xberg.XbergException;
+import io.xberg.Xberg;
+import io.xberg.ExtractionResult;
+import io.xberg.Validator;
+import io.xberg.ValidationException;
+import io.xberg.XbergException;
 import java.io.IOException;
 
 public class MinLengthValidatorExample {

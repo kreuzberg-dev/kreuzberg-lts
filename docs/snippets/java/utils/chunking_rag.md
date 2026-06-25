@@ -1,8 +1,8 @@
 ```java title="Java"
-import dev.xberg.Xberg;
-import dev.xberg.ExtractionResult;
-import dev.xberg.ExtractionConfig;
-import dev.xberg.ChunkingConfig;
+import io.xberg.Xberg;
+import io.xberg.ExtractionResult;
+import io.xberg.ExtractionConfig;
+import io.xberg.ChunkingConfig;
 
 ExtractionConfig config = ExtractionConfig.builder()
     .chunking(ChunkingConfig.builder()

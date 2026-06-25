@@ -1,8 +1,8 @@
 ```java title="Java"
-import dev.xberg.Xberg;
-import dev.xberg.ExtractionConfig;
-import dev.xberg.ChunkingConfig;
-import dev.xberg.PageConfig;
+import io.xberg.Xberg;
+import io.xberg.ExtractionConfig;
+import io.xberg.ChunkingConfig;
+import io.xberg.PageConfig;
 import java.nio.file.Path;
 import java.util.Optional;
 

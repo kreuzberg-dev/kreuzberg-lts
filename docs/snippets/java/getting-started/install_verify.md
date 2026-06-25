@@ -1,6 +1,6 @@
 ```java title="Java"
-import dev.xberg.Xberg;
-import dev.xberg.ExtractionResult;
+import io.xberg.Xberg;
+import io.xberg.ExtractionResult;
 import java.io.IOException;
 
 public class InstallVerify {

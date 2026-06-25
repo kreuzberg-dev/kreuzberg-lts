@@ -1,5 +1,5 @@
 ```java title="Java"
-import dev.xberg.*;
+import io.xberg.*;
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
 import java.lang.foreign.ValueLayout;

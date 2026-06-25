@@ -214,10 +214,10 @@ jobs:
         uses: xberg-io/actions/check-registry@v1
         with:
           registry: maven
-          package: "dev.xberg:xberg"
+          package: "io.xberg:xberg"
           version: ${{ needs.prepare.outputs.version }}
           extra-packages: |
-            kotlin_exists=dev.xberg:xberg-android
+            kotlin_exists=io.xberg:xberg-android
 
   check-nuget:
     name: Check NuGet for existing version

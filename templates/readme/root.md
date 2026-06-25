@@ -94,7 +94,7 @@ See [Go README](https://github.com/xberg-io/xberg/tree/main/packages/go) for ful
 <details>
 <summary><strong>Java</strong></summary>
 
-Available on Maven Central as `dev.xberg:xberg`. See [Java README](https://github.com/xberg-io/xberg/tree/main/packages/java) for the dependency snippet and current version.
+Available on Maven Central as `io.xberg:xberg`. See [Java README](https://github.com/xberg-io/xberg/tree/main/packages/java) for the dependency snippet and current version.
 
 </details>
 
@@ -159,7 +159,7 @@ Install from r-universe. See [R README](https://github.com/xberg-io/xberg/tree/m
 <details>
 <summary><strong>Kotlin (Android)</strong></summary>
 
-Available on Maven Central as `dev.xberg:xberg-android`. See [Kotlin README](https://github.com/xberg-io/xberg/tree/main/packages/kotlin-android) for the dependency snippet and current version.
+Available on Maven Central as `io.xberg:xberg-android`. See [Kotlin README](https://github.com/xberg-io/xberg/tree/main/packages/kotlin-android) for the dependency snippet and current version.
 
 </details>
 

@@ -1,4 +1,4 @@
-package dev.xberg.sample
+package io.xberg.sample
 
 // Sample usage of the generated Kotlin bindings.
 // Replace with your actual API calls after code generation.

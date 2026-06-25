@@ -1,5 +1,5 @@
 ```kotlin title="Kotlin"
-import dev.xberg.*
+import io.xberg.*
 import java.util.Optional
 import java.io.BufferedReader
 import java.io.BufferedWriter

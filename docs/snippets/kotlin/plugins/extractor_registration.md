@@ -1,6 +1,6 @@
 ```kotlin title="Kotlin"
-import dev.xberg.*
-import dev.xberg.kt.Xberg
+import io.xberg.*
+import io.xberg.kt.Xberg
 
 // The Kotlin/Java plugin bridge does not expose an IDocumentExtractor interface
 // — extractor registration lives in the Rust core. From Kotlin you can list

@@ -1,6 +1,6 @@
 ```kotlin title="Kotlin"
-import dev.xberg.*
-import dev.xberg.kt.Xberg
+import io.xberg.*
+import io.xberg.kt.Xberg
 import java.nio.file.Files
 import java.nio.file.Path
 

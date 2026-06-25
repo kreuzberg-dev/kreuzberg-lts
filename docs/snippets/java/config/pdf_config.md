@@ -1,7 +1,7 @@
 ```java title="Java"
-import dev.xberg.ExtractionConfig;
-import dev.xberg.PdfConfig;
-import dev.xberg.HierarchyConfig;
+import io.xberg.ExtractionConfig;
+import io.xberg.PdfConfig;
+import io.xberg.HierarchyConfig;
 import java.util.Arrays;
 
 ExtractionConfig config = ExtractionConfig.builder()

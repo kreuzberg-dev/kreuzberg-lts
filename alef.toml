@@ -519,7 +519,7 @@ exclude_types = [
 ]
 
 [crates.java]
-package = "dev.xberg"
+package = "io.xberg"
 ffi_style = "panama"
 features = [
   "full",
@@ -669,10 +669,10 @@ default_features = false
 # with Java records natively); the Android AAR ships jniLibs/arm64-v8a/ +
 # jniLibs/x86_64/ so Gradle embeds the xberg-ffi cdylib into app builds
 # without manual setup. Emitted by alef-backend-kotlin-android (alef ≥ 0.16).
-package = "dev.xberg"
-namespace = "dev.xberg"
+package = "io.xberg"
+namespace = "io.xberg"
 artifact_id = "xberg-android"
-group_id = "dev.xberg"
+group_id = "io.xberg"
 abis = ["arm64-v8a", "x86_64"]
 # `features = ["full"]` is consumed by the JNI scaffolder (see
 # `alef::scaffold::languages::jni`) to populate the xberg dependency in
@@ -1431,7 +1431,7 @@ alias = "xberg"
 options_type = "ExtractionConfig"
 
 [crates.e2e.call.overrides.java]
-class = "dev.xberg.Xberg"
+class = "io.xberg.Xberg"
 function = "extractFile"
 options_type = "ExtractionConfig"
 enum_fields = { outputFormat = "OutputFormat" }
@@ -2169,7 +2169,7 @@ module = "Xberg"
 
 [crates.e2e.calls.clear_ocr_backends.overrides.java]
 function = "clearOcrBackends"
-module = "dev.xberg.Xberg"
+module = "io.xberg.Xberg"
 
 [crates.e2e.calls.clear_ocr_backends.overrides.csharp]
 function = "ClearOcrBackends"
@@ -2240,7 +2240,7 @@ module = "Xberg"
 
 [crates.e2e.calls.clear_post_processors.overrides.java]
 function = "clearPostProcessors"
-module = "dev.xberg.Xberg"
+module = "io.xberg.Xberg"
 
 [crates.e2e.calls.clear_post_processors.overrides.csharp]
 function = "ClearPostProcessors"
@@ -2311,7 +2311,7 @@ module = "Xberg"
 
 [crates.e2e.calls.clear_validators.overrides.java]
 function = "clearValidators"
-module = "dev.xberg.Xberg"
+module = "io.xberg.Xberg"
 
 [crates.e2e.calls.clear_validators.overrides.csharp]
 function = "ClearValidators"
@@ -2383,7 +2383,7 @@ module = "Xberg"
 
 [crates.e2e.calls.unregister_ocr_backend.overrides.java]
 function = "unregisterOcrBackend"
-module = "dev.xberg.Xberg"
+module = "io.xberg.Xberg"
 
 [crates.e2e.calls.unregister_ocr_backend.overrides.csharp]
 function = "UnregisterOcrBackend"
@@ -2454,7 +2454,7 @@ module = "Xberg"
 
 [crates.e2e.calls.unregister_post_processor.overrides.java]
 function = "unregisterPostProcessor"
-module = "dev.xberg.Xberg"
+module = "io.xberg.Xberg"
 
 [crates.e2e.calls.unregister_post_processor.overrides.csharp]
 function = "UnregisterPostProcessor"
@@ -2525,7 +2525,7 @@ module = "Xberg"
 
 [crates.e2e.calls.unregister_validator.overrides.java]
 function = "unregisterValidator"
-module = "dev.xberg.Xberg"
+module = "io.xberg.Xberg"
 
 [crates.e2e.calls.unregister_validator.overrides.csharp]
 function = "UnregisterValidator"
@@ -2596,7 +2596,7 @@ module = "Xberg"
 
 [crates.e2e.calls.register_ocr_backend.overrides.java]
 function = "registerOcrBackend"
-module = "dev.xberg.Xberg"
+module = "io.xberg.Xberg"
 
 [crates.e2e.calls.register_ocr_backend.overrides.csharp]
 function = "RegisterOcrBackend"
@@ -2669,7 +2669,7 @@ module = "Xberg"
 
 [crates.e2e.calls.register_post_processor.overrides.java]
 function = "registerPostProcessor"
-module = "dev.xberg.Xberg"
+module = "io.xberg.Xberg"
 
 [crates.e2e.calls.register_post_processor.overrides.csharp]
 function = "RegisterPostProcessor"
@@ -2742,7 +2742,7 @@ module = "Xberg"
 
 [crates.e2e.calls.register_validator.overrides.java]
 function = "registerValidator"
-module = "dev.xberg.Xberg"
+module = "io.xberg.Xberg"
 
 [crates.e2e.calls.register_validator.overrides.csharp]
 function = "RegisterValidator"
@@ -2815,7 +2815,7 @@ module = "Xberg"
 
 [crates.e2e.calls.register_embedding_backend.overrides.java]
 function = "registerEmbeddingBackend"
-module = "dev.xberg.Xberg"
+module = "io.xberg.Xberg"
 
 [crates.e2e.calls.register_embedding_backend.overrides.csharp]
 function = "RegisterEmbeddingBackend"
@@ -2888,7 +2888,7 @@ module = "Xberg"
 
 [crates.e2e.calls.unregister_embedding_backend.overrides.java]
 function = "unregisterEmbeddingBackend"
-module = "dev.xberg.Xberg"
+module = "io.xberg.Xberg"
 
 [crates.e2e.calls.unregister_embedding_backend.overrides.csharp]
 function = "UnregisterEmbeddingBackend"
@@ -2959,7 +2959,7 @@ module = "Xberg"
 
 [crates.e2e.calls.clear_embedding_backends.overrides.java]
 function = "clearEmbeddingBackends"
-module = "dev.xberg.Xberg"
+module = "io.xberg.Xberg"
 
 [crates.e2e.calls.clear_embedding_backends.overrides.csharp]
 function = "ClearEmbeddingBackends"
@@ -3032,7 +3032,7 @@ module = "Xberg"
 
 [crates.e2e.calls.register_reranker_backend.overrides.java]
 function = "registerRerankerBackend"
-module = "dev.xberg.Xberg"
+module = "io.xberg.Xberg"
 
 [crates.e2e.calls.register_reranker_backend.overrides.csharp]
 function = "RegisterRerankerBackend"
@@ -3105,7 +3105,7 @@ module = "Xberg"
 
 [crates.e2e.calls.unregister_reranker_backend.overrides.java]
 function = "unregisterRerankerBackend"
-module = "dev.xberg.Xberg"
+module = "io.xberg.Xberg"
 
 [crates.e2e.calls.unregister_reranker_backend.overrides.csharp]
 function = "UnregisterRerankerBackend"
@@ -3176,7 +3176,7 @@ module = "Xberg"
 
 [crates.e2e.calls.clear_reranker_backends.overrides.java]
 function = "clearRerankerBackends"
-module = "dev.xberg.Xberg"
+module = "io.xberg.Xberg"
 
 [crates.e2e.calls.clear_reranker_backends.overrides.csharp]
 function = "ClearRerankerBackends"
@@ -3391,7 +3391,7 @@ module = "Xberg"
 
 [crates.e2e.calls.register_document_extractor.overrides.java]
 function = "registerDocumentExtractor"
-module = "dev.xberg.Xberg"
+module = "io.xberg.Xberg"
 
 [crates.e2e.calls.register_document_extractor.overrides.csharp]
 function = "RegisterDocumentExtractor"
@@ -3464,7 +3464,7 @@ module = "Xberg"
 
 [crates.e2e.calls.unregister_document_extractor.overrides.java]
 function = "unregisterDocumentExtractor"
-module = "dev.xberg.Xberg"
+module = "io.xberg.Xberg"
 
 [crates.e2e.calls.unregister_document_extractor.overrides.csharp]
 function = "UnregisterDocumentExtractor"
@@ -3535,7 +3535,7 @@ module = "Xberg"
 
 [crates.e2e.calls.clear_document_extractors.overrides.java]
 function = "clearDocumentExtractors"
-module = "dev.xberg.Xberg"
+module = "io.xberg.Xberg"
 
 [crates.e2e.calls.clear_document_extractors.overrides.csharp]
 function = "ClearDocumentExtractors"
@@ -3606,7 +3606,7 @@ module = "Xberg"
 
 [crates.e2e.calls.register_renderer.overrides.java]
 function = "registerRenderer"
-module = "dev.xberg.Xberg"
+module = "io.xberg.Xberg"
 
 [crates.e2e.calls.register_renderer.overrides.csharp]
 function = "RegisterRenderer"
@@ -3679,7 +3679,7 @@ module = "Xberg"
 
 [crates.e2e.calls.unregister_renderer.overrides.java]
 function = "unregisterRenderer"
-module = "dev.xberg.Xberg"
+module = "io.xberg.Xberg"
 
 [crates.e2e.calls.unregister_renderer.overrides.csharp]
 function = "UnregisterRenderer"
@@ -3750,7 +3750,7 @@ module = "Xberg"
 
 [crates.e2e.calls.clear_renderers.overrides.java]
 function = "clearRenderers"
-module = "dev.xberg.Xberg"
+module = "io.xberg.Xberg"
 
 [crates.e2e.calls.clear_renderers.overrides.csharp]
 function = "ClearRenderers"
@@ -4020,7 +4020,7 @@ name = "Xberg"
 path = "../../packages/csharp/Xberg/Xberg.csproj"
 
 [crates.e2e.packages.java]
-module = "dev.xberg"
+module = "io.xberg"
 path = "../../packages/java"
 
 [crates.e2e.packages.ruby]
@@ -4043,7 +4043,7 @@ path = "../../packages/r"
 path = "../../packages/dart"
 
 [crates.e2e.packages.kotlin_android]
-module = "dev.xberg"
+module = "io.xberg"
 path = "../../packages/kotlin-android"
 
 [crates.e2e.packages.swift]
@@ -4193,8 +4193,8 @@ snippets = { basic_extraction = "getting-started/basic_usage.md", async_extracti
 [crates.readme.languages.java]
 template = "language_package.md"
 name = "Java"
-package_name = "dev.xberg:xberg"
-badge_url = "https://img.shields.io/maven-central/v/dev.xberg/xberg?label=Java&color=007ec6"
+package_name = "io.xberg:xberg"
+badge_url = "https://img.shields.io/maven-central/v/io.xberg/xberg?label=Java&color=007ec6"
 docs_url = "https://xberg.io/"
 description = "Extract text, tables, images, metadata, and code intelligence from 96 file formats and 306 programming languages including PDF, Office documents, images, and audio/video transcripts where native transcription is available. Java bindings with type-safe API, Foreign Function & Memory API integration, and native performance."
 package_manager = ["maven", "gradle"]
@@ -4296,7 +4296,7 @@ features = { ocr = true, async = true, plugin_system = true, embeddings = true, 
 [crates.readme.languages.kotlin_android]
 template = "language_package.md"
 name = "Kotlin (Android)"
-package_name = "dev.xberg:xberg-android"
+package_name = "io.xberg:xberg-android"
 badge_url = "https://img.shields.io/badge/Android-xberg-3DDC84"
 docs_url = "https://xberg.io/"
 description = "Extract text, tables, images, metadata, and code intelligence from 96 file formats and 306 programming languages including PDF, Office documents, images, and audio/video transcripts where native transcription is available. Android library (AAR) with bundled jniLibs/arm64-v8a and jniLibs/x86_64 — Gradle automatically picks up the native cdylib for emulator and device builds. Server-side Kotlin/JVM consumers can use the Java binding directly via standard Kotlin/Java interop."

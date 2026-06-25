@@ -1,5 +1,5 @@
 ```kotlin title="Kotlin"
-import dev.xberg.*
+import io.xberg.*
 import java.nio.file.Paths
 import java.util.Optional
 

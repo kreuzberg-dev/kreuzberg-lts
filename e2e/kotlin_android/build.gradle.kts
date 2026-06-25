@@ -7,11 +7,11 @@ plugins {
     id("com.android.library") version "9.2.1"
 }
 
-group = "dev.xberg"
+group = "io.xberg"
 version = "0.1.0"
 
 android {
-    namespace = "dev.xberg.e2e"
+    namespace = "io.xberg.e2e"
     compileSdk = 35
 
     defaultConfig {

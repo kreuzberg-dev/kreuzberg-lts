@@ -1,6 +1,6 @@
 ```java
-import dev.xberg.Xberg;
-import dev.xberg.EmbeddingConfig;
+import io.xberg.Xberg;
+import io.xberg.EmbeddingConfig;
 
 // Embed with default config
 float[][] embeddings = Xberg.embed(List.of("Hello world", "How are you?"), null);

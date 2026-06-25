@@ -18,8 +18,8 @@
     <img src="https://img.shields.io/npm/v/@xberg/wasm?label=WASM&color=007ec6" alt="WASM">
   </a>
 
-  <a href="https://central.sonatype.com/artifact/dev.xberg/xberg">
-    <img src="https://img.shields.io/maven-central/v/dev.xberg/xberg?label=Java&color=007ec6" alt="Java">
+  <a href="https://central.sonatype.com/artifact/io.xberg/xberg">
+    <img src="https://img.shields.io/maven-central/v/io.xberg/xberg?label=Java&color=007ec6" alt="Java">
   </a>
   <a href="https://github.com/xberg-io/xberg/releases">
     <img src="https://img.shields.io/github/v/tag/xberg-io/xberg?label=Go&color=007ec6&filter=v4.0.0" alt="Go">

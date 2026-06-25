@@ -415,7 +415,7 @@ pub fn create_tika_adapter(ocr_enabled: bool) -> Result<SubprocessAdapter> {
         "-XX:+UseG1GC".to_string(),
         "-cp".to_string(),
         classpath,
-        "dev.xberg.benchmark.TikaExtract".to_string(),
+        "io.xberg.benchmark.TikaExtract".to_string(),
         ocr_flag(ocr_enabled),
         "sync".to_string(),
     ];

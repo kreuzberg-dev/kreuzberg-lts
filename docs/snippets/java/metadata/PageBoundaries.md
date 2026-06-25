@@ -1,4 +1,4 @@
-Import dev.xberg.\*;
+Import io.xberg.\*;
 import java.nio.charset.StandardCharsets;
 
 var result = Xberg.extractFileSync("document.pdf");

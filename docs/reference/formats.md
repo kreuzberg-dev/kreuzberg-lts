@@ -344,8 +344,8 @@ Example with manual override:
 === "Java"
 
     ```java title="FormatDetection.java"
-    import dev.xberg.Xberg;
-    import dev.xberg.ExtractionResult;
+    import io.xberg.Xberg;
+    import io.xberg.ExtractionResult;
 
     // Automatic format detection from file extension
     ExtractionResult result = Xberg.extractFile("document.pdf");
@@ -573,10 +573,10 @@ Xberg's plugin system allows adding custom format extractors:
 === "Java"
 
     ```java title="CustomExtractor.java"
-    import dev.xberg.Xberg;
-    import dev.xberg.DocumentExtractorProtocol;
-    import dev.xberg.ExtractionResult;
-    import dev.xberg.config.ExtractionConfig;
+    import io.xberg.Xberg;
+    import io.xberg.DocumentExtractorProtocol;
+    import io.xberg.ExtractionResult;
+    import io.xberg.config.ExtractionConfig;
 
     // Custom document extractor for unsupported file formats
     public class CustomExtractor implements DocumentExtractorProtocol {

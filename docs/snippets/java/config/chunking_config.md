@@ -1,6 +1,6 @@
 ```java title="Java"
-import dev.xberg.ExtractionConfig;
-import dev.xberg.ChunkingConfig;
+import io.xberg.ExtractionConfig;
+import io.xberg.ChunkingConfig;
 
 ExtractionConfig config = ExtractionConfig.builder()
     .chunking(ChunkingConfig.builder()
@@ -11,10 +11,10 @@ ExtractionConfig config = ExtractionConfig.builder()
 ```
 
 ```java title="Java - Markdown with Heading Context"
-import dev.xberg.ExtractionConfig;
-import dev.xberg.ChunkingConfig;
-import dev.xberg.HeadingContext;
-import dev.xberg.HeadingLevel;
+import io.xberg.ExtractionConfig;
+import io.xberg.ChunkingConfig;
+import io.xberg.HeadingContext;
+import io.xberg.HeadingLevel;
 
 ExtractionConfig config = ExtractionConfig.builder()
     .chunking(ChunkingConfig.builder()
@@ -39,8 +39,8 @@ result.getChunks().forEach(chunk -> {
 ```
 
 ```java title="Java - Prepend Heading Context"
-import dev.xberg.ExtractionConfig;
-import dev.xberg.ChunkingConfig;
+import io.xberg.ExtractionConfig;
+import io.xberg.ChunkingConfig;
 
 ExtractionConfig config = ExtractionConfig.builder()
     .chunking(ChunkingConfig.builder()

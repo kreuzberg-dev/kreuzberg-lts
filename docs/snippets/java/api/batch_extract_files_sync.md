@@ -1,8 +1,8 @@
 ```java title="Java"
-import dev.xberg.Xberg;
-import dev.xberg.ExtractionResult;
-import dev.xberg.BatchFileItem;
-import dev.xberg.ExtractionConfig;
+import io.xberg.Xberg;
+import io.xberg.ExtractionResult;
+import io.xberg.BatchFileItem;
+import io.xberg.ExtractionConfig;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.Arrays;

@@ -8,7 +8,7 @@ plugins {
   id("com.github.ben-manes.versions") version "0.54.0"
 }
 
-group = "dev.xberg"
+group = "io.xberg"
 version = "1.0.0-rc.1"
 
 repositories {

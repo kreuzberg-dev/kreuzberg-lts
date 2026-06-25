@@ -1,5 +1,5 @@
 ```kotlin title="Kotlin"
-import dev.xberg.*
+import io.xberg.*
 
 class WordCountProcessor : IPostProcessor {
     override fun name(): String = "word-count"

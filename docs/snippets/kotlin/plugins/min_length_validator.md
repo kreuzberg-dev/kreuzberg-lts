@@ -1,5 +1,5 @@
 ```kotlin title="Kotlin"
-import dev.xberg.*
+import io.xberg.*
 
 class MinLengthValidator(private val minLength: Int) : IValidator {
     override fun name(): String = "min-length-validator"

@@ -1,9 +1,9 @@
 ```java title="Java"
-import dev.xberg.Xberg;
-import dev.xberg.ExtractionResult;
-import dev.xberg.ExtractionConfig;
-import dev.xberg.KeywordConfig;
-import dev.xberg.KeywordAlgorithm;
+import io.xberg.Xberg;
+import io.xberg.ExtractionResult;
+import io.xberg.ExtractionConfig;
+import io.xberg.KeywordConfig;
+import io.xberg.KeywordAlgorithm;
 import java.util.List;
 import java.util.Map;
 

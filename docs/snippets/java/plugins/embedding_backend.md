@@ -1,10 +1,10 @@
 ```java title="Java"
-import dev.xberg.Xberg;
-import dev.xberg.EmbeddingBackendBridge;
-import dev.xberg.EmbeddingConfig;
-import dev.xberg.EmbeddingModelType;
-import dev.xberg.IEmbeddingBackend;
-import dev.xberg.XbergRsException;
+import io.xberg.Xberg;
+import io.xberg.EmbeddingBackendBridge;
+import io.xberg.EmbeddingConfig;
+import io.xberg.EmbeddingModelType;
+import io.xberg.IEmbeddingBackend;
+import io.xberg.XbergRsException;
 import java.util.ArrayList;
 import java.util.List;
 

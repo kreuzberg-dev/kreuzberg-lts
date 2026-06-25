@@ -1,0 +1,27 @@
+[package]
+name = "xberg-gliner"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+description = "Stripped span-mode GLiNER ONNX runtime used by xberg NER."
+license = "Apache-2.0"
+repository.workspace = true
+homepage.workspace = true
+keywords = ["nlp", "ner", "gliner", "onnx"]
+categories = ["text-processing"]
+
+[lib]
+name = "xberg_gliner"
+path = "src/lib.rs"
+
+[dependencies]
+ndarray = "0.17"
+ort = { workspace = true, features = ["ndarray"] }
+parking_lot = { workspace = true }
+regex = "1.12"
+thiserror = { workspace = true }
+tokenizers = { version = "0.23", default-features = false, features = ["fancy-regex"] }
+
+[lints]
+workspace = true

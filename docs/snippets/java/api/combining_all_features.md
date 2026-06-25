@@ -1,7 +1,7 @@
 ```java title="Java"
-import dev.xberg.Xberg;
-import dev.xberg.ExtractionResult;
-import dev.xberg.*;
+import io.xberg.Xberg;
+import io.xberg.ExtractionResult;
+import io.xberg.*;
 import java.nio.file.Paths;
 import java.util.Optional;
 

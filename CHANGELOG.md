@@ -22,7 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **FFI:** symbol prefix `xberg_*` → `xberg_*`; header `xberg.h` → `xberg.h`; lib
     `xberg_ffi` → `xberg_ffi`.
   - **Package coordinates:** PyPI `xberg`, npm `@xberg/*`, RubyGems/Hex/pub.dev `xberg`, Maven
-    `dev.xberg`, NuGet `Xberg`, Packagist `xberg-io/xberg`, Homebrew `xberg`.
+    `io.xberg`, NuGet `Xberg`, Packagist `xberg-io/xberg`, Homebrew `xberg`.
   - **Go:** module `github.com/xberg-io/xberg` with **no `/vN` suffix** (v1); the binding now lives at
     `packages/go/` (the `packages/go/{v4,v5}` layout is removed).
   - **Docs:** new docs at `docs.xberg.io`; the frozen v4 site remains at `docs.xberg.io`.
@@ -193,7 +193,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 
 - Orphan `docs/reference/api-gleam.md` left behind by `dc268c1c0e chore: drop Gleam binding entirely`. CI Docs `task docs:build:strict` aborted on 8 `unresolved link reference` warnings from this file (e.g. `[\`BatchFileItem\`]`, `[0.0, 1.0]`, `["<https://example.com">]` patterns the strict link checker reads as broken markdown references). The Gleam binding itself was removed earlier; this is just nav cleanup.
-- **java**: removed stale hand-authored trait-bridge overlay in `packages/java/src/main/java/dev/xberg/` (9 files: `IPostProcessor`, `IOcrBackend`, `IValidator`, `IEmbeddingBackend`, `OcrBackendBridge`, `PostProcessorBridge`, `ValidatorBridge`, `EmbeddingBackendBridge`, `package-info`). Alef's trait-bridge code generation now produces these files correctly in the canonical `packages/java/dev/xberg/` location; the overlay was leftover from before alef handled trait bridges and carried only stale unused imports and formatting differences. Both trees were being compiled by Maven's `sourceDirectory=basedir` config, triggering duplicate-class errors and checkstyle violations. The canonical generated copies are now the sole source.
+- **java**: removed stale hand-authored trait-bridge overlay in `packages/java/src/main/java/io/xberg/` (9 files: `IPostProcessor`, `IOcrBackend`, `IValidator`, `IEmbeddingBackend`, `OcrBackendBridge`, `PostProcessorBridge`, `ValidatorBridge`, `EmbeddingBackendBridge`, `package-info`). Alef's trait-bridge code generation now produces these files correctly in the canonical `packages/java/io/xberg/` location; the overlay was leftover from before alef handled trait bridges and carried only stale unused imports and formatting differences. Both trees were being compiled by Maven's `sourceDirectory=basedir` config, triggering duplicate-class errors and checkstyle violations. The canonical generated copies are now the sole source.
 
 ### Fixed
 
@@ -1155,7 +1155,7 @@ rc.2 was tagged + partially published (5/13 registries) on 2026-05-25 then super
 
 ### Changed
 
-- **deps**: bump alef pin to v0.19.10 (C# `XbergLib.Register*`/`Unregister*` plugin forwarders + `*Bridge.Register*(impl)` static factories; C# trait-bridge stubs emit sync methods with real return types; Kotlin Android test-app switched to JUnit unit tests + correct Maven coordinate `dev.xberg:xberg-android`; Swift dead-code removal of legacy e2e helpers; PHP/Elixir `ahash` machete-ignore; Java output path aligned with pom.xml; Go test-app `go.mod` registry pin; pnpm-workspace allow-builds; Dart `FRB_DART_LOAD_EXTERNAL_LIBRARY_NATIVE_LIB_DIR` env var support; homebrew + php-ext codegen generalized from xberg-specific defaults).
+- **deps**: bump alef pin to v0.19.10 (C# `XbergLib.Register*`/`Unregister*` plugin forwarders + `*Bridge.Register*(impl)` static factories; C# trait-bridge stubs emit sync methods with real return types; Kotlin Android test-app switched to JUnit unit tests + correct Maven coordinate `io.xberg:xberg-android`; Swift dead-code removal of legacy e2e helpers; PHP/Elixir `ahash` machete-ignore; Java output path aligned with pom.xml; Go test-app `go.mod` registry pin; pnpm-workspace allow-builds; Dart `FRB_DART_LOAD_EXTERNAL_LIBRARY_NATIVE_LIB_DIR` env var support; homebrew + php-ext codegen generalized from xberg-specific defaults).
 
 ### Fixed
 
@@ -1167,7 +1167,7 @@ rc.2 was tagged + partially published (5/13 registries) on 2026-05-25 then super
 - **publish (wasm)**: bound build timeout (90 min) + dedicated cache key to survive GitHub runner preemption that cancelled rc.1's WASM build at ~12 min.
 - **publish (elixir)**: NIF matrix expansion (Elixir NIF matrix `include` without standalone `os` key was silently overwriting and only producing the Windows NIF; now produces all 12 NIFs across linux + macOS + windows + arm).
 
-- **java**: align alef output path to pom.xml `<sourceDirectory>`. The alef backend appends `dev/xberg/` to the configured output; the previous setting produced files at `packages/java/src/main/java/dev/xberg/*.java` but pom.xml's `sourceDirectory=${project.basedir}` expects `packages/java/dev/xberg/*.java`. This fixes Maven compilation failures where the rc.1 JAR was missing generated classes like `JsonUtil` and the plugin registration methods. (`alef.toml`) The alef backend appends the package path (`dev/xberg/`) to the configured output, so `packages/java/src/main/java/` generated files to `packages/java/src/main/java/dev/xberg/*.java`, but pom.xml's `sourceDirectory=${project.basedir}` expects files at `packages/java/dev/xberg/*.java`. This fixes Maven compilation failures where the JAR was missing generated classes like `JsonUtil` and plugin registration methods. The pom.xml layout already matches the FFI-style bindings (Go, C#, Dart, etc.), so aligning Java to the same convention restores consistency. (`alef.toml`)
+- **java**: align alef output path to pom.xml `<sourceDirectory>`. The alef backend appends `io/xberg/` to the configured output; the previous setting produced files at `packages/java/src/main/java/io/xberg/*.java` but pom.xml's `sourceDirectory=${project.basedir}` expects `packages/java/io/xberg/*.java`. This fixes Maven compilation failures where the rc.1 JAR was missing generated classes like `JsonUtil` and the plugin registration methods. (`alef.toml`) The alef backend appends the package path (`io/xberg/`) to the configured output, so `packages/java/src/main/java/` generated files to `packages/java/src/main/java/io/xberg/*.java`, but pom.xml's `sourceDirectory=${project.basedir}` expects files at `packages/java/io/xberg/*.java`. This fixes Maven compilation failures where the JAR was missing generated classes like `JsonUtil` and plugin registration methods. The pom.xml layout already matches the FFI-style bindings (Go, C#, Dart, etc.), so aligning Java to the same convention restores consistency. (`alef.toml`)
 
 ### Changed
 

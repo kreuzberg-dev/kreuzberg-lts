@@ -1,6 +1,6 @@
 ```kotlin title="Kotlin"
-import dev.xberg.*
-import dev.xberg.kt.Xberg
+import io.xberg.*
+import io.xberg.kt.Xberg
 
 fun clearAllPlugins() {
     // Note: there is no Xberg.clearDocumentExtractors() — extractor

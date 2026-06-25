@@ -60,8 +60,8 @@ Document intelligence with a Rust core and polyglot SDKs. Extract text, tables, 
 | **TypeScript (WASM)**   | `npm install @xberg/wasm`                  | [API Reference](reference/api-wasm.md)       |
 | **Rust**                | `cargo add xberg`                          | [API Reference](reference/api-rust.md)       |
 | **Go**                  | `go get github.com/xberg-io/xberg` | [API Reference](reference/api-go.md)         |
-| **Java / Kotlin JVM**   | Maven Central `dev.xberg:xberg`        | [API Reference](reference/api-java.md)       |
-| **Kotlin Android**      | Maven Central `dev.xberg:xberg-android` | [API Reference](reference/api-kotlin-android.md) |
+| **Java / Kotlin JVM**   | Maven Central `io.xberg:xberg`        | [API Reference](reference/api-java.md)       |
+| **Kotlin Android**      | Maven Central `io.xberg:xberg-android` | [API Reference](reference/api-kotlin-android.md) |
 | **C#**                  | `dotnet add package Xberg`                 | [API Reference](reference/api-csharp.md)     |
 | **Ruby**                | `gem install xberg`                        | [API Reference](reference/api-ruby.md)       |
 | **PHP**                 | `composer require xberg-io/xberg`         | [API Reference](reference/api-php.md)        |

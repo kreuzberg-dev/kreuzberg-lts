@@ -1,9 +1,9 @@
 ```java title="Element-Based Output (Java)"
-import dev.xberg.Xberg;
-import dev.xberg.ExtractionConfig;
-import dev.xberg.ExtractionResult;
-import dev.xberg.Element;
-import dev.xberg.ResultFormat;
+import io.xberg.Xberg;
+import io.xberg.ExtractionConfig;
+import io.xberg.ExtractionResult;
+import io.xberg.Element;
+import io.xberg.ResultFormat;
 import java.nio.file.Path;
 import java.util.List;
 

@@ -1,8 +1,8 @@
 ```java title="Java"
-import dev.xberg.IValidator;
-import dev.xberg.ExtractionConfig;
-import dev.xberg.ExtractionResult;
-import dev.xberg.ValidatorBridge;
+import io.xberg.IValidator;
+import io.xberg.ExtractionConfig;
+import io.xberg.ExtractionResult;
+import io.xberg.ValidatorBridge;
 
 // Generic validator pattern: every IValidator has the same shape.
 // name() keys the registry, priority() orders execution (higher = earlier),

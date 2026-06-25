@@ -1,9 +1,9 @@
 ```java title="Java"
-import dev.xberg.ExtractionConfig;
-import dev.xberg.ExtractionResult;
-import dev.xberg.Xberg;
-import dev.xberg.LlmConfig;
-import dev.xberg.StructuredExtractionConfig;
+import io.xberg.ExtractionConfig;
+import io.xberg.ExtractionResult;
+import io.xberg.Xberg;
+import io.xberg.LlmConfig;
+import io.xberg.StructuredExtractionConfig;
 
 import java.nio.file.Path;
 import java.util.List;

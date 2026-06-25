@@ -1,4 +1,4 @@
-Import dev.xberg.\*;
+Import io.xberg.\*;
 
 var config = ExtractionConfig.builder()
 .pages(PageConfig.builder()

@@ -1,6 +1,6 @@
 ```java title="Java"
-import dev.xberg.ExtractionConfig;
-import dev.xberg.LanguageDetectionConfig;
+import io.xberg.ExtractionConfig;
+import io.xberg.LanguageDetectionConfig;
 import java.math.BigDecimal;
 
 ExtractionConfig config = ExtractionConfig.builder()

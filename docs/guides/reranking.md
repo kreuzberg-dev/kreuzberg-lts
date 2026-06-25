@@ -110,7 +110,7 @@ Use the `fast` preset to rerank three documents against a query.
 === "Java"
 
     ```java
-    import dev.xberg.*;
+    import io.xberg.*;
 
     RerankerConfig config = new RerankerConfig.Builder()
         .model(new RerankerModelType.Preset("fast"))

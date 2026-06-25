@@ -7,7 +7,7 @@
 [![TypeScript](https://img.shields.io/npm/v/@xberg/node?label=TypeScript&color=007ec6)](https://www.npmjs.com/package/@xberg/node)
 [![WASM](https://img.shields.io/npm/v/@xberg/wasm?label=WASM&color=007ec6)](https://www.npmjs.com/package/@xberg/wasm)
 [![Ruby](https://img.shields.io/gem/v/xberg?label=Ruby&color=007ec6)](https://rubygems.org/gems/xberg)
-[![Java](https://img.shields.io/maven-central/v/dev.xberg/xberg?label=Java&color=007ec6)](https://central.sonatype.com/artifact/dev.xberg/xberg)
+[![Java](https://img.shields.io/maven-central/v/io.xberg/xberg?label=Java&color=007ec6)](https://central.sonatype.com/artifact/io.xberg/xberg)
 [![Go](https://img.shields.io/github/v/tag/xberg-io/xberg?label=Go&color=007ec6)](https://github.com/xberg-io/xberg/tree/main/packages/go)
 [![C#](https://img.shields.io/nuget/v/Xberg?label=C%23&color=007ec6)](https://www.nuget.org/packages/Xberg/)
 

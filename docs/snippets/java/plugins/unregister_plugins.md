@@ -1,5 +1,5 @@
 ```java title="Java"
-import dev.xberg.Xberg;
+import io.xberg.Xberg;
 
 try {
     // Unregister specific plugins

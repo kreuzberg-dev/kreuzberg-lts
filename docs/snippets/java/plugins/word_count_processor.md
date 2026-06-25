@@ -1,8 +1,8 @@
 ```java title="Java"
-import dev.xberg.Xberg;
-import dev.xberg.ExtractionResult;
-import dev.xberg.PostProcessor;
-import dev.xberg.XbergException;
+import io.xberg.Xberg;
+import io.xberg.ExtractionResult;
+import io.xberg.PostProcessor;
+import io.xberg.XbergException;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;

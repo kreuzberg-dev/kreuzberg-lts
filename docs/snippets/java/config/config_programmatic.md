@@ -1,10 +1,10 @@
 ```java title="Java"
-import dev.xberg.Xberg;
-import dev.xberg.ExtractionResult;
-import dev.xberg.ChunkingConfig;
-import dev.xberg.ExtractionConfig;
-import dev.xberg.OcrConfig;
-import dev.xberg.TesseractConfig;
+import io.xberg.Xberg;
+import io.xberg.ExtractionResult;
+import io.xberg.ChunkingConfig;
+import io.xberg.ExtractionConfig;
+import io.xberg.OcrConfig;
+import io.xberg.TesseractConfig;
 
 public final class ProgrammaticConfigExample {
     public static void main(String[] args) throws Exception {

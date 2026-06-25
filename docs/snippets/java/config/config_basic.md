@@ -1,7 +1,7 @@
 ```java title="Java"
-import dev.xberg.Xberg;
-import dev.xberg.ExtractionResult;
-import dev.xberg.ExtractionConfig;
+import io.xberg.Xberg;
+import io.xberg.ExtractionResult;
+import io.xberg.ExtractionConfig;
 
 ExtractionConfig config = ExtractionConfig.builder()
     .useCache(true)

@@ -23,10 +23,6 @@ ignored = [
     # cargo-machete cannot resolve `dep:icu_provider` references in feature flag chains.
     "icu_provider",
     "serde_toon_format",
-    # kreuzberg-gliner-rs exposes the `gliner` lib name; kreuzberg-orp exposes `orp`.
-    # cargo-machete checks for the package name but the source imports the lib name.
-    "kreuzberg-gliner-rs",
-    "kreuzberg-orp",
     # symphonia is optional behind the `transcription` feature; cargo-machete cannot
     # resolve optional dep usage through feature-gated cfg blocks.
     "symphonia",
@@ -321,15 +317,14 @@ ner-llm-types = [
 ] # LlmBackend stub for targets without full ner-llm (Windows, Android x86_64, WASM).
 ner-llm = ["ner", "liter-llm"] # LLM-driven zero-shot NER (no ORT).
 ner-onnx = [
-    # gline-rs ONNX backend (kreuzberg-gliner-rs fork) with HuggingFace model download.
+    # xberg-gliner ONNX backend with Hugging Face model download.
     "ner",
-    "dep:kreuzberg-gliner-rs",
-    "dep:kreuzberg-orp",
+    "dep:xberg-gliner",
     "dep:ort",
     "dep:ndarray",
     "dep:hf-hub",
-    "dep:tokenizers",
     "dep:sha2",
+    "ort-bundled",
     "tokio-runtime",
 ]
 
@@ -639,9 +634,8 @@ infer = "0.19.0"
 itertools = { workspace = true, optional = true }
 jotdown = "0.10"
 jsonschema = { version = "0.46", optional = true, default-features = false }
-kreuzberg-gliner-rs = { version = "0.2.1", optional = true }
+xberg-gliner = { workspace = true, optional = true }
 xberg-libheif = { path = "../xberg-libheif", version = "1.0.0-rc.1", optional = true }
-kreuzberg-orp = { version = "0.1.2", optional = true }
 # No `version` on this path-dep: xberg-tesseract carries `links =
 # "xberg_tesseract"`, and a versioned path-dep makes the maturin sdist
 # resolve two copies (path + registry) of a `links` crate, which cargo rejects

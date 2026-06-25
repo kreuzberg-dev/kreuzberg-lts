@@ -1,7 +1,7 @@
 ```java title="Document Structure Config (Java)"
-import dev.xberg.Xberg;
-import dev.xberg.ExtractionConfig;
-import dev.xberg.ExtractionResult;
+import io.xberg.Xberg;
+import io.xberg.ExtractionConfig;
+import io.xberg.ExtractionResult;
 
 ExtractionConfig config = ExtractionConfig.builder()
     .includeDocumentStructure(true)

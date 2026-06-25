@@ -1,5 +1,5 @@
 ```kotlin title="Kotlin"
-import dev.xberg.*
+import io.xberg.*
 
 fun main() {
     val config = ExtractionConfig.builder().build()

@@ -1,6 +1,6 @@
 ```java title="Java"
-import dev.xberg.ExtractionConfig;
-import dev.xberg.ImageExtractionConfig;
+import io.xberg.ExtractionConfig;
+import io.xberg.ImageExtractionConfig;
 
 ExtractionConfig config = ExtractionConfig.builder()
     .imageExtraction(ImageExtractionConfig.builder()

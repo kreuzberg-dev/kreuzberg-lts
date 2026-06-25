@@ -1,7 +1,7 @@
 <!-- snippet:skip reason="kotlin.test is not on the snippet-runner classpath; the plugin-testing pattern documented here cannot compile under the runner's lightweight Kotlin profile. Run these tests from a real Gradle build." -->
 ```kotlin title="Kotlin"
-import dev.xberg.*
-import dev.xberg.kt.Xberg
+import io.xberg.*
+import io.xberg.kt.Xberg
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith

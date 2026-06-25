@@ -1,8 +1,8 @@
 ```java title="Java"
-import dev.xberg.Xberg;
-import dev.xberg.ExtractionResult;
-import dev.xberg.XbergException;
-import dev.xberg.*;
+import io.xberg.Xberg;
+import io.xberg.ExtractionResult;
+import io.xberg.XbergException;
+import io.xberg.*;
 import java.io.IOException;
 
 public class Main {

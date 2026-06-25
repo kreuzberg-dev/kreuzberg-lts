@@ -18,8 +18,8 @@
     <img src="https://img.shields.io/npm/v/@xberg/wasm?label=WASM&color=007ec6" alt="WASM">
   </a>
 
-  <a href="https://central.sonatype.com/artifact/dev.xberg/xberg">
-    <img src="https://img.shields.io/maven-central/v/dev.xberg/xberg?label=Java&color=007ec6" alt="Java">
+  <a href="https://central.sonatype.com/artifact/io.xberg/xberg">
+    <img src="https://img.shields.io/maven-central/v/io.xberg/xberg?label=Java&color=007ec6" alt="Java">
   </a>
   <a href="https://github.com/xberg-io/xberg/releases">
     <img src="https://img.shields.io/github/v/tag/xberg-io/xberg?label=Go&color=007ec6&filter=v4.0.0" alt="Go">
@@ -77,14 +77,14 @@ Install via one of the supported package managers:
 **Gradle:**
 
 ```gradle
-implementation 'dev.xberg:xberg:4.0.0'
+implementation 'io.xberg:xberg:4.0.0'
 ```
 
 **Maven:**
 
 ```xml
 <dependency>
-    <groupId>dev.xberg</groupId>
+    <groupId>io.xberg</groupId>
     <artifactId>xberg</artifactId>
     <version>4.0.0</version>
 </dependency>

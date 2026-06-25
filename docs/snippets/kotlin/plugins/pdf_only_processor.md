@@ -1,5 +1,5 @@
 ```kotlin title="Kotlin"
-import dev.xberg.*
+import io.xberg.*
 
 class PdfOnlyProcessor : IPostProcessor {
     override fun name(): String = "pdf-only-processor"

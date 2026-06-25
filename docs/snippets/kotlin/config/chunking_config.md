@@ -1,5 +1,5 @@
 ```kotlin title="Kotlin"
-import dev.xberg.*
+import io.xberg.*
 import java.nio.file.Paths
 import java.util.Optional
 
@@ -23,7 +23,7 @@ fun main() {
 ```
 
 ```kotlin title="Kotlin - Markdown with Heading Context"
-import dev.xberg.*
+import io.xberg.*
 import java.nio.file.Paths
 import java.util.Optional
 
@@ -55,7 +55,7 @@ fun main() {
 ```
 
 ```kotlin title="Kotlin - Prepend Heading Context"
-import dev.xberg.*
+import io.xberg.*
 import java.nio.file.Paths
 import java.util.Optional
 

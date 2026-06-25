@@ -1,9 +1,9 @@
 ```java title="Java"
-import dev.xberg.Xberg;
-import dev.xberg.ExtractionResult;
-import dev.xberg.ExtractionConfig;
-import dev.xberg.OcrConfig;
-import dev.xberg.ImagePreprocessingConfig;
+import io.xberg.Xberg;
+import io.xberg.ExtractionResult;
+import io.xberg.ExtractionConfig;
+import io.xberg.OcrConfig;
+import io.xberg.ImagePreprocessingConfig;
 
 ExtractionConfig config = ExtractionConfig.builder()
     .ocr(OcrConfig.builder()

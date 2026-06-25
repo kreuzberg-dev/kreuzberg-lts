@@ -1,8 +1,8 @@
-import dev.xberg.ExtractionResult;
-import dev.xberg.Xberg;
-import dev.xberg.XbergException;
-import dev.xberg.config.ExtractionConfig;
-import dev.xberg.config.OcrConfig;
+import io.xberg.ExtractionResult;
+import io.xberg.Xberg;
+import io.xberg.XbergException;
+import io.xberg.config.ExtractionConfig;
+import io.xberg.config.OcrConfig;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.nio.file.Path;

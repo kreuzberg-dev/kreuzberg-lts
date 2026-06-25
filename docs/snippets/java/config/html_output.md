@@ -1,10 +1,10 @@
 ```java title="Java"
-import dev.xberg.Xberg;
-import dev.xberg.ExtractionConfig;
-import dev.xberg.ExtractionResult;
-import dev.xberg.HtmlOutputConfig;
-import dev.xberg.HtmlTheme;
-import dev.xberg.OutputFormat;
+import io.xberg.Xberg;
+import io.xberg.ExtractionConfig;
+import io.xberg.ExtractionResult;
+import io.xberg.HtmlOutputConfig;
+import io.xberg.HtmlTheme;
+import io.xberg.OutputFormat;
 import java.nio.file.Path;
 import java.util.Optional;
 
