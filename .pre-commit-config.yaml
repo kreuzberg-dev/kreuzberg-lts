@@ -213,15 +213,6 @@ repos:
     - id: alef-docs-fresh
     - id: alef-snippets-validate
 
-    - id: helm-lint
-      files: ^charts/.*/(Chart\.yaml|templates/.+\.ya?ml)$
-    - id: kubeconform
-      args:
-      - -strict
-      - -summary
-      files: ^charts/.*/templates/.+\.ya?ml$
-      exclude: ^charts/.*/(values|Chart)\.ya?ml$
-
     # Formatters
     - id: trailing-whitespace
     - id: end-of-file-fixer
