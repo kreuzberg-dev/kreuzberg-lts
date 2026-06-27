@@ -196,8 +196,6 @@ mod tests {
     fn test_is_language_supported() {
         let registry = LanguageRegistry::new();
 
-        assert!(!registry.is_language_supported("easyocr", "en"));
-
         assert!(registry.is_language_supported("paddleocr", "en"));
         assert!(!registry.is_language_supported("paddleocr", "invalid"));
 
@@ -219,7 +217,6 @@ mod tests {
     fn test_get_language_count() {
         let registry = LanguageRegistry::new();
 
-        assert_eq!(registry.get_language_count("easyocr"), 0);
         assert_eq!(registry.get_language_count("paddleocr"), 14);
         assert!(registry.get_language_count("tesseract") >= 100);
         assert_eq!(registry.get_language_count("nonexistent"), 0);
@@ -245,12 +242,6 @@ mod tests {
             global1.get_language_count("paddleocr"),
             global2.get_language_count("paddleocr")
         );
-    }
-
-    #[test]
-    fn test_easyocr_backend_is_not_registered() {
-        let registry = LanguageRegistry::new();
-        assert!(registry.get_supported_languages("easyocr").is_none());
     }
 
     #[test]

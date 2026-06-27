@@ -796,9 +796,9 @@ mod tests {
     }
 
     #[test]
-    fn test_validate_easyocr_backend_rejected() {
+    fn test_validate_unknown_backend_rejected() {
         let config = OcrConfig {
-            backend: "easyocr".to_string(),
+            backend: "unsupported-ocr".to_string(),
             ..Default::default()
         };
         let result = config.validate();
@@ -885,9 +885,9 @@ mod tests {
 
     #[cfg(feature = "ocr")]
     #[test]
-    fn test_effective_pipeline_easyocr_rejected_by_validation() {
+    fn test_effective_pipeline_unknown_backend_rejected_by_validation() {
         let config = OcrConfig {
-            backend: "easyocr".to_string(),
+            backend: "unsupported-ocr".to_string(),
             ..Default::default()
         };
         let result = config.validate();

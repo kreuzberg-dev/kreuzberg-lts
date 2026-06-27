@@ -107,8 +107,8 @@ mod tests {
     }
 
     #[test]
-    fn test_validate_ocr_backend_rejects_easyocr() {
-        let result = validate_ocr_backend("easyocr");
+    fn test_validate_ocr_backend_rejects_unknown_backend() {
+        let result = validate_ocr_backend("unsupported-ocr");
         assert!(result.is_err());
         let msg = result.unwrap_err().to_string();
         assert!(msg.contains("Invalid OCR backend"));

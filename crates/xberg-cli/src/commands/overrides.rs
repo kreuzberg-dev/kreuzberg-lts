@@ -976,9 +976,9 @@ mod tests {
     }
 
     #[test]
-    fn test_validate_easyocr_backend_rejected() {
+    fn test_validate_unknown_ocr_backend_rejected() {
         let overrides = ExtractionOverrides {
-            ocr_backend: Some("easyocr".to_string()),
+            ocr_backend: Some("unsupported-ocr".to_string()),
             ..default_overrides()
         };
         let err = overrides.validate().unwrap_err();
