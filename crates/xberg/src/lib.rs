@@ -120,11 +120,6 @@ pub use heuristics::{
 #[cfg(feature = "presets")]
 pub mod presets;
 
-// Native HTTP (liter-llm) + PDF rendering are required, so the structured orchestrator is excluded
-// on wasm32. Structured extraction is reached through ExtractionConfig, not public helper entrypoints.
-#[cfg(all(feature = "structured", not(target_arch = "wasm32")))]
-pub(crate) mod structured;
-
 #[cfg(any(feature = "ocr", feature = "ocr-wasm"))]
 pub mod ocr;
 
