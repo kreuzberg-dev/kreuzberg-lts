@@ -187,7 +187,11 @@ $excelFiles = [
     'march_sales.xlsx',
 ];
 
-$results = $xberg->extractBatch($excelFiles);
+$excelInputs = array_map(
+    static fn (string $file): \Xberg\ExtractInput => \Xberg\ExtractInput::fromUri($file),
+    $excelFiles
+);
+$results = \Xberg\Xberg::extractBatch($excelInputs, \Xberg\ExtractionConfig::default())->results;
 
 $totalSheets = 0;
 foreach ($results as $i => $result) {

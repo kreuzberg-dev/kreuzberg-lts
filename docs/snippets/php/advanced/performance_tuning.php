@@ -227,10 +227,8 @@ class CachedXberg
     private array $cache = [];
     private int $maxCacheSize;
 
-    public function __construct(
-        private Xberg $xberg,
-        int $maxCacheSize = 100
-    ) {
+    public function __construct(int $maxCacheSize = 100)
+    {
         $this->maxCacheSize = $maxCacheSize;
     }
 
@@ -259,7 +257,7 @@ class CachedXberg
     }
 }
 
-$cachedXberg = new CachedXberg(new Xberg(), maxCacheSize: 50);
+$cachedXberg = new CachedXberg(maxCacheSize: 50);
 
 echo "\nCached extraction performance:\n";
 echo str_repeat('=', 60) . "\n";

@@ -37,8 +37,7 @@ $nativeConfig = new ExtractionConfig(
     forceOcr: false  // Default: use native text extraction when available
 );
 
-$xbergNative = new Xberg($nativeConfig);
-$resultNative = \Xberg\Xberg::extract(\Xberg\ExtractInput::fromUri('mixed_scanned_document.pdf'), $config ?? \Xberg\ExtractionConfig::default())->results[0];
+$resultNative = \Xberg\Xberg::extract(\Xberg\ExtractInput::fromUri('mixed_scanned_document.pdf'), $nativeConfig)->results[0];
 
 echo "\nNative Text Extraction (no force):\n";
 echo "Characters extracted: " . strlen($resultNative->content) . "\n";

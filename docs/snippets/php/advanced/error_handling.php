@@ -282,7 +282,6 @@ try {
 class LoggingXberg
 {
     public function __construct(
-        private Xberg $xberg,
         private \Psr\Log\LoggerInterface $logger
     ) {}
 
@@ -292,7 +291,8 @@ class LoggingXberg
         $startTime = microtime(true);
 
         try {
-            $result = $this->xberg->extract($filePath, $mimeType);
+            $output = \Xberg\Xberg::extract(\Xberg\ExtractInput::fromUri($filePath), \Xberg\ExtractionConfig::default());
+            $result = $output->results[0];
             $elapsed = microtime(true) - $startTime;
 
             $this->logger->info("Extraction successful", [

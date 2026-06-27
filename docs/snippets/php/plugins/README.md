@@ -142,46 +142,48 @@ $result = $output->results[0];
 validateResult($result);
 ```
 
-### 4. Extend the Xberg Class
+### 4. Wrap the Xberg Class
 
-For application-specific functionality, extend the main class:
+For application-specific functionality, wrap the static API in a helper that
+delegates to `Xberg::extract()`:
 
-```php title="Extend Xberg Class"
+```php title="Wrap Xberg Class"
 <?php
 
 declare(strict_types=1);
 
+use Xberg\ExtractInput;
 use Xberg\ExtractionConfig;
-use Xberg\Xberg as BaseXberg;
+use Xberg\Xberg;
 use Xberg\Types\ExtractedDocument;
 
-final class CustomXberg extends BaseXberg
+final class CustomXberg
 {
-	    public function extractAndValidate(
-	        string $path,
-	        ?ExtractionConfig $config = null
-	    ): ExtractedDocument {
-	        $output = $this->extract($path, $config);
-	        $result = $output->results[0];
+    public static function extractAndValidate(
+        string $path,
+        ?ExtractionConfig $config = null
+    ): ExtractedDocument {
+        $output = Xberg::extract(ExtractInput::fromUri($path), $config);
+        $result = $output->results[0];
 
         // Custom validation
-        if (strlen($result->content) < 100) {
+        if (strlen($result->getContent()) < 100) {
             throw new \RuntimeException('Content too short');
         }
 
         return $result;
     }
 
-	    public function extractAndTransform(
-	        string $path,
-	        callable $transformer,
-	        ?ExtractionConfig $config = null
-	    ): ExtractedDocument {
-	        $output = $this->extract($path, $config);
-	        $result = $output->results[0];
+    public static function extractAndTransform(
+        string $path,
+        callable $transformer,
+        ?ExtractionConfig $config = null
+    ): ExtractedDocument {
+        $output = Xberg::extract(ExtractInput::fromUri($path), $config);
+        $result = $output->results[0];
 
         // Custom transformation
-        $transformedContent = $transformer($result->content);
+        $transformedContent = $transformer($result->getContent());
 
         return new ExtractedDocument(
             content: $transformedContent,

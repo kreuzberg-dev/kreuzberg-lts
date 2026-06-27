@@ -122,7 +122,6 @@ function fitWithinTokenLimit(
             )
         );
 
-        $xbergWithMode = new Xberg($config);
         $output = \Xberg\Xberg::extract(\Xberg\ExtractInput::fromUri($filePath), $config ?? \Xberg\ExtractionConfig::default());
 $result = $output->results[0];
 
@@ -145,7 +144,6 @@ $result = $output->results[0];
         )
     );
 
-    $xbergWithMode = new Xberg($config);
     $output = \Xberg\Xberg::extract(\Xberg\ExtractInput::fromUri($filePath), $config ?? \Xberg\ExtractionConfig::default());
 $result = $output->results[0];
     $tokens = $result->metadata['token_count'] ?? strlen($result->content);

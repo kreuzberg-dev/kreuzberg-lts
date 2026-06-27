@@ -166,10 +166,10 @@ $result = $output->results[0];
 
 function getOptimalPreprocessing(string $file): ImagePreprocessingConfig
 {
-    $quickScan = new Xberg(new ExtractionConfig(
+    $quickScanConfig = new ExtractionConfig(
         ocr: new OcrConfig(backend: 'tesseract', language: 'eng')
-    ));
-    $quickResult = \Xberg\Xberg::extract(\Xberg\ExtractInput::fromUri($file), $config ?? \Xberg\ExtractionConfig::default())->results[0];
+    );
+    $quickResult = \Xberg\Xberg::extract(\Xberg\ExtractInput::fromUri($file), $quickScanConfig)->results[0];
 
     $fileSize = filesize($file);
     $contentLength = strlen($quickResult->content);

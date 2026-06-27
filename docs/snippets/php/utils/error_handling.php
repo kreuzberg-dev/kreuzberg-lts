@@ -45,7 +45,8 @@ try {
         throw new \RuntimeException('Failed to read file');
     }
 
-    $result = $xberg->extract($pdfBytes, 'application/pdf', $config);
+    $output = \Xberg\Xberg::extract(\Xberg\ExtractInput::fromBytes($pdfBytes, 'application/pdf'), $config);
+    $result = $output->results[0];
     echo "Extracted from bytes: " . substr($result->content, 0, 100) . "...\n";
 } catch (ValidationException $e) {
     echo "Invalid configuration or input: " . $e->getMessage() . "\n";
