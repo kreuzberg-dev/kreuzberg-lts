@@ -6,8 +6,11 @@ on:
   workflow_dispatch:
 
 concurrency:
+  # Heavy, dispatch-only suite (multi-GB model downloads, real GPU inference).
+  # Never cancel an in-flight run; queue re-dispatches instead so an expensive
+  # run is not killed mid-flight.
   group: ci-gpu-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 env:
   CARGO_TERM_COLOR: always
