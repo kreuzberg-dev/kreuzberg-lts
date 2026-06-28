@@ -149,7 +149,7 @@ jobs:
           - name: paddleocr-vl
             feature: candle-paddleocr-vl
             test: candle_paddleocr_vl_e2e_extraction
-            hf_repo: paddlepaddle/paddleocr-v4
+            hf_repo: PaddlePaddle/PaddleOCR-VL
             env_var: XBERG_PADDLEOCR_VL_MODEL_PATH
 
     steps:
@@ -235,8 +235,14 @@ jobs:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
           set -euo pipefail
-          python3 -m pip install --quiet --upgrade "huggingface_hub[cli]"
-          huggingface-cli download "${{ matrix.model.hf_repo }}" \
+          # The runner's system python3 has no pip and is externally-managed
+          # (PEP 668), so install the HF CLI into an isolated venv.
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends python3-venv
+          python3 -m venv "$RUNNER_TEMP/hfvenv"
+          "$RUNNER_TEMP/hfvenv/bin/pip" install --quiet --upgrade "huggingface_hub[cli,hf_transfer]"
+          HF_HUB_ENABLE_HF_TRANSFER=1 "$RUNNER_TEMP/hfvenv/bin/huggingface-cli" download \
+            "${{ matrix.model.hf_repo }}" \
             --local-dir "${{ github.workspace }}/models/${{ matrix.model.name }}"
 
       - name: Run ${{ matrix.model.name }} GPU inference
