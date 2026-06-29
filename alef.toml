@@ -1474,6 +1474,32 @@ types = [
   "xberg::engine::seams::ModelProvider",
   "xberg::engine::seams::DefaultModelProvider",
   "xberg::engine::seams::ModelId",
+
+  # Rust-only structured-extraction mechanism (crates/xberg/src/engine/structured/).
+  # Same isolation as the seams above: generic mechanism types that live under the
+  # bare `pub mod engine;`, are not listed in `sources`, and are not re-exported
+  # from lib.rs. Listed here as belt-and-suspenders against a future codegen pass
+  # re-emitting them as transitive container fields.
+  "PageImage",
+  "RasterizeError",
+  "Batch",
+  "ChunkerConfig",
+  "Outcome",
+  "MergedOutput",
+  "CitationSource",
+  "CitedField",
+  "CitationOutput",
+  "BuiltPrompt",
+  "xberg::engine::structured::rasterize::PageImage",
+  "xberg::engine::structured::rasterize::RasterizeError",
+  "xberg::engine::structured::chunk::Batch",
+  "xberg::engine::structured::chunk::ChunkerConfig",
+  "xberg::engine::structured::schema::Outcome",
+  "xberg::engine::structured::schema::MergedOutput",
+  "xberg::engine::structured::citations::CitationSource",
+  "xberg::engine::structured::citations::CitedField",
+  "xberg::engine::structured::citations::CitationOutput",
+  "xberg::engine::structured::prompts::BuiltPrompt",
 ]
 methods = [
   # From<T> trait impls — auto-emitted by derive/trait-bridge

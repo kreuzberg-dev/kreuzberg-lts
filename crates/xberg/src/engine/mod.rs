@@ -21,6 +21,14 @@ mod crawl_handle;
 mod extract_impl;
 pub mod seams;
 
+/// Generic, MIT-clean structured-extraction mechanism (rasterize, chunk, schema,
+/// citations, prompts). Gated on `heuristics` because the mechanism speaks in
+/// heuristics call-mode / confidence types; individual submodules carry further
+/// gates for their own hard dependencies (`pdf`, `presets`). Not part of the
+/// binding surface — see `alef.toml` `[crates.exclude]`.
+#[cfg(feature = "heuristics")]
+pub mod structured;
+
 use seams::{CacheBackend, NoopCache, NoopProgressSink, ProgressSink};
 #[cfg(feature = "presets")]
 use seams::{CorePresetResolver, PresetResolver};
