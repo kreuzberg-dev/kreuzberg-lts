@@ -918,8 +918,9 @@ jobs:
         shell: bash
         run: |
           set -euxo pipefail
-          # manylinux_2_28 is AlmaLinux 8. EPEL + CRB/PowerTools provide the HEIF
-          # codec -devel packages libheif needs (libde265/libaom/libdav1d/libx265).
+          # manylinux_2_28 is AlmaLinux 8. EPEL + CRB/PowerTools provide free codecs
+          # (libaom/libdav1d for AV1). HEVC codecs (libde265/libx265) are not in EPEL
+          # (patent concerns) and not needed for this build (heic feature is omitted).
           yum install -y epel-release || dnf install -y epel-release || true
           yum install -y dnf-plugins-core yum-utils || true
           dnf config-manager --set-enabled powertools 2>/dev/null \
@@ -927,8 +928,8 @@ jobs:
             || yum-config-manager --enable powertools 2>/dev/null || true
           yum install -y \
             gcc gcc-c++ make cmake pkgconfig \
-            openssl-devel libmagic-devel libuv-devel \
-            libde265-devel libaom-devel libx265-devel libdav1d-devel libnuma-devel \
+            openssl-devel file-devel libuv-devel \
+            libaom-devel libdav1d-devel \
             tesseract-devel
           # Apply the C23-symbol-prevention flags (#588) to THIS glibc-gnu build
           # only — written to GITHUB_ENV inside the linux-gnu-gated step so they
