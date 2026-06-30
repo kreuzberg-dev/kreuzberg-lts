@@ -518,7 +518,11 @@ async fn extract_bytes_input(input: ExtractInput, config: &ExtractionConfig, ind
         .bytes
         .ok_or_else(|| XbergError::validation("extract input kind 'bytes' requires the 'bytes' field".to_string()))?;
     let mime_type = resolve_bytes_mime_type(input.mime_type.as_deref(), input.filename.as_deref(), &bytes)?;
-    let mut result = Box::pin(extract_bytes(&bytes, &mime_type, config)).await?;
+    // Thread the source filename so extractors can fall back to extension-based
+    // language detection (e.g. tree-sitter) when content sniffing is inconclusive.
+    let mut cfg = config.clone();
+    cfg.source_name = input.filename.as_deref().map(str::to_string);
+    let mut result = Box::pin(extract_bytes(&bytes, &mime_type, &cfg)).await?;
     annotate_source(
         &mut result,
         "bytes",
@@ -770,14 +774,56 @@ fn merge_crawl_summary(
     }
 }
 
+/// Refine the MIME type for a downloaded document when the server returned the
+/// generic `application/octet-stream` placeholder.
+///
+/// Specific MIME types (e.g. `application/pdf`, `image/png`) are trusted as-is.
+/// Only the generic `application/octet-stream` is overridden, using the URL
+/// filename's extension — which reaches the tree-sitter language-detection path
+/// for source-code files (`.py` → `text/x-source-code`).
+///
+/// If extension-based detection yields an unsupported MIME type, or no filename
+/// is available, the original `application/octet-stream` is returned and
+/// `extract_bytes` handles it via content sniffing.
+#[cfg(feature = "url-ingestion")]
+fn refine_downloaded_mime_type(mime_type: &str, filename: Option<&str>, url: &str) -> String {
+    // Trust explicit, non-generic MIME types from the server.
+    if mime_type != "application/octet-stream" {
+        return mime_type.to_string();
+    }
+
+    // Attempt extension-based detection from the filename (crawlberg derives this from
+    // the URL path or Content-Disposition header). This reaches the tree-sitter language
+    // detection path for source-code extensions (.py → text/x-source-code).
+    if let Some(name) = filename
+        && let Ok(detected) = crate::core::mime::detect_mime_type(name, false)
+        && crate::core::mime::validate_mime_type(&detected).is_ok()
+    {
+        tracing::debug!(
+            url = %url,
+            filename = %name,
+            detected = %detected,
+            "refined application/octet-stream via URL filename extension"
+        );
+        return detected;
+    }
+
+    // No usable filename hint, or detected MIME is unsupported: fall through to the
+    // octet-stream handling in extract_bytes (content sniffing / tree-sitter content
+    // detection).
+    mime_type.to_string()
+}
+
 #[cfg(feature = "url-ingestion")]
 async fn extract_downloaded_document(
     document: DownloadedDocument,
     config: &ExtractionConfig,
     index: usize,
 ) -> Result<ExtractedDocument> {
-    let mime_type = document.mime_type.to_string();
-    let mut result = extract_bytes(&document.content, &mime_type, config).await?;
+    let mime_type = refine_downloaded_mime_type(&document.mime_type, document.filename.as_deref(), &document.url);
+    let mut cfg = config.clone();
+    cfg.source_name = document.filename.as_deref().map(str::to_string);
+    let mut result = extract_bytes(&document.content, &mime_type, &cfg).await?;
     annotate_source(&mut result, "url_document", &document.url, &document.url, index);
     result
         .metadata
