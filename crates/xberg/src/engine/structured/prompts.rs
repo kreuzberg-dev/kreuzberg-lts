@@ -250,8 +250,8 @@ mod tests {
     use super::*;
     use crate::heuristics::confidence::{ExtractionConfidence, SchemaCompliance};
 
-    /// Caller-supplied excerpt cap used across the assembly tests (mirrors the
-    /// enterprise worker's historical 200k limit, but as a plain parameter).
+    /// Caller-supplied excerpt cap used across the assembly tests (a
+    /// conventional 200k limit, supplied as a plain parameter).
     const TEST_MAX_EXCERPT: usize = 200_000;
 
     /// A literal citation instruction, supplied as a parameter — no preset, and
