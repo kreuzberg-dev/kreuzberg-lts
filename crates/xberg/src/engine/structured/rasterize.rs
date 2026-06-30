@@ -57,7 +57,16 @@ pub async fn pages_for_call(
             // TextOnlyWithVisionFallback is handled by the orchestrator — rasterize only if fallback escalates.
             Vec::new()
         }
-        StructuredCallMode::VisionOnly | StructuredCallMode::TextPlusVision => render_all_pages(bytes, mime, dpi)?,
+        StructuredCallMode::VisionOnly | StructuredCallMode::TextPlusVision => {
+            // Rendering is CPU-bound (PDF xref parse + per-page raster, or image
+            // decode/re-encode). Run it on a blocking thread so a large document
+            // never stalls the async runtime's worker threads.
+            let bytes = bytes.to_vec();
+            let mime = mime.to_string();
+            tokio::task::spawn_blocking(move || render_all_pages(&bytes, &mime, dpi))
+                .await
+                .map_err(|e| RasterizeError::Pdf(format!("rasterization task failed: {e}")))??
+        }
     };
 
     Ok(pages)
