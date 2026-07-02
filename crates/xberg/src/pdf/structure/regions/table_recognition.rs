@@ -80,16 +80,41 @@ pub(in crate::pdf::structure) fn recognize_tables_for_native_page(
     let mut tables = Vec::new();
 
     for hint in &table_hints {
+        // The layout model's Table bbox often underestimates the table's bottom
+        // edge, cutting off the last rows (the TATR crop is taken from the hint
+        // bbox, so rows below it can never be recognized). Extend the effective
+        // bottom edge across word rows that continue the table's column
+        // structure before cropping. All extension math happens in HocrWord
+        // space (PDF-point units, image-oriented y).
+        let extended_bottom_pt = extend_table_bottom_rows(
+            words,
+            hint.left,
+            hint.right,
+            (page_height - hint.top).max(0.0),
+            (page_height - hint.bottom).max(0.0),
+            page_height,
+        );
+
         // Convert hint bbox from PDF coords to rendered image pixel coords.
         // PDF: y=0 at bottom, increases upward.
         // Image: y=0 at top, increases downward.
         let px_left = (hint.left * sx).round().max(0.0) as u32;
         let px_top = ((page_height - hint.top) * sy).round().max(0.0) as u32;
         let px_right = (hint.right * sx).round().min(img_w as f32) as u32;
-        let px_bottom = ((page_height - hint.bottom) * sy).round().min(img_h as f32) as u32;
+        let px_bottom = (extended_bottom_pt * sy).round().min(img_h as f32) as u32;
 
         let crop_w = px_right.saturating_sub(px_left);
         let crop_h = px_bottom.saturating_sub(px_top);
+        tracing::debug!(
+            page = page_index,
+            extended_bottom_pt,
+            sy,
+            img_h,
+            px_top,
+            px_bottom,
+            crop_h,
+            "TATR crop bounds"
+        );
 
         if crop_w < 10 || crop_h < 10 {
             continue;
@@ -154,8 +179,8 @@ pub(in crate::pdf::structure) fn recognize_tables_for_native_page(
             continue;
         }
 
-        // Filter words that overlap the table hint bbox (≥20% of word area).
-        // HocrWord uses image coordinates (y=0 at top).
+        // Filter words that overlap the (bottom-extended) table hint bbox
+        // (≥20% of word area). HocrWord uses image coordinates (y=0 at top).
         // Pad the hint bbox slightly (3% width, 2% height) so edge words
         // (e.g. row numbers at the left margin) are not excluded by a
         // tight-fitting RT-DETR bbox.
@@ -166,7 +191,7 @@ pub(in crate::pdf::structure) fn recognize_tables_for_native_page(
         let padded_left = (hint.left - pad_x).max(0.0);
         let padded_right = hint.right + pad_x;
         let padded_top_pdf = hint.top + pad_y;
-        let padded_bottom_pdf = (hint.bottom - pad_y).max(0.0);
+        let padded_bottom_pdf = (page_height - extended_bottom_pt - pad_y).max(0.0);
 
         let hint_img_top = (page_height - padded_top_pdf).max(0.0);
         let hint_img_bottom = (page_height - padded_bottom_pdf).max(0.0);
@@ -184,7 +209,8 @@ pub(in crate::pdf::structure) fn recognize_tables_for_native_page(
         // Match words to cells and build markdown table.
         // Cell bboxes are in crop-pixel space; words are in PDF coords.
         // Convert cell bboxes to PDF coords for matching.
-        let (grid, markdown) = build_tatr_grid_table(&cell_grid, &table_words, px_left as f32, px_top as f32, sx, sy);
+        let (grid, markdown, consumed_bottom) =
+            build_tatr_grid_table(&cell_grid, &table_words, px_left as f32, px_top as f32, sx, sy);
 
         tracing::debug!(
             page = page_index,
@@ -235,9 +261,13 @@ pub(in crate::pdf::structure) fn recognize_tables_for_native_page(
             page_height,
         );
 
+        // Bottom edge from the words actually consumed into the grid, so text
+        // the recognizer did not consume is never suppressed as "inside the
+        // table" by filter_segments_by_table_bboxes (symmetric to the
+        // tightened top edge).
         let bounding_box = Some(crate::types::BoundingBox {
             x0: hint.left as f64,
-            y0: hint.bottom as f64,
+            y0: table_bbox_bottom_from_consumed(consumed_bottom, hint.bottom, page_height),
             x1: hint.right as f64,
             y1: tightened_y1,
         });
@@ -261,6 +291,10 @@ pub(in crate::pdf::structure) fn recognize_tables_for_native_page(
 ///
 /// Uses best-match assignment: each word is assigned to the single cell with
 /// the highest IoW overlap, preventing duplication across cells.
+///
+/// The third return value is the bottom edge (image-y, `top + height`) of the
+/// lowest word actually consumed into a cell, used to bound the emitted table
+/// bbox to the recognized content.
 #[cfg(feature = "layout-detection")]
 fn build_tatr_grid_table(
     cell_grid: &[Vec<crate::layout::models::tatr::CellBBox>],
@@ -269,15 +303,15 @@ fn build_tatr_grid_table(
     crop_offset_px_y: f32,
     sx: f32,
     sy: f32,
-) -> (Vec<Vec<String>>, String) {
+) -> (Vec<Vec<String>>, String, Option<u32>) {
     if cell_grid.is_empty() {
-        return (Vec::new(), String::new());
+        return (Vec::new(), String::new(), None);
     }
 
     let num_rows = cell_grid.len();
     let num_cols = cell_grid[0].len();
     if num_cols == 0 {
-        return (Vec::new(), String::new());
+        return (Vec::new(), String::new(), None);
     }
 
     // Convert all cell bboxes from crop-pixel space to HocrWord coordinate
@@ -301,6 +335,8 @@ fn build_tatr_grid_table(
     let mut cell_words: Vec<Vec<Vec<(usize, f32, f32)>>> = (0..num_rows)
         .map(|_| (0..num_cols).map(|_| Vec::new()).collect())
         .collect();
+    let mut consumed_bottom: Option<u32> = None;
+    let mut word_consumed = vec![false; words.len()];
 
     for (wi, &word) in words.iter().enumerate() {
         let mut best_iow: f32 = 0.0;
@@ -322,6 +358,9 @@ fn build_tatr_grid_table(
             let cx = word.left as f32 + word.width as f32 / 2.0;
             let cy = word.top as f32 + word.height as f32 / 2.0;
             cell_words[best_row][best_col].push((wi, cx, cy));
+            let word_bottom = word.top + word.height;
+            consumed_bottom = Some(consumed_bottom.map_or(word_bottom, |b| b.max(word_bottom)));
+            word_consumed[wi] = true;
         }
     }
 
@@ -347,8 +386,138 @@ fn build_tatr_grid_table(
         grid.push(grid_row);
     }
 
+    // TATR under-detects rows on dense many-row tables. Words it failed to
+    // consume below the grid that still align with the table's columns are
+    // reconstructed into extra rows — completing the table instead of either
+    // suppressing the text (silent loss) or releasing it as paragraphs
+    // (fragments the table structure).
+    let consumed_bottom =
+        append_unconsumed_aligned_rows(&mut grid, words, &word_consumed, consumed_bottom, &converted_cells);
+
     let markdown = render_grid_as_markdown(&grid);
-    (grid, markdown)
+    (grid, markdown, consumed_bottom)
+}
+
+/// Append word rows the recognizer failed to consume below the grid.
+///
+/// Walks unconsumed word rows below the consumed region top-to-bottom; a row
+/// whose words mostly fall within the table's per-column x-spans is rebuilt as
+/// a grid row (each word joined into the column containing its center, or the
+/// nearest column). The walk stops at the first non-aligned row so trailing
+/// prose is never absorbed. Returns the updated consumed-bottom.
+#[cfg(feature = "layout-detection")]
+fn append_unconsumed_aligned_rows(
+    grid: &mut Vec<Vec<String>>,
+    words: &[&crate::pdf::table_reconstruct::HocrWord],
+    word_consumed: &[bool],
+    consumed_bottom: Option<u32>,
+    converted_cells: &[Vec<(f32, f32, f32, f32)>],
+) -> Option<u32> {
+    /// A row is appended when at least this fraction of its words fall in column spans.
+    const MIN_ALIGNED_FRACTION: f32 = 0.6;
+    /// Rows with fewer words than this are never treated as table rows.
+    const MIN_ROW_WORDS: usize = 3;
+    /// Column x-spans are widened by this slack on both sides.
+    const COLUMN_SPAN_SLACK_PTS: f32 = 4.0;
+
+    let mut current_bottom = consumed_bottom?;
+    let num_cols = grid.first().map_or(0, |r| r.len());
+    if num_cols == 0 {
+        return Some(current_bottom);
+    }
+
+    // Median x-span per column across the recognizer's rows.
+    let mut col_spans: Vec<(f32, f32)> = Vec::with_capacity(num_cols);
+    for col in 0..num_cols {
+        let mut lefts: Vec<f32> = converted_cells.iter().filter_map(|r| r.get(col).map(|c| c.0)).collect();
+        let mut rights: Vec<f32> = converted_cells.iter().filter_map(|r| r.get(col).map(|c| c.2)).collect();
+        if lefts.is_empty() {
+            return Some(current_bottom);
+        }
+        lefts.sort_by(f32::total_cmp);
+        rights.sort_by(f32::total_cmp);
+        col_spans.push((
+            lefts[lefts.len() / 2] - COLUMN_SPAN_SLACK_PTS,
+            rights[rights.len() / 2] + COLUMN_SPAN_SLACK_PTS,
+        ));
+    }
+
+    let mut pending: Vec<usize> = (0..words.len())
+        .filter(|&wi| !word_consumed[wi] && !words[wi].text.trim().is_empty() && words[wi].top >= current_bottom)
+        .collect();
+    if pending.is_empty() {
+        return Some(current_bottom);
+    }
+    pending.sort_by_key(|&wi| words[wi].top);
+
+    // Dense small-font tables have a row pitch below a fixed tolerance —
+    // derive the row-grouping tolerance from the word height instead.
+    let same_row_tolerance = {
+        let mut heights: Vec<u32> = pending.iter().map(|&wi| words[wi].height).collect();
+        heights.sort_unstable();
+        (heights[heights.len() / 2] / 2).clamp(2, 5)
+    };
+
+    let column_of = |w: &crate::pdf::table_reconstruct::HocrWord| -> Option<usize> {
+        let center = w.left as f32 + w.width as f32 / 2.0;
+        col_spans.iter().position(|&(l, r)| center >= l && center <= r)
+    };
+    let nearest_column = |w: &crate::pdf::table_reconstruct::HocrWord| -> usize {
+        let center = w.left as f32 + w.width as f32 / 2.0;
+        col_spans
+            .iter()
+            .enumerate()
+            .min_by(|(_, a), (_, b)| {
+                let d1 = (center - (a.0 + a.1) / 2.0).abs();
+                let d2 = (center - (b.0 + b.1) / 2.0).abs();
+                d1.total_cmp(&d2)
+            })
+            .map_or(0, |(i, _)| i)
+    };
+
+    let mut appended_rows = 0_usize;
+    let mut row_start = 0_usize;
+    while row_start < pending.len() {
+        let row_anchor = words[pending[row_start]].top;
+        let row_end = pending[row_start..]
+            .iter()
+            .position(|&wi| words[wi].top.saturating_sub(row_anchor) > same_row_tolerance)
+            .map(|p| row_start + p)
+            .unwrap_or(pending.len());
+
+        let row = &pending[row_start..row_end];
+        let aligned = row.iter().filter(|&&wi| column_of(words[wi]).is_some()).count();
+        if row.len() < MIN_ROW_WORDS || (aligned as f32 / row.len() as f32) < MIN_ALIGNED_FRACTION {
+            break;
+        }
+
+        let mut row_cells: Vec<Vec<(u32, &str)>> = vec![Vec::new(); num_cols];
+        for &wi in row {
+            let w = words[wi];
+            let col = column_of(w).unwrap_or_else(|| nearest_column(w));
+            row_cells[col].push((w.left, w.text.trim()));
+        }
+        let mut grid_row = Vec::with_capacity(num_cols);
+        for mut cell in row_cells {
+            cell.sort_by_key(|&(x, _)| x);
+            grid_row.push(cell.iter().map(|&(_, t)| t).filter(|t| !t.is_empty()).collect::<Vec<_>>().join(" "));
+        }
+        grid.push(grid_row);
+        appended_rows += 1;
+
+        current_bottom = row
+            .iter()
+            .map(|&wi| words[wi].top + words[wi].height)
+            .max()
+            .unwrap_or(row_anchor)
+            .max(current_bottom);
+        row_start = row_end;
+    }
+
+    if appended_rows > 0 {
+        tracing::debug!(appended_rows, "TATR: appended unconsumed aligned rows to grid");
+    }
+    Some(current_bottom)
 }
 
 // Word-to-cell matching is now handled inline in build_tatr_grid_table
@@ -551,11 +720,24 @@ pub(in crate::pdf::structure) fn recognize_tables_slanet(
     let mut tables = Vec::new();
 
     for hint in &table_hints {
+        // Extend the effective bottom edge across word rows that continue the
+        // table's column structure below the hint (mirrors the TATR path; the
+        // hint bbox often underestimates the table bottom). Computed in
+        // HocrWord space (PDF-point units, image-oriented y).
+        let extended_bottom_pt = extend_table_bottom_rows(
+            words,
+            hint.left,
+            hint.right,
+            (page_height - hint.top).max(0.0),
+            (page_height - hint.bottom).max(0.0),
+            page_height,
+        );
+
         // Convert hint bbox to image coordinates (for cell matching)
         let hint_img_left = hint.left * sx;
         let hint_img_top = (page_height - hint.top) * sy;
         let hint_img_right = hint.right * sx;
-        let hint_img_bottom = (page_height - hint.bottom) * sy;
+        let hint_img_bottom = extended_bottom_pt * sy;
 
         // Find SLANeXT cells whose center falls within this table region.
         // Cell bboxes are in original image pixel coords (from SLANeXT decode).
@@ -592,10 +774,10 @@ pub(in crate::pdf::structure) fn recognize_tables_slanet(
             "SLANeXT: cells matched to table hint"
         );
 
-        // Filter words overlapping the table hint bbox.
+        // Filter words overlapping the (bottom-extended) table hint bbox.
         // HocrWord uses image coordinates (y=0 at top), so flip the hint's PDF y-coords.
         let hint_img_top = (page_height - hint.top).max(0.0);
-        let hint_img_bottom = (page_height - hint.bottom).max(0.0);
+        let hint_img_bottom = extended_bottom_pt;
 
         let table_words: Vec<&crate::pdf::table_reconstruct::HocrWord> = words
             .iter()
@@ -610,7 +792,8 @@ pub(in crate::pdf::structure) fn recognize_tables_slanet(
         // Build markdown by matching words to SLANeXT cells.
         // Cell bboxes are in image pixel coords; words are in PDF coords.
         // Convert cell bboxes to PDF coord space for matching.
-        let (grid, markdown) = build_slanet_cells_table(&matching_cells, num_rows, num_cols, &table_words, sx, sy);
+        let (grid, markdown, consumed_bottom) =
+            build_slanet_cells_table(&matching_cells, num_rows, num_cols, &table_words, sx, sy);
 
         if markdown.is_empty() {
             tracing::debug!(page = page_index, "SLANeXT: empty markdown output for table hint");
@@ -650,9 +833,11 @@ pub(in crate::pdf::structure) fn recognize_tables_slanet(
             page_height,
         );
 
+        // Bottom edge from the words actually consumed into the grid (mirrors
+        // the TATR path) so unconsumed text below the table is not suppressed.
         let bounding_box = Some(crate::types::BoundingBox {
             x0: hint.left as f64,
-            y0: hint.bottom as f64,
+            y0: table_bbox_bottom_from_consumed(consumed_bottom, hint.bottom, page_height),
             x1: hint.right as f64,
             y1: tightened_y1,
         });
@@ -681,9 +866,9 @@ fn build_slanet_cells_table(
     words: &[&crate::pdf::table_reconstruct::HocrWord],
     sx: f32,
     sy: f32,
-) -> (Vec<Vec<String>>, String) {
+) -> (Vec<Vec<String>>, String, Option<u32>) {
     if cells.is_empty() || num_rows == 0 || num_cols == 0 {
-        return (Vec::new(), String::new());
+        return (Vec::new(), String::new(), None);
     }
 
     // Renumber rows/cols to be 0-based relative to the filtered cell set.
@@ -717,6 +902,7 @@ fn build_slanet_cells_table(
 
     // Best-match word-to-cell assignment
     let mut word_assignments: Vec<(usize, usize, f32, f32)> = Vec::new();
+    let mut consumed_bottom: Option<u32> = None;
 
     for (wi, &word) in words.iter().enumerate() {
         let mut best_iow: f32 = 0.0;
@@ -734,6 +920,8 @@ fn build_slanet_cells_table(
             let cx = word.left as f32 + word.width as f32 / 2.0;
             let cy = word.top as f32 + word.height as f32 / 2.0;
             word_assignments.push((wi, best_cell_idx, cx, cy));
+            let word_bottom = word.top + word.height;
+            consumed_bottom = Some(consumed_bottom.map_or(word_bottom, |b| b.max(word_bottom)));
         }
     }
 
@@ -770,7 +958,7 @@ fn build_slanet_cells_table(
     }
 
     let markdown = render_grid_as_markdown(&grid);
-    (grid, markdown)
+    (grid, markdown, consumed_bottom)
 }
 
 /// Compute the adaptive column-gap threshold for a slice of `&HocrWord` references.
@@ -833,6 +1021,159 @@ fn compute_col_gap_for_word_refs(words: &[&crate::pdf::table_reconstruct::HocrWo
         20
     } else {
         30
+    }
+}
+
+/// Extend a table's bottom edge across word rows that continue its column structure.
+///
+/// The layout model's Table bbox often underestimates the table's bottom edge,
+/// cutting off the last rows (e.g. the final states on the NICS form). Words
+/// below the hint never reach table recognition — the TATR crop and the
+/// word-to-cell matching are both bounded by the hint — and the missing rows
+/// silently vanish from the output.
+///
+/// Strategy: learn the table's column x-positions from the words inside the
+/// hint (left edges for text columns, right edges for right-aligned numeric
+/// columns), then walk word rows strictly below the hint bottom in image-y
+/// order. A row continues the table while most of its words align with known
+/// column positions; the walk stops at the first non-aligned row so trailing
+/// paragraphs are never swallowed. Alignment is robust for dense many-column
+/// tables where inter-column gaps are too small for gap-based heuristics.
+/// The extension is capped at half the hinted table height.
+///
+/// All coordinates are in HocrWord space (PDF-point units, image-oriented y).
+/// Returns the extended bottom, `>= hint_img_bottom`.
+#[cfg(feature = "layout-detection")]
+fn extend_table_bottom_rows(
+    words: &[crate::pdf::table_reconstruct::HocrWord],
+    hint_left: f32,
+    hint_right: f32,
+    hint_img_top: f32,
+    hint_img_bottom: f32,
+    page_height: f32,
+) -> f32 {
+    /// Downward margin so the last continuation row's descenders stay inside the bbox.
+    const TABLE_BBOX_BOTTOM_EXTEND_MARGIN_PTS: u32 = 4;
+    /// The extension may grow the table by at most this fraction of its hinted height.
+    const MAX_EXTENSION_FRACTION: f32 = 0.5;
+    /// Column x-positions are quantized to bins of this width.
+    const X_BIN_PTS: u32 = 4;
+    /// A bin is a column position if words from at least this many rows hit it.
+    const MIN_BIN_COUNT: u32 = 3;
+    /// A row continues the table when at least this fraction of its words align.
+    const MIN_ALIGNED_FRACTION: f32 = 0.6;
+    /// Rows with fewer words than this are never treated as table rows.
+    const MIN_ROW_WORDS: usize = 3;
+
+    let horizontally_in_hint = |w: &crate::pdf::table_reconstruct::HocrWord| {
+        !w.text.trim().is_empty() && (w.left + w.width) as f32 >= hint_left && (w.left as f32) <= hint_right
+    };
+
+    // Learn column x-positions from the words inside the hint.
+    let in_hint: Vec<&crate::pdf::table_reconstruct::HocrWord> = words
+        .iter()
+        .filter(|w| horizontally_in_hint(w) && (w.top as f32) >= hint_img_top && (w.top as f32) < hint_img_bottom)
+        .collect();
+    if in_hint.len() < 4 {
+        return hint_img_bottom;
+    }
+
+    let mut left_bins: std::collections::HashMap<u32, u32> = std::collections::HashMap::new();
+    let mut right_bins: std::collections::HashMap<u32, u32> = std::collections::HashMap::new();
+    for w in &in_hint {
+        *left_bins.entry(w.left / X_BIN_PTS).or_insert(0) += 1;
+        *right_bins.entry((w.left + w.width) / X_BIN_PTS).or_insert(0) += 1;
+    }
+    // A word aligns with the table when its left edge starts at a known column
+    // start, or its right edge ends at a known column end (right-aligned
+    // numerics), allowing one bin of jitter.
+    let bin_hit = |bins: &std::collections::HashMap<u32, u32>, bin: u32| {
+        (bin.saturating_sub(1)..=bin + 1).any(|b| bins.get(&b).copied().unwrap_or(0) >= MIN_BIN_COUNT)
+    };
+    let word_aligns = |w: &crate::pdf::table_reconstruct::HocrWord| {
+        bin_hit(&left_bins, w.left / X_BIN_PTS) || bin_hit(&right_bins, (w.left + w.width) / X_BIN_PTS)
+    };
+
+    // Dense small-font tables (e.g. 6pt statistics forms) have a row pitch
+    // below a fixed tolerance, which would merge adjacent rows — derive the
+    // row-grouping tolerance from the word height instead.
+    let same_row_tolerance = {
+        let mut heights: Vec<u32> = in_hint.iter().map(|w| w.height).collect();
+        heights.sort_unstable();
+        (heights[heights.len() / 2] / 2).clamp(2, 5)
+    };
+
+    let hint_height = (hint_img_bottom - hint_img_top).max(0.0);
+    let max_bottom = (hint_img_bottom + hint_height * MAX_EXTENSION_FRACTION).min(page_height);
+
+    // Word rows strictly below the hint bottom, within the extension window.
+    let mut below: Vec<&crate::pdf::table_reconstruct::HocrWord> = words
+        .iter()
+        .filter(|w| horizontally_in_hint(w) && (w.top as f32) >= hint_img_bottom && (w.top as f32) < max_bottom)
+        .collect();
+    tracing::debug!(
+        hint_img_bottom,
+        max_bottom,
+        same_row_tolerance,
+        in_hint_words = in_hint.len(),
+        below_words = below.len(),
+        "extend_table_bottom_rows: calibration"
+    );
+    if below.is_empty() {
+        return hint_img_bottom;
+    }
+    below.sort_by_key(|w| w.top);
+
+    let mut extended_bottom = hint_img_bottom;
+    let mut row_start = 0_usize;
+    while row_start < below.len() {
+        let row_anchor = below[row_start].top;
+        let row_end = below[row_start..]
+            .iter()
+            .position(|w| w.top.saturating_sub(row_anchor) > same_row_tolerance)
+            .map(|p| row_start + p)
+            .unwrap_or(below.len());
+
+        let row_words = row_end - row_start;
+        let aligned = below[row_start..row_end].iter().filter(|w| word_aligns(w)).count();
+        let aligned_fraction = aligned as f32 / row_words as f32;
+        tracing::debug!(
+            row_anchor,
+            row_words,
+            aligned,
+            "extend_table_bottom_rows: row"
+        );
+        if row_words < MIN_ROW_WORDS || aligned_fraction < MIN_ALIGNED_FRACTION {
+            break;
+        }
+        let row_bottom = below[row_start..row_end]
+            .iter()
+            .map(|w| w.top + w.height)
+            .max()
+            .unwrap_or(row_anchor);
+        extended_bottom = ((row_bottom + TABLE_BBOX_BOTTOM_EXTEND_MARGIN_PTS) as f32).min(max_bottom);
+        row_start = row_end;
+    }
+
+    tracing::debug!(hint_img_bottom, extended_bottom, "extend_table_bottom_rows: result");
+    extended_bottom
+}
+
+/// Table bbox bottom edge (PDF y0) from the lowest word consumed into the grid.
+///
+/// Falls back to the raw hint bottom when the recognizer consumed no words.
+/// Using the consumed extent instead of the hint keeps
+/// `filter_segments_by_table_bboxes` from suppressing text the recognizer did
+/// not actually place in the table (the silent-text-loss failure mode).
+#[cfg(feature = "layout-detection")]
+fn table_bbox_bottom_from_consumed(consumed_bottom: Option<u32>, hint_bottom_pdf: f32, page_height: f32) -> f64 {
+    /// Small downward margin so the last row's descenders stay inside the bbox.
+    /// Mirrors `TABLE_BBOX_TOP_TIGHTEN_MARGIN_PTS` on the top edge.
+    const TABLE_BBOX_BOTTOM_MARGIN_PTS: u32 = 4;
+
+    match consumed_bottom {
+        Some(bottom) => (page_height - (bottom + TABLE_BBOX_BOTTOM_MARGIN_PTS) as f32).max(0.0) as f64,
+        None => hint_bottom_pdf as f64,
     }
 }
 
@@ -905,7 +1246,10 @@ fn tighten_table_bbox_top(
 #[cfg(test)]
 #[cfg(feature = "layout-detection")]
 mod tests {
-    use super::{compute_col_gap_for_word_refs, tighten_table_bbox_top};
+    use super::{
+        compute_col_gap_for_word_refs, extend_table_bottom_rows, table_bbox_bottom_from_consumed,
+        tighten_table_bbox_top,
+    };
     use crate::pdf::table_reconstruct::HocrWord;
 
     fn make_word(text: &str, left: u32, top: u32, width: u32, height: u32) -> HocrWord {
@@ -1033,5 +1377,99 @@ mod tests {
             col_gap, 60,
             "expected col_gap=60 (large-gap median/2 clamped), got {col_gap}"
         );
+    }
+
+    /// Build a nics-shaped page: a 4-column table whose hint bbox cuts off the
+    /// last rows. Column x-positions leave ~100pt gaps between columns.
+    fn four_column_row(y: u32) -> Vec<HocrWord> {
+        [50_u32, 200, 350, 500]
+            .iter()
+            .map(|&x| make_word("12,345", x, y, 60, 12))
+            .collect()
+    }
+
+    /// Rows below the hint that continue the table's column structure must
+    /// extend the bottom edge; the walk stops at the first prose row so
+    /// trailing paragraphs are never swallowed (mimics the NICS truncation:
+    /// Texas..Wyoming rows below the hint bottom).
+    #[test]
+    fn test_extend_bottom_covers_continuation_rows_and_stops_at_prose() {
+        let page_height = 800.0_f32;
+        let hint_left = 40.0_f32;
+        let hint_right = 580.0_f32;
+        let hint_img_top = 100.0_f32;
+        let hint_img_bottom = 400.0_f32;
+
+        let mut words: Vec<HocrWord> = Vec::new();
+        // In-hint table rows (calibration): 4 columns → 3 gaps per row.
+        for y in (120..390).step_by(30) {
+            words.extend(four_column_row(y));
+        }
+        // Continuation rows below the hint bottom (the cut-off states).
+        words.extend(four_column_row(410));
+        words.extend(four_column_row(440));
+        // Prose footnote row: multiple words at x-positions that do not align
+        // with any of the table's column starts/ends — ends the walk.
+        for x in [80_u32, 120, 240, 300, 440, 470] {
+            words.push(make_word("footnote", x, 480, 10, 12));
+        }
+        // Another structured row AFTER the prose row must NOT be included.
+        words.extend(four_column_row(520));
+
+        let extended =
+            extend_table_bottom_rows(&words, hint_left, hint_right, hint_img_top, hint_img_bottom, page_height);
+
+        // Last continuation row bottom = 440 + 12 = 452, +4 margin = 456.
+        assert_eq!(extended, 456.0, "expected extension to the last continuation row, got {extended}");
+    }
+
+    /// A hint with no rows below it stays unextended.
+    #[test]
+    fn test_extend_bottom_no_rows_below_returns_hint_bottom() {
+        let page_height = 800.0_f32;
+        let mut words: Vec<HocrWord> = Vec::new();
+        for y in (120..390).step_by(30) {
+            words.extend(four_column_row(y));
+        }
+
+        let extended = extend_table_bottom_rows(&words, 40.0, 580.0, 100.0, 400.0, page_height);
+        assert_eq!(extended, 400.0, "no continuation rows → bottom unchanged, got {extended}");
+    }
+
+    /// The extension is capped at half the hinted table height even when
+    /// structured rows continue beyond the cap.
+    #[test]
+    fn test_extend_bottom_capped_at_half_hint_height() {
+        let page_height = 2000.0_f32;
+        let hint_img_top = 100.0_f32;
+        let hint_img_bottom = 300.0_f32; // hint height 200 → cap at 300 + 100 = 400
+
+        let mut words: Vec<HocrWord> = Vec::new();
+        for y in (120..290).step_by(30) {
+            words.extend(four_column_row(y));
+        }
+        // Structured rows continuing far beyond the cap.
+        for y in (310..700).step_by(30) {
+            words.extend(four_column_row(y));
+        }
+
+        let extended = extend_table_bottom_rows(&words, 40.0, 580.0, hint_img_top, hint_img_bottom, page_height);
+        assert!(
+            extended <= 400.0,
+            "extension must be capped at hint_bottom + half hint height (400), got {extended}"
+        );
+        assert!(extended > 300.0, "cap must not prevent extension entirely, got {extended}");
+    }
+
+    /// The emitted bbox bottom must reflect consumed words, not the hint.
+    #[test]
+    fn test_table_bbox_bottom_from_consumed() {
+        let page_height = 800.0_f32;
+        // Lowest consumed word bottom at image-y 452 → PDF y0 = 800 − 456 = 344.
+        let y0 = table_bbox_bottom_from_consumed(Some(452), 200.0, page_height);
+        assert_eq!(y0, 344.0, "consumed bottom must drive y0, got {y0}");
+        // No consumed words → fall back to the hint bottom.
+        let fallback = table_bbox_bottom_from_consumed(None, 200.0, page_height);
+        assert_eq!(fallback, 200.0, "no consumed words → hint bottom, got {fallback}");
     }
 }
