@@ -56,19 +56,27 @@ fn error_to_error_kind(e: &Error) -> ErrorKind {
             } else if msg_lower.contains("partition_") && msg_lower.contains("not available") {
                 // unstructured: partition_X not available
                 ErrorKind::ConfigSetupError
-            } else if msg_lower.contains("tessdata") || msg_lower.contains("tesseract") && msg_lower.contains("not found") {
+            } else if msg_lower.contains("tessdata")
+                || msg_lower.contains("tesseract") && msg_lower.contains("not found")
+            {
                 // OCR: tessdata missing or tesseract not found
                 ErrorKind::ConfigSetupError
-            } else if msg_lower.contains("module") && (msg_lower.contains("not found") || msg_lower.contains("not installed")) {
+            } else if msg_lower.contains("module")
+                && (msg_lower.contains("not found") || msg_lower.contains("not installed"))
+            {
                 // Python: Module X not found / not installed
                 ErrorKind::ConfigSetupError
             } else if msg_lower.contains("import error") || msg_lower.contains("importerror") {
                 // Python import failures are often dependency issues
                 ErrorKind::ConfigSetupError
-            } else if msg_lower.contains("no such file") && (msg_lower.contains(".so") || msg_lower.contains(".dylib") || msg_lower.contains(".dll")) {
+            } else if msg_lower.contains("no such file")
+                && (msg_lower.contains(".so") || msg_lower.contains(".dylib") || msg_lower.contains(".dll"))
+            {
                 // Native library not found
                 ErrorKind::ConfigSetupError
-            } else if msg_lower.contains("failed to find") && (msg_lower.contains("model") || msg_lower.contains("library")) {
+            } else if msg_lower.contains("failed to find")
+                && (msg_lower.contains("model") || msg_lower.contains("library"))
+            {
                 // Generic model/library not found
                 ErrorKind::ConfigSetupError
             } else {

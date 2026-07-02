@@ -1493,7 +1493,10 @@ namespace this_thread {
                 // Replace std::mutex with TESSERACT_MUTEX_TYPE
                 .replace("std::mutex", "TESSERACT_MUTEX_TYPE")
                 // Replace std::lock_guard<TESSERACT_MUTEX_TYPE> with TESSERACT_LOCK_GUARD<TESSERACT_MUTEX_TYPE>
-                .replace("std::lock_guard<TESSERACT_MUTEX_TYPE>", "TESSERACT_LOCK_GUARD<TESSERACT_MUTEX_TYPE>")
+                .replace(
+                    "std::lock_guard<TESSERACT_MUTEX_TYPE>",
+                    "TESSERACT_LOCK_GUARD<TESSERACT_MUTEX_TYPE>",
+                )
                 // Replace std::thread with TESSERACT_THREAD_TYPE
                 .replace("std::thread", "TESSERACT_THREAD_TYPE")
                 // Replace std::this_thread with TESSERACT_THIS_THREAD

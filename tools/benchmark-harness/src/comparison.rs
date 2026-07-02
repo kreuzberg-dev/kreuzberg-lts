@@ -334,6 +334,9 @@ pub fn build_extraction_config(pipeline: Pipeline) -> xberg::ExtractionConfig {
             ocr: Some(xberg::core::config::OcrConfig {
                 backend: "tesseract".to_string(),
                 language: vec!["eng".to_string()],
+                // Content-based orientation rescue (Tesseract OSD) for pages that
+                // are still rotated after /Rotate metadata correction.
+                auto_rotate: true,
                 ..Default::default()
             }),
             ..base

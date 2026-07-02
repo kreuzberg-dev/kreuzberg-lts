@@ -445,9 +445,9 @@ pub(super) fn normalize_unicode_text(text: &str) -> Cow<'_, str> {
         return Cow::Borrowed(text);
     }
     Cow::Owned(
-        text.replace(['\u{2018}', '\u{2019}'], "'")  // curly single quotes
+        text.replace(['\u{2018}', '\u{2019}'], "'") // curly single quotes
             .replace(['\u{201C}', '\u{201D}'], "\"") // curly double quotes
-            .replace('\u{2044}', "/")  // fraction slash
+            .replace('\u{2044}', "/") // fraction slash
             .replace('\u{2022}', "\u{00B7}"), // bullet → middle dot
     )
 }

@@ -216,11 +216,30 @@ pub(in crate::pdf::structure) fn recognize_tables_for_native_page(
             continue;
         }
 
+        // Tighten the top edge of the bbox to the first row that has genuine
+        // column structure.  The hint top sometimes covers a metadata header
+        // above the table (e.g. ballot headers on election pages), causing
+        // filter_segments_by_table_bboxes to suppress those paragraphs.
+        let table_width = hint.right - hint.left;
+        let col_gap_for_tighten = compute_col_gap_for_word_refs(&table_words, table_width);
+        let tatr_num_cols = grid.first().map_or(0, |r| r.len());
+        // Require at least half the table's column gaps per row: header rows with
+        // 1–2 text blocks have fewer gaps than rows inside the actual table.
+        let min_column_gaps = (tatr_num_cols / 2).max(1);
+        let tightened_y1 = tighten_table_bbox_top(
+            &table_words,
+            (page_height - hint.top).max(0.0),
+            hint.top,
+            col_gap_for_tighten,
+            min_column_gaps,
+            page_height,
+        );
+
         let bounding_box = Some(crate::types::BoundingBox {
             x0: hint.left as f64,
             y0: hint.bottom as f64,
             x1: hint.right as f64,
-            y1: hint.top as f64,
+            y1: tightened_y1,
         });
 
         tables.push(Table {
@@ -615,11 +634,27 @@ pub(in crate::pdf::structure) fn recognize_tables_slanet(
             continue;
         }
 
+        // Tighten the top edge of the bbox to the first row that has genuine
+        // column structure (mirrors the same logic applied to the TATR path).
+        let table_width = hint.right - hint.left;
+        let col_gap_for_tighten = compute_col_gap_for_word_refs(&table_words, table_width);
+        let slanet_num_cols = grid.first().map_or(0, |r| r.len());
+        let min_column_gaps = (slanet_num_cols / 2).max(1);
+        // hint_img_top is (page_height - hint.top).max(0.0) — unpadded for SLANeXT.
+        let tightened_y1 = tighten_table_bbox_top(
+            &table_words,
+            hint_img_top,
+            hint.top,
+            col_gap_for_tighten,
+            min_column_gaps,
+            page_height,
+        );
+
         let bounding_box = Some(crate::types::BoundingBox {
             x0: hint.left as f64,
             y0: hint.bottom as f64,
             x1: hint.right as f64,
-            y1: hint.top as f64,
+            y1: tightened_y1,
         });
 
         tables.push(Table {
@@ -736,4 +771,271 @@ fn build_slanet_cells_table(
 
     let markdown = render_grid_as_markdown(&grid);
     (grid, markdown)
+}
+
+/// Compute the adaptive column-gap threshold for a slice of `&HocrWord` references.
+///
+/// Mirrors the logic in `tables::compute_adaptive_column_gap` for borrowed slices.
+#[cfg(feature = "layout-detection")]
+fn compute_col_gap_for_word_refs(
+    words: &[&crate::pdf::table_reconstruct::HocrWord],
+    table_width: f32,
+) -> u32 {
+    let mut gaps: Vec<u32> = Vec::new();
+
+    if words.len() >= 4 {
+        let mut heights: Vec<u32> = words.iter().map(|w| w.height).collect();
+        heights.sort_unstable();
+        let median_h = heights[heights.len() / 2];
+        let row_tolerance = (median_h / 2).max(3);
+
+        let mut sorted: Vec<(u32, u32, u32)> = words
+            .iter()
+            .map(|w| {
+                let yc = w.top + w.height / 2;
+                (yc, w.left, w.left + w.width)
+            })
+            .collect();
+        sorted.sort_by_key(|&(yc, x, _)| (yc, x));
+
+        let mut row_start = 0;
+        while row_start < sorted.len() {
+            let row_yc = sorted[row_start].0;
+            let mut row_end = row_start + 1;
+            while row_end < sorted.len()
+                && sorted[row_end].0.abs_diff(row_yc) <= row_tolerance
+            {
+                row_end += 1;
+            }
+            for i in row_start + 1..row_end {
+                let prev_right = sorted[i - 1].2;
+                let curr_left = sorted[i].1;
+                if curr_left > prev_right {
+                    gaps.push(curr_left - prev_right);
+                }
+            }
+            row_start = row_end;
+        }
+    }
+
+    if gaps.len() >= 3 {
+        gaps.sort_unstable();
+        let large_gaps: Vec<u32> = gaps.iter().copied().filter(|&g| g >= 40).collect();
+        if !large_gaps.is_empty() {
+            let median_gap = large_gaps[large_gaps.len() / 2];
+            return (median_gap / 2).clamp(20, 60);
+        } else {
+            let median_gap = gaps[gaps.len() / 2];
+            return (median_gap * 3).clamp(20, 60);
+        }
+    }
+
+    if table_width < 200.0 {
+        10
+    } else if table_width < 400.0 {
+        15
+    } else if table_width < 600.0 {
+        20
+    } else {
+        30
+    }
+}
+
+/// Tighten the table bounding-box top edge to the first row with genuine column structure.
+///
+/// The layout model hint bbox often extends above the actual table grid to cover
+/// an adjacent header/metadata block (e.g. "Precinct RUN 12/3/2014" on election
+/// pages).  Using raw `hint.top` as `bbox.y1` causes
+/// `filter_segments_by_table_bboxes` to suppress those header paragraphs, making
+/// them invisible in the extraction output.
+///
+/// Strategy: walk word rows in image-y order (ascending = top-of-page first).
+/// The first row whose words span at least `min_column_gaps` gaps ≥ `col_gap` is
+/// the first genuine table content row.  Setting `min_column_gaps` to
+/// `(num_table_cols / 2).max(1)` lets header rows with 1–2 text blocks pass
+/// through while still accepting sparse table rows.
+///
+/// Returns the tightened PDF y coordinate (≤ `hint_top_pdf`).
+#[cfg(feature = "layout-detection")]
+fn tighten_table_bbox_top(
+    table_words: &[&crate::pdf::table_reconstruct::HocrWord],
+    unpadded_hint_img_top: f32,
+    hint_top_pdf: f32,
+    col_gap: u32,
+    min_column_gaps: usize,
+    page_height: f32,
+) -> f64 {
+    /// Small upward margin (image pts) added to the first-row top so that the
+    /// row's own top edge is fully inside the bbox.  Must match the constant
+    /// `TABLE_BBOX_TOP_TIGHTEN_MARGIN_PTS` in `tables.rs`.
+    const TABLE_BBOX_TOP_TIGHTEN_MARGIN_PTS: u32 = 4;
+    const SAME_ROW_TOLERANCE_PTS: u32 = 5;
+
+    let mut sorted: Vec<&crate::pdf::table_reconstruct::HocrWord> =
+        table_words.iter().copied().collect();
+    sorted.sort_by_key(|w| w.top);
+
+    let mut first_table_row_top: Option<u32> = None;
+    let mut row_start = 0_usize;
+    while row_start < sorted.len() {
+        let row_anchor = sorted[row_start].top;
+        let row_end = sorted[row_start..]
+            .iter()
+            .position(|w| w.top.saturating_sub(row_anchor) > SAME_ROW_TOLERANCE_PTS)
+            .map(|p| row_start + p)
+            .unwrap_or(sorted.len());
+
+        let mut left_rights: Vec<(u32, u32)> = sorted[row_start..row_end]
+            .iter()
+            .map(|w| (w.left, w.left + w.width))
+            .collect();
+        left_rights.sort_by_key(|&(l, _)| l);
+        let n_col_gaps = left_rights
+            .windows(2)
+            .filter(|pair| pair[1].0.saturating_sub(pair[0].1) >= col_gap)
+            .count();
+        if n_col_gaps >= min_column_gaps {
+            first_table_row_top = Some(row_anchor);
+            break;
+        }
+        row_start = row_end;
+    }
+
+    let img_top = first_table_row_top.unwrap_or(unpadded_hint_img_top as u32);
+    let img_top_with_margin = img_top.saturating_sub(TABLE_BBOX_TOP_TIGHTEN_MARGIN_PTS);
+    let pdf_top = page_height - img_top_with_margin as f32;
+    // Never extend the bbox beyond the original hint top.
+    (pdf_top as f64).min(hint_top_pdf as f64)
+}
+
+#[cfg(test)]
+#[cfg(feature = "layout-detection")]
+mod tests {
+    use super::{compute_col_gap_for_word_refs, tighten_table_bbox_top};
+    use crate::pdf::table_reconstruct::HocrWord;
+
+    fn make_word(text: &str, left: u32, top: u32, width: u32, height: u32) -> HocrWord {
+        HocrWord {
+            text: text.to_string(),
+            left,
+            top,
+            width,
+            height,
+            confidence: 95.0,
+        }
+    }
+
+    /// Verifies that a two-text-block header row (1 column gap) is skipped when
+    /// `min_column_gaps = 2` (4-column table), and the first genuine table row
+    /// (3 column gaps) is found instead.
+    ///
+    /// Models the la-precinct-bulletin-2014-p1 regression: the ballot header had
+    /// two text blocks at widely-separated x positions, giving it a 181 pt gap
+    /// that exceeded the col_gap threshold — making it look like a table row
+    /// under the old `min_column_gaps = 1` logic.
+    #[test]
+    fn test_tighten_skips_two_block_header_finds_four_column_table_row() {
+        let page_height = 612.0_f32;
+
+        // Header row at image-y = 16 (two text blocks, 181 pt gap between them)
+        let header_precinct = make_word("Precinct", 34, 16, 47, 10); // right=81
+        let header_registrar = make_word("REGISTRAR", 262, 16, 90, 10); // left=262, gap=181
+
+        // Table first row at image-y = 86 (4 columns → 3 gaps)
+        let col1 = make_word("GOVERNOR", 33, 86, 47, 10); // right=80
+        let col2 = make_word("COLUMN2", 217, 86, 70, 10); // left=217 right=287 gap=137
+        let col3 = make_word("COLUMN3", 400, 86, 70, 10); // left=400 right=470 gap=113
+        let col4 = make_word("COLUMN4", 580, 86, 70, 10); // left=580 gap=110
+
+        let all_words: Vec<&HocrWord> =
+            vec![&header_precinct, &header_registrar, &col1, &col2, &col3, &col4];
+
+        // col_gap = 30 (any gap > 30 counts); min_column_gaps = 2 (4-col table)
+        // hint top in PDF coords = page_height - 16 = 596.0
+        let hint_img_top = (page_height - 596.0_f32).max(0.0); // = 16.0
+        let result = tighten_table_bbox_top(
+            &all_words,
+            hint_img_top,
+            596.0,
+            30,
+            2, // min_column_gaps for a 4-column table
+            page_height,
+        );
+
+        // Expected: first table row at img-y=86, margin=4 → img_top_margin=82
+        // pdf_top = 612 - 82 = 530.0; tightened_y1 = min(530.0, 596.0) = 530.0
+        assert!(
+            (result - 530.0).abs() < 1.0,
+            "expected tightened_y1 ≈ 530.0, got {result}"
+        );
+    }
+
+    /// When `min_column_gaps = 1` (2-column table), a two-block header is
+    /// accepted as the first table row — tightening stops there, which is the
+    /// correct behaviour for tables that look exactly like a 2-block row.
+    #[test]
+    fn test_tighten_two_column_table_accepts_first_gap_row() {
+        let page_height = 612.0_f32;
+
+        // "Header" row with 2 text blocks at image-y = 16
+        let block_a = make_word("LEFT", 10, 16, 60, 10); // right=70
+        let block_b = make_word("RIGHT", 200, 16, 60, 10); // gap=130
+
+        let all_words: Vec<&HocrWord> = vec![&block_a, &block_b];
+
+        let hint_img_top = (page_height - 596.0_f32).max(0.0); // = 16.0
+        let result = tighten_table_bbox_top(
+            &all_words,
+            hint_img_top,
+            596.0,
+            30,
+            1, // min_column_gaps = 1 → first gap row accepted
+            page_height,
+        );
+
+        // First row (img-y=16) qualifies → img_top_margin = 16-4 = 12
+        // pdf_top = 612-12 = 600.0; clamped to min(600.0, 596.0) = 596.0
+        assert!(
+            (result - 596.0).abs() < 1.0,
+            "expected tightened_y1 ≈ 596.0 (no tightening past hint), got {result}"
+        );
+    }
+
+    /// When no words meet the min-column-gaps threshold, the function falls back
+    /// to `unpadded_hint_img_top` — bbox top stays at the original hint top.
+    #[test]
+    fn test_tighten_no_qualifying_row_falls_back_to_hint_top() {
+        let page_height = 612.0_f32;
+
+        // All words in a single narrow group (no column gaps)
+        let w1 = make_word("word1", 10, 20, 40, 10);
+        let w2 = make_word("word2", 55, 20, 40, 10); // gap = 5, < col_gap=30
+
+        let all_words: Vec<&HocrWord> = vec![&w1, &w2];
+        let hint_img_top = (page_height - 592.0_f32).max(0.0); // =20.0
+        let result = tighten_table_bbox_top(&all_words, hint_img_top, 592.0, 30, 2, page_height);
+
+        // No row qualifies → fallback: img_top=20, margin=4, img_top_margin=16
+        // pdf_top = 612-16 = 596.0; clamped to min(596.0, 592.0) = 592.0
+        assert!(
+            (result - 592.0).abs() < 1.0,
+            "expected fallback to hint_top_pdf=592.0, got {result}"
+        );
+    }
+
+    #[test]
+    fn test_compute_col_gap_for_word_refs_returns_sensible_gap() {
+        let page_height = 800.0_f32;
+        // 4 words in 2 columns on 1 row, large inter-column gap ≈ 200pt
+        let w1 = make_word("A", 10, 10, 40, 10);
+        let w2 = make_word("B", 60, 10, 40, 10); // small intra-col gap = 10
+        let w3 = make_word("C", 300, 10, 40, 10); // inter-col gap = 200
+        let w4 = make_word("D", 350, 10, 40, 10); // small intra-col gap = 10
+        let _ = page_height;
+
+        let words: Vec<&HocrWord> = vec![&w1, &w2, &w3, &w4];
+        let col_gap = compute_col_gap_for_word_refs(&words, 400.0);
+        // Large gaps are ≥40; here 200 > 40. median_gap=200, threshold=100 → clamped to 60.
+        assert_eq!(col_gap, 60, "expected col_gap=60 (large-gap median/2 clamped), got {col_gap}");
+    }
 }

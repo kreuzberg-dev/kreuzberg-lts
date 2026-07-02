@@ -170,11 +170,7 @@ fn build_bindings_for_one_pdfium_release(release: &str) -> Result<(), BuildError
             // the built crate whenever any of the included header files change.
             .clang_args(
                 // Try to keep original C++ comments for docs.
-                [
-                    "-fretain-comments-from-system-headers",
-                    "-fparse-all-comments",
-                ]
-                .iter(),
+                ["-fretain-comments-from-system-headers", "-fparse-all-comments"].iter(),
             )
             .generate_comments(true);
 
