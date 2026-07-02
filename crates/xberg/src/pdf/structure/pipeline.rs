@@ -432,14 +432,25 @@ fn blocks_to_paragraphs(
     let mut paragraphs: Vec<PdfParagraph> = Vec::new();
     let mut current_lines: Vec<&SegmentData> = Vec::new();
 
-    for line in &lines {
+    for (line_idx, line) in lines.iter().enumerate() {
         let should_break = if current_lines.is_empty() {
             false
         } else {
             let prev = current_lines.last().unwrap();
             let font_change = (line.font_size - prev.font_size).abs() > 1.5;
             let bold_change = line.is_bold != prev.is_bold;
-            let is_list = looks_like_list_item(&line.text);
+            // A list item starts either with a full "marker + text" segment or with a
+            // bare marker segment ("1.", "a)", "•") whose item text is a separate span
+            // on the same line — common when word processors emit the numbering as its
+            // own text run. A bare marker only counts when it starts a NEW visual line
+            // (baseline change from prev) AND its item text follows on the same line,
+            // so mid-prose spans like a footnote "1." cannot split paragraphs.
+            let starts_new_line = (line.baseline_y - prev.baseline_y).abs() > 0.5;
+            let has_same_line_follower = lines
+                .get(line_idx + 1)
+                .is_some_and(|next| (next.baseline_y - line.baseline_y).abs() <= 0.5);
+            let is_list = looks_like_list_item(&line.text)
+                || (starts_new_line && has_same_line_follower && is_bare_list_marker(&line.text));
             // Segment gap: a paragraph break exists between prev and current
             // if a gap_y falls between their baselines.
             let crossed_gap = paragraph_gap_ys.iter().any(|&gap_y| {
@@ -727,6 +738,33 @@ fn finalize_paragraph(
     })
 }
 
+/// Check if text is ENTIRELY a list marker with no item text after it.
+///
+/// Word processors often emit list numbering as its own text run, so the
+/// marker ("1.", "a)", "(2)", "•") and the item body arrive as separate
+/// spans on the same line. `looks_like_list_item` rejects those markers
+/// because it requires trailing text; this predicate accepts them.
+fn is_bare_list_marker(text: &str) -> bool {
+    let t = text.trim();
+    if t.is_empty() || t.chars().count() > 5 {
+        return false;
+    }
+    // Bare bullet characters.
+    if matches!(t, "•" | "·" | "◦" | "▪" | "–" | "—" | "-" | "*") {
+        return true;
+    }
+    // "(1)" / "(a)" parenthesized markers.
+    if let Some(inner) = t.strip_prefix('(').and_then(|r| r.strip_suffix(')')) {
+        return !inner.is_empty() && inner.chars().all(|c| c.is_alphanumeric());
+    }
+    // "1." / "12)" / "a." / "b)" — at most 2 alphanumerics + '.' or ')'.
+    // Longer bodies ("etc.", "Inc.") are prose abbreviations, not markers.
+    if let Some(body) = t.strip_suffix('.').or_else(|| t.strip_suffix(')')) {
+        return !body.is_empty() && body.chars().count() <= 2 && body.chars().all(|c| c.is_alphanumeric());
+    }
+    false
+}
+
 /// Check if text starts with a common list marker.
 fn looks_like_list_item(text: &str) -> bool {
     let t = text.trim_start();
@@ -761,8 +799,10 @@ fn looks_like_list_item(text: &str) -> bool {
             }
             if chars.peek() == Some(&')') {
                 chars.next();
-                // Must be followed by space then an alphabetic character
-                return chars.peek() == Some(&' ') && {
+                // Must be followed by whitespace then an alphabetic character.
+                // Newlines count: paragraph text joins same-line spans with '\n',
+                // so "(1)\nItem" is a marker + item-text pair.
+                return chars.peek().is_some_and(|c| c.is_whitespace()) && {
                     chars.next();
                     chars.peek().is_some_and(|c| c.is_alphabetic())
                 };
@@ -772,8 +812,10 @@ fn looks_like_list_item(text: &str) -> bool {
     }
 
     // "1." / "1)" / "a." / "a)" etc.
-    // Exclude section heading patterns: "I. INTRODUCTION", "II. BASICS" etc.
-    if super::classify::is_section_pattern(t) {
+    // Exclude numbered SECTION HEADINGS ("IV. RESULTS", "3.2 Methods",
+    // "1. INTRODUCTION") but keep genuine numbered list items
+    // ("1. First point") classifiable as lists.
+    if super::classify::is_numbered_section_heading(t) {
         return false;
     }
 
@@ -785,7 +827,9 @@ fn looks_like_list_item(text: &str) -> bool {
         }
         if num_len <= 4 && (chars.peek() == Some(&'.') || chars.peek() == Some(&')')) {
             chars.next();
-            return chars.peek() == Some(&' ') && {
+            // Whitespace includes '\n': paragraph text joins same-line spans with
+            // '\n', so "1.\nÉnumération" is a marker + item-text pair.
+            return chars.peek().is_some_and(|c| c.is_whitespace()) && {
                 chars.next();
                 chars.peek().is_some_and(|c| c.is_alphabetic())
             };
@@ -2771,5 +2815,43 @@ mod tests {
                 );
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod list_marker_tests {
+    use super::{is_bare_list_marker, looks_like_list_item};
+
+    #[test]
+    fn bare_markers_are_detected() {
+        assert!(is_bare_list_marker("1."));
+        assert!(is_bare_list_marker("12)"));
+        assert!(is_bare_list_marker("a)"));
+        assert!(is_bare_list_marker("(2)"));
+        assert!(is_bare_list_marker("•"));
+    }
+
+    #[test]
+    fn prose_fragments_are_not_bare_markers() {
+        assert!(!is_bare_list_marker("etc."));
+        assert!(!is_bare_list_marker("Inc."));
+        assert!(!is_bare_list_marker("Item"));
+        assert!(!is_bare_list_marker(""));
+    }
+
+    #[test]
+    fn newline_separated_marker_and_text_is_a_list_item() {
+        // Paragraph text joins same-line spans with '\n' — the marker + item
+        // pattern must still be recognisable.
+        assert!(looks_like_list_item("1.\nÉnumération 1"));
+        assert!(looks_like_list_item("1. First point"));
+        assert!(looks_like_list_item("(2)\nsecond item"));
+    }
+
+    #[test]
+    fn section_headings_are_not_list_items() {
+        assert!(!looks_like_list_item("3.2 Methods"));
+        assert!(!looks_like_list_item("IV. Results"));
+        assert!(!looks_like_list_item("1. INTRODUCTION"));
     }
 }

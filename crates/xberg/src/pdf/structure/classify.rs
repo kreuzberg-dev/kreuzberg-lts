@@ -816,6 +816,74 @@ pub(super) fn is_section_pattern(text: &str) -> bool {
     starts_with_section_number(t)
 }
 
+/// Check if text starts like a numbered SECTION HEADING as opposed to a list item.
+///
+/// `is_section_pattern` treats ANY leading number as a section marker, which
+/// makes numbered list items ("1. First point") unclassifiable as lists. This
+/// tighter predicate only flags patterns that are reliably headings:
+/// - multi-level numbering: "3.2 Methods", "3.2.1 Details"
+/// - roman-numeral markers: "IV. Results", "II) Scope"
+/// - single number with an ALL-CAPS remainder: "1. INTRODUCTION"
+///
+/// A single-level number followed by mixed-case text ("1. Énumération") is a
+/// list item and returns `false`.
+pub(super) fn is_numbered_section_heading(text: &str) -> bool {
+    let t = text.trim();
+    let bytes = t.as_bytes();
+    if bytes.is_empty() {
+        return false;
+    }
+
+    // Roman-numeral markers are section headings.
+    let roman_chars: &[u8] = b"IVXLCDM";
+    let roman_end = bytes.iter().position(|b| !roman_chars.contains(b)).unwrap_or(0);
+    if roman_end > 0
+        && roman_end < bytes.len()
+        && matches!(bytes[roman_end], b'.' | b' ' | b')')
+        && is_valid_roman(&t[..roman_end])
+    {
+        return true;
+    }
+
+    // Parse leading arabic numbering, counting dot-separated levels.
+    // idx only ever advances over ASCII bytes, so slicing `t` at it is safe.
+    let mut levels = 0usize;
+    let mut idx = 0usize;
+    loop {
+        let digit_len = bytes[idx..]
+            .iter()
+            .position(|b| !b.is_ascii_digit())
+            .unwrap_or(bytes.len() - idx);
+        if digit_len == 0 {
+            break;
+        }
+        levels += 1;
+        idx += digit_len;
+        if bytes.get(idx) == Some(&b'.') && bytes.get(idx + 1).is_some_and(|b| b.is_ascii_digit()) {
+            idx += 1; // consume the level separator and parse the next group
+        } else {
+            break;
+        }
+    }
+    if levels == 0 {
+        return false;
+    }
+    if levels >= 2 {
+        return true; // "3.2 Methods" / "3.2.1 Details"
+    }
+
+    // Single-level marker: consume the trailing '.' / ')' and inspect the remainder.
+    if matches!(bytes.get(idx), Some(b'.') | Some(b')')) {
+        idx += 1;
+    }
+    let remainder = t[idx..].trim_start();
+    remainder.chars().any(|c| c.is_alphabetic())
+        && remainder
+            .chars()
+            .filter(|c| c.is_alphabetic())
+            .all(|c| c.is_uppercase())
+}
+
 /// Check if text starts with a section number pattern (e.g., "1 ", "2.1 ", "A.", "III.").
 pub(super) fn starts_with_section_number(text: &str) -> bool {
     let trimmed = text.trim();
@@ -2588,5 +2656,45 @@ mod tests {
                 "page {i} short repeating text should be furniture"
             );
         }
+    }
+}
+
+#[cfg(test)]
+mod numbered_section_heading_tests {
+    use super::is_numbered_section_heading;
+
+    #[test]
+    fn multilevel_numbers_are_headings() {
+        assert!(is_numbered_section_heading("3.2 Methods"));
+        assert!(is_numbered_section_heading("3.2.1 Details"));
+        assert!(is_numbered_section_heading("3.2. Methods"));
+    }
+
+    #[test]
+    fn roman_markers_are_headings() {
+        assert!(is_numbered_section_heading("IV. Results"));
+        assert!(is_numbered_section_heading("II) Scope"));
+        assert!(is_numbered_section_heading("I INTRODUCTION"));
+    }
+
+    #[test]
+    fn single_number_with_all_caps_remainder_is_heading() {
+        assert!(is_numbered_section_heading("1. INTRODUCTION"));
+        assert!(is_numbered_section_heading("2) RELATED WORK"));
+    }
+
+    #[test]
+    fn numbered_list_items_are_not_headings() {
+        assert!(!is_numbered_section_heading("1. First point"));
+        assert!(!is_numbered_section_heading("1. Énumération 1"));
+        assert!(!is_numbered_section_heading("12) apples and oranges"));
+        assert!(!is_numbered_section_heading("1.\nÉnumération 1"));
+    }
+
+    #[test]
+    fn non_numbered_text_is_not_a_heading_marker() {
+        assert!(!is_numbered_section_heading("Introduction"));
+        assert!(!is_numbered_section_heading(""));
+        assert!(!is_numbered_section_heading("1."));
     }
 }

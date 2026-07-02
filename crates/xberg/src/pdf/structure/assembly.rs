@@ -141,7 +141,7 @@ fn assemble_page_elements(builder: &mut InternalDocumentBuilder, paragraphs: &[P
 
         // Manage list container markers
         if para.is_list_item && !in_list {
-            builder.push_list(false);
+            builder.push_list(list_item_is_ordered(para));
             in_list = true;
         } else if !para.is_list_item && in_list {
             builder.end_list();
@@ -229,7 +229,7 @@ fn assemble_page_elements_with_tables(
             PageElement::Paragraph(para_idx, para) => {
                 // Manage list container markers
                 if para.is_list_item && !in_list {
-                    builder.push_list(false);
+                    builder.push_list(list_item_is_ordered(para));
                     in_list = true;
                 } else if !para.is_list_item && in_list {
                     builder.end_list();
@@ -332,6 +332,9 @@ fn push_paragraph_element(builder: &mut InternalDocumentBuilder, para: &PdfParag
 
     if para.is_list_item {
         let text = get_text(para);
+        // Numbered markers ("1." / "3)") make this an ordered list item so the
+        // renderer emits "1." markers instead of degrading to bullets.
+        let ordered = list_item_is_ordered(para);
         let normalized = normalize_list_text(&text);
         // For full-text path, block-level bold annotation; for structure tree, extract inline annotations
         let annotations = if !para.text.is_empty() && para.is_bold {
@@ -346,7 +349,7 @@ fn push_paragraph_element(builder: &mut InternalDocumentBuilder, para: &PdfParag
         } else {
             vec![]
         };
-        return builder.push_list_item(&normalized, false, annotations, page, bbox);
+        return builder.push_list_item(&normalized, ordered, annotations, page, bbox);
     }
 
     if para.is_page_furniture {
@@ -595,6 +598,29 @@ fn collapse_inner_spaces(line: &str) -> String {
         }
     }
     result
+}
+
+/// True when a list-item paragraph carries a numbered marker ("1." / "3)").
+///
+/// Determines both the item's `ordered` flag and the ordered-ness of the list
+/// container opened for a run of items, so numbered lists render as "1." /
+/// "2." instead of degrading to bullets.
+fn list_item_is_ordered(para: &PdfParagraph) -> bool {
+    let first_line_text;
+    let text = if !para.text.is_empty() {
+        para.text.as_str()
+    } else {
+        first_line_text = para
+            .lines
+            .first()
+            .and_then(|l| l.segments.first())
+            .map(|s| s.text.clone())
+            .unwrap_or_default();
+        first_line_text.as_str()
+    };
+    let t = text.trim_start();
+    let digit_end = t.bytes().position(|b| !b.is_ascii_digit()).unwrap_or(0);
+    digit_end > 0 && matches!(t.as_bytes().get(digit_end), Some(b'.') | Some(b')'))
 }
 
 /// Normalize list item text: strip bullet/number prefixes and return clean text.

@@ -430,8 +430,10 @@ fn looks_like_list_item(text: &str) -> bool {
     }
 
     // "1." / "1)" / "a." / "a)" etc.
-    // Exclude section heading patterns: "I. INTRODUCTION", "II. BASICS" etc.
-    if super::classify::is_section_pattern(t) {
+    // Exclude numbered SECTION HEADINGS ("IV. RESULTS", "3.2 Methods",
+    // "1. INTRODUCTION") but keep genuine numbered list items
+    // ("1. First point") classifiable as lists.
+    if super::classify::is_numbered_section_heading(t) {
         return false;
     }
 
