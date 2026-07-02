@@ -177,14 +177,14 @@ wheels = [
 
 [[package]]
 name = "xberg"
-version = "1.0.0rc1"
+version = "1.0.0rc2"
 source = { directory = "../../packages/python" }
 
 [package.metadata]
 
 [package.metadata.requires-dev]
 dev = [
-    { name = "mypy", specifier = ">=1.19" },
+    { name = "pyrefly", specifier = ">=1.1.1" },
     { name = "ruff", specifier = ">=0.14.8" },
 ]
 

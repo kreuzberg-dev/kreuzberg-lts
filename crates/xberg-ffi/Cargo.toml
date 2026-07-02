@@ -1,6 +1,6 @@
 [package]
 name = "xberg-ffi"
-version = "1.0.0-rc.2"
+version = "1.0.0-rc.3"
 edition = "2021"
 license = "MIT"
 description = "High-performance document intelligence library"
@@ -161,7 +161,7 @@ serde_json = "1"
 tokio = { version = "1", features = ["full"] }
 
 [target.'cfg(not(any(target_os = "android", target_os = "ios", target_os = "windows")))'.dependencies]
-xberg = { path = "../xberg", version = "1.0.0-rc.2", features = [
+xberg = { path = "../xberg", version = "1.0.0-rc.3", features = [
     "full",
     "pdf",
     "ocr",
@@ -209,13 +209,13 @@ xberg = { path = "../xberg", version = "1.0.0-rc.2", features = [
 ] }
 
 [target.'cfg(target_os = "android")'.dependencies]
-xberg = { path = "../xberg", version = "1.0.0-rc.2", features = ["android-target"] }
+xberg = { path = "../xberg", version = "1.0.0-rc.3", features = ["android-target"] }
 
 [target.'cfg(target_os = "ios")'.dependencies]
-xberg = { path = "../xberg", version = "1.0.0-rc.2", features = ["android-target"] }
+xberg = { path = "../xberg", version = "1.0.0-rc.3", features = ["android-target"] }
 
 [target.'cfg(target_os = "windows")'.dependencies]
-xberg = { path = "../xberg", version = "1.0.0-rc.2", features = ["windows-target"] }
+xberg = { path = "../xberg", version = "1.0.0-rc.3", features = ["windows-target"] }
 
 
 [build-dependencies]

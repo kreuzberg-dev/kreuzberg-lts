@@ -1,28 +1,20 @@
 {
-	"name": "@xberg-io/xberg-linux-arm64-gnu",
-	"version": "1.0.0-rc.2",
-	"license": "MIT",
-	"repository": {
-		"type": "git",
-		"url": "git+https://github.com/xberg-io/xberg.git"
-	},
-	"files": [
-		"xberg-node.linux-arm64-gnu.node"
-	],
-	"os": [
-		"linux"
-	],
-	"cpu": [
-		"arm64"
-	],
-	"libc": [
-		"glibc"
-	],
-	"main": "xberg-node.linux-arm64-gnu.node",
-	"publishConfig": {
-		"access": "public"
-	},
-	"engines": {
-		"node": ">= 22"
-	}
+  "name": "@xberg-io/xberg-linux-arm64-gnu",
+  "version": "1.0.0-rc.3",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/xberg-io/xberg.git"
+  },
+  "files": ["xberg-node.linux-arm64-gnu.node"],
+  "os": ["linux"],
+  "cpu": ["arm64"],
+  "libc": ["glibc"],
+  "main": "xberg-node.linux-arm64-gnu.node",
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "node": ">= 22"
+  }
 }

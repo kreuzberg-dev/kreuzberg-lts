@@ -1,62 +1,58 @@
 {
-	"name": "@xberg-io/xberg",
-	"version": "1.0.0-rc.2",
-	"description": "High-performance document intelligence library",
-	"license": "MIT",
-	"repository": {
-		"type": "git",
-		"url": "git+https://github.com/xberg-io/xberg.git"
-	},
-	"files": [
-		"index.js",
-		"index.d.ts",
-		"*.node"
-	],
-	"main": "index.js",
-	"types": "index.d.ts",
-	"exports": {
-		".": {
-			"types": "./index.d.ts",
-			"require": "./index.js",
-			"default": "./index.js"
-		}
-	},
-	"publishConfig": {
-		"access": "public"
-	},
-	"scripts": {
-		"build": "npx --yes -p @napi-rs/cli@^3.6.2 napi build --platform --release",
-		"artifacts": "npx --yes -p @napi-rs/cli@^3.6.2 napi artifacts",
-		"prepublishOnly": "npx --yes -p @napi-rs/cli@^3.6.2 napi prepublish -t npm --skip-optional-publish"
-	},
-	"devDependencies": {
-		"@napi-rs/cli": "^3.6.2"
-	},
-	"optionalDependencies": {
-		"@xberg-io/xberg-darwin-arm64": "1.0.0-rc.2",
-		"@xberg-io/xberg-darwin-x64": "1.0.0-rc.2",
-		"@xberg-io/xberg-linux-arm64-gnu": "1.0.0-rc.2",
-		"@xberg-io/xberg-linux-arm64-musl": "1.0.0-rc.2",
-		"@xberg-io/xberg-linux-x64-gnu": "1.0.0-rc.2",
-		"@xberg-io/xberg-linux-x64-musl": "1.0.0-rc.2",
-		"@xberg-io/xberg-win32-arm64-msvc": "1.0.0-rc.2",
-		"@xberg-io/xberg-win32-x64-msvc": "1.0.0-rc.2"
-	},
-	"napi": {
-		"binaryName": "xberg-node",
-		"packageName": "@xberg-io/xberg",
-		"targets": [
-			"x86_64-unknown-linux-gnu",
-			"aarch64-unknown-linux-gnu",
-			"x86_64-unknown-linux-musl",
-			"aarch64-unknown-linux-musl",
-			"x86_64-apple-darwin",
-			"aarch64-apple-darwin",
-			"x86_64-pc-windows-msvc",
-			"aarch64-pc-windows-msvc"
-		]
-	},
-	"engines": {
-		"node": ">= 22"
-	}
+  "name": "@xberg-io/xberg",
+  "version": "1.0.0-rc.3",
+  "description": "High-performance document intelligence library",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/xberg-io/xberg.git"
+  },
+  "files": ["index.js", "index.d.ts", "*.node"],
+  "main": "index.js",
+  "types": "index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./index.d.ts",
+      "require": "./index.js",
+      "default": "./index.js"
+    }
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "npx --yes -p @napi-rs/cli@^3.6.2 napi build --platform --release",
+    "artifacts": "npx --yes -p @napi-rs/cli@^3.6.2 napi artifacts",
+    "prepublishOnly": "npx --yes -p @napi-rs/cli@^3.6.2 napi prepublish -t npm --skip-optional-publish"
+  },
+  "devDependencies": {
+    "@napi-rs/cli": "^3.6.2"
+  },
+  "optionalDependencies": {
+    "@xberg-io/xberg-darwin-arm64": "1.0.0-rc.3",
+    "@xberg-io/xberg-darwin-x64": "1.0.0-rc.3",
+    "@xberg-io/xberg-linux-arm64-gnu": "1.0.0-rc.3",
+    "@xberg-io/xberg-linux-arm64-musl": "1.0.0-rc.3",
+    "@xberg-io/xberg-linux-x64-gnu": "1.0.0-rc.3",
+    "@xberg-io/xberg-linux-x64-musl": "1.0.0-rc.3",
+    "@xberg-io/xberg-win32-arm64-msvc": "1.0.0-rc.3",
+    "@xberg-io/xberg-win32-x64-msvc": "1.0.0-rc.3"
+  },
+  "napi": {
+    "binaryName": "xberg-node",
+    "packageName": "@xberg-io/xberg",
+    "targets": [
+      "x86_64-unknown-linux-gnu",
+      "aarch64-unknown-linux-gnu",
+      "x86_64-unknown-linux-musl",
+      "aarch64-unknown-linux-musl",
+      "x86_64-apple-darwin",
+      "aarch64-apple-darwin",
+      "x86_64-pc-windows-msvc",
+      "aarch64-pc-windows-msvc"
+    ]
+  },
+  "engines": {
+    "node": ">= 22"
+  }
 }
