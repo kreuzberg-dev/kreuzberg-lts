@@ -439,11 +439,23 @@ fn looks_like_list_item(text: &str) -> bool {
 
     if chars.peek().is_some_and(|c| c.is_alphanumeric()) {
         let mut num_len = 0;
-        while chars.peek().is_some_and(|c| c.is_alphanumeric()) {
+        let mut all_digits = true;
+        let mut all_roman = true;
+        while let Some(&c) = chars.peek() {
+            if !c.is_alphanumeric() {
+                break;
+            }
+            all_digits &= c.is_ascii_digit();
+            all_roman &= matches!(c.to_ascii_lowercase(), 'i' | 'v' | 'x' | 'l' | 'c' | 'd' | 'm');
             chars.next();
             num_len += 1;
         }
-        if num_len <= 4 && (chars.peek() == Some(&'.') || chars.peek() == Some(&')')) {
+        // A marker run is a number ("1.", "12)"), a single letter ("a.", "B)"),
+        // or a roman numeral ("iv.", "VIII)"). Longer plain words followed by a
+        // period are prose — hyphenation fragments ("tua.") and abbreviations —
+        // and must not start a list item.
+        let marker_like = all_digits || num_len == 1 || all_roman;
+        if num_len <= 4 && marker_like && (chars.peek() == Some(&'.') || chars.peek() == Some(&')')) {
             chars.next();
             return chars.peek() == Some(&' ') && {
                 chars.next();

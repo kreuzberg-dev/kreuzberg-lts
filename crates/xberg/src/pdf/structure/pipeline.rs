@@ -909,11 +909,23 @@ fn looks_like_list_item(text: &str) -> bool {
 
     if chars.peek().is_some_and(|c| c.is_alphanumeric()) {
         let mut num_len = 0;
-        while chars.peek().is_some_and(|c| c.is_alphanumeric()) {
+        let mut all_digits = true;
+        let mut all_roman = true;
+        while let Some(&c) = chars.peek() {
+            if !c.is_alphanumeric() {
+                break;
+            }
+            all_digits &= c.is_ascii_digit();
+            all_roman &= matches!(c.to_ascii_lowercase(), 'i' | 'v' | 'x' | 'l' | 'c' | 'd' | 'm');
             chars.next();
             num_len += 1;
         }
-        if num_len <= 4 && (chars.peek() == Some(&'.') || chars.peek() == Some(&')')) {
+        // A marker run is a number ("1.", "12)"), a single letter ("a.", "B)"),
+        // or a roman numeral ("iv.", "VIII)"). Longer plain words followed by a
+        // period are prose — hyphenation fragments ("tua.") and abbreviations —
+        // and must not start a list item.
+        let marker_like = all_digits || num_len == 1 || all_roman;
+        if num_len <= 4 && marker_like && (chars.peek() == Some(&'.') || chars.peek() == Some(&')')) {
             chars.next();
             // Whitespace includes '\n': paragraph text joins same-line spans with
             // '\n', so "1.\nÉnumération" is a marker + item-text pair.
@@ -3046,5 +3058,17 @@ mod list_marker_tests {
         assert!(!looks_like_list_item("3.2 Methods"));
         assert!(!looks_like_list_item("IV. Results"));
         assert!(!looks_like_list_item("1. INTRODUCTION"));
+    }
+
+    #[test]
+    fn prose_words_ending_with_period_are_not_list_markers() {
+        // Hyphenation fragments and abbreviations: "volup-" breaks to "tua. At
+        // vero…" at a line boundary; a short word + period must not read as a
+        // lettered marker.
+        assert!(!looks_like_list_item("tua. At vero eos et accusam"));
+        assert!(!looks_like_list_item("etc. and more prose"));
+        // Single letters and roman numerals remain valid lettered markers.
+        assert!(looks_like_list_item("a. first item"));
+        assert!(looks_like_list_item("iv. fourth item"));
     }
 }
