@@ -59,6 +59,53 @@ impl fmt::Display for TableModel {
     }
 }
 
+/// How to resolve overlapping native vs layout (TATR/SLANeXT) tables.
+///
+/// When both native oxide detection and the layout table model produce a table for
+/// the same page region, one must be dropped. This controls which one wins. Wire
+/// format is snake_case in all serializers (JSON, TOML, YAML).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum TableOverlapPreference {
+    /// Keep whichever table carries more content (cell count + markdown length).
+    /// This is the historical default. TATR/SLANeXT tables usually recognize more
+    /// cells and therefore win, which maximizes table-structure F1 but can lower
+    /// text F1 when the recognized cell reflow diverges from the source reading order.
+    #[default]
+    Content,
+    /// Prefer the native oxide table when it overlaps a layout table. Native tables
+    /// preserve the source reading order, which scores higher on text F1 for
+    /// documents where the layout model's cell reflow diverges from the ground truth.
+    Native,
+    /// Prefer the layout (TATR/SLANeXT) table when it overlaps a native table.
+    Layout,
+}
+
+impl std::str::FromStr for TableOverlapPreference {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "content" => Ok(Self::Content),
+            "native" => Ok(Self::Native),
+            "layout" => Ok(Self::Layout),
+            other => Err(format!(
+                "unknown table overlap preference: '{other}'. Valid: content, native, layout"
+            )),
+        }
+    }
+}
+
+impl fmt::Display for TableOverlapPreference {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            TableOverlapPreference::Content => write!(f, "content"),
+            TableOverlapPreference::Native => write!(f, "native"),
+            TableOverlapPreference::Layout => write!(f, "layout"),
+        }
+    }
+}
+
 /// Layout detection configuration.
 ///
 /// Controls layout detection behavior in the extraction pipeline.
@@ -80,6 +127,16 @@ pub struct LayoutDetectionConfig {
     /// table regions. Defaults to [`TableModel::Tatr`].
     #[serde(default)]
     pub table_model: TableModel,
+
+    /// How to resolve overlapping native vs layout tables.
+    ///
+    /// When a native oxide table and a layout (TATR/SLANeXT) table overlap on the
+    /// same region, this controls which one is kept. Defaults to
+    /// [`TableOverlapPreference::Content`] (historical behavior: keep the table with
+    /// more content). Set to [`TableOverlapPreference::Native`] to favor source
+    /// reading order (higher text F1) over the model's cell reflow.
+    #[serde(default)]
+    pub table_overlap_preference: TableOverlapPreference,
 
     /// Hardware acceleration for ONNX models (layout detection + table structure).
     ///
@@ -104,6 +161,7 @@ impl Default for LayoutDetectionConfig {
             confidence_threshold: None,
             apply_heuristics: true,
             table_model: TableModel::default(),
+            table_overlap_preference: TableOverlapPreference::default(),
             acceleration: None,
             enable_chart_understanding: false,
         }
@@ -200,6 +258,46 @@ mod tests {
             !config.enable_chart_understanding,
             "omitted enable_chart_understanding must default to false"
         );
+    }
+
+    #[test]
+    fn table_overlap_preference_defaults_to_content() {
+        let config = LayoutDetectionConfig::default();
+        assert_eq!(config.table_overlap_preference, TableOverlapPreference::Content);
+    }
+
+    #[test]
+    fn table_overlap_preference_omitted_defaults_to_content() {
+        // Old stored configs lacking the field must deserialize to Content.
+        let json = r#"{"apply_heuristics": true, "table_model": "tatr"}"#;
+        let config: LayoutDetectionConfig = serde_json::from_str(json).unwrap();
+        assert_eq!(config.table_overlap_preference, TableOverlapPreference::Content);
+    }
+
+    #[test]
+    fn table_overlap_preference_serde_snake_case() {
+        let config = LayoutDetectionConfig {
+            table_overlap_preference: TableOverlapPreference::Native,
+            ..LayoutDetectionConfig::default()
+        };
+        let json = serde_json::to_string(&config).unwrap();
+        assert!(json.contains(r#""table_overlap_preference":"native""#), "got: {json}");
+        let parsed: LayoutDetectionConfig = serde_json::from_str(&json).unwrap();
+        assert_eq!(parsed.table_overlap_preference, TableOverlapPreference::Native);
+    }
+
+    #[test]
+    fn table_overlap_preference_from_str_and_display_round_trip() {
+        for pref in [
+            TableOverlapPreference::Content,
+            TableOverlapPreference::Native,
+            TableOverlapPreference::Layout,
+        ] {
+            let s = pref.to_string();
+            let parsed: TableOverlapPreference = s.parse().unwrap();
+            assert_eq!(parsed, pref, "round-trip failed for {pref:?}");
+        }
+        assert!("bogus".parse::<TableOverlapPreference>().is_err());
     }
 
     #[test]

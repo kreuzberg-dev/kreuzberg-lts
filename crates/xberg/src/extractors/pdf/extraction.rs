@@ -258,6 +258,12 @@ pub(crate) fn extract_all_from_oxide_document(
                 #[cfg(feature = "layout-detection")]
                 table_model: config.layout.as_ref().map(|l| l.table_model).unwrap_or_default(),
                 #[cfg(feature = "layout-detection")]
+                table_overlap_preference: config
+                    .layout
+                    .as_ref()
+                    .map(|l| l.table_overlap_preference)
+                    .unwrap_or_default(),
+                #[cfg(feature = "layout-detection")]
                 acceleration: config.acceleration.as_ref(),
             },
         ) {

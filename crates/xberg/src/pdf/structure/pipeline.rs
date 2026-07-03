@@ -1035,6 +1035,8 @@ pub(crate) struct SegmentStructureConfig<'a> {
     #[cfg(feature = "layout-detection")]
     pub table_model: crate::core::config::layout::TableModel,
     #[cfg(feature = "layout-detection")]
+    pub table_overlap_preference: crate::core::config::layout::TableOverlapPreference,
+    #[cfg(feature = "layout-detection")]
     pub acceleration: Option<&'a crate::core::config::acceleration::AccelerationConfig>,
 }
 
@@ -1061,6 +1063,8 @@ pub(crate) fn extract_document_structure_from_segments(
         layout_results,
         #[cfg(feature = "layout-detection")]
         table_model,
+        #[cfg(feature = "layout-detection")]
+        table_overlap_preference,
         #[cfg(feature = "layout-detection")]
         acceleration,
     } = config;
@@ -1601,8 +1605,16 @@ pub(crate) fn extract_document_structure_from_segments(
     // Stage 4: Assemble InternalDocument.
     // Combine native oxide tables with layout-detected tables, then deduplicate
     // overlapping tables on the same page.
+    // Native oxide tables occupy the first `native_count` slots; layout-detected
+    // tables follow. The overlap preference uses this split to decide which side
+    // wins when a native and a layout table cover the same region.
+    let native_count = tables.len();
     let mut combined_tables: Vec<crate::types::Table> = tables.iter().cloned().chain(layout_tables).collect();
-    deduplicate_overlapping_tables(&mut combined_tables);
+    #[cfg(feature = "layout-detection")]
+    let overlap_preference = table_overlap_preference;
+    #[cfg(not(feature = "layout-detection"))]
+    let overlap_preference = crate::core::config::layout::TableOverlapPreference::Content;
+    deduplicate_overlapping_tables(&mut combined_tables, native_count, overlap_preference);
     let effective_image_positions = if inject_placeholders { image_positions } else { &[] };
     let mut doc = assemble_internal_document(all_page_paragraphs, &combined_tables, images, effective_image_positions);
 
@@ -1691,10 +1703,18 @@ fn fused_text_repairs(text: &str) -> Cow<'_, str> {
 
 /// Deduplicate tables that overlap on the same page.
 ///
-/// When both heuristic and layout-based table extraction produce tables for the
-/// same region, they can overlap. This keeps the table with more content (non-empty
-/// cells or longer markdown) and discards the duplicate.
-fn deduplicate_overlapping_tables(tables: &mut Vec<crate::types::Table>) {
+/// When both native oxide detection and layout-based table extraction produce tables
+/// for the same region, they can overlap. Tables at index `< native_count` are native;
+/// the rest are layout (TATR/SLANeXT) tables. `preference` decides which side wins for a
+/// mixed native/layout overlap; for same-origin overlaps (or [`TableOverlapPreference::Content`])
+/// the table with more content (cell count + markdown length) is kept.
+fn deduplicate_overlapping_tables(
+    tables: &mut Vec<crate::types::Table>,
+    native_count: usize,
+    preference: crate::core::config::layout::TableOverlapPreference,
+) {
+    use crate::core::config::layout::TableOverlapPreference;
+
     if tables.len() < 2 {
         return;
     }
@@ -1722,13 +1742,36 @@ fn deduplicate_overlapping_tables(tables: &mut Vec<crate::types::Table>) {
                 let min_area = area_a.min(area_b);
 
                 if min_area > 0.0 && intersection / min_area > 0.5 {
-                    // Keep the one with more content
-                    let content_a = tables[i].cells.len() + tables[i].markdown.len();
-                    let content_b = tables[j].cells.len() + tables[j].markdown.len();
-                    if content_a >= content_b {
-                        to_remove.insert(j);
-                    } else {
-                        to_remove.insert(i);
+                    let i_is_native = i < native_count;
+                    let j_is_native = j < native_count;
+                    let mixed_origin = i_is_native != j_is_native;
+                    // For a mixed native/layout overlap, honor the configured preference.
+                    // Otherwise (same origin, or Content) keep the table with more content.
+                    let remove = match preference {
+                        TableOverlapPreference::Native if mixed_origin => {
+                            if i_is_native {
+                                j
+                            } else {
+                                i
+                            }
+                        }
+                        TableOverlapPreference::Layout if mixed_origin => {
+                            if i_is_native {
+                                i
+                            } else {
+                                j
+                            }
+                        }
+                        _ => {
+                            let content_a = tables[i].cells.len() + tables[i].markdown.len();
+                            let content_b = tables[j].cells.len() + tables[j].markdown.len();
+                            if content_a >= content_b { j } else { i }
+                        }
+                    };
+                    to_remove.insert(remove);
+                    // If the outer table was dropped, stop comparing it against the rest.
+                    if remove == i {
+                        break;
                     }
                 }
             }
@@ -2121,6 +2164,91 @@ mod tests {
     use super::*;
     use crate::pdf::hierarchy::SegmentData;
     use crate::pdf::structure::types::{PdfLine, PdfParagraph};
+
+    /// Helper: a table at `bbox` on `page` whose only content is `markdown`
+    /// (so content weight == markdown length; empty cells).
+    fn ov_table(page: u32, bbox: (f64, f64, f64, f64), markdown: &str) -> crate::types::Table {
+        let (x0, y0, x1, y1) = bbox;
+        crate::types::Table {
+            cells: Vec::new(),
+            markdown: markdown.to_string(),
+            page_number: page,
+            bounding_box: Some(crate::types::BoundingBox { x0, y0, x1, y1 }),
+        }
+    }
+
+    #[test]
+    fn dedup_content_preference_keeps_larger_table() {
+        use crate::core::config::layout::TableOverlapPreference;
+        // native (idx 0, small) vs layout (idx 1, large), same region.
+        let mut tables = vec![
+            ov_table(1, (0.0, 0.0, 100.0, 100.0), "a"),
+            ov_table(1, (0.0, 0.0, 100.0, 100.0), "bbbbbbbbbb"),
+        ];
+        deduplicate_overlapping_tables(&mut tables, 1, TableOverlapPreference::Content);
+        assert_eq!(tables.len(), 1);
+        assert_eq!(
+            tables[0].markdown, "bbbbbbbbbb",
+            "Content keeps the larger (layout) table"
+        );
+    }
+
+    #[test]
+    fn dedup_native_preference_keeps_native_even_when_smaller() {
+        use crate::core::config::layout::TableOverlapPreference;
+        let mut tables = vec![
+            ov_table(1, (0.0, 0.0, 100.0, 100.0), "a"),          // native (idx < 1)
+            ov_table(1, (0.0, 0.0, 100.0, 100.0), "bbbbbbbbbb"), // layout, more content
+        ];
+        deduplicate_overlapping_tables(&mut tables, 1, TableOverlapPreference::Native);
+        assert_eq!(tables.len(), 1);
+        assert_eq!(
+            tables[0].markdown, "a",
+            "Native preference keeps native over a larger layout table"
+        );
+    }
+
+    #[test]
+    fn dedup_layout_preference_keeps_layout_even_when_smaller() {
+        use crate::core::config::layout::TableOverlapPreference;
+        let mut tables = vec![
+            ov_table(1, (0.0, 0.0, 100.0, 100.0), "aaaaaaaaaa"), // native, more content
+            ov_table(1, (0.0, 0.0, 100.0, 100.0), "b"),          // layout
+        ];
+        deduplicate_overlapping_tables(&mut tables, 1, TableOverlapPreference::Layout);
+        assert_eq!(tables.len(), 1);
+        assert_eq!(
+            tables[0].markdown, "b",
+            "Layout preference keeps layout over a larger native table"
+        );
+    }
+
+    #[test]
+    fn dedup_native_preference_falls_back_to_content_for_same_origin() {
+        use crate::core::config::layout::TableOverlapPreference;
+        // Both native (native_count=2): preference cannot disambiguate → content wins.
+        let mut tables = vec![
+            ov_table(1, (0.0, 0.0, 100.0, 100.0), "a"),
+            ov_table(1, (0.0, 0.0, 100.0, 100.0), "bbbbbbbbbb"),
+        ];
+        deduplicate_overlapping_tables(&mut tables, 2, TableOverlapPreference::Native);
+        assert_eq!(tables.len(), 1);
+        assert_eq!(
+            tables[0].markdown, "bbbbbbbbbb",
+            "same-origin overlap falls back to content"
+        );
+    }
+
+    #[test]
+    fn dedup_non_overlapping_tables_both_kept() {
+        use crate::core::config::layout::TableOverlapPreference;
+        let mut tables = vec![
+            ov_table(1, (0.0, 0.0, 100.0, 100.0), "a"),
+            ov_table(1, (200.0, 200.0, 300.0, 300.0), "b"), // disjoint
+        ];
+        deduplicate_overlapping_tables(&mut tables, 1, TableOverlapPreference::Native);
+        assert_eq!(tables.len(), 2, "non-overlapping tables are both kept");
+    }
 
     /// Helper: segment with font metadata for title-promotion tests.
     fn role_seg(text: &str, font_size: f32, is_bold: bool, assigned_role: Option<u8>) -> SegmentData {
@@ -2724,7 +2852,11 @@ mod tests {
         ];
         let gaps = compute_paragraph_gap_ys(&segments);
         assert_eq!(gaps.len(), 1, "only the blank-line jump is a paragraph gap");
-        assert!(gaps[0] > 656.0 && gaps[0] < 684.0, "gap midpoint between the paragraphs, got {}", gaps[0]);
+        assert!(
+            gaps[0] > 656.0 && gaps[0] < 684.0,
+            "gap midpoint between the paragraphs, got {}",
+            gaps[0]
+        );
     }
 
     #[test]
@@ -2777,7 +2909,11 @@ mod tests {
         ];
         let gaps = compute_paragraph_gap_ys(&segments);
         assert_eq!(gaps.len(), 1, "only the code→prose boundary is a gap");
-        assert!(gaps[0] > 632.0 && gaps[0] < 660.0, "gap sits between code and prose, got {}", gaps[0]);
+        assert!(
+            gaps[0] > 632.0 && gaps[0] < 660.0,
+            "gap sits between code and prose, got {}",
+            gaps[0]
+        );
     }
 
     /// 5-paragraph doc (1 title at 14pt + 4 body at 11pt) with k_clusters=4.
