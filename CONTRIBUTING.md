@@ -74,6 +74,13 @@ task setup
 
 This installs all toolchains and dependencies across every language. Safe to re-run anytime.
 
+## Pre-commit hooks
+
+Install the git hooks with `task setup` (or `poly hooks install` directly). On
+every commit, poly runs lint, format, and file-safety checks plus `cargo clippy`;
+the commit-msg hook validates the message. Run all hooks manually with
+`poly hooks run pre-commit --all-files`.
+
 ## Quick reference
 
 | Command       | What it does                                    |
