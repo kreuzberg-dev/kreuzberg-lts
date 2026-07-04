@@ -1,19 +1,15 @@
 {
   "name": "@xberg-io/xberg-darwin-arm64",
-  "version": "1.0.0-rc.6",
+  "version": "1.0.0-rc.7",
   "license": "MIT",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/xberg-io/xberg.git"
   },
+  "main": "xberg-node.darwin-arm64.node",
   "files": ["xberg-node.darwin-arm64.node"],
   "os": ["darwin"],
   "cpu": ["arm64"],
-  "main": "xberg-node.darwin-arm64.node",
-  "publishConfig": {
-    "access": "public"
-  },
-  "engines": {
-    "node": ">= 22"
-  }
+  "engines": { "node": ">= 22" },
+  "publishConfig": { "access": "public" }
 }

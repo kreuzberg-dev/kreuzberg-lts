@@ -1,20 +1,16 @@
 {
   "name": "@xberg-io/xberg-linux-arm64-musl",
-  "version": "1.0.0-rc.6",
+  "version": "1.0.0-rc.7",
   "license": "MIT",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/xberg-io/xberg.git"
   },
+  "main": "xberg-node.linux-arm64-musl.node",
   "files": ["xberg-node.linux-arm64-musl.node"],
   "os": ["linux"],
   "cpu": ["arm64"],
   "libc": ["musl"],
-  "main": "xberg-node.linux-arm64-musl.node",
-  "publishConfig": {
-    "access": "public"
-  },
-  "engines": {
-    "node": ">= 22"
-  }
+  "engines": { "node": ">= 22" },
+  "publishConfig": { "access": "public" }
 }

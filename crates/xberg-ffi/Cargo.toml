@@ -1,6 +1,6 @@
 [package]
 name = "xberg-ffi"
-version = "1.0.0-rc.6"
+version = "1.0.0-rc.7"
 edition = "2021"
 license = "MIT"
 description = "High-performance document intelligence library"
@@ -24,52 +24,7 @@ ignored = ["ahash", "serde_json", "tokio", "async-trait"]
 crate-type = ["cdylib", "staticlib", "rlib"]
 
 [features]
-default = [
-    "full",
-    "pdf",
-    "ocr",
-    "paddle-ocr",
-    "paddle-ocr-types",
-    "layout-detection",
-    "layout-types",
-    "embeddings",
-    "embedding-presets",
-    "reranker",
-    "reranker-presets",
-    "chunking",
-    "keywords-yake",
-    "keywords-rake",
-    "language-detection",
-    "html",
-    "tree-sitter",
-    "office",
-    "email",
-    "archives",
-    "stopwords",
-    "auto-rotate",
-    "auto-rotate-types",
-    "tokio-runtime",
-    "api",
-    "api-types",
-    "mcp",
-    "liter-llm",
-    "quality",
-    "svg",
-    "transcription",
-    "transcription-types",
-    "classification",
-    "captioning",
-    "ner-onnx",
-    "ner-llm",
-    "diff",
-    "markdown-footnotes",
-    "redaction",
-    "enrichment",
-    "heuristics",
-    "presets",
-    "structured",
-    "url-ingestion",
-]
+default = ["full", "pdf", "ocr", "paddle-ocr", "paddle-ocr-types", "layout-detection", "layout-types", "embeddings", "embedding-presets", "reranker", "reranker-presets", "chunking", "keywords-yake", "keywords-rake", "language-detection", "html", "tree-sitter", "office", "email", "archives", "stopwords", "auto-rotate", "auto-rotate-types", "tokio-runtime", "api", "api-types", "mcp", "liter-llm", "quality", "svg", "transcription", "transcription-types", "classification", "captioning", "ner-onnx", "ner-llm", "diff", "markdown-footnotes", "redaction", "enrichment", "heuristics", "presets", "structured", "url-ingestion"]
 full = ["xberg/full"]
 pdf = ["xberg/pdf"]
 ocr = ["xberg/ocr"]
@@ -114,44 +69,7 @@ heuristics = ["xberg/heuristics"]
 presets = ["xberg/presets"]
 structured = ["xberg/structured"]
 url-ingestion = ["xberg/url-ingestion"]
-android-target = [
-    "xberg/android-target",
-    "api",
-    "api-types",
-    "archives",
-    "auto-rotate-types",
-    "captioning",
-    "chunking",
-    "classification",
-    "diff",
-    "email",
-    "embedding-presets",
-    "enrichment",
-    "heuristics",
-    "html",
-    "keywords-rake",
-    "keywords-yake",
-    "language-detection",
-    "layout-types",
-    "liter-llm",
-    "markdown-footnotes",
-    "mcp",
-    "ner-llm",
-    "ocr",
-    "office",
-    "paddle-ocr-types",
-    "pdf",
-    "presets",
-    "quality",
-    "redaction",
-    "reranker-presets",
-    "stopwords",
-    "structured",
-    "svg",
-    "tokio-runtime",
-    "transcription-types",
-    "tree-sitter",
-]
+android-target = ["xberg/android-target", "api", "api-types", "archives", "auto-rotate-types", "captioning", "chunking", "classification", "diff", "email", "embedding-presets", "enrichment", "heuristics", "html", "keywords-rake", "keywords-yake", "language-detection", "layout-types", "liter-llm", "markdown-footnotes", "mcp", "ner-llm", "ocr", "office", "paddle-ocr-types", "pdf", "presets", "quality", "redaction", "reranker-presets", "stopwords", "structured", "svg", "tokio-runtime", "transcription-types", "tree-sitter"]
 
 [dependencies]
 ahash = "0.8"
@@ -160,20 +78,21 @@ crawlberg = { default-features = false, version = "1.0.3" }
 serde_json = "1"
 tokio = { version = "1", features = ["full"] }
 
-[target.'cfg(all(target_os = "macos", target_arch = "x86_64"))'.dependencies]
-xberg = { path = "../xberg", version = "1.0.0-rc.6", features = ["macos-intel-target"] }
-
 [target.'cfg(not(any(target_os = "android", target_os = "ios", target_os = "windows", all(target_os = "macos", target_arch = "x86_64"))))'.dependencies]
-xberg = { path = "../xberg", version = "1.0.0-rc.6", features = ["full", "pdf", "ocr", "paddle-ocr", "paddle-ocr-types", "layout-detection", "layout-types", "embeddings", "embedding-presets", "reranker", "reranker-presets", "chunking", "keywords-yake", "keywords-rake", "language-detection", "html", "tree-sitter", "office", "email", "archives", "stopwords", "auto-rotate", "auto-rotate-types", "tokio-runtime", "api", "api-types", "mcp", "liter-llm", "quality", "svg", "transcription", "transcription-types", "classification", "captioning", "ner-onnx", "ner-llm", "diff", "markdown-footnotes", "redaction", "enrichment", "heuristics", "presets", "structured", "url-ingestion"] }
+xberg = { path = "../xberg", version = "1.0.0-rc.7", features = ["full", "pdf", "ocr", "paddle-ocr", "paddle-ocr-types", "layout-detection", "layout-types", "embeddings", "embedding-presets", "reranker", "reranker-presets", "chunking", "keywords-yake", "keywords-rake", "language-detection", "html", "tree-sitter", "office", "email", "archives", "stopwords", "auto-rotate", "auto-rotate-types", "tokio-runtime", "api", "api-types", "mcp", "liter-llm", "quality", "svg", "transcription", "transcription-types", "classification", "captioning", "ner-onnx", "ner-llm", "diff", "markdown-footnotes", "redaction", "enrichment", "heuristics", "presets", "structured", "url-ingestion"] }
 
 [target.'cfg(target_os = "android")'.dependencies]
-xberg = { path = "../xberg", version = "1.0.0-rc.6", features = ["android-target"] }
+xberg = { path = "../xberg", version = "1.0.0-rc.7", features = ["android-target"] }
 
 [target.'cfg(target_os = "ios")'.dependencies]
-xberg = { path = "../xberg", version = "1.0.0-rc.6", features = ["android-target"] }
+xberg = { path = "../xberg", version = "1.0.0-rc.7", features = ["android-target"] }
 
 [target.'cfg(target_os = "windows")'.dependencies]
-xberg = { path = "../xberg", version = "1.0.0-rc.6", features = ["windows-target"] }
+xberg = { path = "../xberg", version = "1.0.0-rc.7", features = ["windows-target"] }
+
+[target.'cfg(all(target_os = "macos", target_arch = "x86_64"))'.dependencies]
+xberg = { path = "../xberg", version = "1.0.0-rc.7", features = ["macos-intel-target"] }
+
 
 [build-dependencies]
 cbindgen = "0.29"
