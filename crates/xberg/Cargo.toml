@@ -496,6 +496,18 @@ windows-target = [
     "liter-llm",
     "structured",
     "quality",
+    # Pure-Rust features missing from the original list whose public types the
+    # generated bindings reference unconditionally.  Each is verified Windows-safe:
+    # heuristics = [] (no deps), xml = [quick-xml, roxmltree] (pure Rust),
+    # svg = [resvg, image-encode] (pure Rust, WASM-safe per Cargo.toml comment),
+    # chunking-tokenizers = [chunking, tokenizers] (tokenizers is pure Rust on
+    # Windows via the target-specific dep block at line ~788), url-config-types =
+    # [crawlberg] (type-only, no native-runtime — same rationale as android-target).
+    "heuristics",
+    "xml",
+    "svg",
+    "chunking-tokenizers",
+    "url-config-types",
 ]
 # macos-intel-target: native Intel macOS (x86_64-apple-darwin). FULL feature
 # parity with every other platform — including all ONNX Runtime ML (paddle-ocr,

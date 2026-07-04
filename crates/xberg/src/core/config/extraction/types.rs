@@ -65,10 +65,11 @@ pub enum ImageOutputFormat {
 
     /// Re-encode all extracted images as HEIF/HEIC at the given quality level.
     ///
-    /// Requires the `heic` feature. `quality` must be in `1..=100`. Values
-    /// outside this range are clamped and a warning is emitted. 80 is a
-    /// reasonable default.
-    #[cfg(feature = "heic")]
+    /// `quality` must be in `1..=100`. Values outside this range are clamped
+    /// and a warning is emitted. 80 is a reasonable default.
+    ///
+    /// The encode path requires the `heic` feature; on builds without it, selecting
+    /// this variant returns an `EncodeFailed` warning and leaves the image untouched.
     Heif {
         /// HEIF quality (1–100, default 80).
         #[serde(default = "default_heif_quality")]
@@ -95,7 +96,6 @@ const fn default_webp_quality() -> u8 {
     80
 }
 
-#[cfg(feature = "heic")]
 const fn default_heif_quality() -> u8 {
     80
 }

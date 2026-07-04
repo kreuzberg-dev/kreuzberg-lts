@@ -189,6 +189,11 @@ fn target_matches_format(target: ImageOutputFormat, format: &str) -> bool {
                 || format.eq_ignore_ascii_case("HEIF")
                 || format.eq_ignore_ascii_case("HEIC")
         }
+        // Heif variant is unconditional in the type; without the `heic` feature the
+        // encode path is unavailable, so we treat an already-HEIF source as a mismatch
+        // (forcing a no-op re-encode attempt that returns EncodeFailed gracefully).
+        #[cfg(not(feature = "heic"))]
+        ImageOutputFormat::Heif { .. } => false,
         // SVG source matching is handled earlier in re_encode (sanitize pass);
         // this branch is only reached for raster → SVG (which returns UnsupportedDirection).
         // Return false here so the caller proceeds to the UnsupportedDirection guard.
@@ -501,6 +506,13 @@ fn encode_to_target(img: &DynamicImage, target: ImageOutputFormat) -> Result<(Ve
             let bytes = encode_heif(img, clamped)?;
             Ok((bytes, "heif"))
         }
+        // Heif variant is unconditional; without the `heic` feature, signal a failure
+        // so the pipeline emits a warning and leaves the image bytes untouched.
+        #[cfg(not(feature = "heic"))]
+        ImageOutputFormat::Heif { quality: _ } => Err(EncodeWarning::EncodeFailed {
+            target_format: "heif",
+            message: "heic feature is not enabled in this build".to_string(),
+        }),
         // Svg-from-raster is rejected before encode_to_target is reached (in re_encode).
         // This arm makes the match exhaustive when the `svg` feature is active.
         #[cfg(feature = "svg")]
