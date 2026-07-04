@@ -2,6 +2,9 @@
 // alef:hash:356ed0ad572128a92e2a68ca531b92cd783973ff49e6e7f17fef8212f0216bcf
 
 #![allow(unused_variables, unreachable_code, unreachable_patterns, missing_docs)]
+// TEMP(rc.6): alef 0.32.0 DTO Unit-method wrappers bind `let __value = ...?`
+// where the ok type is `()`; alef 0.32.1 drops the binding for Unit returns.
+#![allow(clippy::let_unit_value)]
 #![allow(
     clippy::collapsible_if,
     clippy::collapsible_match,

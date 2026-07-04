@@ -5,6 +5,10 @@
 // here matches one `external fun native*` in the paired Kotlin Bridge object.
 
 #![allow(non_snake_case)]
+// TEMP(rc.6): the alef 0.32.0 jni #170 dispatcher emits the deprecated
+// `jni::objects::GlobalRef<T>` alias (renamed `jni::refs::Global<T>` in jni 0.22);
+// allow it until alef 0.32.1 ships the rename and this file is regenerated.
+#![allow(deprecated)]
 #![allow(clippy::too_many_arguments)]
 #![allow(clippy::missing_safety_doc)]
 #![allow(unused_imports)]
