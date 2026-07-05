@@ -53,6 +53,15 @@ public sealed record ExtractedDocument
     public List<Table> Tables { get; init; } = [];
 
     /// <summary>
+    /// Cheap structural counts (pages, tables, images).
+    ///
+    /// Always populated by the extraction pipeline, even when the `pages` /
+    /// `images` collections are `None`. See `DocumentCounts`.
+    /// </summary>
+    [JsonPropertyName("counts")]
+    public DocumentCounts Counts { get; init; } = default!;
+
+    /// <summary>
     /// ISO 639-1 language codes detected in the document content.
     /// </summary>
     [JsonPropertyName("detected_languages")]

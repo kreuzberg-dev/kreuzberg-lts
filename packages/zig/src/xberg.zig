@@ -2153,6 +2153,27 @@ pub const Entity = struct {
     confidence: ?f32,
 };
 
+/// Cheap structural counts for an extracted document.
+///
+/// Populated on every `ExtractedDocument` returned by `extract` /
+/// `extract_batch`, regardless of whether the heavy `pages` / `images`
+/// collections are materialized. A caller that only needs "how many pages /
+/// tables / images did this document have?" (reporting, cost estimation,
+/// progress, quotas) can read these without enabling per-page or per-image
+/// extraction.
+///
+/// The page count comes from the parse (the extractor already walks the page
+/// tree); it does not require opting into per-page content. `pages` is `0` for
+/// inputs that are not page-addressable (e.g. plain text).
+pub const DocumentCounts = struct {
+    /// Total pages in the source document (`0` when not page-addressable).
+    pages: u64,
+    /// Tables detected in the document.
+    tables: u64,
+    /// Images detected in the document.
+    images: u64,
+};
+
 /// Document extracted by the core extraction pipeline.
 ///
 /// `extract` and `extract_batch` return an `ExtractionResult` envelope whose
@@ -2171,6 +2192,11 @@ pub const ExtractedDocument = struct {
     extraction_method: ?ExtractionMethod,
     /// Tables extracted from the document, each with structured cell data.
     tables: []const Table,
+    /// Cheap structural counts (pages, tables, images).
+    ///
+    /// Always populated by the extraction pipeline, even when the `pages` /
+    /// `images` collections are `null`. See `DocumentCounts`.
+    counts: DocumentCounts,
     /// ISO 639-1 language codes detected in the document content.
     detected_languages: ?[]const []const u8,
     /// Text chunks when chunking is enabled.
