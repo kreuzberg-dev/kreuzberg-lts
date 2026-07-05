@@ -245,9 +245,7 @@ impl TrocrEngine {
             .process(image_bytes, &self.device)
             .map_err(|e| CandleOcrError::InferenceFailed(format!("Image preprocessing failed: {}", e)))?;
 
-        if let Ok(shape) = image_tensor.shape() {
-            tracing::debug!(tensor_shape = ?shape.dims(), "TrOCR: image tensor shape after preprocessing");
-        }
+        tracing::debug!(tensor_shape = ?image_tensor.shape().dims(), "TrOCR: image tensor shape after preprocessing");
 
         // Run encoder forward pass to get encoder hidden states
         let mut model_guard = self.model.lock();
@@ -259,9 +257,7 @@ impl TrocrEngine {
             .forward(&image_tensor)
             .map_err(|e| CandleOcrError::InferenceFailed(format!("Encoder forward failed: {}", e)))?;
 
-        if let Ok(shape) = encoder_hidden_states.shape() {
-            tracing::debug!(encoder_shape = ?shape.dims(), "TrOCR: encoder hidden states shape");
-        }
+        tracing::debug!(encoder_shape = ?encoder_hidden_states.shape().dims(), "TrOCR: encoder hidden states shape");
 
         // Decoder configuration for generation (from the loaded checkpoint config)
         let decoder_start_token_id = self.decoder_start_token_id;

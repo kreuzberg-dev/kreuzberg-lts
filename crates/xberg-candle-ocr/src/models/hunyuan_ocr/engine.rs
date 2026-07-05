@@ -146,7 +146,7 @@ impl HunyuanOCREngine {
         let img = image::load_from_memory(image_bytes)
             .map_err(|e| CandleOcrError::InferenceFailed(format!("Image decode: {}", e)))?;
 
-        let (img_width, img_height) = img.dimensions();
+        let (img_width, img_height) = (img.width(), img.height());
         tracing::debug!(width = img_width, height = img_height, "Hunyuan-OCR: image dimensions");
 
         // Build OCR prompt that matches the model's expected input template
