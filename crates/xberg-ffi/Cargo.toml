@@ -69,12 +69,12 @@ heuristics = ["xberg/heuristics"]
 presets = ["xberg/presets"]
 structured = ["xberg/structured"]
 url-ingestion = ["xberg/url-ingestion"]
-android-target = ["xberg/android-target", "api", "api-types", "archives", "auto-rotate-types", "captioning", "chunking", "classification", "diff", "email", "embedding-presets", "enrichment", "heuristics", "html", "keywords-rake", "keywords-yake", "language-detection", "layout-types", "liter-llm", "markdown-footnotes", "mcp", "ner-llm", "ocr", "office", "paddle-ocr-types", "pdf", "presets", "quality", "redaction", "reranker-presets", "stopwords", "structured", "svg", "tokio-runtime", "transcription-types", "tree-sitter"]
+android-target = ["xberg/android-target", "api", "api-types", "archives", "auto-rotate-types", "captioning", "chunking", "classification", "diff", "email", "embedding-presets", "enrichment", "heuristics", "html", "keywords-rake", "keywords-yake", "language-detection", "layout-types", "liter-llm", "markdown-footnotes", "mcp", "ner-llm", "ocr", "office", "paddle-ocr-types", "pdf", "presets", "quality", "redaction", "reranker-presets", "stopwords", "structured", "svg", "tokio-runtime", "transcription-types", "tree-sitter", "url-ingestion"]
 
 [dependencies]
 ahash = "0.8"
 async-trait = "0.1"
-crawlberg = { default-features = false, version = "1.0.2" }
+crawlberg = { default-features = false, version = "1.0.3" }
 serde_json = "1"
 tokio = { version = "1", features = ["full"] }
 

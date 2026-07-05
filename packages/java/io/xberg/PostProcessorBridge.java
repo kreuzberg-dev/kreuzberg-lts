@@ -126,38 +126,24 @@ public final class PostProcessorBridge implements AutoCloseable {
 
     private void initStubShouldProcess(long offset) throws ReflectiveOperationException {
         var stubShouldProcess = LINKER.upcallStub(LOOKUP.bind(this, "handleShouldProcess",
-            MethodType.methodType(
-                int.class,
-                MemorySegment.class,
-                MemorySegment.class,
-                MemorySegment.class,
-                MemorySegment.class,
-                MemorySegment.class
-        )),
-        FunctionDescriptor.of(
-            ValueLayout.JAVA_INT,
-            ValueLayout.ADDRESS,
-            ValueLayout.ADDRESS,
-            ValueLayout.ADDRESS,
-            ValueLayout.ADDRESS,
-            ValueLayout.ADDRESS
-        ),
+            MethodType.methodType(long.class, MemorySegment.class, MemorySegment.class, MemorySegment.class)),
+        FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS),
         arena);
         vtable.set(ValueLayout.ADDRESS, offset, stubShouldProcess);
     }
 
     private void initStubEstimatedDurationMs(long offset) throws ReflectiveOperationException {
         var stubEstimatedDurationMs = LINKER.upcallStub(LOOKUP.bind(this, "handleEstimatedDurationMs",
-            MethodType.methodType(int.class, MemorySegment.class, MemorySegment.class, MemorySegment.class, MemorySegment.class)),
-        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS),
+            MethodType.methodType(long.class, MemorySegment.class, MemorySegment.class)),
+        FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.ADDRESS, ValueLayout.ADDRESS),
         arena);
         vtable.set(ValueLayout.ADDRESS, offset, stubEstimatedDurationMs);
     }
 
     private void initStubPriority(long offset) throws ReflectiveOperationException {
         var stubPriority = LINKER.upcallStub(LOOKUP.bind(this, "handlePriority",
-            MethodType.methodType(int.class, MemorySegment.class, MemorySegment.class, MemorySegment.class)),
-        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS),
+            MethodType.methodType(long.class, MemorySegment.class)),
+        FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.ADDRESS),
         arena);
         vtable.set(ValueLayout.ADDRESS, offset, stubPriority);
     }
@@ -235,59 +221,48 @@ public final class PostProcessorBridge implements AutoCloseable {
         }
     }
 
-    private int handleShouldProcess(
-        MemorySegment userData,
-        MemorySegment _result_in,
-        MemorySegment _config_in,
-        MemorySegment outResult,
-        MemorySegment outError
-    ) {
+    // Direct-value C slot (`fn(user_data, params...) -> <primitive>`): the value
+    // returns straight through the ABI with no out_result/out_error pointers,
+    // so a host exception cannot propagate — log it before substituting the
+    // default, which would otherwise be indistinguishable from a real result.
+    private long handleShouldProcess(MemorySegment userData, MemorySegment _result_in, MemorySegment _config_in) {
         try {
             String _result_json = _result_in.reinterpret(Long.MAX_VALUE).getString(0);
             ExtractedDocument _result = JSON.readValue(_result_json, ExtractedDocument.class);
             String _config_json = _config_in.reinterpret(Long.MAX_VALUE).getString(0);
             ExtractionConfig _config = JSON.readValue(_config_json, ExtractionConfig.class);
-            boolean callbackResult = impl.should_process(_result, _config);
-            String json = JSON.writeValueAsString(callbackResult);
-            MemorySegment jsonCs = arena.allocateFrom(json);
-            outResult.set(ValueLayout.ADDRESS, 0, jsonCs);
-            return 0;
+            return impl.should_process(_result, _config) ? 1L : 0L;
         } catch (Throwable e) {
-            writeError(outError, e);
-            return 1;
+            System.err.println("[PostProcessorBridge] host 'should_process' threw; returning default: " + e);
+            return 0L;
         }
     }
 
-    private int handleEstimatedDurationMs(
-        MemorySegment userData,
-        MemorySegment _result_in,
-        MemorySegment outResult,
-        MemorySegment outError
-    ) {
+    // Direct-value C slot (`fn(user_data, params...) -> <primitive>`): the value
+    // returns straight through the ABI with no out_result/out_error pointers,
+    // so a host exception cannot propagate — log it before substituting the
+    // default, which would otherwise be indistinguishable from a real result.
+    private long handleEstimatedDurationMs(MemorySegment userData, MemorySegment _result_in) {
         try {
             String _result_json = _result_in.reinterpret(Long.MAX_VALUE).getString(0);
             ExtractedDocument _result = JSON.readValue(_result_json, ExtractedDocument.class);
-            long callbackResult = impl.estimated_duration_ms(_result);
-            String json = JSON.writeValueAsString(callbackResult);
-            MemorySegment jsonCs = arena.allocateFrom(json);
-            outResult.set(ValueLayout.ADDRESS, 0, jsonCs);
-            return 0;
+            return impl.estimated_duration_ms(_result);
         } catch (Throwable e) {
-            writeError(outError, e);
-            return 1;
+            System.err.println("[PostProcessorBridge] host 'estimated_duration_ms' threw; returning default: " + e);
+            return 0L;
         }
     }
 
-    private int handlePriority(MemorySegment userData, MemorySegment outResult, MemorySegment outError) {
+    // Direct-value C slot (`fn(user_data, params...) -> <primitive>`): the value
+    // returns straight through the ABI with no out_result/out_error pointers,
+    // so a host exception cannot propagate — log it before substituting the
+    // default, which would otherwise be indistinguishable from a real result.
+    private long handlePriority(MemorySegment userData) {
         try {
-            int callbackResult = impl.priority();
-            String json = JSON.writeValueAsString(callbackResult);
-            MemorySegment jsonCs = arena.allocateFrom(json);
-            outResult.set(ValueLayout.ADDRESS, 0, jsonCs);
-            return 0;
+            return impl.priority();
         } catch (Throwable e) {
-            writeError(outError, e);
-            return 1;
+            System.err.println("[PostProcessorBridge] host 'priority' threw; returning default: " + e);
+            return 0L;
         }
     }
 

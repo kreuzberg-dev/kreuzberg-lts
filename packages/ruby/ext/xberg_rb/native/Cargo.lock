@@ -1230,9 +1230,9 @@ dependencies = [
 
 [[package]]
 name = "crawlberg"
-version = "1.0.2"
+version = "1.0.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e361dcd0b6433eaa4cc3e269f2e983e7f8ddea09b597bc5257d9a356e3d8882c"
+checksum = "46b3f6dfec53e26f1f989b4685943153a54e1d2101f8bd3ae5afd810b7957423"
 dependencies = [
  "ahash 0.8.12",
  "aho-corasick",
@@ -3141,12 +3141,10 @@ checksum = "ccfe6121cbe750cf81efa362d85c0bde7ea298ec43092d3a193baca59cdbd634"
 dependencies = [
  "defmt",
  "jiff-static",
- "jiff-tzdb-platform",
  "log",
  "portable-atomic",
  "portable-atomic-util",
  "serde_core",
- "windows-link",
 ]
 
 [[package]]
@@ -3158,21 +3156,6 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.118",
-]
-
-[[package]]
-name = "jiff-tzdb"
-version = "0.1.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c900ef84826f1338a557697dc8fc601df9ca9af4ac137c7fb61d4c6f2dfd3076"
-
-[[package]]
-name = "jiff-tzdb-platform"
-version = "0.1.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "875a5a69ac2bab1a891711cf5eccbec1ce0341ea805560dcd90b7a2e925132e8"
-dependencies = [
- "jiff-tzdb",
 ]
 
 [[package]]
@@ -3440,9 +3423,9 @@ checksum = "92daf443525c4cce67b150400bc2316076100ce0b3686209eb8cf3c31612e6f0"
 
 [[package]]
 name = "liter-llm"
-version = "1.9.2"
+version = "1.9.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "42b3c1f3725f552f5e954a3a991aa9be1373b621a7b2f090bb93272e67a7ab60"
+checksum = "b2262222bbb692fb6c788b90bc24c1f8358d75f845374e4a0df6c70630541017"
 dependencies = [
  "ahash 0.8.12",
  "async-trait",
@@ -3535,24 +3518,20 @@ dependencies = [
  "aes 0.9.1",
  "bitflags 2.13.0",
  "cbc 0.2.1",
- "chrono",
  "ecb",
  "encoding_rs",
  "flate2",
  "getrandom 0.4.3",
  "indexmap",
  "itoa",
- "jiff",
  "log",
  "md-5",
  "nom 8.0.0",
  "rand 0.10.2",
  "rangemap",
- "rayon",
  "sha2 0.11.0",
  "stringprep",
  "thiserror 2.0.18",
- "time",
  "ttf-parser",
  "weezl 0.2.1",
 ]
@@ -7119,15 +7098,15 @@ checksum = "009994f150cc0cd50ff54917d5bc8bffe8cad10ca10d81c34da2ec421ae61782"
 
 [[package]]
 name = "tree-sitter-language-pack"
-version = "1.12.2"
+version = "1.12.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3379f087c3935b801e5eb926ab2e77529c2397e0ccaa81a79c1d444fbb9bd00c"
+checksum = "d49e30d1927ccc08599c054380bda399817781f74eb9184007e90606c7ff3a2c"
 dependencies = [
  "ahash 0.8.12",
  "cc",
  "dirs",
  "fd-lock",
- "getrandom 0.2.17",
+ "getrandom 0.4.3",
  "libloading 0.9.0",
  "memchr",
  "serde",
@@ -8117,7 +8096,7 @@ dependencies = [
 
 [[package]]
 name = "xberg"
-version = "1.0.0-rc.5"
+version = "1.0.0-rc.7"
 dependencies = [
  "ahash 0.8.12",
  "async-trait",
@@ -8233,7 +8212,7 @@ dependencies = [
 
 [[package]]
 name = "xberg-gliner"
-version = "1.0.0-rc.5"
+version = "1.0.0-rc.7"
 dependencies = [
  "ndarray 0.17.2",
  "ort",
@@ -8245,7 +8224,7 @@ dependencies = [
 
 [[package]]
 name = "xberg-libheif"
-version = "1.0.0-rc.5"
+version = "1.0.0-rc.7"
 dependencies = [
  "cfg-if",
  "enumn",
@@ -8256,7 +8235,7 @@ dependencies = [
 
 [[package]]
 name = "xberg-paddle-ocr"
-version = "1.0.0-rc.5"
+version = "1.0.0-rc.7"
 dependencies = [
  "geo-clipper",
  "geo-types",
@@ -8271,7 +8250,7 @@ dependencies = [
 
 [[package]]
 name = "xberg-rb"
-version = "1.0.0-rc.5"
+version = "1.0.0-rc.7"
 dependencies = [
  "async-trait",
  "crawlberg",
@@ -8285,7 +8264,7 @@ dependencies = [
 
 [[package]]
 name = "xberg-tesseract"
-version = "1.0.0-rc.5"
+version = "1.0.0-rc.7"
 dependencies = [
  "cc",
  "cmake",

@@ -3329,6 +3329,18 @@ void* __swift_bridge__$Vec_RerankerBackendBox$get_mut(void* vec_ptr, uintptr_t i
 uintptr_t __swift_bridge__$Vec_RerankerBackendBox$len(void* vec_ptr);
 void* __swift_bridge__$Vec_RerankerBackendBox$as_ptr(void* vec_ptr);
 
+typedef struct TokenizerBackendBox TokenizerBackendBox;
+void __swift_bridge__$TokenizerBackendBox$_free(void* self);
+
+void* __swift_bridge__$Vec_TokenizerBackendBox$new(void);
+void __swift_bridge__$Vec_TokenizerBackendBox$drop(void* vec_ptr);
+void __swift_bridge__$Vec_TokenizerBackendBox$push(void* vec_ptr, void* item_ptr);
+void* __swift_bridge__$Vec_TokenizerBackendBox$pop(void* vec_ptr);
+void* __swift_bridge__$Vec_TokenizerBackendBox$get(void* vec_ptr, uintptr_t index);
+void* __swift_bridge__$Vec_TokenizerBackendBox$get_mut(void* vec_ptr, uintptr_t index);
+uintptr_t __swift_bridge__$Vec_TokenizerBackendBox$len(void* vec_ptr);
+void* __swift_bridge__$Vec_TokenizerBackendBox$as_ptr(void* vec_ptr);
+
 void* __swift_bridge__$CacheStats$new(uintptr_t total_files, double total_size_mb, double available_space_mb, double oldest_file_age_days, double newest_file_age_days);
 uintptr_t __swift_bridge__$CacheStats$total_files(void* self);
 double __swift_bridge__$CacheStats$total_size_mb(void* self);
@@ -4658,6 +4670,7 @@ struct __private__ResultPtrAndPtr __swift_bridge__$list_ocr_backends(void);
 struct __private__ResultPtrAndPtr __swift_bridge__$list_post_processors(void);
 struct __private__ResultPtrAndPtr __swift_bridge__$list_renderers(void);
 struct __private__ResultPtrAndPtr __swift_bridge__$list_reranker_backends(void);
+struct __private__ResultPtrAndPtr __swift_bridge__$list_tokenizer_backends(void);
 struct __private__ResultPtrAndPtr __swift_bridge__$list_validators(void);
 void* __swift_bridge__$find_unmarked_claims(void* markdown);
 bool __swift_bridge__$verify_excerpt(void* excerpt, void* source_text);
@@ -4680,6 +4693,8 @@ void* __swift_bridge__$embedding_backend_call_embed(void* this, void* texts);
 void* __swift_bridge__$alef_phantom_vec_renderer(void);
 void* __swift_bridge__$alef_phantom_vec_reranker_backend(void);
 void* __swift_bridge__$reranker_backend_call_rerank(void* this, void* query, void* documents);
+void* __swift_bridge__$alef_phantom_vec_tokenizer_backend(void);
+uintptr_t __swift_bridge__$tokenizer_backend_call_count_tokens(void* this, void* text);
 void* __swift_bridge__$register_ocr_backend(void* swift_box);
 void* __swift_bridge__$unregister_ocr_backend(void* name);
 void* __swift_bridge__$clear_ocr_backends(void);
@@ -4701,6 +4716,9 @@ void* __swift_bridge__$clear_renderers(void);
 void* __swift_bridge__$register_reranker_backend(void* swift_box);
 void* __swift_bridge__$unregister_reranker_backend(void* name);
 void* __swift_bridge__$clear_reranker_backends(void);
+void* __swift_bridge__$register_tokenizer_backend(void* swift_box);
+void* __swift_bridge__$unregister_tokenizer_backend(void* name);
+void* __swift_bridge__$clear_tokenizer_backends(void);
 struct __private__ResultPtrAndPtr __swift_bridge__$extraction_config_from_json(void* json);
 struct __private__ResultPtrAndPtr __swift_bridge__$extract_input_from_json(void* json);
 struct __private__ResultPtrAndPtr __swift_bridge__$url_extraction_config_from_json(void* json);

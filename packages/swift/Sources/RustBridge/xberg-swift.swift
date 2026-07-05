@@ -127,6 +127,9 @@ public func listRenderers() throws -> RustVec<RustString> {
 public func listRerankerBackends() throws -> RustVec<RustString> {
     try { let val = __swift_bridge__$list_reranker_backends(); if val.is_ok { return RustVec(ptr: val.ok_or_err!) } else { throw RustString(ptr: val.ok_or_err!) } }()
 }
+public func listTokenizerBackends() throws -> RustVec<RustString> {
+    try { let val = __swift_bridge__$list_tokenizer_backends(); if val.is_ok { return RustVec(ptr: val.ok_or_err!) } else { throw RustString(ptr: val.ok_or_err!) } }()
+}
 public func listValidators() throws -> RustVec<RustString> {
     try { let val = __swift_bridge__$list_validators(); if val.is_ok { return RustVec(ptr: val.ok_or_err!) } else { throw RustString(ptr: val.ok_or_err!) } }()
 }
@@ -193,6 +196,12 @@ public func alef_phantom_vec_reranker_backend() -> RustVec<RerankerBackendBox> {
 public func reranker_backend_call_rerank<GenericIntoRustString: IntoRustString>(_ this: RerankerBackendBoxRef, _ query: GenericIntoRustString, _ documents: RustVec<GenericIntoRustString>) -> RustString {
     RustString(ptr: __swift_bridge__$reranker_backend_call_rerank(this.ptr, { let rustString = query.intoRustString(); rustString.isOwned = false; return rustString.ptr }(), { let val = documents; val.isOwned = false; return val.ptr }()))
 }
+public func alef_phantom_vec_tokenizer_backend() -> RustVec<TokenizerBackendBox> {
+    RustVec(ptr: __swift_bridge__$alef_phantom_vec_tokenizer_backend())
+}
+public func tokenizer_backend_call_count_tokens<GenericIntoRustString: IntoRustString>(_ this: TokenizerBackendBoxRef, _ text: GenericIntoRustString) -> UInt {
+    __swift_bridge__$tokenizer_backend_call_count_tokens(this.ptr, { let rustString = text.intoRustString(); rustString.isOwned = false; return rustString.ptr }())
+}
 public func registerOcrBackend(_ swift_box: SwiftOcrBackendBox) throws -> () {
     try { let val = __swift_bridge__$register_ocr_backend(Unmanaged.passRetained(swift_box).toOpaque()); if val != nil { throw RustString(ptr: val!) } else { return } }()
 }
@@ -255,6 +264,15 @@ public func unregisterRerankerBackend<GenericIntoRustString: IntoRustString>(_ n
 }
 public func clearRerankerBackends() throws -> () {
     try { let val = __swift_bridge__$clear_reranker_backends(); if val != nil { throw RustString(ptr: val!) } else { return } }()
+}
+public func registerTokenizerBackend(_ swift_box: SwiftTokenizerBackendBox) throws -> () {
+    try { let val = __swift_bridge__$register_tokenizer_backend(Unmanaged.passRetained(swift_box).toOpaque()); if val != nil { throw RustString(ptr: val!) } else { return } }()
+}
+public func unregisterTokenizerBackend<GenericIntoRustString: IntoRustString>(_ name: GenericIntoRustString) throws -> () {
+    try { let val = __swift_bridge__$unregister_tokenizer_backend({ let rustString = name.intoRustString(); rustString.isOwned = false; return rustString.ptr }()); if val != nil { throw RustString(ptr: val!) } else { return } }()
+}
+public func clearTokenizerBackends() throws -> () {
+    try { let val = __swift_bridge__$clear_tokenizer_backends(); if val != nil { throw RustString(ptr: val!) } else { return } }()
 }
 @_cdecl("__swift_bridge__$SwiftOcrBackendBox$alef_name")
 func __swift_bridge__SwiftOcrBackendBox_alef_name (_ this: UnsafeMutableRawPointer) -> UnsafeMutableRawPointer {
@@ -519,6 +537,31 @@ func __swift_bridge__SwiftRerankerBackendBox_alef_shutdown (_ this: UnsafeMutabl
 @_cdecl("__swift_bridge__$SwiftRerankerBackendBox$alef_rerank")
 func __swift_bridge__SwiftRerankerBackendBox_alef_rerank (_ this: UnsafeMutableRawPointer, _ query: UnsafeMutableRawPointer, _ documents: UnsafeMutableRawPointer) -> UnsafeMutableRawPointer {
     { let rustString = Unmanaged<SwiftRerankerBackendBox>.fromOpaque(this).takeUnretainedValue().alef_rerank(query: RustString(ptr: query), documents: RustVec(ptr: documents)).intoRustString(); rustString.isOwned = false; return rustString.ptr }()
+}
+
+@_cdecl("__swift_bridge__$SwiftTokenizerBackendBox$alef_name")
+func __swift_bridge__SwiftTokenizerBackendBox_alef_name (_ this: UnsafeMutableRawPointer) -> UnsafeMutableRawPointer {
+    { let rustString = Unmanaged<SwiftTokenizerBackendBox>.fromOpaque(this).takeUnretainedValue().alef_name().intoRustString(); rustString.isOwned = false; return rustString.ptr }()
+}
+
+@_cdecl("__swift_bridge__$SwiftTokenizerBackendBox$alef_version")
+func __swift_bridge__SwiftTokenizerBackendBox_alef_version (_ this: UnsafeMutableRawPointer) -> UnsafeMutableRawPointer {
+    { let rustString = Unmanaged<SwiftTokenizerBackendBox>.fromOpaque(this).takeUnretainedValue().alef_version().intoRustString(); rustString.isOwned = false; return rustString.ptr }()
+}
+
+@_cdecl("__swift_bridge__$SwiftTokenizerBackendBox$alef_initialize")
+func __swift_bridge__SwiftTokenizerBackendBox_alef_initialize (_ this: UnsafeMutableRawPointer) -> UnsafeMutableRawPointer {
+    { let rustString = Unmanaged<SwiftTokenizerBackendBox>.fromOpaque(this).takeUnretainedValue().alef_initialize().intoRustString(); rustString.isOwned = false; return rustString.ptr }()
+}
+
+@_cdecl("__swift_bridge__$SwiftTokenizerBackendBox$alef_shutdown")
+func __swift_bridge__SwiftTokenizerBackendBox_alef_shutdown (_ this: UnsafeMutableRawPointer) -> UnsafeMutableRawPointer {
+    { let rustString = Unmanaged<SwiftTokenizerBackendBox>.fromOpaque(this).takeUnretainedValue().alef_shutdown().intoRustString(); rustString.isOwned = false; return rustString.ptr }()
+}
+
+@_cdecl("__swift_bridge__$SwiftTokenizerBackendBox$alef_count_tokens")
+func __swift_bridge__SwiftTokenizerBackendBox_alef_count_tokens (_ this: UnsafeMutableRawPointer, _ text: UnsafeMutableRawPointer) -> UInt {
+    Unmanaged<SwiftTokenizerBackendBox>.fromOpaque(this).takeUnretainedValue().alef_count_tokens(text: RustString(ptr: text))
 }
 
 public func extractionConfigFromJson<GenericIntoRustString: IntoRustString>(_ json: GenericIntoRustString) throws -> ExtractionConfig {
@@ -27270,6 +27313,81 @@ extension RerankerBackendBox: Vectorizable {
 }
 
 
+public class TokenizerBackendBox: TokenizerBackendBoxRefMut {
+    public var isOwned: Bool = true
+
+    public override init(ptr: UnsafeMutableRawPointer) {
+        super.init(ptr: ptr)
+    }
+
+    deinit {
+        if isOwned {
+            __swift_bridge__$TokenizerBackendBox$_free(ptr)
+        }
+    }
+}
+public class TokenizerBackendBoxRefMut: TokenizerBackendBoxRef {
+    public override init(ptr: UnsafeMutableRawPointer) {
+        super.init(ptr: ptr)
+    }
+}
+public class TokenizerBackendBoxRef {
+    public var ptr: UnsafeMutableRawPointer
+
+    public init(ptr: UnsafeMutableRawPointer) {
+        self.ptr = ptr
+    }
+}
+extension TokenizerBackendBox: Vectorizable {
+    public static func vecOfSelfNew() -> UnsafeMutableRawPointer {
+        __swift_bridge__$Vec_TokenizerBackendBox$new()
+    }
+
+    public static func vecOfSelfFree(vecPtr: UnsafeMutableRawPointer) {
+        __swift_bridge__$Vec_TokenizerBackendBox$drop(vecPtr)
+    }
+
+    public static func vecOfSelfPush(vecPtr: UnsafeMutableRawPointer, value: TokenizerBackendBox) {
+        __swift_bridge__$Vec_TokenizerBackendBox$push(vecPtr, {value.isOwned = false; return value.ptr;}())
+    }
+
+    public static func vecOfSelfPop(vecPtr: UnsafeMutableRawPointer) -> Optional<Self> {
+        let pointer = __swift_bridge__$Vec_TokenizerBackendBox$pop(vecPtr)
+        if pointer == nil {
+            return nil
+        } else {
+            return (TokenizerBackendBox(ptr: pointer!) as! Self)
+        }
+    }
+
+    public static func vecOfSelfGet(vecPtr: UnsafeMutableRawPointer, index: UInt) -> Optional<TokenizerBackendBoxRef> {
+        let pointer = __swift_bridge__$Vec_TokenizerBackendBox$get(vecPtr, index)
+        if pointer == nil {
+            return nil
+        } else {
+            return TokenizerBackendBoxRef(ptr: pointer!)
+        }
+    }
+
+    public static func vecOfSelfGetMut(vecPtr: UnsafeMutableRawPointer, index: UInt) -> Optional<TokenizerBackendBoxRefMut> {
+        let pointer = __swift_bridge__$Vec_TokenizerBackendBox$get_mut(vecPtr, index)
+        if pointer == nil {
+            return nil
+        } else {
+            return TokenizerBackendBoxRefMut(ptr: pointer!)
+        }
+    }
+
+    public static func vecOfSelfAsPtr(vecPtr: UnsafeMutableRawPointer) -> UnsafePointer<TokenizerBackendBoxRef> {
+        UnsafePointer<TokenizerBackendBoxRef>(OpaquePointer(__swift_bridge__$Vec_TokenizerBackendBox$as_ptr(vecPtr)))
+    }
+
+    public static func vecOfSelfLen(vecPtr: UnsafeMutableRawPointer) -> UInt {
+        __swift_bridge__$Vec_TokenizerBackendBox$len(vecPtr)
+    }
+}
+
+
 @_cdecl("__swift_bridge__$SwiftOcrBackendBox$_free")
 func __swift_bridge__SwiftOcrBackendBox__free (ptr: UnsafeMutableRawPointer) {
     let _ = Unmanaged<SwiftOcrBackendBox>.fromOpaque(ptr).takeRetainedValue()
@@ -27309,6 +27427,12 @@ func __swift_bridge__SwiftRendererBox__free (ptr: UnsafeMutableRawPointer) {
 @_cdecl("__swift_bridge__$SwiftRerankerBackendBox$_free")
 func __swift_bridge__SwiftRerankerBackendBox__free (ptr: UnsafeMutableRawPointer) {
     let _ = Unmanaged<SwiftRerankerBackendBox>.fromOpaque(ptr).takeRetainedValue()
+}
+
+
+@_cdecl("__swift_bridge__$SwiftTokenizerBackendBox$_free")
+func __swift_bridge__SwiftTokenizerBackendBox__free (ptr: UnsafeMutableRawPointer) {
+    let _ = Unmanaged<SwiftTokenizerBackendBox>.fromOpaque(ptr).takeRetainedValue()
 }
 
 

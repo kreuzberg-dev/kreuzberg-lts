@@ -21,6 +21,7 @@ namespace Xberg;
 // - _EmbeddingBackendBridgeAdapter → "csharp-bridge-embedding_backend-adapter"
 // - _RendererBridgeAdapter → "csharp-bridge-renderer-adapter"
 // - _RerankerBackendBridgeAdapter → "csharp-bridge-reranker_backend-adapter"
+// - _TokenizerBackendBridgeAdapter → "csharp-bridge-tokenizer_backend-adapter"
 //
 // These names are used by e2e test cleanup to unregister adapters after each test.
 
@@ -361,6 +362,44 @@ public sealed class _RerankerBackendBridgeAdapter : IRerankerBackend
     public List<float> Rerank(string Query, List<string> Documents)
     {
         return _impl.Rerank(Query, Documents);
+    }
+
+}
+
+/// <summary>
+/// Adapter bridge for TokenizerBackend trait implementation.
+/// Wraps a user-provided ITokenizerBackend implementation and delegates all method calls.
+/// </summary>
+public sealed class _TokenizerBackendBridgeAdapter : ITokenizerBackend
+{
+    private readonly ITokenizerBackend _impl;
+
+    /// <summary>Create an adapter around a user-provided TokenizerBackend implementation.</summary>
+    public _TokenizerBackendBridgeAdapter(ITokenizerBackend impl)
+    {
+        _impl = impl ?? throw new ArgumentNullException(nameof(impl));
+    }
+
+    // MARK: - Plugin lifecycle (if present)
+
+    /// <summary>Get the plugin name.</summary>
+    public string Name => _impl.Name;
+
+    /// <summary>Get the plugin version.</summary>
+    public string Version => _impl.Version;
+
+    /// <summary>Initialize the plugin.</summary>
+    public void Initialize() => _impl.Initialize();
+
+    /// <summary>Shut down the plugin.</summary>
+    public void Shutdown() => _impl.Shutdown();
+
+    // MARK: - Trait methods
+
+    /// <summary></summary>
+    public ulong CountTokens(string Text)
+    {
+        return _impl.CountTokens(Text);
     }
 
 }

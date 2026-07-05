@@ -6,11 +6,15 @@
     "type": "git",
     "url": "git+https://github.com/xberg-io/xberg.git"
   },
-  "main": "xberg-node.linux-x64-gnu.node",
   "files": ["xberg-node.linux-x64-gnu.node"],
   "os": ["linux"],
   "cpu": ["x64"],
   "libc": ["glibc"],
-  "engines": { "node": ">= 22" },
-  "publishConfig": { "access": "public" }
+  "main": "xberg-node.linux-x64-gnu.node",
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "node": ">= 22"
+  }
 }

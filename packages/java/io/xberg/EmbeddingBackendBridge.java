@@ -105,8 +105,8 @@ public final class EmbeddingBackendBridge implements AutoCloseable {
 
     private void initStubDimensions(long offset) throws ReflectiveOperationException {
         var stubDimensions = LINKER.upcallStub(LOOKUP.bind(this, "handleDimensions",
-            MethodType.methodType(int.class, MemorySegment.class, MemorySegment.class, MemorySegment.class)),
-        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS),
+            MethodType.methodType(long.class, MemorySegment.class)),
+        FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.ADDRESS),
         arena);
         vtable.set(ValueLayout.ADDRESS, offset, stubDimensions);
     }
@@ -166,16 +166,16 @@ public final class EmbeddingBackendBridge implements AutoCloseable {
         } catch (Throwable e) { return 1; }
     }
 
-    private int handleDimensions(MemorySegment userData, MemorySegment outResult, MemorySegment outError) {
+    // Direct-value C slot (`fn(user_data, params...) -> <primitive>`): the value
+    // returns straight through the ABI with no out_result/out_error pointers,
+    // so a host exception cannot propagate — log it before substituting the
+    // default, which would otherwise be indistinguishable from a real result.
+    private long handleDimensions(MemorySegment userData) {
         try {
-            long callbackResult = impl.dimensions();
-            String json = JSON.writeValueAsString(callbackResult);
-            MemorySegment jsonCs = arena.allocateFrom(json);
-            outResult.set(ValueLayout.ADDRESS, 0, jsonCs);
-            return 0;
+            return impl.dimensions();
         } catch (Throwable e) {
-            writeError(outError, e);
-            return 1;
+            System.err.println("[EmbeddingBackendBridge] host 'dimensions' threw; returning default: " + e);
+            return 0L;
         }
     }
 

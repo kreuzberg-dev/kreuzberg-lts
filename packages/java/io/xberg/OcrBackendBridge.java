@@ -165,8 +165,8 @@ public final class OcrBackendBridge implements AutoCloseable {
 
     private void initStubSupportsLanguage(long offset) throws ReflectiveOperationException {
         var stubSupportsLanguage = LINKER.upcallStub(LOOKUP.bind(this, "handleSupportsLanguage",
-            MethodType.methodType(int.class, MemorySegment.class, MemorySegment.class, MemorySegment.class, MemorySegment.class)),
-        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS),
+            MethodType.methodType(long.class, MemorySegment.class, MemorySegment.class)),
+        FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.ADDRESS, ValueLayout.ADDRESS),
         arena);
         vtable.set(ValueLayout.ADDRESS, offset, stubSupportsLanguage);
     }
@@ -189,24 +189,24 @@ public final class OcrBackendBridge implements AutoCloseable {
 
     private void initStubSupportsTableDetection(long offset) throws ReflectiveOperationException {
         var stubSupportsTableDetection = LINKER.upcallStub(LOOKUP.bind(this, "handleSupportsTableDetection",
-            MethodType.methodType(int.class, MemorySegment.class, MemorySegment.class, MemorySegment.class)),
-        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS),
+            MethodType.methodType(long.class, MemorySegment.class)),
+        FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.ADDRESS),
         arena);
         vtable.set(ValueLayout.ADDRESS, offset, stubSupportsTableDetection);
     }
 
     private void initStubSupportsDocumentProcessing(long offset) throws ReflectiveOperationException {
         var stubSupportsDocumentProcessing = LINKER.upcallStub(LOOKUP.bind(this, "handleSupportsDocumentProcessing",
-            MethodType.methodType(int.class, MemorySegment.class, MemorySegment.class, MemorySegment.class)),
-        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS),
+            MethodType.methodType(long.class, MemorySegment.class)),
+        FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.ADDRESS),
         arena);
         vtable.set(ValueLayout.ADDRESS, offset, stubSupportsDocumentProcessing);
     }
 
     private void initStubEmitsStructuredMarkdown(long offset) throws ReflectiveOperationException {
         var stubEmitsStructuredMarkdown = LINKER.upcallStub(LOOKUP.bind(this, "handleEmitsStructuredMarkdown",
-            MethodType.methodType(int.class, MemorySegment.class, MemorySegment.class, MemorySegment.class)),
-        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS),
+            MethodType.methodType(long.class, MemorySegment.class)),
+        FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.ADDRESS),
         arena);
         vtable.set(ValueLayout.ADDRESS, offset, stubEmitsStructuredMarkdown);
     }
@@ -325,17 +325,17 @@ public final class OcrBackendBridge implements AutoCloseable {
         }
     }
 
-    private int handleSupportsLanguage(MemorySegment userData, MemorySegment lang_in, MemorySegment outResult, MemorySegment outError) {
+    // Direct-value C slot (`fn(user_data, params...) -> <primitive>`): the value
+    // returns straight through the ABI with no out_result/out_error pointers,
+    // so a host exception cannot propagate — log it before substituting the
+    // default, which would otherwise be indistinguishable from a real result.
+    private long handleSupportsLanguage(MemorySegment userData, MemorySegment lang_in) {
         try {
             String lang = lang_in.reinterpret(Long.MAX_VALUE).getString(0);
-            boolean callbackResult = impl.supports_language(lang);
-            String json = JSON.writeValueAsString(callbackResult);
-            MemorySegment jsonCs = arena.allocateFrom(json);
-            outResult.set(ValueLayout.ADDRESS, 0, jsonCs);
-            return 0;
+            return impl.supports_language(lang) ? 1L : 0L;
         } catch (Throwable e) {
-            writeError(outError, e);
-            return 1;
+            System.err.println("[OcrBackendBridge] host 'supports_language' threw; returning default: " + e);
+            return 0L;
         }
     }
 
@@ -364,42 +364,42 @@ public final class OcrBackendBridge implements AutoCloseable {
         }
     }
 
-    private int handleSupportsTableDetection(MemorySegment userData, MemorySegment outResult, MemorySegment outError) {
+    // Direct-value C slot (`fn(user_data, params...) -> <primitive>`): the value
+    // returns straight through the ABI with no out_result/out_error pointers,
+    // so a host exception cannot propagate — log it before substituting the
+    // default, which would otherwise be indistinguishable from a real result.
+    private long handleSupportsTableDetection(MemorySegment userData) {
         try {
-            boolean callbackResult = impl.supports_table_detection();
-            String json = JSON.writeValueAsString(callbackResult);
-            MemorySegment jsonCs = arena.allocateFrom(json);
-            outResult.set(ValueLayout.ADDRESS, 0, jsonCs);
-            return 0;
+            return impl.supports_table_detection() ? 1L : 0L;
         } catch (Throwable e) {
-            writeError(outError, e);
-            return 1;
+            System.err.println("[OcrBackendBridge] host 'supports_table_detection' threw; returning default: " + e);
+            return 0L;
         }
     }
 
-    private int handleSupportsDocumentProcessing(MemorySegment userData, MemorySegment outResult, MemorySegment outError) {
+    // Direct-value C slot (`fn(user_data, params...) -> <primitive>`): the value
+    // returns straight through the ABI with no out_result/out_error pointers,
+    // so a host exception cannot propagate — log it before substituting the
+    // default, which would otherwise be indistinguishable from a real result.
+    private long handleSupportsDocumentProcessing(MemorySegment userData) {
         try {
-            boolean callbackResult = impl.supports_document_processing();
-            String json = JSON.writeValueAsString(callbackResult);
-            MemorySegment jsonCs = arena.allocateFrom(json);
-            outResult.set(ValueLayout.ADDRESS, 0, jsonCs);
-            return 0;
+            return impl.supports_document_processing() ? 1L : 0L;
         } catch (Throwable e) {
-            writeError(outError, e);
-            return 1;
+            System.err.println("[OcrBackendBridge] host 'supports_document_processing' threw; returning default: " + e);
+            return 0L;
         }
     }
 
-    private int handleEmitsStructuredMarkdown(MemorySegment userData, MemorySegment outResult, MemorySegment outError) {
+    // Direct-value C slot (`fn(user_data, params...) -> <primitive>`): the value
+    // returns straight through the ABI with no out_result/out_error pointers,
+    // so a host exception cannot propagate — log it before substituting the
+    // default, which would otherwise be indistinguishable from a real result.
+    private long handleEmitsStructuredMarkdown(MemorySegment userData) {
         try {
-            boolean callbackResult = impl.emits_structured_markdown();
-            String json = JSON.writeValueAsString(callbackResult);
-            MemorySegment jsonCs = arena.allocateFrom(json);
-            outResult.set(ValueLayout.ADDRESS, 0, jsonCs);
-            return 0;
+            return impl.emits_structured_markdown() ? 1L : 0L;
         } catch (Throwable e) {
-            writeError(outError, e);
-            return 1;
+            System.err.println("[OcrBackendBridge] host 'emits_structured_markdown' threw; returning default: " + e);
+            return 0L;
         }
     }
 

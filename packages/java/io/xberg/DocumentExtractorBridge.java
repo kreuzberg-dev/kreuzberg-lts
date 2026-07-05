@@ -139,30 +139,16 @@ public final class DocumentExtractorBridge implements AutoCloseable {
 
     private void initStubPriority(long offset) throws ReflectiveOperationException {
         var stubPriority = LINKER.upcallStub(LOOKUP.bind(this, "handlePriority",
-            MethodType.methodType(int.class, MemorySegment.class, MemorySegment.class, MemorySegment.class)),
-        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS),
+            MethodType.methodType(long.class, MemorySegment.class)),
+        FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.ADDRESS),
         arena);
         vtable.set(ValueLayout.ADDRESS, offset, stubPriority);
     }
 
     private void initStubCanHandle(long offset) throws ReflectiveOperationException {
         var stubCanHandle = LINKER.upcallStub(LOOKUP.bind(this, "handleCanHandle",
-            MethodType.methodType(
-                int.class,
-                MemorySegment.class,
-                MemorySegment.class,
-                MemorySegment.class,
-                MemorySegment.class,
-                MemorySegment.class
-        )),
-        FunctionDescriptor.of(
-            ValueLayout.JAVA_INT,
-            ValueLayout.ADDRESS,
-            ValueLayout.ADDRESS,
-            ValueLayout.ADDRESS,
-            ValueLayout.ADDRESS,
-            ValueLayout.ADDRESS
-        ),
+            MethodType.methodType(long.class, MemorySegment.class, MemorySegment.class, MemorySegment.class)),
+        FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS),
         arena);
         vtable.set(ValueLayout.ADDRESS, offset, stubCanHandle);
     }
@@ -250,37 +236,31 @@ public final class DocumentExtractorBridge implements AutoCloseable {
         }
     }
 
-    private int handlePriority(MemorySegment userData, MemorySegment outResult, MemorySegment outError) {
+    // Direct-value C slot (`fn(user_data, params...) -> <primitive>`): the value
+    // returns straight through the ABI with no out_result/out_error pointers,
+    // so a host exception cannot propagate — log it before substituting the
+    // default, which would otherwise be indistinguishable from a real result.
+    private long handlePriority(MemorySegment userData) {
         try {
-            int callbackResult = impl.priority();
-            String json = JSON.writeValueAsString(callbackResult);
-            MemorySegment jsonCs = arena.allocateFrom(json);
-            outResult.set(ValueLayout.ADDRESS, 0, jsonCs);
-            return 0;
+            return impl.priority();
         } catch (Throwable e) {
-            writeError(outError, e);
-            return 1;
+            System.err.println("[DocumentExtractorBridge] host 'priority' threw; returning default: " + e);
+            return 0L;
         }
     }
 
-    private int handleCanHandle(
-        MemorySegment userData,
-        MemorySegment _path_in,
-        MemorySegment _mime_type_in,
-        MemorySegment outResult,
-        MemorySegment outError
-    ) {
+    // Direct-value C slot (`fn(user_data, params...) -> <primitive>`): the value
+    // returns straight through the ABI with no out_result/out_error pointers,
+    // so a host exception cannot propagate — log it before substituting the
+    // default, which would otherwise be indistinguishable from a real result.
+    private long handleCanHandle(MemorySegment userData, MemorySegment _path_in, MemorySegment _mime_type_in) {
         try {
             java.nio.file.Path _path = java.nio.file.Paths.get(_path_in.reinterpret(Long.MAX_VALUE).getString(0));
             String _mime_type = _mime_type_in.reinterpret(Long.MAX_VALUE).getString(0);
-            boolean callbackResult = impl.can_handle(_path, _mime_type);
-            String json = JSON.writeValueAsString(callbackResult);
-            MemorySegment jsonCs = arena.allocateFrom(json);
-            outResult.set(ValueLayout.ADDRESS, 0, jsonCs);
-            return 0;
+            return impl.can_handle(_path, _mime_type) ? 1L : 0L;
         } catch (Throwable e) {
-            writeError(outError, e);
-            return 1;
+            System.err.println("[DocumentExtractorBridge] host 'can_handle' threw; returning default: " + e);
+            return 0L;
         }
     }
 

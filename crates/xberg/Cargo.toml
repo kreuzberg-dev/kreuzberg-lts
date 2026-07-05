@@ -449,12 +449,15 @@ android-target = [
     "classification",
     "captioning",
     "ner-llm",
-    # Same not-feature-aware-binding reason: the Dart/Kotlin bindings reference
-    # `UrlExtractionConfig.crawl` unconditionally, but that field is gated on
-    # `#[cfg(any(url-ingestion, url-config-types))]`. Use the type-only variant
-    # (pure-Rust crawlberg types, no native-runtime) so the field exists on the
-    # no-ORT Android surface without pulling a native HTTP runtime.
-    "url-config-types",
+    # Same not-feature-aware-binding reason: the Dart FRB dispatch
+    # (`frb_generated.rs`) references `crate::map_url` unconditionally, and the
+    # Dart/Kotlin bindings reference `UrlExtractionConfig.crawl`. `map_url` is
+    # gated on `#[cfg(url-ingestion)]`, so `url-config-types` alone leaves it
+    # configured out → E0425. `url-ingestion` adds `crawlberg/native-runtime`,
+    # which is a zero-dependency flag (`native-runtime = []`) over pure-Rust
+    # crawlberg — no ORT, no new native deps — so it is safe on the no-ORT
+    # Android surface and supersedes the type-only `url-config-types`.
+    "url-ingestion",
 ]
 # windows-target: curated feature set for Windows host builds across every
 # binding crate. Native libheif/libheif-sys is not installed on the standard
@@ -501,13 +504,19 @@ windows-target = [
     # heuristics = [] (no deps), xml = [quick-xml, roxmltree] (pure Rust),
     # svg = [resvg, image-encode] (pure Rust, WASM-safe per Cargo.toml comment),
     # chunking-tokenizers = [chunking, tokenizers] (tokenizers is pure Rust on
-    # Windows via the target-specific dep block at line ~788), url-config-types =
-    # [crawlberg] (type-only, no native-runtime — same rationale as android-target).
+    # Windows via the target-specific dep block at line ~788), url-ingestion =
+    # [crawlberg + native-runtime] (pure-Rust crawlberg; native-runtime = [] is a
+    # zero-dep flag). url-ingestion (not just url-config-types) is required so the
+    # non-feature-aware Dart FRB dispatch resolves `crate::map_url` on Windows.
     "heuristics",
     "xml",
     "svg",
     "chunking-tokenizers",
-    "url-config-types",
+    "url-ingestion",
+    # markdown-footnotes = [] (pure Rust, no deps). The generated bindings
+    # re-export FootnoteConfig/FootnoteAnchor/FootnoteDefinition/Citation
+    # unconditionally, so the defining feature must be enabled on Windows too.
+    "markdown-footnotes",
 ]
 # macos-intel-target: native Intel macOS (x86_64-apple-darwin). FULL feature
 # parity with every other platform — including all ONNX Runtime ML (paddle-ocr,

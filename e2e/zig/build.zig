@@ -512,6 +512,36 @@ pub fn build(b: *std.Build) void {
     summarization_run.step.dependOn(&smoke_run.step);
     test_step.dependOn(&summarization_run.step);
 
+    const tokenizer_backend_management_module = b.createModule(.{
+        .root_source_file = b.path("src/tokenizer_backend_management_test.zig"),
+        .target = target,
+        .optimize = optimize,
+        .link_libc = true,
+    });
+    tokenizer_backend_management_module.addImport("xberg", xberg_module);
+    const tokenizer_backend_management_tests = b.addTest(.{
+        .name = "tokenizer_backend_management_test",
+        .root_module = tokenizer_backend_management_module,
+        .use_llvm = true,
+    });
+    tokenizer_backend_management_tests.root_module.addRPath(.{ .cwd_relative = ffi_path_abs });
+    const tokenizer_backend_management_run = b.addRunArtifact(tokenizer_backend_management_tests);
+    tokenizer_backend_management_run.setEnvironmentVariable("CRAWLBERG_ALLOW_PRIVATE_NETWORK", "true");
+    if (mock_server_url) |_url| {
+        tokenizer_backend_management_run.setEnvironmentVariable("MOCK_SERVER_URL", _url);
+    }
+    if (mock_servers_json) |_json| {
+        tokenizer_backend_management_run.setEnvironmentVariable("MOCK_SERVERS", _json);
+    }
+    {
+        var _it = mock_servers_map.iterator();
+        while (_it.next()) |_entry| {
+            tokenizer_backend_management_run.setEnvironmentVariable(_entry.key_ptr.*, _entry.value_ptr.*);
+        }
+    }
+    tokenizer_backend_management_run.step.dependOn(&summarization_run.step);
+    test_step.dependOn(&tokenizer_backend_management_run.step);
+
     const url_module = b.createModule(.{
         .root_source_file = b.path("src/url_test.zig"),
         .target = target,
@@ -539,7 +569,7 @@ pub fn build(b: *std.Build) void {
             url_run.setEnvironmentVariable(_entry.key_ptr.*, _entry.value_ptr.*);
         }
     }
-    url_run.step.dependOn(&summarization_run.step);
+    url_run.step.dependOn(&tokenizer_backend_management_run.step);
     test_step.dependOn(&url_run.step);
 
     const validator_management_module = b.createModule(.{

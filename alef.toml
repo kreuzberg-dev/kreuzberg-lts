@@ -1,5 +1,5 @@
 [workspace]
-alef_version = "0.32.3"
+alef_version = "0.32.4"
 # alef codegen emits non-shorthand struct init (`name: name`) in generated
 # binding lib.rs files; allow it repo-wide so workspace clippy passes under
 # -D warnings (emitted into every generated Rust binding as #![allow(...)]).
@@ -518,7 +518,7 @@ roots = ["crawlberg::CrawlConfig", "crawlberg::MapResult"]
 # (crawlberg) specified without providing a version"). Keep this in sync with
 # the root Cargo.toml [workspace.dependencies] entry.
 [crates.extra_dependencies]
-crawlberg = { version = "1.0.2", default-features = false }
+crawlberg = { version = "1.0.3", default-features = false }
 
 [crates.python]
 module_name = "_xberg"

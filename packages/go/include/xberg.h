@@ -144,9 +144,12 @@ typedef struct XBERGChunkMetadata XBERGChunkMetadata;
  * Defaults to `Characters` (Unicode character count). When using token-based sizing,
  * chunks are sized by token count according to the specified tokenizer.
  *
- * Token-based sizing uses HuggingFace tokenizers loaded at runtime. Any tokenizer
- * available on HuggingFace Hub can be used, including OpenAI-compatible tokenizers
- * (e.g., `Xenova/gpt-4o`, `Xenova/cl100k_base`).
+ * Token-based sizing uses HuggingFace tokenizers loaded at runtime, or a tokenizer
+ * backend you register yourself. Any tokenizer available on HuggingFace Hub can be
+ * used, including OpenAI-compatible tokenizers (e.g., `Xenova/gpt-4o`,
+ * `Xenova/cl100k_base`). To size chunks with your own tokenizer instead (llama.cpp/GGUF
+ * vocabularies, SentencePiece models, custom vocabs), register a `TokenizerBackend`
+ * with `register_tokenizer_backend` and set `model` to the registered name.
  */
 typedef struct XBERGChunkSizing XBERGChunkSizing;
 /**
@@ -1896,6 +1899,47 @@ typedef struct XBERGTokenReductionConfig XBERGTokenReductionConfig;
  */
 typedef struct XBERGTokenReductionOptions XBERGTokenReductionOptions;
 /**
+ * Trait for in-process tokenizer backend plugins.
+ *
+ * Unlike `EmbeddingBackend`, this trait is **synchronous**:
+ * the chunk splitter calls `Self.count_tokens` inside its boundary search,
+ * many times per chunk, so counting must be a direct call with no async
+ * dispatch. Host-language bridges (PyO3, napi-rs, etc.) invoke their host
+ * callable synchronously on the calling thread; implementations should keep
+ * `count_tokens` cheap â it dominates chunking time when the backend is slow.
+ *
+ * # Lifecycle
+ *
+ * `initialize()` is called once during registration, before any
+ * `count_tokens` call; lazy-loading implementations should load their
+ * vocabulary there. After registration succeeds, `count_tokens` may be called
+ * from any thread, concurrently. `shutdown()` runs on unregistration and may
+ * overlap an in-flight `count_tokens` call from a chunking run that resolved
+ * the backend earlier â implementations must tolerate this, e.g. by keeping
+ * the resources `count_tokens` needs alive via `Arc`.
+ *
+ * # Thread safety
+ *
+ * Backends must be `Send + Sync + 'static` (inherited from `Plugin`). They
+ * are stored in `Arc<dyn TokenizerBackend>` and called concurrently from
+ * xberg's chunking pipeline. If the underlying tokenizer isn't thread-safe,
+ * the backend must serialize access internally.
+ *
+ * # Contract
+ *
+ * - `count_tokens` must return a non-zero count for non-empty text. The
+ *   registry probes this once at registration and rejects backends that
+ *   report zero â a zero count would make every span appear to fit any
+ *   budget. At runtime, a zero count for non-empty text is not trusted:
+ *   the chunker substitutes the character count and logs the substitution.
+ *   (An implementation may still return 0 for the empty string.)
+ * - `count_tokens` must not panic; return a best-effort count for text the
+ *   tokenizer can't fully process.
+ * - Counting should be deterministic for a given input â the splitter may
+ *   evaluate overlapping spans of the same text repeatedly.
+ */
+typedef struct XBERGTokenizerBackend XBERGTokenizerBackend;
+/**
  * Configuration for audio/video transcription (speech-to-text).
  *
  * When present and `enabled`, Xberg will route audio and video files
@@ -2938,6 +2982,53 @@ typedef struct XBERGXbergRerankerBackendVTable {
    */
   void (*free_user_data)(void*);
 } XBERGXbergRerankerBackendVTable;
+
+/**
+ * VTable for C plugin bridges implementing the `TokenizerBackend` trait.
+ *
+ * # Safety
+ *
+ * All function pointers must be valid for the lifetime of any bridge created from
+ * this vtable.  `free_user_data`, when non-null, is called once with `user_data`
+ * when the bridge is dropped.
+ */
+typedef struct XBERGXbergTokenizerBackendVTable {
+  /**
+   * Return a null-terminated UTF-8 name string into `out_name`; return 0 on success.
+   */
+  int32_t (*name_fn)(const void *user_data,
+                     char **out_name,
+                     char **out_error);
+  /**
+   * Return a null-terminated UTF-8 version string into `out_version`; return 0 on success.
+   */
+  int32_t (*version_fn)(const void *user_data,
+                        char **out_version,
+                        char **out_error);
+  /**
+   * Initialise the plugin; return 0 on success, non-zero on failure (error text in `out_error`).
+   */
+  int32_t (*initialize_fn)(const void *user_data,
+                           char **out_error);
+  /**
+   * Shut down the plugin; return 0 on success, non-zero on failure (error text in `out_error`).
+   */
+  int32_t (*shutdown_fn)(const void *user_data,
+                         char **out_error);
+  /**
+   * Count the tokens in `text` according to this backend's tokenizer.
+   */
+  uintptr_t (*count_tokens)(const void *user_data,
+                            const char *text);
+  /**
+   * Optional string destructor: called for strings returned by vtable callbacks.
+   */
+  void (*free_string)(char*);
+  /**
+   * Optional destructor: called once with `user_data` when the bridge is dropped.
+   */
+  void (*free_user_data)(void*);
+} XBERGXbergTokenizerBackendVTable;
 
 /**
  * Return the last error code (0 means no error).
@@ -18694,6 +18785,25 @@ char *xberg_list_reranker_backends(void);
 uintptr_t xberg_list_reranker_backends_len(void);
 
 /**
+ * List the names of all registered tokenizer backends.
+ *
+ * Used by `xberg-cli`, the api/mcp endpoints, and generated language
+ * bindings.
+ * \note SAFETY: Caller must ensure all pointer arguments are valid or null. Returned pointers must be
+ * freed with the appropriate free function.
+ */
+char *xberg_list_tokenizer_backends(void);
+
+/**
+ * Return the byte length of the C string most recently returned by `xberg_list_tokenizer_backends` on
+ * this thread. Returns 0 when the primary call returned null or failed before producing a string.
+ * Enables safe slice construction in Zig and Java FFM Panama without a NUL-scan.
+ * \note SAFETY: Pointer arguments are ignored and are present only to keep the companion ABI aligned
+ * with `xberg_list_tokenizer_backends`.
+ */
+uintptr_t xberg_list_tokenizer_backends_len(void);
+
+/**
  * List names of all registered validators.
  * \note SAFETY: Caller must ensure all pointer arguments are valid or null. Returned pointers must be
  * freed with the appropriate free function.
@@ -19118,5 +19228,55 @@ int32_t xberg_unregister_reranker_backend(const char *name,
  * and must free it with `xberg_free_string`.
  */
 int32_t xberg_clear_reranker_backend(char **out_error);
+
+/**
+ * Register a C plugin implementing `TokenizerBackend` via a vtable.
+ *
+ * # Parameters
+ *
+ * - `name`: null-terminated UTF-8 plugin name. Must not be null.
+ * - `vtable`: vtable with function pointers implementing the trait.
+ * - `user_data`: opaque pointer forwarded to every vtable function.
+ * - `out_error`: receives a heap-allocated error string on failure.
+ *
+ * # Safety
+ *
+ * All function pointers in `vtable` must remain valid until the plugin is
+ * unregistered. `user_data` must be safe to use from any thread that calls
+ * into the plugin.
+ */
+int32_t xberg_register_tokenizer_backend(const char *name,
+                                         const struct XBERGXbergTokenizerBackendVTable *vtable,
+                                         const void *user_data,
+                                         char **out_error);
+
+/**
+ * Unregister a previously registered C plugin by name.
+ *
+ * # Parameters
+ *
+ * - `name`: null-terminated UTF-8 plugin name. Must not be null.
+ * - `out_error`: receives a heap-allocated error string on failure.
+ *
+ * # Safety
+ *
+ * `name` must point to a valid null-terminated C string.
+ */
+int32_t xberg_unregister_tokenizer_backend(const char *name,
+                                           char **out_error);
+
+/**
+ * Remove all registered C plugins of this trait.
+ *
+ * # Parameters
+ *
+ * - `out_error`: receives a heap-allocated error string on failure.
+ *
+ * # Safety
+ *
+ * `out_error` may be null. When non-null, the caller owns the resulting string
+ * and must free it with `xberg_free_string`.
+ */
+int32_t xberg_clear_tokenizer_backend(char **out_error);
 
 #endif  /* XBERG_H */

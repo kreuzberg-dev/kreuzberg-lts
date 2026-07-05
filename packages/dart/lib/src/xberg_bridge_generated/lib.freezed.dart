@@ -1333,7 +1333,9 @@ class ChunkSizing_Tokenizer extends ChunkSizing {
   const ChunkSizing_Tokenizer({required this.model, required this.cacheDir}): super._();
 
 
-/// HuggingFace model ID or path, e.g. "Xenova/gpt-4o", "bert-base-uncased".
+/// Name of a tokenizer backend registered via `register_tokenizer_backend`,
+/// or a HuggingFace model ID, e.g. "Xenova/gpt-4o", "bert-base-uncased".
+/// A registered backend name takes precedence over a HuggingFace ID.
  final  String model;
 /// Optional cache directory override for tokenizer files.
 /// Defaults to hf-hub's standard cache (`~/.cache/huggingface/`).
