@@ -644,8 +644,8 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { os: ubuntu-latest, arch: x86_64, target: x86_64-unknown-linux-musl }
-          - { os: ubuntu-24.04-arm, arch: aarch64, target: aarch64-unknown-linux-musl }
+          - { os: ubuntu-latest, arch: x86_64, napi_arch: x64, target: x86_64-unknown-linux-musl }
+          - { os: ubuntu-24.04-arm, arch: aarch64, napi_arch: arm64, target: aarch64-unknown-linux-musl }
     steps:
       - uses: actions/checkout@v6
         with:
@@ -657,13 +657,20 @@ jobs:
           docker build -f docker/Dockerfile.musl-node \
             --build-arg TARGET=${{ matrix.target }} \
             --output type=local,dest=./build-output .
-      - name: Stage .node file and package structure for npm
-        # Inline: package the .node file into npm/<platform>/ structure matching
-        # the main job's build-node-napi output format (pack-target-tarball).
-        # The publish-node script will create/inject package.json for each platform.
+      - name: Stage .node into napi platform dir for npm
+        # Emit the canonical napi layout — npm/<napi-platform>/ carrying the
+        # committed per-platform package.json plus the built .node — so the
+        # publish-node consumer extracts a ready-to-pack sub-package. The old
+        # npm/xberg-<triple>/ dir (no package.json) forced the consumer to
+        # synthesise a name and mis-scoped the packages as
+        # @xberg-io/xberg-xberg-<triple>.
         run: |
-          mkdir -p staging/npm/xberg-${{ matrix.target }}
-          find build-output -name "*.node" -exec cp {} staging/npm/xberg-${{ matrix.target }}/ \;
+          platform="linux-${{ matrix.napi_arch }}-musl"
+          mkdir -p "staging/npm/${platform}"
+          find build-output -name "*.node" -exec cp {} "staging/npm/${platform}/" \;
+          test -n "$(find "staging/npm/${platform}" -name '*.node')" || {
+            echo "::error::no .node produced by musl build for ${platform}"; exit 1; }
+          cp "crates/xberg-node/npm/${platform}/package.json" "staging/npm/${platform}/package.json"
           tar -czf node-bindings-${{ matrix.target }}.tar.gz -C staging npm
       - uses: actions/upload-artifact@v7
         with:
@@ -715,17 +722,17 @@ jobs:
             --build-arg TARGET=${{ matrix.target }} \
             --output type=local,dest=./build-output .
       - name: Stage .node into napi platform dir for npm
-        # publish-node derives each platform sub-package's name from its
-        # npm/<dir>/package.json (falling back to @xberg-io/xberg-<dirname>), and
-        # explicitly waits on @xberg-io/xberg-linux-{x64,arm64}-gnu. Stage the
-        # container's .node under the exact napi platform dir so the fallback
-        # yields that name — matching the native job's `napi artifacts` layout.
+        # Emit the canonical napi layout — npm/<napi-platform>/ carrying the
+        # committed per-platform package.json plus the built .node — matching the
+        # native job's `napi artifacts` layout so the publish-node consumer needs
+        # no per-platform package.json synthesis.
         run: |
           platform="linux-${{ matrix.napi_arch }}-gnu"
           mkdir -p "staging/npm/${platform}"
           find build-output -name "*.node" -exec cp {} "staging/npm/${platform}/" \;
           test -n "$(find "staging/npm/${platform}" -name '*.node')" || {
             echo "::error::no .node produced by manylinux build for ${platform}"; exit 1; }
+          cp "crates/xberg-node/npm/${platform}/package.json" "staging/npm/${platform}/package.json"
           tar -czf node-bindings-${{ matrix.target }}.tar.gz -C staging npm
       - uses: actions/upload-artifact@v7
         with:
@@ -2461,45 +2468,37 @@ jobs:
         # main package needs an injected optionalDependencies map listing every
         # platform sub-package. Tightly coupled to napi-rs + repo conventions;
         # the generic publish-npm action operates on a single package dir.
-        working-directory: crates/xberg-node
         shell: bash
         run: |
-          rm -rf npm
-          mkdir -p npm
-
-          # Extract all platform tarballs into npm/<platform>/
-          cd ../..
+          # Every node-bindings artifact ships the canonical napi layout
+          # (npm/<napi-platform>/{package.json,*.node}); the macOS/Windows legs
+          # also carry index.js + index.d.ts at the tarball root. Extract them,
+          # pack each platform sub-package that has both a package.json and a
+          # built .node, and stamp the main package's optionalDependencies from
+          # exactly those sub-packages. Platform dirs that napi created but no
+          # job built (e.g. win32-arm64-msvc) have a package.json but no .node —
+          # skip them so we never publish an empty package or reference it.
+          rm -rf crates/xberg-node/npm
+          mkdir -p crates/xberg-node/npm
           for pkg in node-artifacts/*.tar.gz; do
             tar -xzf "${pkg}" -C crates/xberg-node
           done
-          cd crates/xberg-node
 
-          # Ensure each platform subdir has a package.json (create if missing)
-          for dir in npm/*/; do
-            [ -d "$dir" ] || continue
-            if [ ! -f "$dir/package.json" ]; then
-              # Create minimal platform package.json if not present
-              platform=$(basename "$dir")
-              jq -n --arg name "@xberg-io/xberg-${platform}" \
-                    --arg version "$([[ -f package.json ]] && jq -r '.version' package.json || echo '0.0.0')" \
-                    '{name: $name, version: $version, files: ["./*.node"]}' > "$dir/package.json"
-            fi
-          done
-
-          # Pack each platform sub-package as a tarball
-          cd npm
+          # Pack each platform sub-package (only those that shipped a binary).
+          cd crates/xberg-node/npm
           for dir in */; do
-            if [ -f "$dir/package.json" ]; then
+            if [ -f "$dir/package.json" ] && ls "$dir"*.node >/dev/null 2>&1; then
               (cd "$dir" && npm pack && mv ./*.tgz ..)
             fi
           done
-          cd ../..
+          cd ../../..
 
-          # Stamp main package's optionalDependencies with all platform packages
+          # Stamp main package's optionalDependencies with the packed platforms.
           tmp_pkg_json="$(mktemp)"
           optional_deps_json='{}'
           for platform_pkg_json in crates/xberg-node/npm/*/package.json; do
-            [ -f "$platform_pkg_json" ] || continue
+            dir="$(dirname "$platform_pkg_json")"
+            ls "$dir"/*.node >/dev/null 2>&1 || continue
             name="$(jq -r '.name // empty' "$platform_pkg_json")"
             version="$(jq -r '.version // empty' "$platform_pkg_json")"
             [[ -z "$name" || -z "$version" ]] && { echo "Invalid: $platform_pkg_json" >&2; exit 1; }
