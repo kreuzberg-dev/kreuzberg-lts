@@ -3349,36 +3349,3 @@ jobs:
           package-dir: cli-proxy/npm
           access: public
           provenance: "true"
-
-  trigger-docker-publish:
-    name: Trigger Docker image publish
-    # publish-docker.yaml normally fires on `release: published`, but the release
-    # is created as a draft and only un-drafted by finalize-github-release, which
-    # needs every binding upload to succeed — so a single binding failure means
-    # the release never publishes and Docker never builds. Fire the docker
-    # pipeline explicitly via repository_dispatch, decoupled from the scripting
-    # bindings: images build from source and only need a sane core. GITHUB_TOKEN
-    # cannot trigger a workflow from a workflow, so use the BOT app token.
-    needs: [prepare, publish-crates]
-    if: ${{ needs.prepare.outputs.is_tag == 'true' && needs.prepare.outputs.dry_run != 'true' && needs.prepare.outputs.release_any == 'true' && !cancelled() && needs.publish-crates.result != 'failure' }}
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/create-github-app-token@v2
-        id: app-token
-        with:
-          app-id: ${{ secrets.BOT_APP_ID }}
-          private-key: ${{ secrets.BOT_APP_PRIVATE_KEY }}
-          owner: xberg-io
-
-      - name: Dispatch publish-docker
-        env:
-          GH_TOKEN: ${{ steps.app-token.outputs.token }}
-          TAG: ${{ needs.prepare.outputs.tag }}
-          REF: ${{ needs.prepare.outputs.checkout_ref }}
-        run: |
-          set -euo pipefail
-          gh api "repos/${GITHUB_REPOSITORY}/dispatches" \
-            -f event_type=publish-docker \
-            -f "client_payload[tag]=${TAG}" \
-            -f "client_payload[ref]=${REF}"
-          echo "Dispatched publish-docker for ${TAG}" >> "$GITHUB_STEP_SUMMARY"

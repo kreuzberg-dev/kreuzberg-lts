@@ -21,12 +21,13 @@ on:
         required: false
         type: boolean
         default: false
-  # NOTE: intentionally no `release: [published]` trigger. The GitHub release is
-  # created as a draft and only un-drafted after every binding upload succeeds,
-  # so relying on `release: published` would mean Docker never builds when any
-  # binding fails. The publish pipeline fires this workflow explicitly via
-  # repository_dispatch (see publish.yaml `trigger-docker-publish`). Re-adding
-  # `release: [published]` would double-fire this workflow.
+  # Docker images build from source (no binding artifacts needed), so this
+  # workflow runs fully in parallel with publish.yaml — both fire on the same
+  # `release: published` event. Kept `repository_dispatch` for manual/scripted
+  # re-publish; publish.yaml no longer dispatches it (the trigger-docker-publish
+  # job was removed) so there is no double-fire.
+  release:
+    types: [published]
   repository_dispatch:
     types: [publish-docker]
 
@@ -68,8 +69,8 @@ jobs:
         id: meta
         uses: xberg-io/actions/prepare-release-metadata@v1
         with:
-          tag: ${{ inputs.tag }}
-          ref: ${{ inputs.ref }}
+          tag: ${{ inputs.tag || github.event.client_payload.tag || github.event.release.tag_name }}
+          ref: ${{ inputs.ref || github.event.client_payload.ref }}
           # This workflow only builds the docker target; scope metadata accordingly
           # so release_docker resolves true and unrelated release_* stay false.
           available-targets: docker
