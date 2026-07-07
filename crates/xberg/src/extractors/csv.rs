@@ -276,15 +276,17 @@ fn parse_csv(text: &str, delimiter: char) -> Vec<Vec<String>> {
 /// When the `quality` feature is enabled, uses chardetng for more sophisticated
 /// encoding detection. Without it, tries common encodings in order.
 fn decode_csv_bytes(content: &[u8]) -> String {
-    // Fast path: valid UTF-8.
+    // Fast path: valid UTF-8. Strip a leading BOM so it doesn't ride along into
+    // the first header cell — Excel exports UTF-8 CSV with a BOM by default
+    // (xberg-io/xberg#1223).
     if let Ok(s) = utf8_validation::from_utf8(content) {
-        return s.to_string();
+        return crate::utils::strip_bom(s).to_string();
     }
 
     // Non-UTF-8 content: use encoding detection.
     #[cfg(feature = "quality")]
     {
-        crate::utils::safe_decode(content, None)
+        crate::utils::strip_bom(&crate::utils::safe_decode(content, None)).to_string()
     }
 
     #[cfg(not(feature = "quality"))]
@@ -299,14 +301,18 @@ fn decode_csv_bytes(content: &[u8]) -> String {
 /// selecting the first one that decodes without errors.
 #[cfg(not(feature = "quality"))]
 fn decode_csv_bytes_fallback(content: &[u8]) -> String {
-    // Common encoding labels used in CSV files, especially in East Asia
+    // Multibyte encodings first: they reject invalid byte sequences, so a
+    // no-errors decode is real evidence. windows-1252 / iso-8859-1 map all 256
+    // bytes and therefore *never* report errors, so if they came first they
+    // would shadow gb18030 / big5 and every Chinese CSV would decode as Latin-1
+    // mojibake (xberg-io/xberg#1223).
     let encoding_labels = [
         "shift_jis",    // Japanese Shift-JIS (common for CSV from Japanese systems)
         "windows-31j",  // Windows CP932 (Microsoft's Shift-JIS variant)
-        "windows-1252", // Western European (common default)
-        "iso-8859-1",   // Latin-1 fallback
         "gb18030",      // Simplified Chinese
         "big5",         // Traditional Chinese
+        "windows-1252", // Western European catch-all (decodes any bytes)
+        "iso-8859-1",   // Latin-1 catch-all (decodes any bytes)
     ];
 
     // Try each encoding and use the first one that decodes without errors
@@ -330,6 +336,23 @@ fn decode_csv_bytes_fallback(content: &[u8]) -> String {
     String::from_utf8_lossy(content).into_owned()
 }
 
+/// Whether a CSV cell is a real number. `str::parse::<f64>` also accepts the
+/// tokens "NaN", "inf", "infinity" (case-insensitive), so a header cell or a
+/// column of those words would be misclassified as numeric — flipping header
+/// and column-type detection (xberg-io/xberg#1223). Reject those spellings.
+fn is_csv_number(cell: &str) -> bool {
+    let trimmed = cell.trim();
+    if trimmed.is_empty() {
+        return false;
+    }
+    let lower = trimmed.to_ascii_lowercase();
+    let lower = lower.strip_prefix(['+', '-']).unwrap_or(&lower);
+    if matches!(lower, "nan" | "inf" | "infinity") {
+        return false;
+    }
+    trimmed.parse::<f64>().is_ok()
+}
+
 /// Detect whether the first row is a header row.
 ///
 /// Heuristic: the first row is considered a header if:
@@ -347,24 +370,14 @@ fn detect_header(rows: &[Vec<String>]) -> bool {
     }
 
     // Check if first row has no numeric values
-    let first_row_has_number = first_row.iter().any(|cell| {
-        let trimmed = cell.trim();
-        !trimmed.is_empty() && trimmed.parse::<f64>().is_ok()
-    });
-
-    if first_row_has_number {
+    if first_row.iter().any(|cell| is_csv_number(cell)) {
         return false;
     }
 
     // Check if at least one data row has numeric values
     let data_rows = &rows[1..rows.len().min(6)];
 
-    data_rows.iter().any(|row| {
-        row.iter().any(|cell| {
-            let trimmed = cell.trim();
-            !trimmed.is_empty() && trimmed.parse::<f64>().is_ok()
-        })
-    })
+    data_rows.iter().any(|row| row.iter().any(|cell| is_csv_number(cell)))
 }
 
 /// Infer column types by scanning the first N data rows.
@@ -404,7 +417,7 @@ fn infer_column_types(rows: &[Vec<String>], has_header: bool) -> Vec<String> {
                 }
                 non_empty_count += 1;
 
-                if cell.parse::<f64>().is_ok() {
+                if is_csv_number(cell) {
                     numeric_count += 1;
                 } else {
                     for re in date_patterns {
@@ -744,6 +757,32 @@ mod tests {
         assert!(
             !detect_header(&rows),
             "Should not detect header when first row has numbers"
+        );
+    }
+
+    #[test]
+    fn nan_inf_are_not_numeric() {
+        // "NaN"/"inf"/"Infinity" must not read as numbers (str::parse accepts them).
+        assert!(!is_csv_number("NaN"));
+        assert!(!is_csv_number("inf"));
+        assert!(!is_csv_number("-Infinity"));
+        assert!(!is_csv_number("nan"));
+        assert!(is_csv_number("42"));
+        assert!(is_csv_number("-3.14"));
+        assert!(is_csv_number("1e6"));
+    }
+
+    #[test]
+    fn header_row_of_nan_inf_labels_still_detected_as_header() {
+        // A header like "NaN,inf,count" must not be mistaken for a numeric data
+        // row, so the table is still recognized as having a header.
+        let rows = vec![
+            vec!["NaN".to_string(), "inf".to_string(), "label".to_string()],
+            vec!["1".to_string(), "2".to_string(), "x".to_string()],
+        ];
+        assert!(
+            detect_header(&rows),
+            "header of NaN/inf/label words must be treated as a header, not numeric data"
         );
     }
 

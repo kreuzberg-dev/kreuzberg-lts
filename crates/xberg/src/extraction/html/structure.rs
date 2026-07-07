@@ -691,11 +691,6 @@ impl<'a, 'b> HtmlWalker<'a, 'b> {
         use crate::types::document_structure::{GridCell, TableGrid};
 
         let num_rows = rows.len() as u32;
-        let num_cols = rows
-            .iter()
-            .map(|r| r.iter().map(|c| c.col_span).sum::<u32>())
-            .max()
-            .unwrap_or(0);
 
         let has_spans = rows.iter().any(|r| r.iter().any(|c| c.col_span > 1 || c.row_span > 1));
 
@@ -709,26 +704,32 @@ impl<'a, 'b> HtmlWalker<'a, 'b> {
             return;
         }
 
+        // Place cells on a grid that reserves the columns still occupied by a
+        // rowspan started in an earlier row, so a cell under a rowspan does not
+        // shift left into the spanning column and misalign every following row
+        // against its headers (xberg-io/xberg#1223). The placement algorithm is
+        // shared with the flattening helpers so the geometry cannot drift.
         let mut grid_cells = Vec::new();
-        for (row_idx, row) in rows.iter().enumerate() {
-            let mut col_offset: u32 = 0;
-            for cell in row {
+        let cols = crate::extraction::grid_flatten::resolve_span_grid(
+            rows,
+            |c| c.col_span,
+            |c| c.row_span,
+            |row_idx, col, cell| {
                 grid_cells.push(GridCell {
                     content: cell.text.clone(),
-                    row: row_idx as u32,
-                    col: col_offset,
+                    row: row_idx,
+                    col,
                     row_span: cell.row_span,
                     col_span: cell.col_span,
                     is_header: cell.is_header,
                     bbox: None,
                 });
-                col_offset += cell.col_span;
-            }
-        }
+            },
+        );
 
         let grid = TableGrid {
             rows: num_rows,
-            cols: num_cols,
+            cols,
             cells: grid_cells,
         };
         self.builder.push_table(grid, None, None);

@@ -135,13 +135,15 @@ impl HtmlExtractor {
                 HC::Table { grid } => {
                     let cell_count = grid.cells.len();
                     budget.add_cells(cell_count)?;
-                    // Convert grid to 2D cells for the builder
-                    let mut cells = vec![vec![String::new(); grid.cols as usize]; grid.rows as usize];
-                    for cell in &grid.cells {
-                        if (cell.row as usize) < cells.len() && (cell.col as usize) < cells[0].len() {
-                            cells[cell.row as usize][cell.col as usize] = cell.content.clone();
-                        }
-                    }
+                    // The crate assigns `col` naively (no rowspan reservation), so
+                    // a cell under a rowspan would shift left into the spanning
+                    // column (xberg-io/xberg#1223); re-derive true positions.
+                    let cells = crate::extraction::grid_flatten::flatten_positioned_cells(
+                        grid.rows as usize,
+                        grid.cells
+                            .iter()
+                            .map(|c| (c.row, c.row_span, c.col_span, c.content.clone())),
+                    );
                     b.push_table_from_cells(&cells, None, None);
                 }
                 HC::Image { description, src, .. } => {
@@ -420,12 +422,14 @@ impl SyncExtractor for HtmlExtractor {
         for (i, t) in table_data.into_iter().enumerate() {
             let grid = &t.grid;
             budget.add_cells(grid.cells.len())?;
-            let mut cells = vec![vec![String::new(); grid.cols as usize]; grid.rows as usize];
-            for cell in &grid.cells {
-                if (cell.row as usize) < cells.len() && (cell.col as usize) < cells[0].len() {
-                    cells[cell.row as usize][cell.col as usize] = cell.content.clone();
-                }
-            }
+            // Re-derive positions: the crate grid's `col` does not reserve
+            // rowspan columns (xberg-io/xberg#1223).
+            let cells = crate::extraction::grid_flatten::flatten_positioned_cells(
+                grid.rows as usize,
+                grid.cells
+                    .iter()
+                    .map(|c| (c.row, c.row_span, c.col_span, c.content.clone())),
+            );
             tables.push(Table {
                 cells,
                 markdown: t.markdown,
@@ -619,12 +623,12 @@ mod tests {
             .enumerate()
             .map(|(i, t)| {
                 let grid = &t.grid;
-                let mut cells = vec![vec![String::new(); grid.cols as usize]; grid.rows as usize];
-                for cell in &grid.cells {
-                    if (cell.row as usize) < cells.len() && (cell.col as usize) < cells[0].len() {
-                        cells[cell.row as usize][cell.col as usize] = cell.content.clone();
-                    }
-                }
+                let cells = crate::extraction::grid_flatten::flatten_positioned_cells(
+                    grid.rows as usize,
+                    grid.cells
+                        .iter()
+                        .map(|c| (c.row, c.row_span, c.col_span, c.content.clone())),
+                );
                 Table {
                     cells,
                     markdown: t.markdown,
