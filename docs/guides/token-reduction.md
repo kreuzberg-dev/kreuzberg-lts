@@ -2,11 +2,15 @@
 
 Reduce token count while preserving meaning for LLM pipelines.
 
-| Level        | Reduction | Effect                                   |
-| ------------ | --------- | ---------------------------------------- |
-| `off`        | 0%        | Pass-through                             |
-| `moderate`   | 15–25%    | Stopwords + redundancy removal           |
-| `aggressive` | 30–50%    | Semantic clustering + importance scoring |
+Set the reduction mode on `token_reduction` (a `TokenReductionOptions`).
+
+| Mode         | Effect                                                      |
+| ------------ | ----------------------------------------------------------- |
+| `off`        | No reduction; text returned as-is.                          |
+| `light`      | Remove only the most common stopwords.                      |
+| `moderate`   | Balanced stopword removal and redundancy filtering.         |
+| `aggressive` | Aggressive filtering; may remove less common content words. |
+| `maximum`    | Maximum compression; prioritizes brevity over completeness. |
 
 ## Configuration
 
@@ -38,10 +42,6 @@ Reduce token count while preserving meaning for LLM pipelines.
 
     --8<-- "snippets/ruby/config/token_reduction_config.md"
 
-=== "R"
-
-    --8<-- "snippets/r/config/token_reduction_config.md"
-
 ## Example
 
 === "Python"
@@ -72,11 +72,7 @@ Reduce token count while preserving meaning for LLM pipelines.
 
     --8<-- "snippets/ruby/advanced/token_reduction_example.md"
 
-=== "R"
-
-    --8<-- "snippets/r/advanced/token_reduction_example.md"
-
 ## See also
 
-- [Configuration Reference](../reference/configuration.md#tokenreductionconfig) — all reduction options
+- [Configuration Reference](../reference/configuration.md#tokenreductionoptions) — all reduction options
 - [LLM Integration](llm-integration.md) — use token reduction with LLM pipelines

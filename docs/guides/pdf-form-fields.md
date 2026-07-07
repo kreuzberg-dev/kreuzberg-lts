@@ -192,5 +192,5 @@ form_json = {
 
 ## See also
 
-- [PDF Extraction](extraction.md#pdf-extraction) — general PDF text extraction
+- [PDF Extraction](extraction.md) — general PDF text extraction
 - [Configuration Reference](../reference/configuration.md#pdfconfig) — all PDF options

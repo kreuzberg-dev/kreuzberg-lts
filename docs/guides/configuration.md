@@ -32,10 +32,6 @@ All extraction behavior is controlled through `ExtractionConfig`. Pass it direct
 
     --8<-- "snippets/ruby/config/config_basic.md"
 
-=== "R"
-
-    --8<-- "snippets/r/config/config_basic.md"
-
 ## Configuration Files
 
 Three formats are supported. TOML is recommended.
@@ -115,13 +111,45 @@ When no `--config` path is supplied, Xberg walks up from the current working dir
 
     --8<-- "snippets/ruby/config/config_discover.md"
 
-=== "R"
-
-    --8<-- "snippets/r/config/config_discover.md"
-
 === "Wasm"
 
     --8<-- "snippets/wasm/config/config_discover.md"
+
+### Environment Variable Overrides
+
+`ExtractionConfig::apply_env_overrides()` applies `XBERG_*` variables on top of an already-loaded config. Each variable that is set overrides the matching config-file value; unset variables are ignored. The `serve` and `mcp` commands call it automatically after loading the config. The `extract` and `batch` commands do not apply it — use flags or `--config-json` there.
+
+| Variable | Overrides |
+| --- | --- |
+| `XBERG_OCR_LANGUAGE` | OCR language (ISO 639 code, e.g. `eng`, `deu`) |
+| `XBERG_OCR_BACKEND` | OCR backend (`tesseract`, `paddle-ocr`, `vlm`) |
+| `XBERG_DISABLE_OCR` | Disable OCR entirely (`true`/`false`) |
+| `XBERG_CHUNKING_MAX_CHARS` | Maximum characters per chunk |
+| `XBERG_CHUNKING_MAX_OVERLAP` | Overlap between chunks |
+| `XBERG_CHUNKING_TOKENIZER` | HuggingFace tokenizer model ID for token-based sizing |
+| `XBERG_CACHE_ENABLED` | Cache flag (`true`/`false`) |
+| `XBERG_TOKEN_REDUCTION_MODE` | Token reduction level (`off`, `light`, `moderate`, `aggressive`, `maximum`) |
+| `XBERG_OUTPUT_FORMAT` | Output format |
+| `XBERG_LAYOUT_PRESET` | Layout detection preset (`fast`, `accurate`) |
+| `XBERG_LLM_MODEL` | LLM model for structured extraction |
+| `XBERG_LLM_API_KEY` | API key for the structured-extraction LLM provider |
+| `XBERG_LLM_BASE_URL` | Custom base URL for the LLM provider |
+| `XBERG_VLM_OCR_MODEL` | VLM model for vision-based OCR |
+| `XBERG_VLM_EMBEDDING_MODEL` | LLM model for embedding generation |
+| `XBERG_EMBEDDING_PLUGIN_NAME` | Name of a registered in-process embedding backend |
+
+Server-only variables (`XBERG_HOST`, `XBERG_PORT`, `XBERG_CORS_ORIGINS`, `XBERG_MAX_REQUEST_BODY_BYTES`, `XBERG_MAX_MULTIPART_FIELD_BYTES`) configure the API/MCP server, not extraction.
+
+### Loading Precedence
+
+For the `extract` and `batch` commands, sources are applied highest to lowest:
+
+1. Individual CLI flags (`--ocr`, `--output-format`, `--chunk`, …)
+2. Inline JSON (`--config-json` or `--config-json-base64`) — merged field by field, not whole-object
+3. Config file — explicit `--config`, otherwise the auto-discovered `xberg.toml`
+4. Built-in defaults
+
+The `serve` and `mcp` commands add environment variables on top of the loaded config via `apply_env_overrides()`, so a set `XBERG_*` variable overrides the config-file value in those modes.
 
 ## Common Use Cases
 
@@ -155,10 +183,6 @@ When no `--config` path is supplied, Xberg walks up from the current working dir
 
     --8<-- "snippets/ruby/config/config_ocr.md"
 
-=== "R"
-
-    --8<-- "snippets/r/config/config_ocr.md"
-
 For backend selection and language packs, see [OCR Guide](ocr.md). For fine-grained Tesseract tuning, see [TesseractConfig Reference](../reference/configuration.md#tesseractconfig).
 
 ### Chunking for RAG
@@ -190,10 +214,6 @@ For backend selection and language packs, see [OCR Guide](ocr.md). For fine-grai
 === "Ruby"
 
     --8<-- "snippets/ruby/utils/chunking.md"
-
-=== "R"
-
-    --8<-- "snippets/r/utils/chunking.md"
 
 ## All Configuration Categories
 

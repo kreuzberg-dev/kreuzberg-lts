@@ -2,6 +2,8 @@
 
 Detect languages in extracted text using [`whatlang`](https://crates.io/crates/whatlang) — supports 60+ languages with ISO 639-3 codes. Set `detect_multiple: true` to chunk the text into 200-character segments and return all detected languages sorted by prevalence.
 
+Set `min_confidence` (`0.0`–`1.0`, default `0.8`) to the lowest whatlang confidence a detection must reach to be reported. In single-language mode, the primary detection is dropped and no language is returned when it scores below the threshold. In `detect_multiple` mode, the threshold is applied to each 200-character chunk; chunks below it are discarded, and if no chunk clears it, detection falls back to single-language mode. Per-chunk confidence runs lower than whole-document confidence, so a high threshold can suppress multi-language results.
+
 ## Configuration
 
 === "Python"
@@ -32,10 +34,6 @@ Detect languages in extracted text using [`whatlang`](https://crates.io/crates/w
 
     --8<-- "snippets/ruby/config/language_detection_config.md"
 
-=== "R"
-
-    --8<-- "snippets/r/config/language_detection_config.md"
-
 ## Multilingual Example
 
 === "Python"
@@ -65,10 +63,6 @@ Detect languages in extracted text using [`whatlang`](https://crates.io/crates/w
 === "Ruby"
 
     --8<-- "snippets/ruby/advanced/language_detection_multilingual.md"
-
-=== "R"
-
-    --8<-- "snippets/r/advanced/language_detection_multilingual.md"
 
 ## See also
 

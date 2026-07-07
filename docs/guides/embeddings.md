@@ -2,12 +2,23 @@
 
 Turn extracted text into vectors for semantic search and RAG, using local ONNX models or a registered backend — no external API calls. Enable the `embeddings` feature to use in-process embedding backends.
 
-| Preset         | Model                        | Dimensions | Max Tokens | Use Case                                                |
-| -------------- | ---------------------------- | ---------- | ---------- | ------------------------------------------------------- |
-| `fast`         | all-MiniLM-L6-v2 (quantized) | 384        | 512        | Quick prototyping, development, resource-constrained    |
-| `balanced`     | BGE-base-en-v1.5             | 768        | 1024       | General-purpose RAG, production deployments, English    |
-| `quality`      | BGE-large-en-v1.5            | 1024       | 2000       | Complex documents, maximum accuracy, sufficient compute |
-| `multilingual` | multilingual-e5-base         | 768        | 1024       | International documents, mixed-language content         |
+| Preset         | Model                        | Dimensions | Chunk Size (chars) | Use Case                                                |
+| -------------- | ---------------------------- | ---------- | ------------------ | ------------------------------------------------------- |
+| `fast`         | all-MiniLM-L6-v2 (quantized) | 384        | 512                | Quick prototyping, development, resource-constrained    |
+| `balanced`     | BGE-base-en-v1.5             | 768        | 1024               | General-purpose RAG, production deployments, English    |
+| `quality`      | BGE-large-en-v1.5            | 1024       | 2000               | Complex documents, maximum accuracy, sufficient compute |
+| `multilingual` | multilingual-e5-base         | 768        | 1024               | International documents, mixed-language content         |
+
+The chunk-size column is the preset's target chunk size in characters (its `chunk_size`), not a token limit.
+
+## Model Types
+
+Select the embedding source via the `model` field of `EmbeddingConfig`. `EmbeddingModelType` has four variants, tagged by `type`:
+
+- `preset` — a bundled ONNX model configuration by `name` (see the preset table above). Recommended default.
+- `custom` — any ONNX embedding model from HuggingFace, given its `model_id` and output `dimensions`.
+- `llm` — a provider-hosted embedding model through liter-llm, configured by a nested `llm` (`LlmConfig`), e.g. `openai/text-embedding-3-small`.
+- `plugin` — an in-process backend registered by `name` via the plugin system (see below).
 
 ## In-Process Embedding Backends (Plugin Variant)
 
@@ -51,9 +62,37 @@ Rust extraction configuration and `XBERG_EMBEDDING_PLUGIN_NAME` accept the Plugi
 
     --8<-- "snippets/ruby/advanced/embedding_with_chunking.md"
 
-=== "R"
+## Standalone Embedding
 
-    --8<-- "snippets/r/advanced/embedding_with_chunking.md"
+Call `embed_texts` (or `embed_texts_async`) to embed a list of strings directly with an `EmbeddingConfig`, bypassing extraction and chunking. Each input string maps to one output vector.
+
+=== "Python"
+
+    --8<-- "snippets/python/utils/standalone_embed.md"
+
+=== "TypeScript"
+
+    --8<-- "snippets/typescript/utils/standalone_embed.md"
+
+=== "Rust"
+
+    --8<-- "snippets/rust/utils/standalone_embed.md"
+
+=== "Go"
+
+    --8<-- "snippets/go/utils/standalone_embed.md"
+
+=== "Java"
+
+    --8<-- "snippets/java/utils/standalone_embed.md"
+
+=== "C#"
+
+    --8<-- "snippets/csharp/utils/standalone_embed.md"
+
+=== "Ruby"
+
+    --8<-- "snippets/ruby/utils/standalone_embed.md"
 
 ## Vector Database Integration
 
@@ -84,10 +123,6 @@ Rust extraction configuration and `XBERG_EMBEDDING_PLUGIN_NAME` accept the Plugi
 === "Ruby"
 
     --8<-- "snippets/ruby/advanced/vector_database_integration.md"
-
-=== "R"
-
-    --8<-- "snippets/r/advanced/vector_database_integration.md"
 
 ## See also
 

@@ -56,8 +56,9 @@ The prompt is sent alongside each image as a single VLM request. The model sees 
   "images": [
     {
       "image_kind": "diagram",
+      "page_number": 3,
       "caption": "A flowchart showing the data ingestion pipeline: source → cleaner → indexer → retrieval API.",
-      "bounding_box": { "page": 3, "x": 72, "y": 144, "width": 468, "height": 312 }
+      "bounding_box": { "x0": 72.0, "y0": 144.0, "x1": 540.0, "y1": 456.0 }
     },
     {
       "image_kind": "icon",
@@ -66,6 +67,8 @@ The prompt is sent alongside each image as a single VLM request. The model sees 
   ]
 }
 ```
+
+`bounding_box` uses PDF coordinates (`x0`=left, `y0`=bottom, `x1`=right, `y1`=top) and is only populated for PDF-extracted images when the extractor reports position data; it is omitted otherwise. `page_number` is a sibling field on the image, not part of the box.
 
 ## Supported Providers
 

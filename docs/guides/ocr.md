@@ -116,10 +116,6 @@ tesseract --list-langs
 
     --8<-- "snippets/ruby/ocr/ocr_extraction.md"
 
-=== "R"
-
-    --8<-- "snippets/r/ocr/ocr_extraction.md"
-
 === "Wasm"
 
     --8<-- "snippets/wasm/ocr/ocr_extraction.md"
@@ -151,10 +147,6 @@ Specify multiple language codes separated by `+` (Tesseract) or as a list (Paddl
 === "Ruby"
 
     --8<-- "snippets/ruby/ocr/ocr_multi_language.md"
-
-=== "R"
-
-    --8<-- "snippets/r/ocr/ocr_multi_language.md"
 
 === "Wasm"
 
@@ -206,10 +198,6 @@ Process PDFs with OCR even when they have a text layer:
 === "Ruby"
 
     --8<-- "snippets/ruby/ocr/ocr_force_all_pages.md"
-
-=== "R"
-
-    --8<-- "snippets/r/ocr/ocr_force_all_pages.md"
 
 ### Disable OCR
 
@@ -278,10 +266,6 @@ When `disable_ocr` is set, image files return empty content instead of raising `
 === "Ruby"
 
     --8<-- "snippets/ruby/ocr/ocr_paddleocr.md"
-
-=== "R"
-
-    --8<-- "snippets/r/ocr/ocr_paddleocr.md"
 
 ### Candle GLM-OCR
 
@@ -603,11 +587,11 @@ PaddleOCR-VL 1.5 — SigLIP vision encoder + Ernie-4.5 text decoder for lightwei
 
 === "Native bindings (Rust, Go, TypeScript, Node.js, Java, C#, Ruby, PHP, Elixir)"
 
-    Built in via the `candle-paddleocr-vl-15` feature flag or the `candle-vlm-ocr` umbrella feature. The model downloads automatically on first use (~2.5 GB) and is cached at `~/.cache/huggingface/`.
+    Built in via the `candle-paddleocr-vl` feature flag or the `candle-vlm-ocr` umbrella feature. The model downloads automatically on first use (~2.5 GB) and is cached at `~/.cache/huggingface/`.
 
     ```toml title="Cargo.toml (Rust example)"
     [dependencies]
-    xberg = { version = "5", features = ["candle-paddleocr-vl-15"] }
+    xberg = { version = "5", features = ["candle-paddleocr-vl"] }
     ```
 
     **GPU support:**
@@ -626,7 +610,7 @@ PaddleOCR-VL 1.5 — SigLIP vision encoder + Ernie-4.5 text decoder for lightwei
     config = ExtractionConfig(
         force_ocr=True,
         ocr=OcrConfig(
-            backend="candle-paddleocr-vl-15",
+            backend="candle-paddleocr-vl",
             language="en",
             backend_options={"device": "auto", "model_path": "~/.cache/huggingface/"},
         ),
@@ -646,7 +630,7 @@ PaddleOCR-VL 1.5 — SigLIP vision encoder + Ernie-4.5 text decoder for lightwei
       {
         forceOcr: true,
         ocr: {
-          backend: 'candle-paddleocr-vl-15',
+          backend: 'candle-paddleocr-vl',
           language: 'en',
           backendOptions: { device: 'auto', model_path: '~/.cache/huggingface/' },
         },
@@ -665,7 +649,7 @@ PaddleOCR-VL 1.5 — SigLIP vision encoder + Ernie-4.5 text decoder for lightwei
     let config = ExtractionConfig {
         force_ocr: true,
         ocr: Some(OcrConfig {
-            backend: "candle-paddleocr-vl-15".into(),
+            backend: "candle-paddleocr-vl".into(),
             language: "en".into(),
             backend_options: Some(json!({"device": "auto", "model_path": "~/.cache/huggingface/"})),
             ..Default::default()
@@ -680,7 +664,7 @@ PaddleOCR-VL 1.5 — SigLIP vision encoder + Ernie-4.5 text decoder for lightwei
 === "CLI"
 
     ```bash title="Terminal"
-    xberg extract document.pdf --force-ocr true --ocr-backend candle-paddleocr-vl-15 --ocr-backend-options '{"device":"auto","model_path":"~/.cache/huggingface/"}'
+    xberg extract document.pdf --force-ocr true --ocr-backend candle-paddleocr-vl --ocr-backend-options '{"device":"auto","model_path":"~/.cache/huggingface/"}'
     ```
 
 **Supported languages:** English, Chinese, Japanese, Korean, French, German, Spanish, Italian, Portuguese, Russian, and others.
@@ -775,10 +759,6 @@ Higher DPI improves accuracy but increases processing time and memory.
 === "Ruby"
 
     --8<-- "snippets/ruby/config/ocr_dpi_config.md"
-
-=== "R"
-
-    --8<-- "snippets/r/config/ocr_dpi_config.md"
 
 ## PaddleOCR Script Families
 

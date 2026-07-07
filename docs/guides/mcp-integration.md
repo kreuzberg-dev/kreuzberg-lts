@@ -81,7 +81,41 @@ Xberg exposes MCP tools for extraction, cache operations, and metadata. All extr
 **Cache:** `cache_stats`, `cache_clear`, `cache_manifest`, `cache_warm`
 **Metadata:** `list_formats`, `get_version`
 
+`extract` takes a unified `input` object — `{"kind": "uri", "uri": "<path-or-url>"}` for a local path, `file://` URI, or HTTP(S) URL, or `{"kind": "bytes", "bytes": [...], "mime_type": "<mime>"}` for raw bytes. `extract_batch` takes an `inputs` array of the same objects. Both also accept optional `pdf_password` and `response_format` (`"json"` default, or `"toon"`). `detect_mime_type` takes a `path` string.
+
 Full parameter schemas are discoverable at runtime via the MCP client's `list_tools` call.
+
+---
+
+## Prompts
+
+The server registers three guided-workflow prompts, discoverable via `list_prompts` and retrieved with `get_prompt`:
+
+- `extract_document` — build an `extract` call for a document. Arguments: `path` (required), `output_format` (`json` default, or `toon`).
+- `extract_with_ocr` — extract with explicit OCR configuration. Arguments: `path` (required), `languages` (comma-separated ISO 639 codes, e.g. `eng,deu`), `force_ocr` (`true` to force OCR even when native text exists).
+- `semantic_search` — prepare a document for semantic search. Arguments: `path` (required), `preset` (`speed`, `balanced` default, or `quality`), `chunker_type` (`text` default, `markdown`, `yaml`, or `semantic`), `max_characters` (default `2000`).
+
+---
+
+## Resources
+
+Static metadata is exposed at well-known `xberg://` URIs, discoverable via `list_resources` and read with `read_resource`. All return `application/json`:
+
+- `xberg://formats` — all supported document formats and MIME types.
+- `xberg://models` — model manifest with file sizes and SHA256 checksums.
+- `xberg://languages/ocr` — available OCR language codes.
+- `xberg://presets/embeddings` — embedding model presets (only when the `embeddings` feature is built in).
+
+---
+
+## Completions
+
+The server declares the completions capability and returns argument suggestions for prompt arguments via `complete`:
+
+- `languages` (comma-separated; completes the last segment against OCR language codes)
+- `preset` (`speed`, `balanced`, `quality`)
+- `chunker_type` (`text`, `markdown`, `yaml`, `semantic`)
+- `output_format` (`json`, `toon`)
 
 ---
 
@@ -142,26 +176,11 @@ async def main() -> None:
 
             result = await session.call_tool(
                 "extract",
-                arguments={"path": "document.pdf"},
+                arguments={"input": {"kind": "uri", "uri": "document.pdf"}},
             )
             print(result)
 
 asyncio.run(main())
-```
-
-### Spawning from Python
-
-If your application manages the server lifecycle directly:
-
-```python title="spawn_server.py"
-import subprocess
-
-process = subprocess.Popen(
-    ["python", "-m", "xberg", "mcp"],
-    stdout=subprocess.PIPE,
-    stderr=subprocess.PIPE,
-)
-print(f"MCP server running (PID {process.pid})")
 ```
 
 ---

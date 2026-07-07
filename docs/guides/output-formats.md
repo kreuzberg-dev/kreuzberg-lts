@@ -4,6 +4,7 @@ Choose the format that matches your downstream processing. See the [Configuratio
 
 ## Available Formats
 
+- **Content Format** — `output_format` controls the `content` field: Plain, Markdown, Djot, HTML, JSON, Structured, or a custom renderer
 - **Unified (default)** — Plain text/Markdown, for LLM prompts and full-text search
 - **Element-Based** — Flat array of typed elements with metadata, for RAG chunking and semantic search
 - **Document Structure** — Hierarchical tree with explicit parent-child references, for knowledge graphs and structured apps
@@ -18,6 +19,28 @@ No configuration required. The result contains:
 - `pages` — Per-page breakdown for PDFs, DOCX, and PPTX
 - `tables` — Extracted tables in structured format
 - `images` — Image metadata and paths
+
+---
+
+## Content Output Format
+
+`output_format` sets the format of the `content` field. It is independent of `result_format` (element-based / document structure) and applies to every extraction.
+
+| `OutputFormat`    | Description                                                              |
+| ----------------- | ----------------------------------------------------------------------- |
+| `Plain` (default) | Raw extracted text with minimal formatting                              |
+| `Markdown`        | Markdown-formatted content                                              |
+| `Djot`            | Djot markup (requires the `djot` feature)                              |
+| `Html`            | HTML-formatted content                                                  |
+| `Json`            | JSON tree with heading-driven sections                                  |
+| `Structured`      | JSON with full OCR element metadata (bounding boxes, confidence scores) |
+| `Custom(name)`    | Output from a renderer registered in the `RendererRegistry` (e.g. `docx`, `latex`) |
+
+```python
+config = ExtractionConfig(output_format="markdown")
+result = extract("document.pdf", config=config)
+print(result.content)  # Markdown-formatted
+```
 
 ---
 
@@ -151,10 +174,6 @@ Use for RAG chunking, semantic search, or Unstructured.io-compatible pipelines.
 
     --8<-- "snippets/ruby/config/element_based_output.md"
 
-=== "R"
-
-    --8<-- "snippets/r/config/element_based_output.md"
-
 === "PHP"
 
     --8<-- "snippets/php/config/element_based_output.md"
@@ -280,10 +299,6 @@ Use when you need hierarchical relationships between sections.
 === "Ruby"
 
     --8<-- "snippets/ruby/config/document_structure_config.md"
-
-=== "R"
-
-    --8<-- "snippets/r/config/document_structure_config.md"
 
 ### Node Shape
 
@@ -471,7 +486,7 @@ Hierarchy data is in `result.pages[n].hierarchy`. Each page has a `blocks` list:
 | Parameter                | Type            | Default | Description                                         |
 | ------------------------ | --------------- | ------- | --------------------------------------------------- |
 | `enabled`                | `bool`          | `true`  | Enable hierarchy extraction                         |
-| `k_clusters`             | `int`           | `6`     | Font size clusters (2–10), maps to heading levels   |
+| `k_clusters`             | `int`           | `3`     | Font size clusters (2–10), maps to heading levels   |
 | `include_bbox`           | `bool`          | `true`  | Include bounding box coordinates                    |
 | `ocr_coverage_threshold` | `float \| None` | `None`  | Trigger OCR if text coverage is below this fraction |
 
@@ -479,10 +494,10 @@ Hierarchy data is in `result.pages[n].hierarchy`. Each page has a `blocks` list:
 
 | `k_clusters` | Heading levels | Use when                                |
 | ------------ | -------------- | --------------------------------------- |
-| 2–3          | H1–H2          | Simple documents with 1–2 heading sizes |
-| 4–5          | H1–H4          | Standard documents                      |
-| 6 (default)  | H1–H6          | Most documents                          |
-| 7–8          | H1–H6+         | Books, specs with deep nesting          |
+| 2–3 (default) | H1–H2         | Simple documents with 1–2 heading sizes |
+| 4–5           | H1–H4         | Standard documents                      |
+| 6             | H1–H6         | Most documents                          |
+| 7–8           | H1–H6+        | Books, specs with deep nesting          |
 
 #### Ocr_coverage_threshold
 

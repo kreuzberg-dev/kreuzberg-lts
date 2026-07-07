@@ -22,9 +22,16 @@ config = ExtractionConfig(
 **Behavior:**
 
 - **Without embeddings** — Uses structural heuristics: detects headers (ALL CAPS, numbered sections) and paragraph boundaries
-- **With embeddings** — Compares consecutive paragraphs via embeddings to detect topic shifts, merging paragraphs below the `topic_threshold` (default: 0.5)
+- **With embeddings** — Compares consecutive paragraphs via embeddings to detect topic shifts, merging paragraphs below the `topic_threshold` (default: 0.75)
 
-Use `topic_threshold` to control sensitivity: higher values (0.7–0.9) preserve more fine-grained topics, lower values (0.1–0.3) merge aggressive. Only applies when an embedding model is configured.
+Use `topic_threshold` to control sensitivity: lower values (0.1–0.3) detect more topic boundaries (more, smaller chunks); higher values (0.7–0.9) detect fewer (fewer, larger chunks). Only applies when an embedding model is configured.
+
+## Markdown Tables
+
+When `chunker_type` is `"markdown"`, set `table_chunking` to control how tables that exceed the chunk size are split:
+
+- **`split`** (default) — split at row boundaries; continuation chunks do not repeat the header
+- **`repeat_header`** — prepend the header row and separator to every continuation chunk so each chunk is self-contained
 
 ## Configuration
 
@@ -55,10 +62,6 @@ Use `topic_threshold` to control sensitivity: higher values (0.7–0.9) preserve
 === "Ruby"
 
     --8<-- "snippets/ruby/config/chunking_config.md"
-
-=== "R"
-
-    --8<-- "snippets/r/config/chunking_config.md"
 
 === "Wasm"
 
@@ -119,10 +122,6 @@ Language bindings register through the same API — implement the trait's method
 === "Ruby"
 
     --8<-- "snippets/ruby/advanced/chunking_rag.md"
-
-=== "R"
-
-    --8<-- "snippets/r/advanced/chunking_rag.md"
 
 ## See also
 

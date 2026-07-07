@@ -1,30 +1,23 @@
 # Code Intelligence
 
-Parse source code to extract structure, dependencies, exports, and semantic chunks — all automatically detected by language. Use in code search, codebase mapping, RAG pipelines, and dependency analysis across 306 programming languages.
-
-See the [TreeSitterConfig reference](../reference/configuration.md#treesitterconfig) for all configuration options.
-
-Xberg integrates [tree-sitter-language-pack](https://docs.tree-sitter-language-pack.xberg.io) (TSLP) to parse and analyze source code files. When you extract a source code file, Xberg automatically detects the programming language and produces structured analysis alongside the raw text content.
-
-## What You Get
-
-When extracting source code, the `metadata.format` field contains a `ProcessResult` (format type `"code"`) with:
-
-- **Structure** -- functions, classes, structs, methods, modules, and their nesting hierarchy
-- **Imports** -- import/include/require statements with source paths and imported items
-- **Exports** -- exported symbols with their kinds (function, class, variable, type, default)
-- **Comments** -- inline and block comments with their positions
-- **Docstrings** -- documentation comments with parsed sections (params, returns, etc.)
-- **Symbols** -- variable, constant, and type alias definitions
-- **Diagnostics** -- parse errors and warnings from tree-sitter
-- **Chunks** -- semantically meaningful code chunks for RAG and embedding pipelines
-- **Metrics** -- file-level statistics (lines of code, comment lines, empty lines, node count)
+Xberg integrates [tree-sitter-language-pack](https://docs.tree-sitter-language-pack.xberg.io) (TSLP) to parse source code files. When you extract a source code file, Xberg detects the programming language, parses it with tree-sitter, and emits the source as content split at semantic boundaries -- functions, classes, and modules -- rather than fixed line counts.
 
 Language support covers **306 programming languages** via tree-sitter grammars. See the [TSLP documentation](https://docs.tree-sitter-language-pack.xberg.io) for the full language list.
 
+See the [TreeSitterConfig reference](../reference/configuration.md#treesitterconfig) for all configuration options.
+
+## What You Get
+
+Extracting a source code file produces:
+
+- **`content`** -- the source text, split into code segments at tree-sitter chunk boundaries and rendered in the configured output format. When chunking is enabled, each segment is preceded by a heading naming its enclosing function, class, or module. With chunking disabled (the default), the whole source is emitted as a single code block.
+- **`metadata.format`** -- tagged as `code` (`format_type: "code"`). This is a marker only; it carries no additional fields such as language, structure, or imports.
+
+Tree-sitter's structured analysis (structure, imports, exports, comments, docstrings, symbols, diagnostics) is computed internally to drive chunking, but is **not currently exposed** in the extraction result. The `code_intelligence` field on the result is reserved for this data and is always `null` in the current release. Read the rendered `content` rather than expecting structured code-intelligence fields.
+
 ## Getting Started
 
-Code intelligence is enabled by default when the `tree-sitter` feature flag is active. Simply extract a source code file:
+Code extraction is enabled by default when the `tree-sitter` feature flag is active. Extract a source code file and read `content`:
 
 === "Rust"
 
@@ -35,14 +28,12 @@ Code intelligence is enabled by default when the `tree-sitter` feature flag is a
     let output = extract(ExtractInput::from_uri("app.py"), &config).await?;
     let result = &output.results[0];
 
-    // The content field has the raw source text
+    // The rendered source is in the content field.
     println!("{}", result.content);
 
-    // Code intelligence is in metadata.format
-    if let Some(xberg::types::FormatMetadata::Code(ref code)) = result.metadata.format {
-        println!("Language: {}", code.language);
-        println!("Structures: {}", code.structure.len());
-        println!("Imports: {}", code.imports.len());
+    // metadata.format is tagged as Code -- a marker with no payload.
+    if matches!(result.metadata.format, Some(xberg::types::FormatMetadata::Code)) {
+        println!("Detected a source code file");
     }
     ```
 
@@ -55,15 +46,13 @@ Code intelligence is enabled by default when the `tree-sitter` feature flag is a
     output = await xberg.extract(xberg.ExtractInput(kind="uri", uri="app.py"), config=config)
     result = output.results[0]
 
-    # The content field has the raw source text
+    # The rendered source is in the content field.
     print(result.content)
 
-    # Code intelligence is in metadata["format"]
+    # metadata["format"] is tagged as code -- a marker with no extra fields.
     fmt = result.metadata.get("format")
     if fmt and fmt.get("format_type") == "code":
-        print(f"Language: {fmt['language']}")
-        print(f"Structures: {len(fmt['structure'])}")
-        print(f"Imports: {len(fmt['imports'])}")
+        print("Detected a source code file")
     ```
 
 === "TypeScript"
@@ -77,13 +66,13 @@ Code intelligence is enabled by default when the `tree-sitter` feature flag is a
     });
     const result = output.results[0];
 
+    // The rendered source is in the content field.
     console.log(result.content);
 
+    // metadata.format is tagged "code" -- a marker with no extra fields.
     const fmt = result.metadata?.format;
     if (fmt?.formatType === "code") {
-      console.log(`Language: ${fmt.language}`);
-      console.log(`Structures: ${fmt.structure.length}`);
-      console.log(`Imports: ${fmt.imports.length}`);
+      console.log("Detected a source code file");
     }
     ```
 
@@ -96,13 +85,16 @@ Code intelligence is enabled by default when the `tree-sitter` feature flag is a
     }
 
     fmt.Println(result.Content)
-    // Code intelligence is available in result.Metadata.Format
-    // when Format.Type == "code"
+    // result.Metadata.Format is tagged "code" for source files.
     ```
 
 ## Configuration
 
-Use `TreeSitterConfig` to control which analysis features are enabled. Set `enabled: false` to disable code intelligence entirely. By default, `structure`, `imports`, and `exports` are enabled; `comments`, `docstrings`, `symbols`, and `diagnostics` are disabled.
+Use `TreeSitterConfig` to control tree-sitter processing. Set `enabled: false` to skip code intelligence entirely. `chunk_max_size` controls where the source is split into segments; when unset (the default), the whole file is emitted as a single block.
+
+!!! warning "Analysis toggles are inert in the current release"
+
+    Only `enabled` and `chunk_max_size` affect the emitted output. The `structure`, `imports`, `exports`, `comments`, `docstrings`, `symbols`, and `diagnostics` toggles configure tree-sitter's internal analysis, but that analysis is not surfaced in the result -- setting them has no observable effect on `content` or `metadata`.
 
 === "Rust"
 
@@ -112,14 +104,7 @@ Use `TreeSitterConfig` to control which analysis features are enabled. Set `enab
     let config = ExtractionConfig {
         tree_sitter: Some(TreeSitterConfig {
             process: TreeSitterProcessConfig {
-                structure: true,      // functions, classes, etc. (default: true)
-                imports: true,        // import statements (default: true)
-                exports: true,        // export statements (default: true)
-                comments: true,       // comments (default: false)
-                docstrings: true,     // docstrings (default: false)
-                symbols: true,        // variables, constants (default: false)
-                diagnostics: true,    // parse errors/warnings (default: false)
-                chunk_max_size: Some(4096),  // max chunk size in bytes
+                chunk_max_size: Some(4096),  // split source at chunk boundaries
                 ..Default::default()
             },
             ..Default::default()
@@ -136,13 +121,6 @@ Use `TreeSitterConfig` to control which analysis features are enabled. Set `enab
     config = xberg.ExtractionConfig(
         tree_sitter={
             "process": {
-                "structure": True,
-                "imports": True,
-                "exports": True,
-                "comments": True,
-                "docstrings": True,
-                "symbols": True,
-                "diagnostics": True,
                 "chunk_max_size": 4096,
             }
         }
@@ -157,13 +135,6 @@ Use `TreeSitterConfig` to control which analysis features are enabled. Set `enab
     const config: ExtractionConfig = {
       treeSitter: {
         process: {
-          structure: true,
-          imports: true,
-          exports: true,
-          comments: true,
-          docstrings: true,
-          symbols: true,
-          diagnostics: true,
           chunkMaxSize: 4096,
         },
       },
@@ -174,13 +145,6 @@ Use `TreeSitterConfig` to control which analysis features are enabled. Set `enab
 
     ```toml title="xberg.toml"
     [tree_sitter.process]
-    structure = true
-    imports = true
-    exports = true
-    comments = true
-    docstrings = true
-    symbols = true
-    diagnostics = true
     chunk_max_size = 4096
     ```
 
@@ -188,72 +152,43 @@ Use `TreeSitterConfig` to control which analysis features are enabled. Set `enab
 
 See [`TreeSitterConfig`](../reference/configuration.md#treesitterconfig) and [`TreeSitterProcessConfig`](../reference/configuration.md#treesitterprocessconfig) for all fields.
 
-## ProcessResult Fields
+## Chunked Content
 
-Code intelligence results are returned as a `ProcessResult` from the upstream [`tree-sitter-language-pack`](https://docs.rs/tree-sitter-language-pack) crate. Top-level fields: `language`, `metrics`, `structure`, `imports`, `exports`, `chunks`, plus `comments` / `docstrings` / `symbols` / `diagnostics` (populated only when their `TreeSitterProcessConfig` flag is on). See the upstream crate docs for full field shapes.
+With `chunk_max_size` set, tree-sitter splits the source at function, class, and module boundaries and Xberg emits each chunk as a separate code segment in `content`, preceded by a heading naming its enclosing scope:
 
-## Semantic Chunking for RAG
-
-Code chunks produced by tree-sitter are semantically aware -- they split at function, class, and module boundaries rather than fixed line counts. This makes them ideal for retrieval-augmented generation (RAG) pipelines:
-
-```python title="rag_chunking.py"
+```python title="chunked.py"
 import xberg
 
 config = xberg.ExtractionConfig(
     tree_sitter={"process": {"chunk_max_size": 2048}}
 )
 
-result = xberg.extract("large_module.py", config=config)
+output = await xberg.extract(
+    xberg.ExtractInput(kind="uri", uri="large_module.py"), config=config
+)
+result = output.results[0]
 
-fmt = result.metadata.get("format")
-if fmt and fmt.get("format_type") == "code":
-    for chunk in fmt.get("chunks", []):
-        # Each chunk is a semantically coherent piece of code
-        embedding = your_embedding_model(chunk["content"])
-        store_in_vector_db(
-            text=chunk["content"],
-            embedding=embedding,
-            metadata={
-                "language": chunk["language"],
-                "start_line": chunk["span"]["start_line"],
-                "parent": chunk.get("context", {}).get("parent_name"),
-            },
-        )
+# Chunk boundaries are reflected in the layout of result.content.
+print(result.content)
 ```
+
+Structured per-chunk data (byte spans, parent context, per-chunk language) is not exposed in the current release. For programmatic chunking with offsets and metadata -- for example, in a RAG pipeline -- use Xberg's [chunking pipeline](chunking.md) instead.
 
 ## Language Detection
 
 Xberg detects the programming language in two ways:
 
 1. **File extension** (fast path) -- when using `extract`, the extension is matched against 248 known language extensions
-2. **Shebang line** (fallback) -- when using `extract` or when the extension is ambiguous, the first line is checked for `#!/usr/bin/env python`, `#!/bin/bash`, and so on.
+2. **Shebang line** (fallback) -- when the extension is missing or ambiguous, the first line is checked for `#!/usr/bin/env python`, `#!/bin/bash`, and so on.
 
-If neither method identifies the language, extraction returns an `UnsupportedFormat` error.
+If neither method identifies the language, extraction returns an `UnsupportedFormat` error. The detected language is used internally for parsing and is not exposed as a structured field on the result.
 
 ## Language Support
 
-Tree-sitter-language-pack supports 306 programming languages. For the full list, see the [TSLP language reference](https://docs.tree-sitter-language-pack.xberg.io).
-
-Common languages with full structural analysis:
-
-| Language   | Structure | Imports | Exports | Docstrings |
-| ---------- | --------- | ------- | ------- | ---------- |
-| Python     | Yes       | Yes     | Yes     | Yes        |
-| Rust       | Yes       | Yes     | Yes     | Yes        |
-| TypeScript | Yes       | Yes     | Yes     | Yes        |
-| JavaScript | Yes       | Yes     | Yes     | Yes        |
-| Go         | Yes       | Yes     | Yes     | Yes        |
-| Java       | Yes       | Yes     | Yes     | Yes        |
-| C/C++      | Yes       | Yes     | Yes     | Yes        |
-| Ruby       | Yes       | Yes     | Yes     | Yes        |
-| PHP        | Yes       | Yes     | Yes     | Yes        |
-| C#         | Yes       | Yes     | Yes     | Yes        |
-| Swift      | Yes       | Yes     | Yes     | Yes        |
-| Kotlin     | Yes       | Yes     | Yes     | Yes        |
-| Elixir     | Yes       | Yes     | Yes     | Yes        |
+Tree-sitter-language-pack supports 306 programming languages, including Python, Rust, TypeScript, JavaScript, Go, Java, C/C++, Ruby, PHP, C#, Swift, Kotlin, and Elixir. For the full list, see the [TSLP language reference](https://docs.tree-sitter-language-pack.xberg.io).
 
 ## Related Documentation
 
 - [Configuration Reference](../reference/configuration.md#treesitterconfig) -- TreeSitterConfig and TreeSitterProcessConfig fields
-- [Types Reference](../reference/types.md) -- ProcessResult, StructureItem, CodeChunk, and related type definitions
+- [Chunking Guide](chunking.md) -- programmatic chunking with offsets and metadata
 - [tree-sitter-language-pack documentation](https://docs.tree-sitter-language-pack.xberg.io) -- Full language support reference

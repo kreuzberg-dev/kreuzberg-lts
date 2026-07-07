@@ -1,16 +1,16 @@
 # Quality Processing
 
-Score extracted text for quality issues (0.0–1.0, where 1.0 is highest quality). Detects OCR artifacts, script content, navigation elements, and structural issues to filter low-quality extractions before downstream processing.
+Score extracted text on a 0.0–1.0 scale, where 1.0 is highest quality. Scoring starts from `1.0` for clean prose: OCR, script, and navigation noise subtract penalties, while document structure and metadata add bonuses. The result is clamped to `[0.0, 1.0]`. Empty text scores `0.0`; text shorter than 10 characters scores `0.1`.
 
-| Factor              | Weight | Detects                                                |
-| ------------------- | ------ | ------------------------------------------------------ |
-| OCR Artifacts       | 30%    | Scattered chars, repeated punctuation, malformed words |
-| Script Content      | 20%    | JavaScript, CSS, HTML tags                             |
-| Navigation Elements | 10%    | Breadcrumbs, pagination, skip links                    |
-| Document Structure  | 20%    | Sentence/paragraph length, punctuation distribution    |
-| Metadata Quality    | 10%    | Presence of title, author, subject                     |
+| Factor              | Max weight | Effect  | Detects                                                |
+| ------------------- | ---------- | ------- | ------------------------------------------------------ |
+| OCR Artifacts       | 30%        | Penalty | Scattered chars, repeated punctuation, malformed words |
+| Script Content      | 20%        | Penalty | JavaScript, CSS, HTML tags                             |
+| Navigation Elements | 10%        | Penalty | Breadcrumbs, pagination, skip links                    |
+| Document Structure  | 20%        | Bonus   | Sentence/paragraph length, punctuation distribution    |
+| Metadata Quality    | 10%        | Bonus   | Title, author, subject, description, keywords          |
 
-Score ranges: `0.0–0.3` very low, `0.3–0.6` low, `0.6–0.8` moderate, `0.8–1.0` high.
+Script and navigation penalties apply only to text longer than 1000 characters; shorter text is scored on OCR artifacts and structure alone.
 
 ## Configuration
 
@@ -42,10 +42,6 @@ Score ranges: `0.0–0.3` very low, `0.3–0.6` low, `0.6–0.8` moderate, `0.8�
 
     --8<-- "snippets/ruby/config/quality_processing_config.md"
 
-=== "R"
-
-    --8<-- "snippets/r/config/quality_processing_config.md"
-
 ## Example
 
 === "Python"
@@ -76,11 +72,7 @@ Score ranges: `0.0–0.3` very low, `0.3–0.6` low, `0.6–0.8` moderate, `0.8�
 
     --8<-- "snippets/ruby/advanced/quality_processing_example.md"
 
-=== "R"
-
-    --8<-- "snippets/r/advanced/quality_processing_example.md"
-
 ## See also
 
-- [Configuration Reference](../reference/configuration.md#qualityprocessingconfig) — all quality options
+- [Configuration Reference](../reference/configuration.md#extractionconfig) — the `enable_quality_processing` option
 - [Extraction Basics](extraction.md) — core extraction pipeline

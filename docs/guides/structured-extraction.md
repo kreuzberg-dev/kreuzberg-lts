@@ -28,6 +28,8 @@ result on the extracted document.
     #[tokio::main]
     async fn main() -> xberg::Result<()> {
         let config = ExtractionConfig {
+            // StructuredExtractionConfig does not derive Default, so set
+            // every field explicitly.
             structured_extraction: Some(StructuredExtractionConfig {
                 schema_name: "paper_metadata".to_string(),
                 schema: json!({
@@ -43,12 +45,13 @@ result on the extracted document.
                     "required": ["title", "authors"],
                     "additionalProperties": false
                 }),
+                schema_description: None,
                 strict: true,
+                prompt: None,
                 llm: LlmConfig {
                     model: "openai/gpt-4o-mini".to_string(),
                     ..Default::default()
                 },
-                ..Default::default()
             }),
             ..Default::default()
         };
@@ -188,9 +191,11 @@ Structured extraction works with every `ExtractInput` source:
 - `kind = "uri"` for local paths and `file://` URIs
 - `kind = "uri"` for HTTP(S) document URLs and website crawl seeds
 
-For batches, each successful result can carry its own `structured_output`.
-Failures are reported in `ExtractionResult.errors` without discarding other
-results.
+For batches, each successful result can carry its own `structured_output`. When
+structured extraction fails for a document, that document is still returned with
+`structured_output` unset and the failure recorded in its
+`ExtractedDocument.processing_warnings`. Input-level extraction failures are
+reported separately in `ExtractionResult.errors`.
 
 ## Output
 

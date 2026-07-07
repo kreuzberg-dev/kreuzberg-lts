@@ -120,7 +120,7 @@ pub trait DocumentExtractor: Plugin {
         &self,
         input: ExtractInput,
         config: &ExtractionConfig,
-    ) -> Result<ExtractionResult>;
+    ) -> Result<ExtractedDocument>;
 
     fn supported_mime_types(&self) -> &[&str];
 
@@ -150,23 +150,23 @@ pub trait OcrBackend: Plugin {
 
 **Registry functions**
 
-Each of the seven plugin types (`DocumentExtractor`, `OcrBackend`, `PostProcessor`, `EmbeddingBackend`, `RerankerBackend`, `Renderer`, `Validator`) has four symmetric functions:
+Each of the eight plugin types (`DocumentExtractor`, `OcrBackend`, `PostProcessor`, `EmbeddingBackend`, `RerankerBackend`, `TokenizerBackend`, `Renderer`, `Validator`) has four symmetric functions:
 
 ```rust
 register_document_extractor(extractor: Arc<dyn DocumentExtractor>) -> Result<()>;
 unregister_document_extractor(name: &str) -> Result<()>;
-list_document_extractors() -> Vec<String>;
+list_document_extractors() -> Result<Vec<String>>;
 clear_document_extractors() -> Result<()>;
 ```
 
-Replace `document_extractor` with `ocr_backend`, `post_processor`, `embedding_backend`, `reranker_backend`, `renderer`, or `validator` to manage the other registries.
+Replace `document_extractor` with `ocr_backend`, `post_processor`, `embedding_backend`, `reranker_backend`, `tokenizer_backend`, `renderer`, or `validator` to manage the other registries.
 
 **Example — registering a custom extractor**
 
 ```rust
 use std::sync::Arc;
 use xberg::{
-    ExtractInput, ExtractionConfig, ExtractionResult, Result,
+    ExtractInput, ExtractionConfig, ExtractedDocument, Result,
     plugins::{Plugin, DocumentExtractor},
     register_document_extractor,
 };
@@ -184,7 +184,7 @@ impl Plugin for JsonExtractor {
 #[async_trait]
 impl DocumentExtractor for JsonExtractor {
     async fn extract(&self, input: ExtractInput, _config: &ExtractionConfig)
-        -> Result<ExtractionResult>
+        -> Result<ExtractedDocument>
     {
         // ...
         todo!()

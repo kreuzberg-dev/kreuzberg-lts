@@ -3,8 +3,6 @@
 Extend Xberg with custom extractors, post-processors, OCR backends, and
 validators registered globally for use across all extraction calls.
 
-!!! Note "Wasm" Custom plugins are not supported in Wasm environments. Use Python, Rust, or other native bindings.
-
 ## Plugin Types
 
 | Type                  | Purpose                           | Use case                                                   |
@@ -13,6 +11,10 @@ validators registered globally for use across all extraction calls.
 | **PostProcessor**     | Transform extraction results      | Metadata enrichment, content filtering, text normalization |
 | **OcrBackend**        | Perform OCR on images             | Cloud OCR services, custom OCR engines                     |
 | **Validator**         | Validate extraction quality       | Minimum content length, quality score thresholds           |
+| **EmbeddingBackend**  | Generate embedding vectors        | Custom embedding models, RAG pipelines                     |
+| **RerankerBackend**   | Score query/document pairs        | Cross-encoder reranking of retrieved chunks                |
+| **TokenizerBackend**  | Count tokens for chunk boundaries | Model-specific tokenizers, token-aware chunk sizing        |
+| **Renderer**          | Convert results to output formats | Custom Markdown, HTML, Djot, or plain-text renderers       |
 
 All plugins must be thread-safe (`Send + Sync` in Rust, thread-safe in Python) and
 implement `initialize()` / `shutdown()` lifecycle methods.
@@ -58,10 +60,6 @@ implement `initialize()` / `shutdown()` lifecycle methods.
 === "Ruby"
 
     --8<-- "snippets/ruby/plugins/extractor_registration.md"
-
-=== "R"
-
-    --8<-- "snippets/r/plugins/extractor_registration.md"
 
 ### Priority System
 
@@ -138,10 +136,6 @@ Processors execute in three stages:
 === "Ruby"
 
     --8<-- "snippets/ruby/ocr/cloud_ocr_backend.md"
-
-=== "R"
-
-    --8<-- "snippets/r/ocr/cloud_ocr_backend.md"
 
 ### Registration
 
@@ -336,7 +330,3 @@ Register the backend and set its name in `OcrConfig`:
 === "Ruby"
 
     --8<-- "snippets/ruby/plugins/pdf_metadata_extractor.md"
-
-=== "R"
-
-    --8<-- "snippets/r/plugins/pdf_metadata_extractor.md"

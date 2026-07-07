@@ -2,7 +2,7 @@
 
 Extract text, metadata, and structure from 96 file formats — PDFs, Office documents, images, email, HTML, archives, and more. Single files or batches, from local paths or in-memory bytes, with per-document configuration overrides and built-in content filtering.
 
-See the [Configuration Reference](../reference/configuration.md) for all extraction settings and the [Supported Formats](../reference/configuration.md#supported-formats) reference for format-specific options.
+See the [Configuration Reference](../reference/configuration.md) for all extraction settings and the [Supported Formats](../reference/formats.md) reference for format-specific options.
 
 ## Entry Points
 
@@ -17,6 +17,12 @@ Two extraction functions are the public entry points:
 URLs. Use `kind = "bytes"` for in-memory payloads. `extract` and
 `extract_batch` return an `ExtractionResult` envelope with `results`, `errors`,
 `summary`, and optional crawl metadata.
+
+Beyond local paths and bytes, HTTP(S) URIs are fetched and can be crawled — see
+[`UrlExtractionConfig`](../reference/configuration.md#urlextractionconfig) and
+[`CrawlConfig`](../reference/configuration.md#crawlconfig). Embedded images and
+their preprocessing are controlled by
+[`ImageExtractionConfig`](../reference/configuration.md#imageextractionconfig).
 
 ## Extract One Input
 
@@ -408,14 +414,36 @@ See [Code Intelligence](code-intelligence.md) for usage and [`TreeSitterProcessC
 
 ## PDF Page Rendering
 
-Render individual PDF pages as PNG images. Unlike the extraction pipeline (which parses text, tables, metadata), this API produces raw pixel data for thumbnails, vision model input, or custom OCR pipelines.
+Render individual PDF pages as PNG images. Unlike the extraction pipeline (which parses text, tables, metadata), this API produces raw pixel data for thumbnails, vision model input, or custom OCR pipelines. It is exposed as pure-Rust functions on the core crate.
 
-### Two Approaches
+### Functions
 
-| API               | When to use                                                            |
-| ----------------- | ---------------------------------------------------------------------- |
-| `render_pdf_page` | You know which page you need, or only need a few pages                 |
-| `PdfPageIterator` | Process every page sequentially without loading all images into memory |
+| Function                 | Purpose                                                                    |
+| ------------------------ | -------------------------------------------------------------------------- |
+| `render_pdf_page_to_png` | Render one zero-based page index to PNG bytes at a given DPI               |
+| `pdf_page_count`         | Read the page count without rasterizing, to drive a render loop over pages |
+
+Render a single page, or count first and loop to process every page without
+holding all images in memory:
+
+```rust title="render_pdf_pages.rs"
+use xberg::{pdf_page_count, render_pdf_page_to_png};
+
+let pdf_bytes = std::fs::read("document.pdf")?;
+
+// Render one specific page (zero-based) at 300 DPI, no password.
+let png = render_pdf_page_to_png(&pdf_bytes, 0, Some(300), None)?;
+std::fs::write("page-0.png", &png)?;
+
+// Or count pages and render each in turn.
+let count = pdf_page_count(&pdf_bytes, None)?;
+for page_index in 0..count {
+    let png = render_pdf_page_to_png(&pdf_bytes, page_index, Some(150), None)?;
+    std::fs::write(format!("page-{page_index}.png"), &png)?;
+}
+```
+
+`dpi` defaults to 150 when passed `None`. `password` unlocks encrypted PDFs.
 
 ### DPI Configuration
 
@@ -478,10 +506,6 @@ All extraction functions raise typed exceptions on failure. Catch specific excep
 === "Ruby"
 
     --8<-- "snippets/ruby/api/error_handling.md"
-
-=== "R"
-
-    --8<-- "snippets/r/api/error_handling.md"
 
 === "C"
 
