@@ -31,7 +31,7 @@ use xberg::core::config::{ExtractionConfig, ImageExtractionConfig, OutputFormat}
 const PNG_MAGIC: &[u8] = b"\x89PNG\r\n\x1a\n";
 
 /// JPEG SOI marker: `\xFF\xD8\xFF`
-#[cfg(feature = "pdf")]
+#[cfg(any(feature = "pdf", all(feature = "ocr", feature = "image-encode")))]
 const JPEG_MAGIC: &[u8] = b"\xFF\xD8\xFF";
 
 /// WebP container: `RIFF` at offset 0, `WEBP` at offset 8
