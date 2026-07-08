@@ -407,8 +407,9 @@ pub fn cluster_tiles(images: &mut [ExtractedImage]) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use image::ImageBuffer;
-    use image::Rgba;
+    // Only the OCR-gated entropy tests decode synthesized images.
+    #[cfg(any(feature = "ocr", feature = "ocr-wasm"))]
+    use image::{ImageBuffer, Rgba};
 
     #[test]
     fn test_classify_returns_mask_for_is_mask_true() {
@@ -466,6 +467,10 @@ mod tests {
         assert_eq!(conf, 0.85);
     }
 
+    // Entropy-based classification requires the real `compute_entropy_on_thumbnail`
+    // impl, which is only compiled with an OCR feature (the non-OCR build uses a stub
+    // that returns `Err`). Gate these to match so they don't fail on OCR-less builds.
+    #[cfg(any(feature = "ocr", feature = "ocr-wasm"))]
     #[test]
     fn test_classify_returns_photograph_for_high_entropy_thumbnail() {
         let mut state: u32 = 0x9E37_79B9;
@@ -487,6 +492,7 @@ mod tests {
         assert!(conf >= 0.6, "confidence {} should be >= 0.6", conf);
     }
 
+    #[cfg(any(feature = "ocr", feature = "ocr-wasm"))]
     #[test]
     fn test_classify_returns_chart_for_low_entropy_small_image() {
         // Create a 2-color PNG (low entropy): half red, half blue
