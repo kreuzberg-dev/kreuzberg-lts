@@ -670,7 +670,29 @@ jobs:
           find build-output -name "*.node" -exec cp {} "staging/npm/${platform}/" \;
           test -n "$(find "staging/npm/${platform}" -name '*.node')" || {
             echo "::error::no .node produced by musl build for ${platform}"; exit 1; }
+          # Ship the .node's vendored shared-lib closure (libonnxruntime + codecs)
+          # beside it — the .node's RUNPATH is $ORIGIN, so co-located libs resolve
+          # at require() time. Without them consumers hit ERR_DLOPEN_FAILED.
+          if [ -d build-output/vendor ] && [ -n "$(ls -A build-output/vendor 2>/dev/null)" ]; then
+            cp -v build-output/vendor/* "staging/npm/${platform}/"
+          else
+            echo "::error::no vendored shared libs produced by musl build for ${platform}"; exit 1
+          fi
           cp "crates/xberg-node/npm/${platform}/package.json" "staging/npm/${platform}/package.json"
+          # Reconcile `files` with the binaries on disk — napi create-npm-dirs
+          # regenerates the committed package.json to list only *.node, so the
+          # vendored libs must be re-added here or npm publish drops them.
+          python3 -c '
+          import json, os, re, sys
+          d = sys.argv[1]; p = os.path.join(d, "package.json")
+          pkg = json.load(open(p))
+          ship = re.compile(r"\.(node|dylib|dll)$|\.so(\.[0-9]+)*$")
+          on_disk = sorted(f for f in os.listdir(d) if ship.search(f))
+          pkg["files"] = sorted(set(pkg.get("files", [])) | set(on_disk))
+          with open(p, "w") as fh:
+              json.dump(pkg, fh, indent=2); fh.write("\n")
+          print("reconciled files:", pkg["files"])
+          ' "staging/npm/${platform}"
           tar -czf node-bindings-${{ matrix.target }}.tar.gz -C staging npm
       - uses: actions/upload-artifact@v7
         with:
@@ -732,7 +754,29 @@ jobs:
           find build-output -name "*.node" -exec cp {} "staging/npm/${platform}/" \;
           test -n "$(find "staging/npm/${platform}" -name '*.node')" || {
             echo "::error::no .node produced by manylinux build for ${platform}"; exit 1; }
+          # Ship the .node's vendored shared-lib closure (libonnxruntime + codecs)
+          # beside it — the .node's RUNPATH is $ORIGIN, so co-located libs resolve
+          # at require() time. Without them consumers hit ERR_DLOPEN_FAILED.
+          if [ -d build-output/vendor ] && [ -n "$(ls -A build-output/vendor 2>/dev/null)" ]; then
+            cp -v build-output/vendor/* "staging/npm/${platform}/"
+          else
+            echo "::error::no vendored shared libs produced by manylinux build for ${platform}"; exit 1
+          fi
           cp "crates/xberg-node/npm/${platform}/package.json" "staging/npm/${platform}/package.json"
+          # Reconcile `files` with the binaries on disk — napi create-npm-dirs
+          # regenerates the committed package.json to list only *.node, so the
+          # vendored libs must be re-added here or npm publish drops them.
+          python3 -c '
+          import json, os, re, sys
+          d = sys.argv[1]; p = os.path.join(d, "package.json")
+          pkg = json.load(open(p))
+          ship = re.compile(r"\.(node|dylib|dll)$|\.so(\.[0-9]+)*$")
+          on_disk = sorted(f for f in os.listdir(d) if ship.search(f))
+          pkg["files"] = sorted(set(pkg.get("files", [])) | set(on_disk))
+          with open(p, "w") as fh:
+              json.dump(pkg, fh, indent=2); fh.write("\n")
+          print("reconciled files:", pkg["files"])
+          ' "staging/npm/${platform}"
           tar -czf node-bindings-${{ matrix.target }}.tar.gz -C staging npm
       - uses: actions/upload-artifact@v7
         with:
@@ -2765,7 +2809,22 @@ jobs:
       - upload-elixir-release
       - upload-php-pie-release
       - upload-swift-bundle
-    if: ${{ needs.prepare.outputs.is_tag == 'true' && needs.prepare.outputs.dry_run != 'true' }}
+    # `always()` so a non-critical upload flake does not skip finalization (and,
+    # transitively, the publish-hex / publish-zig jobs that need this one). A
+    # single cancelled php-pie / swift-bundle leg — e.g. a runner preemption —
+    # previously skipped this whole job and blocked unrelated language publishes
+    # (rc.15). Require only the critical release assets (CLI, Go, C-FFI, Elixir
+    # NIF) plus verify-assets; php-pie and swift are best-effort and upload to an
+    # already-created release, so their absence must not block the release.
+    if: >-
+      ${{ always()
+      && needs.prepare.outputs.is_tag == 'true'
+      && needs.prepare.outputs.dry_run != 'true'
+      && needs.verify-assets.result == 'success'
+      && needs.upload-cli-release.result == 'success'
+      && needs.upload-go-release.result == 'success'
+      && needs.upload-c-ffi-release.result == 'success'
+      && needs.upload-elixir-release.result == 'success' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/create-github-app-token@v2
@@ -3254,12 +3313,31 @@ jobs:
       - publish-zig
       - publish-homebrew-formula
       - publish-homebrew-bottles
+    # This job does the Go module tagging (packages/go/{tag}) and final release
+    # marking, so a transient failure in a *non-critical* publish must not skip
+    # it. A blunt `!contains(needs.*.result, 'failure')` let a single flaky
+    # Homebrew bottle upload skip finalization — and the Go tag — in rc.15.
+    # Instead require each *critical* registry publish to be non-failed
+    # (`!= 'failure'` still permits `skipped`, i.e. an already-published version
+    # on a re-run). Homebrew (formula/bottles), pub.dev, and the swift manifest
+    # are best-effort and deliberately excluded from the gate.
     if: |
       always() &&
       !cancelled() &&
       needs.prepare.outputs.is_tag == 'true' &&
       needs.prepare.outputs.dry_run != 'true' &&
-      !contains(needs.*.result, 'failure')
+      needs.finalize-github-release-after-uploads.result != 'failure' &&
+      needs.publish-crates.result != 'failure' &&
+      needs.publish-pypi.result != 'failure' &&
+      needs.publish-rubygems.result != 'failure' &&
+      needs.publish-node.result != 'failure' &&
+      needs.publish-wasm.result != 'failure' &&
+      needs.publish-packagist.result != 'failure' &&
+      needs.publish-maven.result != 'failure' &&
+      needs.publish-kotlin-android.result != 'failure' &&
+      needs.publish-nuget.result != 'failure' &&
+      needs.publish-hex.result != 'failure' &&
+      needs.publish-zig.result != 'failure'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/create-github-app-token@v2

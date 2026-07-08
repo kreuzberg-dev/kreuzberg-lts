@@ -5,3 +5,6 @@ lib/src/native/
 rust/
 example/
 test/
+*.so
+*.dylib
+*.dll

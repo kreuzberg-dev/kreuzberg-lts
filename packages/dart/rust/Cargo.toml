@@ -1,6 +1,6 @@
 [package]
 name = "xberg-dart"
-version = "1.0.0-rc.15"
+version = "1.0.0-rc.16"
 edition = "2024"
 license = "MIT"
 
@@ -12,7 +12,7 @@ ignored = ["crawlberg", "xberg"]
 [lib]
 crate-type = ["cdylib", "staticlib"]
 [features]
-default = ["api", "api-types", "auto-rotate-types", "chunking-tokenizers", "diff", "heuristics", "html", "keywords-rake", "keywords-yake", "layout-types", "liter-llm", "markdown-footnotes", "ocr", "ocr-wasm", "office", "paddle-ocr-types", "pdf", "presets", "quality", "redaction", "reranker-presets", "svg", "transcription-types", "tree-sitter", "url-config-types", "url-ingestion", "xml"]
+default = ["api", "api-types", "auto-rotate-types", "chunking-tokenizers", "diff", "heuristics", "html", "keywords-rake", "keywords-yake", "late-interaction-presets", "layout-types", "liter-llm", "markdown-footnotes", "ocr", "ocr-wasm", "office", "paddle-ocr-types", "pdf", "presets", "quality", "redaction", "reranker-presets", "sparse-embedding-presets", "svg", "tokio-runtime", "transcription-types", "tree-sitter", "url-config-types", "url-ingestion", "xml"]
 api = ["xberg/api"]
 api-types = ["xberg/api-types"]
 auto-rotate-types = ["xberg/auto-rotate-types"]
@@ -22,6 +22,8 @@ heuristics = ["xberg/heuristics"]
 html = ["xberg/html"]
 keywords-rake = ["xberg/keywords-rake"]
 keywords-yake = ["xberg/keywords-yake"]
+late-interaction = ["xberg/late-interaction"]
+late-interaction-presets = ["xberg/late-interaction-presets"]
 layout-types = ["xberg/layout-types"]
 liter-llm = ["xberg/liter-llm"]
 markdown-footnotes = ["xberg/markdown-footnotes"]
@@ -35,13 +37,16 @@ quality = ["xberg/quality"]
 redaction = ["xberg/redaction"]
 reranker = ["xberg/reranker"]
 reranker-presets = ["xberg/reranker-presets"]
+sparse-embedding-presets = ["xberg/sparse-embedding-presets"]
+sparse-embeddings = ["xberg/sparse-embeddings"]
 svg = ["xberg/svg"]
+tokio-runtime = ["xberg/tokio-runtime"]
 transcription-types = ["xberg/transcription-types"]
 tree-sitter = ["xberg/tree-sitter"]
 url-config-types = ["xberg/url-config-types"]
 url-ingestion = ["xberg/url-ingestion"]
 xml = ["xberg/xml"]
-android-target = ["xberg/android-target", "api", "api-types", "auto-rotate-types", "chunking-tokenizers", "diff", "heuristics", "html", "keywords-rake", "keywords-yake", "layout-types", "liter-llm", "markdown-footnotes", "ocr", "office", "paddle-ocr-types", "pdf", "presets", "quality", "redaction", "reranker-presets", "svg", "transcription-types", "tree-sitter", "url-config-types", "url-ingestion", "xml"]
+android-target = ["xberg/android-target", "api", "api-types", "auto-rotate-types", "chunking-tokenizers", "diff", "heuristics", "html", "keywords-rake", "keywords-yake", "late-interaction-presets", "layout-types", "liter-llm", "markdown-footnotes", "ocr", "office", "paddle-ocr-types", "pdf", "presets", "quality", "redaction", "reranker-presets", "sparse-embedding-presets", "svg", "tokio-runtime", "transcription-types", "tree-sitter", "url-config-types", "url-ingestion", "xml"]
 
 [dependencies]
 async-trait = "0.1"
@@ -49,16 +54,16 @@ crawlberg = { default-features = false, version = "1.0.3" }
 flutter_rust_bridge = "=2.12.0"
 serde_json = "1"
 tokio = { version = "1", features = ["rt-multi-thread", "sync"] }
-[target.'cfg(all(target_os = "macos", target_arch = "x86_64"))'.dependencies]
-xberg = { path = "../../../crates/xberg", default-features = false, features = ["macos-intel-target"] }
 [target.'cfg(not(any(target_os = "android", target_os = "ios", target_os = "windows", all(target_os = "macos", target_arch = "x86_64"))))'.dependencies]
-xberg = { path = "../../../crates/xberg", features = ["pdf", "excel", "office", "hwp", "hwpx", "iwork", "email", "html", "xml", "archives", "mdx", "svg", "language-detection", "chunking", "chunking-tokenizers", "quality", "keywords", "diff", "api", "api-types", "mcp", "ocr", "paddle-ocr", "paddle-ocr-types", "layout-detection", "layout-types", "embeddings", "embedding-presets", "reranker", "reranker-presets", "transcription-types", "tree-sitter", "liter-llm", "tokio-runtime", "ner-llm", "ner-onnx", "redaction", "summarization", "classification", "captioning", "qr-codes", "auto-rotate-types", "stopwords"] }
+xberg = { path = "../../../crates/xberg", features = ["pdf", "excel", "office", "hwp", "hwpx", "iwork", "email", "html", "xml", "archives", "mdx", "svg", "language-detection", "chunking", "chunking-tokenizers", "quality", "keywords", "diff", "api", "api-types", "mcp", "ocr", "paddle-ocr", "paddle-ocr-types", "layout-detection", "layout-types", "embeddings", "embedding-presets", "reranker", "reranker-presets", "sparse-embeddings", "sparse-embedding-presets", "late-interaction", "late-interaction-presets", "transcription-types", "tree-sitter", "liter-llm", "tokio-runtime", "ner-llm", "ner-onnx", "redaction", "summarization", "classification", "captioning", "qr-codes", "auto-rotate-types", "stopwords"] }
 [target.'cfg(target_os = "android")'.dependencies]
 xberg = { path = "../../../crates/xberg", default-features = false, features = ["android-target"] }
 [target.'cfg(target_os = "ios")'.dependencies]
 xberg = { path = "../../../crates/xberg", default-features = false, features = ["android-target"] }
 [target.'cfg(target_os = "windows")'.dependencies]
 xberg = { path = "../../../crates/xberg", default-features = false, features = ["windows-target"] }
+[target.'cfg(all(target_os = "macos", target_arch = "x86_64"))'.dependencies]
+xberg = { path = "../../../crates/xberg", default-features = false, features = ["macos-intel-target"] }
 
 [lints.rust]
 # flutter_rust_bridge uses #[cfg(frb_expand)] internally during macro expansion.

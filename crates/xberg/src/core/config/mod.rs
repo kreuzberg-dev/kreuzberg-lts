@@ -13,6 +13,7 @@ pub mod extraction;
 pub mod formats;
 #[cfg(feature = "html")]
 pub mod html_output;
+pub mod late_interaction;
 pub mod layout;
 pub mod llm;
 pub mod merge;
@@ -23,6 +24,7 @@ pub mod pdf;
 pub mod processing;
 pub mod redaction;
 pub mod reranker;
+pub mod sparse_embedding;
 pub mod summarization;
 pub mod transcription;
 pub mod translation;
@@ -46,6 +48,7 @@ pub use extraction::{
 pub use formats::{JupyterCellRendering, OutputFormat};
 #[cfg(feature = "html")]
 pub use html_output::{HtmlOutputConfig, HtmlTheme};
+pub use late_interaction::{LateInteractionConfig, LateInteractionModelType};
 #[cfg(feature = "layout-types")]
 pub use layout::{LayoutDetectionConfig, TableModel};
 pub use llm::{CallMode, LlmConfig, MergeMode, StructuredExtractionConfig};
@@ -57,7 +60,8 @@ pub use processing::{
     ChunkSizing, ChunkerType, ChunkingConfig, EmbeddingConfig, EmbeddingModelType, PostProcessorConfig,
     TableChunkingMode,
 };
-pub use reranker::{RerankerConfig, RerankerModelType};
+pub use reranker::{RerankerConfig, RerankerHead, RerankerModelType};
+pub use sparse_embedding::{SparseEmbeddingConfig, SparseEmbeddingModelType};
 #[cfg(feature = "tree-sitter")]
 pub use tree_sitter::{CodeContentMode, TreeSitterConfig, TreeSitterProcessConfig};
 

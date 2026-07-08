@@ -36,6 +36,11 @@ pub mod filter;
 pub mod query;
 #[cfg(feature = "vector-store")]
 pub mod registry;
+// Scoring primitives (MaxSim, sparse dot) are consumed only by the concrete
+// backends, so gate them on the backend features to stay dead-code-free when a
+// downstream builds the contract surface alone.
+#[cfg(any(feature = "in-memory", feature = "sqlite"))]
+mod scoring;
 #[cfg(feature = "vector-store")]
 pub mod store;
 #[cfg(feature = "vector-store")]
@@ -64,7 +69,7 @@ pub use store::VectorStore;
 #[cfg(feature = "vector-store")]
 pub use types::{
     ChunkId, ChunkRecord, CollectionSpec, CollectionStats, DistanceMetric, DocumentId, DocumentRecord, DocumentSummary,
-    IndexMethod, PrimaryScore, RetrievedChunk,
+    IndexMethod, MultiVector, PrimaryScore, RetrievedChunk, SparseVector,
 };
 
 #[cfg(feature = "in-memory")]

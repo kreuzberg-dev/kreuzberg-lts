@@ -106,6 +106,7 @@ fn platform_candidates() -> &'static [&'static str] {
     feature = "paddle-ocr",
     feature = "auto-rotate",
     feature = "reranker",
+    feature = "onnx-runtime",
     feature = "transcription"
 ))]
 pub(crate) fn apply_execution_providers(

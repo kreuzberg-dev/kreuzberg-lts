@@ -271,6 +271,12 @@ chunking = [
     "dep:strum",
 ]
 chunking-tokenizers = ["chunking", "dep:tokenizers"]
+# onnx-runtime: shared ONNX model-loading helpers (crate::onnx) — HF download,
+# cross-process lock, tokenizer load, ORT session build. Marker feature enabled
+# by every ORT-backed capability that builds on the shared helper (currently
+# sparse-embeddings and late-interaction). The embeddings and reranker modules
+# still vendor their own copies; migrating them onto crate::onnx is a follow-up.
+onnx-runtime = ["dep:hf-hub", "dep:ort", "dep:tokenizers", "ort-bundled"]
 # embedding-presets: static preset metadata (WASM-safe, no ORT)
 embedding-presets = []
 # embeddings: full embedding generation with ONNX Runtime (ORT-dependent, WASM-incompatible)
@@ -298,6 +304,28 @@ reranker = [
     "dep:tokenizers",
     "tokio-runtime",
     "ort-bundled",
+]
+# v5.0.0: SPLADE sparse embeddings for hybrid dense+sparse retrieval.
+# sparse-embedding-presets: static preset metadata (WASM/Android-safe, no ORT).
+sparse-embedding-presets = []
+# sparse-embeddings: SPLADE inference via ONNX Runtime (ORT-dependent,
+# WASM-incompatible). Builds on the shared crate::onnx helper (onnx-runtime).
+sparse-embeddings = [
+    "sparse-embedding-presets",
+    "onnx-runtime",
+    "dep:ndarray",
+    "tokio-runtime",
+]
+# v5.0.0: ColBERT late-interaction (multi-vector) embeddings for MaxSim retrieval.
+# late-interaction-presets: static preset metadata + pure-CPU MaxSim (WASM/Android-safe, no ORT).
+late-interaction-presets = []
+# late-interaction: ColBERT multi-vector inference via ONNX Runtime (ORT-dependent,
+# WASM-incompatible). Builds on the shared crate::onnx helper (onnx-runtime).
+late-interaction = [
+    "late-interaction-presets",
+    "onnx-runtime",
+    "dep:ndarray",
+    "tokio-runtime",
 ]
 stopwords = []
 quality = ["dep:unicode-normalization", "dep:chardetng", "stopwords"]
@@ -417,6 +445,8 @@ no-ort-target = [
     "stopwords",
     "embedding-presets",
     "reranker-presets",
+    "sparse-embedding-presets",
+    "late-interaction-presets",
     "layout-types",
     "auto-rotate-types",
     "paddle-ocr-types",
@@ -590,6 +620,8 @@ full = [
     "layout-detection",
     "embeddings",
     "reranker",
+    "sparse-embeddings",
+    "late-interaction",
     "transcription",
     "chunking-tokenizers",
     "enrichment",
@@ -777,7 +809,7 @@ uuid = { version = "1", features = ["v4"], optional = true }
 v_htmlescape = { version = "0.17", optional = true }
 whatlang = { version = "0.18.0", optional = true }
 xberg-gliner = { workspace = true, optional = true }
-xberg-libheif = { path = "../xberg-libheif", version = "1.0.0-rc.15", optional = true }
+xberg-libheif = { path = "../xberg-libheif", version = "1.0.0-rc.16", optional = true }
 # No `version` on this path-dep: xberg-tesseract carries `links =
 # "xberg_tesseract"`, and a versioned path-dep makes the maturin sdist
 # resolve two copies (path + registry) of a `links` crate, which cargo rejects
@@ -797,9 +829,9 @@ tokenizers = { version = "0.23", default-features = false, features = ["http", "
 # Note: candle-core unconditionally links platform-specific deps (cudarc on Linux, metal-kernels on macOS).
 # To avoid conflicts during feature unification, GPU features (candle-cuda/metal/mkl/accelerate) should
 # only be explicitly enabled with platform awareness. CI uses `--features full` which excludes GPU accel.
-xberg-candle-ocr = { path = "../xberg-candle-ocr", version = "1.0.0-rc.15", optional = true }
+xberg-candle-ocr = { path = "../xberg-candle-ocr", version = "1.0.0-rc.16", optional = true }
 # PaddleOCR via ONNX Runtime - not available on WASM (vendored from paddle-ocr-rs)
-xberg-paddle-ocr = { path = "../xberg-paddle-ocr", version = "1.0.0-rc.15", optional = true }
+xberg-paddle-ocr = { path = "../xberg-paddle-ocr", version = "1.0.0-rc.16", optional = true }
 
 # Desktop / server hosts (Linux + macOS, NOT Android): ureq uses ring-backed rustls plus
 # `platform-verifier`, which trusts the OS certificate store (rustls-native-certs on Linux,
@@ -829,9 +861,9 @@ ureq = { version = "3.3", default-features = false, features = [
     "json",
 ], optional = true }
 # Candle-based VLM OCR backends - pure-Rust transformer inference, not on WASM yet.
-xberg-candle-ocr = { path = "../xberg-candle-ocr", version = "1.0.0-rc.15", optional = true }
+xberg-candle-ocr = { path = "../xberg-candle-ocr", version = "1.0.0-rc.16", optional = true }
 # PaddleOCR via ONNX Runtime - not available on WASM (vendored from paddle-ocr-rs)
-xberg-paddle-ocr = { path = "../xberg-paddle-ocr", version = "1.0.0-rc.15", optional = true }
+xberg-paddle-ocr = { path = "../xberg-paddle-ocr", version = "1.0.0-rc.16", optional = true }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies.tree-sitter-language-pack]
 workspace = true

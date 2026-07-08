@@ -9,10 +9,11 @@ use crate::capability::Capabilities;
 use crate::error::{RagError, RagResult};
 use crate::filter::{Filter, FilterField};
 use crate::query::{RetrieveMode, RetrieveOutput, RetrieveQuery};
+use crate::scoring::{max_sim, sparse_dot};
 use crate::store::VectorStore;
 use crate::types::{
     ChunkId, ChunkRecord, CollectionSpec, CollectionStats, DistanceMetric, DocumentId, DocumentRecord, DocumentSummary,
-    PrimaryScore, RetrievedChunk,
+    PrimaryScore, RetrievedChunk, validate_chunk_side_vectors,
 };
 use async_trait::async_trait;
 use std::collections::HashMap;
@@ -169,6 +170,32 @@ fn eval_filter(filter: &Filter, doc: &DocumentRecord, chunk: &ChunkRecord) -> bo
     }
 }
 
+/// Build a [`RetrievedChunk`] from a stored chunk and a computed score.
+fn to_retrieved_chunk(
+    coll: &Collection,
+    c: &StoredChunk,
+    query: &RetrieveQuery,
+    score_value: f32,
+    primary_score: PrimaryScore,
+) -> RetrievedChunk {
+    RetrievedChunk {
+        id: c.id.clone(),
+        document_id: c.document_id.clone(),
+        ordinal: c.record.ordinal,
+        external_id: c.record.external_id.clone(),
+        content: query.include_content.then(|| c.record.content.clone()),
+        score: score_value,
+        primary_score,
+        chunk_metadata: c.record.chunk_metadata.clone(),
+        document: query.include_document.then(|| {
+            coll.documents
+                .get(&c.document_id)
+                .map(|d| summarize(&c.document_id, &d.record))
+                .unwrap_or_else(|| summarize(&c.document_id, &DocumentRecord::default()))
+        }),
+    }
+}
+
 fn summarize(id: &DocumentId, doc: &DocumentRecord) -> DocumentSummary {
     DocumentSummary {
         id: id.clone(),
@@ -195,6 +222,8 @@ impl VectorStore for InMemoryVectorStore {
             full_text: false,
             hybrid: false,
             filtering: true,
+            sparse: true,
+            late_interaction: true,
             index_methods: vec![crate::types::IndexMethod::Flat],
         }
     }
@@ -244,6 +273,7 @@ impl VectorStore for InMemoryVectorStore {
                     got: chunk.embedding.len() as u32,
                 });
             }
+            validate_chunk_side_vectors(chunk)?;
         }
 
         // Resolve identity: reuse the id for an existing external_id, else mint one.
@@ -328,7 +358,10 @@ impl VectorStore for InMemoryVectorStore {
     }
 
     async fn retrieve(&self, collection: &str, query: &RetrieveQuery) -> RagResult<RetrieveOutput> {
-        if query.mode != RetrieveMode::Vector {
+        if !matches!(
+            query.mode,
+            RetrieveMode::Vector | RetrieveMode::Sparse | RetrieveMode::LateInteraction
+        ) {
             return Err(RagError::UnsupportedMode {
                 backend: self.name.clone(),
                 mode: query.mode.as_str().to_string(),
@@ -343,11 +376,8 @@ impl VectorStore for InMemoryVectorStore {
             .as_ref()
             .ok_or_else(|| RagError::CollectionNotFound(collection.to_string()))?;
         query.validate(spec)?;
-        let query_vector = query.query_vector.as_ref().ok_or_else(|| {
-            RagError::InvalidQuery("in-memory backend cannot embed text; supply query_vector".to_string())
-        })?;
 
-        let mut scored: Vec<RetrievedChunk> = coll
+        let candidates: Vec<&StoredChunk> = coll
             .chunks
             .iter()
             .filter(|c| {
@@ -357,26 +387,53 @@ impl VectorStore for InMemoryVectorStore {
                         .is_some_and(|d| eval_filter(f, &d.record, &c.record))
                 })
             })
-            .map(|c| {
-                let s = score(spec.distance_metric, query_vector, &c.record.embedding);
-                RetrievedChunk {
-                    id: c.id.clone(),
-                    document_id: c.document_id.clone(),
-                    ordinal: c.record.ordinal,
-                    external_id: c.record.external_id.clone(),
-                    content: query.include_content.then(|| c.record.content.clone()),
-                    score: s,
-                    primary_score: PrimaryScore::Vector(s),
-                    chunk_metadata: c.record.chunk_metadata.clone(),
-                    document: query.include_document.then(|| {
-                        coll.documents
-                            .get(&c.document_id)
-                            .map(|d| summarize(&c.document_id, &d.record))
-                            .unwrap_or_else(|| summarize(&c.document_id, &DocumentRecord::default()))
-                    }),
-                }
-            })
             .collect();
+
+        let mut scored: Vec<RetrievedChunk> = match query.mode {
+            RetrieveMode::Vector => {
+                let query_vector = query.query_vector.as_ref().ok_or_else(|| {
+                    RagError::InvalidQuery("in-memory backend cannot embed text; supply query_vector".to_string())
+                })?;
+                candidates
+                    .iter()
+                    .map(|c| {
+                        let s = score(spec.distance_metric, query_vector, &c.record.embedding);
+                        to_retrieved_chunk(coll, c, query, s, PrimaryScore::Vector(s))
+                    })
+                    .collect()
+            }
+            RetrieveMode::Sparse => {
+                // Validated non-None by `query.validate`.
+                let query_sparse = query.query_sparse.as_ref().expect("validated: query_sparse present");
+                candidates
+                    .iter()
+                    .filter_map(|c| {
+                        let doc_sparse = c.record.sparse_embedding.as_ref()?;
+                        let s = sparse_dot(query_sparse, doc_sparse);
+                        // Only chunks sharing at least one query term are candidates
+                        // (a zero score means no overlap), matching the sqlite backend.
+                        (s > 0.0).then(|| to_retrieved_chunk(coll, c, query, s, PrimaryScore::Sparse(s)))
+                    })
+                    .collect()
+            }
+            RetrieveMode::LateInteraction => {
+                // Validated non-None by `query.validate`.
+                let query_mv = query
+                    .query_multi_vector
+                    .as_ref()
+                    .expect("validated: query_multi_vector present");
+                candidates
+                    .iter()
+                    .filter_map(|c| {
+                        let doc_mv = c.record.multi_vector.as_ref()?;
+                        let s = max_sim(query_mv, doc_mv);
+                        Some(to_retrieved_chunk(coll, c, query, s, PrimaryScore::LateInteraction(s)))
+                    })
+                    .collect()
+            }
+            // Unreachable: guarded above.
+            RetrieveMode::FullText | RetrieveMode::Hybrid => unreachable!("guarded by capability check above"),
+        };
 
         scored.sort_by(|a, b| b.score.partial_cmp(&a.score).unwrap_or(std::cmp::Ordering::Equal));
 
@@ -387,7 +444,7 @@ impl VectorStore for InMemoryVectorStore {
         scored.truncate(query.top_k as usize);
 
         Ok(RetrieveOutput {
-            mode: RetrieveMode::Vector,
+            mode: query.mode,
             chunks: scored,
             primary_latency_ms: 0,
         })
@@ -425,6 +482,26 @@ mod tests {
             ordinal,
             content: content.to_string(),
             embedding,
+            sparse_embedding: None,
+            multi_vector: None,
+            chunk_metadata: serde_json::Value::Null,
+        }
+    }
+
+    fn chunk_full(
+        ordinal: u32,
+        content: &str,
+        embedding: Vec<f32>,
+        sparse_embedding: Option<crate::types::SparseVector>,
+        multi_vector: Option<crate::types::MultiVector>,
+    ) -> ChunkRecord {
+        ChunkRecord {
+            external_id: None,
+            ordinal,
+            content: content.to_string(),
+            embedding,
+            sparse_embedding,
+            multi_vector,
             chunk_metadata: serde_json::Value::Null,
         }
     }
@@ -502,6 +579,95 @@ mod tests {
         };
         let out = store.retrieve("docs", &q).await.unwrap();
         assert_eq!(out.chunks.len(), 1);
+    }
+
+    #[tokio::test]
+    async fn sparse_retrieve_ranks_by_overlap() {
+        use crate::types::SparseVector;
+        let store = store_with_collection(2).await;
+        let doc = DocumentRecord::default();
+        let chunks = vec![
+            chunk_full(
+                0,
+                "match",
+                vec![1.0, 0.0],
+                Some(SparseVector {
+                    indices: vec![1, 3],
+                    values: vec![2.0, 2.0],
+                }),
+                None,
+            ),
+            chunk_full(
+                1,
+                "miss",
+                vec![0.0, 1.0],
+                Some(SparseVector {
+                    indices: vec![5, 9],
+                    values: vec![2.0, 2.0],
+                }),
+                None,
+            ),
+        ];
+        store.upsert_document("docs", &doc, &chunks).await.unwrap();
+
+        let q = RetrieveQuery {
+            mode: RetrieveMode::Sparse,
+            query_sparse: Some(SparseVector {
+                indices: vec![1, 3],
+                values: vec![1.0, 1.0],
+            }),
+            include_content: true,
+            ..RetrieveQuery::vector(10)
+        };
+        let out = store.retrieve("docs", &q).await.unwrap();
+        assert_eq!(out.chunks.len(), 1, "only the overlapping chunk scores > 0");
+        assert_eq!(out.chunks[0].content.as_deref(), Some("match"));
+    }
+
+    #[tokio::test]
+    async fn late_interaction_retrieve_ranks_by_max_sim() {
+        use crate::types::MultiVector;
+        let store = store_with_collection(2).await;
+        let doc = DocumentRecord::default();
+        let chunks = vec![
+            chunk_full(
+                0,
+                "aligned",
+                vec![1.0, 0.0],
+                None,
+                Some(MultiVector {
+                    num_tokens: 1,
+                    dim: 2,
+                    data: vec![1.0, 0.0],
+                }),
+            ),
+            chunk_full(
+                1,
+                "orthogonal",
+                vec![0.0, 1.0],
+                None,
+                Some(MultiVector {
+                    num_tokens: 1,
+                    dim: 2,
+                    data: vec![0.0, 1.0],
+                }),
+            ),
+        ];
+        store.upsert_document("docs", &doc, &chunks).await.unwrap();
+
+        let q = RetrieveQuery {
+            mode: RetrieveMode::LateInteraction,
+            query_vector: Some(vec![1.0, 0.0]),
+            query_multi_vector: Some(MultiVector {
+                num_tokens: 1,
+                dim: 2,
+                data: vec![1.0, 0.0],
+            }),
+            include_content: true,
+            ..RetrieveQuery::vector(10)
+        };
+        let out = store.retrieve("docs", &q).await.unwrap();
+        assert_eq!(out.chunks[0].content.as_deref(), Some("aligned"));
     }
 
     #[tokio::test]

@@ -1,5 +1,5 @@
 [workspace]
-alef_version = "0.34.1"
+alef_version = "0.34.2"
 # alef codegen emits non-shorthand struct init (`name: name`) in generated
 # binding lib.rs files; allow it repo-wide so workspace clippy passes under
 # -D warnings (emitted into every generated Rust binding as #![allow(...)]).
@@ -458,6 +458,10 @@ features = [
     "embedding-presets",
     "reranker",
     "reranker-presets",
+    "sparse-embeddings",
+    "sparse-embedding-presets",
+    "late-interaction",
+    "late-interaction-presets",
     "chunking",
     "keywords-yake",
     "keywords-rake",
@@ -543,6 +547,12 @@ exclude_functions = [
     "register_renderer",
     "unregister_document_extractor",
     "unregister_renderer",
+    # Sparse and late-interaction embedding functions — async variants are deferred,
+    # sync variants excluded for consistency.
+    "embed_sparse",
+    "embed_sparse_async",
+    "embed_multi_vector",
+    "embed_multi_vector_async",
 ]
 reexported_types = ["ExtractionResult", "ExtractedDocument", "ExtractionDiff"]
 
@@ -586,6 +596,12 @@ exclude_functions = [
     "batch_extract_bytes_sync",
     "batch_extract_files",
     "batch_extract_files_sync",
+    # Sparse and late-interaction embedding functions — async variants are deferred,
+    # sync variants excluded for consistency.
+    "embed_sparse",
+    "embed_sparse_async",
+    "embed_multi_vector",
+    "embed_multi_vector_async",
 ]
 
 [crates.node.extra_dependencies]
@@ -622,6 +638,12 @@ exclude_functions = [
     "batch_extract_bytes_sync",
     "batch_extract_files",
     "batch_extract_files_sync",
+    # Sparse and late-interaction embedding functions — async variants are deferred,
+    # sync variants excluded for consistency.
+    "embed_sparse",
+    "embed_sparse_async",
+    "embed_multi_vector",
+    "embed_multi_vector_async",
 ]
 
 [crates.ruby.stubs]
@@ -677,6 +699,12 @@ exclude_functions = [
     # embed_texts_async and rerank_async are now generated with always-true cfg
     # conditions to work around ext-php-rs's #[php_impl] macro unconditional
     # function resolution. See prepend_cfg_for_php in rust_bindings.rs.
+    # Sparse and late-interaction embedding functions — async variants are deferred,
+    # sync variants excluded for consistency.
+    "embed_sparse",
+    "embed_sparse_async",
+    "embed_multi_vector",
+    "embed_multi_vector_async",
 ]
 
 # Windows: libheif is not installed on the `windows-latest` runner image, so
@@ -724,6 +752,12 @@ exclude_functions = [
     "register_renderer",
     "unregister_document_extractor",
     "unregister_renderer",
+    # Sparse and late-interaction embedding functions — async variants are deferred,
+    # sync variants excluded for consistency.
+    "embed_sparse",
+    "embed_sparse_async",
+    "embed_multi_vector",
+    "embed_multi_vector_async",
 ]
 exclude_types = [
     # Trait types cannot be FFI-bound
@@ -838,6 +872,12 @@ exclude_functions = [
     "batch_extract_bytes_sync",
     "batch_extract_files",
     "batch_extract_files_sync",
+    # Sparse and late-interaction embedding functions — async variants are deferred,
+    # sync variants excluded for consistency.
+    "embed_sparse",
+    "embed_sparse_async",
+    "embed_multi_vector",
+    "embed_multi_vector_async",
 ]
 
 [crates.wasm.extra_dependencies]
@@ -968,8 +1008,13 @@ cfg = 'all(target_os = "macos", target_arch = "x86_64")'
 features = ["macos-intel-target"]
 default_features = false
 
+# The Go module lives in the `packages/go/` subdirectory, so its import path must
+# include that segment — otherwise `go get github.com/xberg-io/xberg@latest` resolves
+# against the repo root and (a) mis-resolves to a legacy `v4.9.9+incompatible` tag and
+# (b) tries to zip the entire monorepo, failing Go's 500MB module-source cap (#1230).
+# v1.x uses no major-version suffix in the path. Release tags: `packages/go/vX.Y.Z`.
 [crates.go]
-module = "github.com/xberg-io/xberg"
+module = "github.com/xberg-io/xberg/packages/go"
 package_name = "xberg"
 exclude_functions = [
     "calculate_quality_score",
@@ -1045,6 +1090,12 @@ exclude_functions = [
     "unregister_document_extractor",
     "register_renderer",
     "unregister_renderer",
+    # Sparse and late-interaction embedding functions — async variants are deferred,
+    # sync variants excluded for consistency.
+    "embed_sparse",
+    "embed_sparse_async",
+    "embed_multi_vector",
+    "embed_multi_vector_async",
 ]
 exclude_types = [
     "LlmBackend",
@@ -1073,6 +1124,10 @@ features = [
     "embedding-presets",
     "reranker",
     "reranker-presets",
+    "sparse-embeddings",
+    "sparse-embedding-presets",
+    "late-interaction",
+    "late-interaction-presets",
     "chunking",
     "keywords-yake",
     "keywords-rake",
@@ -1112,6 +1167,12 @@ exclude_functions = [
     "batch_extract_bytes_sync",
     "batch_extract_files",
     "batch_extract_files_sync",
+    # Sparse and late-interaction embedding functions — async variants are deferred,
+    # sync variants excluded for consistency.
+    "embed_sparse",
+    "embed_sparse_async",
+    "embed_multi_vector",
+    "embed_multi_vector_async",
 ]
 
 # Windows: libheif is not installed on the `windows-latest` runner image, so
@@ -1145,7 +1206,7 @@ style = "frb"
 # re-pull `ort-sys` on `x86_64-linux-android` (no ORT prebuilt) via cargo feature
 # unification, defeating the `android-target` dep override. Desktop builds still
 # get them through the `cfg(not(android/ios/windows))` `features = ["full"]` dep.
-excluded_default_features = ["heic", "embeddings", "reranker"]
+excluded_default_features = ["heic", "embeddings", "reranker", "sparse-embeddings", "late-interaction"]
 features = [
     "pdf",
     "excel",
@@ -1177,6 +1238,10 @@ features = [
     "embedding-presets",
     "reranker",
     "reranker-presets",
+    "sparse-embeddings",
+    "sparse-embedding-presets",
+    "late-interaction",
+    "late-interaction-presets",
     "transcription-types",
     "tree-sitter",
     "liter-llm",
@@ -1205,6 +1270,12 @@ exclude_functions = [
     "batch_extract_bytes_sync",
     "batch_extract_files",
     "batch_extract_files_sync",
+    # Sparse and late-interaction embedding functions — async variants are deferred,
+    # sync variants excluded for consistency.
+    "embed_sparse",
+    "embed_sparse_async",
+    "embed_multi_vector",
+    "embed_multi_vector_async",
 ]
 
 # Android (any arch) and iOS: libheif-sys + ORT do not cross-compile to mobile
@@ -1279,6 +1350,12 @@ exclude_functions = [
     "batch_extract_bytes_sync",
     "batch_extract_files",
     "batch_extract_files_sync",
+    # Sparse and late-interaction embedding functions — async variants are deferred,
+    # sync variants excluded for consistency.
+    "embed_sparse",
+    "embed_sparse_async",
+    "embed_multi_vector",
+    "embed_multi_vector_async",
 ]
 
 # Windows: libheif is not installed on the `windows-latest` runner image, so
@@ -1368,6 +1445,10 @@ features = [
     "embedding-presets",
     "reranker",
     "reranker-presets",
+    "sparse-embeddings",
+    "sparse-embedding-presets",
+    "late-interaction",
+    "late-interaction-presets",
     "transcription-types",
     "tree-sitter",
     "liter-llm",
@@ -1439,6 +1520,12 @@ exclude_functions = [
     "batch_extract_bytes_sync",
     "batch_extract_files",
     "batch_extract_files_sync",
+    # Sparse and late-interaction embedding functions — async variants are deferred,
+    # sync variants excluded for consistency.
+    "embed_sparse",
+    "embed_sparse_async",
+    "embed_multi_vector",
+    "embed_multi_vector_async",
 ]
 
 # iOS: libheif-sys + ORT do not cross-compile to the iOS SDK, so the
@@ -1493,6 +1580,12 @@ exclude_functions = [
     "batch_extract_bytes_sync",
     "batch_extract_files",
     "batch_extract_files_sync",
+    # Sparse and late-interaction embedding functions — async variants are deferred,
+    # sync variants excluded for consistency.
+    "embed_sparse",
+    "embed_sparse_async",
+    "embed_multi_vector",
+    "embed_multi_vector_async",
 ]
 
 [crates.zig]
@@ -1511,6 +1604,12 @@ exclude_functions = [
     "batch_extract_bytes_sync",
     "batch_extract_files",
     "batch_extract_files_sync",
+    # Sparse and late-interaction embedding functions — async variants are deferred,
+    # sync variants excluded for consistency.
+    "embed_sparse",
+    "embed_sparse_async",
+    "embed_multi_vector",
+    "embed_multi_vector_async",
 ]
 
 [crates.output]
@@ -3950,7 +4049,7 @@ path = "../../packages/zig"
 # Placeholder until v5.0.0-rc.4 ships and the tarball SHA is known.
 # Update post-release with the real Zig multihash for
 # https://github.com/xberg-io/xberg/releases/download/v{version}/xberg-zig-v{version}.tar.gz
-hash = "xberg-1.0.0-rc.15-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+hash = "xberg-1.0.0-rc.16-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
 
 # Point WASM e2e at the wasm-pack `nodejs` target. The default `pkg/` is the
 # bundler target whose JS glue uses `import * as foo from "env"` statements

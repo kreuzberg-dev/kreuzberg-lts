@@ -227,6 +227,9 @@ packages/csharp/test_html_debug.cs
 .gemini/
 .xberg/
 .mcp.json
+# Alef-generated agent skills (mirrors of .ai-rulez/skills; .claude/.codex covered above)
+.agents/skills/
+.github/skills/
 .playwright-mcp/
 .fastembed_cache/
 */.fastembed_cache/
@@ -313,11 +316,5 @@ packages/go/.lib/
 build-output-musl-node/
 
 # BEGIN ai-rulez (DO NOT EDIT - managed by ai-rulez)
-.agents/
 .ai-rulez/.generated-manifest.json
-.cursor/
-.github/agents/
-.github/commands/
-.github/copilot-instructions.md
-.github/skills/
 # END ai-rulez

@@ -389,6 +389,18 @@ void* __swift_bridge__$Vec_HtmlOutputConfig$get_mut(void* vec_ptr, uintptr_t ind
 uintptr_t __swift_bridge__$Vec_HtmlOutputConfig$len(void* vec_ptr);
 void* __swift_bridge__$Vec_HtmlOutputConfig$as_ptr(void* vec_ptr);
 
+typedef struct LateInteractionConfig LateInteractionConfig;
+void __swift_bridge__$LateInteractionConfig$_free(void* self);
+
+void* __swift_bridge__$Vec_LateInteractionConfig$new(void);
+void __swift_bridge__$Vec_LateInteractionConfig$drop(void* vec_ptr);
+void __swift_bridge__$Vec_LateInteractionConfig$push(void* vec_ptr, void* item_ptr);
+void* __swift_bridge__$Vec_LateInteractionConfig$pop(void* vec_ptr);
+void* __swift_bridge__$Vec_LateInteractionConfig$get(void* vec_ptr, uintptr_t index);
+void* __swift_bridge__$Vec_LateInteractionConfig$get_mut(void* vec_ptr, uintptr_t index);
+uintptr_t __swift_bridge__$Vec_LateInteractionConfig$len(void* vec_ptr);
+void* __swift_bridge__$Vec_LateInteractionConfig$as_ptr(void* vec_ptr);
+
 typedef struct LayoutDetectionConfig LayoutDetectionConfig;
 void __swift_bridge__$LayoutDetectionConfig$_free(void* self);
 
@@ -604,6 +616,18 @@ void* __swift_bridge__$Vec_RerankerConfig$get(void* vec_ptr, uintptr_t index);
 void* __swift_bridge__$Vec_RerankerConfig$get_mut(void* vec_ptr, uintptr_t index);
 uintptr_t __swift_bridge__$Vec_RerankerConfig$len(void* vec_ptr);
 void* __swift_bridge__$Vec_RerankerConfig$as_ptr(void* vec_ptr);
+
+typedef struct SparseEmbeddingConfig SparseEmbeddingConfig;
+void __swift_bridge__$SparseEmbeddingConfig$_free(void* self);
+
+void* __swift_bridge__$Vec_SparseEmbeddingConfig$new(void);
+void __swift_bridge__$Vec_SparseEmbeddingConfig$drop(void* vec_ptr);
+void __swift_bridge__$Vec_SparseEmbeddingConfig$push(void* vec_ptr, void* item_ptr);
+void* __swift_bridge__$Vec_SparseEmbeddingConfig$pop(void* vec_ptr);
+void* __swift_bridge__$Vec_SparseEmbeddingConfig$get(void* vec_ptr, uintptr_t index);
+void* __swift_bridge__$Vec_SparseEmbeddingConfig$get_mut(void* vec_ptr, uintptr_t index);
+uintptr_t __swift_bridge__$Vec_SparseEmbeddingConfig$len(void* vec_ptr);
+void* __swift_bridge__$Vec_SparseEmbeddingConfig$as_ptr(void* vec_ptr);
 
 typedef struct SummarizationConfig SummarizationConfig;
 void __swift_bridge__$SummarizationConfig$_free(void* self);
@@ -2069,6 +2093,66 @@ void* __swift_bridge__$Vec_RerankedDocument$get_mut(void* vec_ptr, uintptr_t ind
 uintptr_t __swift_bridge__$Vec_RerankedDocument$len(void* vec_ptr);
 void* __swift_bridge__$Vec_RerankedDocument$as_ptr(void* vec_ptr);
 
+typedef struct SparseEmbedding SparseEmbedding;
+void __swift_bridge__$SparseEmbedding$_free(void* self);
+
+void* __swift_bridge__$Vec_SparseEmbedding$new(void);
+void __swift_bridge__$Vec_SparseEmbedding$drop(void* vec_ptr);
+void __swift_bridge__$Vec_SparseEmbedding$push(void* vec_ptr, void* item_ptr);
+void* __swift_bridge__$Vec_SparseEmbedding$pop(void* vec_ptr);
+void* __swift_bridge__$Vec_SparseEmbedding$get(void* vec_ptr, uintptr_t index);
+void* __swift_bridge__$Vec_SparseEmbedding$get_mut(void* vec_ptr, uintptr_t index);
+uintptr_t __swift_bridge__$Vec_SparseEmbedding$len(void* vec_ptr);
+void* __swift_bridge__$Vec_SparseEmbedding$as_ptr(void* vec_ptr);
+
+typedef struct SparseEmbeddingPreset SparseEmbeddingPreset;
+void __swift_bridge__$SparseEmbeddingPreset$_free(void* self);
+
+void* __swift_bridge__$Vec_SparseEmbeddingPreset$new(void);
+void __swift_bridge__$Vec_SparseEmbeddingPreset$drop(void* vec_ptr);
+void __swift_bridge__$Vec_SparseEmbeddingPreset$push(void* vec_ptr, void* item_ptr);
+void* __swift_bridge__$Vec_SparseEmbeddingPreset$pop(void* vec_ptr);
+void* __swift_bridge__$Vec_SparseEmbeddingPreset$get(void* vec_ptr, uintptr_t index);
+void* __swift_bridge__$Vec_SparseEmbeddingPreset$get_mut(void* vec_ptr, uintptr_t index);
+uintptr_t __swift_bridge__$Vec_SparseEmbeddingPreset$len(void* vec_ptr);
+void* __swift_bridge__$Vec_SparseEmbeddingPreset$as_ptr(void* vec_ptr);
+
+typedef struct MultiVectorEmbedding MultiVectorEmbedding;
+void __swift_bridge__$MultiVectorEmbedding$_free(void* self);
+
+void* __swift_bridge__$Vec_MultiVectorEmbedding$new(void);
+void __swift_bridge__$Vec_MultiVectorEmbedding$drop(void* vec_ptr);
+void __swift_bridge__$Vec_MultiVectorEmbedding$push(void* vec_ptr, void* item_ptr);
+void* __swift_bridge__$Vec_MultiVectorEmbedding$pop(void* vec_ptr);
+void* __swift_bridge__$Vec_MultiVectorEmbedding$get(void* vec_ptr, uintptr_t index);
+void* __swift_bridge__$Vec_MultiVectorEmbedding$get_mut(void* vec_ptr, uintptr_t index);
+uintptr_t __swift_bridge__$Vec_MultiVectorEmbedding$len(void* vec_ptr);
+void* __swift_bridge__$Vec_MultiVectorEmbedding$as_ptr(void* vec_ptr);
+
+typedef struct LateInteractionPreset LateInteractionPreset;
+void __swift_bridge__$LateInteractionPreset$_free(void* self);
+
+void* __swift_bridge__$Vec_LateInteractionPreset$new(void);
+void __swift_bridge__$Vec_LateInteractionPreset$drop(void* vec_ptr);
+void __swift_bridge__$Vec_LateInteractionPreset$push(void* vec_ptr, void* item_ptr);
+void* __swift_bridge__$Vec_LateInteractionPreset$pop(void* vec_ptr);
+void* __swift_bridge__$Vec_LateInteractionPreset$get(void* vec_ptr, uintptr_t index);
+void* __swift_bridge__$Vec_LateInteractionPreset$get_mut(void* vec_ptr, uintptr_t index);
+uintptr_t __swift_bridge__$Vec_LateInteractionPreset$len(void* vec_ptr);
+void* __swift_bridge__$Vec_LateInteractionPreset$as_ptr(void* vec_ptr);
+
+typedef struct LateInteractionMatch LateInteractionMatch;
+void __swift_bridge__$LateInteractionMatch$_free(void* self);
+
+void* __swift_bridge__$Vec_LateInteractionMatch$new(void);
+void __swift_bridge__$Vec_LateInteractionMatch$drop(void* vec_ptr);
+void __swift_bridge__$Vec_LateInteractionMatch$push(void* vec_ptr, void* item_ptr);
+void* __swift_bridge__$Vec_LateInteractionMatch$pop(void* vec_ptr);
+void* __swift_bridge__$Vec_LateInteractionMatch$get(void* vec_ptr, uintptr_t index);
+void* __swift_bridge__$Vec_LateInteractionMatch$get_mut(void* vec_ptr, uintptr_t index);
+uintptr_t __swift_bridge__$Vec_LateInteractionMatch$len(void* vec_ptr);
+void* __swift_bridge__$Vec_LateInteractionMatch$as_ptr(void* vec_ptr);
+
 typedef struct DocumentMetadata DocumentMetadata;
 void __swift_bridge__$DocumentMetadata$_free(void* self);
 
@@ -2537,6 +2621,18 @@ void* __swift_bridge__$Vec_HtmlTheme$get_mut(void* vec_ptr, uintptr_t index);
 uintptr_t __swift_bridge__$Vec_HtmlTheme$len(void* vec_ptr);
 void* __swift_bridge__$Vec_HtmlTheme$as_ptr(void* vec_ptr);
 
+typedef struct LateInteractionModelType LateInteractionModelType;
+void __swift_bridge__$LateInteractionModelType$_free(void* self);
+
+void* __swift_bridge__$Vec_LateInteractionModelType$new(void);
+void __swift_bridge__$Vec_LateInteractionModelType$drop(void* vec_ptr);
+void __swift_bridge__$Vec_LateInteractionModelType$push(void* vec_ptr, void* item_ptr);
+void* __swift_bridge__$Vec_LateInteractionModelType$pop(void* vec_ptr);
+void* __swift_bridge__$Vec_LateInteractionModelType$get(void* vec_ptr, uintptr_t index);
+void* __swift_bridge__$Vec_LateInteractionModelType$get_mut(void* vec_ptr, uintptr_t index);
+uintptr_t __swift_bridge__$Vec_LateInteractionModelType$len(void* vec_ptr);
+void* __swift_bridge__$Vec_LateInteractionModelType$as_ptr(void* vec_ptr);
+
 typedef struct TableModel TableModel;
 void __swift_bridge__$TableModel$_free(void* self);
 
@@ -2657,6 +2753,18 @@ void* __swift_bridge__$Vec_EmbeddingModelType$get_mut(void* vec_ptr, uintptr_t i
 uintptr_t __swift_bridge__$Vec_EmbeddingModelType$len(void* vec_ptr);
 void* __swift_bridge__$Vec_EmbeddingModelType$as_ptr(void* vec_ptr);
 
+typedef struct RerankerHead RerankerHead;
+void __swift_bridge__$RerankerHead$_free(void* self);
+
+void* __swift_bridge__$Vec_RerankerHead$new(void);
+void __swift_bridge__$Vec_RerankerHead$drop(void* vec_ptr);
+void __swift_bridge__$Vec_RerankerHead$push(void* vec_ptr, void* item_ptr);
+void* __swift_bridge__$Vec_RerankerHead$pop(void* vec_ptr);
+void* __swift_bridge__$Vec_RerankerHead$get(void* vec_ptr, uintptr_t index);
+void* __swift_bridge__$Vec_RerankerHead$get_mut(void* vec_ptr, uintptr_t index);
+uintptr_t __swift_bridge__$Vec_RerankerHead$len(void* vec_ptr);
+void* __swift_bridge__$Vec_RerankerHead$as_ptr(void* vec_ptr);
+
 typedef struct RerankerModelType RerankerModelType;
 void __swift_bridge__$RerankerModelType$_free(void* self);
 
@@ -2668,6 +2776,18 @@ void* __swift_bridge__$Vec_RerankerModelType$get(void* vec_ptr, uintptr_t index)
 void* __swift_bridge__$Vec_RerankerModelType$get_mut(void* vec_ptr, uintptr_t index);
 uintptr_t __swift_bridge__$Vec_RerankerModelType$len(void* vec_ptr);
 void* __swift_bridge__$Vec_RerankerModelType$as_ptr(void* vec_ptr);
+
+typedef struct SparseEmbeddingModelType SparseEmbeddingModelType;
+void __swift_bridge__$SparseEmbeddingModelType$_free(void* self);
+
+void* __swift_bridge__$Vec_SparseEmbeddingModelType$new(void);
+void __swift_bridge__$Vec_SparseEmbeddingModelType$drop(void* vec_ptr);
+void __swift_bridge__$Vec_SparseEmbeddingModelType$push(void* vec_ptr, void* item_ptr);
+void* __swift_bridge__$Vec_SparseEmbeddingModelType$pop(void* vec_ptr);
+void* __swift_bridge__$Vec_SparseEmbeddingModelType$get(void* vec_ptr, uintptr_t index);
+void* __swift_bridge__$Vec_SparseEmbeddingModelType$get_mut(void* vec_ptr, uintptr_t index);
+uintptr_t __swift_bridge__$Vec_SparseEmbeddingModelType$len(void* vec_ptr);
+void* __swift_bridge__$Vec_SparseEmbeddingModelType$as_ptr(void* vec_ptr);
 
 typedef struct WhisperModel WhisperModel;
 void __swift_bridge__$WhisperModel$_free(void* self);
@@ -3530,6 +3650,15 @@ void* __swift_bridge__$HtmlOutputConfig$css_file(void* self);
 void* __swift_bridge__$HtmlOutputConfig$theme(void* self);
 void* __swift_bridge__$HtmlOutputConfig$class_prefix(void* self);
 bool __swift_bridge__$HtmlOutputConfig$embed_css(void* self);
+void* __swift_bridge__$LateInteractionConfig$new(void* model, uintptr_t batch_size, uintptr_t max_length, uintptr_t query_max_length, bool show_download_progress, void* cache_dir, void* acceleration, struct __private__OptionU64 max_embed_duration_secs);
+void* __swift_bridge__$LateInteractionConfig$model(void* self);
+uintptr_t __swift_bridge__$LateInteractionConfig$batch_size(void* self);
+uintptr_t __swift_bridge__$LateInteractionConfig$max_length(void* self);
+uintptr_t __swift_bridge__$LateInteractionConfig$query_max_length(void* self);
+bool __swift_bridge__$LateInteractionConfig$show_download_progress(void* self);
+void* __swift_bridge__$LateInteractionConfig$cache_dir(void* self);
+void* __swift_bridge__$LateInteractionConfig$acceleration(void* self);
+struct __private__OptionU64 __swift_bridge__$LateInteractionConfig$max_embed_duration_secs(void* self);
 void* __swift_bridge__$LayoutDetectionConfig$new(struct __private__OptionF32 confidence_threshold, bool apply_heuristics, void* table_model, void* table_overlap_preference, void* acceleration, bool enable_chart_understanding);
 struct __private__OptionF32 __swift_bridge__$LayoutDetectionConfig$confidence_threshold(void* self);
 bool __swift_bridge__$LayoutDetectionConfig$apply_heuristics(void* self);
@@ -3671,6 +3800,14 @@ bool __swift_bridge__$RerankerConfig$show_download_progress(void* self);
 void* __swift_bridge__$RerankerConfig$cache_dir(void* self);
 void* __swift_bridge__$RerankerConfig$acceleration(void* self);
 struct __private__OptionU64 __swift_bridge__$RerankerConfig$max_rerank_duration_secs(void* self);
+void* __swift_bridge__$SparseEmbeddingConfig$new(void* model, uintptr_t batch_size, uintptr_t max_length, bool show_download_progress, void* cache_dir, void* acceleration, struct __private__OptionU64 max_embed_duration_secs);
+void* __swift_bridge__$SparseEmbeddingConfig$model(void* self);
+uintptr_t __swift_bridge__$SparseEmbeddingConfig$batch_size(void* self);
+uintptr_t __swift_bridge__$SparseEmbeddingConfig$max_length(void* self);
+bool __swift_bridge__$SparseEmbeddingConfig$show_download_progress(void* self);
+void* __swift_bridge__$SparseEmbeddingConfig$cache_dir(void* self);
+void* __swift_bridge__$SparseEmbeddingConfig$acceleration(void* self);
+struct __private__OptionU64 __swift_bridge__$SparseEmbeddingConfig$max_embed_duration_secs(void* self);
 void* __swift_bridge__$SummarizationConfig$new(void* strategy, struct __private__OptionU32 max_tokens, void* llm);
 void* __swift_bridge__$SummarizationConfig$strategy(void* self);
 struct __private__OptionU32 __swift_bridge__$SummarizationConfig$max_tokens(void* self);
@@ -4397,6 +4534,29 @@ void* __swift_bridge__$EmbeddedDiff$diff(void* self);
 uintptr_t __swift_bridge__$RerankedDocument$index(void* self);
 float __swift_bridge__$RerankedDocument$score(void* self);
 void* __swift_bridge__$RerankedDocument$document(void* self);
+void* __swift_bridge__$SparseEmbedding$indices(void* self);
+void* __swift_bridge__$SparseEmbedding$values(void* self);
+void* __swift_bridge__$SparseEmbeddingPreset$name(void* self);
+void* __swift_bridge__$SparseEmbeddingPreset$model_repo(void* self);
+void* __swift_bridge__$SparseEmbeddingPreset$model_file(void* self);
+void* __swift_bridge__$SparseEmbeddingPreset$additional_files(void* self);
+uintptr_t __swift_bridge__$SparseEmbeddingPreset$max_length(void* self);
+void* __swift_bridge__$SparseEmbeddingPreset$description(void* self);
+uint32_t __swift_bridge__$MultiVectorEmbedding$num_tokens(void* self);
+uint32_t __swift_bridge__$MultiVectorEmbedding$dim(void* self);
+void* __swift_bridge__$MultiVectorEmbedding$data(void* self);
+struct __private__ResultPtrAndPtr __swift_bridge__$multi_vector_embedding_is_well_formed_from_json(void* json);
+void* __swift_bridge__$LateInteractionPreset$name(void* self);
+void* __swift_bridge__$LateInteractionPreset$model_repo(void* self);
+void* __swift_bridge__$LateInteractionPreset$model_file(void* self);
+void* __swift_bridge__$LateInteractionPreset$additional_files(void* self);
+uintptr_t __swift_bridge__$LateInteractionPreset$max_length(void* self);
+uintptr_t __swift_bridge__$LateInteractionPreset$query_max_length(void* self);
+uintptr_t __swift_bridge__$LateInteractionPreset$dim(void* self);
+void* __swift_bridge__$LateInteractionPreset$description(void* self);
+void* __swift_bridge__$LateInteractionMatch$new(uintptr_t index, float score);
+uintptr_t __swift_bridge__$LateInteractionMatch$index(void* self);
+float __swift_bridge__$LateInteractionMatch$score(void* self);
 void* __swift_bridge__$DocumentMetadata$mime_type(void* self);
 uint64_t __swift_bridge__$DocumentMetadata$size_bytes(void* self);
 struct __private__OptionU32 __swift_bridge__$DocumentMetadata$page_count(void* self);
@@ -4632,6 +4792,7 @@ void* __swift_bridge__$UrlExtractionMode$to_string(void* self);
 void* __swift_bridge__$OutputFormat$to_string(void* self);
 void* __swift_bridge__$JupyterCellRendering$to_string(void* self);
 void* __swift_bridge__$HtmlTheme$to_string(void* self);
+void* __swift_bridge__$LateInteractionModelType$to_string(void* self);
 void* __swift_bridge__$TableModel$to_string(void* self);
 void* __swift_bridge__$TableOverlapPreference$to_string(void* self);
 void* __swift_bridge__$CallMode$to_string(void* self);
@@ -4642,7 +4803,9 @@ void* __swift_bridge__$TableChunkingMode$to_string(void* self);
 void* __swift_bridge__$ChunkerType$to_string(void* self);
 void* __swift_bridge__$ChunkSizing$to_string(void* self);
 void* __swift_bridge__$EmbeddingModelType$to_string(void* self);
+void* __swift_bridge__$RerankerHead$to_string(void* self);
 void* __swift_bridge__$RerankerModelType$to_string(void* self);
+void* __swift_bridge__$SparseEmbeddingModelType$to_string(void* self);
 void* __swift_bridge__$WhisperModel$to_string(void* self);
 void* __swift_bridge__$CodeContentMode$to_string(void* self);
 void* __swift_bridge__$ListType$to_string(void* self);
@@ -4704,6 +4867,8 @@ struct __private__ResultPtrAndPtr __swift_bridge__$list_renderers(void);
 struct __private__ResultPtrAndPtr __swift_bridge__$list_reranker_backends(void);
 struct __private__ResultPtrAndPtr __swift_bridge__$list_tokenizer_backends(void);
 struct __private__ResultPtrAndPtr __swift_bridge__$list_validators(void);
+double __swift_bridge__$max_sim_score(void* query, void* doc);
+void* __swift_bridge__$max_sim_rank(void* query, void* docs);
 void* __swift_bridge__$find_unmarked_claims(void* markdown);
 bool __swift_bridge__$verify_excerpt(void* excerpt, void* source_text);
 struct __private__ResultPtrAndPtr __swift_bridge__$map_url(void* uri, void* config);
@@ -4756,6 +4921,7 @@ struct __private__ResultPtrAndPtr __swift_bridge__$extract_input_from_json(void*
 struct __private__ResultPtrAndPtr __swift_bridge__$url_extraction_config_from_json(void* json);
 struct __private__ResultPtrAndPtr __swift_bridge__$ocr_config_from_json(void* json);
 struct __private__ResultPtrAndPtr __swift_bridge__$extracted_document_from_json(void* json);
+struct __private__ResultPtrAndPtr __swift_bridge__$multi_vector_embedding_from_json(void* json);
 struct __private__ResultPtrAndPtr __swift_bridge__$cache_stats_from_json(void* json);
 struct __private__ResultPtrAndPtr __swift_bridge__$acceleration_config_from_json(void* json);
 struct __private__ResultPtrAndPtr __swift_bridge__$captioning_config_from_json(void* json);
@@ -4771,6 +4937,7 @@ struct __private__ResultPtrAndPtr __swift_bridge__$image_extraction_config_from_
 struct __private__ResultPtrAndPtr __swift_bridge__$token_reduction_options_from_json(void* json);
 struct __private__ResultPtrAndPtr __swift_bridge__$language_detection_config_from_json(void* json);
 struct __private__ResultPtrAndPtr __swift_bridge__$html_output_config_from_json(void* json);
+struct __private__ResultPtrAndPtr __swift_bridge__$late_interaction_config_from_json(void* json);
 struct __private__ResultPtrAndPtr __swift_bridge__$layout_detection_config_from_json(void* json);
 struct __private__ResultPtrAndPtr __swift_bridge__$llm_config_from_json(void* json);
 struct __private__ResultPtrAndPtr __swift_bridge__$structured_extraction_config_from_json(void* json);
@@ -4788,6 +4955,7 @@ struct __private__ResultPtrAndPtr __swift_bridge__$redaction_config_from_json(vo
 struct __private__ResultPtrAndPtr __swift_bridge__$redaction_term_from_json(void* json);
 struct __private__ResultPtrAndPtr __swift_bridge__$redaction_pattern_from_json(void* json);
 struct __private__ResultPtrAndPtr __swift_bridge__$reranker_config_from_json(void* json);
+struct __private__ResultPtrAndPtr __swift_bridge__$sparse_embedding_config_from_json(void* json);
 struct __private__ResultPtrAndPtr __swift_bridge__$summarization_config_from_json(void* json);
 struct __private__ResultPtrAndPtr __swift_bridge__$transcription_config_from_json(void* json);
 struct __private__ResultPtrAndPtr __swift_bridge__$translation_config_from_json(void* json);
@@ -4909,6 +5077,10 @@ struct __private__ResultPtrAndPtr __swift_bridge__$table_diff_from_json(void* js
 struct __private__ResultPtrAndPtr __swift_bridge__$embedded_changes_from_json(void* json);
 struct __private__ResultPtrAndPtr __swift_bridge__$embedded_diff_from_json(void* json);
 struct __private__ResultPtrAndPtr __swift_bridge__$reranked_document_from_json(void* json);
+struct __private__ResultPtrAndPtr __swift_bridge__$sparse_embedding_from_json(void* json);
+struct __private__ResultPtrAndPtr __swift_bridge__$sparse_embedding_preset_from_json(void* json);
+struct __private__ResultPtrAndPtr __swift_bridge__$late_interaction_preset_from_json(void* json);
+struct __private__ResultPtrAndPtr __swift_bridge__$late_interaction_match_from_json(void* json);
 struct __private__ResultPtrAndPtr __swift_bridge__$document_metadata_from_json(void* json);
 struct __private__ResultPtrAndPtr __swift_bridge__$user_chunk_config_from_json(void* json);
 struct __private__ResultPtrAndPtr __swift_bridge__$extraction_confidence_from_json(void* json);
@@ -4946,6 +5118,7 @@ struct __private__ResultPtrAndPtr __swift_bridge__$url_extraction_mode_from_json
 struct __private__ResultPtrAndPtr __swift_bridge__$output_format_from_json(void* json);
 struct __private__ResultPtrAndPtr __swift_bridge__$jupyter_cell_rendering_from_json(void* json);
 struct __private__ResultPtrAndPtr __swift_bridge__$html_theme_from_json(void* json);
+struct __private__ResultPtrAndPtr __swift_bridge__$late_interaction_model_type_from_json(void* json);
 struct __private__ResultPtrAndPtr __swift_bridge__$table_model_from_json(void* json);
 struct __private__ResultPtrAndPtr __swift_bridge__$table_overlap_preference_from_json(void* json);
 struct __private__ResultPtrAndPtr __swift_bridge__$call_mode_from_json(void* json);
@@ -4956,7 +5129,9 @@ struct __private__ResultPtrAndPtr __swift_bridge__$table_chunking_mode_from_json
 struct __private__ResultPtrAndPtr __swift_bridge__$chunker_type_from_json(void* json);
 struct __private__ResultPtrAndPtr __swift_bridge__$chunk_sizing_from_json(void* json);
 struct __private__ResultPtrAndPtr __swift_bridge__$embedding_model_type_from_json(void* json);
+struct __private__ResultPtrAndPtr __swift_bridge__$reranker_head_from_json(void* json);
 struct __private__ResultPtrAndPtr __swift_bridge__$reranker_model_type_from_json(void* json);
+struct __private__ResultPtrAndPtr __swift_bridge__$sparse_embedding_model_type_from_json(void* json);
 struct __private__ResultPtrAndPtr __swift_bridge__$whisper_model_from_json(void* json);
 struct __private__ResultPtrAndPtr __swift_bridge__$code_content_mode_from_json(void* json);
 struct __private__ResultPtrAndPtr __swift_bridge__$ocr_backend_type_from_json(void* json);
@@ -5021,6 +5196,7 @@ void* __swift_bridge__$__alef_phantom_vec_url_extraction_config(void);
 void* __swift_bridge__$__alef_phantom_vec_image_extraction_config(void);
 void* __swift_bridge__$__alef_phantom_vec_token_reduction_options(void);
 void* __swift_bridge__$__alef_phantom_vec_language_detection_config(void);
+void* __swift_bridge__$__alef_phantom_vec_late_interaction_config(void);
 void* __swift_bridge__$__alef_phantom_vec_llm_config(void);
 void* __swift_bridge__$__alef_phantom_vec_structured_extraction_config(void);
 void* __swift_bridge__$__alef_phantom_vec_ner_config(void);
@@ -5036,6 +5212,7 @@ void* __swift_bridge__$__alef_phantom_vec_redaction_config(void);
 void* __swift_bridge__$__alef_phantom_vec_redaction_term(void);
 void* __swift_bridge__$__alef_phantom_vec_redaction_pattern(void);
 void* __swift_bridge__$__alef_phantom_vec_reranker_config(void);
+void* __swift_bridge__$__alef_phantom_vec_sparse_embedding_config(void);
 void* __swift_bridge__$__alef_phantom_vec_summarization_config(void);
 void* __swift_bridge__$__alef_phantom_vec_translation_config(void);
 void* __swift_bridge__$__alef_phantom_vec_supported_format(void);
@@ -5150,6 +5327,7 @@ void* __swift_bridge__$__alef_phantom_vec_extract_input_kind(void);
 void* __swift_bridge__$__alef_phantom_vec_url_extraction_mode(void);
 void* __swift_bridge__$__alef_phantom_vec_output_format(void);
 void* __swift_bridge__$__alef_phantom_vec_jupyter_cell_rendering(void);
+void* __swift_bridge__$__alef_phantom_vec_late_interaction_model_type(void);
 void* __swift_bridge__$__alef_phantom_vec_call_mode(void);
 void* __swift_bridge__$__alef_phantom_vec_merge_mode(void);
 void* __swift_bridge__$__alef_phantom_vec_ner_backend_kind(void);
@@ -5158,7 +5336,9 @@ void* __swift_bridge__$__alef_phantom_vec_table_chunking_mode(void);
 void* __swift_bridge__$__alef_phantom_vec_chunker_type(void);
 void* __swift_bridge__$__alef_phantom_vec_chunk_sizing(void);
 void* __swift_bridge__$__alef_phantom_vec_embedding_model_type(void);
+void* __swift_bridge__$__alef_phantom_vec_reranker_head(void);
 void* __swift_bridge__$__alef_phantom_vec_reranker_model_type(void);
+void* __swift_bridge__$__alef_phantom_vec_sparse_embedding_model_type(void);
 void* __swift_bridge__$__alef_phantom_vec_list_type(void);
 void* __swift_bridge__$__alef_phantom_vec_ocr_backend_type(void);
 void* __swift_bridge__$__alef_phantom_vec_processing_stage(void);
@@ -5223,6 +5403,11 @@ void* __swift_bridge__$__alef_phantom_vec_table_diff(void);
 void* __swift_bridge__$__alef_phantom_vec_embedded_changes(void);
 void* __swift_bridge__$__alef_phantom_vec_embedded_diff(void);
 void* __swift_bridge__$__alef_phantom_vec_reranked_document(void);
+void* __swift_bridge__$__alef_phantom_vec_sparse_embedding(void);
+void* __swift_bridge__$__alef_phantom_vec_sparse_embedding_preset(void);
+void* __swift_bridge__$__alef_phantom_vec_multi_vector_embedding(void);
+void* __swift_bridge__$__alef_phantom_vec_late_interaction_preset(void);
+void* __swift_bridge__$__alef_phantom_vec_late_interaction_match(void);
 void* __swift_bridge__$__alef_phantom_vec_document_metadata(void);
 void* __swift_bridge__$__alef_phantom_vec_user_chunk_config(void);
 void* __swift_bridge__$__alef_phantom_vec_extraction_confidence(void);

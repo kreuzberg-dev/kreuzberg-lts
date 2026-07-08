@@ -89,6 +89,18 @@ pub mod embeddings;
 #[cfg(any(feature = "reranker-presets", feature = "reranker"))]
 pub mod reranking;
 
+/// Shared ONNX Runtime model-loading helpers (download, tokenizer, session).
+#[cfg(feature = "onnx-runtime")]
+pub(crate) mod onnx;
+
+/// Sparse (SPLADE) learned embeddings for hybrid dense+sparse retrieval.
+#[cfg(any(feature = "sparse-embedding-presets", feature = "sparse-embeddings"))]
+pub mod sparse_embeddings;
+
+/// ColBERT late-interaction (multi-vector) embeddings for MaxSim retrieval.
+#[cfg(any(feature = "late-interaction-presets", feature = "late-interaction"))]
+pub mod late_interaction;
+
 #[cfg(feature = "ocr")]
 /// Image preprocessing and DPI utilities for OCR pipelines.
 pub mod image;
@@ -132,6 +144,7 @@ pub mod ocr;
     feature = "paddle-ocr",
     feature = "embeddings",
     feature = "reranker",
+    feature = "onnx-runtime",
     feature = "layout-detection",
     feature = "auto-rotate",
     feature = "transcription"
@@ -196,9 +209,15 @@ pub use core::config::{
     ExtractionConfig, ExtractionErrorItem, ExtractionResult, ExtractionSummary, FileExtractionConfig,
     ImageExtractionConfig, JupyterCellRendering, LanguageDetectionConfig, LlmConfig, MergeMode, NerBackendKind,
     NerConfig, OcrConfig, OutputFormat, PageClassificationConfig, PageConfig, PostProcessorConfig, RedactionConfig,
-    RedactionPattern, RedactionTerm, RerankerConfig, RerankerModelType, StructuredExtractionConfig,
+    RedactionPattern, RedactionTerm, RerankerConfig, RerankerHead, RerankerModelType, StructuredExtractionConfig,
     SummarizationConfig, TableChunkingMode, TokenReductionOptions, TranslationConfig, UrlExtractionConfig,
     UrlExtractionMode,
+};
+// Sparse-embedding / late-interaction config types are pure data (no ORT) and
+// always compiled; re-export at the crate root so bindings resolve
+// `xberg::SparseEmbeddingConfig` etc., mirroring `RerankerConfig` above.
+pub use core::config::{
+    LateInteractionConfig, LateInteractionModelType, SparseEmbeddingConfig, SparseEmbeddingModelType,
 };
 // ── Crawlberg config types — re-exported so consumers only need xberg as a dep ─
 //
@@ -741,6 +760,301 @@ pub fn get_reranker_preset(_name: &str) -> Option<RerankerPreset> {
 #[cfg(not(feature = "reranker-presets"))]
 #[cfg_attr(alef, alef(skip))]
 pub fn list_reranker_presets() -> Vec<String> {
+    Vec::new()
+}
+
+// ── Sparse embeddings (SPLADE) — public API, feature-gated ────────────────────
+/// Re-export the sparse-embedding result and preset types when the presets
+/// feature is active.
+///
+/// Since v5.0.0.
+#[cfg(feature = "sparse-embedding-presets")]
+pub use sparse_embeddings::{SparseEmbedding, SparseEmbeddingPreset};
+
+/// Generate sparse (SPLADE) embeddings for a list of texts.
+///
+/// Returns one [`SparseEmbedding`] per input text, in order.
+///
+/// Since v5.0.0.
+#[cfg(feature = "sparse-embeddings")]
+#[cfg_attr(alef, alef(skip))]
+pub fn embed_sparse(
+    texts: Vec<String>,
+    config: &core::config::SparseEmbeddingConfig,
+) -> crate::Result<Vec<SparseEmbedding>> {
+    sparse_embeddings::embed_sparse(&texts, config)
+}
+
+/// Stub for builds without the `sparse-embeddings` feature — keeps the symbol
+/// available on no-ORT targets so language bindings compile; the runtime call
+/// returns an unsupported error.
+///
+/// Since v5.0.0.
+#[cfg(all(feature = "sparse-embedding-presets", not(feature = "sparse-embeddings")))]
+#[cfg_attr(alef, alef(skip))]
+pub fn embed_sparse(
+    _texts: Vec<String>,
+    _config: &core::config::SparseEmbeddingConfig,
+) -> crate::Result<Vec<SparseEmbedding>> {
+    Err(XbergError::validation(
+        "embed_sparse requires the `sparse-embeddings` feature, which depends on ONNX Runtime; \
+         not available on this target (Android x86_64 emulator or WASM)",
+    ))
+}
+
+#[cfg(all(feature = "sparse-embeddings", feature = "tokio-runtime"))]
+#[cfg_attr(alef, alef(skip))]
+pub use sparse_embeddings::embed_sparse_async;
+
+/// Stub for builds without the `sparse-embeddings` feature.
+///
+/// Since v5.0.0.
+#[cfg(all(
+    feature = "sparse-embedding-presets",
+    not(feature = "sparse-embeddings"),
+    feature = "tokio-runtime"
+))]
+#[cfg_attr(alef, alef(skip))]
+pub async fn embed_sparse_async(
+    _texts: Vec<String>,
+    _config: &core::config::SparseEmbeddingConfig,
+) -> crate::Result<Vec<SparseEmbedding>> {
+    Err(XbergError::validation(
+        "embed_sparse_async requires the `sparse-embeddings` feature, which depends on ONNX Runtime; \
+         not available on this target (Android x86_64 emulator or WASM)",
+    ))
+}
+
+/// Get a sparse-embedding preset by name.
+///
+/// Since v5.0.0.
+#[cfg(feature = "sparse-embedding-presets")]
+#[cfg_attr(alef, alef(skip))]
+pub fn get_sparse_embedding_preset(name: &str) -> Option<sparse_embeddings::SparseEmbeddingPreset> {
+    sparse_embeddings::get_preset(name)
+}
+
+/// List the names of all available sparse-embedding presets.
+///
+/// Since v5.0.0.
+#[cfg(feature = "sparse-embedding-presets")]
+#[cfg_attr(alef, alef(skip))]
+pub fn list_sparse_embedding_presets() -> Vec<String> {
+    sparse_embeddings::list_presets()
+}
+
+// ── Sparse-embedding stubs for builds without the feature ─────────────────────
+/// Stub result type for builds without the `sparse-embedding-presets` feature.
+///
+/// Field names match the real type so JSON round-trips remain schema-compatible.
+///
+/// Since v5.0.0.
+#[cfg(not(feature = "sparse-embedding-presets"))]
+#[cfg_attr(alef, alef(skip))]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[cfg_attr(feature = "api", derive(utoipa::ToSchema))]
+pub struct SparseEmbedding {
+    /// Vocabulary token ids with non-zero weight, ascending.
+    pub indices: Vec<u32>,
+    /// Weights parallel to `indices`.
+    pub values: Vec<f32>,
+}
+
+/// Stub preset type for builds without the `sparse-embedding-presets` feature.
+///
+/// Since v5.0.0.
+#[cfg(not(feature = "sparse-embedding-presets"))]
+#[cfg_attr(alef, alef(skip))]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct SparseEmbeddingPreset {
+    /// Unique preset identifier (e.g. "splade").
+    pub name: String,
+    /// HuggingFace repository ID for the model.
+    pub model_repo: String,
+    /// ONNX model file name within the repository.
+    pub model_file: String,
+    /// Sibling files that must be downloaded alongside `model_file`.
+    pub additional_files: Vec<String>,
+    /// Maximum token sequence length the model supports.
+    pub max_length: usize,
+    /// Human-readable description of the preset's intended use case.
+    pub description: String,
+}
+
+/// Returns `None` for builds without the `sparse-embedding-presets` feature.
+///
+/// Since v5.0.0.
+#[cfg(not(feature = "sparse-embedding-presets"))]
+#[cfg_attr(alef, alef(skip))]
+pub fn get_sparse_embedding_preset(_name: &str) -> Option<SparseEmbeddingPreset> {
+    None
+}
+
+/// Returns an empty list for builds without the `sparse-embedding-presets` feature.
+///
+/// Since v5.0.0.
+#[cfg(not(feature = "sparse-embedding-presets"))]
+#[cfg_attr(alef, alef(skip))]
+pub fn list_sparse_embedding_presets() -> Vec<String> {
+    Vec::new()
+}
+
+// ── Late interaction (ColBERT) — public API, feature-gated ────────────────────
+/// Re-export the multi-vector result/preset types and the pure-CPU MaxSim
+/// primitives when the presets feature is active.
+///
+/// Since v5.0.0.
+#[cfg(feature = "late-interaction-presets")]
+pub use late_interaction::{
+    LateInteractionMatch, LateInteractionPreset, MultiVectorEmbedding, max_sim_rank, max_sim_score,
+};
+
+/// Generate ColBERT multi-vector embeddings for a list of texts.
+///
+/// `is_query` selects `[Q]`/`[D]` marker insertion and, when `true`, query
+/// augmentation padding.
+///
+/// Since v5.0.0.
+#[cfg(feature = "late-interaction")]
+#[cfg_attr(alef, alef(skip))]
+pub fn embed_multi_vector(
+    texts: Vec<String>,
+    config: &core::config::LateInteractionConfig,
+    is_query: bool,
+) -> crate::Result<Vec<MultiVectorEmbedding>> {
+    late_interaction::embed_multi_vector(&texts, config, is_query)
+}
+
+/// Stub for builds without the `late-interaction` feature — keeps the symbol
+/// available on no-ORT targets so language bindings compile.
+///
+/// Since v5.0.0.
+#[cfg(all(feature = "late-interaction-presets", not(feature = "late-interaction")))]
+#[cfg_attr(alef, alef(skip))]
+pub fn embed_multi_vector(
+    _texts: Vec<String>,
+    _config: &core::config::LateInteractionConfig,
+    _is_query: bool,
+) -> crate::Result<Vec<MultiVectorEmbedding>> {
+    Err(XbergError::validation(
+        "embed_multi_vector requires the `late-interaction` feature, which depends on ONNX Runtime; \
+         not available on this target (Android x86_64 emulator or WASM)",
+    ))
+}
+
+#[cfg(all(feature = "late-interaction", feature = "tokio-runtime"))]
+#[cfg_attr(alef, alef(skip))]
+pub use late_interaction::embed_multi_vector_async;
+
+/// Stub for builds without the `late-interaction` feature.
+///
+/// Since v5.0.0.
+#[cfg(all(
+    feature = "late-interaction-presets",
+    not(feature = "late-interaction"),
+    feature = "tokio-runtime"
+))]
+#[cfg_attr(alef, alef(skip))]
+pub async fn embed_multi_vector_async(
+    _texts: Vec<String>,
+    _config: &core::config::LateInteractionConfig,
+    _is_query: bool,
+) -> crate::Result<Vec<MultiVectorEmbedding>> {
+    Err(XbergError::validation(
+        "embed_multi_vector_async requires the `late-interaction` feature, which depends on ONNX Runtime; \
+         not available on this target (Android x86_64 emulator or WASM)",
+    ))
+}
+
+/// Get a late-interaction preset by name.
+///
+/// Since v5.0.0.
+#[cfg(feature = "late-interaction-presets")]
+#[cfg_attr(alef, alef(skip))]
+pub fn get_late_interaction_preset(name: &str) -> Option<late_interaction::LateInteractionPreset> {
+    late_interaction::get_preset(name)
+}
+
+/// List the names of all available late-interaction presets.
+///
+/// Since v5.0.0.
+#[cfg(feature = "late-interaction-presets")]
+#[cfg_attr(alef, alef(skip))]
+pub fn list_late_interaction_presets() -> Vec<String> {
+    late_interaction::list_presets()
+}
+
+// ── Late-interaction stubs for builds without the feature ─────────────────────
+/// Stub multi-vector result type for builds without the `late-interaction-presets` feature.
+///
+/// Since v5.0.0.
+#[cfg(not(feature = "late-interaction-presets"))]
+#[cfg_attr(alef, alef(skip))]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[cfg_attr(feature = "api", derive(utoipa::ToSchema))]
+pub struct MultiVectorEmbedding {
+    /// Number of attention-live token rows.
+    pub num_tokens: u32,
+    /// Dimensionality of each per-token vector.
+    pub dim: u32,
+    /// Flat row-major buffer, length `num_tokens * dim`.
+    pub data: Vec<f32>,
+}
+
+/// Stub match type for builds without the `late-interaction-presets` feature.
+///
+/// Since v5.0.0.
+#[cfg(not(feature = "late-interaction-presets"))]
+#[cfg_attr(alef, alef(skip))]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[cfg_attr(feature = "api", derive(utoipa::ToSchema))]
+pub struct LateInteractionMatch {
+    /// Position of this document in the original input slice.
+    pub index: usize,
+    /// MaxSim relevance score.
+    pub score: f32,
+}
+
+/// Stub preset type for builds without the `late-interaction-presets` feature.
+///
+/// Since v5.0.0.
+#[cfg(not(feature = "late-interaction-presets"))]
+#[cfg_attr(alef, alef(skip))]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct LateInteractionPreset {
+    /// Unique preset identifier (e.g. "colbert").
+    pub name: String,
+    /// HuggingFace repository ID for the model.
+    pub model_repo: String,
+    /// ONNX model file name within the repository.
+    pub model_file: String,
+    /// Sibling files that must be downloaded alongside `model_file`.
+    pub additional_files: Vec<String>,
+    /// Maximum document token sequence length.
+    pub max_length: usize,
+    /// Fixed padded query length (ColBERT query augmentation).
+    pub query_max_length: usize,
+    /// Per-token embedding dimensionality.
+    pub dim: usize,
+    /// Human-readable description of the preset's intended use case.
+    pub description: String,
+}
+
+/// Returns `None` for builds without the `late-interaction-presets` feature.
+///
+/// Since v5.0.0.
+#[cfg(not(feature = "late-interaction-presets"))]
+#[cfg_attr(alef, alef(skip))]
+pub fn get_late_interaction_preset(_name: &str) -> Option<LateInteractionPreset> {
+    None
+}
+
+/// Returns an empty list for builds without the `late-interaction-presets` feature.
+///
+/// Since v5.0.0.
+#[cfg(not(feature = "late-interaction-presets"))]
+#[cfg_attr(alef, alef(skip))]
+pub fn list_late_interaction_presets() -> Vec<String> {
     Vec::new()
 }
 

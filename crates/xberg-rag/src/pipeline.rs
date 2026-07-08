@@ -91,6 +91,8 @@ pub fn chunk_to_record(chunk: xberg::Chunk, ordinal: u32, embedding: Vec<f32>) -
         ordinal,
         content: chunk.content,
         embedding,
+        sparse_embedding: None,
+        multi_vector: None,
         chunk_metadata,
     }
 }

@@ -2,7 +2,7 @@
 
 use crate::error::{RagError, RagResult};
 use crate::filter::Filter;
-use crate::types::{CollectionSpec, RetrievedChunk};
+use crate::types::{CollectionSpec, MultiVector, RetrievedChunk, SparseVector};
 use serde::{Deserialize, Serialize};
 
 /// Maximum number of results a single query may request.
@@ -19,8 +19,24 @@ pub enum RetrieveMode {
     Vector,
     /// Full-text search only.
     FullText,
-    /// Hybrid (vector + full-text fused).
+    /// Hybrid (vector + full-text [+ sparse] fused).
     Hybrid,
+    /// Sparse (SPLADE-style) retrieval only.
+    Sparse,
+    /// Late-interaction (ColBERT-style MaxSim) reranking of a candidate set.
+    ///
+    /// Backends implement this differently despite advertising the same
+    /// [`Capabilities::late_interaction`](crate::Capabilities::late_interaction)
+    /// flag: the in-memory backend runs an exhaustive MaxSim scan over every
+    /// stored `multi_vector` and ignores `query_vector`/`query_text` entirely
+    /// (true global ranking, no `query_vector` required). The sqlite backend
+    /// seeds a candidate set via dense KNN over `query_vector` and reranks only
+    /// those candidates with MaxSim (recall bounded by `candidate_k`), so it
+    /// requires `query_vector` and errors without one even though `query_text`
+    /// alone satisfies [`RetrieveQuery::validate`]. This is an intentional
+    /// two-stage tradeoff (as in ColBERT PLAID), not a bug — check the backend
+    /// docs before assuming exhaustive recall.
+    LateInteraction,
 }
 
 impl RetrieveMode {
@@ -30,6 +46,8 @@ impl RetrieveMode {
             RetrieveMode::Vector => "vector",
             RetrieveMode::FullText => "full_text",
             RetrieveMode::Hybrid => "hybrid",
+            RetrieveMode::Sparse => "sparse",
+            RetrieveMode::LateInteraction => "late_interaction",
         }
     }
 }
@@ -47,6 +65,12 @@ pub struct RetrieveQuery {
     /// Pre-computed query vector.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub query_vector: Option<Vec<f32>>,
+    /// Pre-computed sparse (SPLADE-style) query vector.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub query_sparse: Option<SparseVector>,
+    /// Pre-computed late-interaction (ColBERT-style) query multi-vector.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub query_multi_vector: Option<MultiVector>,
     /// Number of results to return.
     pub top_k: u32,
     /// Optional filter constraint.
@@ -73,6 +97,8 @@ impl RetrieveQuery {
             mode: RetrieveMode::Vector,
             query_text: None,
             query_vector: None,
+            query_sparse: None,
+            query_multi_vector: None,
             top_k,
             filter: None,
             candidate_multiplier: None,
@@ -135,6 +161,34 @@ impl RetrieveQuery {
             RetrieveMode::Hybrid => {
                 if self.query_text.is_none() {
                     return Err(RagError::InvalidQuery("hybrid mode requires query_text".to_string()));
+                }
+            }
+            RetrieveMode::Sparse => {
+                let Some(sparse) = &self.query_sparse else {
+                    return Err(RagError::InvalidQuery("sparse mode requires query_sparse".to_string()));
+                };
+                if !sparse.is_well_formed() {
+                    return Err(RagError::InvalidQuery(
+                        "query_sparse is malformed: indices and values must be equal length and indices strictly ascending"
+                            .to_string(),
+                    ));
+                }
+            }
+            RetrieveMode::LateInteraction => {
+                let Some(multi_vector) = &self.query_multi_vector else {
+                    return Err(RagError::InvalidQuery(
+                        "late_interaction mode requires query_multi_vector".to_string(),
+                    ));
+                };
+                if !multi_vector.is_well_formed() {
+                    return Err(RagError::InvalidQuery(
+                        "query_multi_vector is malformed: data length must equal num_tokens * dim".to_string(),
+                    ));
+                }
+                if self.query_text.is_none() && self.query_vector.is_none() {
+                    return Err(RagError::InvalidQuery(
+                        "late_interaction mode requires query_text or query_vector to seed candidates".to_string(),
+                    ));
                 }
             }
         }
@@ -219,5 +273,66 @@ mod tests {
             ..RetrieveQuery::vector(10)
         };
         assert!(q.validate(&collection(768)).is_err());
+    }
+
+    #[test]
+    fn rejects_sparse_mode_without_query_sparse() {
+        let q = RetrieveQuery {
+            mode: RetrieveMode::Sparse,
+            ..RetrieveQuery::vector(10)
+        };
+        assert!(matches!(q.validate(&collection(768)), Err(RagError::InvalidQuery(_))));
+    }
+
+    #[test]
+    fn accepts_sparse_mode_with_query_sparse() {
+        let q = RetrieveQuery {
+            mode: RetrieveMode::Sparse,
+            query_sparse: Some(crate::types::SparseVector {
+                indices: vec![1, 2],
+                values: vec![0.5, 0.5],
+            }),
+            ..RetrieveQuery::vector(10)
+        };
+        assert!(q.validate(&collection(768)).is_ok());
+    }
+
+    #[test]
+    fn rejects_late_interaction_without_multi_vector() {
+        let q = RetrieveQuery {
+            mode: RetrieveMode::LateInteraction,
+            query_text: Some("hi".to_string()),
+            ..RetrieveQuery::vector(10)
+        };
+        assert!(matches!(q.validate(&collection(768)), Err(RagError::InvalidQuery(_))));
+    }
+
+    #[test]
+    fn rejects_late_interaction_without_seed_input() {
+        let q = RetrieveQuery {
+            mode: RetrieveMode::LateInteraction,
+            query_multi_vector: Some(crate::types::MultiVector {
+                num_tokens: 1,
+                dim: 2,
+                data: vec![0.1, 0.2],
+            }),
+            ..RetrieveQuery::vector(10)
+        };
+        assert!(matches!(q.validate(&collection(768)), Err(RagError::InvalidQuery(_))));
+    }
+
+    #[test]
+    fn accepts_late_interaction_with_multi_vector_and_seed() {
+        let q = RetrieveQuery {
+            mode: RetrieveMode::LateInteraction,
+            query_text: Some("hi".to_string()),
+            query_multi_vector: Some(crate::types::MultiVector {
+                num_tokens: 1,
+                dim: 2,
+                data: vec![0.1, 0.2],
+            }),
+            ..RetrieveQuery::vector(10)
+        };
+        assert!(q.validate(&collection(768)).is_ok());
     }
 }

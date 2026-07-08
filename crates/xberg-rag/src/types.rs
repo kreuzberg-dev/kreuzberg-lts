@@ -5,7 +5,43 @@
 //! `embedding_version`/`enrichment_version` migration columns) are dropped. IDs are
 //! opaque strings so backends are free to use UUIDs, row ids, or anything else.
 
+#[cfg(any(feature = "in-memory", feature = "sqlite"))]
+use crate::error::{RagError, RagResult};
 use serde::{Deserialize, Serialize};
+
+/// Validate a chunk's optional sparse / multi-vector fields before storage.
+///
+/// The dense `embedding` dimension is checked by each backend against the
+/// collection spec; this covers the two side vectors whose internal invariants
+/// (`SparseVector` sorted parallel arrays, `MultiVector` complete rows) are not
+/// otherwise enforced. Called at every backend's `upsert_document` boundary so a
+/// malformed vector is rejected up front rather than panicking or silently
+/// mis-scoring at retrieval time.
+///
+/// # Errors
+///
+/// [`RagError::InvalidQuery`] naming the offending chunk ordinal.
+#[cfg(any(feature = "in-memory", feature = "sqlite"))]
+pub(crate) fn validate_chunk_side_vectors(chunk: &ChunkRecord) -> RagResult<()> {
+    if let Some(sparse) = &chunk.sparse_embedding
+        && !sparse.is_well_formed()
+    {
+        return Err(RagError::InvalidQuery(format!(
+            "chunk {} has a malformed sparse_embedding: indices and values must be equal length \
+             and indices strictly ascending",
+            chunk.ordinal
+        )));
+    }
+    if let Some(multi_vector) = &chunk.multi_vector
+        && !multi_vector.is_well_formed()
+    {
+        return Err(RagError::InvalidQuery(format!(
+            "chunk {} has a malformed multi_vector: data length must equal num_tokens * dim",
+            chunk.ordinal
+        )));
+    }
+    Ok(())
+}
 
 /// Opaque identifier for a document, assigned by the backend.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
@@ -114,9 +150,75 @@ pub struct ChunkRecord {
     pub content: String,
     /// Dense embedding vector.
     pub embedding: Vec<f32>,
+    /// Sparse (SPLADE-style) embedding, if the pipeline produced one.
+    #[serde(default)]
+    pub sparse_embedding: Option<SparseVector>,
+    /// Late-interaction (ColBERT-style) multi-vector, if the pipeline produced one.
+    #[serde(default)]
+    pub multi_vector: Option<MultiVector>,
     /// Chunk-level metadata (free-form JSON).
     #[serde(default)]
     pub chunk_metadata: serde_json::Value,
+}
+
+/// Sparse (SPLADE-style) embedding: parallel arrays, indices sorted ascending.
+///
+/// `indices` and `values` must have equal length; `indices` are term/dimension
+/// ids into the sparse vocabulary space and must be strictly ascending with no
+/// duplicates so that merge-based dot products (see [`sparse_dot`]) are valid.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
+pub struct SparseVector {
+    /// Ascending, deduplicated term/dimension ids.
+    pub indices: Vec<u32>,
+    /// Weight for each corresponding index.
+    pub values: Vec<f32>,
+}
+
+impl SparseVector {
+    /// True iff the vector upholds the contract [`sparse_dot`](crate::scoring)
+    /// relies on: `indices` and `values` are equal length and `indices` is
+    /// strictly ascending (sorted, no duplicates).
+    ///
+    /// Public fields let any caller build an ill-formed value (e.g. from
+    /// deserialized input); the store validates with this before storing or
+    /// scoring so a bad vector surfaces a clear error instead of a panic or a
+    /// silently wrong score.
+    pub fn is_well_formed(&self) -> bool {
+        self.indices.len() == self.values.len() && self.indices.windows(2).all(|w| w[0] < w[1])
+    }
+}
+
+/// Late-interaction (ColBERT-style) multi-vector: row-major `[num_tokens x dim]`.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
+pub struct MultiVector {
+    /// Number of token vectors.
+    pub num_tokens: u32,
+    /// Dimension of each token vector.
+    pub dim: u32,
+    /// Row-major token vector data, length `num_tokens * dim`.
+    pub data: Vec<f32>,
+}
+
+impl MultiVector {
+    /// True iff `data` holds exactly `num_tokens * dim` values, so every token
+    /// row is complete. [`rows`](Self::rows) silently drops a trailing partial
+    /// row via `chunks_exact`, so the store validates with this at write/query
+    /// time to reject a truncated multi-vector instead of scoring a short one.
+    pub fn is_well_formed(&self) -> bool {
+        (self.num_tokens as usize).checked_mul(self.dim as usize) == Some(self.data.len())
+    }
+
+    /// Iterate over the token rows as `&[f32]` slices.
+    ///
+    /// Returns an empty iterator if `dim` is zero. `chunks_exact` panics on a
+    /// zero chunk size even for an empty slice, so the `dim == 0` case pairs an
+    /// empty slice with a step of `1` to yield no rows without panicking.
+    #[cfg(any(feature = "in-memory", feature = "sqlite"))]
+    pub(crate) fn rows(&self) -> impl Iterator<Item = &[f32]> {
+        let dim = self.dim as usize;
+        let (data, step): (&[f32], usize) = if dim == 0 { (&[], 1) } else { (&self.data, dim) };
+        data.chunks_exact(step)
+    }
 }
 
 /// Document summary attached to retrieval results.
@@ -158,12 +260,19 @@ pub enum PrimaryScore {
     Vector(f32),
     /// Full-text relevance.
     FullText(f32),
-    /// Hybrid (vector + full-text fused via reciprocal rank fusion).
+    /// Sparse (SPLADE-style) relevance.
+    Sparse(f32),
+    /// Late-interaction (ColBERT-style) MaxSim relevance.
+    LateInteraction(f32),
+    /// Hybrid (vector + full-text + sparse fused via reciprocal rank fusion).
     Hybrid {
         /// Vector similarity component.
         vector: f32,
         /// Full-text component.
         full_text: f32,
+        /// Sparse component (`0.0` when the query did not supply `query_sparse`).
+        #[serde(default)]
+        sparse: f32,
         /// Reciprocal-rank-fusion combined score.
         rrf: f32,
     },

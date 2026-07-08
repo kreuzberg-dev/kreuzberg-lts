@@ -52,8 +52,13 @@ ENV ORT_LIB_LOCATION=/usr/lib
 ENV ORT_PREFER_DYNAMIC_LINK=1
 ENV ORT_SKIP_DOWNLOAD=1
 ENV ORT_STRATEGY=system
-# Allow cdylib output on musl targets (default is +crt-static which blocks shared libs)
-ENV RUSTFLAGS="-C target-feature=-crt-static"
+# Allow cdylib output on musl targets (default is +crt-static which blocks shared
+# libs). Also bake an `$ORIGIN` RUNPATH so the .node resolves its vendored
+# shared-lib closure (libonnxruntime + image codecs, sourced from Alpine edge and
+# absent on consumer machines) from beside itself in the npm platform package.
+# `$ORIGIN` must reach the linker literally — escape the `$` so Docker does not
+# treat it as a build-arg reference.
+ENV RUSTFLAGS="-C target-feature=-crt-static -C link-arg=-Wl,-rpath,\$ORIGIN"
 
 # Copy workspace manifests and crates
 COPY Cargo.toml Cargo.lock ./
@@ -107,13 +112,23 @@ RUN rustup target add "${TARGET}" && \
     cp ./*.node /build/ && \
     strip /build/*.node
 
+# Vendor the .node's non-system shared-lib closure (libonnxruntime + image codecs
+# like libheif/libde265/aom/x265/dav1d, all sourced from Alpine edge repos and
+# absent on a plain consumer system) next to the .node. The loader, libc,
+# compiler runtime and system TLS are left to the target platform.
+COPY docker/scripts/vendor-node-libs.sh /usr/local/bin/vendor-node-libs.sh
+RUN sh /usr/local/bin/vendor-node-libs.sh /build /build/vendor
+
 # Verify the artifact
 RUN file /build/*.node && \
     echo "=== Dynamic dependencies ===" && \
-    readelf -d /build/*.node 2>/dev/null | grep NEEDED || echo "No dynamic dependencies (fully static)"
+    { readelf -d /build/*.node 2>/dev/null | grep NEEDED || echo "No dynamic dependencies (fully static)"; } && \
+    echo "=== Vendored libs (ship beside the .node) ===" && \
+    ls -la /build/vendor
 
 # =============================================================================
-# Output stage — just the .node artifact(s)
+# Output stage — the .node artifact(s) plus the vendored shared-lib closure
 # =============================================================================
 FROM scratch
 COPY --from=builder /build/*.node /
+COPY --from=builder /build/vendor/ /vendor/

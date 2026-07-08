@@ -124,6 +124,14 @@ ENV CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER=gcc \
     CC_aarch64_unknown_linux_gnu=gcc \
     CXX_aarch64_unknown_linux_gnu=g++
 
+# ort links libonnxruntime dynamically; the .so is downloaded from Microsoft and
+# is NOT present on consumer machines. Bake an `$ORIGIN` RUNPATH into the .node
+# so the dynamic loader resolves its vendored dependencies (staged next to the
+# .node in the npm platform package) at load time. `$ORIGIN` must reach the
+# linker literally — escape the `$` so neither Docker (build-arg expansion) nor
+# the RUN shell substitutes it here.
+ENV RUSTFLAGS="-C link-arg=-Wl,-rpath,\$ORIGIN"
+
 # Build the NAPI binding. napi build wraps `cargo build` and emits
 # xberg.<platform>.node. Run via npx (matching crates/xberg-node/package.json's
 # build script) so no pnpm workspace install is needed. No --use-napi-cross:
@@ -135,15 +143,26 @@ RUN rustup target add "${TARGET}" && \
     cp ./*.node /build/ && \
     strip /build/*.node
 
+# Vendor the .node's non-system shared-lib closure (libonnxruntime + image
+# codecs like libheif/libde265/dav1d) next to it. The loader, libc, compiler
+# runtime (libgcc_s/libstdc++) and system TLS are intentionally left to the
+# target platform — they are guaranteed at the manylinux_2_28 (RHEL 8) floor and
+# bundling libstdc++ into a Node addon risks an ABI clash with node's own copy.
+COPY docker/scripts/vendor-node-libs.sh /usr/local/bin/vendor-node-libs.sh
+RUN sh /usr/local/bin/vendor-node-libs.sh /build /build/vendor
+
 # Verify the artifact and its glibc floor (highest GLIBC_ symbol version).
 RUN file /build/*.node && \
     echo "=== Dynamic dependencies ===" && \
     readelf -d /build/*.node 2>/dev/null | grep NEEDED && \
+    echo "=== Vendored libs (ship beside the .node) ===" && \
+    ls -la /build/vendor && \
     echo "=== Max GLIBC symbol version (floor) ===" && \
     { objdump -T /build/*.node 2>/dev/null | grep -oE 'GLIBC_[0-9]+\.[0-9]+' | sort -V | tail -1 || true; }
 
 # =============================================================================
-# Output stage — just the .node artifact(s)
+# Output stage — the .node artifact(s) plus the vendored shared-lib closure
 # =============================================================================
 FROM scratch
 COPY --from=builder /build/*.node /
+COPY --from=builder /build/vendor/ /vendor/

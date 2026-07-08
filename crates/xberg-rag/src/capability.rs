@@ -18,18 +18,32 @@ pub struct Capabilities {
     pub hybrid: bool,
     /// The backend can apply server-side filters during retrieval.
     pub filtering: bool,
+    /// Sparse (`RetrieveMode::Sparse`) retrieval is supported.
+    pub sparse: bool,
+    /// Late-interaction (`RetrieveMode::LateInteraction`) retrieval is supported.
+    ///
+    /// This flag does not imply identical semantics across backends: the
+    /// in-memory store does an exhaustive MaxSim scan over every stored
+    /// multi-vector (no `query_vector` needed, ignored if supplied), while the
+    /// sqlite store seeds candidates via dense KNN over `query_vector` (recall
+    /// bounded by `candidate_k`) and reranks only that set with MaxSim. Same
+    /// capability, different recall/latency profile — see
+    /// [`RetrieveMode::LateInteraction`](crate::RetrieveMode::LateInteraction).
+    pub late_interaction: bool,
     /// Index methods the backend actually implements (others fall back to `Flat`).
     pub index_methods: Vec<IndexMethod>,
 }
 
 impl Capabilities {
     /// Vector-only capabilities (the minimal backend: exact vector search, no
-    /// full-text, no hybrid). Filtering supported.
+    /// full-text, no hybrid, no sparse, no late-interaction). Filtering supported.
     pub fn vector_only() -> Self {
         Self {
             full_text: false,
             hybrid: false,
             filtering: true,
+            sparse: false,
+            late_interaction: false,
             index_methods: vec![IndexMethod::Flat],
         }
     }

@@ -5721,6 +5721,390 @@ String toString() {
 
 
 /// @nodoc
+mixin _$LateInteractionModelType {
+
+
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is LateInteractionModelType);
+}
+
+
+@override
+int get hashCode => runtimeType.hashCode;
+
+@override
+String toString() {
+  return 'LateInteractionModelType()';
+}
+
+
+}
+
+/// @nodoc
+class $LateInteractionModelTypeCopyWith<$Res>  {
+$LateInteractionModelTypeCopyWith(LateInteractionModelType _, $Res Function(LateInteractionModelType) __);
+}
+
+
+/// Adds pattern-matching-related methods to [LateInteractionModelType].
+extension LateInteractionModelTypePatterns on LateInteractionModelType {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( LateInteractionModelType_Preset value)?  preset,TResult Function( LateInteractionModelType_Custom value)?  custom,TResult Function( LateInteractionModelType_Plugin value)?  plugin,required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case LateInteractionModelType_Preset() when preset != null:
+return preset(_that);case LateInteractionModelType_Custom() when custom != null:
+return custom(_that);case LateInteractionModelType_Plugin() when plugin != null:
+return plugin(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( LateInteractionModelType_Preset value)  preset,required TResult Function( LateInteractionModelType_Custom value)  custom,required TResult Function( LateInteractionModelType_Plugin value)  plugin,}){
+final _that = this;
+switch (_that) {
+case LateInteractionModelType_Preset():
+return preset(_that);case LateInteractionModelType_Custom():
+return custom(_that);case LateInteractionModelType_Plugin():
+return plugin(_that);}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( LateInteractionModelType_Preset value)?  preset,TResult? Function( LateInteractionModelType_Custom value)?  custom,TResult? Function( LateInteractionModelType_Plugin value)?  plugin,}){
+final _that = this;
+switch (_that) {
+case LateInteractionModelType_Preset() when preset != null:
+return preset(_that);case LateInteractionModelType_Custom() when custom != null:
+return custom(_that);case LateInteractionModelType_Plugin() when plugin != null:
+return plugin(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( String name)?  preset,TResult Function( String modelId,  String modelFile,  List<String> additionalFiles,  PlatformInt64 maxLength)?  custom,TResult Function( String name)?  plugin,required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case LateInteractionModelType_Preset() when preset != null:
+return preset(_that.name);case LateInteractionModelType_Custom() when custom != null:
+return custom(_that.modelId,_that.modelFile,_that.additionalFiles,_that.maxLength);case LateInteractionModelType_Plugin() when plugin != null:
+return plugin(_that.name);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( String name)  preset,required TResult Function( String modelId,  String modelFile,  List<String> additionalFiles,  PlatformInt64 maxLength)  custom,required TResult Function( String name)  plugin,}) {final _that = this;
+switch (_that) {
+case LateInteractionModelType_Preset():
+return preset(_that.name);case LateInteractionModelType_Custom():
+return custom(_that.modelId,_that.modelFile,_that.additionalFiles,_that.maxLength);case LateInteractionModelType_Plugin():
+return plugin(_that.name);}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( String name)?  preset,TResult? Function( String modelId,  String modelFile,  List<String> additionalFiles,  PlatformInt64 maxLength)?  custom,TResult? Function( String name)?  plugin,}) {final _that = this;
+switch (_that) {
+case LateInteractionModelType_Preset() when preset != null:
+return preset(_that.name);case LateInteractionModelType_Custom() when custom != null:
+return custom(_that.modelId,_that.modelFile,_that.additionalFiles,_that.maxLength);case LateInteractionModelType_Plugin() when plugin != null:
+return plugin(_that.name);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+
+
+class LateInteractionModelType_Preset extends LateInteractionModelType {
+  const LateInteractionModelType_Preset({required this.name}): super._();
+
+
+/// Preset name (e.g. "colbert").
+ final  String name;
+
+/// Create a copy of LateInteractionModelType
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$LateInteractionModelType_PresetCopyWith<LateInteractionModelType_Preset> get copyWith => _$LateInteractionModelType_PresetCopyWithImpl<LateInteractionModelType_Preset>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is LateInteractionModelType_Preset&&(identical(other.name, name) || other.name == name));
+}
+
+
+@override
+int get hashCode => Object.hash(runtimeType,name);
+
+@override
+String toString() {
+  return 'LateInteractionModelType.preset(name: $name)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $LateInteractionModelType_PresetCopyWith<$Res> implements $LateInteractionModelTypeCopyWith<$Res> {
+  factory $LateInteractionModelType_PresetCopyWith(LateInteractionModelType_Preset value, $Res Function(LateInteractionModelType_Preset) _then) = _$LateInteractionModelType_PresetCopyWithImpl;
+@useResult
+$Res call({
+ String name
+});
+
+
+
+
+}
+/// @nodoc
+class _$LateInteractionModelType_PresetCopyWithImpl<$Res>
+    implements $LateInteractionModelType_PresetCopyWith<$Res> {
+  _$LateInteractionModelType_PresetCopyWithImpl(this._self, this._then);
+
+  final LateInteractionModelType_Preset _self;
+  final $Res Function(LateInteractionModelType_Preset) _then;
+
+/// Create a copy of LateInteractionModelType
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? name = null,}) {
+  return _then(LateInteractionModelType_Preset(
+name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
+}
+
+
+}
+
+/// @nodoc
+
+
+class LateInteractionModelType_Custom extends LateInteractionModelType {
+  const LateInteractionModelType_Custom({required this.modelId, required this.modelFile, required final  List<String> additionalFiles, required this.maxLength}): _additionalFiles = additionalFiles,super._();
+
+
+/// HuggingFace model repository ID.
+ final  String modelId;
+/// Path to the ONNX file within the repo. Defaults to `"onnx/model.onnx"`.
+ final  String modelFile;
+/// Sibling files that must be downloaded alongside `model_file`.
+ final  List<String> _additionalFiles;
+/// Sibling files that must be downloaded alongside `model_file`.
+ List<String> get additionalFiles {
+  if (_additionalFiles is EqualUnmodifiableListView) return _additionalFiles;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_additionalFiles);
+}
+
+/// Maximum token sequence length. Stored as `i64` for FFI compatibility;
+/// negative values are clamped to the model default.
+ final  PlatformInt64 maxLength;
+
+/// Create a copy of LateInteractionModelType
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$LateInteractionModelType_CustomCopyWith<LateInteractionModelType_Custom> get copyWith => _$LateInteractionModelType_CustomCopyWithImpl<LateInteractionModelType_Custom>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is LateInteractionModelType_Custom&&(identical(other.modelId, modelId) || other.modelId == modelId)&&(identical(other.modelFile, modelFile) || other.modelFile == modelFile)&&const DeepCollectionEquality().equals(other._additionalFiles, _additionalFiles)&&(identical(other.maxLength, maxLength) || other.maxLength == maxLength));
+}
+
+
+@override
+int get hashCode => Object.hash(runtimeType,modelId,modelFile,const DeepCollectionEquality().hash(_additionalFiles),maxLength);
+
+@override
+String toString() {
+  return 'LateInteractionModelType.custom(modelId: $modelId, modelFile: $modelFile, additionalFiles: $additionalFiles, maxLength: $maxLength)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $LateInteractionModelType_CustomCopyWith<$Res> implements $LateInteractionModelTypeCopyWith<$Res> {
+  factory $LateInteractionModelType_CustomCopyWith(LateInteractionModelType_Custom value, $Res Function(LateInteractionModelType_Custom) _then) = _$LateInteractionModelType_CustomCopyWithImpl;
+@useResult
+$Res call({
+ String modelId, String modelFile, List<String> additionalFiles, PlatformInt64 maxLength
+});
+
+
+
+
+}
+/// @nodoc
+class _$LateInteractionModelType_CustomCopyWithImpl<$Res>
+    implements $LateInteractionModelType_CustomCopyWith<$Res> {
+  _$LateInteractionModelType_CustomCopyWithImpl(this._self, this._then);
+
+  final LateInteractionModelType_Custom _self;
+  final $Res Function(LateInteractionModelType_Custom) _then;
+
+/// Create a copy of LateInteractionModelType
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? modelId = null,Object? modelFile = null,Object? additionalFiles = null,Object? maxLength = null,}) {
+  return _then(LateInteractionModelType_Custom(
+modelId: null == modelId ? _self.modelId : modelId // ignore: cast_nullable_to_non_nullable
+as String,modelFile: null == modelFile ? _self.modelFile : modelFile // ignore: cast_nullable_to_non_nullable
+as String,additionalFiles: null == additionalFiles ? _self._additionalFiles : additionalFiles // ignore: cast_nullable_to_non_nullable
+as List<String>,maxLength: null == maxLength ? _self.maxLength : maxLength // ignore: cast_nullable_to_non_nullable
+as PlatformInt64,
+  ));
+}
+
+
+}
+
+/// @nodoc
+
+
+class LateInteractionModelType_Plugin extends LateInteractionModelType {
+  const LateInteractionModelType_Plugin({required this.name}): super._();
+
+
+/// Name the backend was registered under.
+ final  String name;
+
+/// Create a copy of LateInteractionModelType
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$LateInteractionModelType_PluginCopyWith<LateInteractionModelType_Plugin> get copyWith => _$LateInteractionModelType_PluginCopyWithImpl<LateInteractionModelType_Plugin>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is LateInteractionModelType_Plugin&&(identical(other.name, name) || other.name == name));
+}
+
+
+@override
+int get hashCode => Object.hash(runtimeType,name);
+
+@override
+String toString() {
+  return 'LateInteractionModelType.plugin(name: $name)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $LateInteractionModelType_PluginCopyWith<$Res> implements $LateInteractionModelTypeCopyWith<$Res> {
+  factory $LateInteractionModelType_PluginCopyWith(LateInteractionModelType_Plugin value, $Res Function(LateInteractionModelType_Plugin) _then) = _$LateInteractionModelType_PluginCopyWithImpl;
+@useResult
+$Res call({
+ String name
+});
+
+
+
+
+}
+/// @nodoc
+class _$LateInteractionModelType_PluginCopyWithImpl<$Res>
+    implements $LateInteractionModelType_PluginCopyWith<$Res> {
+  _$LateInteractionModelType_PluginCopyWithImpl(this._self, this._then);
+
+  final LateInteractionModelType_Plugin _self;
+  final $Res Function(LateInteractionModelType_Plugin) _then;
+
+/// Create a copy of LateInteractionModelType
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? name = null,}) {
+  return _then(LateInteractionModelType_Plugin(
+name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
+}
+
+
+}
+
+/// @nodoc
 mixin _$LoadError {
 
 
@@ -9838,11 +10222,11 @@ return plugin(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( String name)?  preset,TResult Function( String modelId,  String modelFile,  List<String> additionalFiles,  PlatformInt64 maxLength)?  custom,TResult Function( LlmConfig llm)?  llm,TResult Function( String name)?  plugin,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( String name)?  preset,TResult Function( String modelId,  String modelFile,  List<String> additionalFiles,  PlatformInt64 maxLength,  RerankerHead head)?  custom,TResult Function( LlmConfig llm)?  llm,TResult Function( String name)?  plugin,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case RerankerModelType_Preset() when preset != null:
 return preset(_that.name);case RerankerModelType_Custom() when custom != null:
-return custom(_that.modelId,_that.modelFile,_that.additionalFiles,_that.maxLength);case RerankerModelType_Llm() when llm != null:
+return custom(_that.modelId,_that.modelFile,_that.additionalFiles,_that.maxLength,_that.head);case RerankerModelType_Llm() when llm != null:
 return llm(_that.llm);case RerankerModelType_Plugin() when plugin != null:
 return plugin(_that.name);case _:
   return orElse();
@@ -9862,11 +10246,11 @@ return plugin(_that.name);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( String name)  preset,required TResult Function( String modelId,  String modelFile,  List<String> additionalFiles,  PlatformInt64 maxLength)  custom,required TResult Function( LlmConfig llm)  llm,required TResult Function( String name)  plugin,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( String name)  preset,required TResult Function( String modelId,  String modelFile,  List<String> additionalFiles,  PlatformInt64 maxLength,  RerankerHead head)  custom,required TResult Function( LlmConfig llm)  llm,required TResult Function( String name)  plugin,}) {final _that = this;
 switch (_that) {
 case RerankerModelType_Preset():
 return preset(_that.name);case RerankerModelType_Custom():
-return custom(_that.modelId,_that.modelFile,_that.additionalFiles,_that.maxLength);case RerankerModelType_Llm():
+return custom(_that.modelId,_that.modelFile,_that.additionalFiles,_that.maxLength,_that.head);case RerankerModelType_Llm():
 return llm(_that.llm);case RerankerModelType_Plugin():
 return plugin(_that.name);}
 }
@@ -9882,11 +10266,11 @@ return plugin(_that.name);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( String name)?  preset,TResult? Function( String modelId,  String modelFile,  List<String> additionalFiles,  PlatformInt64 maxLength)?  custom,TResult? Function( LlmConfig llm)?  llm,TResult? Function( String name)?  plugin,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( String name)?  preset,TResult? Function( String modelId,  String modelFile,  List<String> additionalFiles,  PlatformInt64 maxLength,  RerankerHead head)?  custom,TResult? Function( LlmConfig llm)?  llm,TResult? Function( String name)?  plugin,}) {final _that = this;
 switch (_that) {
 case RerankerModelType_Preset() when preset != null:
 return preset(_that.name);case RerankerModelType_Custom() when custom != null:
-return custom(_that.modelId,_that.modelFile,_that.additionalFiles,_that.maxLength);case RerankerModelType_Llm() when llm != null:
+return custom(_that.modelId,_that.modelFile,_that.additionalFiles,_that.maxLength,_that.head);case RerankerModelType_Llm() when llm != null:
 return llm(_that.llm);case RerankerModelType_Plugin() when plugin != null:
 return plugin(_that.name);case _:
   return null;
@@ -9967,7 +10351,7 @@ as String,
 
 
 class RerankerModelType_Custom extends RerankerModelType {
-  const RerankerModelType_Custom({required this.modelId, required this.modelFile, required final  List<String> additionalFiles, required this.maxLength}): _additionalFiles = additionalFiles,super._();
+  const RerankerModelType_Custom({required this.modelId, required this.modelFile, required final  List<String> additionalFiles, required this.maxLength, required this.head}): _additionalFiles = additionalFiles,super._();
 
 
 /// HuggingFace model repository ID (e.g. "cross-encoder/ms-marco-MiniLM-L6-v2").
@@ -10000,6 +10384,12 @@ class RerankerModelType_Custom extends RerankerModelType {
 /// Stored as `i64` for FFI compatibility across language bindings.
 /// Treated as a non-negative value; negative values are clamped to the model default.
  final  PlatformInt64 maxLength;
+/// Scoring head for the ONNX model's output tensor.
+///
+/// Defaults to [`RerankerHead::CrossEncoder`]. Set to
+/// [`RerankerHead::Qwen3Generative`] for Qwen3 generative-reranker
+/// checkpoints (e.g. `Qwen/Qwen3-Reranker-0.6B`).
+ final  RerankerHead head;
 
 /// Create a copy of RerankerModelType
 /// with the given fields replaced by the non-null parameter values.
@@ -10011,16 +10401,16 @@ $RerankerModelType_CustomCopyWith<RerankerModelType_Custom> get copyWith => _$Re
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is RerankerModelType_Custom&&(identical(other.modelId, modelId) || other.modelId == modelId)&&(identical(other.modelFile, modelFile) || other.modelFile == modelFile)&&const DeepCollectionEquality().equals(other._additionalFiles, _additionalFiles)&&(identical(other.maxLength, maxLength) || other.maxLength == maxLength));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is RerankerModelType_Custom&&(identical(other.modelId, modelId) || other.modelId == modelId)&&(identical(other.modelFile, modelFile) || other.modelFile == modelFile)&&const DeepCollectionEquality().equals(other._additionalFiles, _additionalFiles)&&(identical(other.maxLength, maxLength) || other.maxLength == maxLength)&&(identical(other.head, head) || other.head == head));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,modelId,modelFile,const DeepCollectionEquality().hash(_additionalFiles),maxLength);
+int get hashCode => Object.hash(runtimeType,modelId,modelFile,const DeepCollectionEquality().hash(_additionalFiles),maxLength,head);
 
 @override
 String toString() {
-  return 'RerankerModelType.custom(modelId: $modelId, modelFile: $modelFile, additionalFiles: $additionalFiles, maxLength: $maxLength)';
+  return 'RerankerModelType.custom(modelId: $modelId, modelFile: $modelFile, additionalFiles: $additionalFiles, maxLength: $maxLength, head: $head)';
 }
 
 
@@ -10031,7 +10421,7 @@ abstract mixin class $RerankerModelType_CustomCopyWith<$Res> implements $Reranke
   factory $RerankerModelType_CustomCopyWith(RerankerModelType_Custom value, $Res Function(RerankerModelType_Custom) _then) = _$RerankerModelType_CustomCopyWithImpl;
 @useResult
 $Res call({
- String modelId, String modelFile, List<String> additionalFiles, PlatformInt64 maxLength
+ String modelId, String modelFile, List<String> additionalFiles, PlatformInt64 maxLength, RerankerHead head
 });
 
 
@@ -10048,13 +10438,14 @@ class _$RerankerModelType_CustomCopyWithImpl<$Res>
 
 /// Create a copy of RerankerModelType
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') $Res call({Object? modelId = null,Object? modelFile = null,Object? additionalFiles = null,Object? maxLength = null,}) {
+@pragma('vm:prefer-inline') $Res call({Object? modelId = null,Object? modelFile = null,Object? additionalFiles = null,Object? maxLength = null,Object? head = null,}) {
   return _then(RerankerModelType_Custom(
 modelId: null == modelId ? _self.modelId : modelId // ignore: cast_nullable_to_non_nullable
 as String,modelFile: null == modelFile ? _self.modelFile : modelFile // ignore: cast_nullable_to_non_nullable
 as String,additionalFiles: null == additionalFiles ? _self._additionalFiles : additionalFiles // ignore: cast_nullable_to_non_nullable
 as List<String>,maxLength: null == maxLength ? _self.maxLength : maxLength // ignore: cast_nullable_to_non_nullable
-as PlatformInt64,
+as PlatformInt64,head: null == head ? _self.head : head // ignore: cast_nullable_to_non_nullable
+as RerankerHead,
   ));
 }
 
@@ -10710,6 +11101,390 @@ class _$RevisionAnchor_SheetCopyWithImpl<$Res>
   return _then(RevisionAnchor_Sheet(
 index: null == index ? _self.index : index // ignore: cast_nullable_to_non_nullable
 as PlatformInt64,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
+}
+
+
+}
+
+/// @nodoc
+mixin _$SparseEmbeddingModelType {
+
+
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is SparseEmbeddingModelType);
+}
+
+
+@override
+int get hashCode => runtimeType.hashCode;
+
+@override
+String toString() {
+  return 'SparseEmbeddingModelType()';
+}
+
+
+}
+
+/// @nodoc
+class $SparseEmbeddingModelTypeCopyWith<$Res>  {
+$SparseEmbeddingModelTypeCopyWith(SparseEmbeddingModelType _, $Res Function(SparseEmbeddingModelType) __);
+}
+
+
+/// Adds pattern-matching-related methods to [SparseEmbeddingModelType].
+extension SparseEmbeddingModelTypePatterns on SparseEmbeddingModelType {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( SparseEmbeddingModelType_Preset value)?  preset,TResult Function( SparseEmbeddingModelType_Custom value)?  custom,TResult Function( SparseEmbeddingModelType_Plugin value)?  plugin,required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case SparseEmbeddingModelType_Preset() when preset != null:
+return preset(_that);case SparseEmbeddingModelType_Custom() when custom != null:
+return custom(_that);case SparseEmbeddingModelType_Plugin() when plugin != null:
+return plugin(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( SparseEmbeddingModelType_Preset value)  preset,required TResult Function( SparseEmbeddingModelType_Custom value)  custom,required TResult Function( SparseEmbeddingModelType_Plugin value)  plugin,}){
+final _that = this;
+switch (_that) {
+case SparseEmbeddingModelType_Preset():
+return preset(_that);case SparseEmbeddingModelType_Custom():
+return custom(_that);case SparseEmbeddingModelType_Plugin():
+return plugin(_that);}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( SparseEmbeddingModelType_Preset value)?  preset,TResult? Function( SparseEmbeddingModelType_Custom value)?  custom,TResult? Function( SparseEmbeddingModelType_Plugin value)?  plugin,}){
+final _that = this;
+switch (_that) {
+case SparseEmbeddingModelType_Preset() when preset != null:
+return preset(_that);case SparseEmbeddingModelType_Custom() when custom != null:
+return custom(_that);case SparseEmbeddingModelType_Plugin() when plugin != null:
+return plugin(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( String name)?  preset,TResult Function( String modelId,  String modelFile,  List<String> additionalFiles,  PlatformInt64 maxLength)?  custom,TResult Function( String name)?  plugin,required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case SparseEmbeddingModelType_Preset() when preset != null:
+return preset(_that.name);case SparseEmbeddingModelType_Custom() when custom != null:
+return custom(_that.modelId,_that.modelFile,_that.additionalFiles,_that.maxLength);case SparseEmbeddingModelType_Plugin() when plugin != null:
+return plugin(_that.name);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( String name)  preset,required TResult Function( String modelId,  String modelFile,  List<String> additionalFiles,  PlatformInt64 maxLength)  custom,required TResult Function( String name)  plugin,}) {final _that = this;
+switch (_that) {
+case SparseEmbeddingModelType_Preset():
+return preset(_that.name);case SparseEmbeddingModelType_Custom():
+return custom(_that.modelId,_that.modelFile,_that.additionalFiles,_that.maxLength);case SparseEmbeddingModelType_Plugin():
+return plugin(_that.name);}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( String name)?  preset,TResult? Function( String modelId,  String modelFile,  List<String> additionalFiles,  PlatformInt64 maxLength)?  custom,TResult? Function( String name)?  plugin,}) {final _that = this;
+switch (_that) {
+case SparseEmbeddingModelType_Preset() when preset != null:
+return preset(_that.name);case SparseEmbeddingModelType_Custom() when custom != null:
+return custom(_that.modelId,_that.modelFile,_that.additionalFiles,_that.maxLength);case SparseEmbeddingModelType_Plugin() when plugin != null:
+return plugin(_that.name);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+
+
+class SparseEmbeddingModelType_Preset extends SparseEmbeddingModelType {
+  const SparseEmbeddingModelType_Preset({required this.name}): super._();
+
+
+/// Preset name (e.g. "splade").
+ final  String name;
+
+/// Create a copy of SparseEmbeddingModelType
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$SparseEmbeddingModelType_PresetCopyWith<SparseEmbeddingModelType_Preset> get copyWith => _$SparseEmbeddingModelType_PresetCopyWithImpl<SparseEmbeddingModelType_Preset>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is SparseEmbeddingModelType_Preset&&(identical(other.name, name) || other.name == name));
+}
+
+
+@override
+int get hashCode => Object.hash(runtimeType,name);
+
+@override
+String toString() {
+  return 'SparseEmbeddingModelType.preset(name: $name)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $SparseEmbeddingModelType_PresetCopyWith<$Res> implements $SparseEmbeddingModelTypeCopyWith<$Res> {
+  factory $SparseEmbeddingModelType_PresetCopyWith(SparseEmbeddingModelType_Preset value, $Res Function(SparseEmbeddingModelType_Preset) _then) = _$SparseEmbeddingModelType_PresetCopyWithImpl;
+@useResult
+$Res call({
+ String name
+});
+
+
+
+
+}
+/// @nodoc
+class _$SparseEmbeddingModelType_PresetCopyWithImpl<$Res>
+    implements $SparseEmbeddingModelType_PresetCopyWith<$Res> {
+  _$SparseEmbeddingModelType_PresetCopyWithImpl(this._self, this._then);
+
+  final SparseEmbeddingModelType_Preset _self;
+  final $Res Function(SparseEmbeddingModelType_Preset) _then;
+
+/// Create a copy of SparseEmbeddingModelType
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? name = null,}) {
+  return _then(SparseEmbeddingModelType_Preset(
+name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
+}
+
+
+}
+
+/// @nodoc
+
+
+class SparseEmbeddingModelType_Custom extends SparseEmbeddingModelType {
+  const SparseEmbeddingModelType_Custom({required this.modelId, required this.modelFile, required final  List<String> additionalFiles, required this.maxLength}): _additionalFiles = additionalFiles,super._();
+
+
+/// HuggingFace model repository ID.
+ final  String modelId;
+/// Path to the ONNX file within the repo. Defaults to `"onnx/model.onnx"`.
+ final  String modelFile;
+/// Sibling files that must be downloaded alongside `model_file`.
+ final  List<String> _additionalFiles;
+/// Sibling files that must be downloaded alongside `model_file`.
+ List<String> get additionalFiles {
+  if (_additionalFiles is EqualUnmodifiableListView) return _additionalFiles;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_additionalFiles);
+}
+
+/// Maximum token sequence length. Stored as `i64` for FFI compatibility;
+/// negative values are clamped to the model default.
+ final  PlatformInt64 maxLength;
+
+/// Create a copy of SparseEmbeddingModelType
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$SparseEmbeddingModelType_CustomCopyWith<SparseEmbeddingModelType_Custom> get copyWith => _$SparseEmbeddingModelType_CustomCopyWithImpl<SparseEmbeddingModelType_Custom>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is SparseEmbeddingModelType_Custom&&(identical(other.modelId, modelId) || other.modelId == modelId)&&(identical(other.modelFile, modelFile) || other.modelFile == modelFile)&&const DeepCollectionEquality().equals(other._additionalFiles, _additionalFiles)&&(identical(other.maxLength, maxLength) || other.maxLength == maxLength));
+}
+
+
+@override
+int get hashCode => Object.hash(runtimeType,modelId,modelFile,const DeepCollectionEquality().hash(_additionalFiles),maxLength);
+
+@override
+String toString() {
+  return 'SparseEmbeddingModelType.custom(modelId: $modelId, modelFile: $modelFile, additionalFiles: $additionalFiles, maxLength: $maxLength)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $SparseEmbeddingModelType_CustomCopyWith<$Res> implements $SparseEmbeddingModelTypeCopyWith<$Res> {
+  factory $SparseEmbeddingModelType_CustomCopyWith(SparseEmbeddingModelType_Custom value, $Res Function(SparseEmbeddingModelType_Custom) _then) = _$SparseEmbeddingModelType_CustomCopyWithImpl;
+@useResult
+$Res call({
+ String modelId, String modelFile, List<String> additionalFiles, PlatformInt64 maxLength
+});
+
+
+
+
+}
+/// @nodoc
+class _$SparseEmbeddingModelType_CustomCopyWithImpl<$Res>
+    implements $SparseEmbeddingModelType_CustomCopyWith<$Res> {
+  _$SparseEmbeddingModelType_CustomCopyWithImpl(this._self, this._then);
+
+  final SparseEmbeddingModelType_Custom _self;
+  final $Res Function(SparseEmbeddingModelType_Custom) _then;
+
+/// Create a copy of SparseEmbeddingModelType
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? modelId = null,Object? modelFile = null,Object? additionalFiles = null,Object? maxLength = null,}) {
+  return _then(SparseEmbeddingModelType_Custom(
+modelId: null == modelId ? _self.modelId : modelId // ignore: cast_nullable_to_non_nullable
+as String,modelFile: null == modelFile ? _self.modelFile : modelFile // ignore: cast_nullable_to_non_nullable
+as String,additionalFiles: null == additionalFiles ? _self._additionalFiles : additionalFiles // ignore: cast_nullable_to_non_nullable
+as List<String>,maxLength: null == maxLength ? _self.maxLength : maxLength // ignore: cast_nullable_to_non_nullable
+as PlatformInt64,
+  ));
+}
+
+
+}
+
+/// @nodoc
+
+
+class SparseEmbeddingModelType_Plugin extends SparseEmbeddingModelType {
+  const SparseEmbeddingModelType_Plugin({required this.name}): super._();
+
+
+/// Name the backend was registered under.
+ final  String name;
+
+/// Create a copy of SparseEmbeddingModelType
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$SparseEmbeddingModelType_PluginCopyWith<SparseEmbeddingModelType_Plugin> get copyWith => _$SparseEmbeddingModelType_PluginCopyWithImpl<SparseEmbeddingModelType_Plugin>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is SparseEmbeddingModelType_Plugin&&(identical(other.name, name) || other.name == name));
+}
+
+
+@override
+int get hashCode => Object.hash(runtimeType,name);
+
+@override
+String toString() {
+  return 'SparseEmbeddingModelType.plugin(name: $name)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $SparseEmbeddingModelType_PluginCopyWith<$Res> implements $SparseEmbeddingModelTypeCopyWith<$Res> {
+  factory $SparseEmbeddingModelType_PluginCopyWith(SparseEmbeddingModelType_Plugin value, $Res Function(SparseEmbeddingModelType_Plugin) _then) = _$SparseEmbeddingModelType_PluginCopyWithImpl;
+@useResult
+$Res call({
+ String name
+});
+
+
+
+
+}
+/// @nodoc
+class _$SparseEmbeddingModelType_PluginCopyWithImpl<$Res>
+    implements $SparseEmbeddingModelType_PluginCopyWith<$Res> {
+  _$SparseEmbeddingModelType_PluginCopyWithImpl(this._self, this._then);
+
+  final SparseEmbeddingModelType_Plugin _self;
+  final $Res Function(SparseEmbeddingModelType_Plugin) _then;
+
+/// Create a copy of SparseEmbeddingModelType
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? name = null,}) {
+  return _then(SparseEmbeddingModelType_Plugin(
+name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,
   ));
 }

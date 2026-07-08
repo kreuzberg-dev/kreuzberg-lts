@@ -30,7 +30,9 @@ cache or running inference.
 | Capability | Repositories |
 | ---------- | ------------ |
 | Embeddings | [`Xenova/all-MiniLM-L6-v2`](https://huggingface.co/Xenova/all-MiniLM-L6-v2), [`Xenova/bge-base-en-v1.5`](https://huggingface.co/Xenova/bge-base-en-v1.5), [`Xenova/bge-large-en-v1.5`](https://huggingface.co/Xenova/bge-large-en-v1.5), [`intfloat/multilingual-e5-base`](https://huggingface.co/intfloat/multilingual-e5-base) |
-| Reranking | [`BAAI/bge-reranker-base`](https://huggingface.co/BAAI/bge-reranker-base), [`rozgo/bge-reranker-v2-m3`](https://huggingface.co/rozgo/bge-reranker-v2-m3), [`jinaai/jina-reranker-v1-turbo-en`](https://huggingface.co/jinaai/jina-reranker-v1-turbo-en), [`jinaai/jina-reranker-v2-base-multilingual`](https://huggingface.co/jinaai/jina-reranker-v2-base-multilingual) |
+| Reranking | [`BAAI/bge-reranker-base`](https://huggingface.co/BAAI/bge-reranker-base), [`rozgo/bge-reranker-v2-m3`](https://huggingface.co/rozgo/bge-reranker-v2-m3), [`jinaai/jina-reranker-v1-turbo-en`](https://huggingface.co/jinaai/jina-reranker-v1-turbo-en), [`Qwen/Qwen3-Reranker-0.6B`](https://huggingface.co/Qwen/Qwen3-Reranker-0.6B) |
+| Sparse embeddings (SPLADE) | [`prithivida/Splade_PP_en_v1`](https://huggingface.co/prithivida/Splade_PP_en_v1) |
+| Late interaction (ColBERT) | [`answerdotai/answerai-colbert-small-v1`](https://huggingface.co/answerdotai/answerai-colbert-small-v1) |
 | Transcription (Whisper) | [`onnx-community/whisper-tiny`](https://huggingface.co/onnx-community/whisper-tiny), [`onnx-community/whisper-base`](https://huggingface.co/onnx-community/whisper-base), [`onnx-community/whisper-small`](https://huggingface.co/onnx-community/whisper-small), [`Xenova/whisper-medium`](https://huggingface.co/Xenova/whisper-medium), [`Xenova/whisper-large-v3`](https://huggingface.co/Xenova/whisper-large-v3) |
 | Tokenizers (token counting / chunk sizing) | [`Xenova/gpt-4o`](https://huggingface.co/Xenova/gpt-4o), [`thenlper/gte-small`](https://huggingface.co/thenlper/gte-small) |
 

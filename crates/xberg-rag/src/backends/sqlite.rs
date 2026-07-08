@@ -28,10 +28,11 @@ use crate::capability::Capabilities;
 use crate::error::{RagError, RagResult};
 use crate::filter::{Filter, FilterField, FilterNamespace};
 use crate::query::{RetrieveMode, RetrieveOutput, RetrieveQuery};
+use crate::scoring::{max_sim, sparse_dot};
 use crate::store::VectorStore;
 use crate::types::{
     ChunkId, ChunkRecord, CollectionSpec, CollectionStats, DistanceMetric, DocumentId, DocumentRecord, DocumentSummary,
-    IndexMethod, PrimaryScore, RetrievedChunk,
+    IndexMethod, MultiVector, PrimaryScore, RetrievedChunk, SparseVector, validate_chunk_side_vectors,
 };
 use async_trait::async_trait;
 use rusqlite::{Connection, params, params_from_iter};
@@ -92,6 +93,73 @@ fn io_be(msg: &str) -> RagError {
 /// Encode a `Vec<f32>` as little-endian bytes for sqlite-vec MATCH parameters.
 fn encode_vec(v: &[f32]) -> Vec<u8> {
     v.iter().flat_map(|f| f.to_le_bytes()).collect()
+}
+
+/// Encode a [`SparseVector`] to a self-describing little-endian blob:
+/// `u32 len` then `len` ascending `u32` indices then `len` `f32` values.
+fn encode_sparse(sv: &SparseVector) -> Vec<u8> {
+    let n = sv.indices.len();
+    let mut buf = Vec::with_capacity(4 + n * 8);
+    buf.extend_from_slice(&(n as u32).to_le_bytes());
+    for &i in &sv.indices {
+        buf.extend_from_slice(&i.to_le_bytes());
+    }
+    for &v in &sv.values {
+        buf.extend_from_slice(&v.to_le_bytes());
+    }
+    buf
+}
+
+/// Decode a blob written by [`encode_sparse`]. Returns `None` on any length or
+/// truncation mismatch so a corrupt row is skipped rather than panicking.
+fn decode_sparse(bytes: &[u8]) -> Option<SparseVector> {
+    let n = u32::from_le_bytes(bytes.get(0..4)?.try_into().ok()?) as usize;
+    let expected = 4usize.checked_add(n.checked_mul(8)?)?;
+    if bytes.len() != expected {
+        return None;
+    }
+    let mut indices = Vec::with_capacity(n);
+    let mut values = Vec::with_capacity(n);
+    for k in 0..n {
+        let off = 4 + k * 4;
+        indices.push(u32::from_le_bytes(bytes.get(off..off + 4)?.try_into().ok()?));
+    }
+    let val_start = 4 + n * 4;
+    for k in 0..n {
+        let off = val_start + k * 4;
+        values.push(f32::from_le_bytes(bytes.get(off..off + 4)?.try_into().ok()?));
+    }
+    Some(SparseVector { indices, values })
+}
+
+/// Encode a [`MultiVector`] to a self-describing little-endian blob:
+/// `u32 num_tokens`, `u32 dim`, then `num_tokens * dim` `f32` values.
+fn encode_multi_vector(mv: &MultiVector) -> Vec<u8> {
+    let mut buf = Vec::with_capacity(8 + mv.data.len() * 4);
+    buf.extend_from_slice(&mv.num_tokens.to_le_bytes());
+    buf.extend_from_slice(&mv.dim.to_le_bytes());
+    for &v in &mv.data {
+        buf.extend_from_slice(&v.to_le_bytes());
+    }
+    buf
+}
+
+/// Decode a blob written by [`encode_multi_vector`]. Returns `None` on any
+/// length or truncation mismatch so a corrupt row is skipped, not panicked on.
+fn decode_multi_vector(bytes: &[u8]) -> Option<MultiVector> {
+    let num_tokens = u32::from_le_bytes(bytes.get(0..4)?.try_into().ok()?);
+    let dim = u32::from_le_bytes(bytes.get(4..8)?.try_into().ok()?);
+    let count = (num_tokens as usize).checked_mul(dim as usize)?;
+    let expected = 8usize.checked_add(count.checked_mul(4)?)?;
+    if bytes.len() != expected {
+        return None;
+    }
+    let mut data = Vec::with_capacity(count);
+    for k in 0..count {
+        let off = 8 + k * 4;
+        data.push(f32::from_le_bytes(bytes.get(off..off + 4)?.try_into().ok()?));
+    }
+    Some(MultiVector { num_tokens, dim, data })
 }
 
 /// Map `DistanceMetric` to the sqlite-vec column option string.
@@ -183,6 +251,8 @@ CREATE TABLE IF NOT EXISTS chunks (
     external_id    TEXT,
     content        TEXT NOT NULL,
     embedding      BLOB NOT NULL,
+    sparse         BLOB,
+    multi_vector   BLOB,
     chunk_metadata TEXT NOT NULL DEFAULT 'null'
 ) STRICT;
 
@@ -191,7 +261,30 @@ CREATE INDEX IF NOT EXISTS idx_chunks_coll ON chunks(collection);
 ";
 
 fn setup_schema(conn: &Connection) -> rusqlite::Result<()> {
-    conn.execute_batch(BASE_SCHEMA)
+    conn.execute_batch(BASE_SCHEMA)?;
+    migrate_chunk_side_vector_columns(conn)
+}
+
+/// Add the `sparse` / `multi_vector` columns to a pre-existing `chunks` table.
+///
+/// `BASE_SCHEMA`'s `CREATE TABLE IF NOT EXISTS` provides these columns on a
+/// fresh database but is a no-op against a database created before they were
+/// introduced. This backfills them idempotently: it inspects `PRAGMA
+/// table_info` and only issues an `ALTER TABLE ADD COLUMN` for a column that is
+/// actually missing (both are nullable, so existing rows default to `NULL`).
+fn migrate_chunk_side_vector_columns(conn: &Connection) -> rusqlite::Result<()> {
+    let existing: std::collections::HashSet<String> = {
+        let mut stmt = conn.prepare("PRAGMA table_info(chunks)")?;
+        let cols = stmt.query_map([], |row| row.get::<_, String>(1))?;
+        cols.collect::<rusqlite::Result<_>>()?
+    };
+    if !existing.contains("sparse") {
+        conn.execute_batch("ALTER TABLE chunks ADD COLUMN sparse BLOB;")?;
+    }
+    if !existing.contains("multi_vector") {
+        conn.execute_batch("ALTER TABLE chunks ADD COLUMN multi_vector BLOB;")?;
+    }
+    Ok(())
 }
 
 fn setup_pragmas(conn: &Connection, in_memory: bool) -> rusqlite::Result<()> {
@@ -527,6 +620,14 @@ impl VectorStore for SqliteVectorStore {
             full_text: true,
             hybrid: true,
             filtering: true,
+            // Sparse is a brute-force scan over the stored side vectors (no
+            // dedicated index), analogous to the vec0 scan. Late-interaction is
+            // NOT exhaustive here: it seeds candidates via dense KNN over
+            // query_vector (recall bounded by candidate_k) and reranks only
+            // that set with MaxSim — see `RetrieveMode::LateInteraction` for
+            // how this differs from the in-memory backend's exhaustive scan.
+            sparse: true,
+            late_interaction: true,
             // sqlite-vec vec0 performs exact brute-force scan (Flat).
             // HNSW is not implemented by sqlite-vec 0.1.x.
             index_methods: vec![IndexMethod::Flat],
@@ -630,7 +731,7 @@ impl VectorStore for SqliteVectorStore {
                 .ok_or_else(|| RagError::CollectionNotFound(collection.clone()))?;
             let dim = row.spec.embedding_dim;
 
-            // Dimension validation before any writes.
+            // Dimension + side-vector validation before any writes.
             for chunk in &chunks {
                 if chunk.embedding.len() as u32 != dim {
                     return Err(RagError::EmbeddingDimMismatch {
@@ -638,6 +739,7 @@ impl VectorStore for SqliteVectorStore {
                         got: chunk.embedding.len() as u32,
                     });
                 }
+                validate_chunk_side_vectors(chunk)?;
             }
 
             let vt = vec_table(row.rowid);
@@ -692,10 +794,13 @@ impl VectorStore for SqliteVectorStore {
                 for chunk in &chunks {
                     let chunk_id = ChunkId(format!("{}:{}", doc_id.0, chunk.ordinal));
                     let blob = encode_vec(&chunk.embedding);
+                    let sparse_blob: Option<Vec<u8>> = chunk.sparse_embedding.as_ref().map(encode_sparse);
+                    let mv_blob: Option<Vec<u8>> = chunk.multi_vector.as_ref().map(encode_multi_vector);
                     conn.execute(
                         "INSERT INTO chunks
-                             (id, document_id, collection, ordinal, external_id, content, embedding, chunk_metadata)
-                         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
+                             (id, document_id, collection, ordinal, external_id, content,
+                              embedding, sparse, multi_vector, chunk_metadata)
+                         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)",
                         params![
                             chunk_id.0,
                             doc_id.0,
@@ -704,6 +809,8 @@ impl VectorStore for SqliteVectorStore {
                             chunk.external_id,
                             chunk.content,
                             blob,
+                            sparse_blob,
+                            mv_blob,
                             serde_json::to_string(&chunk.chunk_metadata).unwrap_or_default(),
                         ],
                     )
@@ -818,6 +925,8 @@ impl VectorStore for SqliteVectorStore {
                                 ordinal: r.get::<_, u32>(0)?,
                                 content: r.get(2)?,
                                 embedding: Vec::new(), // not needed for filter
+                                sparse_embedding: None,
+                                multi_vector: None,
                                 chunk_metadata: serde_json::from_str(&meta_str).unwrap_or(serde_json::Value::Null),
                             })
                         },
@@ -889,7 +998,29 @@ impl VectorStore for SqliteVectorStore {
                         .as_ref()
                         .ok_or_else(|| RagError::InvalidQuery("hybrid mode requires query_text".to_string()))?;
                     let qv = query.query_vector.as_deref();
-                    retrieve_hybrid(conn, &vt, &ft, qt, qv, candidate_k, &query)?
+                    let qs = query.query_sparse.as_ref();
+                    retrieve_hybrid(conn, &vt, &ft, qt, qv, qs, &collection, candidate_k, &query)?
+                }
+                RetrieveMode::Sparse => {
+                    let qs = query
+                        .query_sparse
+                        .as_ref()
+                        .ok_or_else(|| RagError::InvalidQuery("sparse mode requires query_sparse".to_string()))?;
+                    retrieve_sparse(conn, &collection, qs, candidate_k, &query)?
+                }
+                RetrieveMode::LateInteraction => {
+                    let qmv = query.query_multi_vector.as_ref().ok_or_else(|| {
+                        RagError::InvalidQuery("late_interaction mode requires query_multi_vector".to_string())
+                    })?;
+                    let qv = query.query_vector.as_deref().ok_or_else(|| {
+                        RagError::InvalidQuery(
+                            "sqlite backend requires query_vector to seed late_interaction candidates via dense KNN; \
+                             query_text alone is insufficient for this backend (the in-memory backend does not have \
+                             this requirement)"
+                                .to_string(),
+                        )
+                    })?;
+                    retrieve_late_interaction(conn, &vt, qmv, qv, candidate_k, &query)?
                 }
             };
 
@@ -1055,6 +1186,8 @@ fn filter_chunks(conn: &Connection, chunks: Vec<RetrievedChunk>, filter: &Filter
                         external_id: r.get(1)?,
                         content: r.get(2)?,
                         embedding: Vec::new(), // not needed for filter evaluation
+                        sparse_embedding: None,
+                        multi_vector: None,
                         chunk_metadata: serde_json::from_str(&meta_str).unwrap_or(serde_json::Value::Null),
                     })
                 },
@@ -1161,12 +1294,18 @@ fn retrieve_fts(
         .collect::<RagResult<Vec<_>>>()
 }
 
+/// Reciprocal-rank-fusion constant (the canonical `k = 60`).
+const K_RRF: f32 = 60.0;
+
+#[allow(clippy::too_many_arguments)]
 fn retrieve_hybrid(
     conn: &Connection,
     vec_tbl: &str,
     fts_tbl: &str,
     query_text: &str,
     query_vector: Option<&[f32]>,
+    query_sparse: Option<&SparseVector>,
+    collection: &str,
     candidate_k: i64,
     query: &RetrieveQuery,
 ) -> RagResult<Vec<RetrievedChunk>> {
@@ -1205,16 +1344,20 @@ fn retrieve_hybrid(
         .map_err(be)?
     };
 
-    // Reciprocal Rank Fusion (k_rrf = 60 is the canonical constant).
-    const K_RRF: f32 = 60.0;
+    // Run sparse arm (only when the caller supplied a sparse query vector).
+    let sparse_hits: Vec<(String, f32)> = match query_sparse {
+        Some(qs) => sparse_scan(conn, collection, qs, candidate_k)?,
+        None => Vec::new(),
+    };
 
+    // Reciprocal Rank Fusion over the (up to) three arms.
+    // Value tuple: (rrf_score, vec_score, fts_score, sparse_score).
     let mut rrf_map: std::collections::HashMap<String, (f32, f32, f32, f32)> = std::collections::HashMap::new();
-    // (rrf_score, vec_score, fts_score, raw_vec_dist)
 
     for (rank, (cid, dist)) in vec_hits.iter().enumerate() {
         let vec_score = 1.0 / (1.0 + dist);
         let rrf = 1.0 / (K_RRF + rank as f32 + 1.0);
-        let entry = rrf_map.entry(cid.clone()).or_insert((0.0, 0.0, 0.0, *dist));
+        let entry = rrf_map.entry(cid.clone()).or_insert((0.0, 0.0, 0.0, 0.0));
         entry.0 += rrf;
         entry.1 = vec_score;
     }
@@ -1224,21 +1367,27 @@ fn retrieve_hybrid(
         entry.0 += rrf;
         entry.2 = *fts_score;
     }
+    for (rank, (cid, sparse_score)) in sparse_hits.iter().enumerate() {
+        let rrf = 1.0 / (K_RRF + rank as f32 + 1.0);
+        let entry = rrf_map.entry(cid.clone()).or_insert((0.0, 0.0, 0.0, 0.0));
+        entry.0 += rrf;
+        entry.3 = *sparse_score;
+    }
 
     // Sort by RRF score descending.
-    let mut ranked: Vec<(String, f32, f32, f32)> = rrf_map
+    let mut ranked: Vec<(String, f32, f32, f32, f32)> = rrf_map
         .into_iter()
-        .map(|(id, (rrf, vec, fts, _))| (id, rrf, vec, fts))
+        .map(|(id, (rrf, vec, fts, sparse))| (id, rrf, vec, fts, sparse))
         .collect();
     ranked.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
     ranked.truncate(candidate_k as usize);
 
-    let ids: Vec<String> = ranked.iter().map(|(id, _, _, _)| id.clone()).collect();
+    let ids: Vec<String> = ranked.iter().map(|(id, ..)| id.clone()).collect();
     let rows = load_chunks_by_ids(conn, &ids).map_err(be)?;
 
     ranked
         .iter()
-        .filter_map(|(cid, rrf, vec, fts)| {
+        .filter_map(|(cid, rrf, vec, fts, sparse)| {
             let row = rows.iter().find(|r| &r.id == cid)?;
             Some(Ok(RetrievedChunk {
                 id: ChunkId(cid.clone()),
@@ -1250,6 +1399,7 @@ fn retrieve_hybrid(
                 primary_score: PrimaryScore::Hybrid {
                     vector: *vec,
                     full_text: *fts,
+                    sparse: *sparse,
                     rrf: *rrf,
                 },
                 chunk_metadata: row.chunk_metadata.clone(),
@@ -1257,6 +1407,147 @@ fn retrieve_hybrid(
             }))
         })
         .collect::<RagResult<Vec<_>>>()
+}
+
+/// Brute-force sparse scan: score every chunk in `collection` that has a stored
+/// sparse embedding against `query_sparse`, returning `(chunk_id, score)` sorted
+/// by descending score and capped at `limit`.
+///
+/// sqlite has no sparse inverted index, so this scans the collection's `sparse`
+/// column (skipping `NULL` and any undecodable blob) and computes the merge dot
+/// product in Rust — the same approach as the in-memory backend. Adequate for
+/// v1 collection sizes; a dedicated inverted index is a follow-up.
+fn sparse_scan(
+    conn: &Connection,
+    collection: &str,
+    query_sparse: &SparseVector,
+    limit: i64,
+) -> RagResult<Vec<(String, f32)>> {
+    let mut stmt = conn
+        .prepare("SELECT id, sparse FROM chunks WHERE collection = ?1 AND sparse IS NOT NULL")
+        .map_err(be)?;
+    let mut scored: Vec<(String, f32)> = stmt
+        .query_map(params![collection], |r| {
+            Ok((r.get::<_, String>(0)?, r.get::<_, Vec<u8>>(1)?))
+        })
+        .map_err(be)?
+        .collect::<rusqlite::Result<Vec<_>>>()
+        .map_err(be)?
+        .into_iter()
+        .filter_map(|(id, blob)| {
+            let doc_sparse = decode_sparse(&blob)?;
+            let score = sparse_dot(query_sparse, &doc_sparse);
+            (score > 0.0).then_some((id, score))
+        })
+        .collect();
+    scored.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
+    scored.truncate(limit.max(0) as usize);
+    Ok(scored)
+}
+
+/// Sparse-only retrieval: [`sparse_scan`] then hydrate into `RetrievedChunk`s.
+fn retrieve_sparse(
+    conn: &Connection,
+    collection: &str,
+    query_sparse: &SparseVector,
+    candidate_k: i64,
+    query: &RetrieveQuery,
+) -> RagResult<Vec<RetrievedChunk>> {
+    let scored = sparse_scan(conn, collection, query_sparse, candidate_k)?;
+    let ids: Vec<String> = scored.iter().map(|(id, _)| id.clone()).collect();
+    let rows = load_chunks_by_ids(conn, &ids).map_err(be)?;
+    scored
+        .iter()
+        .filter_map(|(cid, score)| {
+            let row = rows.iter().find(|r| &r.id == cid)?;
+            Some(Ok(RetrievedChunk {
+                id: ChunkId(cid.clone()),
+                document_id: DocumentId(row.document_id.clone()),
+                ordinal: row.ordinal,
+                external_id: row.external_id.clone(),
+                content: query.include_content.then(|| row.content.clone()),
+                score: *score,
+                primary_score: PrimaryScore::Sparse(*score),
+                chunk_metadata: row.chunk_metadata.clone(),
+                document: None,
+            }))
+        })
+        .collect::<RagResult<Vec<_>>>()
+}
+
+/// Late-interaction retrieval: seed a candidate set via dense vector KNN, then
+/// rescore each candidate that has a stored multi-vector with MaxSim.
+///
+/// A first-cut ColBERT retrieval that reuses the dense index for recall and
+/// applies late interaction only as a rerank — no per-token index. Candidates
+/// without a stored (or decodable) multi-vector are dropped.
+fn retrieve_late_interaction(
+    conn: &Connection,
+    vec_tbl: &str,
+    query_multi_vector: &MultiVector,
+    query_vector: &[f32],
+    candidate_k: i64,
+    query: &RetrieveQuery,
+) -> RagResult<Vec<RetrievedChunk>> {
+    // Seed candidates via dense KNN.
+    let blob = encode_vec(query_vector);
+    let sql = format!(
+        "SELECT chunk_id FROM {vec_tbl}
+         WHERE embedding MATCH ?1 AND k = ?2"
+    );
+    let mut stmt = conn.prepare(&sql).map_err(be)?;
+    let ids: Vec<String> = stmt
+        .query_map(params![blob, candidate_k], |r| r.get::<_, String>(0))
+        .map_err(be)?
+        .collect::<rusqlite::Result<Vec<_>>>()
+        .map_err(be)?;
+
+    if ids.is_empty() {
+        return Ok(Vec::new());
+    }
+
+    // Load candidate multi-vectors and rescore with MaxSim.
+    let placeholders = std::iter::repeat_n("?", ids.len()).collect::<Vec<_>>().join(",");
+    let load_sql = format!(
+        "SELECT id, document_id, ordinal, external_id, content, multi_vector, chunk_metadata
+         FROM chunks WHERE id IN ({placeholders}) AND multi_vector IS NOT NULL"
+    );
+    let mut load_stmt = conn.prepare(&load_sql).map_err(be)?;
+    let mut scored: Vec<RetrievedChunk> = load_stmt
+        .query_map(params_from_iter(ids.iter()), |r| {
+            let meta_str: String = r.get(6)?;
+            Ok((
+                r.get::<_, String>(0)?,         // id
+                r.get::<_, String>(1)?,         // document_id
+                r.get::<_, u32>(2)?,            // ordinal
+                r.get::<_, Option<String>>(3)?, // external_id
+                r.get::<_, String>(4)?,         // content
+                r.get::<_, Vec<u8>>(5)?,        // multi_vector blob
+                serde_json::from_str(&meta_str).unwrap_or(serde_json::Value::Null),
+            ))
+        })
+        .map_err(be)?
+        .collect::<rusqlite::Result<Vec<_>>>()
+        .map_err(be)?
+        .into_iter()
+        .filter_map(|(id, document_id, ordinal, external_id, content, mv_blob, meta)| {
+            let doc_mv = decode_multi_vector(&mv_blob)?;
+            let score = max_sim(query_multi_vector, &doc_mv);
+            Some(RetrievedChunk {
+                id: ChunkId(id),
+                document_id: DocumentId(document_id),
+                ordinal,
+                external_id,
+                content: query.include_content.then_some(content),
+                score,
+                primary_score: PrimaryScore::LateInteraction(score),
+                chunk_metadata: meta,
+                document: None,
+            })
+        })
+        .collect();
+    scored.sort_by(|a, b| b.score.partial_cmp(&a.score).unwrap_or(std::cmp::Ordering::Equal));
+    Ok(scored)
 }
 
 // ── Tests ─────────────────────────────────────────────────────────────────────
@@ -1273,7 +1564,24 @@ mod tests {
             ordinal,
             content: content.to_string(),
             embedding,
+            sparse_embedding: None,
+            multi_vector: None,
             chunk_metadata: serde_json::Value::Null,
+        }
+    }
+
+    fn sv(indices: &[u32], values: &[f32]) -> SparseVector {
+        SparseVector {
+            indices: indices.to_vec(),
+            values: values.to_vec(),
+        }
+    }
+
+    fn mv(num_tokens: u32, dim: u32, data: &[f32]) -> MultiVector {
+        MultiVector {
+            num_tokens,
+            dim,
+            data: data.to_vec(),
         }
     }
 
@@ -1438,6 +1746,174 @@ mod tests {
         assert!(!out.chunks.is_empty());
         let ps = out.chunks[0].primary_score;
         assert!(matches!(ps, PrimaryScore::Hybrid { .. }));
+    }
+
+    // ── blob round-trips ─────────────────────────────────────────────────────
+
+    #[test]
+    fn sparse_blob_roundtrips() {
+        let original = sv(&[1, 7, 900], &[0.5, 1.5, 2.0]);
+        let decoded = decode_sparse(&encode_sparse(&original)).unwrap();
+        assert_eq!(decoded, original);
+        assert_eq!(
+            decode_sparse(&encode_sparse(&SparseVector::default())),
+            Some(SparseVector::default())
+        );
+    }
+
+    #[test]
+    fn multi_vector_blob_roundtrips() {
+        let original = mv(2, 3, &[1.0, 2.0, 3.0, 4.0, 5.0, 6.0]);
+        let decoded = decode_multi_vector(&encode_multi_vector(&original)).unwrap();
+        assert_eq!(decoded, original);
+    }
+
+    #[test]
+    fn decode_sparse_rejects_truncated_blob() {
+        let mut bytes = encode_sparse(&sv(&[1, 2], &[0.5, 0.5]));
+        bytes.truncate(bytes.len() - 1);
+        assert_eq!(decode_sparse(&bytes), None);
+        assert_eq!(decode_sparse(&[]), None);
+    }
+
+    #[test]
+    fn decode_multi_vector_rejects_truncated_blob() {
+        let mut bytes = encode_multi_vector(&mv(2, 2, &[1.0, 2.0, 3.0, 4.0]));
+        bytes.truncate(bytes.len() - 1);
+        assert_eq!(decode_multi_vector(&bytes), None);
+        assert_eq!(decode_multi_vector(&[0, 0, 0]), None);
+    }
+
+    // ── sparse retrieval ─────────────────────────────────────────────────────
+
+    async fn upsert_sparse_chunk(store: &SqliteVectorStore, content: &str, embedding: Vec<f32>, sparse: SparseVector) {
+        let mut chunk = mk_chunk(0, content, embedding);
+        chunk.sparse_embedding = Some(sparse);
+        store.upsert_document("docs", &mk_doc(content), &[chunk]).await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn sparse_retrieve_ranks_by_overlap() {
+        let store = store_with_col(2).await;
+        // "match" shares indices 1 & 3 with the query; "other" shares nothing.
+        upsert_sparse_chunk(&store, "match", vec![1.0, 0.0], sv(&[1, 3], &[2.0, 2.0])).await;
+        upsert_sparse_chunk(&store, "other", vec![0.0, 1.0], sv(&[5, 9], &[2.0, 2.0])).await;
+
+        let q = RetrieveQuery {
+            mode: RetrieveMode::Sparse,
+            query_sparse: Some(sv(&[1, 3], &[1.0, 1.0])),
+            include_content: true,
+            ..RetrieveQuery::vector(10)
+        };
+        let out = store.retrieve("docs", &q).await.unwrap();
+        assert_eq!(out.mode, RetrieveMode::Sparse);
+        assert_eq!(out.chunks.len(), 1, "only the overlapping chunk scores > 0");
+        assert_eq!(out.chunks[0].content.as_deref(), Some("match"));
+        assert!(matches!(out.chunks[0].primary_score, PrimaryScore::Sparse(s) if s > 0.0));
+    }
+
+    #[tokio::test]
+    async fn sparse_retrieve_rejects_malformed_query() {
+        let store = store_with_col(2).await;
+        let q = RetrieveQuery {
+            mode: RetrieveMode::Sparse,
+            // indices not strictly ascending -> ill-formed.
+            query_sparse: Some(sv(&[3, 1], &[1.0, 1.0])),
+            ..RetrieveQuery::vector(10)
+        };
+        let err = store.retrieve("docs", &q).await.unwrap_err();
+        assert!(matches!(err, RagError::InvalidQuery(_)));
+    }
+
+    #[tokio::test]
+    async fn upsert_rejects_malformed_sparse_chunk() {
+        let store = store_with_col(2).await;
+        let mut chunk = mk_chunk(0, "bad", vec![1.0, 0.0]);
+        chunk.sparse_embedding = Some(sv(&[1, 2, 3], &[1.0])); // len mismatch
+        let err = store
+            .upsert_document("docs", &mk_doc("bad"), &[chunk])
+            .await
+            .unwrap_err();
+        assert!(matches!(err, RagError::InvalidQuery(_)));
+    }
+
+    // ── late-interaction retrieval ───────────────────────────────────────────
+
+    #[tokio::test]
+    async fn late_interaction_rescores_dense_candidates() {
+        let store = store_with_col(2).await;
+        // Both chunks are dense-retrievable; the multi-vector decides the order.
+        let mut a = mk_chunk(0, "a", vec![1.0, 0.0]);
+        a.multi_vector = Some(mv(1, 2, &[1.0, 0.0])); // aligns with query token
+        let mut b = mk_chunk(0, "b", vec![0.9, 0.1]);
+        b.multi_vector = Some(mv(1, 2, &[0.0, 1.0])); // orthogonal to query token
+        store.upsert_document("docs", &mk_doc("a"), &[a]).await.unwrap();
+        store.upsert_document("docs", &mk_doc("b"), &[b]).await.unwrap();
+
+        let q = RetrieveQuery {
+            mode: RetrieveMode::LateInteraction,
+            query_vector: Some(vec![1.0, 0.0]),
+            query_multi_vector: Some(mv(1, 2, &[1.0, 0.0])),
+            include_content: true,
+            ..RetrieveQuery::vector(10)
+        };
+        let out = store.retrieve("docs", &q).await.unwrap();
+        assert_eq!(out.mode, RetrieveMode::LateInteraction);
+        assert_eq!(
+            out.chunks[0].content.as_deref(),
+            Some("a"),
+            "MaxSim favours the aligned token"
+        );
+        assert!(matches!(out.chunks[0].primary_score, PrimaryScore::LateInteraction(_)));
+    }
+
+    #[tokio::test]
+    async fn late_interaction_without_query_vector_returns_clear_error() {
+        let store = store_with_col(2).await;
+        let q = RetrieveQuery {
+            mode: RetrieveMode::LateInteraction,
+            query_text: Some("hi".to_string()),
+            query_multi_vector: Some(mv(1, 2, &[1.0, 0.0])),
+            ..RetrieveQuery::vector(10)
+        };
+        let err = store.retrieve("docs", &q).await.unwrap_err();
+        let RagError::InvalidQuery(msg) = err else {
+            panic!("expected InvalidQuery, got {err:?}");
+        };
+        assert!(
+            msg.contains("query_vector") && msg.contains("sqlite"),
+            "error should explain that the sqlite backend requires query_vector: {msg}"
+        );
+    }
+
+    // ── 3-arm hybrid ─────────────────────────────────────────────────────────
+
+    #[tokio::test]
+    async fn hybrid_fuses_sparse_arm() {
+        let store = store_with_col(2).await;
+        upsert_sparse_chunk(
+            &store,
+            "hybrid sparse content",
+            vec![1.0, 0.0],
+            sv(&[1, 2], &[1.0, 1.0]),
+        )
+        .await;
+
+        let q = RetrieveQuery {
+            mode: RetrieveMode::Hybrid,
+            query_text: Some("hybrid".to_string()),
+            query_vector: Some(vec![1.0, 0.0]),
+            query_sparse: Some(sv(&[1, 2], &[1.0, 1.0])),
+            include_content: true,
+            ..RetrieveQuery::vector(5)
+        };
+        let out = store.retrieve("docs", &q).await.unwrap();
+        assert!(!out.chunks.is_empty());
+        // The sparse arm should have contributed a non-zero component.
+        let PrimaryScore::Hybrid { sparse, .. } = out.chunks[0].primary_score else {
+            panic!("expected hybrid primary score");
+        };
+        assert!(sparse > 0.0, "sparse arm should contribute to the fused score");
     }
 
     // ── delete_by_filter ─────────────────────────────────────────────────────
