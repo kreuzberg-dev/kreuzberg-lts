@@ -84,12 +84,14 @@ pub struct PaddleOcrConfig {
     /// A legacy `"mobile"`/`"server"` tier under v6 falls back to `"medium"`.
     pub model_tier: String,
 
-    /// Model generation: `"pp-ocrv5"` (default) or `"pp-ocrv6"`.
+    /// Model generation: `"pp-ocrv6"` (default) or `"pp-ocrv5"`.
     ///
     /// PP-OCRv6 adds a unified CJK+Latin+JA/KO recognition model with `medium`/`small`/`tiny`
     /// tiers (see `model_tier`). Scripts outside the v6 unified coverage (Arabic, Cyrillic,
     /// Devanagari, Greek, Tamil, Telugu, Thai) transparently fall back to the PP-OCRv5
-    /// per-script recognition models. Defaults to `"pp-ocrv5"` so existing configs are unchanged.
+    /// per-script recognition models. Defaults to `"pp-ocrv6"`; the default `model_tier`
+    /// (`"mobile"`) resolves to the v6 `"medium"` tier. Select `"pp-ocrv5"` to pin the
+    /// legacy per-script/unified fleet.
     pub model_version: String,
 }
 
@@ -120,8 +122,8 @@ impl PaddleOcrConfig {
             rec_batch_num: 6,
             padding: 10,
             drop_score: 0.5,
-            model_tier: "mobile".to_string(), // mobile is the default: fast, ~13MB total download
-            model_version: "pp-ocrv5".to_string(), // v5 stays the default; opt into v6 explicitly
+            model_tier: "mobile".to_string(), // resolves to v6 "medium" by default (see effective_v6_tier); "mobile"/"server" under explicit pp-ocrv5
+            model_version: "pp-ocrv6".to_string(), // v6 is the default generation; opt into legacy v5 explicitly
         }
     }
 
@@ -288,7 +290,7 @@ impl PaddleOcrConfig {
     ///
     /// # Arguments
     ///
-    /// * `version` - `"pp-ocrv5"` (default) or `"pp-ocrv6"`. Under `"pp-ocrv6"`, `model_tier`
+    /// * `version` - `"pp-ocrv6"` (default) or `"pp-ocrv5"`. Under `"pp-ocrv6"`, `model_tier`
     ///   selects among `"medium"`/`"small"`/`"tiny"`.
     pub fn with_model_version(mut self, version: impl Into<String>) -> Self {
         self.model_version = version.into();
@@ -446,7 +448,7 @@ mod tests {
         assert!(!config.enable_table_detection);
         assert_eq!(config.padding, 10);
         assert_eq!(config.model_tier, "mobile");
-        assert_eq!(config.model_version, "pp-ocrv5");
+        assert_eq!(config.model_version, "pp-ocrv6");
     }
 
     #[test]
@@ -606,9 +608,17 @@ mod tests {
     }
 
     #[test]
-    fn test_model_version_backward_compat() {
-        // JSON without model_version should deserialize to default "pp-ocrv5"
+    fn test_model_version_defaults_when_omitted() {
+        // JSON without model_version deserializes to the default generation (pp-ocrv6).
         let json = r#"{"language":"en","model_tier":"mobile"}"#;
+        let config: PaddleOcrConfig = serde_json::from_str(json).unwrap();
+        assert_eq!(config.model_version, "pp-ocrv6");
+    }
+
+    #[test]
+    fn test_model_version_pins_legacy_v5_when_requested() {
+        // Existing configs can still pin the legacy v5 fleet explicitly.
+        let json = r#"{"language":"en","model_tier":"mobile","model_version":"pp-ocrv5"}"#;
         let config: PaddleOcrConfig = serde_json::from_str(json).unwrap();
         assert_eq!(config.model_version, "pp-ocrv5");
     }
