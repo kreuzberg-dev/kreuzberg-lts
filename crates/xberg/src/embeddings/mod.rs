@@ -164,6 +164,16 @@ pub static EMBEDDING_PRESETS: LazyLock<Vec<EmbeddingPreset>> = LazyLock::new(|| 
             dimensions: 768,
             description: "Multilingual support (768 dims, 100+ languages). Best for: International documents, mixed-language content, global applications.".to_string(),
         },
+        EmbeddingPreset {
+            name: "gte-modernbert-base".to_string(),
+            chunk_size: 1024,
+            overlap: 100,
+            model_repo: "xberg-io/embedding-models".to_string(),
+            pooling: "cls".to_string(),
+            model_file: "gte-modernbert-base/model.onnx".to_string(),
+            dimensions: 768,
+            description: "GTE ModernBERT base (768 dims, 2026-gen, 8192 context). Best for: general-purpose English RAG with long-context ModernBERT tokenization.".to_string(),
+        },
     ]
 });
 
