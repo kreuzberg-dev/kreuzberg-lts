@@ -174,7 +174,7 @@ fn test_file_extraction_html_quality() {
             continue;
         }
 
-        let result = extract_uri_document_blocking(&path, None, &config).expect("extraction should succeed");
+        let result = helpers::extract_uri_document_blocking(&path, None, &config).expect("extraction should succeed");
         let html = result.formatted_content.as_deref().unwrap_or(&result.content);
 
         if let Err(msg) = assert_html_quality(html) {

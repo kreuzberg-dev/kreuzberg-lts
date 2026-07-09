@@ -395,7 +395,7 @@ mod e2e_cuda {
             ..Default::default()
         };
 
-        let result = extract_bytes_document(&image_bytes, "image/png", &config).await;
+        let result = helpers::extract_bytes_document(&image_bytes, "image/png", &config).await;
         assert!(result.is_ok(), "E2E CUDA extraction failed: {:?}", result.err());
         assert_cuda_requested(&captured);
 

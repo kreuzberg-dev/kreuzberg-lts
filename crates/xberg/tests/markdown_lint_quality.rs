@@ -215,7 +215,7 @@ fn test_file_extraction_markdown_passes_rumdl() {
             continue;
         }
 
-        let result = extract_uri_document_blocking(&path, None, &config).expect("extraction should succeed");
+        let result = helpers::extract_uri_document_blocking(&path, None, &config).expect("extraction should succeed");
         let md = result.formatted_content.as_deref().unwrap_or(&result.content);
 
         if let Err(msg) = run_rumdl_with_disabled(md, &["MD041", "MD025", "MD049"]) {
