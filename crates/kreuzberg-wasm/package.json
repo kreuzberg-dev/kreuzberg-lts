@@ -52,7 +52,7 @@
 		"type": "git",
 		"url": "https://github.com/kreuzberg-dev/kreuzberg.git"
 	},
-	"license": "Elastic-2.0",
+	"license": "MIT",
 	"keywords": [
 		"wasm",
 		"webassembly",

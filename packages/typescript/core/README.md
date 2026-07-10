@@ -61,4 +61,4 @@ npm run lint:fix
 
 ## License
 
-Elastic License 2.0 (ELv2)
+MIT License - see [LICENSE](../../../LICENSE) for details.

@@ -225,6 +225,6 @@ If a check is reporting "expected check missing" rather than failing outright, t
 - **Star the repo:** [Give us a star on GitHub](https://github.com/kreuzberg-dev/kreuzberg) — it helps others discover Kreuzberg!
 - **Discord:** [Join our community](https://discord.gg/xt9WY3GnKR)
 - **Issues:** [GitHub Issues](https://github.com/kreuzberg-dev/kreuzberg/issues)
-- **License:** [Elastic License 2.0 (ELv2)](https://github.com/kreuzberg-dev/kreuzberg/blob/main/LICENSE)
+- **License:** [MIT License](https://github.com/kreuzberg-dev/kreuzberg/blob/main/LICENSE)
 
 Thank you for contributing to Kreuzberg!

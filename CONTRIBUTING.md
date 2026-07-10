@@ -108,6 +108,6 @@ We use [Conventional Commits](https://www.conventionalcommits.org/). Prefix your
 - **Documentation:** [docs.kreuzberg.dev](https://docs.kreuzberg.dev)
 - **Discord:** [Join our community](https://discord.gg/xt9WY3GnKR)
 - **Issues:** [GitHub Issues](https://github.com/kreuzberg-dev/kreuzberg/issues)
-- **License:** [Elastic License 2.0 (ELv2)](LICENSE)
+- **License:** [MIT License](LICENSE)
 
 Thank you for helping make Kreuzberg better!

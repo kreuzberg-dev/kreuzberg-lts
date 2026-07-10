@@ -39,7 +39,7 @@ defmodule Kreuzberg.MixProject do
 
   defp package do
     [
-      licenses: ["Elastic-2.0"],
+      licenses: ["MIT"],
       links: %{GitHub: @source_url},
       files: ~w(
         lib

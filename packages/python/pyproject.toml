@@ -34,7 +34,7 @@ keywords = [
   "xlsx",
   "xml",
 ]
-license = { text = "Elastic-2.0" }
+license = { text = "MIT" }
 maintainers = [ { name = "Na'aman Hirschfeld", email = "naaman@kreuzberg.dev" } ]
 authors = [ { name = "Na'aman Hirschfeld", email = "naaman@kreuzberg.dev" } ]
 requires-python = ">=3.10"
@@ -43,7 +43,7 @@ classifiers = [
   "Intended Audience :: Developers",
   "Intended Audience :: Information Technology",
   "Intended Audience :: Science/Research",
-  "License :: Other/Proprietary License",
+  "License :: OSI Approved :: MIT License",
   "Operating System :: OS Independent",
   "Programming Language :: Python :: 3 :: Only",
   "Programming Language :: Python :: 3.10",

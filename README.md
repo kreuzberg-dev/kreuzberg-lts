@@ -48,7 +48,7 @@
 
   <!-- Project Info -->
   <a href="https://github.com/kreuzberg-dev/kreuzberg/blob/main/LICENSE">
-    <img src="https://img.shields.io/badge/License-Elastic--2.0-blue.svg" alt="License">
+    <img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License">
   </a>
   <a href="https://docs.kreuzberg.dev">
     <img src="https://img.shields.io/badge/docs-kreuzberg.dev-007ec6" alt="Documentation">
@@ -300,4 +300,4 @@ Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines
 
 ## License
 
-Elastic License 2.0 (ELv2) - see [LICENSE](LICENSE) for details. See [https://www.elastic.co/licensing/elastic-license](https://www.elastic.co/licensing/elastic-license) for the full license text.
+MIT License - see [LICENSE](LICENSE) for details.

@@ -9,7 +9,7 @@
 [![Go](https://img.shields.io/github/v/tag/kreuzberg-dev/kreuzberg?label=Go)](https://pkg.go.dev/github.com/kreuzberg-dev/kreuzberg)
 [![C#](https://img.shields.io/nuget/v/Kreuzberg?label=C%23)](https://www.nuget.org/packages/Kreuzberg/)
 
-[![License: Elastic-2.0](https://img.shields.io/badge/License-Elastic--2.0-blue.svg)](https://www.elastic.co/licensing/elastic-license)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![Documentation](https://img.shields.io/badge/docs-kreuzberg.dev-blue)](https://kreuzberg.dev/)
 [![Hugging Face](https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-Models-yellow)](https://huggingface.co/Kreuzberg)
 [![Discord](https://img.shields.io/badge/Discord-Join%20our%20community-7289da)](https://discord.gg/xt9WY3GnKR)
@@ -309,4 +309,4 @@ For detailed information, see the PDFium Linking Guide in the project documentat
 
 ## License
 
-Elastic License 2.0 (ELv2) - see [LICENSE](../../LICENSE) for details.
+MIT License - see [LICENSE](../../LICENSE) for details.

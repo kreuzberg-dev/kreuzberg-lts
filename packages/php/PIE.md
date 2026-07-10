@@ -211,4 +211,4 @@ php --ini
 
 ## License
 
-The Kreuzberg extension is licensed under the Elastic License 2.0 (ELv2). See LICENSE file for details.
+The Kreuzberg extension is licensed under the MIT License. See LICENSE file for details.

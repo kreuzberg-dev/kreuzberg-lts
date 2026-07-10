@@ -41,4 +41,4 @@ const assertions = createAssertions(new DenoAdapter());
 
 ## License
 
-Elastic License 2.0 (ELv2)
+MIT License - see [LICENSE](../../../LICENSE) for details.

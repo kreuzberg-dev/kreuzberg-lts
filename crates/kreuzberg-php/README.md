@@ -347,4 +347,4 @@ Follow Rust 2024 edition conventions and ext-php-rs best practices.
 
 ## License
 
-Elastic License 2.0 (ELv2) - see [LICENSE](../../LICENSE) for details.
+MIT License - see [LICENSE](../../LICENSE) for details.

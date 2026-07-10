@@ -2,7 +2,7 @@
 name = "kreuzberg_rustler"
 version = "4.9.9"
 edition = "2024"
-license = "Elastic-2.0"
+license = "MIT"
 description = "Elixir bindings for Kreuzberg document intelligence library"
 repository = "https://github.com/kreuzberg-dev/kreuzberg"
 

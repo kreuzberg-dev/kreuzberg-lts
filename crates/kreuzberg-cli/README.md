@@ -1022,4 +1022,4 @@ We welcome contributions! Please see the main Kreuzberg repository for contribut
 
 ## License
 
-Elastic License 2.0 (ELv2)
+MIT License - see [LICENSE](../../LICENSE) for details.
