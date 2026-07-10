@@ -35,7 +35,7 @@ exclude = [
     "**/*.patch",
     "crates/kreuzberg-ffi/kreuzberg.h",
     "crates/kreuzberg-pdfium-render/include/**",
-    "packages/go/v4/internal/ffi/kreuzberg.h",
+    "v4/internal/ffi/kreuzberg.h",
 ]
 
 [lint.markdown.rumdl]
@@ -359,7 +359,7 @@ lint = { exclude = [
     "**/*.patch",
     "crates/kreuzberg-ffi/kreuzberg.h",
     "crates/kreuzberg-pdfium-render/include/**",
-    "packages/go/v4/internal/ffi/kreuzberg.h",
+    "v4/internal/ffi/kreuzberg.h",
 ] }
 fmt = { exclude = [
     "**/*.freezed.dart",
@@ -397,7 +397,7 @@ fmt = { exclude = [
     "**/*.patch",
     "crates/kreuzberg-ffi/kreuzberg.h",
     "crates/kreuzberg-pdfium-render/include/**",
-    "packages/go/v4/internal/ffi/kreuzberg.h",
+    "v4/internal/ffi/kreuzberg.h",
 ] }
 file_safety = { exclude = [
     "**/*.freezed.dart",
@@ -435,7 +435,7 @@ file_safety = { exclude = [
     "**/*.patch",
     "crates/kreuzberg-ffi/kreuzberg.h",
     "crates/kreuzberg-pdfium-render/include/**",
-    "packages/go/v4/internal/ffi/kreuzberg.h",
+    "v4/internal/ffi/kreuzberg.h",
 ] }
 cargo = true
 commit = { stages = ["commit-msg"] }

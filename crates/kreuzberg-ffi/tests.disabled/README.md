@@ -17,7 +17,7 @@ The FFI layer is thoroughly tested through:
 1. **Unit tests** in `src/lib.rs` that directly call the public Rust FFI functions
 2. **Language binding tests**:
    - Java: `packages/java/src/test/java/`
-   - Go: `packages/go/v4/*_test.go`
+   - Go: `v4/*_test.go`
    - Python: `packages/python/tests/`
    - TypeScript: `packages/typescript/**/*.spec.ts`
    - Ruby: `packages/ruby/spec/`

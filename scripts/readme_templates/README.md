@@ -139,7 +139,7 @@ python scripts/generate_readme.py
 
 - `packages/python/README.md` - Python binding README
 - `packages/typescript/README.md` - TypeScript binding README
-- `packages/go/README.md` - Go binding README
+- `v4/README.md` - Go binding README
 - (And others for each language)
 
 ### Generate Specific Language
@@ -163,7 +163,7 @@ Output shows which files would be created:
 
 ```text
 INFO: [DRY-RUN] Would generate: /path/to/packages/python/README.md
-INFO: [DRY-RUN] Would generate: /path/to/packages/go/README.md
+INFO: [DRY-RUN] Would generate: /path/to/v4/README.md
 ```
 
 ### Validate READMEs
@@ -177,7 +177,7 @@ python scripts/generate_readme.py --validate
 **Output Examples:**
 
 - `INFO: Valid: /path/to/packages/python/README.md` - In sync
-- `WARNING: Out of date: /path/to/packages/go/README.md` - Needs regeneration
+- `WARNING: Out of date: /path/to/v4/README.md` - Needs regeneration
 
 Validate specific language:
 

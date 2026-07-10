@@ -202,18 +202,18 @@ fi
 echo ""
 
 print_section "Go Module Configuration"
-print_status INFO "Go module location: $REPO_ROOT/packages/go/v4"
-if [ -f "$REPO_ROOT/packages/go/v4/go.mod" ]; then
+print_status INFO "Go module location: $REPO_ROOT/v4"
+if [ -f "$REPO_ROOT/v4/go.mod" ]; then
   print_status OK "go.mod exists"
   echo "    Contents:"
-  head -10 "$REPO_ROOT/packages/go/v4/go.mod" | sed 's/^/    /'
+  head -10 "$REPO_ROOT/v4/go.mod" | sed 's/^/    /'
 else
   print_status FAIL "go.mod not found"
 fi
 
-if [ -d "$REPO_ROOT/packages/go/v4" ]; then
+if [ -d "$REPO_ROOT/v4" ]; then
   print_status INFO "Go packages in v4:"
-  find "$REPO_ROOT/packages/go/v4" -maxdepth 1 -type f -name "*.go" | head -5 | sed 's/^/  /' || true
+  find "$REPO_ROOT/v4" -maxdepth 1 -type f -name "*.go" | head -5 | sed 's/^/  /' || true
 fi
 echo ""
 

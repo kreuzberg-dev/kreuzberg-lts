@@ -12,7 +12,7 @@ export LD_LIBRARY_PATH="$root/target/debug:${LD_LIBRARY_PATH:-}"
 
 # Go module directories in go.work
 workspace_dirs=(
-  packages/go/v4
+  v4
   e2e/go
 )
 

@@ -18,9 +18,9 @@ wheels/
 !**/src/bin/
 **/obj/
 # Go install / build outputs accidentally written next to source
-packages/go/v4/install
-packages/go/v4/kreuzberg
-packages/go/v4/v4
+v4/install
+v4/kreuzberg
+v4/v4
 
 # Rust
 *.rs.bk

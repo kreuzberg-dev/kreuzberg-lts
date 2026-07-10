@@ -90,7 +90,7 @@ Document Extraction Engines
 This FFI layer is consumed by:
 
 - **Java** (packages/java): Using Java 25 Foreign Function & Memory API (Panama FFI)
-- **Go** (packages/go): Using cgo wrapper bindings
+- **Go** (v4): Using cgo wrapper bindings
 - **C#** (packages/csharp): Using P/Invoke interop
 - **Zig** and other C-compatible languages
 

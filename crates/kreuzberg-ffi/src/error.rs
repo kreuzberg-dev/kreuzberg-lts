@@ -43,7 +43,7 @@
 //! end
 //! ```
 //!
-//! **Go** (packages/go/v4/errors.go):
+//! **Go** (v4/errors.go):
 //! ```go
 //! const (
 //!     ValidationError int32 = 0

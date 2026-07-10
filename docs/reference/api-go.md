@@ -30,7 +30,7 @@ For development in the Kreuzberg monorepo:
 cargo build -p kreuzberg-ffi --release
 
 # Go will automatically link against target/release/libkreuzberg_ffi.a
-cd packages/go/v4
+cd v4
 go build -v
 
 # Run your binary - no library paths needed, it's statically linked!
@@ -1925,7 +1925,7 @@ result, err := kreuzberg.ExtractFile(ctx, "large.pdf", cfg)
 Run the test suite:
 
 ```bash title="Terminal"
-# Unit tests (from packages/go)
+# Unit tests (from v4)
 task go:test
 
 # Lint (gofmt + golangci-lint)
@@ -1936,7 +1936,7 @@ task e2e:go:verify
 
 # Manual test (build FFI library first)
 cargo build -p kreuzberg-ffi --release
-go test -v ./packages/go/v4
+go test -v ./v4
 ```
 
 ---
@@ -2089,7 +2089,7 @@ For configuration details, see the [Code Intelligence Guide](../guides/code-inte
 
 ## Related Resources
 
-- **Source:** [packages/go/v4/](https://github.com/kreuzberg-dev/kreuzberg-lts/tree/main/packages/go/v4) (Go binding implementation)
+- **Source:** [v4/](https://github.com/kreuzberg-dev/kreuzberg-lts/tree/main/v4) (Go binding implementation)
 - **FFI Bridge:** [crates/kreuzberg-ffi/](https://github.com/kreuzberg-dev/kreuzberg-lts/tree/main/crates/kreuzberg-ffi) (C FFI layer)
 - **Rust Core:** [crates/kreuzberg/](https://github.com/kreuzberg-dev/kreuzberg-lts/tree/main/crates/kreuzberg) (extraction logic)
 - **E2E Tests:** [e2e/go/](https://github.com/kreuzberg-dev/kreuzberg-lts/tree/main/e2e/go) (auto-generated test fixtures)

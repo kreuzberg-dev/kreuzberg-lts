@@ -18,7 +18,7 @@ $repoRoot = if ($env:REPO_ROOT) { $env:REPO_ROOT } else {
     if ($LASTEXITCODE -eq 0) { $gitRoot } else { Split-Path -Parent (Split-Path -Parent $PSScriptRoot) }
 }
 
-$goDir = Join-Path $repoRoot "packages/go/v4"
+$goDir = Join-Path $repoRoot "v4"
 
 # Set environment variables for Go linting
 $env:PKG_CONFIG_PATH = "$repoRoot/crates/kreuzberg-ffi;$($env:PKG_CONFIG_PATH)"

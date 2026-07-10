@@ -6,11 +6,11 @@ tag="${1:?Release tag argument required (e.g. v4.0.0-rc.7)}"
 version="${tag#v}"
 major="${version%%.*}"
 
-# Two tag formats for backwards compatibility:
-#   - packages/go/v4/vX.Y.Z  (correct per Go module spec, module path includes /v4)
-#   - packages/go/vX.Y.Z     (legacy format, existing consumers may depend on it)
-module_tag="packages/go/v${major}/${tag}"
-legacy_tag="packages/go/${tag}"
+# Go module version tag. The module lives at v4/ with path
+# github.com/kreuzberg-dev/kreuzberg-lts/v4, so version tags are v4/vX.Y.Z.
+# (The former "packages/go/*" tags belonged to the retired
+# kreuzberg-dev/kreuzberg module path and are not created for the LTS module.)
+module_tag="v${major}/${tag}"
 
 repo="${GITHUB_REPOSITORY:-kreuzberg-dev/kreuzberg-lts}"
 sha=$(git rev-parse "$tag^{commit}")
@@ -45,4 +45,3 @@ create_tag() {
 }
 
 create_tag "$module_tag"
-create_tag "$legacy_tag"

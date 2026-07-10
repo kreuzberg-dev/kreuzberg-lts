@@ -108,12 +108,12 @@ go_version="$(
 import re
 from pathlib import Path
 
-text = Path("packages/go/v4/doc.go").read_text(encoding="utf-8")
+text = Path("v4/doc.go").read_text(encoding="utf-8")
 m = re.search(r"This binding targets Kreuzberg\s+([^\s]+)", text)
 print(m.group(1) if m else "")
 PY
 )"
-echo "packages/go/v4/doc.go: $go_version"
+echo "v4/doc.go: $go_version"
 [ "$go_version" = "$expected" ] || {
   echo "❌ Go doc.go mismatch"
   errors=$((errors + 1))

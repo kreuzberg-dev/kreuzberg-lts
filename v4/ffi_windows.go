@@ -16,7 +16,7 @@ package kreuzberg
 //
 // IMPORTANT: On Windows, you must set CGO_CFLAGS environment variable to include
 // the path to internal/ffi directory, e.g.:
-//   set CGO_CFLAGS=-I/c/path/to/packages/go/v4/internal/ffi
+//   set CGO_CFLAGS=-I/c/path/to/v4/internal/ffi
 // The path should use forward slashes and MSYS2-style drive letters (/c/ instead of C:/)
 
 #include "internal/ffi/kreuzberg.h"

@@ -538,12 +538,12 @@ def main():
             rf"\g<1>{version}\g<3>",
         ),
         (
-            repo_root / "packages/go/README.md",
+            repo_root / "v4/README.md",
             r'\d+\.\d+\.\d+(?:-[a-zA-Z0-9.]+)?',
             version,
         ),
         (
-            repo_root / "packages/go/v4/doc.go",
+            repo_root / "v4/doc.go",
             r'\d+\.\d+\.\d+(?:-[a-zA-Z0-9.]+)?',
             version,
         ),
@@ -659,7 +659,7 @@ def main():
         ),
         # Go README badge filter and version references
         (
-            repo_root / "packages/go/v4/README.md",
+            repo_root / "v4/README.md",
             r'(filter=v)\d+\.\d+\.\d+',
             rf'\g<1>{version}',
         ),
@@ -798,7 +798,7 @@ def main():
     # Sync vendored C headers from generated FFI header
     generated_header = repo_root / "crates/kreuzberg-ffi/kreuzberg.h"
     vendored_headers = [
-        repo_root / "packages/go/v4/internal/ffi/kreuzberg.h",
+        repo_root / "v4/internal/ffi/kreuzberg.h",
         repo_root / "packages/ruby/vendor/kreuzberg-ffi/kreuzberg.h",
         repo_root / "packages/r/vendor/kreuzberg-ffi/kreuzberg.h",
     ]
@@ -814,7 +814,7 @@ def main():
                     unchanged_files.append(str(vendored.relative_to(repo_root)))
 
     # Sync Go DefaultVersion constant
-    go_install_main = repo_root / "packages/go/v4/cmd/install/main.go"
+    go_install_main = repo_root / "v4/cmd/install/main.go"
     if go_install_main.exists():
         content = go_install_main.read_text()
         old_pattern = re.search(r'DefaultVersion = "([^"]+)"', content)

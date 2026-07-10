@@ -7,6 +7,6 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 echo "Updating golangci-lint to ${VERSION}..."
 go install "github.com/golangci/golangci-lint/v2/cmd/golangci-lint@${VERSION}"
 
-cd "${REPO_ROOT}/packages/go/v4"
+cd "${REPO_ROOT}/v4"
 go get -u ./...
 go mod tidy

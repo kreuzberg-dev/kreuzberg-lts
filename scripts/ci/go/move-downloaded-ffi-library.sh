@@ -9,7 +9,7 @@ fi
 
 mkdir -p target/release
 mkdir -p target/x86_64-pc-windows-gnu/release
-mkdir -p packages/go/v4/internal/ffi
+mkdir -p v4/internal/ffi
 mkdir -p crates/kreuzberg-ffi
 
 echo "Moving FFI artifacts from ffi-download..."
@@ -36,12 +36,12 @@ fi
 # Copy header file to Go package (check both flat and nested paths)
 HEADER_FOUND=false
 if [ -f "ffi-download/kreuzberg.h" ]; then
-  cp ffi-download/kreuzberg.h packages/go/v4/internal/ffi/
-  echo "✓ Copied kreuzberg.h to packages/go/v4/internal/ffi/"
+  cp ffi-download/kreuzberg.h v4/internal/ffi/
+  echo "✓ Copied kreuzberg.h to v4/internal/ffi/"
   HEADER_FOUND=true
 elif [ -f "ffi-download/crates/kreuzberg-ffi/kreuzberg.h" ]; then
-  cp ffi-download/crates/kreuzberg-ffi/kreuzberg.h packages/go/v4/internal/ffi/
-  echo "✓ Copied kreuzberg.h to packages/go/v4/internal/ffi/"
+  cp ffi-download/crates/kreuzberg-ffi/kreuzberg.h v4/internal/ffi/
+  echo "✓ Copied kreuzberg.h to v4/internal/ffi/"
   HEADER_FOUND=true
 fi
 
@@ -55,8 +55,8 @@ if [ "$HEADER_FOUND" = false ]; then
 fi
 
 # Verify header was copied
-if [ ! -f "packages/go/v4/internal/ffi/kreuzberg.h" ]; then
-  echo "✗ Error: Failed to copy kreuzberg.h to packages/go/v4/internal/ffi/"
+if [ ! -f "v4/internal/ffi/kreuzberg.h" ]; then
+  echo "✗ Error: Failed to copy kreuzberg.h to v4/internal/ffi/"
   exit 1
 fi
 

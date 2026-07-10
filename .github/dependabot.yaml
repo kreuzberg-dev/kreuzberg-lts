@@ -47,7 +47,7 @@ updates:
     multi-ecosystem-group: "dependencies"
 
   - package-ecosystem: "gomod"
-    directory: "/packages/go/v4"
+    directory: "/v4"
     patterns: ["*"]
     multi-ecosystem-group: "dependencies"
 

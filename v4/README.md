@@ -86,7 +86,7 @@ cargo build -p kreuzberg-ffi --release
 
 # Go build will automatically link against the static library
 # (from target/release/libkreuzberg_ffi.a)
-cd packages/go/v4
+cd v4
 go build -v
 
 # Run your binary (no library path needed - it's statically linked)

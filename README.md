@@ -107,7 +107,7 @@ Each language binding provides comprehensive documentation with examples and bes
 
 **Compiled Languages:**
 
-- **[Go](https://github.com/kreuzberg-dev/kreuzberg-lts/tree/main/packages/go)** – Go module with FFI bindings, context-aware async
+- **[Go](https://github.com/kreuzberg-dev/kreuzberg-lts/tree/main/v4)** – Go module with FFI bindings, context-aware async
 - **[Java](https://github.com/kreuzberg-dev/kreuzberg-lts/tree/main/packages/java)** – Maven Central, Foreign Function & Memory API
 - **[C#](https://github.com/kreuzberg-dev/kreuzberg-lts/tree/main/packages/csharp)** – NuGet package, .NET 6.0+, full async/await support
 

@@ -31,7 +31,7 @@ func main() {
 }
 ```
 
-See the [Go binding documentation](https://github.com/kreuzberg-dev/kreuzberg-lts/tree/main/packages/go) for complete API reference.
+See the [Go binding documentation](https://github.com/kreuzberg-dev/kreuzberg-lts/tree/main/v4) for complete API reference.
 
 ## Ruby
 
