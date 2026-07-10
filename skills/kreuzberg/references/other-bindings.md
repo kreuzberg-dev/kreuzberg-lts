@@ -7,7 +7,7 @@ Kreuzberg provides native bindings for multiple programming languages, each with
 **Installation:**
 
 ```bash
-go get github.com/kreuzberg-dev/kreuzberg/packages/go/v4
+go get github.com/kreuzberg-dev/kreuzberg-lts/v4
 ```
 
 **Basic Extraction:**
@@ -18,7 +18,7 @@ package main
 import (
     "context"
     "fmt"
-    "github.com/kreuzberg-dev/kreuzberg/packages/go/v4/kreuzberg"
+    "github.com/kreuzberg-dev/kreuzberg-lts/v4/kreuzberg"
 )
 
 func main() {
@@ -31,7 +31,7 @@ func main() {
 }
 ```
 
-See the [Go binding documentation](https://github.com/kreuzberg-dev/kreuzberg/tree/main/packages/go) for complete API reference.
+See the [Go binding documentation](https://github.com/kreuzberg-dev/kreuzberg-lts/tree/main/packages/go) for complete API reference.
 
 ## Ruby
 
@@ -56,7 +56,7 @@ result = Kreuzberg.extract_file_sync('document.pdf')
 puts result.content
 ```
 
-See the [Ruby binding documentation](https://github.com/kreuzberg-dev/kreuzberg/tree/main/packages/ruby) for complete API reference.
+See the [Ruby binding documentation](https://github.com/kreuzberg-dev/kreuzberg-lts/tree/main/packages/ruby) for complete API reference.
 
 ## Java
 
@@ -85,7 +85,7 @@ public class Example {
 }
 ```
 
-See the [Java binding documentation](https://github.com/kreuzberg-dev/kreuzberg/tree/main/packages/java) for complete API reference.
+See the [Java binding documentation](https://github.com/kreuzberg-dev/kreuzberg-lts/tree/main/packages/java) for complete API reference.
 
 ## C
 
@@ -104,7 +104,7 @@ var result = KreuzbergClient.ExtractFileSync("document.pdf");
 Console.WriteLine(result.Content);
 ```
 
-See the [C# binding documentation](https://github.com/kreuzberg-dev/kreuzberg/tree/main/packages/csharp) for complete API reference.
+See the [C# binding documentation](https://github.com/kreuzberg-dev/kreuzberg-lts/tree/main/packages/csharp) for complete API reference.
 
 ## PHP
 
@@ -127,7 +127,7 @@ $result = $kreuzberg->extractFile('document.pdf');
 echo $result->content;
 ```
 
-See the [PHP binding documentation](https://github.com/kreuzberg-dev/kreuzberg/tree/main/packages/php) for complete API reference.
+See the [PHP binding documentation](https://github.com/kreuzberg-dev/kreuzberg-lts/tree/main/packages/php) for complete API reference.
 
 ## Elixir
 
@@ -149,7 +149,7 @@ end
 IO.puts(result.content)
 ```
 
-See the [Elixir binding documentation](https://github.com/kreuzberg-dev/kreuzberg/tree/main/packages/elixir) for complete API reference.
+See the [Elixir binding documentation](https://github.com/kreuzberg-dev/kreuzberg-lts/tree/main/packages/elixir) for complete API reference.
 
 ## WebAssembly (WASM)
 
@@ -171,7 +171,7 @@ console.log(result.content);
 
 Supports browsers, Deno, and Cloudflare Workers.
 
-See the [WASM binding documentation](https://github.com/kreuzberg-dev/kreuzberg/tree/main/packages/typescript) for complete API reference.
+See the [WASM binding documentation](https://github.com/kreuzberg-dev/kreuzberg-lts/tree/main/packages/typescript) for complete API reference.
 
 ## Docker
 
@@ -209,4 +209,4 @@ See the [Docker guide](https://docs.kreuzberg.dev/guides/docker/) for deployment
 
 ## Platform Support
 
-All language bindings include precompiled binaries for x86_64 and aarch64 on Linux and macOS. Windows support varies by binding. Refer to the main [README](https://github.com/kreuzberg-dev/kreuzberg) for platform compatibility matrix.
+All language bindings include precompiled binaries for x86_64 and aarch64 on Linux and macOS. Windows support varies by binding. Refer to the main [README](https://github.com/kreuzberg-dev/kreuzberg-lts) for platform compatibility matrix.

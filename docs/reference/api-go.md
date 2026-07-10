@@ -18,7 +18,7 @@ Kreuzberg Go binaries are **statically linked** — once built, they are self-co
 ### Add the package to your `go.mod`
 
 ```bash title="Terminal"
-go get github.com/kreuzberg-dev/kreuzberg/packages/go/v4@latest
+go get github.com/kreuzberg-dev/kreuzberg-lts/v4@latest
 ```
 
 ### Monorepo Development
@@ -43,13 +43,13 @@ When building outside the monorepo, provide the static library via `CGO_LDFLAGS`
 
 ```bash title="Terminal"
 # Option 1: Download pre-built from GitHub Releases
-curl -LO https://github.com/kreuzberg-dev/kreuzberg/releases/download/v4.9.9/go-ffi-linux-x86_64.tar.gz
+curl -LO https://github.com/kreuzberg-dev/kreuzberg-lts/releases/download/v4.9.9/go-ffi-linux-x86_64.tar.gz
 tar -xzf go-ffi-linux-x86_64.tar.gz
 mkdir -p ~/kreuzberg/lib
 cp kreuzberg-ffi/lib/libkreuzberg_ffi.a ~/kreuzberg/lib/
 
 # Option 2: Build static library yourself
-git clone https://github.com/kreuzberg-dev/kreuzberg.git
+git clone https://github.com/kreuzberg-dev/kreuzberg-lts.git
 cd kreuzberg && cargo build -p kreuzberg-ffi --release
 cp target/release/libkreuzberg_ffi.a ~/kreuzberg/lib/
 
@@ -71,7 +71,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/kreuzberg-dev/kreuzberg/packages/go/v4"
+	"github.com/kreuzberg-dev/kreuzberg-lts/v4"
 )
 
 func main() {
@@ -97,7 +97,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/kreuzberg-dev/kreuzberg/packages/go/v4"
+	"github.com/kreuzberg-dev/kreuzberg-lts/v4"
 )
 
 func main() {
@@ -1510,7 +1510,7 @@ import (
 	"errors"
 	"log"
 
-	"github.com/kreuzberg-dev/kreuzberg/packages/go/v4"
+	"github.com/kreuzberg-dev/kreuzberg-lts/v4"
 )
 
 result, err := kreuzberg.ExtractFileSync("document.pdf", nil)
@@ -1701,7 +1701,7 @@ import (
 	"encoding/json"
 	"log"
 
-	"github.com/kreuzberg-dev/kreuzberg/packages/go/v4"
+	"github.com/kreuzberg-dev/kreuzberg-lts/v4"
 )
 
 //export myCustomProcessor
@@ -2043,7 +2043,7 @@ import (
 	"fmt"
 	"log"
 
-	kreuzberg "github.com/kreuzberg-dev/kreuzberg/packages/go/v4"
+	kreuzberg "github.com/kreuzberg-dev/kreuzberg-lts/v4"
 )
 
 func main() {
@@ -2089,8 +2089,8 @@ For configuration details, see the [Code Intelligence Guide](../guides/code-inte
 
 ## Related Resources
 
-- **Source:** [packages/go/v4/](https://github.com/kreuzberg-dev/kreuzberg/tree/main/packages/go/v4) (Go binding implementation)
-- **FFI Bridge:** [crates/kreuzberg-ffi/](https://github.com/kreuzberg-dev/kreuzberg/tree/main/crates/kreuzberg-ffi) (C FFI layer)
-- **Rust Core:** [crates/kreuzberg/](https://github.com/kreuzberg-dev/kreuzberg/tree/main/crates/kreuzberg) (extraction logic)
-- **E2E Tests:** [e2e/go/](https://github.com/kreuzberg-dev/kreuzberg/tree/main/e2e/go) (auto-generated test fixtures)
-- **CI:** [.github/workflows/ci.yaml](https://github.com/kreuzberg-dev/kreuzberg/blob/main/.github/workflows/ci.yaml) (test pipeline)
+- **Source:** [packages/go/v4/](https://github.com/kreuzberg-dev/kreuzberg-lts/tree/main/packages/go/v4) (Go binding implementation)
+- **FFI Bridge:** [crates/kreuzberg-ffi/](https://github.com/kreuzberg-dev/kreuzberg-lts/tree/main/crates/kreuzberg-ffi) (C FFI layer)
+- **Rust Core:** [crates/kreuzberg/](https://github.com/kreuzberg-dev/kreuzberg-lts/tree/main/crates/kreuzberg) (extraction logic)
+- **E2E Tests:** [e2e/go/](https://github.com/kreuzberg-dev/kreuzberg-lts/tree/main/e2e/go) (auto-generated test fixtures)
+- **CI:** [.github/workflows/ci.yaml](https://github.com/kreuzberg-dev/kreuzberg-lts/blob/main/.github/workflows/ci.yaml) (test pipeline)

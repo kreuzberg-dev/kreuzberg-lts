@@ -88,7 +88,7 @@ The chart creates the following resources:
 | HorizontalPodAutoscaler | CPU/memory-based autoscaling | `autoscaling.enabled` |
 | PodDisruptionBudget | Availability during disruptions | `podDisruptionBudget.enabled` |
 
-All values are documented in the chart's [`values.yaml`](https://github.com/kreuzberg-dev/kreuzberg/blob/main/charts/kreuzberg/values.yaml).
+All values are documented in the chart's [`values.yaml`](https://github.com/kreuzberg-dev/kreuzberg-lts/blob/main/charts/kreuzberg/values.yaml).
 
 ---
 

@@ -9,8 +9,8 @@ Thank you for your interest in contributing to Kreuzberg! This guide covers ever
 Welcome! Here's how to get started:
 
 1. **Pick an issue** that matches your experience level:
-   - [Good first issue](https://github.com/kreuzberg-dev/kreuzberg/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22) — small, well-scoped tasks ideal for newcomers
-   - [Help wanted](https://github.com/kreuzberg-dev/kreuzberg/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22) — tasks where we'd especially appreciate community help
+   - [Good first issue](https://github.com/kreuzberg-dev/kreuzberg-lts/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22) — small, well-scoped tasks ideal for newcomers
+   - [Help wanted](https://github.com/kreuzberg-dev/kreuzberg-lts/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22) — tasks where we'd especially appreciate community help
 2. **Read through the issue** and any existing comments
 3. **Leave a comment** letting maintainers know you'd like to work on it
 4. **Ask questions** — we're here to help!
@@ -20,7 +20,7 @@ Congratulations — that's really all it takes to start contributing! Fork, fix,
 !!! Tip
     Start small. A focused contribution you understand well is more valuable than an ambitious one that stalls.
 
-Want to propose a larger change or new feature? [Open an issue](https://github.com/kreuzberg-dev/kreuzberg/issues) to discuss it with maintainers first.
+Want to propose a larger change or new feature? [Open an issue](https://github.com/kreuzberg-dev/kreuzberg-lts/issues) to discuss it with maintainers first.
 
 ---
 
@@ -85,7 +85,7 @@ Fork the repository on GitHub, then clone your fork:
 ```bash title="Terminal"
 git clone git@github.com:<your-username>/kreuzberg.git
 cd kreuzberg
-git remote add upstream https://github.com/kreuzberg-dev/kreuzberg.git
+git remote add upstream https://github.com/kreuzberg-dev/kreuzberg-lts.git
 ```
 
 ### 2. Create a branch
@@ -116,7 +116,7 @@ task node:test
 
 ### 5. Commit with conventional messages
 
-We use [Conventional Commits](https://www.conventionalcommits.org/). The pre-commit hook validates this.
+We use [Conventional Commits](https://www.conventionalcommits.org/). CI validates this.
 
 ```text
 feat: add PDF table extraction support
@@ -135,7 +135,7 @@ When adding user-facing features, add or update pages under `docs/` and referenc
 
 ### Finding issues
 
-Browse the [issue tracker](https://github.com/kreuzberg-dev/kreuzberg/issues) and filter by labels: `good first issue`, `help wanted`, `bug`, or `enhancement`.
+Browse the [issue tracker](https://github.com/kreuzberg-dev/kreuzberg-lts/issues) and filter by labels: `good first issue`, `help wanted`, `bug`, or `enhancement`.
 
 ### Reporting a bug
 
@@ -222,9 +222,9 @@ If a check is reporting "expected check missing" rather than failing outright, t
 
 ## Community and support
 
-- **Star the repo:** [Give us a star on GitHub](https://github.com/kreuzberg-dev/kreuzberg) — it helps others discover Kreuzberg!
+- **Star the repo:** [Give us a star on GitHub](https://github.com/kreuzberg-dev/kreuzberg-lts) — it helps others discover Kreuzberg!
 - **Discord:** [Join our community](https://discord.gg/xt9WY3GnKR)
-- **Issues:** [GitHub Issues](https://github.com/kreuzberg-dev/kreuzberg/issues)
-- **License:** [MIT License](https://github.com/kreuzberg-dev/kreuzberg/blob/main/LICENSE)
+- **Issues:** [GitHub Issues](https://github.com/kreuzberg-dev/kreuzberg-lts/issues)
+- **License:** [MIT License](https://github.com/kreuzberg-dev/kreuzberg-lts/blob/main/LICENSE)
 
 Thank you for contributing to Kreuzberg!

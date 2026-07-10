@@ -9,7 +9,7 @@
 	},
 	"homepage": "https://kreuzberg.dev",
 	"bugs": {
-		"url": "https://github.com/kreuzberg-dev/kreuzberg/issues"
+		"url": "https://github.com/kreuzberg-dev/kreuzberg-lts/issues"
 	},
 	"main": "dist/index.js",
 	"module": "dist/index.mjs",
@@ -31,7 +31,7 @@
 	},
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/kreuzberg-dev/kreuzberg.git"
+		"url": "git+https://github.com/kreuzberg-dev/kreuzberg-lts.git"
 	},
 	"license": "MIT",
 	"keywords": [

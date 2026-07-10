@@ -71,9 +71,9 @@ optional-dependencies.tesseract = []
 urls.Changelog = "https://kreuzberg.dev/CHANGELOG/"
 urls.Documentation = "https://kreuzberg.dev"
 urls.Homepage = "https://kreuzberg.dev"
-urls.Issues = "https://github.com/kreuzberg-dev/kreuzberg/issues"
-urls.Repository = "https://github.com/kreuzberg-dev/kreuzberg"
-urls.Source = "https://github.com/kreuzberg-dev/kreuzberg"
+urls.Issues = "https://github.com/kreuzberg-dev/kreuzberg-lts/issues"
+urls.Repository = "https://github.com/kreuzberg-dev/kreuzberg-lts"
+urls.Source = "https://github.com/kreuzberg-dev/kreuzberg-lts"
 scripts.kreuzberg = "kreuzberg.__main__:main"
 
 [tool.maturin]

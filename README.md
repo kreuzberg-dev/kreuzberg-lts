@@ -21,8 +21,8 @@
   <a href="https://central.sonatype.com/artifact/dev.kreuzberg/kreuzberg">
     <img src="https://img.shields.io/maven-central/v/dev.kreuzberg/kreuzberg?label=Java&color=007ec6" alt="Java">
   </a>
-  <a href="https://github.com/kreuzberg-dev/kreuzberg/releases">
-    <img src="https://img.shields.io/github/v/tag/kreuzberg-dev/kreuzberg?label=Go&color=007ec6&filter=v4.9.9" alt="Go">
+  <a href="https://github.com/kreuzberg-dev/kreuzberg-lts/releases">
+    <img src="https://img.shields.io/github/v/tag/kreuzberg-dev/kreuzberg-lts?label=Go&color=007ec6&filter=v4.9.9" alt="Go">
   </a>
   <a href="https://www.nuget.org/packages/Kreuzberg/">
     <img src="https://img.shields.io/nuget/v/Kreuzberg?label=C%23&color=007ec6" alt="C#">
@@ -36,10 +36,10 @@
   <a href="https://kreuzberg-dev.r-universe.dev/kreuzberg">
     <img src="https://img.shields.io/badge/R-kreuzberg-007ec6" alt="R">
   </a>
-  <a href="https://github.com/kreuzberg-dev/kreuzberg/pkgs/container/kreuzberg">
+  <a href="https://github.com/kreuzberg-dev/kreuzberg-lts/pkgs/container/kreuzberg">
     <img src="https://img.shields.io/badge/Docker-007ec6?logo=docker&logoColor=white" alt="Docker">
   </a>
-  <a href="https://github.com/kreuzberg-dev/kreuzberg/releases">
+  <a href="https://github.com/kreuzberg-dev/kreuzberg-lts/releases">
     <img src="https://img.shields.io/badge/C-FFI-007ec6" alt="C">
   </a>
   <a href="https://artifacthub.io/packages/search?repo=kreuzberg">
@@ -47,7 +47,7 @@
   </a>
 
   <!-- Project Info -->
-  <a href="https://github.com/kreuzberg-dev/kreuzberg/blob/main/LICENSE">
+  <a href="https://github.com/kreuzberg-dev/kreuzberg-lts/blob/main/LICENSE">
     <img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License">
   </a>
   <a href="https://docs.kreuzberg.dev">
@@ -94,27 +94,27 @@ Each language binding provides comprehensive documentation with examples and bes
 
 **Scripting Languages:**
 
-- **[Python](https://github.com/kreuzberg-dev/kreuzberg/tree/main/packages/python)** – PyPI package, async/sync APIs, OCR backends (Tesseract, PaddleOCR, EasyOCR)
-- **[Ruby](https://github.com/kreuzberg-dev/kreuzberg/tree/main/packages/ruby)** – RubyGems package, idiomatic Ruby API, native bindings
-- **[PHP](https://github.com/kreuzberg-dev/kreuzberg/tree/main/packages/php)** – Composer package, modern PHP 8.4+ support, type-safe API, async extraction
-- **[Elixir](https://github.com/kreuzberg-dev/kreuzberg/tree/main/packages/elixir)** – Hex package, OTP integration, concurrent processing
-- **[R](https://github.com/kreuzberg-dev/kreuzberg/tree/main/packages/r)** – r-universe package, idiomatic R API, extendr bindings
+- **[Python](https://github.com/kreuzberg-dev/kreuzberg-lts/tree/main/packages/python)** – PyPI package, async/sync APIs, OCR backends (Tesseract, PaddleOCR, EasyOCR)
+- **[Ruby](https://github.com/kreuzberg-dev/kreuzberg-lts/tree/main/packages/ruby)** – RubyGems package, idiomatic Ruby API, native bindings
+- **[PHP](https://github.com/kreuzberg-dev/kreuzberg-lts/tree/main/packages/php)** – Composer package, modern PHP 8.4+ support, type-safe API, async extraction
+- **[Elixir](https://github.com/kreuzberg-dev/kreuzberg-lts/tree/main/packages/elixir)** – Hex package, OTP integration, concurrent processing
+- **[R](https://github.com/kreuzberg-dev/kreuzberg-lts/tree/main/packages/r)** – r-universe package, idiomatic R API, extendr bindings
 
 **JavaScript/TypeScript:**
 
-- **[@kreuzberg/node](https://github.com/kreuzberg-dev/kreuzberg/tree/main/crates/kreuzberg-node)** – Native NAPI-RS bindings for Node.js/Bun, fastest performance
-- **[@kreuzberg/wasm](https://github.com/kreuzberg-dev/kreuzberg/tree/main/packages/typescript)** – WebAssembly for browsers/Deno/Cloudflare Workers, full feature parity (PDF, Excel, OCR, archives)
+- **[@kreuzberg/node](https://github.com/kreuzberg-dev/kreuzberg-lts/tree/main/crates/kreuzberg-node)** – Native NAPI-RS bindings for Node.js/Bun, fastest performance
+- **[@kreuzberg/wasm](https://github.com/kreuzberg-dev/kreuzberg-lts/tree/main/packages/typescript)** – WebAssembly for browsers/Deno/Cloudflare Workers, full feature parity (PDF, Excel, OCR, archives)
 
 **Compiled Languages:**
 
-- **[Go](https://github.com/kreuzberg-dev/kreuzberg/tree/main/packages/go)** – Go module with FFI bindings, context-aware async
-- **[Java](https://github.com/kreuzberg-dev/kreuzberg/tree/main/packages/java)** – Maven Central, Foreign Function & Memory API
-- **[C#](https://github.com/kreuzberg-dev/kreuzberg/tree/main/packages/csharp)** – NuGet package, .NET 6.0+, full async/await support
+- **[Go](https://github.com/kreuzberg-dev/kreuzberg-lts/tree/main/packages/go)** – Go module with FFI bindings, context-aware async
+- **[Java](https://github.com/kreuzberg-dev/kreuzberg-lts/tree/main/packages/java)** – Maven Central, Foreign Function & Memory API
+- **[C#](https://github.com/kreuzberg-dev/kreuzberg-lts/tree/main/packages/csharp)** – NuGet package, .NET 6.0+, full async/await support
 
 **Native:**
 
-- **[Rust](https://github.com/kreuzberg-dev/kreuzberg/tree/main/crates/kreuzberg)** – Core library, flexible feature flags, zero-copy APIs
-- **[C (FFI)](https://github.com/kreuzberg-dev/kreuzberg/tree/main/crates/kreuzberg-ffi)** – C header + shared library, pkg-config/CMake support, cross-platform
+- **[Rust](https://github.com/kreuzberg-dev/kreuzberg-lts/tree/main/crates/kreuzberg)** – Core library, flexible feature flags, zero-copy APIs
+- **[C (FFI)](https://github.com/kreuzberg-dev/kreuzberg-lts/tree/main/crates/kreuzberg-ffi)** – C header + shared library, pkg-config/CMake support, cross-platform
 
 **Containers:**
 
@@ -279,7 +279,7 @@ Kreuzberg ships with an [Agent Skill](https://agentskills.io) that teaches AI co
 Install the skill into any project using the [Vercel Skills CLI](https://github.com/vercel-labs/skills):
 
 ```bash
-npx skills add kreuzberg-dev/kreuzberg
+npx skills add kreuzberg-dev/kreuzberg-lts
 ```
 
 The skill is located at [`skills/kreuzberg/SKILL.md`](skills/kreuzberg/SKILL.md) and is automatically discovered by supported AI coding tools once installed.

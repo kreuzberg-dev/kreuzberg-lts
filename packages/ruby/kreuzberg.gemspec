@@ -159,16 +159,16 @@ Gem::Specification.new do |spec|
     including PDF, DOCX, PPTX, XLSX, HTML, RTF, images (with OCR), email, archives, and more.
     Features async/sync APIs, text chunking, language detection, and keyword extraction.
   DESC
-  spec.homepage = 'https://github.com/kreuzberg-dev/kreuzberg'
+  spec.homepage = 'https://github.com/kreuzberg-dev/kreuzberg-lts'
   spec.license = 'MIT'
   spec.required_ruby_version = ['>= 3.2.0', '< 5.0']
 
   spec.metadata = {
     'homepage_uri' => spec.homepage,
-    'source_code_uri' => 'https://github.com/kreuzberg-dev/kreuzberg',
-    'changelog_uri' => 'https://github.com/kreuzberg-dev/kreuzberg/blob/main/CHANGELOG.md',
+    'source_code_uri' => 'https://github.com/kreuzberg-dev/kreuzberg-lts',
+    'changelog_uri' => 'https://github.com/kreuzberg-dev/kreuzberg-lts/blob/main/CHANGELOG.md',
     'documentation_uri' => 'https://docs.kreuzberg.dev',
-    'bug_tracker_uri' => 'https://github.com/kreuzberg-dev/kreuzberg/issues',
+    'bug_tracker_uri' => 'https://github.com/kreuzberg-dev/kreuzberg-lts/issues',
     'rubygems_mfa_required' => 'true',
     'keywords' => 'document-intelligence,document-extraction,text-extraction,ocr,pdf,rust,native-extension,nlp,rag'
   }

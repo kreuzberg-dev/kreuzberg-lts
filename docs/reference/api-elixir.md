@@ -19,7 +19,7 @@ Or install from Git:
 ```elixir title="mix.exs"
 def deps do
   [
-    {:kreuzberg, git: "https://github.com/kreuzberg-dev/kreuzberg.git"}
+    {:kreuzberg, git: "https://github.com/kreuzberg-dev/kreuzberg-lts.git"}
   ]
 end
 ```
@@ -2145,7 +2145,7 @@ IO.puts(Application.spec(:kreuzberg, :vsn))
 
 ## Additional Resources
 
-- [GitHub Repository](https://github.com/kreuzberg-dev/kreuzberg)
+- [GitHub Repository](https://github.com/kreuzberg-dev/kreuzberg-lts)
 - [Installation Guide](../getting-started/installation.md)
 - [Error Handling Reference](errors.md)
 - [Type Reference](types.md)

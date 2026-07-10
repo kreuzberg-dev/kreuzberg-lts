@@ -160,6 +160,6 @@ Precompiled binaries for Linux (x86_64 & aarch64), macOS (Apple Silicon), and Wi
 
 ## Getting Help
 
-- **Bugs & feature requests** — [Open an issue on GitHub](https://github.com/kreuzberg-dev/kreuzberg/issues)
+- **Bugs & feature requests** — [Open an issue on GitHub](https://github.com/kreuzberg-dev/kreuzberg-lts/issues)
 - **Community chat** — [Join the Discord](https://discord.gg/xt9WY3GnKR)
 - **Contributing** — [Read the contributor guide](contributing.md)

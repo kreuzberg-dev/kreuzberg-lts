@@ -13,7 +13,7 @@ install.packages("kreuzberg", repos = "https://kreuzberg-dev.r-universe.dev")
 Or install from source using `remotes`:
 
 ```r title="R"
-remotes::install_github("kreuzberg-dev/kreuzberg", subdir = "packages/r")
+remotes::install_github("kreuzberg-dev/kreuzberg-lts", subdir = "packages/r")
 ```
 
 **System Requirements:**

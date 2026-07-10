@@ -23,7 +23,7 @@ import org.junit.jupiter.api.Test;
  * <p>
  * Related to GitHub issue #355.
  *
- * @see <a href="https://github.com/kreuzberg-dev/kreuzberg/issues/355">Issue
+ * @see <a href="https://github.com/kreuzberg-dev/kreuzberg-lts/issues/355">Issue
  *      #355</a>
  */
 @DisplayName("JSON Deserialization (Issue #355 Regression)")

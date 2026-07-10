@@ -10,7 +10,7 @@ license: MIT
 metadata:
   author: kreuzberg-dev
   version: "1.0"
-  repository: https://github.com/kreuzberg-dev/kreuzberg
+  repository: https://github.com/kreuzberg-dev/kreuzberg-lts
 ---
 
 # Kreuzberg Document Extraction
@@ -405,4 +405,4 @@ Detailed reference files for specific topics:
 - **[Other Language Bindings](references/other-bindings.md)** — Go, Ruby, Java, C#, PHP, Elixir, WASM, Docker
 
 Full documentation: <https://docs.kreuzberg.dev>
-GitHub: <https://github.com/kreuzberg-dev/kreuzberg>
+GitHub: <https://github.com/kreuzberg-dev/kreuzberg-lts>

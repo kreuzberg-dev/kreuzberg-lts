@@ -23,11 +23,11 @@
 	},
 	"homepage": "https://kreuzberg.dev",
 	"bugs": {
-		"url": "https://github.com/kreuzberg-dev/kreuzberg/issues"
+		"url": "https://github.com/kreuzberg-dev/kreuzberg-lts/issues"
 	},
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/kreuzberg-dev/kreuzberg.git"
+		"url": "https://github.com/kreuzberg-dev/kreuzberg-lts.git"
 	},
 	"license": "MIT",
 	"type": "module",

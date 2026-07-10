@@ -12,8 +12,8 @@ R bindings for Kreuzberg - a high-performance document intelligence framework su
 Useful links:
 \itemize{
   \item \url{https://kreuzberg.dev}
-  \item \url{https://github.com/kreuzberg-dev/kreuzberg}
-  \item Report bugs at \url{https://github.com/kreuzberg-dev/kreuzberg/issues}
+  \item \url{https://github.com/kreuzberg-dev/kreuzberg-lts}
+  \item Report bugs at \url{https://github.com/kreuzberg-dev/kreuzberg-lts/issues}
 }
 
 }

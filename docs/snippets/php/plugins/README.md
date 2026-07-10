@@ -212,8 +212,8 @@ Despite the deferred plugin system, PHP bindings achieve **95% feature parity** 
 
 For questions about the plugin system or to request early access when available:
 
-- GitHub Issues: https://github.com/kreuzberg-dev/kreuzberg/issues
-- Discussions: https://github.com/kreuzberg-dev/kreuzberg/discussions
+- GitHub Issues: https://github.com/kreuzberg-dev/kreuzberg-lts/issues
+- Discussions: https://github.com/kreuzberg-dev/kreuzberg-lts/discussions
 
 ## Contributing
 

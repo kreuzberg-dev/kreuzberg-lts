@@ -310,7 +310,7 @@ for page in result.pages:
 ## Getting Help
 
 - **Documentation**: <https://github.com/kreuzberg-dev/Kreuzberg>
-- **Issues**: <https://github.com/kreuzberg-dev/kreuzberg/issues>
+- **Issues**: <https://github.com/kreuzberg-dev/kreuzberg-lts/issues>
 - **API Reference**: See `docs/api/` for endpoint documentation
 
 ## Next Steps

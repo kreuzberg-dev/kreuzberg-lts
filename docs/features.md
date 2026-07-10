@@ -394,7 +394,7 @@ Rust builds are modular through Cargo features. Nothing is enabled by default --
 
     ```bash
     gem install kreuzberg                  # Ruby
-    go get github.com/kreuzberg-dev/kreuzberg/packages/go/v4  # Go
+    go get github.com/kreuzberg-dev/kreuzberg-lts/v4  # Go
     dotnet add package kreuzberg.dev       # C#
     ```
 
@@ -424,7 +424,7 @@ For the full configuration schema and examples, see the [Configuration Guide](gu
 Kreuzberg ships with an [Agent Skill](https://agentskills.io) that teaches AI coding assistants the complete API across Python, TypeScript, Rust, and CLI. Install it with:
 
 ```bash
-npx skills add kreuzberg-dev/kreuzberg
+npx skills add kreuzberg-dev/kreuzberg-lts
 ```
 
 Compatible with Claude Code, Codex, Gemini CLI, Cursor, VS Code, Amp, Goose, Roo Code, and any tool supporting the Agent Skills standard. See the [AI Coding Assistants Guide](guides/agent-skills.md).

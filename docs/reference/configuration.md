@@ -4291,7 +4291,7 @@ postprocessor:
 }
 ```
 
-For complete working examples, see the [e2e test suites](https://github.com/kreuzberg-dev/kreuzberg/tree/main/e2e).
+For complete working examples, see the [e2e test suites](https://github.com/kreuzberg-dev/kreuzberg-lts/tree/main/e2e).
 
 ---
 
@@ -4554,4 +4554,4 @@ For comprehensive documentation including memory impact calculations, reverse pr
 - [API Server Guide](../guides/api-server.md) - HTTP API server setup and deployment
 - [File Size Limits Reference](./file-size-limits.md) - Complete size limits documentation with performance tuning
 - [OCR Guide](../guides/ocr.md) - OCR-specific configuration and troubleshooting
-- [E2E Test Suites](https://github.com/kreuzberg-dev/kreuzberg/tree/main/e2e) - Complete working examples
+- [E2E Test Suites](https://github.com/kreuzberg-dev/kreuzberg-lts/tree/main/e2e) - Complete working examples

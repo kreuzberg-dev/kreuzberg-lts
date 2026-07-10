@@ -157,7 +157,7 @@ task python:lint        # ruff + mypy
 task node:lint          # eslint + typecheck
 ```
 
-The repo uses pre-commit hooks that enforce conventional commit messages, code formatting, and lint rules. If a commit is rejected, the hook output tells you exactly what to fix.
+The repo uses [poly](https://github.com/Goldziher/poly) for formatting and lint rules — run `poly fmt --check .` and `poly lint .` (or `task lint`) before committing. CI enforces the same checks plus conventional commit messages; if CI fails, the output tells you exactly what to fix.
 
 ---
 

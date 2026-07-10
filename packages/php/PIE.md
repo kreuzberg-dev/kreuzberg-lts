@@ -28,8 +28,8 @@ The `composer.json` includes PIE-specific metadata in the `php-ext` section:
       }
     ],
     "support": {
-      "source-url": "https://github.com/kreuzberg-dev/kreuzberg",
-      "download-url": "https://github.com/kreuzberg-dev/kreuzberg/releases"
+      "source-url": "https://github.com/kreuzberg-dev/kreuzberg-lts",
+      "download-url": "https://github.com/kreuzberg-dev/kreuzberg-lts/releases"
     }
   }
 }
@@ -206,8 +206,8 @@ php --ini
 - **PIE GitHub**: <https://github.com/php/pie>
 - **PIE Documentation**: <https://www.php.net/manual/en/install.pie.intro.php>
 - **Packagist Extensions**: <https://packagist.org/extensions>
-- **Kreuzberg Repository**: <https://github.com/kreuzberg-dev/kreuzberg>
-- **Issue Tracker**: <https://github.com/kreuzberg-dev/kreuzberg/issues>
+- **Kreuzberg Repository**: <https://github.com/kreuzberg-dev/kreuzberg-lts>
+- **Issue Tracker**: <https://github.com/kreuzberg-dev/kreuzberg-lts/issues>
 
 ## License
 

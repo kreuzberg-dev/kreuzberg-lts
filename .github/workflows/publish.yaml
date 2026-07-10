@@ -3632,7 +3632,7 @@ jobs:
           packagist-username: Goldziher
           package-name: kreuzberg/kreuzberg
           version: ${{ needs.prepare.outputs.version }}
-          repository-url: https://github.com/kreuzberg-dev/kreuzberg
+          repository-url: https://github.com/kreuzberg-dev/kreuzberg-lts
           dry-run: ${{ needs.prepare.outputs.dry_run }}
         env:
           PACKAGIST_API_TOKEN: ${{ secrets.PACKAGIST_API_TOKEN }}
@@ -3733,7 +3733,7 @@ jobs:
           tap-repo: kreuzberg-dev/homebrew-tap
           tag: ${{ needs.prepare.outputs.tag }}
           version: ${{ needs.prepare.outputs.version }}
-          github-repo: kreuzberg-dev/kreuzberg
+          github-repo: kreuzberg-dev/kreuzberg-lts
           dry-run: ${{ needs.prepare.outputs.dry_run }}
 
       - name: Verify formula sha256 matches current tarball
@@ -3742,7 +3742,7 @@ jobs:
           GH_TOKEN: ${{ secrets.HOMEBREW_TOKEN }}
         run: |
           TAG="${{ needs.prepare.outputs.tag }}"
-          TARBALL_URL="https://github.com/kreuzberg-dev/kreuzberg/archive/${TAG}.tar.gz"
+          TARBALL_URL="https://github.com/kreuzberg-dev/kreuzberg-lts/archive/${TAG}.tar.gz"
           ACTUAL_SHA=$(curl -sL "$TARBALL_URL" | sha256sum | awk '{print $1}')
 
           # Clone the tap and check the formula

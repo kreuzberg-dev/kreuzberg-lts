@@ -21,8 +21,8 @@
   <a href="https://central.sonatype.com/artifact/dev.kreuzberg/kreuzberg">
     <img src="https://img.shields.io/maven-central/v/dev.kreuzberg/kreuzberg?label=Java&color=007ec6" alt="Java">
   </a>
-  <a href="https://github.com/kreuzberg-dev/kreuzberg/releases">
-    <img src="https://img.shields.io/github/v/tag/kreuzberg-dev/kreuzberg?label=Go&color=007ec6&filter=v4.9.9" alt="Go">
+  <a href="https://github.com/kreuzberg-dev/kreuzberg-lts/releases">
+    <img src="https://img.shields.io/github/v/tag/kreuzberg-dev/kreuzberg-lts?label=Go&color=007ec6&filter=v4.9.9" alt="Go">
   </a>
   <a href="https://www.nuget.org/packages/Kreuzberg/">
     <img src="https://img.shields.io/nuget/v/Kreuzberg?label=C%23&color=007ec6" alt="C#">
@@ -36,7 +36,7 @@
   <a href="https://kreuzberg-dev.r-universe.dev/kreuzberg">
     <img src="https://img.shields.io/badge/R-kreuzberg-007ec6" alt="R">
   </a>
-  <a href="https://github.com/kreuzberg-dev/kreuzberg/pkgs/container/kreuzberg">
+  <a href="https://github.com/kreuzberg-dev/kreuzberg-lts/pkgs/container/kreuzberg">
     <img src="https://img.shields.io/badge/Docker-007ec6?logo=docker&logoColor=white" alt="Docker">
   </a>
   <a href="https://artifacthub.io/packages/search?repo=kreuzberg">
@@ -44,7 +44,7 @@
   </a>
 
   <!-- Project Info -->
-  <a href="https://github.com/kreuzberg-dev/kreuzberg/blob/main/LICENSE">
+  <a href="https://github.com/kreuzberg-dev/kreuzberg-lts/blob/main/LICENSE">
     <img src="https://img.shields.io/badge/License-MIT-007ec6" alt="License">
   </a>
   <a href="https://docs.kreuzberg.dev">
@@ -418,7 +418,7 @@ For advanced configuration options including language detection, table extractio
 
 ## Contributing
 
-Contributions are welcome! See [Contributing Guide](https://github.com/kreuzberg-dev/kreuzberg/blob/main/CONTRIBUTING.md).
+Contributions are welcome! See [Contributing Guide](https://github.com/kreuzberg-dev/kreuzberg-lts/blob/main/CONTRIBUTING.md).
 
 ## License
 
@@ -427,5 +427,5 @@ MIT License - see LICENSE file for details.
 ## Support
 
 - **Discord Community**: [Join our Discord](https://discord.gg/xt9WY3GnKR)
-- **GitHub Issues**: [Report bugs](https://github.com/kreuzberg-dev/kreuzberg/issues)
-- **Discussions**: [Ask questions](https://github.com/kreuzberg-dev/kreuzberg/discussions)
+- **GitHub Issues**: [Report bugs](https://github.com/kreuzberg-dev/kreuzberg-lts/issues)
+- **Discussions**: [Ask questions](https://github.com/kreuzberg-dev/kreuzberg-lts/discussions)

@@ -10,10 +10,10 @@ Works with any tool supporting the [Agent Skills](https://agentskills.io) standa
 
 ```bash title="Terminal"
 # Install into current project (recommended)
-npx skills add kreuzberg-dev/kreuzberg
+npx skills add kreuzberg-dev/kreuzberg-lts
 
 # Install globally
-npx skills add kreuzberg-dev/kreuzberg -g
+npx skills add kreuzberg-dev/kreuzberg-lts -g
 ```
 
 Or copy manually:

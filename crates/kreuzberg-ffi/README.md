@@ -21,8 +21,8 @@
   <a href="https://central.sonatype.com/artifact/dev.kreuzberg/kreuzberg">
     <img src="https://img.shields.io/maven-central/v/dev.kreuzberg/kreuzberg?label=Java&color=007ec6" alt="Java">
   </a>
-  <a href="https://github.com/kreuzberg-dev/kreuzberg/releases">
-    <img src="https://img.shields.io/github/v/tag/kreuzberg-dev/kreuzberg?label=Go&color=007ec6&filter=v4.3.8" alt="Go">
+  <a href="https://github.com/kreuzberg-dev/kreuzberg-lts/releases">
+    <img src="https://img.shields.io/github/v/tag/kreuzberg-dev/kreuzberg-lts?label=Go&color=007ec6&filter=v4.3.8" alt="Go">
   </a>
   <a href="https://www.nuget.org/packages/Kreuzberg/">
     <img src="https://img.shields.io/nuget/v/Kreuzberg?label=C%23&color=007ec6" alt="C#">
@@ -36,15 +36,15 @@
   <a href="https://kreuzberg-dev.r-universe.dev/kreuzberg">
     <img src="https://img.shields.io/badge/R-kreuzberg-007ec6" alt="R">
   </a>
-  <a href="https://github.com/kreuzberg-dev/kreuzberg/pkgs/container/kreuzberg">
+  <a href="https://github.com/kreuzberg-dev/kreuzberg-lts/pkgs/container/kreuzberg">
     <img src="https://img.shields.io/badge/Docker-007ec6?logo=docker&logoColor=white" alt="Docker">
   </a>
-  <a href="https://github.com/kreuzberg-dev/kreuzberg/releases">
+  <a href="https://github.com/kreuzberg-dev/kreuzberg-lts/releases">
     <img src="https://img.shields.io/badge/C-FFI-007ec6" alt="C">
   </a>
 
   <!-- Project Info -->
-  <a href="https://github.com/kreuzberg-dev/kreuzberg/blob/main/LICENSE">
+  <a href="https://github.com/kreuzberg-dev/kreuzberg-lts/blob/main/LICENSE">
     <img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License">
   </a>
   <a href="https://docs.kreuzberg.dev">
@@ -166,7 +166,7 @@ The installation variant is used in release artifacts for third-party use.
 
 ### Installing from Release Artifacts
 
-Pre-built C FFI packages are available from the [releases page](https://github.com/kreuzberg-dev/kreuzberg/releases).
+Pre-built C FFI packages are available from the [releases page](https://github.com/kreuzberg-dev/kreuzberg-lts/releases).
 
 Each `c-ffi-{platform}.tar.gz` archive contains:
 
@@ -962,7 +962,7 @@ for (int i = 0; i < 10; i++) {
 - **C FFI Standards**: <https://en.cppreference.com/w/c>
 - **cbindgen Documentation**: <https://rust-lang.github.io/cbindgen/>
 - **Project Homepage**: <https://kreuzberg.dev>
-- **GitHub Repository**: <https://github.com/kreuzberg-dev/kreuzberg>
+- **GitHub Repository**: <https://github.com/kreuzberg-dev/kreuzberg-lts>
 
 ## Contributing
 

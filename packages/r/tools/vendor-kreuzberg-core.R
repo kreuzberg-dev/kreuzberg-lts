@@ -209,7 +209,7 @@ vendor_toml_content <- paste0(
   'rust-version = "1.91"\n',
   'authors = ["Na\'aman Hirschfeld <nhirschfeld@gmail.com>"]\n',
   'license = "MIT"\n',
-  'repository = "https://github.com/kreuzberg-dev/kreuzberg"\n',
+  'repository = "https://github.com/kreuzberg-dev/kreuzberg-lts"\n',
   'homepage = "https://kreuzberg.dev"\n\n',
   '[workspace.dependencies]\n',
   ws_dep_text, '\n'

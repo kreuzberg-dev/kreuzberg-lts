@@ -33,12 +33,12 @@
   <a href="https://kreuzberg-dev.r-universe.dev/kreuzberg">
     <img src="https://img.shields.io/badge/R-kreuzberg-007ec6" alt="R">
   </a>
-  <a href="https://github.com/kreuzberg-dev/kreuzberg/releases">
+  <a href="https://github.com/kreuzberg-dev/kreuzberg-lts/releases">
     <img src="https://img.shields.io/badge/C-FFI-007ec6" alt="C">
   </a>
 
   <!-- Project Info -->
-  <a href="https://github.com/kreuzberg-dev/kreuzberg/blob/main/LICENSE">
+  <a href="https://github.com/kreuzberg-dev/kreuzberg-lts/blob/main/LICENSE">
     <img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License">
   </a>
   <a href="https://docs.kreuzberg.dev">
@@ -66,7 +66,7 @@ Extract text, tables, images, and metadata from 91+ file formats including PDF, 
 install.packages("kreuzberg", repos = "https://kreuzberg-dev.r-universe.dev")
 
 # Or install from GitHub
-# remotes::install_github("kreuzberg-dev/kreuzberg", subdir = "packages/r")
+# remotes::install_github("kreuzberg-dev/kreuzberg-lts", subdir = "packages/r")
 ```
 
 ### System Requirements
@@ -229,5 +229,5 @@ MIT License - see [LICENSE](LICENSE) for details.
 ## Support
 
 - [Discord](https://discord.gg/kreuzberg)
-- [GitHub Issues](https://github.com/kreuzberg-dev/kreuzberg/issues)
-- [GitHub Discussions](https://github.com/kreuzberg-dev/kreuzberg/discussions)
+- [GitHub Issues](https://github.com/kreuzberg-dev/kreuzberg-lts/issues)
+- [GitHub Discussions](https://github.com/kreuzberg-dev/kreuzberg-lts/discussions)

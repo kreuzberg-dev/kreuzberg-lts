@@ -3,5 +3,5 @@
 # install.packages("kreuzberg")
 
 # Or install from GitHub
-# remotes::install_github("kreuzberg-dev/kreuzberg", subdir = "packages/r")
+# remotes::install_github("kreuzberg-dev/kreuzberg-lts", subdir = "packages/r")
 ```

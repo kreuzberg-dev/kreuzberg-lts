@@ -176,7 +176,7 @@ def update_go_mod(file_path: Path, version: str) -> Tuple[bool, str, str]:
     """
     content = file_path.read_text()
 
-    pattern = r'(github\.com/kreuzberg-dev/kreuzberg(?:/[^\s]+)?\s+)v([0-9]+\.[0-9]+\.[0-9]+(?:-[^\s]+)?)'
+    pattern = r'(github\.com/kreuzberg-dev/kreuzberg-lts(?:/[^\s]+)?\s+)v([0-9]+\.[0-9]+\.[0-9]+(?:-[^\s]+)?)'
     match = re.search(pattern, content)
     old_version = match.group(2) if match else "NOT FOUND"
 

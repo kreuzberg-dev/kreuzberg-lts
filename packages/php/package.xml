@@ -39,7 +39,7 @@
     - Batch processing capabilities
     - High-performance Rust core
 
-    Please report issues at: https://github.com/kreuzberg-dev/kreuzberg/issues
+    Please report issues at: https://github.com/kreuzberg-dev/kreuzberg-lts/issues
   </notes>
   <contents>
     <dir name="/">

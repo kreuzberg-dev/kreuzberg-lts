@@ -5,7 +5,7 @@ defmodule Kreuzberg.Native do
     otp_app: :kreuzberg,
     crate: "kreuzberg_rustler",
     base_url:
-      "https://github.com/kreuzberg-dev/kreuzberg/releases/download/v#{Mix.Project.config()[:version]}",
+      "https://github.com/kreuzberg-dev/kreuzberg-lts/releases/download/v#{Mix.Project.config()[:version]}",
     version: Mix.Project.config()[:version],
     force_build: System.get_env("KREUZBERG_BUILD") in ["1", "true"] or Mix.env() in [:test, :dev],
     # Targets that are built in CI (see publish.yaml elixir-natives matrix)

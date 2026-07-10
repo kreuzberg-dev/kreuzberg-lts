@@ -53,7 +53,7 @@ All platforms receive precompiled binaries through GitHub releases. Linux musl b
 ### Install Script (Linux / macOS)
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/kreuzberg-dev/kreuzberg/main/scripts/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/kreuzberg-dev/kreuzberg-lts/main/scripts/install.sh | bash
 ```
 
 ### Homebrew
@@ -1013,7 +1013,7 @@ RUST_LOG=debug cargo test -p kreuzberg-cli -- --nocapture
 
 - **Kreuzberg Core**: `../kreuzberg/`
 - **Main Documentation**: <https://docs.kreuzberg.dev>
-- **GitHub Repository**: <https://github.com/kreuzberg-dev/kreuzberg>
+- **GitHub Repository**: <https://github.com/kreuzberg-dev/kreuzberg-lts>
 - **Configuration Guide**: See example configuration sections above
 
 ## Contributing

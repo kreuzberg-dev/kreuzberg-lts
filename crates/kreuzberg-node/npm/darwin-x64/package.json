@@ -39,10 +39,10 @@
 	},
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/kreuzberg-dev/kreuzberg.git"
+		"url": "git+https://github.com/kreuzberg-dev/kreuzberg-lts.git"
 	},
 	"bugs": {
-		"url": "https://github.com/kreuzberg-dev/kreuzberg/issues"
+		"url": "https://github.com/kreuzberg-dev/kreuzberg-lts/issues"
 	},
 	"publishConfig": {
 		"registry": "https://registry.npmjs.org/",

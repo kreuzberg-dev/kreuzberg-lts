@@ -73,7 +73,7 @@ if [ ! -f "vendor/kreuzberg/Cargo.toml" ]; then
   else
     # Strategy 2: download source from GitHub
     VERSION="$(grep '^Version:' DESCRIPTION | sed 's/Version:[[:space:]]*//')"
-    GITHUB_URL="https://github.com/kreuzberg-dev/kreuzberg/archive/refs/tags/v${VERSION}.tar.gz"
+    GITHUB_URL="https://github.com/kreuzberg-dev/kreuzberg-lts/archive/refs/tags/v${VERSION}.tar.gz"
 
     echo "* monorepo not detected — downloading kreuzberg v${VERSION} source..."
 

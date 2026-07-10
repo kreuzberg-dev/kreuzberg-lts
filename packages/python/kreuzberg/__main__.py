@@ -122,7 +122,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         sys.stderr.write(
             "The Kreuzberg CLI binary could not be found. "
             "Install the standalone CLI binary from the GitHub releases page: "
-            "https://github.com/kreuzberg-dev/kreuzberg/releases\n",
+            "https://github.com/kreuzberg-dev/kreuzberg-lts/releases\n",
         )
         return 1
 

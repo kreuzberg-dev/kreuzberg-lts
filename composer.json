@@ -24,8 +24,8 @@
 	],
 	"homepage": "https://kreuzberg.dev",
 	"support": {
-		"issues": "https://github.com/kreuzberg-dev/kreuzberg/issues",
-		"source": "https://github.com/kreuzberg-dev/kreuzberg",
+		"issues": "https://github.com/kreuzberg-dev/kreuzberg-lts/issues",
+		"source": "https://github.com/kreuzberg-dev/kreuzberg-lts",
 		"docs": "https://kreuzberg.dev"
 	},
 	"authors": [
@@ -79,8 +79,8 @@
 			}
 		],
 		"support": {
-			"source-url": "https://github.com/kreuzberg-dev/kreuzberg",
-			"download-url": "https://github.com/kreuzberg-dev/kreuzberg/releases"
+			"source-url": "https://github.com/kreuzberg-dev/kreuzberg-lts",
+			"download-url": "https://github.com/kreuzberg-dev/kreuzberg-lts/releases"
 		}
 	}
 }

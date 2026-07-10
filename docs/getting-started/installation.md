@@ -23,7 +23,7 @@ The fastest way to try Kreuzberg - no SDK, no code, just your terminal.
 === "Install script"
 
     ```bash
-    curl -fsSL https://raw.githubusercontent.com/kreuzberg-dev/kreuzberg/main/scripts/install.sh | bash
+    curl -fsSL https://raw.githubusercontent.com/kreuzberg-dev/kreuzberg-lts/main/scripts/install.sh | bash
     ```
 
 === "Homebrew"
@@ -111,7 +111,7 @@ The fastest way to try Kreuzberg - no SDK, no code, just your terminal.
     ---
 
     ```bash
-    go get github.com/kreuzberg-dev/kreuzberg/packages/go/v4@latest
+    go get github.com/kreuzberg-dev/kreuzberg-lts/v4@latest
     ```
 
     [API Reference](../reference/api-go.md){ .install-btn .install-btn--ghost }
@@ -344,7 +344,7 @@ Ships prebuilt NIF binaries via RustlerPrecompiled. Falls back to compiling from
 ### Go
 
 ```bash
-go get github.com/kreuzberg-dev/kreuzberg/packages/go/v4@latest
+go get github.com/kreuzberg-dev/kreuzberg-lts/v4@latest
 ```
 
 !!! Warning "Windows"
