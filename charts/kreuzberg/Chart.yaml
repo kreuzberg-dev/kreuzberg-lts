@@ -5,11 +5,11 @@ description: >-
   a Rust core. Extract text, metadata, images, and structured information from
   PDFs, Office documents, images, and 91+ formats.
 type: application
-version: 0.1.0
-appVersion: "4.8.4"
+version: 4.9.9
+appVersion: "4.9.9"
 home: https://kreuzberg.dev
 sources:
-  - https://github.com/kreuzberg-dev/kreuzberg
+  - https://github.com/kreuzberg-dev/kreuzberg-lts
 keywords:
   - document-intelligence
   - text-extraction
@@ -21,11 +21,11 @@ keywords:
 maintainers:
   - name: kreuzberg-dev
     url: https://github.com/kreuzberg-dev
-icon: https://raw.githubusercontent.com/kreuzberg-dev/kreuzberg/main/docs/assets/logo.svg
+icon: https://raw.githubusercontent.com/kreuzberg-dev/kreuzberg-lts/main/docs/assets/logo.svg
 annotations:
   artifacthub.io/license: MIT
   artifacthub.io/links: |
     - name: Documentation
       url: https://kreuzberg.dev
     - name: Source
-      url: https://github.com/kreuzberg-dev/kreuzberg
+      url: https://github.com/kreuzberg-dev/kreuzberg-lts
