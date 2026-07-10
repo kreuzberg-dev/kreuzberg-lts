@@ -124,7 +124,7 @@ tasks:
       - task: c:test
 
   check:
-    desc: Run all linting and formatting checks via prek
+    desc: Run all linting and formatting checks via poly
     cmds:
       - task: lint
 
@@ -155,8 +155,6 @@ tasks:
       - task: r:update
       - echo "Updating C dependencies..."
       - task: c:update
-      - echo "Updating prek dependencies..."
-      - prek autoupdate
       - echo "All dependencies updated"
 
   clean:
@@ -223,9 +221,10 @@ tasks:
       - task: _test_wf:all:ci
 
   lint:
-    desc: Run all linters and formatters via prek (pre-commit framework)
+    desc: Run all linters and formatters via poly
     cmds:
-      - prek run --all-files
+      - poly fmt --check .
+      - poly lint .
 
   check:publish:
     desc: Check all registries and GitHub release assets for a given version

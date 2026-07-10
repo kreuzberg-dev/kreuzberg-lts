@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [chore/v4.9-lts]
+    branches: [main]
   pull_request:
-    branches: [chore/v4.9-lts]
+    branches: [main]
   workflow_dispatch:
 
 concurrency:
@@ -29,7 +29,7 @@ permissions:
 jobs:
   validate-rust:
     name: "Validate: Rust"
-    if: github.repository == 'kreuzberg-dev/kreuzberg' && github.actor != 'dependabot[bot]'
+    if: github.repository == 'kreuzberg-dev/kreuzberg-lts' && github.actor != 'dependabot[bot]'
     runs-on: ubuntu-24.04-arm
     timeout-minutes: 30
     steps:
@@ -53,6 +53,15 @@ jobs:
       - name: Install Task
         uses: kreuzberg-dev/actions/install-task@v1
 
+      - name: Install poly
+        uses: Goldziher/poly@v0
+
+      - name: Run poly format check
+        run: poly fmt --check .
+
+      - name: Run poly lint
+        run: poly lint .
+
       - name: Run Rust lint checks
         run: task rust:lint:check
 
@@ -69,109 +78,10 @@ jobs:
         run: scripts/ci/validate/cleanup-after-lint.sh
         shell: bash
 
-  build-ffi:
-    needs: [validate-rust]
-    name: "Build: FFI (${{ matrix.os }})"
-    if: github.repository == 'kreuzberg-dev/kreuzberg' && github.actor != 'dependabot[bot]'
-    runs-on: ${{ matrix.os }}
-    timeout-minutes: 180
-    permissions:
-      contents: read
-    strategy:
-      fail-fast: true
-      matrix:
-        include:
-          - os: ubuntu-latest
-            target: x86_64-unknown-linux-gnu
-          - os: ubuntu-24.04-arm
-            target: aarch64-unknown-linux-gnu
-          - os: macos-latest
-            target: aarch64-apple-darwin
-          - os: windows-latest
-            target: x86_64-pc-windows-msvc
-    steps:
-      - uses: actions/checkout@v6
-        id: checkout
-
-      - name: Install system dependencies
-        uses: ./.github/actions/install-system-deps
-
-      - name: Free disk space before setup
-        if: startsWith(matrix.os, 'ubuntu')
-        uses: kreuzberg-dev/actions/free-disk-space-linux@v1
-        with:
-          show-initial: "true"
-          show-final: "true"
-
-      - name: Setup OpenSSL
-        uses: kreuzberg-dev/actions/setup-openssl@v1
-
-      - name: Setup Rust
-        uses: kreuzberg-dev/actions/setup-rust@v1
-        with:
-          cache-key-prefix: ffi-${{ matrix.os }}
-          target: ${{ matrix.target }}
-          use-sccache: "true"
-          report-stats: "true"
-
-      - name: Cache PDFium
-        uses: ./.github/actions/cache-pdfium
-        with:
-          pdfium-version: ${{ env.PDFIUM_VERSION }}
-
-      - name: Download PDFium
-        uses: ./.github/actions/download-pdfium
-        with:
-          pdfium-version: ${{ env.PDFIUM_VERSION }}
-
-      - name: Configure bindgen compatibility headers (Windows)
-        if: matrix.os == 'windows-latest'
-        shell: pwsh
-        run: scripts/ci/rust/configure-bindgen-windows.ps1
-
-      - name: Setup ONNX Runtime
-        uses: ./.github/actions/setup-onnx-runtime
-        with:
-          ort-version: ${{ env.ORT_VERSION }}
-
-      - name: Install Task
-        uses: kreuzberg-dev/actions/install-task@v1
-
-      - name: Pre-build diagnostics
-        shell: bash
-        run: scripts/ci/rust/pre-build-diagnostics.sh
-
-      - name: Build kreuzberg-ffi (release)
-        run: cargo build --release -p kreuzberg-ffi --features embeddings
-        shell: bash
-
-      - name: Build kreuzberg-cli (release, --features all)
-        run: cargo build --release -p kreuzberg-cli --features all
-        shell: bash
-
-      - name: Upload FFI artifacts
-        uses: actions/upload-artifact@v7
-        with:
-          name: ffi-${{ matrix.os }}
-          path: |
-            target/release/libkreuzberg_ffi.*
-            target/release/kreuzberg_ffi.*
-            crates/kreuzberg-ffi/kreuzberg.h
-            crates/kreuzberg-ffi/kreuzberg-ffi.pc
-            crates/kreuzberg-ffi/cmake/
-            target/release/kreuzberg
-            target/release/kreuzberg.exe
-          retention-days: 7
-          if-no-files-found: error
-
-      - name: Cleanup Rust cache
-        if: always() && steps.checkout.outcome == 'success'
-        uses: kreuzberg-dev/actions/cleanup-rust-cache@v1
-
   rust-tests:
     needs: [validate-rust]
     name: "Test: Rust (${{ matrix.os }})"
-    if: github.repository == 'kreuzberg-dev/kreuzberg' && github.actor != 'dependabot[bot]'
+    if: github.repository == 'kreuzberg-dev/kreuzberg-lts' && github.actor != 'dependabot[bot]'
     runs-on: ${{ matrix.os }}
     timeout-minutes: 180
     permissions:
@@ -275,217 +185,3 @@ jobs:
       - name: Cleanup Rust cache
         if: always() && steps.checkout.outcome == 'success'
         uses: kreuzberg-dev/actions/cleanup-rust-cache@v1
-
-  test-c-ffi:
-    name: "Test: C FFI (${{ matrix.os }})"
-    if: |
-      always() && !cancelled() &&
-      needs.build-ffi.result == 'success' &&
-      github.repository == 'kreuzberg-dev/kreuzberg' && github.actor != 'dependabot[bot]'
-    needs: [build-ffi]
-    timeout-minutes: 60
-    strategy:
-      fail-fast: true
-      matrix:
-        include:
-          - os: ubuntu-latest
-          - os: ubuntu-24.04-arm
-          - os: macos-latest
-          - os: windows-latest
-    runs-on: ${{ matrix.os }}
-    steps:
-      - uses: actions/checkout@v6
-        id: checkout
-
-      - name: Install system dependencies
-        if: runner.os != 'Windows'
-        uses: ./.github/actions/install-system-deps
-
-      - name: Setup ONNX Runtime
-        uses: ./.github/actions/setup-onnx-runtime
-        with:
-          ort-version: ${{ env.ORT_VERSION }}
-          dest-dir: target/release
-
-      - name: Download FFI library
-        uses: actions/download-artifact@v8
-        with:
-          name: ffi-${{ matrix.os }}
-          path: .
-
-      - name: Make FFI library executable
-        if: runner.os != 'Windows'
-        shell: bash
-        run: chmod +x target/release/libkreuzberg_ffi.* 2>/dev/null || true
-
-      - name: Compile C tests
-        if: runner.os != 'Windows'
-        shell: bash
-        run: make -C crates/kreuzberg-ffi/tests/c LIBDIR="$(pwd)/target/release" clean all
-
-      - name: Run C tests
-        if: runner.os != 'Windows'
-        shell: bash
-        env:
-          LD_LIBRARY_PATH: ${{ github.workspace }}/target/release
-          DYLD_LIBRARY_PATH: ${{ github.workspace }}/target/release
-        run: |
-          FAILED=0
-          for test in crates/kreuzberg-ffi/tests/c/test_*; do
-            [ -x "$test" ] || continue
-            name=$(basename "$test")
-            if "$test"; then
-              echo "PASS: $name"
-            else
-              echo "FAIL: $name"
-              FAILED=1
-            fi
-          done
-          [ "$FAILED" -eq 0 ] || exit 1
-
-      - name: Verify pkg-config output
-        if: runner.os != 'Windows'
-        shell: bash
-        run: |
-          PC_DIR="$(pwd)/target/release"
-          PC_FILE=$(find "$PC_DIR" -name 'kreuzberg-ffi.pc' 2>/dev/null | head -1)
-          if [ -z "$PC_FILE" ]; then
-            echo "Warning: kreuzberg-ffi.pc not found in release artifacts"
-          else
-            echo "Found pkg-config file: $PC_FILE"
-            cat "$PC_FILE"
-          fi
-
-      - name: Verify header version constants
-        if: runner.os != 'Windows'
-        shell: bash
-        run: |
-          HEADER="crates/kreuzberg-ffi/kreuzberg.h"
-          echo "Checking version constants in $HEADER..."
-          grep 'KREUZBERG_VERSION_MAJOR' "$HEADER"
-          grep 'KREUZBERG_VERSION_MINOR' "$HEADER"
-          grep 'KREUZBERG_VERSION_PATCH' "$HEADER"
-          grep 'KREUZBERG_VERSION ' "$HEADER"
-          echo "Version constants verified."
-
-      - name: Verify CMake config files exist
-        if: runner.os != 'Windows'
-        shell: bash
-        run: |
-          test -f crates/kreuzberg-ffi/cmake/kreuzberg-ffi-config.cmake
-          test -f crates/kreuzberg-ffi/cmake/kreuzberg-ffi-config-version.cmake
-          echo "CMake config files verified."
-
-      - name: Verify header generated (Windows)
-        if: runner.os == 'Windows'
-        shell: bash
-        run: |
-          test -f crates/kreuzberg-ffi/kreuzberg.h
-          grep 'KREUZBERG_VERSION_MAJOR' crates/kreuzberg-ffi/kreuzberg.h
-          echo "Header verified on Windows."
-
-  test-cli:
-    name: "Test: CLI (${{ matrix.os }})"
-    if: |
-      always() && !cancelled() &&
-      needs.build-ffi.result == 'success' &&
-      github.repository == 'kreuzberg-dev/kreuzberg' && github.actor != 'dependabot[bot]'
-    needs: [build-ffi]
-    timeout-minutes: 60
-    strategy:
-      fail-fast: true
-      matrix:
-        os: [ubuntu-latest, ubuntu-24.04-arm, macos-latest, windows-latest]
-    runs-on: ${{ matrix.os }}
-    steps:
-      - uses: actions/checkout@v6
-        id: checkout
-
-      - name: Install system dependencies
-        uses: ./.github/actions/install-system-deps
-
-      - name: Download FFI library
-        uses: actions/download-artifact@v8
-        with:
-          name: ffi-${{ matrix.os }}
-          path: .
-
-      - name: Download PDFium
-        uses: ./.github/actions/download-pdfium
-        with:
-          pdfium-version: ${{ env.PDFIUM_VERSION }}
-
-      - name: Stage PDFium runtime
-        uses: ./.github/actions/stage-pdfium-runtime
-        with:
-          destination: target/release
-
-      - name: Setup ONNX Runtime
-        uses: ./.github/actions/setup-onnx-runtime
-        with:
-          ort-version: ${{ env.ORT_VERSION }}
-
-      - name: Setup Layout Models
-        uses: ./.github/actions/setup-layout-models
-
-      - name: Setup Tesseract cache
-        uses: ./.github/actions/setup-tesseract-cache
-        with:
-          label: ${{ matrix.os }}
-          enable-cache: "true"
-
-      - name: Make binaries executable
-        if: runner.os != 'Windows'
-        shell: bash
-        run: chmod +x target/release/kreuzberg target/release/libkreuzberg_ffi.* 2>/dev/null || true
-
-      - name: Verify CLI binary exists
-        shell: bash
-        run: |
-          if [ "${{ runner.os }}" = "Windows" ]; then
-            test -f target/release/kreuzberg.exe
-            echo "CLI binary found: target/release/kreuzberg.exe"
-          else
-            test -f target/release/kreuzberg
-            echo "CLI binary found: target/release/kreuzberg"
-          fi
-
-      - name: Set library paths
-        shell: bash
-        run: |
-          echo "LD_LIBRARY_PATH=${{ github.workspace }}/target/release:${LD_LIBRARY_PATH:-}" >> "$GITHUB_ENV"
-          echo "DYLD_LIBRARY_PATH=${{ github.workspace }}/target/release:${DYLD_LIBRARY_PATH:-}" >> "$GITHUB_ENV"
-
-      - name: Test CLI version
-        shell: bash
-        run: |
-          if [ "${{ runner.os }}" = "Windows" ]; then
-            ./target/release/kreuzberg.exe --version
-          else
-            ./target/release/kreuzberg --version
-          fi
-
-      - name: Test CLI help
-        shell: bash
-        run: |
-          if [ "${{ runner.os }}" = "Windows" ]; then
-            ./target/release/kreuzberg.exe --help
-          else
-            ./target/release/kreuzberg --help
-          fi
-
-      - name: Test CLI with sample document
-        shell: bash
-        run: |
-          if [ "${{ runner.os }}" = "Windows" ]; then
-            CLI="./target/release/kreuzberg.exe"
-          else
-            CLI="./target/release/kreuzberg"
-          fi
-          TEST_DOC=$(find test_documents -name '*.pdf' -type f -print -quit 2>/dev/null || true)
-          if [ -n "$TEST_DOC" ]; then
-            echo "Testing CLI with: $TEST_DOC"
-            $CLI extract "$TEST_DOC" || echo "CLI extraction test failed (may be expected)"
-          else
-            echo "No test documents found, skipping integration test"
-          fi

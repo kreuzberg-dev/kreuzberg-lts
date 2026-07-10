@@ -16,12 +16,12 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Verify tag points at chore/v4.9-lts
+      - name: Verify tag points at main
         shell: bash
         run: |
-          git fetch origin chore/v4.9-lts:refs/remotes/origin/chore/v4.9-lts
-          if ! git merge-base --is-ancestor "$GITHUB_SHA" origin/chore/v4.9-lts; then
-            echo "::error::Tag $GITHUB_REF_NAME points at $GITHUB_SHA which is not on chore/v4.9-lts" >&2
+          git fetch origin main:refs/remotes/origin/main
+          if ! git merge-base --is-ancestor "$GITHUB_SHA" origin/main; then
+            echo "::error::Tag $GITHUB_REF_NAME points at $GITHUB_SHA which is not on main" >&2
             exit 1
           fi
 

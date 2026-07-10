@@ -1,0 +1,445 @@
+[discovery]
+exclude = [
+    "**/*.freezed.dart",
+    "**/*.g.dart",
+    "**/*.jinja",
+    "**/*.lock",
+    "**/Cargo.lock",
+    "**/go.sum",
+    "**/package-lock.json",
+    "**/pnpm-lock.yaml",
+    "**/uv.lock",
+    ".alef/**",
+    "artifacts/**",
+    "dist/**",
+    "docs/assets/**",
+    "docs/snippets/**",
+    "fixtures/**",
+    "node_modules/**",
+    "scripts/readme_templates/**",
+    "target/**",
+    "test_apps/**",
+    "test_documents/**",
+    "vendor/**",
+    "**/Cargo.toml",
+    "**/_generated/**",
+    "**/coverage/**",
+    "**/pkg/**",
+    "**/.next/**",
+    "**/*.min.js",
+    "**/vendored/**",
+    "**/stopwords/**",
+    "**/testdata/**",
+    "e2e/**",
+    "**/*.diff",
+    "**/*.patch",
+    "crates/kreuzberg-ffi/kreuzberg.h",
+    "crates/kreuzberg-pdfium-render/include/**",
+    "packages/go/v4/internal/ffi/kreuzberg.h",
+]
+
+[lint.markdown.rumdl]
+disable = ["MD012", "MD013", "MD024", "MD033", "MD036", "MD041", "MD046", "MD051", "MD076"]
+
+[fmt.markdown.rumdl]
+disable = ["MD012", "MD013", "MD024", "MD033", "MD036", "MD041", "MD046", "MD051", "MD076"]
+
+[lint.python.ruff]
+select = ["ALL"]
+ignore = [
+    "ANN401",
+    "ASYNC109",
+    "ASYNC110",
+    "BLE001",
+    "COM812",
+    "D100",
+    "D104",
+    "D107",
+    "D205",
+    "E501",
+    "EM",
+    "FBT",
+    "FIX",
+    "ISC001",
+    "PD011",
+    "PGH003",
+    "PLR2004",
+    "PLW0603",
+    "S104",
+    "S110",
+    "S603",
+    "TD",
+    "TRY",
+]
+mccabe_max_complexity = 15
+pydocstyle_convention = "google"
+pylint_max_args = 10
+pylint_max_branches = 15
+pylint_max_returns = 10
+
+[lint.php.mago]
+select = ["correctness", "security"]
+ignore = ["strict-assertions", "use-specific-assertions", "no-redundant-variable", "sensitive-parameter"]
+php_version = "8.2"
+
+[lint.typos.extend_words]
+ake = "ake"
+algoritmos = "algoritmos"
+arange = "arange"
+bre = "bre"
+caf = "caf"
+charater = "charater"
+chlidren = "chlidren"
+cliper = "cliper"
+cursos = "cursos"
+delocate = "delocate"
+docling = "docling"
+edn = "edn"
+ein = "ein"
+excepcional = "excepcional"
+execpt = "execpt"
+extention = "extention"
+faiure = "faiure"
+fith = "fith"
+flate = "flate"
+formated = "formated"
+headerr = "headerr"
+helo = "helo"
+hocr = "hocr"
+hom = "hom"
+inh = "inh"
+internacional = "internacional"
+ist = "ist"
+kreuzberg = "kreuzberg"
+layrnorm = "layrnorm"
+legt = "legt"
+markitdown = "markitdown"
+ment = "ment"
+mis = "mis"
+mmaped = "mmaped"
+multline = "multline"
+odf = "odf"
+onnx = "onnx"
+openwebui = "openwebui"
+opf = "opf"
+ove = "ove"
+pard = "pard"
+portait = "portait"
+programa = "programa"
+pymupdf = "pymupdf"
+relatie = "relatie"
+rumdl = "rumdl"
+seperator = "seperator"
+ser = "ser"
+similarily = "similarily"
+siz = "siz"
+specifing = "specifing"
+splitted = "splitted"
+substract = "substract"
+surrealdb = "surrealdb"
+tbe = "tbe"
+tesseract = "tesseract"
+tha = "tha"
+thr = "thr"
+threed = "threed"
+ths = "ths"
+thw = "thw"
+traineddata = "traineddata"
+tre = "tre"
+unparseable = "unparseable"
+utiliza = "utiliza"
+webui = "webui"
+yor = "yor"
+
+[lint.typos.extend_identifiers]
+MarkItDown = "MarkItDown"
+PDFium = "PDFium"
+PyMuPDF = "PyMuPDF"
+SurrealDB = "SurrealDB"
+WebUI = "WebUI"
+traineddata = "traineddata"
+
+[per-file-ignores]
+"**/api.py" = ["F401", "I001", "TC006", "UP035"]
+"**/*.pyi" = ["A002", "F401", "I001", "PYI033", "TC006", "UP035"]
+"**/options.py" = ["F401", "I001", "RUF100"]
+"**/__init__.py" = ["I001"]
+"**/tests/**" = [
+    "ANN",
+    "D103",
+    "PLR2004",
+    "PLR0915",
+    "PLR0913",
+    "S101",
+    "S105",
+    "S106",
+    "S108",
+    "S310",
+    "S311",
+    "PT011",
+    "PT012",
+    "PERF401",
+    "PTH123",
+    "T201",
+    "TC001",
+    "TC002",
+    "TC003",
+    "INP001",
+    "no-unused-vars",
+    "no-literal-password",
+    "no-unescaped-output",
+    "RUF100",
+    "F401",
+    "F811",
+    "I001",
+    "PT018",
+    "ARG001",
+    "ARG002",
+    "D403",
+    "E713",
+    "UP035",
+    "UP012",
+    "RUF015",
+    "F541",
+    "EXE001",
+    "A001",
+    "N801",
+]
+"**/e2e/**" = [
+    "ANN",
+    "D103",
+    "PLR2004",
+    "PLR0915",
+    "PLR0913",
+    "S101",
+    "S105",
+    "S106",
+    "S108",
+    "S310",
+    "S311",
+    "PT011",
+    "PT012",
+    "PERF401",
+    "PTH123",
+    "T201",
+    "TC001",
+    "TC002",
+    "TC003",
+    "INP001",
+    "no-unused-vars",
+    "no-literal-password",
+    "no-unescaped-output",
+    "RUF100",
+    "F401",
+    "F811",
+    "I001",
+    "PT018",
+    "ARG001",
+    "ARG002",
+    "D403",
+    "E713",
+    "UP035",
+    "UP012",
+    "RUF015",
+    "F541",
+    "EXE001",
+    "A001",
+    "N801",
+]
+"**/test_apps/**" = [
+    "ANN",
+    "D103",
+    "PLR2004",
+    "PLR0915",
+    "PLR0913",
+    "S101",
+    "S105",
+    "S106",
+    "S108",
+    "S310",
+    "S311",
+    "PT011",
+    "PT012",
+    "PERF401",
+    "PTH123",
+    "T201",
+    "TC001",
+    "TC002",
+    "TC003",
+    "INP001",
+    "no-unused-vars",
+    "no-literal-password",
+    "no-unescaped-output",
+    "RUF100",
+    "F401",
+    "F811",
+    "I001",
+    "PT018",
+    "ARG001",
+    "ARG002",
+    "D403",
+    "E713",
+    "UP035",
+    "UP012",
+    "RUF015",
+    "F541",
+    "EXE001",
+    "A001",
+    "N801",
+]
+"**/text_repair.rs" = ["typo"]
+"docker/**" = ["DL3006", "DL3059"]
+"e2e/**/*.py" = ["A001", "N801"]
+"packages/python/build.py" = ["INP001"]
+"scripts/**/*.py" = [
+    "B023",
+    "C901",
+    "D101",
+    "D102",
+    "D103",
+    "D415",
+    "E702",
+    "ERA001",
+    "PERF203",
+    "PERF401",
+    "PLC0415",
+    "PLR0912",
+    "PLR0915",
+    "PLW2901",
+    "PT018",
+    "PTH108",
+    "PTH123",
+    "S101",
+    "S108",
+    "S311",
+    "S607",
+    "SIM105",
+    "SIM115",
+    "T201",
+]
+"scripts/ci/docker/test_docker.py" = ["EXE001"]
+
+[hooks]
+stages = ["pre-commit"]
+
+[hooks.builtin]
+lint = { exclude = [
+    "**/*.freezed.dart",
+    "**/*.g.dart",
+    "**/*.jinja",
+    "**/*.lock",
+    "**/Cargo.lock",
+    "**/go.sum",
+    "**/package-lock.json",
+    "**/pnpm-lock.yaml",
+    "**/uv.lock",
+    ".alef/**",
+    "artifacts/**",
+    "dist/**",
+    "docs/assets/**",
+    "docs/snippets/**",
+    "fixtures/**",
+    "node_modules/**",
+    "scripts/readme_templates/**",
+    "target/**",
+    "test_apps/**",
+    "test_documents/**",
+    "vendor/**",
+    "**/Cargo.toml",
+    "**/_generated/**",
+    "**/coverage/**",
+    "**/pkg/**",
+    "**/.next/**",
+    "**/*.min.js",
+    "**/vendored/**",
+    "**/stopwords/**",
+    "**/testdata/**",
+    "e2e/**",
+    "**/*.diff",
+    "**/*.patch",
+    "crates/kreuzberg-ffi/kreuzberg.h",
+    "crates/kreuzberg-pdfium-render/include/**",
+    "packages/go/v4/internal/ffi/kreuzberg.h",
+] }
+fmt = { exclude = [
+    "**/*.freezed.dart",
+    "**/*.g.dart",
+    "**/*.jinja",
+    "**/*.lock",
+    "**/Cargo.lock",
+    "**/go.sum",
+    "**/package-lock.json",
+    "**/pnpm-lock.yaml",
+    "**/uv.lock",
+    ".alef/**",
+    "artifacts/**",
+    "dist/**",
+    "docs/assets/**",
+    "docs/snippets/**",
+    "fixtures/**",
+    "node_modules/**",
+    "scripts/readme_templates/**",
+    "target/**",
+    "test_apps/**",
+    "test_documents/**",
+    "vendor/**",
+    "**/Cargo.toml",
+    "**/_generated/**",
+    "**/coverage/**",
+    "**/pkg/**",
+    "**/.next/**",
+    "**/*.min.js",
+    "**/vendored/**",
+    "**/stopwords/**",
+    "**/testdata/**",
+    "e2e/**",
+    "**/*.diff",
+    "**/*.patch",
+    "crates/kreuzberg-ffi/kreuzberg.h",
+    "crates/kreuzberg-pdfium-render/include/**",
+    "packages/go/v4/internal/ffi/kreuzberg.h",
+] }
+file_safety = { exclude = [
+    "**/*.freezed.dart",
+    "**/*.g.dart",
+    "**/*.jinja",
+    "**/*.lock",
+    "**/Cargo.lock",
+    "**/go.sum",
+    "**/package-lock.json",
+    "**/pnpm-lock.yaml",
+    "**/uv.lock",
+    ".alef/**",
+    "artifacts/**",
+    "dist/**",
+    "docs/assets/**",
+    "docs/snippets/**",
+    "fixtures/**",
+    "node_modules/**",
+    "scripts/readme_templates/**",
+    "target/**",
+    "test_apps/**",
+    "test_documents/**",
+    "vendor/**",
+    "**/Cargo.toml",
+    "**/_generated/**",
+    "**/coverage/**",
+    "**/pkg/**",
+    "**/.next/**",
+    "**/*.min.js",
+    "**/vendored/**",
+    "**/stopwords/**",
+    "**/testdata/**",
+    "e2e/**",
+    "**/*.diff",
+    "**/*.patch",
+    "crates/kreuzberg-ffi/kreuzberg.h",
+    "crates/kreuzberg-pdfium-render/include/**",
+    "packages/go/v4/internal/ffi/kreuzberg.h",
+] }
+cargo = true
+commit = { stages = ["commit-msg"] }
+
+[hooks.pre-commit.commands.pyrefly]
+run = "pyrefly check packages/python"
+files = "packages/python/**/*.py"
