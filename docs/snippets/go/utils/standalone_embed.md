@@ -5,7 +5,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/kreuzberg-dev/kreuzberg/packages/go/v4"
+	"github.com/kreuzberg-dev/kreuzberg-lts/v4"
 )
 
 func main() {

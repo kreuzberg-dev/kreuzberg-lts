@@ -21,8 +21,8 @@
   <a href="https://central.sonatype.com/artifact/dev.kreuzberg/kreuzberg">
     <img src="https://img.shields.io/maven-central/v/dev.kreuzberg/kreuzberg?label=Java&color=007ec6" alt="Java">
   </a>
-  <a href="https://github.com/kreuzberg-dev/kreuzberg/releases">
-    <img src="https://img.shields.io/github/v/tag/kreuzberg-dev/kreuzberg?label=Go&color=007ec6&filter=v4.9.9" alt="Go">
+  <a href="https://github.com/kreuzberg-dev/kreuzberg-lts/releases">
+    <img src="https://img.shields.io/github/v/tag/kreuzberg-dev/kreuzberg-lts?label=Go&color=007ec6&filter=v4.9.9" alt="Go">
   </a>
   <a href="https://www.nuget.org/packages/Kreuzberg/">
     <img src="https://img.shields.io/nuget/v/Kreuzberg?label=C%23&color=007ec6" alt="C#">
@@ -36,7 +36,7 @@
   <a href="https://kreuzberg-dev.r-universe.dev/kreuzberg">
     <img src="https://img.shields.io/badge/R-kreuzberg-007ec6" alt="R">
   </a>
-  <a href="https://github.com/kreuzberg-dev/kreuzberg/pkgs/container/kreuzberg">
+  <a href="https://github.com/kreuzberg-dev/kreuzberg-lts/pkgs/container/kreuzberg">
     <img src="https://img.shields.io/badge/Docker-007ec6?logo=docker&logoColor=white" alt="Docker">
   </a>
   <a href="https://artifacthub.io/packages/search?repo=kreuzberg">
@@ -44,7 +44,7 @@
   </a>
 
   <!-- Project Info -->
-  <a href="https://github.com/kreuzberg-dev/kreuzberg/blob/main/LICENSE">
+  <a href="https://github.com/kreuzberg-dev/kreuzberg-lts/blob/main/LICENSE">
     <img src="https://img.shields.io/badge/License-MIT-007ec6" alt="License">
   </a>
   <a href="https://docs.kreuzberg.dev">
@@ -70,7 +70,7 @@
 High-performance document intelligence for Go backed by the Rust core that powers every Kreuzberg binding.
 
 > **Version 4.8.4**
-> Report issues at [github.com/kreuzberg-dev/kreuzberg](https://github.com/kreuzberg-dev/kreuzberg/issues).
+> Report issues at [github.com/kreuzberg-dev/kreuzberg-lts](https://github.com/kreuzberg-dev/kreuzberg-lts/issues).
 
 ## Install
 
@@ -101,10 +101,10 @@ To use this package via `go get`:
 
 ```bash
 # Get the latest release
-go get github.com/kreuzberg-dev/kreuzberg/packages/go/v4@latest
+go get github.com/kreuzberg-dev/kreuzberg-lts/v4@latest
 
 # Or a specific version
-go get github.com/kreuzberg-dev/kreuzberg/packages/go/v4@v4.8.4
+go get github.com/kreuzberg-dev/kreuzberg-lts/v4@v4.8.4
 ```
 
 You'll need to provide the static library at build time. See [Building with Static Libraries](#building-with-static-libraries) below.
@@ -115,11 +115,11 @@ When building outside the Kreuzberg monorepo, you need to provide the static lib
 
 #### Option 1: Download Pre-built Static Library
 
-Download the static library for your platform from [GitHub Releases](https://github.com/kreuzberg-dev/kreuzberg/releases):
+Download the static library for your platform from [GitHub Releases](https://github.com/kreuzberg-dev/kreuzberg-lts/releases):
 
 ```bash
 # Example: Linux x86_64
-curl -LO https://github.com/kreuzberg-dev/kreuzberg/releases/download/v4.8.4/go-ffi-linux-x86_64.tar.gz
+curl -LO https://github.com/kreuzberg-dev/kreuzberg-lts/releases/download/v4.8.4/go-ffi-linux-x86_64.tar.gz
 tar -xzf go-ffi-linux-x86_64.tar.gz
 
 # Copy to a permanent location
@@ -144,7 +144,7 @@ If pre-built libraries aren't available for your platform:
 
 ```bash
 # Clone the repository
-git clone https://github.com/kreuzberg-dev/kreuzberg.git
+git clone https://github.com/kreuzberg-dev/kreuzberg-lts.git
 cd kreuzberg
 
 # Build the static library
@@ -191,7 +191,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/kreuzberg-dev/kreuzberg/packages/go/v4"
+	"github.com/kreuzberg-dev/kreuzberg-lts/v4"
 )
 
 func main() {
@@ -297,7 +297,7 @@ func init() {
 
 ## API Reference
 
-- **GoDoc**: [pkg.go.dev/github.com/kreuzberg-dev/kreuzberg/packages/go/v4](https://pkg.go.dev/github.com/kreuzberg-dev/kreuzberg/packages/go/v4)
+- **GoDoc**: [pkg.go.dev/github.com/kreuzberg-dev/kreuzberg-lts/v4](https://pkg.go.dev/github.com/kreuzberg-dev/kreuzberg-lts/v4)
 - **Full documentation**: [kreuzberg.dev](https://kreuzberg.dev) (configuration, formats, OCR backends)
 
 ## Troubleshooting
@@ -305,7 +305,7 @@ func init() {
 | Issue | Fix |
 |-------|-----|
 | `ld returned 1 exit status` or `undefined reference to 'html_to_markdown_...'` | The static library wasn't found. Make sure `CGO_LDFLAGS` points to the directory containing `libkreuzberg_ffi.a`: `CGO_LDFLAGS="-L/path/to/lib -lkreuzberg_ffi" go build` |
-| `cannot find -lkreuzberg_ffi` | The static library file is missing or in the wrong location. Download it from [GitHub Releases](https://github.com/kreuzberg-dev/kreuzberg/releases) or build it yourself: `cargo build -p kreuzberg-ffi --release` |
+| `cannot find -lkreuzberg_ffi` | The static library file is missing or in the wrong location. Download it from [GitHub Releases](https://github.com/kreuzberg-dev/kreuzberg-lts/releases) or build it yourself: `cargo build -p kreuzberg-ffi --release` |
 | `undefined: v4.ExtractFile` | This function was removed in v4.1.0. Use `ExtractFileSync` and wrap in goroutine if needed (see migration guide) |
 | `Missing dependency: tesseract` | Install the OCR backend and ensure it is on `PATH`. Errors bubble up as `*v4.MissingDependencyError`. |
 | `undefined: C.customValidator` during build | Export the callback with `//export` in a `*_cgo.go` file before using it in `Register*` helpers. |

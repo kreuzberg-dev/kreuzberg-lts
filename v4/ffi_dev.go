@@ -12,7 +12,7 @@ package kreuzberg
 //   go test -tags kreuzberg_dev ./...
 //
 // For production/external usage, run:
-//   go generate github.com/kreuzberg-dev/kreuzberg/packages/go/v4
+//   go generate github.com/kreuzberg-dev/kreuzberg-lts/v4
 //
 // This will download the FFI library and generate cgo_flags.go with
 // the correct CGO directives for your platform.

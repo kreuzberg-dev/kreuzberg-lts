@@ -4,7 +4,7 @@ package main
 import (
 	"fmt"
 
-	"github.com/kreuzberg-dev/kreuzberg/packages/go/v4"
+	"github.com/kreuzberg-dev/kreuzberg-lts/v4"
 )
 
 maxChars := 512

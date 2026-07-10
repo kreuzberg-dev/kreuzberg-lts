@@ -26,10 +26,10 @@
 // The simplest way to get started:
 //
 //	# Step 1: Get the module
-//	go get github.com/kreuzberg-dev/kreuzberg/packages/go/v4@latest
+//	go get github.com/kreuzberg-dev/kreuzberg-lts/v4@latest
 //
 //	# Step 2: Download FFI library and generate CGO flags (one-time setup)
-//	go generate github.com/kreuzberg-dev/kreuzberg/packages/go/v4
+//	go generate github.com/kreuzberg-dev/kreuzberg-lts/v4
 //
 //	# Step 3: Build your project
 //	go build
@@ -271,8 +271,8 @@
 // # Resources
 //
 // - Documentation: https://kreuzberg.dev
-// - GitHub: https://github.com/kreuzberg-dev/kreuzberg
-// - Issue tracker: https://github.com/kreuzberg-dev/kreuzberg/issues
+// - GitHub: https://github.com/kreuzberg-dev/kreuzberg-lts
+// - Issue tracker: https://github.com/kreuzberg-dev/kreuzberg-lts/issues
 // - Discord: https://discord.gg/xt9WY3GnKR
 //
 // # Troubleshooting
@@ -281,7 +281,7 @@
 //
 // The FFI library is not installed. Run:
 //
-//	go generate github.com/kreuzberg-dev/kreuzberg/packages/go/v4
+//	go generate github.com/kreuzberg-dev/kreuzberg-lts/v4
 //
 // This downloads the library and generates the CGO flags.
 //
@@ -317,5 +317,5 @@
 //
 // # Version
 //
-// This binding targets Kreuzberg 4.9.9 (https://github.com/kreuzberg-dev/kreuzberg).
+// This binding targets Kreuzberg 4.9.9 (https://github.com/kreuzberg-dev/kreuzberg-lts).
 package kreuzberg

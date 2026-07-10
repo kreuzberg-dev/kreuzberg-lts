@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/kreuzberg-dev/kreuzberg/packages/go/v4"
+	"github.com/kreuzberg-dev/kreuzberg-lts/v4"
 )
 
 // TestPointerValidityAfterFFICall verifies that pointers remain valid after FFI calls

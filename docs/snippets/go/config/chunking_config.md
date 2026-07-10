@@ -4,7 +4,7 @@ package main
 import (
 	"fmt"
 
-	"github.com/kreuzberg-dev/kreuzberg/packages/go/v4"
+	"github.com/kreuzberg-dev/kreuzberg-lts/v4"
 )
 
 func main() {
@@ -27,7 +27,7 @@ package main
 import (
 	"fmt"
 
-	"github.com/kreuzberg-dev/kreuzberg/packages/go/v4"
+	"github.com/kreuzberg-dev/kreuzberg-lts/v4"
 )
 
 func main() {
@@ -67,7 +67,7 @@ package main
 import (
 	"fmt"
 
-	"github.com/kreuzberg-dev/kreuzberg/packages/go/v4"
+	"github.com/kreuzberg-dev/kreuzberg-lts/v4"
 )
 
 func boolPtr(b bool) *bool { return &b }

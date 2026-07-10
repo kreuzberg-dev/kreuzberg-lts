@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	kreuzberg "github.com/kreuzberg-dev/kreuzberg/packages/go/v4"
+	kreuzberg "github.com/kreuzberg-dev/kreuzberg-lts/v4"
 )
 
 func TestConfigFromJSON(t *testing.T) {

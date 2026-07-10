@@ -4,7 +4,7 @@ import (
 	"sync"
 	"testing"
 
-	kreuzberg "github.com/kreuzberg-dev/kreuzberg/packages/go/v4"
+	kreuzberg "github.com/kreuzberg-dev/kreuzberg-lts/v4"
 )
 
 // TestMutexBasicProtection verifies that the FFI mutex prevents concurrent crashes

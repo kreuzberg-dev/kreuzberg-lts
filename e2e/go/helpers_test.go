@@ -11,7 +11,7 @@ import (
 	"testing"
 	"unicode"
 
-	kreuzberg "github.com/kreuzberg-dev/kreuzberg/packages/go/v4"
+	kreuzberg "github.com/kreuzberg-dev/kreuzberg-lts/v4"
 )
 
 var (

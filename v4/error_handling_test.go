@@ -9,7 +9,7 @@ import (
 	"sync/atomic"
 	"testing"
 
-	kreuzberg "github.com/kreuzberg-dev/kreuzberg/packages/go/v4"
+	kreuzberg "github.com/kreuzberg-dev/kreuzberg-lts/v4"
 )
 
 // TestInvalidConfigNegativeChunkSize validates error handling for negative chunk sizes.
