@@ -4,15 +4,12 @@
     "https://checkstyle.org/dtds/suppressions_1_2.dtd">
 
 <suppressions>
-    <!-- FFI code patterns that require non-standard naming -->
-    <suppress checks="ConstantName" files="KreuzbergFFI\.java"/>
-    <suppress checks="MagicNumber" files="KreuzbergFFI\.java"/>
+  <suppress checks="ConstantName" files="KreuzbergFFI\.java" />
+  <suppress checks="MagicNumber" files="KreuzbergFFI\.java" />
 
-    <!-- Test files can have more relaxed rules -->
-    <suppress checks="MagicNumber" files=".*Test\.java"/>
-    <suppress checks="MethodLength" files=".*Test\.java"/>
+  <suppress checks="MagicNumber" files=".*Test\.java" />
+  <suppress checks="MethodLength" files=".*Test\.java" />
 
-    <!-- Generated E2E tests are validated by compilation/runtime and may exceed style limits -->
-    <suppress checks="LineLength" files="e2e/java/src/test/java/.*Test\.java"/>
-    <suppress checks="UnusedImports" files="e2e/java/src/test/java/.*Test\.java"/>
+  <suppress checks="LineLength" files="e2e/java/src/test/java/.*Test\.java" />
+  <suppress checks="UnusedImports" files="e2e/java/src/test/java/.*Test\.java" />
 </suppressions>

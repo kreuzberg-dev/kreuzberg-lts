@@ -17,8 +17,7 @@ readonly class CodeDiagnostic
         public string $message,
         public string $severity,
         public CodeSpan $span,
-    ) {
-    }
+    ) {}
 
     /**
      * @param array<string, mixed> $data
@@ -34,10 +33,6 @@ readonly class CodeDiagnostic
         /** @var array<string, mixed> $spanData */
         $spanData = $data['span'] ?? [];
 
-        return new self(
-            message: $message,
-            severity: $severity,
-            span: CodeSpan::fromArray($spanData),
-        );
+        return new self(message: $message, severity: $severity, span: CodeSpan::fromArray($spanData));
     }
 }

@@ -25,10 +25,8 @@ async fn test_markdown_resolves_images() {
     let result = kreuzberg::extract_file(&path, None, &config).await.unwrap();
 
     let images = result.images.as_ref().expect("should have images");
-    // Should resolve the 2 local images but NOT the https:// URL
     assert_eq!(images.len(), 2, "expected 2 resolved images, got {}", images.len());
 
-    // Verify image data is non-empty
     for img in images {
         assert!(!img.data.is_empty(), "image data should not be empty");
         assert_eq!(img.format, "png");
@@ -44,7 +42,6 @@ async fn test_markdown_bytes_no_resolution() {
         .await
         .unwrap();
 
-    // extract_bytes has no file path context, so no image resolution should happen
     let image_count = result.images.as_ref().map_or(0, |imgs| imgs.len());
     assert_eq!(image_count, 0, "extract_bytes should not resolve local images");
 }
@@ -113,7 +110,6 @@ async fn test_djot_resolves_images() {
 
 #[tokio::test]
 async fn test_traversal_blocked() {
-    // Create a temp markdown file that references a traversal path
     let tmp_dir = std::env::temp_dir().join("kreuzberg_path_test");
     std::fs::create_dir_all(&tmp_dir).unwrap();
     let md_path = tmp_dir.join("traversal.md");
@@ -124,10 +120,8 @@ async fn test_traversal_blocked() {
         .await
         .unwrap();
 
-    // Neither should resolve: traversal is blocked, and images/ doesn't exist in tmp
     let image_count = result.images.as_ref().map_or(0, |imgs| imgs.len());
     assert_eq!(image_count, 0, "traversal paths should not resolve to images");
 
-    // Cleanup
     let _ = std::fs::remove_dir_all(&tmp_dir);
 }

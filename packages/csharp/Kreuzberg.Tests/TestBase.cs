@@ -16,8 +16,6 @@ public abstract class TestBase : IDisposable
 
     public virtual void Dispose()
     {
-        // Clean up all registered callbacks after each test class
-        // This prevents GCHandle accumulation which can cause test host crashes
         CleanupRegistrations();
         GC.SuppressFinalize(this);
     }
@@ -30,7 +28,6 @@ public abstract class TestBase : IDisposable
         }
         catch
         {
-            // Ignore cleanup errors - some tests may not have registered anything
         }
 
         try
@@ -39,7 +36,6 @@ public abstract class TestBase : IDisposable
         }
         catch
         {
-            // Ignore cleanup errors
         }
 
         try
@@ -48,7 +44,6 @@ public abstract class TestBase : IDisposable
         }
         catch
         {
-            // Ignore cleanup errors
         }
     }
 }

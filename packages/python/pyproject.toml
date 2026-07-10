@@ -1,6 +1,6 @@
 [build-system]
 build-backend = "maturin"
-requires = [ "maturin>=1,<2" ]
+requires = ["maturin>=1,<2"]
 
 [project]
 name = "kreuzberg"
@@ -11,62 +11,59 @@ description = """\
   """
 readme = "README.md"
 keywords = [
-  "document-extraction",
-  "document-intelligence",
-  "document-parsing",
-  "document-processing",
-  "docx",
-  "easyocr",
-  "email-parsing",
-  "html",
-  "markdown",
-  "metadata-extraction",
-  "ocr",
-  "office-documents",
-  "pdf",
-  "pdf-extraction",
-  "performance",
-  "pptx",
-  "rust",
-  "table-extraction",
-  "tesseract",
-  "text-extraction",
-  "xlsx",
-  "xml",
+    "document-extraction",
+    "document-intelligence",
+    "document-parsing",
+    "document-processing",
+    "docx",
+    "easyocr",
+    "email-parsing",
+    "html",
+    "markdown",
+    "metadata-extraction",
+    "ocr",
+    "office-documents",
+    "pdf",
+    "pdf-extraction",
+    "performance",
+    "pptx",
+    "rust",
+    "table-extraction",
+    "tesseract",
+    "text-extraction",
+    "xlsx",
+    "xml",
 ]
 license = { text = "MIT" }
-maintainers = [ { name = "Na'aman Hirschfeld", email = "naaman@kreuzberg.dev" } ]
-authors = [ { name = "Na'aman Hirschfeld", email = "naaman@kreuzberg.dev" } ]
+maintainers = [{ name = "Na'aman Hirschfeld", email = "naaman@kreuzberg.dev" }]
+authors = [{ name = "Na'aman Hirschfeld", email = "naaman@kreuzberg.dev" }]
 requires-python = ">=3.10"
 classifiers = [
-  "Development Status :: 4 - Beta",
-  "Intended Audience :: Developers",
-  "Intended Audience :: Information Technology",
-  "Intended Audience :: Science/Research",
-  "License :: OSI Approved :: MIT License",
-  "Operating System :: OS Independent",
-  "Programming Language :: Python :: 3 :: Only",
-  "Programming Language :: Python :: 3.10",
-  "Programming Language :: Python :: 3.11",
-  "Programming Language :: Python :: 3.12",
-  "Programming Language :: Python :: 3.13",
-  "Programming Language :: Python :: 3.14",
-  "Programming Language :: Python :: Implementation :: CPython",
-  "Programming Language :: Rust",
-  "Topic :: Office/Business",
-  "Topic :: Scientific/Engineering :: Information Analysis",
-  "Topic :: Software Development :: Libraries :: Python Modules",
-  "Topic :: Text Processing",
-  "Topic :: Text Processing :: Filters",
-  "Topic :: Text Processing :: General",
-  "Typing :: Typed",
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Information Technology",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Programming Language :: Python :: Implementation :: CPython",
+    "Programming Language :: Rust",
+    "Topic :: Office/Business",
+    "Topic :: Scientific/Engineering :: Information Analysis",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Text Processing",
+    "Topic :: Text Processing :: Filters",
+    "Topic :: Text Processing :: General",
+    "Typing :: Typed",
 ]
 dependencies = []
-optional-dependencies.all = [ "kreuzberg[easyocr]", "kreuzberg[tesseract]" ]
-optional-dependencies.easyocr = [
-  "easyocr>=1.7.2",
-  "torch>=2.9.1",
-]
+optional-dependencies.all = ["kreuzberg[easyocr]", "kreuzberg[tesseract]"]
+optional-dependencies.easyocr = ["easyocr>=1.7.2", "torch>=2.9.1"]
 optional-dependencies.tesseract = []
 urls.Changelog = "https://kreuzberg.dev/CHANGELOG/"
 urls.Documentation = "https://kreuzberg.dev"
@@ -80,17 +77,23 @@ scripts.kreuzberg = "kreuzberg.__main__:main"
 module-name = "kreuzberg._internal_bindings"
 manifest-path = "../../crates/kreuzberg-py/Cargo.toml"
 include = [
-  { path = "kreuzberg/_internal_bindings.pyi", format = [ "wheel", "sdist" ] },
-  { path = "kreuzberg/py.typed", format = [ "wheel", "sdist" ] },
+    { path = "kreuzberg/_internal_bindings.pyi", format = [
+        "wheel",
+        "sdist",
+    ] },
+    { path = "kreuzberg/py.typed", format = [
+        "wheel",
+        "sdist",
+    ] },
 ]
 
 [tool.pytest]
 ini_options.addopts = "--doctest-modules"
 ini_options.markers = [
-  "cli_features: marks tests that require CLI binary built with --features all (deselect with '-m \"not cli_features\"')",
-  "integration: marks tests as integration tests (requires running services)",
-  "slow: marks tests as slow (deselect with '-m \"not slow\"')",
-  "windows_slow: marks tests as too slow on Windows CI (deselect with '-m \"not windows_slow\"')",
+    "cli_features: marks tests that require CLI binary built with --features all (deselect with '-m \"not cli_features\"')",
+    "integration: marks tests as integration tests (requires running services)",
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "windows_slow: marks tests as too slow on Windows CI (deselect with '-m \"not windows_slow\"')",
 ]
 ini_options.asyncio_mode = "auto"
 ini_options.timeout = 60

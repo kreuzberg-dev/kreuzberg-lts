@@ -8,10 +8,10 @@
  */
 
 import {
-	classifyError as classify_error,
-	type ErrorClassification,
-	getErrorCodeDescription as get_error_code_description,
-	getErrorCodeName as get_error_code_name,
+  classifyError as classify_error,
+  type ErrorClassification,
+  getErrorCodeDescription as get_error_code_description,
+  getErrorCodeName as get_error_code_name,
 } from "@kreuzberg/node";
 
 /**
@@ -30,38 +30,38 @@ import {
  * ```
  */
 export const ErrorCode = {
-	/**
-	 * Input validation error (invalid config, parameters, paths)
-	 */
-	Validation: 0,
-	/**
-	 * Document parsing error (corrupt files, unsupported format features)
-	 */
-	Parsing: 1,
-	/**
-	 * OCR processing error (backend failures, image quality issues)
-	 */
-	Ocr: 2,
-	/**
-	 * Missing system dependency (tesseract not found, pandoc not installed)
-	 */
-	MissingDependency: 3,
-	/**
-	 * File system I/O error (permissions, disk full, file not found)
-	 */
-	Io: 4,
-	/**
-	 * Plugin registration or execution error
-	 */
-	Plugin: 5,
-	/**
-	 * Unsupported MIME type or file format
-	 */
-	UnsupportedFormat: 6,
-	/**
-	 * Internal library error (indicates a bug, should rarely occur)
-	 */
-	Internal: 7,
+  /**
+   * Input validation error (invalid config, parameters, paths)
+   */
+  Validation: 0,
+  /**
+   * Document parsing error (corrupt files, unsupported format features)
+   */
+  Parsing: 1,
+  /**
+   * OCR processing error (backend failures, image quality issues)
+   */
+  Ocr: 2,
+  /**
+   * Missing system dependency (tesseract not found, pandoc not installed)
+   */
+  MissingDependency: 3,
+  /**
+   * File system I/O error (permissions, disk full, file not found)
+   */
+  Io: 4,
+  /**
+   * Plugin registration or execution error
+   */
+  Plugin: 5,
+  /**
+   * Unsupported MIME type or file format
+   */
+  UnsupportedFormat: 6,
+  /**
+   * Internal library error (indicates a bug, should rarely occur)
+   */
+  Internal: 7,
 } as const;
 
 /**
@@ -92,7 +92,7 @@ export type ErrorCodeValue = (typeof ErrorCode)[keyof typeof ErrorCode];
  * ```
  */
 export function getErrorCodeName(code: number): string {
-	return get_error_code_name(code);
+  return get_error_code_name(code);
 }
 
 /**
@@ -116,7 +116,7 @@ export function getErrorCodeName(code: number): string {
  * ```
  */
 export function getErrorCodeDescription(code: number): string {
-	return get_error_code_description(code);
+  return get_error_code_description(code);
 }
 
 /**
@@ -153,7 +153,7 @@ export function getErrorCodeDescription(code: number): string {
  * ```
  */
 export function classifyErrorMessage(errorMessage: string): ErrorClassification {
-	return classify_error(errorMessage);
+  return classify_error(errorMessage);
 }
 
 /**
@@ -178,7 +178,7 @@ export function classifyErrorMessage(errorMessage: string): ErrorClassification 
  * ```
  */
 export function isValidErrorCode(code: number): boolean {
-	return Number.isInteger(code) && code >= 0 && code <= 7;
+  return Number.isInteger(code) && code >= 0 && code <= 7;
 }
 
 /**
@@ -199,11 +199,11 @@ export function isValidErrorCode(code: number): boolean {
  * ```
  */
 export function getErrorCodeKey(code: number): keyof typeof ErrorCode | null {
-	const keys = Object.keys(ErrorCode) as Array<keyof typeof ErrorCode>;
-	for (const key of keys) {
-		if (ErrorCode[key] === code) {
-			return key;
-		}
-	}
-	return null;
+  const keys = Object.keys(ErrorCode) as Array<keyof typeof ErrorCode>;
+  for (const key of keys) {
+    if (ErrorCode[key] === code) {
+      return key;
+    }
+  }
+  return null;
 }

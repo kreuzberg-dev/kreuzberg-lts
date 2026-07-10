@@ -154,7 +154,6 @@ impl OcrBackendRegistry {
     /// The backend if found, or an error if not registered.
     #[tracing::instrument(skip(self), fields(registered_backends = ?self.backends.keys().collect::<Vec<_>>()))]
     pub fn get(&self, name: &str) -> Result<Arc<dyn OcrBackend>> {
-        // Normalize common aliases: "paddleocr" → "paddle-ocr"
         let canonical = match name {
             "paddleocr" => "paddle-ocr",
             _ => name,
@@ -492,11 +491,9 @@ mod tests {
 
         registry.register(backend).unwrap();
 
-        // "paddleocr" (without hyphen) should resolve to "paddle-ocr"
         let retrieved = registry.get("paddleocr").unwrap();
         assert_eq!(retrieved.name(), "paddle-ocr");
 
-        // "paddle-ocr" (canonical) should also work
         let retrieved = registry.get("paddle-ocr").unwrap();
         assert_eq!(retrieved.name(), "paddle-ocr");
     }
@@ -512,11 +509,9 @@ mod tests {
 
         registry.register(backend).unwrap();
 
-        // Canonical name works
         let retrieved = registry.get("paddle-ocr").unwrap();
         assert_eq!(retrieved.name(), "paddle-ocr");
 
-        // Alias without hyphen also works
         let aliased = registry.get("paddleocr").unwrap();
         assert_eq!(aliased.name(), "paddle-ocr");
     }

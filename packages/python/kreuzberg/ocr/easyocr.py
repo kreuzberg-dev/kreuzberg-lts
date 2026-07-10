@@ -314,7 +314,6 @@ class EasyOCRBackend:
         if suffix == ".pdf":
             return self._process_pdf(path, language)
 
-        # Fallback for image files (including multi-page TIFFs)
         try:
             from PIL import Image, ImageSequence  # noqa: PLC0415
 
@@ -333,7 +332,6 @@ class EasyOCRBackend:
     def _process_pdf(self, path: str, language: str) -> dict[str, Any]:
         """Process PDF by converting pages to images."""
         try:
-            # Try pdf2image first
             from pdf2image import convert_from_path  # noqa: PLC0415
 
             images = convert_from_path(path)
@@ -341,7 +339,6 @@ class EasyOCRBackend:
             return self._aggregate_pages(pages)
         except ImportError:
             try:
-                # Try pymupdf (fitz)
                 import fitz  # noqa: PLC0415
 
                 doc = fitz.open(path)

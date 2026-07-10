@@ -12,22 +12,17 @@ pub fn render_markdown(doc: &InternalDocument) -> String {
     let arena = Arena::new();
     let root = build_comrak_ast(doc, &arena);
 
-    // Guard: empty AST causes index-out-of-bounds in comrak's formatter.
     if root.first_child().is_none() {
         tracing::debug!("markdown rendering: empty AST, returning empty string");
         return String::new();
     }
 
     let mut options = comrak_options();
-    options.render.width = 0; // no line wrapping
+    options.render.width = 0;
 
     let mut output = String::new();
     format_commonmark(root, &options, &mut output).expect("comrak formatting should not fail");
 
-    // Strip comrak-generated HTML comments (e.g. `<!-- end list -->`) that leak
-    // into markdown output when adjacent lists are rendered. Only page marker
-    // comments (`<!-- PAGE N -->`) should appear in output, and those are inserted
-    // by our own code, not by comrak.
     if output.contains("<!--") {
         output = output
             .lines()
@@ -39,25 +34,14 @@ pub fn render_markdown(doc: &InternalDocument) -> String {
             .join("\n");
     }
 
-    // Safety net: decode any HTML entities that slipped through from other code paths.
-    // `&#10;` (newline) → space, `&#2;` (STX control char) → removed.
     if output.contains("&#") {
         output = output.replace("&#10;", " ").replace("&#2;", "");
     }
 
-    // Un-escape underscores: comrak's format_commonmark escapes underscores as `\_`
-    // to prevent emphasis interpretation, but our rendered content uses underscores
-    // literally (e.g. sheet names like `first_sheet`). Since we never emit intentional
-    // `\_` sequences, globally replacing is safe.
     if output.contains("\\_") {
         output = output.replace("\\_", "_");
     }
 
-    // Un-escape brackets and parentheses: comrak's format_commonmark escapes `[`, `]`,
-    // `(`, `)` in text nodes to prevent accidental link syntax. Since the AST already
-    // handles real links via NodeValue::Link (rendered as `[text](url)` without
-    // escaping), all remaining `\[`, `\]`, `\(`, `\)` are literal characters that
-    // should appear un-escaped.
     if output.contains("\\[") || output.contains("\\]") || output.contains("\\(") || output.contains("\\)") {
         output = output
             .replace("\\[", "[")
@@ -66,11 +50,6 @@ pub fn render_markdown(doc: &InternalDocument) -> String {
             .replace("\\)", ")");
     }
 
-    // Un-escape stars and hashes at the START of lines only.
-    // comrak escapes `*` → `\*` and `#` → `\#` to prevent false emphasis / ATX-heading
-    // interpretation. We need to un-escape these for RST list markers (`\* item` → `* item`)
-    // and auto-numbered lists (`\#. item` → `#. item`), but NOT inside table cells where
-    // `\*\*text\*\*` should remain escaped as literal asterisks.
     if output.contains("\\*") || output.contains("\\#") {
         output = output
             .lines()
@@ -86,18 +65,12 @@ pub fn render_markdown(doc: &InternalDocument) -> String {
             .join("\n");
     }
 
-    // Collapse runs of 3+ newlines (double blank lines) into exactly 2 newlines.
-    // comrak emits an extra blank line after lists when followed by a code block or table.
-    // MD012 forbids multiple consecutive blank lines.
     while output.contains("\n\n\n") {
         output = output.replace("\n\n\n", "\n\n");
     }
 
-    // Strip arXiv watermark/sidebar noise that gets concatenated with body text.
-    // Only applies to the first ~2000 chars (first page area) to avoid touching references.
     output = strip_arxiv_watermark_noise(output);
 
-    // Trim trailing whitespace but keep single trailing newline
     let trimmed_len = output.trim_end().len();
     if trimmed_len == 0 {
         return String::new();
@@ -114,19 +87,15 @@ pub fn render_markdown(doc: &InternalDocument) -> String {
 /// that pdfium concatenates with body text. This strips patterns like:
 /// "Title N arXiv:NNNN.NNNNNvN [cat.SC] DD Mon YYYY" from the first pages.
 fn strip_arxiv_watermark_noise(mut text: String) -> String {
-    // Only search the first portion of the text (roughly first 2 pages)
     let search_limit = text.floor_char_boundary(text.len().min(6000));
     let search_area = &text[..search_limit];
 
-    // Match: optional preceding short fragment + arXiv ID + optional version + category + date
     let re = regex::Regex::new(
         r"(?:\s+\S+(?:\s+\S+){0,8})?\s*arXiv:\d{4}\.\d{4,5}(?:v\d+)?(?:\s*\[[\w.-]+\])?\s*(?:\d{1,2}\s+\w+\s+\d{4})?",
     )
     .expect("valid regex");
 
     if let Some(m) = re.find(search_area) {
-        // Only strip if it looks like a watermark (appears near end of a paragraph,
-        // not in the middle of a sentence about arXiv).
         let after = &search_area[m.end()..];
         let before_char = if m.start() > 0 {
             search_area[..m.start()].chars().last()
@@ -134,7 +103,6 @@ fn strip_arxiv_watermark_noise(mut text: String) -> String {
             None
         };
 
-        // Strip if preceded by a sentence-ending period or is at end of paragraph
         let is_at_paragraph_boundary = before_char == Some('.') || after.starts_with('\n') || after.starts_with("\n\n");
         if is_at_paragraph_boundary {
             let start = m.start();
@@ -163,7 +131,6 @@ pub(crate) fn comrak_options<'a>() -> Options<'a> {
     options.extension.superscript = true;
     options.extension.highlight = true;
     options.extension.alerts = true;
-    // Use fenced code blocks (```) instead of 4-space indentation.
     options.render.prefer_fenced = true;
     options
 }

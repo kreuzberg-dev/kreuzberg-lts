@@ -14,7 +14,6 @@ async fn test_xml_preserves_hierarchy() {
 
     let result = extract_bytes(xml, "application/xml", &config).await.unwrap();
 
-    // PLANT children should be indented under PLANT
     assert!(result.content.contains("PLANT"));
     assert!(result.content.contains("  COMMON\n    Bloodroot"));
     assert!(result.content.contains("  ZONE\n    4"));
@@ -51,7 +50,6 @@ async fn test_xml_sibling_separation() {
 
     let result = extract_bytes(xml, "application/xml", &config).await.unwrap();
 
-    // Blank line between PLANT siblings
     assert!(result.content.contains("\n\nPLANT"));
 }
 
@@ -131,7 +129,6 @@ async fn test_xml_real_file_plant_catalog() {
 
     let result = extract_bytes(&content, "application/xml", &config).await.unwrap();
 
-    // Each plant's fields should be grouped together
     assert!(result.content.contains("PLANT\n  COMMON\n    Bloodroot"));
     assert!(result.content.contains("PLANT\n  COMMON\n    Columbine"));
 }

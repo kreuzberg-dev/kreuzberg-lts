@@ -17,17 +17,17 @@ package dev.kreuzberg;
  * @since 4.0.0
  */
 public final class ParsingException extends KreuzbergException {
-	/**
+    /**
 	 * Constructs a new parsing exception with the specified message.
 	 *
 	 * @param message
 	 *            the detail message explaining why parsing failed
 	 */
-	public ParsingException(String message) {
-		super(message);
-	}
+    public ParsingException(String message) {
+        super(message);
+    }
 
-	/**
+    /**
 	 * Constructs a new parsing exception with the specified message and cause.
 	 *
 	 * @param message
@@ -35,7 +35,7 @@ public final class ParsingException extends KreuzbergException {
 	 * @param cause
 	 *            the cause of the parsing failure
 	 */
-	public ParsingException(String message, Throwable cause) {
-		super(message, cause);
-	}
+    public ParsingException(String message, Throwable cause) {
+        super(message, cause);
+    }
 }

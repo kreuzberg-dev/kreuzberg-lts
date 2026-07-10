@@ -66,7 +66,6 @@ public static class LegacyExtractionAPI
         ExtractionConfig? config = null
     )
     {
-        // Implementation delegated to KreuzbergClient
         return await KreuzbergClient.ExtractBytesAsync(input, mimeType, config);
     }
 }

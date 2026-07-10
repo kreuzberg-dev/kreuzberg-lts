@@ -169,14 +169,6 @@ impl Neg for PdfPoints {
 impl Eq for PdfPoints {}
 
 #[allow(clippy::derive_ord_xor_partial_ord)]
-// We would ideally use f32::total_cmp() here, but it was not stabilized until 1.62.0.
-// Providing our own (simple) implementation allows for better backwards compatibility.
-// Strictly speaking, our implementation is not _true_ total ordering because it treats
-// +0 and -0 to be equal; but for the purposes of this library and this specific data type,
-// this minor deviation from true total ordering is acceptable.
-//
-// For a deeper dive on the precise considerations of total ordering as applied to
-// floating point values, see: https://github.com/rust-lang/rust/pull/72568
 impl Ord for PdfPoints {
     #[inline]
     fn cmp(&self, other: &Self) -> Ordering {

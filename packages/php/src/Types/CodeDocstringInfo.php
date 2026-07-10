@@ -24,8 +24,7 @@ readonly class CodeDocstringInfo
         public ?string $associatedItem,
         public CodeSpan $span,
         public array $sections,
-    ) {
-    }
+    ) {}
 
     /**
      * @param array<string, mixed> $data
@@ -54,7 +53,7 @@ readonly class CodeDocstringInfo
             span: CodeSpan::fromArray($spanData),
             sections: array_map(
                 /** @param array<string, mixed> $section */
-                static fn (array $section): CodeDocSection => CodeDocSection::fromArray($section),
+                static fn(array $section): CodeDocSection => CodeDocSection::fromArray($section),
                 $sectionsData,
             ),
         );

@@ -43,18 +43,6 @@ impl<'a> PdfPageLinks<'a> {
     /// Returns the number of links in this [PdfPageLinks] collection.
     #[inline]
     pub fn len(&self) -> PdfPageLinkIndex {
-        // Since there is no FPDF_* function to return the number of links contained in a page,
-        // we must explore the entire collection. One option would be to simply iterate over
-        // all possible links, like so:
-
-        // self.iter().count() as PdfPageLinkIndex
-
-        // This works perfectly, but is inefficient for very large collections of links as it
-        // is O(n). Instead, we use a sliding interval search technique, conceptually similar
-        // to binary search, that should be closer to O(log n).
-
-        // Early exit if there are zero or one links.
-
         if self.get(0).is_err() {
             return 0;
         }
@@ -62,8 +50,6 @@ impl<'a> PdfPageLinks<'a> {
         if self.get(1).is_err() {
             return 1;
         }
-
-        // Establish a maximal upper bound for the range (0..len).
 
         let mut range_start = 0;
         let mut range_end = 50;
@@ -77,14 +63,10 @@ impl<'a> PdfPageLinks<'a> {
             }
         }
 
-        // Now probe the range between (range_start..range_end).
-
         loop {
             let midpoint = range_start + (range_end - range_start) / 2;
 
             if midpoint == range_start {
-                // range_start and range_end now differ by a maximum of 1.
-
                 break;
             }
 

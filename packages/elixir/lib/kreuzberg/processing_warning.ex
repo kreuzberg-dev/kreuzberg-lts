@@ -11,9 +11,9 @@ defmodule Kreuzberg.ProcessingWarning do
   """
 
   @type t :: %__MODULE__{
-          source: String.t(),
-          message: String.t()
-        }
+  source: String.t(),
+  message: String.t()
+  }
 
   defstruct source: "", message: ""
 
@@ -34,8 +34,8 @@ defmodule Kreuzberg.ProcessingWarning do
   @spec from_map(map()) :: t()
   def from_map(data) when is_map(data) do
     %__MODULE__{
-      source: data["source"] || "",
-      message: data["message"] || ""
+    source: data["source"] || "",
+    message: data["message"] || ""
     }
   end
 
@@ -54,8 +54,8 @@ defmodule Kreuzberg.ProcessingWarning do
   @spec to_map(t()) :: map()
   def to_map(%__MODULE__{} = warning) do
     %{
-      "source" => warning.source,
-      "message" => warning.message
+    "source" => warning.source,
+    "message" => warning.message
     }
   end
 end

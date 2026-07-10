@@ -8,8 +8,6 @@ use ahash::AHashMap;
 use crate::error::{KreuzbergError, Result};
 use crate::extraction::ooxml_constants::WORDPROCESSINGML_NAMESPACE;
 
-// --- Types ---
-
 /// The type of a style definition in DOCX.
 #[derive(Debug, Clone, PartialEq)]
 pub enum StyleType {
@@ -158,8 +156,6 @@ pub struct StyleCatalog {
     pub default_run_properties: RunProperties,
 }
 
-// --- Parsing ---
-
 /// Parse `word/styles.xml` content into a `StyleCatalog`.
 ///
 /// Uses `roxmltree` for tree-based XML parsing, consistent with the
@@ -184,7 +180,6 @@ pub fn parse_styles_xml(xml: &str) -> Result<StyleCatalog> {
                     catalog.styles.insert(style_def.id.clone(), style_def);
                 }
             }
-            // Skip latentStyles and anything else
             _ => {}
         }
     }
@@ -201,13 +196,11 @@ fn parse_doc_defaults(node: &roxmltree::Node, catalog: &mut StyleCatalog) {
 
         match child.tag_name().name() {
             "rPrDefault" => {
-                // Look for <w:rPr> inside <w:rPrDefault>
                 if let Some(rpr) = find_child_element(&child, "rPr") {
                     catalog.default_run_properties = parse_run_properties(&rpr);
                 }
             }
             "pPrDefault" => {
-                // Look for <w:pPr> inside <w:pPrDefault>
                 if let Some(ppr) = find_child_element(&child, "pPr") {
                     catalog.default_paragraph_properties = parse_paragraph_properties(&ppr);
                 }
@@ -292,8 +285,6 @@ fn parse_run_properties(node: &roxmltree::Node) -> RunProperties {
             "b" => props.bold = Some(parse_toggle_property(&child)),
             "i" => props.italic = Some(parse_toggle_property(&child)),
             "u" => {
-                // <w:u/> or <w:u w:val="single"/> means underlined;
-                // <w:u w:val="none"/> means not underlined.
                 let val = get_w_val(&child);
                 props.underline = Some(!matches!(val, Some("none")));
             }
@@ -429,8 +420,6 @@ fn parse_paragraph_properties(node: &roxmltree::Node) -> ParagraphProperties {
     props
 }
 
-// --- Style Resolution ---
-
 impl StyleCatalog {
     /// Resolve a style by walking its `basedOn` inheritance chain.
     ///
@@ -445,16 +434,13 @@ impl StyleCatalog {
     ///
     /// The chain depth is limited to 20 to prevent infinite loops from circular references.
     pub fn resolve_style(&self, style_id: &str) -> ResolvedStyle {
-        // Start with document defaults
         let mut resolved = ResolvedStyle {
             paragraph_properties: self.default_paragraph_properties.clone(),
             run_properties: self.default_run_properties.clone(),
         };
 
-        // Collect the inheritance chain (from root ancestor to the style itself)
         let chain = self.collect_chain(style_id);
 
-        // Apply each style in order (root ancestor first, target style last)
         for style_def in &chain {
             merge_paragraph_properties(&mut resolved.paragraph_properties, &style_def.paragraph_properties);
             merge_run_properties(&mut resolved.run_properties, &style_def.run_properties);
@@ -478,7 +464,6 @@ impl StyleCatalog {
                 break;
             }
             if visited.contains(&id) {
-                // Cycle detected
                 break;
             }
 
@@ -491,13 +476,10 @@ impl StyleCatalog {
             }
         }
 
-        // Reverse so root ancestor is first and the target style is last
         chain.reverse();
         chain
     }
 }
-
-// --- Merge helpers ---
 
 /// Merge child run properties onto parent, where `Some` in child overrides parent.
 fn merge_run_properties(base: &mut RunProperties, overlay: &RunProperties) {
@@ -567,8 +549,6 @@ fn merge_run_properties(base: &mut RunProperties, overlay: &RunProperties) {
     if overlay.kern.is_some() {
         base.kern = overlay.kern;
     }
-    // Theme color, tint, and shade form an atomic group: if theme_color changes,
-    // tint/shade from the parent must not leak through.
     if overlay.theme_color.is_some() {
         base.theme_color.clone_from(&overlay.theme_color);
         base.theme_tint = overlay.theme_tint.clone();
@@ -653,8 +633,6 @@ fn merge_paragraph_properties(base: &mut ParagraphProperties, overlay: &Paragrap
     }
 }
 
-// --- XML helpers ---
-
 /// Get the `w:val` attribute from a node.
 ///
 /// Tries namespaced attribute first, then falls back to unqualified `val`.
@@ -690,12 +668,10 @@ fn find_child_element<'a>(node: &'a roxmltree::Node, local_name: &str) -> Option
 /// - `<w:b w:val="0"/>` or `<w:b w:val="false"/>` -> `false`
 fn parse_toggle_property(node: &roxmltree::Node) -> bool {
     match get_w_val(node) {
-        None => true, // bare element like <w:b/> means enabled
+        None => true,
         Some(val) => !matches!(val, "0" | "false"),
     }
 }
-
-// --- Tests ---
 
 #[cfg(test)]
 mod tests {
@@ -796,7 +772,6 @@ mod tests {
 
         assert_eq!(catalog.styles.len(), 3);
 
-        // Normal
         let normal = catalog.styles.get("Normal").expect("Normal style must exist");
         assert_eq!(normal.style_type, StyleType::Paragraph);
         assert!(normal.is_default);
@@ -805,7 +780,6 @@ mod tests {
         assert_eq!(normal.paragraph_properties.alignment.as_deref(), Some("left"));
         assert_eq!(normal.run_properties.font_size_half_points, Some(22));
 
-        // Heading1
         let heading1 = catalog.styles.get("Heading1").expect("Heading1 style must exist");
         assert_eq!(heading1.style_type, StyleType::Paragraph);
         assert!(!heading1.is_default);
@@ -821,7 +795,6 @@ mod tests {
         assert_eq!(heading1.run_properties.font_size_half_points, Some(32));
         assert_eq!(heading1.run_properties.font_ascii_theme.as_deref(), Some("majorHAnsi"));
 
-        // Strong (character style)
         let strong = catalog.styles.get("Strong").expect("Strong style must exist");
         assert_eq!(strong.style_type, StyleType::Character);
         assert_eq!(strong.run_properties.bold, Some(true));
@@ -829,7 +802,6 @@ mod tests {
 
     #[test]
     fn test_resolve_style_inheritance() {
-        // 3-level chain: docDefaults -> Normal -> Heading1
         let xml = make_styles_xml(
             r#"
             <w:docDefaults>
@@ -872,13 +844,10 @@ mod tests {
 
         let resolved = catalog.resolve_style("Heading1");
 
-        // Run properties: docDefaults font_ascii=Calibri, sz=24; Heading1 overrides sz=32, adds bold
         assert_eq!(resolved.run_properties.font_ascii.as_deref(), Some("Calibri"));
         assert_eq!(resolved.run_properties.font_size_half_points, Some(32));
         assert_eq!(resolved.run_properties.bold, Some(true));
 
-        // Paragraph properties: docDefaults spacing_after=160; Normal overrides to 200 and sets jc=left;
-        // Heading1 overrides jc=center, adds spacing_before=240, keep_next=true, outline_level=0
         assert_eq!(resolved.paragraph_properties.spacing_after, Some(200));
         assert_eq!(resolved.paragraph_properties.alignment.as_deref(), Some("center"));
         assert_eq!(resolved.paragraph_properties.spacing_before, Some(240));
@@ -888,7 +857,6 @@ mod tests {
 
     #[test]
     fn test_resolve_style_toggle() {
-        // basedOn has bold=true, derived explicitly disables bold with w:val="0"
         let xml = make_styles_xml(
             r#"
             <w:style w:type="paragraph" w:styleId="BoldBase">
@@ -911,15 +879,12 @@ mod tests {
 
         let resolved = catalog.resolve_style("NoBold");
 
-        // Bold should be explicitly false (overridden)
         assert_eq!(resolved.run_properties.bold, Some(false));
-        // Italic should be inherited from BoldBase
         assert_eq!(resolved.run_properties.italic, Some(true));
     }
 
     #[test]
     fn test_resolve_style_cycle_protection() {
-        // Create a circular basedOn chain: A -> B -> A
         let xml = make_styles_xml(
             r#"
             <w:style w:type="paragraph" w:styleId="StyleA">
@@ -940,11 +905,8 @@ mod tests {
         );
         let catalog = parse_styles_xml(&xml).expect("should parse");
 
-        // Must not panic or infinite loop
         let resolved = catalog.resolve_style("StyleA");
 
-        // Both bold and italic should be present (the cycle is broken, and
-        // both styles in the chain contribute their properties)
         assert_eq!(resolved.run_properties.bold, Some(true));
         assert_eq!(resolved.run_properties.italic, Some(true));
     }
@@ -956,13 +918,11 @@ mod tests {
 
         let resolved = catalog.resolve_style("DoesNotExist");
 
-        // Should return empty defaults without panicking
         assert_eq!(resolved, ResolvedStyle::default());
     }
 
     #[test]
     fn test_resolve_style_with_missing_base() {
-        // Style references a basedOn that doesn't exist in the catalog
         let xml = make_styles_xml(
             r#"
             <w:style w:type="paragraph" w:styleId="Orphan">
@@ -978,7 +938,6 @@ mod tests {
 
         let resolved = catalog.resolve_style("Orphan");
 
-        // Should resolve with just the style's own properties
         assert_eq!(resolved.run_properties.bold, Some(true));
     }
 
@@ -1041,7 +1000,6 @@ mod tests {
 
     #[test]
     fn test_parse_underline_bare() {
-        // Test for bare <w:u/> (no val attribute) -> underline should be Some(true)
         let xml = make_styles_xml(
             r#"
             <w:style w:type="character" w:styleId="BareUnderline">
@@ -1060,7 +1018,6 @@ mod tests {
 
     #[test]
     fn test_parse_bold_explicit_true() {
-        // Test for <w:b w:val="true"/> -> bold should be Some(true)
         let xml = make_styles_xml(
             r#"
             <w:style w:type="character" w:styleId="ExplicitBold">
@@ -1085,7 +1042,6 @@ mod tests {
 
     #[test]
     fn test_parse_spacing_line_rule() {
-        // Test for spacing_line_rule parsing
         let xml = make_styles_xml(
             r#"
             <w:style w:type="paragraph" w:styleId="SpacingRule">
@@ -1117,14 +1073,12 @@ mod tests {
         );
         let catalog = parse_styles_xml(&xml).expect("should parse");
 
-        // latentStyles should be skipped, only the actual style parsed
         assert_eq!(catalog.styles.len(), 1);
         assert!(catalog.styles.contains_key("Normal"));
     }
 
     #[test]
     fn test_parse_vert_align() {
-        // Test for vert_align parsing
         let xml = make_styles_xml(
             r#"
             <w:style w:type="character" w:styleId="Superscript">
@@ -1152,7 +1106,6 @@ mod tests {
 
     #[test]
     fn test_parse_multilingual_fonts() {
-        // Test for multilingual rFonts parsing
         let xml = make_styles_xml(
             r#"
             <w:style w:type="character" w:styleId="MultiLang">
@@ -1174,7 +1127,6 @@ mod tests {
 
     #[test]
     fn test_resolve_character_style() {
-        // Test for character style resolution
         let xml = make_styles_xml(
             r#"
             <w:style w:type="character" w:styleId="BaseChar">
@@ -1198,7 +1150,6 @@ mod tests {
 
         let resolved = catalog.resolve_style("DerivedChar");
 
-        // Should inherit bold and size from BaseChar, add italic and color
         assert_eq!(resolved.run_properties.bold, Some(true));
         assert_eq!(resolved.run_properties.font_size_half_points, Some(24));
         assert_eq!(resolved.run_properties.italic, Some(true));
@@ -1207,7 +1158,6 @@ mod tests {
 
     #[test]
     fn test_deep_inheritance_chain() {
-        // Build a 5-level chain: Level0 -> Level1 -> Level2 -> Level3 -> Level4
         let xml = make_styles_xml(
             r#"
             <w:style w:type="paragraph" w:styleId="Level0">
@@ -1253,15 +1203,10 @@ mod tests {
 
         let resolved = catalog.resolve_style("Level4");
 
-        // sz: Level0=20, overridden by Level4=40
         assert_eq!(resolved.run_properties.font_size_half_points, Some(40));
-        // bold: from Level1
         assert_eq!(resolved.run_properties.bold, Some(true));
-        // italic: from Level2
         assert_eq!(resolved.run_properties.italic, Some(true));
-        // alignment: from Level3
         assert_eq!(resolved.paragraph_properties.alignment.as_deref(), Some("center"));
-        // spacing_after: from Level0 (not overridden)
         assert_eq!(resolved.paragraph_properties.spacing_after, Some(100));
     }
 
@@ -1366,7 +1311,6 @@ mod tests {
 
     #[test]
     fn test_paragraph_properties_inheritance() {
-        // Test that page_break_before inherits through basedOn chain
         let xml = make_styles_xml(
             r#"
             <w:style w:type="paragraph" w:styleId="BaseStyle">
@@ -1389,11 +1333,8 @@ mod tests {
 
         let resolved = catalog.resolve_style("DerivedStyle");
 
-        // page_break_before should inherit from BaseStyle
         assert_eq!(resolved.paragraph_properties.page_break_before, Some(true));
-        // spacing_before should come from DerivedStyle
         assert_eq!(resolved.paragraph_properties.spacing_before, Some(50));
-        // spacing_after should inherit from BaseStyle
         assert_eq!(resolved.paragraph_properties.spacing_after, Some(100));
     }
 
@@ -1500,7 +1441,6 @@ mod tests {
 
     #[test]
     fn test_run_properties_inheritance_with_effects() {
-        // Test that caps/shadow inherit through basedOn chain
         let xml = make_styles_xml(
             r#"
             <w:style w:type="character" w:styleId="BaseCharStyle">
@@ -1524,10 +1464,8 @@ mod tests {
 
         let resolved = catalog.resolve_style("DerivedCharStyle");
 
-        // bold and caps should inherit from BaseCharStyle
         assert_eq!(resolved.run_properties.bold, Some(true));
         assert_eq!(resolved.run_properties.caps, Some(true));
-        // italic and shadow should come from DerivedCharStyle
         assert_eq!(resolved.run_properties.italic, Some(true));
         assert_eq!(resolved.run_properties.shadow, Some(true));
     }

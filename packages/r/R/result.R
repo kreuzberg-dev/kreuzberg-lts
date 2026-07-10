@@ -1,8 +1,5 @@
-#' Convert a list to a kreuzberg_result S3 object
-#'
 #' @param x A named list from native extraction.
 #' @return Object with class \code{kreuzberg_result}.
-#' @keywords internal
 as_kreuzberg_result <- function(x) {
   if (!inherits(x, "kreuzberg_result")) {
     class(x) <- c("kreuzberg_result", "list")
@@ -10,11 +7,8 @@ as_kreuzberg_result <- function(x) {
   x
 }
 
-#' Print method for kreuzberg_result
-#'
 #' @param x A \code{kreuzberg_result} object.
 #' @param ... Additional arguments (ignored).
-#' @export
 print.kreuzberg_result <- function(x, ...) {
   cat("<kreuzberg_result>\n")
   if (!is.null(x$mime_type)) cat("  MIME type:", x$mime_type, "\n")
@@ -37,11 +31,8 @@ print.kreuzberg_result <- function(x, ...) {
   invisible(x)
 }
 
-#' Summary method for kreuzberg_result
-#'
 #' @param object A \code{kreuzberg_result} object.
 #' @param ... Additional arguments (ignored).
-#' @export
 summary.kreuzberg_result <- function(object, ...) {
   cat("<kreuzberg_result summary>\n")
   cat("  MIME type:       ", object$mime_type %||% "(unknown)", "\n")
@@ -61,12 +52,9 @@ summary.kreuzberg_result <- function(object, ...) {
   invisible(object)
 }
 
-#' Format method for kreuzberg_result
-#'
 #' @param x A \code{kreuzberg_result} object.
 #' @param ... Additional arguments (ignored).
 #' @return A character string representation.
-#' @export
 format.kreuzberg_result <- function(x, ...) {
   paste0(
     "<kreuzberg_result: ",
@@ -77,73 +65,48 @@ format.kreuzberg_result <- function(x, ...) {
   )
 }
 
-# --- S3 generics and methods ---
 
-#' Get extracted content from a result
-#'
 #' @param x A \code{kreuzberg_result} object.
 #' @param ... Additional arguments (ignored).
 #' @return Character string of extracted content.
-#' @export
 content <- function(x, ...) UseMethod("content")
 
-#' @export
 content.kreuzberg_result <- function(x, ...) x$content
 
-#' Get the MIME type from a result
-#'
 #' @param x A \code{kreuzberg_result} object.
 #' @param ... Additional arguments (ignored).
 #' @return Character string of the MIME type.
-#' @export
 mime_type <- function(x, ...) UseMethod("mime_type")
 
-#' @export
 mime_type.kreuzberg_result <- function(x, ...) x$mime_type
 
-#' Get the page count from a result
-#'
 #' @param x A \code{kreuzberg_result} object.
 #' @param ... Additional arguments (ignored).
 #' @return Integer page count.
-#' @export
 page_count <- function(x, ...) UseMethod("page_count")
 
-#' @export
 page_count.kreuzberg_result <- function(x, ...) length(x$pages %||% list())
 
-#' Get the chunk count from a result
-#'
 #' @param x A \code{kreuzberg_result} object.
 #' @param ... Additional arguments (ignored).
 #' @return Integer chunk count.
-#' @export
 chunk_count <- function(x, ...) UseMethod("chunk_count")
 
-#' @export
 chunk_count.kreuzberg_result <- function(x, ...) length(x$chunks %||% list())
 
-#' Get the detected language from a result
-#'
 #' @param x A \code{kreuzberg_result} object.
 #' @param ... Additional arguments (ignored).
 #' @return Character string of the detected language, or NULL.
-#' @export
 detected_language <- function(x, ...) UseMethod("detected_language")
 
-#' @export
 detected_language.kreuzberg_result <- function(x, ...) x$detected_language
 
-#' Get a metadata field from a result
-#'
 #' @param x A \code{kreuzberg_result} object.
 #' @param name Name of the metadata field.
 #' @param ... Additional arguments (ignored).
 #' @return The metadata value, or NULL if not present.
-#' @export
 metadata_field <- function(x, name, ...) UseMethod("metadata_field")
 
-#' @export
 metadata_field.kreuzberg_result <- function(x, name, ...) {
   if (is.null(x$metadata)) {
     return(NULL)

@@ -18,8 +18,7 @@ readonly class PageHierarchy
     public function __construct(
         public int $blockCount,
         public array $blocks = [],
-    ) {
-    }
+    ) {}
 
     /**
      * @param array<string, mixed> $data
@@ -31,13 +30,10 @@ readonly class PageHierarchy
         /** @var array<array<string, mixed>> $blocksData */
         $blocksData = $data['blocks'] ?? [];
 
-        return new self(
-            blockCount: $blockCount,
-            blocks: array_map(
-                /** @param array<string, mixed> $block */
-                static fn (array $block): HierarchicalBlock => HierarchicalBlock::fromArray($block),
-                $blocksData,
-            ),
-        );
+        return new self(blockCount: $blockCount, blocks: array_map(
+            /** @param array<string, mixed> $block */
+            static fn(array $block): HierarchicalBlock => HierarchicalBlock::fromArray($block),
+            $blocksData,
+        ));
     }
 }

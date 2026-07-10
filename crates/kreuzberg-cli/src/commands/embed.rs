@@ -20,7 +20,6 @@ pub fn embed_command(
         anyhow::bail!("No texts provided for embedding. Provide --text or pipe text via stdin.");
     }
 
-    // Validate no empty texts
     for (i, t) in texts.iter().enumerate() {
         if t.is_empty() {
             anyhow::bail!("Text at position {} is empty. All texts must be non-empty.", i + 1);
@@ -54,7 +53,6 @@ pub fn embed_command(
             (config, model.to_string())
         }
         "local" | "" => {
-            // Validate preset for local provider
             let _preset_info = kreuzberg::get_preset(preset).with_context(|| {
                 format!(
                     "Unknown embedding preset '{}'. Available: {:?}",
@@ -81,7 +79,6 @@ pub fn embed_command(
         }
     };
 
-    // Generate embeddings
     let embeddings = kreuzberg::embed_texts(&texts, &config).context("Failed to generate embeddings")?;
 
     let dimensions = embeddings.first().map(|e| e.len()).unwrap_or(0);

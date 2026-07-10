@@ -45,8 +45,8 @@ final class ReactBridge
         }
 
         $reactDeferred = new \React\Promise\Deferred();
-        $pollIntervalSeconds = 0.001; // 1ms initial interval
-        $maxPollInterval = 0.05; // 50ms max interval
+        $pollIntervalSeconds = 0.001;
+        $maxPollInterval = 0.05;
 
         $timer = null;
         $currentInterval = $pollIntervalSeconds;
@@ -63,13 +63,17 @@ final class ReactBridge
                     $reactDeferred->reject($e);
                 }
             } else {
-                // Adaptive backoff: increase interval
                 $currentInterval = min($currentInterval * 2, $maxPollInterval);
                 if ($timer !== null) {
                     \React\EventLoop\Loop::cancelTimer($timer);
                 }
-                $timer = \React\EventLoop\Loop::addTimer($currentInterval, static function () use ($deferred, $reactDeferred, &$timer, &$currentInterval, $maxPollInterval): void {
-                    // Re-check inside timer
+                $timer = \React\EventLoop\Loop::addTimer($currentInterval, static function () use (
+                    $deferred,
+                    $reactDeferred,
+                    &$timer,
+                    &$currentInterval,
+                    $maxPollInterval,
+                ): void {
                     if ($deferred->isReady()) {
                         try {
                             $result = $deferred->getResult();
@@ -79,14 +83,12 @@ final class ReactBridge
                         }
                     } else {
                         $currentInterval = min($currentInterval * 2, $maxPollInterval);
-                        // Schedule next poll
                         self::schedulePoll($deferred, $reactDeferred, $timer, $currentInterval, $maxPollInterval);
                     }
                 });
             }
         };
 
-        // Start first poll
         $timer = \React\EventLoop\Loop::addTimer($pollIntervalSeconds, $poll);
 
         return $reactDeferred->promise();
@@ -102,7 +104,13 @@ final class ReactBridge
         float &$currentInterval,
         float $maxPollInterval,
     ): void {
-        $timer = \React\EventLoop\Loop::addTimer($currentInterval, static function () use ($deferred, $reactDeferred, &$timer, &$currentInterval, $maxPollInterval): void {
+        $timer = \React\EventLoop\Loop::addTimer($currentInterval, static function () use (
+            $deferred,
+            $reactDeferred,
+            &$timer,
+            &$currentInterval,
+            $maxPollInterval,
+        ): void {
             if ($deferred->isReady()) {
                 try {
                     $result = $deferred->getResult();

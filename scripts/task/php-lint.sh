@@ -4,7 +4,6 @@ set -euo pipefail
 mode="${1:-check}"
 root="$(git rev-parse --show-toplevel)"
 
-# Ensure packages/php tools are installed
 cd "$root/packages/php"
 composer install --quiet 2>/dev/null || true
 
@@ -13,7 +12,6 @@ phpstan="$root/packages/php/vendor/bin/phpstan"
 
 failed=0
 
-# --- packages/php (has its own config, phpstan.neon, etc.) ---
 echo "==> Linting packages/php"
 cd "$root/packages/php"
 case "$mode" in
@@ -27,7 +25,6 @@ check)
   ;;
 esac
 
-# --- e2e/php (format only, no phpstan config) ---
 if [ -d "$root/e2e/php" ]; then
   echo "==> Linting e2e/php"
   cd "$root/e2e/php"
@@ -41,7 +38,6 @@ if [ -d "$root/e2e/php" ]; then
   esac
 fi
 
-# --- examples/php (format only, no phpstan config) ---
 if [ -d "$root/examples/php" ]; then
   echo "==> Linting examples/php"
   cd "$root/examples/php"

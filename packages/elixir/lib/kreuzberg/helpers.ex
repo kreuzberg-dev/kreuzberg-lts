@@ -151,7 +151,7 @@ defmodule Kreuzberg.Helpers do
       {:ok, [force_ocr: true]}
   """
   @spec validate_config(nil | ExtractionConfig.t() | map() | keyword()) ::
-          {:ok, nil | ExtractionConfig.t() | map() | keyword()} | {:error, String.t()}
+  {:ok, nil | ExtractionConfig.t() | map() | keyword()} | {:error, String.t()}
   def validate_config(nil), do: {:ok, nil}
 
   def validate_config(%ExtractionConfig{} = cfg) do
@@ -159,8 +159,6 @@ defmodule Kreuzberg.Helpers do
   end
 
   def validate_config(config) when is_map(config) or is_list(config) do
-    # For plain maps/keyword lists, pass through without validation
-    # ExtractionConfig.to_map/1 already handles string/atom key normalization
     {:ok, config}
   end
 
@@ -203,38 +201,36 @@ defmodule Kreuzberg.Helpers do
   def into_result(map) when is_map(map) do
     normalized = normalize_map_keys(map)
 
-    # Validate required fields exist
     cond do
       not Map.has_key?(normalized, "content") ->
-        {:error, "Missing required field 'content' in extraction result"}
+      {:error, "Missing required field 'content' in extraction result"}
 
       not Map.has_key?(normalized, "mime_type") ->
-        {:error, "Missing required field 'mime_type' in extraction result"}
+      {:error, "Missing required field 'mime_type' in extraction result"}
 
       true ->
-        # Use ExtractionResult.new to properly normalize nested structures
-        result =
-          ExtractionResult.new(
-            normalized["content"],
-            normalized["mime_type"],
-            normalized["metadata"] || %{},
-            normalized["tables"] || [],
-            detected_languages: normalized["detected_languages"],
-            chunks: normalized["chunks"],
-            images: normalized["images"],
-            pages: normalized["pages"],
-            elements: normalized["elements"],
-            ocr_elements: normalized["ocr_elements"],
-            djot_content: normalized["djot_content"],
-            document: normalized["document"],
-            extracted_keywords: normalized["extracted_keywords"],
-            quality_score: normalized["quality_score"],
-            processing_warnings: normalized["processing_warnings"],
-            annotations: normalized["annotations"],
-            llm_usage: normalized["llm_usage"]
-          )
+      result =
+      ExtractionResult.new(
+      normalized["content"],
+      normalized["mime_type"],
+      normalized["metadata"] || %{},
+      normalized["tables"] || [],
+      detected_languages: normalized["detected_languages"],
+      chunks: normalized["chunks"],
+      images: normalized["images"],
+      pages: normalized["pages"],
+      elements: normalized["elements"],
+      ocr_elements: normalized["ocr_elements"],
+      djot_content: normalized["djot_content"],
+      document: normalized["document"],
+      extracted_keywords: normalized["extracted_keywords"],
+      quality_score: normalized["quality_score"],
+      processing_warnings: normalized["processing_warnings"],
+      annotations: normalized["annotations"],
+      llm_usage: normalized["llm_usage"]
+      )
 
-        {:ok, result}
+      {:ok, result}
     end
   end
 
@@ -296,17 +292,17 @@ defmodule Kreuzberg.Helpers do
       {:ok, result_map}
   """
   @spec call_native(
-          (-> {:ok, any()} | {:error, String.t()}),
-          (map() -> {:ok, any()} | {:error, String.t()}),
-          nil | ExtractionConfig.t() | map() | keyword()
-        ) :: {:ok, any()} | {:error, String.t()}
+  (-> {:ok, any()} | {:error, String.t()}),
+  (map() -> {:ok, any()} | {:error, String.t()}),
+  nil | ExtractionConfig.t() | map() | keyword()
+  ) :: {:ok, any()} | {:error, String.t()}
   def call_native(nil_func, _config_func, nil) do
     nil_func.()
   end
 
   def call_native(_nil_func, config_func, config) do
     with {:ok, validated_config} <- validate_config(config),
-         config_map <- ExtractionConfig.to_map(validated_config) do
+    config_map <- ExtractionConfig.to_map(validated_config) do
       config_func.(config_map)
     else
       {:error, reason} -> {:error, "Invalid configuration: #{reason}"}

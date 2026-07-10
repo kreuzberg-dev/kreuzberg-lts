@@ -33,7 +33,6 @@ pub fn extract_and_preserve_code(text: &str, preserved: &mut AHashMap<String, St
     let mut code_block_id = 0;
     let mut inline_code_id = 0;
 
-    // Extract code blocks first
     result = MARKDOWN_CODE_BLOCK_REGEX
         .replace_all(&result, |caps: &regex::Captures| {
             let code_block = caps[0].to_string();
@@ -44,7 +43,6 @@ pub fn extract_and_preserve_code(text: &str, preserved: &mut AHashMap<String, St
         })
         .to_string();
 
-    // Extract inline code
     result = MARKDOWN_INLINE_CODE_REGEX
         .replace_all(&result, |caps: &regex::Captures| {
             let inline_code = caps[0].to_string();
@@ -94,13 +92,11 @@ pub fn preserve_markdown_structure(text: &str) -> String {
     let mut processed_lines: Vec<&str> = Vec::new();
 
     for line in text.lines() {
-        // Preserve headers
         if crate::utils::markdown_utils::is_markdown_header(line) {
             processed_lines.push(line);
             continue;
         }
 
-        // Preserve list items
         if MARKDOWN_LISTS_REGEX.is_match(line) {
             processed_lines.push(line);
             continue;
@@ -228,8 +224,6 @@ mod tests {
         assert!(result.contains("## Header 2"));
         assert!(result.contains("### Header 3"));
     }
-
-    // is_markdown_header tests are in crate::utils::markdown_utils::tests
 
     #[test]
     fn test_is_markdown_list() {

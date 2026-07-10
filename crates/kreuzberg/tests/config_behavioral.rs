@@ -33,7 +33,6 @@ async fn test_output_format_plain_produces_plain() {
         .await
         .expect("Should extract successfully");
 
-    // Plain text should not have markdown or HTML formatting
     assert!(
         !result.content.contains("# ") && !result.content.contains("<h1>"),
         "Plain format should not contain markdown headers or HTML tags, got: {}",
@@ -60,7 +59,6 @@ async fn test_output_format_markdown_produces_markdown() {
         .await
         .expect("Should extract successfully");
 
-    // Verify markdown formatting is present (# for headers or ** for bold)
     let has_markdown = result.content.contains("# ") || result.content.contains("**") || result.content.contains("*");
 
     assert!(
@@ -84,7 +82,6 @@ async fn test_output_format_html_produces_html() {
         .await
         .expect("Should extract successfully");
 
-    // HTML format should be safe and not contain injection vectors
     assert!(
         !result.content.contains("<script>"),
         "HTML format should be safe from injection"
@@ -106,10 +103,8 @@ async fn test_result_format_unified_structure() {
         .await
         .expect("Should extract successfully");
 
-    // Unified format should have content in main content field
     assert!(!result.content.is_empty(), "Unified format should have content");
 
-    // Elements should be None or empty for unified format
     assert!(
         result.elements.is_none() || result.elements.as_ref().unwrap().is_empty(),
         "Unified format should not have elements"
@@ -130,10 +125,8 @@ async fn test_result_format_element_based_structure() {
         .await
         .expect("Should extract successfully");
 
-    // Element-based format should produce elements array
     if let Some(elements) = &result.elements {
         assert!(!elements.is_empty(), "Element-based format should have elements");
-        // Verify elements have expected structure
         for element in elements {
             assert!(!element.text.is_empty(), "Elements should have non-empty text");
         }
@@ -144,7 +137,7 @@ async fn test_result_format_element_based_structure() {
 #[tokio::test]
 #[cfg(feature = "chunking")]
 async fn test_chunking_max_chars_limits_chunk_size() {
-    let long_text = "word ".repeat(500); // ~2500 characters
+    let long_text = "word ".repeat(500);
 
     let config = ExtractionConfig {
         chunking: Some(ChunkingConfig {
@@ -164,7 +157,6 @@ async fn test_chunking_max_chars_limits_chunk_size() {
     if let Some(chunks) = result.chunks {
         assert!(chunks.len() > 1, "Long text should produce multiple chunks");
 
-        // Verify chunk size constraint: each chunk should respect max_chars
         for (i, chunk) in chunks.iter().enumerate() {
             assert!(
                 chunk.content.len() <= 100 + 20,
@@ -180,7 +172,7 @@ async fn test_chunking_max_chars_limits_chunk_size() {
 #[tokio::test]
 #[cfg(feature = "chunking")]
 async fn test_chunking_overlap_creates_overlap() {
-    let text = "First sentence. ".repeat(30); // ~480 characters
+    let text = "First sentence. ".repeat(30);
 
     let config = ExtractionConfig {
         chunking: Some(ChunkingConfig {
@@ -198,11 +190,9 @@ async fn test_chunking_overlap_creates_overlap() {
     if let Some(chunks) = result.chunks
         && chunks.len() >= 2
     {
-        // Check if adjacent chunks have overlapping text
         let chunk1_end = &chunks[0].content[chunks[0].content.len().saturating_sub(15)..];
         let chunk2_start = &chunks[1].content[..chunks[1].content.len().min(15)];
 
-        // There should be some overlap in the text
         let overlap_found = chunk1_end.chars().any(|c| c != ' ') && chunk2_start.chars().any(|c| c != ' ');
 
         assert!(
@@ -239,7 +229,6 @@ async fn test_cache_enabled_allows_caching() {
         ..Default::default()
     };
 
-    // Extract twice with same content
     let result1 = extract_bytes(text.as_bytes(), "text/plain", &config)
         .await
         .expect("First extraction should succeed");
@@ -248,7 +237,6 @@ async fn test_cache_enabled_allows_caching() {
         .await
         .expect("Second extraction should succeed");
 
-    // Results should be identical
     assert_eq!(
         result1.content, result2.content,
         "Cache enabled should produce consistent results"
@@ -287,7 +275,6 @@ async fn test_quality_processing_enabled_produces_score() {
         .await
         .expect("Should extract successfully");
 
-    // Quality processing should add a quality_score to metadata
     let has_quality_score = result.metadata.additional.contains_key("quality_score");
     assert!(
         has_quality_score,
@@ -332,10 +319,8 @@ async fn test_output_format_with_element_based() {
         .await
         .expect("Should extract successfully");
 
-    // Should have elements
     assert!(result.elements.is_some(), "ElementBased format should produce elements");
 
-    // Content should still be markdown formatted
     assert!(
         !result.content.contains("<p>"),
         "Output format should not contain HTML tags"
@@ -346,7 +331,7 @@ async fn test_output_format_with_element_based() {
 #[tokio::test]
 #[cfg(feature = "chunking")]
 async fn test_chunking_overlap_maximum() {
-    let text = "x".repeat(200); // Simple repeated character
+    let text = "x".repeat(200);
 
     let config = ExtractionConfig {
         chunking: Some(ChunkingConfig {
@@ -362,7 +347,6 @@ async fn test_chunking_overlap_maximum() {
         .expect("Should extract successfully");
 
     if let Some(chunks) = result.chunks {
-        // Verify max_overlap is not exceeded
         for (i, chunk) in chunks.iter().enumerate() {
             assert!(
                 chunk.content.len() <= 60 + 10,
@@ -378,7 +362,7 @@ async fn test_chunking_overlap_maximum() {
 #[tokio::test]
 #[cfg(feature = "chunking")]
 async fn test_large_document_with_combined_config() {
-    let large_text = "This is a paragraph. ".repeat(100); // ~2000 characters
+    let large_text = "This is a paragraph. ".repeat(100);
 
     let config = ExtractionConfig {
         output_format: OutputFormat::Plain,
@@ -396,10 +380,8 @@ async fn test_large_document_with_combined_config() {
         .await
         .expect("Should extract successfully");
 
-    // Should have chunks due to size
     assert!(result.chunks.is_some(), "Should produce chunks for large text");
 
-    // Should have quality score
     #[cfg(feature = "quality")]
     {
         assert!(
@@ -408,6 +390,5 @@ async fn test_large_document_with_combined_config() {
         );
     }
 
-    // Should have content in plain format
     assert!(!result.content.is_empty(), "Should have content");
 }

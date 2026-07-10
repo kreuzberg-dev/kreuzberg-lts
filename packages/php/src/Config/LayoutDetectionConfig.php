@@ -43,8 +43,7 @@ readonly class LayoutDetectionConfig
         public bool $applyHeuristics = true,
         public ?string $tableModel = null,
         public ?AccelerationConfig $acceleration = null,
-    ) {
-    }
+    ) {}
 
     /**
      * Create configuration from array data.

@@ -20,13 +20,13 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  *            bounding box as [left, top, right, bottom] in PDF units, or null
  */
 public record HierarchicalBlock(@JsonProperty("text") String text, @JsonProperty("font_size") float fontSize,
-		@JsonProperty("level") String level, @JsonProperty("bbox") float[] bbox) {
-	@JsonCreator
-	public HierarchicalBlock(@JsonProperty("text") String text, @JsonProperty("font_size") float fontSize,
-			@JsonProperty("level") String level, @JsonProperty("bbox") float[] bbox) {
-		this.text = text != null ? text : "";
-		this.fontSize = fontSize;
-		this.level = level != null ? level : "body";
-		this.bbox = bbox;
-	}
+    @JsonProperty("level") String level, @JsonProperty("bbox") float[] bbox) {
+    @JsonCreator
+    public HierarchicalBlock(@JsonProperty("text") String text, @JsonProperty("font_size") float fontSize,
+        @JsonProperty("level") String level, @JsonProperty("bbox") float[] bbox) {
+        this.text = text != null ? text : "";
+        this.fontSize = fontSize;
+        this.level = level != null ? level : "body";
+        this.bbox = bbox;
+    }
 }

@@ -1,8 +1,4 @@
 #!/usr/bin/env bash
-# Run textlint prose linting against docs/**/*.md.
-#
-# Usage:
-#   scripts/ci/docs/textlint.sh
 
 set -euo pipefail
 

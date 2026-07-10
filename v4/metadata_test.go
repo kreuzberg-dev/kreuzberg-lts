@@ -662,12 +662,10 @@ func TestMetadataEmptyHTML(t *testing.T) {
 		t.Fatalf("extraction failed: %v", err)
 	}
 
-	// Empty HTML may legitimately produce no content or tables
 	t.Logf("empty HTML extraction: content=%q, tables=%d", result.Content, len(result.Tables))
 
 	htmlMeta, ok := result.Metadata.HTMLMetadata()
 	if !ok {
-		// Empty HTML may not produce metadata - this is acceptable
 		t.Logf("HTMLMetadata not present for empty HTML (format_type: %s)", result.Metadata.Format.Type)
 		return
 	}

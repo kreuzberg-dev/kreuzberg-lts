@@ -1,13 +1,5 @@
 #!/usr/bin/env bash
-#
-# Generate checksum file for Elixir NIF binaries from GitHub release
-#
 # Usage: ./generate_elixir_checksums.sh <version>
-# Example: ./generate_elixir_checksums.sh 4.0.6
-#
-# This script downloads all NIF binaries from the GitHub release and generates
-# the checksum file required by RustlerPrecompiled. It must be run BEFORE
-# `mix compile` because RustlerPrecompiled validates checksums during compilation.
 
 set -euo pipefail
 
@@ -15,7 +7,6 @@ VERSION="${1:?Usage: $0 <version>}"
 REPO="kreuzberg-dev/kreuzberg-lts"
 CHECKSUM_FILE="packages/elixir/checksum-Elixir.Kreuzberg.Native.exs"
 
-# Targets that are actually built in CI (from publish.yaml elixir-natives matrix)
 TARGETS=(
   "aarch64-apple-darwin"
   "aarch64-unknown-linux-gnu"
@@ -23,22 +14,18 @@ TARGETS=(
   "x86_64-pc-windows-gnu"
 )
 
-# NIF versions from native.ex
 NIF_VERSIONS=("2.16" "2.17")
 
-# Create temporary directory for downloads
 TMPDIR=$(mktemp -d)
 trap 'rm -rf "$TMPDIR"' EXIT
 
 echo "Generating checksums for v${VERSION}..."
 echo "Download directory: $TMPDIR"
 
-# Start building the checksum file content
 CHECKSUMS=()
 
 for TARGET in "${TARGETS[@]}"; do
   for NIF_VERSION in "${NIF_VERSIONS[@]}"; do
-    # Determine extension based on target
     if [[ "$TARGET" == *"windows"* ]]; then
       EXT="dll"
     else
@@ -50,9 +37,7 @@ for TARGET in "${TARGETS[@]}"; do
 
     echo "Downloading: $FILENAME"
 
-    # Download the file
     if curl -fsSL -o "${TMPDIR}/${FILENAME}" "$URL"; then
-      # Calculate SHA256 checksum
       if command -v sha256sum &>/dev/null; then
         CHECKSUM=$(sha256sum "${TMPDIR}/${FILENAME}" | cut -d' ' -f1)
       elif command -v shasum &>/dev/null; then
@@ -71,10 +56,8 @@ for TARGET in "${TARGETS[@]}"; do
   done
 done
 
-# Sort checksums for consistent output
 mapfile -t SORTED_CHECKSUMS < <(printf '%s\n' "${CHECKSUMS[@]}" | sort)
 
-# Write the checksum file
 echo "Writing checksum file: $CHECKSUM_FILE"
 {
   echo "%{"

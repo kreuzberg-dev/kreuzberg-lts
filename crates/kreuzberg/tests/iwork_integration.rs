@@ -16,8 +16,6 @@ mod iwork_tests {
         PathBuf::from(manifest).join("../../test_documents/iwork").join(name)
     }
 
-    // ── MIME type unit tests ────────────────────────────────────────────
-
     #[test]
     fn test_pages_extractor_mime_types() {
         let extractor = PagesExtractor::new();
@@ -48,13 +46,10 @@ mod iwork_tests {
         );
     }
 
-    // ── Proto text extraction unit tests ────────────────────────────────
-
     #[test]
     fn test_extract_text_from_proto_basic() {
         use kreuzberg::extractors::iwork::extract_text_from_proto;
 
-        // Protobuf: field 3, wire type 2 (length-delimited) = tag 0x1A
         let text = b"Hello World from iWork";
         let mut proto = vec![0x1A, text.len() as u8];
         proto.extend_from_slice(text);
@@ -71,14 +66,11 @@ mod iwork_tests {
     fn test_extract_text_from_proto_skips_binary() {
         use kreuzberg::extractors::iwork::extract_text_from_proto;
 
-        // Craft a proto payload with binary blob (non-UTF-8)
         let binary: Vec<u8> = (0..20).map(|i| i * 7 + 3).collect();
         let mut proto = vec![0x1A, binary.len() as u8];
         proto.extend_from_slice(&binary);
 
-        // Should not panic and should produce no valid text strings
         let extracted = extract_text_from_proto(&proto);
-        // Binary data should not produce alphabetic strings
         for s in &extracted {
             assert!(
                 !s.chars().all(|c| c.is_alphabetic()),
@@ -91,12 +83,11 @@ mod iwork_tests {
     fn test_extract_text_from_proto_nested() {
         use kreuzberg::extractors::iwork::extract_text_from_proto;
 
-        // Nested message: outer field 2 wrapping an inner field 3 with text
         let inner_text = b"Nested Content";
         let mut inner = vec![0x1A, inner_text.len() as u8];
         inner.extend_from_slice(inner_text);
 
-        let mut outer = vec![0x12, inner.len() as u8]; // field 2, wire type 2
+        let mut outer = vec![0x12, inner.len() as u8];
         outer.extend_from_slice(&inner);
 
         let extracted = extract_text_from_proto(&outer);
@@ -106,8 +97,6 @@ mod iwork_tests {
             extracted
         );
     }
-
-    // ── MIME type detection integration tests ───────────────────────────
 
     #[test]
     fn test_mime_detection_numbers_file() {
@@ -139,8 +128,6 @@ mod iwork_tests {
         );
     }
 
-    // ── Extraction integration tests ─────────────────────────────────────
-
     #[tokio::test]
     #[cfg(feature = "tokio-runtime")]
     async fn test_extract_numbers_document() {
@@ -160,7 +147,6 @@ mod iwork_tests {
             .expect("NumbersExtractor should not fail on valid file");
         let result = derive_extraction_result(doc, false, kreuzberg::OutputFormat::Plain);
 
-        // A valid Numbers file should produce some text output
         assert!(
             !result.content.is_empty(),
             "Numbers extraction should produce non-empty text. Got: {:?}",
@@ -181,22 +167,17 @@ mod iwork_tests {
         let extractor = PagesExtractor::new();
         let config = ExtractionConfig::default();
 
-        // Extraction should not panic — it may produce empty content if the
-        // fixture is a stub (non-Snappy compressed IWA), but should not error.
         let doc = extractor
             .extract_bytes(&content, "application/x-iwork-pages-sffpages", &config)
             .await
             .expect("PagesExtractor should not fail on valid ZIP file");
         let result = derive_extraction_result(doc, false, kreuzberg::OutputFormat::Plain);
 
-        // For any valid .pages file, extraction should succeed (even if empty)
         assert!(
             result.mime_type.as_ref() == "application/x-iwork-pages-sffpages",
             "MIME type should be preserved in result"
         );
     }
-
-    // ── iwa_entries listing test ─────────────────────────────────────────
 
     #[test]
     fn test_list_iwa_entries_numbers() {

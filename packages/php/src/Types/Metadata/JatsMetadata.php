@@ -21,8 +21,7 @@ readonly class JatsMetadata
         public ?string $license = null,
         public array $historyDates = [],
         public array $contributorRoles = [],
-    ) {
-    }
+    ) {}
 
     /**
      * @param array<string, mixed> $data
@@ -82,10 +81,7 @@ readonly class JatsMetadata
         }
 
         if ($this->contributorRoles !== []) {
-            $result['contributor_roles'] = array_map(
-                fn (ContributorRole $c) => $c->toArray(),
-                $this->contributorRoles,
-            );
+            $result['contributor_roles'] = array_map(fn(ContributorRole $c) => $c->toArray(), $this->contributorRoles);
         }
 
         return $result;

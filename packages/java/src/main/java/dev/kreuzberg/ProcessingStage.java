@@ -7,22 +7,22 @@ package dev.kreuzberg;
  * Controls when a post-processor is applied in the extraction pipeline.
  */
 public enum ProcessingStage {
-	/** Runs before built-in enrichments. */
-	EARLY("early"),
+    /** Runs before built-in enrichments. */
+    EARLY("early"),
 
-	/** Runs after core extraction (default). */
-	MIDDLE("middle"),
+    /** Runs after core extraction (default). */
+    MIDDLE("middle"),
 
-	/** Runs after other processors have completed. */
-	LATE("late");
+    /** Runs after other processors have completed. */
+    LATE("late");
 
-	private final String wireName;
+    private final String wireName;
 
-	ProcessingStage(String wireName) {
-		this.wireName = wireName;
-	}
+    ProcessingStage(String wireName) {
+        this.wireName = wireName;
+    }
 
-	String wireName() {
-		return wireName;
-	}
+    String wireName() {
+        return wireName;
+    }
 }

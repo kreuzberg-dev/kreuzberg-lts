@@ -72,7 +72,6 @@ mod tests {
         assert!(json.contains("\"x0\":50.0"));
         assert!(json.contains("\"y1\":700.0"));
 
-        // Round-trip
         let deserialized: Table = serde_json::from_str(&json).unwrap();
         assert_eq!(deserialized.page_number, 1);
         assert!(deserialized.bounding_box.is_some());
@@ -93,17 +92,14 @@ mod tests {
         };
 
         let json = serde_json::to_string(&table).unwrap();
-        // skip_serializing_if = None means bounding_box is omitted
         assert!(!json.contains("bounding_box"));
 
-        // Round-trip
         let deserialized: Table = serde_json::from_str(&json).unwrap();
         assert!(deserialized.bounding_box.is_none());
     }
 
     #[test]
     fn test_table_deserialization_without_bounding_box_field() {
-        // Backward compatibility: old JSON without bounding_box field should deserialize
         let json = r#"{"cells":[["A","B"]],"markdown":"| A | B |","page_number":1}"#;
         let table: Table = serde_json::from_str(json).unwrap();
         assert!(table.bounding_box.is_none());
@@ -127,7 +123,6 @@ mod tests {
         let cloned = table.clone();
         assert_eq!(cloned.bounding_box, table.bounding_box);
 
-        // Debug should work
         let debug = format!("{:?}", table);
         assert!(debug.contains("bounding_box"));
     }
@@ -149,11 +144,9 @@ mod tests {
             }),
         };
 
-        // Serialize and deserialize
         let json_value = serde_json::to_value(&original).unwrap();
         let deserialized: Table = serde_json::from_value(json_value).unwrap();
 
-        // Check all fields are preserved exactly
         assert_eq!(deserialized.cells, original.cells);
         assert_eq!(deserialized.markdown, original.markdown);
         assert_eq!(deserialized.page_number, original.page_number);

@@ -176,8 +176,6 @@ impl kreuzberg::plugins::DocumentExtractor for FfiDocumentExtractor {
                 source: Some(Box::new(e)),
             })?;
 
-        // Convert ExtractionResult from FFI callback to InternalDocument.
-        // FFI callers return ExtractionResult JSON; we convert to the internal format.
         let mut doc = kreuzberg::types::internal::InternalDocument::new("ffi");
         doc.metadata = extraction_result.metadata;
         doc.tables = extraction_result.tables;
@@ -188,7 +186,6 @@ impl kreuzberg::plugins::DocumentExtractor for FfiDocumentExtractor {
         if let Some(annotations) = extraction_result.annotations {
             doc.annotations = Some(annotations);
         }
-        // Push content as a paragraph element
         if !extraction_result.content.is_empty() {
             use kreuzberg::types::internal::{ElementKind, InternalElement};
             let elem = InternalElement::text(ElementKind::Paragraph, &extraction_result.content, 0);
@@ -264,9 +261,6 @@ pub unsafe extern "C" fn kreuzberg_register_document_extractor(
         }
 
         // SAFETY: C callers may pass NULL for function pointer parameters.
-        // Bare fn types in Rust are guaranteed non-null, so the compiler may
-        // optimize away a direct `== 0` check. `black_box` prevents this by
-        // hiding the value from the optimizer.
         if core::hint::black_box(callback as usize) == 0 {
             set_last_error("DocumentExtractor callback cannot be NULL".to_string());
             return false;

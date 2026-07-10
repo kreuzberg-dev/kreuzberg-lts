@@ -30,10 +30,8 @@ pub fn transform_to_document_structure(result: &ExtractionResult) -> DocumentStr
     if let Some(ref pages) = result.pages {
         for page in pages {
             let page_num = page.page_number as u32;
-            // Reset section stack for each new page (prevents cross-page nesting)
             section_stack.clear();
 
-            // Process hierarchy blocks (headings) first — they create section groups
             if let Some(ref hierarchy) = page.hierarchy {
                 for block in &hierarchy.blocks {
                     let level = parse_heading_level(&block.level);
@@ -55,7 +53,6 @@ pub fn transform_to_document_structure(result: &ExtractionResult) -> DocumentStr
                 }
             }
 
-            // Process tables
             for table_arc in &page.tables {
                 let table = table_arc.as_ref();
                 let grid = table_cells_to_grid(&table.cells);
@@ -68,7 +65,6 @@ pub fn transform_to_document_structure(result: &ExtractionResult) -> DocumentStr
                 );
             }
 
-            // Process images
             for (idx, image_arc) in page.images.iter().enumerate() {
                 let image = image_arc.as_ref();
                 push_content_node(
@@ -84,23 +80,18 @@ pub fn transform_to_document_structure(result: &ExtractionResult) -> DocumentStr
                 );
             }
 
-            // Process page content text (paragraphs, list items) only if no hierarchy blocks
-            // (hierarchy blocks already contain the structured body content)
             let has_hierarchy_blocks = page.hierarchy.as_ref().is_some_and(|h| !h.blocks.is_empty());
             if !has_hierarchy_blocks {
                 process_text_content(&mut doc, &section_stack, &page.content, Some(page_num));
             }
 
-            // Add PageBreak between pages (not after last)
             if result.pages.as_ref().is_some_and(|all| page.page_number < all.len()) {
                 push_content_node(&mut doc, &section_stack, NodeContent::PageBreak, Some(page_num), None);
             }
         }
     } else {
-        // No pages — process unified content
         process_text_content(&mut doc, &section_stack, &result.content, Some(1));
 
-        // Process global tables
         for table in &result.tables {
             let grid = table_cells_to_grid(&table.cells);
             push_content_node(
@@ -112,7 +103,6 @@ pub fn transform_to_document_structure(result: &ExtractionResult) -> DocumentStr
             );
         }
 
-        // Process global images
         if let Some(ref images) = result.images {
             for (idx, image) in images.iter().enumerate() {
                 let page_num = image.page_number.map(|p| p as u32).unwrap_or(1);
@@ -131,7 +121,6 @@ pub fn transform_to_document_structure(result: &ExtractionResult) -> DocumentStr
         }
     }
 
-    // Validation — debug assert in dev, silent in release
     debug_assert!(
         doc.validate().is_ok(),
         "DocumentStructure validation failed: {:?}",
@@ -140,10 +129,6 @@ pub fn transform_to_document_structure(result: &ExtractionResult) -> DocumentStr
 
     doc
 }
-
-// ============================================================================
-// Section Nesting
-// ============================================================================
 
 /// Push a heading-driven `Group` node onto the tree, managing the section stack.
 fn push_heading_group(
@@ -154,7 +139,6 @@ fn push_heading_group(
     page: Option<u32>,
     bbox: Option<BoundingBox>,
 ) {
-    // Pop sections at same or deeper level
     while section_stack.last().is_some_and(|(l, _)| *l >= level) {
         section_stack.pop();
     }
@@ -181,13 +165,10 @@ fn push_heading_group(
 
     let group_idx = doc.push_node(node);
 
-    // Wire parent → child using add_child
     if let Some((_, parent_idx)) = section_stack.last() {
         doc.add_child(*parent_idx, group_idx);
     }
 
-    // Insert a Heading child node inside the Group so downstream consumers
-    // can find headings via NodeContent::Heading (matches DOCX builder behavior).
     let heading_index = doc.len() as u32;
     let heading_node = DocumentNode {
         id: NodeId::generate("heading", text, page, heading_index),
@@ -239,17 +220,12 @@ fn push_content_node(
 
     let node_idx = doc.push_node(node);
 
-    // Wire parent → child using add_child, EXCEPT for PageBreak nodes which are always root-level
     if !is_page_break && let Some((_, parent_idx)) = section_stack.last() {
         doc.add_child(*parent_idx, node_idx);
     }
 
     node_idx
 }
-
-// ============================================================================
-// Text Content Processing
-// ============================================================================
 
 /// Process text content into paragraphs and list items.
 fn process_text_content(
@@ -265,24 +241,20 @@ fn process_text_content(
     let list_items = detect_list_items(content);
 
     if list_items.is_empty() {
-        // No list items — split into paragraphs
         add_paragraphs(doc, section_stack, content, page);
         return;
     }
 
     let mut current_offset = 0;
 
-    // Group consecutive list items by type
     let mut list_groups: Vec<(ListType, Vec<(usize, usize)>)> = Vec::new();
 
     for item in &list_items {
-        // Add paragraphs before list items
         if current_offset < item.byte_start {
             let text_before = &content[current_offset..item.byte_start];
             add_paragraphs(doc, section_stack, text_before, page);
         }
 
-        // Group consecutive same-type list items
         if list_groups.last().is_some_and(|(t, _)| *t == item.list_type) {
             if let Some(group) = list_groups.last_mut() {
                 group.1.push((item.byte_start, item.byte_end));
@@ -294,11 +266,9 @@ fn process_text_content(
         current_offset = item.byte_end;
     }
 
-    // Emit list groups
     for (list_type, items) in &list_groups {
         let ordered = matches!(list_type, ListType::Numbered | ListType::Lettered);
 
-        // Create List container
         let list_content = NodeContent::List { ordered };
         let list_index = doc.len() as u32;
         let list_node = DocumentNode {
@@ -315,15 +285,12 @@ fn process_text_content(
         };
         let list_idx = doc.push_node(list_node);
 
-        // Wire parent → list using add_child()
         if let Some((_, parent_idx)) = section_stack.last() {
             doc.add_child(*parent_idx, list_idx);
         }
 
-        // Add list items as children
         for (start, end) in items {
             let item_text = content[*start..*end].trim();
-            // Strip list marker
             let clean_text = strip_list_marker(item_text);
 
             let item_content = NodeContent::ListItem {
@@ -347,7 +314,6 @@ fn process_text_content(
         }
     }
 
-    // Add remaining text after last list item
     if current_offset < content.len() {
         let text_after = &content[current_offset..];
         add_paragraphs(doc, section_stack, text_after, page);
@@ -404,10 +370,6 @@ fn parse_markdown_heading(line: &str) -> Option<(u8, &str)> {
     Some((hashes as u8, text))
 }
 
-// ============================================================================
-// Table Conversion
-// ============================================================================
-
 /// Convert a `Vec<Vec<String>>` cell grid into a `TableGrid`.
 fn table_cells_to_grid(cells: &[Vec<String>]) -> TableGrid {
     let rows = cells.len() as u32;
@@ -422,7 +384,7 @@ fn table_cells_to_grid(cells: &[Vec<String>]) -> TableGrid {
                 col: col_idx as u32,
                 row_span: 1,
                 col_span: 1,
-                is_header: row_idx == 0, // First row assumed header
+                is_header: row_idx == 0,
                 bbox: None,
             });
         }
@@ -434,10 +396,6 @@ fn table_cells_to_grid(cells: &[Vec<String>]) -> TableGrid {
         cells: grid_cells,
     }
 }
-
-// ============================================================================
-// Helpers
-// ============================================================================
 
 /// Parse heading level from "h1"-"h6" strings. Returns None for "body" or unknown.
 fn parse_heading_level(level: &str) -> Option<u8> {
@@ -455,13 +413,11 @@ fn parse_heading_level(level: &str) -> Option<u8> {
 /// Strip list marker from text (e.g., "- item" → "item", "1. item" → "item").
 fn strip_list_marker(text: &str) -> &str {
     let trimmed = text.trim_start();
-    // Bullet markers
     for prefix in &["- ", "* ", "• "] {
         if let Some(rest) = trimmed.strip_prefix(prefix) {
             return rest;
         }
     }
-    // Numbered markers (e.g., "1. ", "12. ")
     if let Some(dot_pos) = trimmed.find('.') {
         let prefix = &trimmed[..dot_pos];
         if prefix.chars().all(|c| c.is_ascii_digit())
@@ -471,7 +427,6 @@ fn strip_list_marker(text: &str) -> &str {
         {
             return rest;
         }
-        // Lettered markers (e.g., "a. ", "B. ")
         if prefix.len() == 1
             && prefix.chars().all(|c| c.is_alphabetic())
             && let Some(rest) = trimmed[dot_pos + 1..].strip_prefix(' ')
@@ -491,12 +446,10 @@ fn estimate_node_count(result: &ExtractionResult) -> usize {
                 let hierarchy_count = p.hierarchy.as_ref().map(|h| h.blocks.len()).unwrap_or(0);
                 let table_count = p.tables.len();
                 let image_count = p.images.len();
-                // Rough estimate: hierarchy blocks + tables + images + ~5 paragraphs per page
                 hierarchy_count + table_count + image_count + 5
             })
             .sum()
     } else {
-        // Estimate from content length
         (result.content.len() / 200).max(4)
     };
 
@@ -530,7 +483,6 @@ mod tests {
         assert!(doc.validate().is_ok());
         assert_eq!(doc.len(), 3);
 
-        // All root-level body nodes
         let body: Vec<_> = doc.body_roots().collect();
         assert_eq!(body.len(), 3);
     }
@@ -542,10 +494,8 @@ mod tests {
 
         assert!(doc.validate().is_ok());
 
-        // Should have 1 List container + 3 ListItem children = 4 nodes
         assert_eq!(doc.len(), 4);
 
-        // Root should be the List container
         let roots: Vec<_> = doc.body_roots().collect();
         assert_eq!(roots.len(), 1);
         match &roots[0].1.content {
@@ -553,7 +503,6 @@ mod tests {
             _ => panic!("Expected List node"),
         }
 
-        // List should have 3 children
         assert_eq!(doc.nodes[0].children.len(), 3);
     }
 
@@ -597,7 +546,6 @@ mod tests {
         let doc = transform_to_document_structure(&result);
         assert!(doc.validate().is_ok());
 
-        // Root: H1 Group
         let roots: Vec<_> = doc.body_roots().collect();
         assert_eq!(roots.len(), 1);
         match &roots[0].1.content {
@@ -612,7 +560,6 @@ mod tests {
             _ => panic!("Expected Group node"),
         }
 
-        // H1 should have H2 Group as child
         let h1_children = &doc.nodes[0].children;
         assert!(!h1_children.is_empty());
     }
@@ -651,14 +598,12 @@ mod tests {
         let doc = transform_to_document_structure(&result);
         assert!(doc.validate().is_ok());
 
-        // Two separate root-level H1 groups
         let roots: Vec<_> = doc.body_roots().collect();
         assert_eq!(roots.len(), 2);
     }
 
     #[test]
     fn test_skipped_heading_levels() {
-        // H1 → H3 (no H2)
         let result = ExtractionResult {
             pages: Some(vec![PageContent {
                 page_number: 1,
@@ -691,7 +636,6 @@ mod tests {
         let doc = transform_to_document_structure(&result);
         assert!(doc.validate().is_ok());
 
-        // H1 Group should have 2 children: Heading("Title") + H3 Group
         assert_eq!(doc.nodes[0].children.len(), 2);
         let heading_idx = doc.nodes[0].children[0];
         assert!(matches!(
@@ -710,7 +654,6 @@ mod tests {
         assert!(doc.validate().is_ok());
         assert_eq!(doc.len(), 2);
 
-        // All nodes should be root-level (no parent)
         for node in &doc.nodes {
             assert!(node.parent.is_none());
         }
@@ -734,7 +677,6 @@ mod tests {
         let doc = transform_to_document_structure(&result);
         assert!(doc.validate().is_ok());
 
-        // Find Table node
         let table_node = doc
             .nodes
             .iter()
@@ -745,7 +687,7 @@ mod tests {
             assert_eq!(grid.rows, 2);
             assert_eq!(grid.cols, 2);
             assert_eq!(grid.cells.len(), 4);
-            assert!(grid.cells[0].is_header); // First row is header
+            assert!(grid.cells[0].is_header);
             assert!(!grid.cells[2].is_header);
         }
     }

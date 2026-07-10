@@ -385,8 +385,7 @@ readonly class ExtractionConfig
          * @default null
          */
         public ?ContentFilterConfig $contentFilter = null,
-    ) {
-    }
+    ) {}
 
     /**
      * Create configuration from array data.
@@ -701,7 +700,6 @@ readonly class ExtractionConfig
         $currentSection = null;
 
         foreach ($lines as $line) {
-            // Remove comments and trim
             if (($commentPos = strpos($line, '#')) !== false) {
                 $line = substr($line, 0, $commentPos);
             }
@@ -711,7 +709,6 @@ readonly class ExtractionConfig
                 continue;
             }
 
-            // Parse section header [section_name]
             if (preg_match('/^\[([^\]]+)\]$/', $line, $matches)) {
                 $currentSection = $matches[1];
                 if (!isset($result[$currentSection])) {
@@ -720,12 +717,10 @@ readonly class ExtractionConfig
                 continue;
             }
 
-            // Parse key = value
             if (preg_match('/^([^=]+)=(.+)$/', $line, $matches)) {
                 $key = trim($matches[1]);
                 $value = trim($matches[2]);
 
-                // Convert value type
                 if (strtolower($value) === 'true') {
                     $value = true;
                 } elseif (strtolower($value) === 'false') {
@@ -733,7 +728,6 @@ readonly class ExtractionConfig
                 } elseif (is_numeric($value)) {
                     $value = strpos($value, '.') !== false ? (float) $value : (int) $value;
                 } else {
-                    // Remove quotes if present
                     $value = preg_replace('/^["\']|["\']$/', '', $value);
                 }
 
@@ -764,11 +758,9 @@ readonly class ExtractionConfig
             throw new \InvalidArgumentException("Unable to read file: {$path}");
         }
 
-        // Detect format from file extension
         if (str_ends_with($path, '.toml')) {
             $data = self::parseTOML($contents);
         } else {
-            // Default to JSON
             $data = json_decode($contents, true);
             if (json_last_error() !== JSON_ERROR_NONE) {
                 throw new \InvalidArgumentException('Invalid JSON: ' . json_last_error_msg());
@@ -808,7 +800,6 @@ readonly class ExtractionConfig
 
             $parent = dirname($current);
             if ($parent === $current) {
-                // Reached filesystem root
                 break;
             }
             $current = $parent;
@@ -846,61 +837,47 @@ readonly class ExtractionConfig
             'content_filter' => $this->contentFilter?->toArray(),
         ];
 
-        // Add simple boolean/string fields only if explicitly set to non-default values
-        // useCache defaults to true, so only add if false
         if (!$this->useCache) {
             $result['use_cache'] = false;
         }
-        // enableQualityProcessing defaults to true, so only add if false
         if (!$this->enableQualityProcessing) {
             $result['enable_quality_processing'] = false;
         }
-        // forceOcr defaults to false, so only add if true
         if ($this->forceOcr) {
             $result['force_ocr'] = true;
         }
-        // disableOcr defaults to false, so only add if true
         if ($this->disableOcr) {
             $result['disable_ocr'] = true;
         }
-        // forceOcrPages defaults to null, so only add if set
         if ($this->forceOcrPages !== null) {
             $result['force_ocr_pages'] = $this->forceOcrPages;
         }
-        // maxConcurrentExtractions defaults to null, so only add if set
         if ($this->maxConcurrentExtractions !== null) {
             $result['max_concurrent_extractions'] = $this->maxConcurrentExtractions;
         }
-        // resultFormat defaults to 'unified', so only add if different
         if ($this->resultFormat !== 'unified') {
             $result['result_format'] = $this->resultFormat;
         }
-        // outputFormat defaults to 'plain', so only add if different
         if ($this->outputFormat !== 'plain') {
             $result['output_format'] = $this->outputFormat;
         }
-        // includeDocumentStructure defaults to false, so only add if true
         if ($this->includeDocumentStructure) {
             $result['include_document_structure'] = true;
         }
-        // cacheNamespace defaults to null, so only add if set
         if ($this->cacheNamespace !== null) {
             $result['cache_namespace'] = $this->cacheNamespace;
         }
-        // cacheTtlSecs defaults to null, so only add if set
         if ($this->cacheTtlSecs !== null) {
             $result['cache_ttl_secs'] = $this->cacheTtlSecs;
         }
-        // extractionTimeoutSecs defaults to null, so only add if set
         if ($this->extractionTimeoutSecs !== null) {
             $result['extraction_timeout_secs'] = $this->extractionTimeoutSecs;
         }
-        // maxArchiveDepth defaults to 3, so only add if different
         if ($this->maxArchiveDepth !== 3) {
             $result['max_archive_depth'] = $this->maxArchiveDepth;
         }
 
-        return array_filter($result, static fn ($value): bool => $value !== null);
+        return array_filter($result, static fn($value): bool => $value !== null);
     }
 
     /**

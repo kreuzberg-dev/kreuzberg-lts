@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Validate that ffi-download directory exists
 if [ ! -d "ffi-download" ]; then
   echo "✗ Error: ffi-download directory not found"
   exit 1
@@ -15,7 +14,6 @@ mkdir -p crates/kreuzberg-ffi
 echo "Moving FFI artifacts from ffi-download..."
 echo ""
 
-# Move library files
 LIBRARY_COUNT=0
 while IFS= read -r file; do
   filename="$(basename "$file")"
@@ -33,7 +31,6 @@ if [ "$LIBRARY_COUNT" -eq 0 ]; then
   echo "⚠ Warning: No FFI library files found in ffi-download (may be a cross-platform build artifact)"
 fi
 
-# Copy header file to Go package (check both flat and nested paths)
 HEADER_FOUND=false
 if [ -f "ffi-download/kreuzberg.h" ]; then
   cp ffi-download/kreuzberg.h v4/internal/ffi/
@@ -54,13 +51,11 @@ if [ "$HEADER_FOUND" = false ]; then
   exit 1
 fi
 
-# Verify header was copied
 if [ ! -f "v4/internal/ffi/kreuzberg.h" ]; then
   echo "✗ Error: Failed to copy kreuzberg.h to v4/internal/ffi/"
   exit 1
 fi
 
-# Copy pkg-config file (check both flat and nested paths)
 if [ -f "ffi-download/kreuzberg-ffi.pc" ]; then
   cp ffi-download/kreuzberg-ffi.pc crates/kreuzberg-ffi/
   echo "✓ Copied kreuzberg-ffi.pc to crates/kreuzberg-ffi/"

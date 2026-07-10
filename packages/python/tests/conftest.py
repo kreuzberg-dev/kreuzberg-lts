@@ -31,8 +31,6 @@ def test_documents() -> Path:
     return path
 
 
-# Session-level cache for all PDF extractions
-# PDFium can only be initialized once per process
 _pdf_extraction_cache: dict[str, ExtractionResult | None] = {}
 _pdfium_initialized: bool = False
 
@@ -50,14 +48,10 @@ def get_cached_pdf_extraction(pdf_path: str, config: Any) -> ExtractionResult | 
 
     global _pdfium_initialized
 
-    # If PDFium is already initialized, return the first successful result
-    # (PDFium can't be used to extract multiple PDFs after initialization)
     if _pdfium_initialized:
-        # Return the first successful extraction result
         for result in _pdf_extraction_cache.values():
             if result is not None:
                 return result
-        # No successful extraction yet - shouldn't happen
         return None
 
     if pdf_path not in _pdf_extraction_cache:
@@ -68,10 +62,8 @@ def get_cached_pdf_extraction(pdf_path: str, config: Any) -> ExtractionResult | 
             return result
         except Exception as exc:
             if "PdfiumLibraryBindingsAlreadyInitialized" in str(exc):
-                # PDFium is already initialized by another test
                 _pdfium_initialized = True
                 _pdf_extraction_cache[pdf_path] = None
-                # Return any previously successful extraction
                 for result in _pdf_extraction_cache.values():
                     if result is not None:
                         return result
@@ -92,6 +84,5 @@ def _pdfium_session_management() -> Generator[None, None, None]:
 
     yield
 
-    # Clear cache after session
     _pdf_extraction_cache.clear()
     _pdfium_initialized = False

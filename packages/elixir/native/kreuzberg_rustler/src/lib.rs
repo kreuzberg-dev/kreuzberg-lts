@@ -26,7 +26,6 @@ pub(crate) mod safe;
 pub mod utilities;
 mod utils;
 
-// The rustler::init! macro will automatically discover NIF functions in public submodules
 rustler::init!("Elixir.Kreuzberg.Native", load = on_load);
 
 #[allow(non_local_definitions)]

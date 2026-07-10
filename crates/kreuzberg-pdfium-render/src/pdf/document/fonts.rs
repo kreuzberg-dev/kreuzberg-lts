@@ -27,10 +27,6 @@ use js_sys::{ArrayBuffer, Uint8Array};
 #[cfg(target_arch = "wasm32")]
 use web_sys::{Blob, Response, window};
 
-// The following dummy declaration is used only when running cargo doc.
-// It allows documentation of WASM-specific functionality to be included
-// in documentation generated on non-WASM targets.
-
 #[cfg(doc)]
 struct Blob;
 

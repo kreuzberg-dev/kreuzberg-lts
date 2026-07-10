@@ -152,32 +152,11 @@ impl<'a> PdfPageGroupObject<'a> {
 
         if let Some(page_handle) = page_handle {
             if page_handle != self.page_handle() {
-                // The object is attached to a different page.
-
-                // In theory, transferring ownership of the page object from its current
-                // page to the page referenced by this group should be possible:
-
-                // object.remove_object_from_page()?;
-                // object.add_object_to_page_handle(self.page)?;
-
-                // But in practice, as per https://github.com/ajrcarey/pdfium-render/issues/18,
-                // transferring memory ownership of a page object from one page to another
-                // generally segfaults Pdfium. Instead, return an error.
-                // TODO: AJRC - 26/5/25 - this may not be the case where the pages are in the
-                // same document. Refer to https://github.com/ajrcarey/pdfium-render/issues/18
-                // and test. We may be able to relax this restriction. It would be necessary
-                // to rethink the ownership hierarchy of the group, since it would no longer
-                // necessarily be fixed to a single page.
-
                 return Err(PdfiumError::OwnershipAlreadyAttachedToDifferentPage);
             } else {
-                // The object is already attached to this group's parent page.
-
                 true
             }
         } else {
-            // The object isn't attached to a page.
-
             object.add_object_to_page_handle(self.document_handle(), self.page_handle())?;
 
             false
@@ -190,8 +169,6 @@ impl<'a> PdfPageGroupObject<'a> {
 
     /// Adds all the given [PdfPageObject] objects to this group.
     pub fn append(&mut self, objects: &mut [PdfPageObject<'a>]) -> Result<(), PdfiumError> {
-        // Hold off regenerating page content until all objects have been processed.
-
         let content_regeneration_strategy =
             PdfPageIndexCache::get_content_regeneration_strategy_for_page(self.document_handle(), self.page_handle())
                 .unwrap_or(PdfPageContentRegenerationStrategy::AutomaticOnEveryChange);
@@ -210,8 +187,6 @@ impl<'a> PdfPageGroupObject<'a> {
         for object in objects.iter_mut() {
             self.push(object)?;
         }
-
-        // Regenerate page content now, if necessary.
 
         if let Some(page_index) = page_index {
             PdfPageIndexCache::cache_props_for_page(
@@ -240,8 +215,6 @@ impl<'a> PdfPageGroupObject<'a> {
     /// `PdfPageContentRegenerationStrategy::AutomaticOnEveryChange` then content regeneration
     /// will be triggered on the page.
     pub fn remove_objects_from_page(mut self) -> Result<(), PdfiumError> {
-        // Hold off regenerating page content until all objects have been processed.
-
         let content_regeneration_strategy =
             PdfPageIndexCache::get_content_regeneration_strategy_for_page(self.document_handle(), self.page_handle())
                 .unwrap_or(PdfPageContentRegenerationStrategy::AutomaticOnEveryChange);
@@ -257,14 +230,8 @@ impl<'a> PdfPageGroupObject<'a> {
             );
         }
 
-        // Remove the selected objects from the source page.
-
         self.apply_to_each(|object| object.remove_object_from_page())?;
         self.object_handles.clear();
-
-        // A curious upstream bug in Pdfium means that any objects _not_ removed from the page
-        // may be vertically reflected and translated. Attempt to mitigate this.
-        // For more details, see: https://github.com/ajrcarey/pdfium-render/issues/60
 
         let page_height = PdfPoints::new(self.bindings().FPDF_GetPageHeightF(self.page_handle()));
 
@@ -275,18 +242,11 @@ impl<'a> PdfPageGroupObject<'a> {
                 self.bindings(),
             );
 
-            // Undo the reflection effect.
-            // TODO: AJRC - 28/1/23 - it is not clear that _all_ objects need to be unreflected.
-            // The challenge here is detecting which objects, if any, have been affected by
-            // the Pdfium reflection bug. Testing suggests that comparing object transformation matrices
-            // before and after object removal doesn't result in any detectable change to the matrices,
-            // so that approach doesn't work.
+            // ~keep TODO: verify whether every grouped object must be unreflected before page translation.
 
             object.flip_vertically()?;
             object.translate(PdfPoints::ZERO, page_height)?;
         }
-
-        // Regenerate page content now, if necessary.
 
         if let Some(page_index) = page_index {
             PdfPageIndexCache::cache_props_for_page(
@@ -322,27 +282,15 @@ impl<'a> PdfPageGroupObject<'a> {
     where
         F: Fn(&PdfPageObject) -> bool,
     {
-        // The naive approach of using self.object_handles.retain() directly like so:
-
-        // self.object_handles.retain(|handle| f(&self.get_object_from_handle(handle)));
-
-        // does not work, due to self being borrowed both mutably and immutably simultaneously.
-        // Instead, we build a separate list indicating whether each object should be retained
-        // or discarded ...
-
         let mut do_retain = vec![false; self.object_handles.len()];
 
         for (index, handle) in self.object_handles.iter().enumerate() {
             do_retain[index] = f(&self.get_object_from_handle(handle));
         }
 
-        // ... and then we use that marker list in our call to self.object_handles.retain().
-
         let mut index = 0;
 
         self.object_handles.retain(|_| {
-            // Should the object at index position |index| be retained?
-
             let do_retain = do_retain[index];
 
             index += 1;
@@ -468,14 +416,8 @@ impl<'a> PdfPageGroupObject<'a> {
         destination_page_width: PdfPoints,
         destination_page_height: PdfPoints,
     ) -> Result<PdfPageObject<'a>, PdfiumError> {
-        // Since the PdfPageXObjectForm can only create a form from an entire page, we first
-        // prepare a temporary page containing just the items in this group. Once we have
-        // prepared that page, then we can create the form object.
-
         let src_doc_handle = self.document_handle();
         let src_page_handle = self.page_handle();
-
-        // First, create a new temporary page in the source document...
 
         let tmp_page_index = self.bindings().FPDF_GetPageCount(src_doc_handle);
 
@@ -493,8 +435,6 @@ impl<'a> PdfPageGroupObject<'a> {
             PdfPageContentRegenerationStrategy::AutomaticOnEveryChange,
         );
 
-        // ... move the objects in this group across to the temporary page...
-
         self.apply_to_each(|object| {
             match object.ownership() {
                 PdfPageObjectOwnership::Page(_) => object.remove_object_from_page()?,
@@ -510,8 +450,6 @@ impl<'a> PdfPageGroupObject<'a> {
         })?;
         PdfPage::regenerate_content_immut_for_handle(self.page_handle(), self.bindings())?;
         PdfPage::regenerate_content_immut_for_handle(tmp_page, self.bindings())?;
-
-        // ... create the form object from the temporary page...
 
         let x_object =
             self.bindings()
@@ -531,8 +469,6 @@ impl<'a> PdfPageGroupObject<'a> {
         );
 
         self.bindings().FPDF_CloseXObject(x_object);
-
-        // ... and move objects on the temporary page back to their original locations.
 
         self.apply_to_each(|object| {
             match object.ownership() {
@@ -628,16 +564,6 @@ impl<'a> PdfPageGroupObject<'a> {
         index: PdfPageIndex,
         destination: &PdfDocument,
     ) -> Result<(), PdfiumError> {
-        // Pdfium provides the FPDF_ImportPages() function for copying one or more pages
-        // from one document into another. Using this function as a substitute for true
-        // page object cloning allows us to copy some objects (such as path objects containing
-        // Bézier curves) that PdfPageObject::try_copy() cannot.
-
-        // To use FPDF_ImportPages() as a cloning substitute, we take the following approach:
-
-        // First, we create a new in-memory document and import the source page for this
-        // page object group into that new document.
-
         let temp = Pdfium::pdfium_document_handle_to_result(self.bindings.FPDF_CreateNewDocument(), self.bindings)?;
 
         if let Some(source_page_index) = PdfPageIndexCache::get_index_for_page(self.document_handle, self.page_handle) {
@@ -651,12 +577,6 @@ impl<'a> PdfPageGroupObject<'a> {
         } else {
             return Err(PdfiumError::SourcePageIndexNotInCache);
         }
-
-        // Next, we remove all page objects from the in-memory document _except_ the ones in this group.
-
-        // We cannot compare object references across documents. Instead, we build a map of
-        // the types of objects, their positions, their bounds, and their transformation matrices,
-        // and use this map to determine which objects should be removed from the in-memory page.
 
         let mut objects_to_discard = HashMap::new();
 
@@ -672,9 +592,6 @@ impl<'a> PdfPageGroupObject<'a> {
             }
         }
 
-        // We now have a map of objects that should be removed from the in-memory page; after
-        // we remove them, only the copies of the objects in this group will remain on the page.
-
         temp.pages()
             .get(0)?
             .objects()
@@ -686,9 +603,6 @@ impl<'a> PdfPageGroupObject<'a> {
                 ))
             })?
             .remove_objects_from_page()?;
-
-        // Finally, with only the copies of the objects in this group left on the in-memory page,
-        // we now copy the page back into the given destination.
 
         PdfPages::copy_page_range_between_documents(temp.handle(), 0..=0, destination.handle(), index, self.bindings)?;
 
@@ -880,7 +794,6 @@ impl<'a> PdfPageGroupObject<'a> {
         "every [PdfPageObject] in this group,"
     );
 
-    // The internal implementation of the transform() function used by the create_transform_setters!() macro.
     fn transform_impl(
         &mut self,
         a: PdfMatrixValue,
@@ -893,7 +806,6 @@ impl<'a> PdfPageGroupObject<'a> {
         self.apply_to_each(|object| object.transform(a, b, c, d, e, f))
     }
 
-    // The internal implementation of the reset_matrix() function used by the create_transform_setters!() macro.
     fn reset_matrix_impl(&mut self, matrix: PdfMatrix) -> Result<(), PdfiumError> {
         self.apply_to_each(|object| object.reset_matrix_impl(matrix))
     }
@@ -935,8 +847,6 @@ mod test {
 
         let document = pdfium.load_pdf_from_file(&test_fixture_path("export-test.pdf"), None)?;
 
-        // Form a group of all text objects in the top half of the first page of music ...
-
         let page = document.pages().get(2)?;
 
         let mut group = page.objects().create_empty_group();
@@ -951,8 +861,6 @@ mod test {
                 .collect::<Vec<_>>()
                 .as_mut_slice(),
         )?;
-
-        // ... and confirm the group's bounds are restricted to the top half of the page.
 
         let bounds = group.bounds()?;
 
@@ -970,8 +878,6 @@ mod test {
 
         let document = pdfium.load_pdf_from_file(&test_fixture_path("export-test.pdf"), None)?;
 
-        // Form a group of all text objects in the bottom half of the last page of music ...
-
         let page = document.pages().get(5)?;
 
         let mut group = page.objects().create_empty_group();
@@ -987,8 +893,6 @@ mod test {
                 .as_mut_slice(),
         )?;
 
-        // ... and extract the text from the group.
-
         assert_eq!(
             group.text_separated(" "),
             "Cento Concerti Ecclesiastici a Una, a Due, a Tre, e   a Quattro voci Giacomo Vincenti, Venice, 1605 Edited by Alastair Carey Source is the 1605 reprint of the original 1602 publication.  Item #2 in the source. Folio pages f5r (binding B1) in both Can to and Basso partbooks. The Basso partbook is barred; the Canto par tbook is not. The piece is marked ™Canto solo, Û Tenoreº in the  Basso partbook, indicating it can be sung either by a Soprano or by a  Tenor down an octave. V.  Quem vidistis, pastores, dicite, annuntiate nobis: in terris quis apparuit? R.  Natum vidimus, et choros angelorum collaudantes Dominum. Alleluia. What did you see, shepherds, speak, tell us: who has appeared on earth? We saw the new-born, and choirs of angels praising the Lord. Alleluia. Third responsory at Matins on Christmas Day 2  Basso, bar 47: one tone lower in source."
@@ -999,9 +903,6 @@ mod test {
 
     #[test]
     fn test_group_apply() -> Result<(), PdfiumError> {
-        // Measure the bounds of a group of objects, translate the group, and confirm the
-        // bounds have changed.
-
         let pdfium = test_bind_to_pdfium();
 
         let mut document = pdfium.create_new_pdf()?;

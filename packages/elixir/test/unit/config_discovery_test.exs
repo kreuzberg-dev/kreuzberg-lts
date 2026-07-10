@@ -30,7 +30,6 @@ defmodule KreuzbergTest.Unit.ConfigDiscoveryTest do
     test "discovery walks up directory tree for TOML" do
       with_temp_dir(fn _dir ->
         File.write!("kreuzberg.toml", valid_toml_content())
-        # Create subdirectory to verify walking up
         File.mkdir_p!("nested")
         original_cwd = File.cwd!()
 
@@ -59,7 +58,6 @@ defmodule KreuzbergTest.Unit.ConfigDiscoveryTest do
     @tag :unit
     test "discovers config files with different formats" do
       with_temp_dir(fn _dir ->
-        # Write a TOML file which should be discovered
         File.write!("kreuzberg.toml", valid_toml_content())
         result = Kreuzberg.discover_extraction_config()
         assert {:ok, config} = result
@@ -195,14 +193,11 @@ defmodule KreuzbergTest.Unit.ConfigDiscoveryTest do
         File.write!("custom_config.toml", valid_toml_content())
         config_path = Path.join(dir, "custom_config.toml")
 
-        # This test verifies env var support is available
-        # Actual behavior depends on implementation
         assert is_binary(config_path)
       end)
     end
   end
 
-  # Helper functions
 
   defp valid_toml_content do
     """

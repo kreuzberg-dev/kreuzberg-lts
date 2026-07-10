@@ -111,7 +111,6 @@ async fn test_chunk_response_structure() {
         .expect("Failed to convert to bytes");
     let chunk_response: ChunkResponse = serde_json::from_slice(&body).expect("Failed to deserialize");
 
-    // Verify response structure
     assert!(chunk_response.chunk_count > 0);
     assert_eq!(chunk_response.chunks.len(), chunk_response.chunk_count);
     assert_eq!(chunk_response.chunker_type, "text");
@@ -120,7 +119,6 @@ async fn test_chunk_response_structure() {
     assert!(chunk_response.config.trim);
     assert!(chunk_response.input_size_bytes > 0);
 
-    // Verify chunk metadata
     for (idx, chunk) in chunk_response.chunks.iter().enumerate() {
         assert!(!chunk.content.is_empty());
         assert_eq!(chunk.chunk_index, idx);
@@ -182,7 +180,6 @@ async fn test_chunk_with_defaults() {
         .expect("Failed to convert to bytes");
     let chunk_response: ChunkResponse = serde_json::from_slice(&body).expect("Failed to deserialize");
 
-    // Verify defaults are applied
     assert_eq!(chunk_response.config.max_characters, 2000);
     assert_eq!(chunk_response.config.overlap, 100);
     assert!(chunk_response.config.trim);
@@ -237,7 +234,6 @@ async fn test_chunk_case_insensitive_chunker_type() {
         .expect("Failed to convert to bytes");
     let chunk_response: ChunkResponse = serde_json::from_slice(&body).expect("Failed to deserialize");
 
-    // Verify it's normalized to lowercase
     assert_eq!(chunk_response.chunker_type, "markdown");
 }
 
@@ -276,7 +272,6 @@ async fn test_chunk_long_text() {
         .expect("Failed to convert to bytes");
     let chunk_response: ChunkResponse = serde_json::from_slice(&body).expect("Failed to deserialize");
 
-    // Should have multiple chunks
     assert!(chunk_response.chunk_count > 1);
     assert_eq!(chunk_response.chunks.len(), chunk_response.chunk_count);
 }
@@ -316,7 +311,6 @@ async fn test_chunk_custom_config() {
         .expect("Failed to convert to bytes");
     let chunk_response: ChunkResponse = serde_json::from_slice(&body).expect("Failed to deserialize");
 
-    // Verify custom config was applied
     assert_eq!(chunk_response.config.max_characters, 30);
     assert_eq!(chunk_response.config.overlap, 5);
     assert!(!chunk_response.config.trim);
@@ -326,7 +320,6 @@ async fn test_chunk_custom_config() {
 async fn test_chunk_rejects_json_array() {
     let app = create_router(ExtractionConfig::default());
 
-    // Send a JSON array instead of object
     let response = app
         .oneshot(
             Request::builder()
@@ -339,7 +332,6 @@ async fn test_chunk_rejects_json_array() {
         .await
         .expect("Operation failed");
 
-    // Should reject with 400 or 422, NOT 200
     assert!(
         response.status() == StatusCode::BAD_REQUEST || response.status() == StatusCode::UNPROCESSABLE_ENTITY,
         "Expected 400 or 422, got {}",

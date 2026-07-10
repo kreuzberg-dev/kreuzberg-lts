@@ -61,8 +61,7 @@ readonly class Metadata
         public ?string $outputFormat = null,
         public ?int $extractionDurationMs = null,
         public array $custom = [],
-    ) {
-    }
+    ) {}
 
     /**
      * Create Metadata from array returned by extension.

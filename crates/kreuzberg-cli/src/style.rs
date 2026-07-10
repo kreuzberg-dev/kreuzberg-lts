@@ -67,11 +67,8 @@ mod tests {
 
     #[test]
     fn test_styled_returns_plain_text_when_no_color() {
-        // Set NO_COLOR for this test's assertion scope via direct env check
-        // Since OnceLock caches, we test the raw logic instead.
         let text = "hello";
         let result = format!("{}{}{}", Style::new().render(), text, Style::new().render_reset());
-        // A plain Style produces no ANSI codes, so the result is just the text.
         assert_eq!(result, "hello");
     }
 
@@ -79,14 +76,12 @@ mod tests {
     fn test_styled_applies_ansi_when_style_present() {
         let style = Style::new().fg_color(Some(anstyle::Color::Ansi(AnsiColor::Green)));
         let rendered = format!("{}{}{}", style.render(), "ok", style.render_reset());
-        // The rendered string should contain ANSI escape sequences.
         assert!(rendered.contains("\x1b["));
         assert!(rendered.contains("ok"));
     }
 
     #[test]
     fn test_helper_functions_return_strings() {
-        // Smoke test: all helpers produce non-empty output for non-empty input.
         assert!(!header("h").is_empty());
         assert!(!success("s").is_empty());
         assert!(!dim("d").is_empty());
@@ -95,10 +90,7 @@ mod tests {
 
     #[test]
     fn test_is_color_enabled_respects_no_color_env() {
-        // We cannot easily test OnceLock-cached value, but we can verify the
-        // logic: NO_COLOR absence means colors enabled.
         let has_no_color = std::env::var_os("NO_COLOR").is_some();
-        // The cached result should match the env at init time.
         assert_eq!(is_color_enabled(), !has_no_color);
     }
 }

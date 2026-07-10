@@ -20,17 +20,17 @@ package dev.kreuzberg;
  * @since 4.0.0
  */
 public final class CacheException extends KreuzbergException {
-	/**
+    /**
 	 * Constructs a new cache exception with the specified message.
 	 *
 	 * @param message
 	 *            the detail message explaining why the cache operation failed
 	 */
-	public CacheException(String message) {
-		super(message);
-	}
+    public CacheException(String message) {
+        super(message);
+    }
 
-	/**
+    /**
 	 * Constructs a new cache exception with the specified message and cause.
 	 *
 	 * @param message
@@ -38,7 +38,7 @@ public final class CacheException extends KreuzbergException {
 	 * @param cause
 	 *            the cause of the cache failure
 	 */
-	public CacheException(String message, Throwable cause) {
-		super(message, cause);
-	}
+    public CacheException(String message, Throwable cause) {
+        super(message, cause);
+    }
 }

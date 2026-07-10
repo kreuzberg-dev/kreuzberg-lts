@@ -81,14 +81,9 @@ pub async fn process_images_with_ocr(
     use tokio::sync::Semaphore;
     use tokio::task::JoinSet;
 
-    // Bound concurrency to prevent resource exhaustion with many images.
     let max_tasks = crate::core::config::concurrency::resolve_thread_budget(config.concurrency.as_ref());
     let semaphore = Arc::new(Semaphore::new(max_tasks));
 
-    // Each spawned task returns `(image_index, spawn_blocking_result)`.
-    // `spawn_blocking` itself may fail if the thread panics; we carry that
-    // as a `Result` so we can translate it into a `KreuzbergError` in the
-    // collection loop below, keeping the JoinSet item type concrete.
     type OcrTaskResult = (
         usize,
         Result<Result<crate::types::OcrExtractionResult, crate::ocr::error::OcrError>, tokio::task::JoinError>,
@@ -111,9 +106,6 @@ pub async fn process_images_with_ocr(
         let output_format = output_format.clone();
 
         join_set.spawn(async move {
-            // Acquire a semaphore permit before starting OCR work.
-            // The permit is held for the duration of the blocking task,
-            // ensuring at most MAX_CONCURRENT_OCR_TASKS run simultaneously.
             let _permit = permit.acquire().await.expect("semaphore should not be closed");
 
             let blocking_result = tokio::task::spawn_blocking(move || {
@@ -130,14 +122,11 @@ pub async fn process_images_with_ocr(
     }
 
     while let Some(join_result) = join_set.join_next().await {
-        // JoinSet join error means the async wrapper itself panicked, which is
-        // not expected; propagate as a hard error.
         let (idx, blocking_result) = join_result.map_err(|e| crate::KreuzbergError::Ocr {
             message: format!("OCR task panicked: {}", e),
             source: None,
         })?;
 
-        // Translate spawn_blocking join error (thread panic) into a KreuzbergError.
         let ocr_result = blocking_result.map_err(|e| crate::KreuzbergError::Ocr {
             message: format!("OCR blocking task panicked: {}", e),
             source: None,
@@ -145,11 +134,6 @@ pub async fn process_images_with_ocr(
 
         match ocr_result {
             Ok(ocr_extraction) => {
-                // Recursion prevention: the child ExtractionResult explicitly
-                // disables image extraction (`images: None`) and omits all
-                // expensive post-processing fields (chunking, language detection,
-                // keywords, etc.) to prevent further extraction cycles and
-                // minimize overhead.
                 let extraction_result = ExtractionResult {
                     content: ocr_extraction.content,
                     mime_type: ocr_extraction.mime_type.into(),

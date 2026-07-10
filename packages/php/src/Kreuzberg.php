@@ -42,8 +42,7 @@ final readonly class Kreuzberg
     public function __construct(
         private ?ExtractionConfig $defaultConfig = null,
         private ?EmbeddingConfig $defaultEmbeddingConfig = null,
-    ) {
-    }
+    ) {}
 
     /**
      * Extract content from a file.
@@ -73,11 +72,8 @@ final readonly class Kreuzberg
      * @return ExtractionResult Extraction result with content, metadata, and tables
      * @throws KreuzbergException If extraction fails
      */
-    public function extractBytes(
-        string $data,
-        string $mimeType,
-        ?ExtractionConfig $config = null,
-    ): ExtractionResult {
+    public function extractBytes(string $data, string $mimeType, ?ExtractionConfig $config = null): ExtractionResult
+    {
         $config ??= $this->defaultConfig ?? new ExtractionConfig();
 
         return extract_bytes($data, $mimeType, $config);
@@ -91,10 +87,8 @@ final readonly class Kreuzberg
      * @return array<ExtractionResult> List of extraction results (one per file)
      * @throws KreuzbergException If extraction fails
      */
-    public function batchExtractFiles(
-        array $paths,
-        ?ExtractionConfig $config = null,
-    ): array {
+    public function batchExtractFiles(array $paths, ?ExtractionConfig $config = null): array
+    {
         $config ??= $this->defaultConfig ?? new ExtractionConfig();
 
         return batch_extract_files($paths, $config);
@@ -109,11 +103,8 @@ final readonly class Kreuzberg
      * @return array<ExtractionResult> List of extraction results (one per data item)
      * @throws KreuzbergException If extraction fails
      */
-    public function batchExtractBytes(
-        array $dataList,
-        array $mimeTypes,
-        ?ExtractionConfig $config = null,
-    ): array {
+    public function batchExtractBytes(array $dataList, array $mimeTypes, ?ExtractionConfig $config = null): array
+    {
         $config ??= $this->defaultConfig ?? new ExtractionConfig();
 
         return batch_extract_bytes($dataList, $mimeTypes, $config);
@@ -149,11 +140,8 @@ final readonly class Kreuzberg
      * @return DeferredResult Deferred result that can be polled or waited on
      * @throws KreuzbergException If config parsing fails
      */
-    public function extractBytesAsync(
-        string $data,
-        string $mimeType,
-        ?ExtractionConfig $config = null,
-    ): DeferredResult {
+    public function extractBytesAsync(string $data, string $mimeType, ?ExtractionConfig $config = null): DeferredResult
+    {
         $config ??= $this->defaultConfig ?? new ExtractionConfig();
 
         return extract_bytes_async($data, $mimeType, $config);
@@ -167,10 +155,8 @@ final readonly class Kreuzberg
      * @return DeferredResult Deferred result (use getResults() for batch)
      * @throws KreuzbergException If config parsing fails
      */
-    public function batchExtractFilesAsync(
-        array $paths,
-        ?ExtractionConfig $config = null,
-    ): DeferredResult {
+    public function batchExtractFilesAsync(array $paths, ?ExtractionConfig $config = null): DeferredResult
+    {
         $config ??= $this->defaultConfig ?? new ExtractionConfig();
 
         return batch_extract_files_async($paths, $config);
@@ -203,10 +189,8 @@ final readonly class Kreuzberg
      * @return array<array<float>> List of embedding vectors (one per input string)
      * @throws KreuzbergException If generation fails
      */
-    public function embed(
-        array $texts,
-        ?EmbeddingConfig $config = null,
-    ): array {
+    public function embed(array $texts, ?EmbeddingConfig $config = null): array
+    {
         $config ??= $this->defaultEmbeddingConfig ?? new EmbeddingConfig();
 
         return embed($texts, $config);
@@ -220,10 +204,8 @@ final readonly class Kreuzberg
      * @return DeferredResult Deferred result that can be polled or waited on
      * @throws KreuzbergException If generation fails
      */
-    public function embedAsync(
-        array $texts,
-        ?EmbeddingConfig $config = null,
-    ): DeferredResult {
+    public function embedAsync(array $texts, ?EmbeddingConfig $config = null): DeferredResult
+    {
         $config ??= $this->defaultEmbeddingConfig ?? new EmbeddingConfig();
 
         return embed_async($texts, $config);
@@ -275,10 +257,8 @@ final readonly class Kreuzberg
      * @return array<ExtractionResult> List of extraction results (one per file)
      * @throws KreuzbergException If extraction fails
      */
-    public static function batchExtractFilesSync(
-        array $paths,
-        ?ExtractionConfig $config = null,
-    ): array {
+    public static function batchExtractFilesSync(array $paths, ?ExtractionConfig $config = null): array
+    {
         $config ??= new ExtractionConfig();
 
         return batch_extract_files($paths, $config);
@@ -349,10 +329,8 @@ final readonly class Kreuzberg
      * @return DeferredResult Deferred result (use getResults() for batch)
      * @throws KreuzbergException If config parsing fails
      */
-    public static function batchExtractFilesAsyncStatic(
-        array $paths,
-        ?ExtractionConfig $config = null,
-    ): DeferredResult {
+    public static function batchExtractFilesAsyncStatic(array $paths, ?ExtractionConfig $config = null): DeferredResult
+    {
         $config ??= new ExtractionConfig();
 
         return batch_extract_files_async($paths, $config);
@@ -385,10 +363,8 @@ final readonly class Kreuzberg
      * @return array<array<float>> List of embedding vectors (one per input string)
      * @throws KreuzbergException If generation fails
      */
-    public static function embedStatic(
-        array $texts,
-        ?EmbeddingConfig $config = null,
-    ): array {
+    public static function embedStatic(array $texts, ?EmbeddingConfig $config = null): array
+    {
         return embed($texts, $config);
     }
 
@@ -400,10 +376,8 @@ final readonly class Kreuzberg
      * @return DeferredResult Deferred result that can be polled or waited on
      * @throws KreuzbergException If generation fails
      */
-    public static function embedAsyncStatic(
-        array $texts,
-        ?EmbeddingConfig $config = null,
-    ): DeferredResult {
+    public static function embedAsyncStatic(array $texts, ?EmbeddingConfig $config = null): DeferredResult
+    {
         return embed_async($texts, $config);
     }
 

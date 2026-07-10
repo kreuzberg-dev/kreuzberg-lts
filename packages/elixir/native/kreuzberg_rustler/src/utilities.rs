@@ -8,8 +8,6 @@ use rustler::types::map::map_new;
 use rustler::{Binary, Encoder, Env, NifResult, Term};
 
 // =============================================================================
-// VALIDATION FUNCTIONS - Configuration validators for extraction parameters
-// =============================================================================
 
 /// Validate chunking parameters (max_chars and max_overlap).
 ///
@@ -115,10 +113,6 @@ pub fn validate_tesseract_oem<'a>(env: Env<'a>, oem: i32) -> NifResult<Term<'a>>
     }
 }
 
-// =============================================================================
-// MIME TYPE FUNCTIONS
-// =============================================================================
-
 /// Detect MIME type from binary data using content inspection.
 #[rustler::nif]
 pub fn detect_mime_type<'a>(env: Env<'a>, data: Binary<'a>) -> NifResult<Term<'a>> {
@@ -171,10 +165,6 @@ pub fn get_extensions_for_mime<'a>(env: Env<'a>, mime_type: String) -> NifResult
     }
 }
 
-// =============================================================================
-// EMBEDDING PRESET FUNCTIONS
-// =============================================================================
-
 /// List all available embedding presets.
 #[rustler::nif]
 pub fn list_embedding_presets<'a>(env: Env<'a>) -> NifResult<Term<'a>> {
@@ -192,7 +182,6 @@ pub fn get_embedding_preset<'a>(env: Env<'a>, preset_name: String) -> NifResult<
 
     match kreuzberg::get_preset(&preset_name) {
         Some(preset) => {
-            // Manually construct a map from preset fields
             let mut map = map_new(env);
 
             map = match map.map_put("name".encode(env), preset.name.encode(env)) {
@@ -226,14 +215,9 @@ pub fn get_embedding_preset<'a>(env: Env<'a>, preset_name: String) -> NifResult<
     }
 }
 
-// =============================================================================
-// CACHE MANAGEMENT FUNCTIONS
-// =============================================================================
-
 /// Get cache statistics including file count, size, and disk space information.
 #[rustler::nif]
 pub fn cache_stats<'a>(env: Env<'a>) -> NifResult<Term<'a>> {
-    // Get the cache directory - use kreuzberg's internal cache path
     let cache_dir = match std::env::current_dir() {
         Ok(dir) => {
             let mut path = dir;
@@ -253,12 +237,10 @@ pub fn cache_stats<'a>(env: Env<'a>) -> NifResult<Term<'a>> {
         }
     };
 
-    // Get cache statistics using kreuzberg's cache module
     match kreuzberg::cache::get_cache_metadata(cache_dir_str) {
         Ok(stats) => {
             let mut map = map_new(env);
 
-            // Add all statistics to the map
             map = match map.map_put("total_files".encode(env), (stats.total_files as i64).encode(env)) {
                 Ok(m) => m,
                 Err(_) => {
@@ -309,7 +291,6 @@ pub fn cache_stats<'a>(env: Env<'a>) -> NifResult<Term<'a>> {
 /// Clear all cached extraction results.
 #[rustler::nif]
 pub fn clear_cache<'a>(env: Env<'a>) -> NifResult<Term<'a>> {
-    // Get the cache directory - use kreuzberg's internal cache path
     let cache_dir = match std::env::current_dir() {
         Ok(dir) => {
             let mut path = dir;
@@ -329,11 +310,8 @@ pub fn clear_cache<'a>(env: Env<'a>) -> NifResult<Term<'a>> {
         }
     };
 
-    // Clear the cache using kreuzberg's cache module
     match kreuzberg::cache::clear_cache_directory(cache_dir_str) {
         Ok((removed_count, removed_size_mb)) => {
-            // Cache cleared successfully
-            // Note: removed_count and removed_size_mb are available for future logging
             let _ = (removed_count, removed_size_mb);
             Ok(atoms::ok().encode(env))
         }
@@ -341,25 +319,15 @@ pub fn clear_cache<'a>(env: Env<'a>) -> NifResult<Term<'a>> {
     }
 }
 
-// =============================================================================
-// CONFIG FUNCTIONS
-// =============================================================================
-
 /// Discover an ExtractionConfig by searching the current directory and parent directories.
 #[rustler::nif]
 pub fn config_discover<'a>(env: Env<'a>) -> NifResult<Term<'a>> {
     match kreuzberg::core::config::ExtractionConfig::discover() {
-        Ok(Some(config)) => {
-            // Convert config to JSON string
-            match serde_json::to_string(&config) {
-                Ok(json) => Ok((atoms::ok(), json).encode(env)),
-                Err(e) => Ok((atoms::error(), format!("Failed to serialize config: {}", e)).encode(env)),
-            }
-        }
-        Ok(None) => {
-            // No config found - return error with :not_found atom
-            Ok((atoms::error(), atoms::not_found()).encode(env))
-        }
+        Ok(Some(config)) => match serde_json::to_string(&config) {
+            Ok(json) => Ok((atoms::ok(), json).encode(env)),
+            Err(e) => Ok((atoms::error(), format!("Failed to serialize config: {}", e)).encode(env)),
+        },
+        Ok(None) => Ok((atoms::error(), atoms::not_found()).encode(env)),
         Err(e) => Ok((atoms::error(), format!("Failed to discover config: {}", e)).encode(env)),
     }
 }
@@ -372,13 +340,10 @@ pub fn config_from_file<'a>(env: Env<'a>, file_path: String) -> NifResult<Term<'
     let path = Path::new(&file_path);
 
     match kreuzberg::core::config::ExtractionConfig::from_file(path) {
-        Ok(config) => {
-            // Convert config to JSON string
-            match serde_json::to_string(&config) {
-                Ok(json) => Ok((atoms::ok(), json).encode(env)),
-                Err(e) => Ok((atoms::error(), format!("Failed to serialize config: {}", e)).encode(env)),
-            }
-        }
+        Ok(config) => match serde_json::to_string(&config) {
+            Ok(json) => Ok((atoms::ok(), json).encode(env)),
+            Err(e) => Ok((atoms::error(), format!("Failed to serialize config: {}", e)).encode(env)),
+        },
         Err(e) => Ok((atoms::error(), format!("Failed to load config from file: {}", e)).encode(env)),
     }
 }

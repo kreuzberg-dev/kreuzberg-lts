@@ -36,8 +36,8 @@ import type { ErrorClassification } from "../types.js";
  * ```
  */
 export function getLastErrorCode(): number {
-	const binding = getBinding();
-	return binding.getLastErrorCode();
+  const binding = getBinding();
+  return binding.getLastErrorCode();
 }
 
 /**
@@ -65,9 +65,9 @@ export function getLastErrorCode(): number {
  * ```
  */
 export function getLastPanicContext(): PanicContext | null {
-	const binding = getBinding();
-	const result = binding.getLastPanicContext();
-	return result as unknown as PanicContext | null;
+  const binding = getBinding();
+  const result = binding.getLastPanicContext();
+  return result as unknown as PanicContext | null;
 }
 
 /**
@@ -89,8 +89,8 @@ export function getLastPanicContext(): PanicContext | null {
  * ```
  */
 export function getErrorCodeName(code: number): string {
-	const binding = getBinding();
-	return binding.getErrorCodeName(code);
+  const binding = getBinding();
+  return binding.getErrorCodeName(code);
 }
 
 /**
@@ -111,8 +111,8 @@ export function getErrorCodeName(code: number): string {
  * ```
  */
 export function getErrorCodeDescription(code: number): string {
-	const binding = getBinding();
-	return binding.getErrorCodeDescription(code);
+  const binding = getBinding();
+  return binding.getErrorCodeDescription(code);
 }
 
 /**
@@ -148,9 +148,9 @@ export function getErrorCodeDescription(code: number): string {
  * ```
  */
 export function classifyError(errorMessage: string): ErrorClassification {
-	const binding = getBinding();
-	const result = binding.classifyError(errorMessage);
-	return result as unknown as ErrorClassification;
+  const binding = getBinding();
+  const result = binding.classifyError(errorMessage);
+  return result as unknown as ErrorClassification;
 }
 
 /**
@@ -166,7 +166,7 @@ export function classifyError(errorMessage: string): ErrorClassification {
  * @deprecated Use checkOcrDependencies() or getSystemInfo() instead
  */
 export function getMissingDependencies(): string[] {
-	throw new Error("getMissingDependencies is not directly available. Use checkOcrDependencies() instead.");
+  throw new Error("getMissingDependencies is not directly available. Use checkOcrDependencies() instead.");
 }
 
 /**
@@ -182,7 +182,7 @@ export function getMissingDependencies(): string[] {
  * @deprecated Use listOcrBackends() from @kreuzberg/node instead
  */
 export function getAvailableOcrBackends(): string[] {
-	throw new Error("getAvailableOcrBackends is not directly available. Use listOcrBackends() instead.");
+  throw new Error("getAvailableOcrBackends is not directly available. Use listOcrBackends() instead.");
 }
 
 /**
@@ -198,9 +198,9 @@ export function getAvailableOcrBackends(): string[] {
  * @deprecated Check error codes after extraction attempts instead
  */
 export function checkOcrDependencies(): Record<string, unknown> {
-	throw new Error(
-		"checkOcrDependencies is not directly available. Check error codes after extraction attempts instead.",
-	);
+  throw new Error(
+    "checkOcrDependencies is not directly available. Check error codes after extraction attempts instead.",
+  );
 }
 
 /**
@@ -216,7 +216,7 @@ export function checkOcrDependencies(): Record<string, unknown> {
  * @deprecated Not available in current API
  */
 export function getSystemInfo(): Record<string, unknown> {
-	throw new Error("getSystemInfo is not available in the current API.");
+  throw new Error("getSystemInfo is not available in the current API.");
 }
 
 /**
@@ -232,5 +232,5 @@ export function getSystemInfo(): Record<string, unknown> {
  * @deprecated Not available in current API
  */
 export function diagnosticInfo(): Record<string, unknown> {
-	throw new Error("diagnosticInfo is not available in the current API.");
+  throw new Error("diagnosticInfo is not available in the current API.");
 }

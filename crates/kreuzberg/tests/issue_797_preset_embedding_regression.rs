@@ -23,7 +23,6 @@ mod preset_no_embedding {
             ..Default::default()
         };
 
-        // Small plain-text document — forces at least one chunk even with large defaults.
         let text = b"Hello world. This is a short document used to verify that preset-based \
                      chunking does not unexpectedly generate embeddings.";
 

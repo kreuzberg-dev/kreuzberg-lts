@@ -16,13 +16,13 @@ defmodule Kreuzberg.RelationshipKind do
   """
 
   @type t ::
-          :footnote_reference
-          | :citation_reference
-          | :internal_link
-          | :caption
-          | :label
-          | :toc_entry
-          | :cross_reference
+  :footnote_reference
+  | :citation_reference
+  | :internal_link
+  | :caption
+  | :label
+  | :toc_entry
+  | :cross_reference
 
   @doc """
   Returns all valid RelationshipKind values.
@@ -34,13 +34,13 @@ defmodule Kreuzberg.RelationshipKind do
   """
   @spec values() :: list(t())
   def values,
-    do: [
-      :footnote_reference,
-      :citation_reference,
-      :internal_link,
-      :caption,
-      :label,
-      :toc_entry,
-      :cross_reference
-    ]
+  do: [
+  :footnote_reference,
+  :citation_reference,
+  :internal_link,
+  :caption,
+  :label,
+  :toc_entry,
+  :cross_reference
+  ]
 end

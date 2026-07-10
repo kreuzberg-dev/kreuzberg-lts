@@ -154,18 +154,14 @@ mod tests {
         }
     }
 
-    // ==================== Struct Layout Tests ====================
-
     #[test]
     fn test_cextraction_result_layout() {
-        // Test size
         assert_eq!(
             std::mem::size_of::<CExtractionResult>(),
             208,
             "CExtractionResult must be exactly 208 bytes"
         );
 
-        // Test alignment
         assert_eq!(
             std::mem::align_of::<CExtractionResult>(),
             8,
@@ -175,14 +171,12 @@ mod tests {
 
     #[test]
     fn test_cbatch_result_layout() {
-        // Test size
         assert_eq!(
             std::mem::size_of::<CBatchResult>(),
             24,
             "CBatchResult must be exactly 24 bytes"
         );
 
-        // Test alignment
         assert_eq!(
             std::mem::align_of::<CBatchResult>(),
             8,
@@ -192,22 +186,18 @@ mod tests {
 
     #[test]
     fn test_cbytes_with_mime_layout() {
-        // Test size
         assert_eq!(
             std::mem::size_of::<CBytesWithMime>(),
             24,
             "CBytesWithMime must be exactly 24 bytes"
         );
 
-        // Test alignment
         assert_eq!(
             std::mem::align_of::<CBytesWithMime>(),
             8,
             "CBytesWithMime must be 8-byte aligned"
         );
     }
-
-    // ==================== Memory Safety Tests ====================
 
     /// Helper function to create a mock CExtractionResult for testing
     fn create_mock_extraction_result() -> *mut CExtractionResult {
@@ -245,7 +235,6 @@ mod tests {
     #[test]
     fn test_batch_result_allocation_deallocation() {
         unsafe {
-            // Simulate the exact allocation pattern from kreuzberg_batch_extract_files_sync
             let c_results = vec![
                 create_mock_extraction_result(),
                 create_mock_extraction_result(),
@@ -254,7 +243,6 @@ mod tests {
 
             let actual_count = c_results.len();
 
-            // This is the exact pattern used in kreuzberg_batch_extract_files_sync
             let results_array = c_results.into_boxed_slice();
             let results_ptr = Box::into_raw(results_array) as *mut *mut CExtractionResult;
 
@@ -265,22 +253,17 @@ mod tests {
                 _padding2: [0u8; 7],
             }));
 
-            // Verify the batch result is valid
             assert!(!batch_result.is_null());
             assert_eq!((*batch_result).count, 3);
             assert!((*batch_result).success);
 
-            // Now free it using the public API
             kreuzberg_free_batch_result(batch_result);
-
-            // If we got here without crashing, the allocation/deallocation pattern is correct
         }
     }
 
     #[test]
     fn test_free_null_batch() {
         unsafe {
-            // Freeing NULL batch should not crash
             kreuzberg_free_batch_result(ptr::null_mut());
         }
     }
@@ -288,7 +271,6 @@ mod tests {
     #[test]
     fn test_free_null_result() {
         unsafe {
-            // Freeing NULL result should not crash
             kreuzberg_free_result(ptr::null_mut());
         }
     }
@@ -296,7 +278,6 @@ mod tests {
     #[test]
     fn test_free_null_string() {
         unsafe {
-            // Freeing NULL string should not crash
             kreuzberg_free_string(ptr::null_mut());
         }
     }
@@ -304,7 +285,6 @@ mod tests {
     #[test]
     fn test_batch_result_with_empty_results() {
         unsafe {
-            // Test batch result with zero results
             let c_results: Vec<*mut CExtractionResult> = Vec::new();
             let results_array = c_results.into_boxed_slice();
             let results_ptr = Box::into_raw(results_array) as *mut *mut CExtractionResult;
@@ -319,7 +299,6 @@ mod tests {
             assert!(!batch_result.is_null());
             assert_eq!((*batch_result).count, 0);
 
-            // Free should handle empty batch gracefully
             kreuzberg_free_batch_result(batch_result);
         }
     }
@@ -327,10 +306,9 @@ mod tests {
     #[test]
     fn test_batch_result_with_null_elements() {
         unsafe {
-            // Test batch result where some elements are NULL
             let c_results = vec![
                 create_mock_extraction_result(),
-                ptr::null_mut(), // NULL element
+                ptr::null_mut(),
                 create_mock_extraction_result(),
             ];
 
@@ -345,7 +323,6 @@ mod tests {
                 _padding2: [0u8; 7],
             }));
 
-            // Free should handle NULL elements gracefully
             kreuzberg_free_batch_result(batch_result);
         }
     }
@@ -353,8 +330,6 @@ mod tests {
     #[test]
     fn test_batch_result_single_element() {
         unsafe {
-            // Test batch allocation/deallocation with exactly 1 result
-            // This is important for boundary condition testing
             let c_results = vec![create_mock_extraction_result()];
 
             let actual_count = c_results.len();
@@ -368,12 +343,10 @@ mod tests {
                 _padding2: [0u8; 7],
             }));
 
-            // Verify the batch result is valid
             assert!(!batch_result.is_null());
             assert_eq!((*batch_result).count, 1);
             assert!((*batch_result).success);
 
-            // Free should handle single-element batch correctly
             kreuzberg_free_batch_result(batch_result);
         }
     }
@@ -381,8 +354,6 @@ mod tests {
     #[test]
     fn test_batch_result_large_size() {
         unsafe {
-            // Test batch with 100 elements to catch boundary conditions
-            // This verifies the system can handle larger batches without memory corruption
             let mut c_results = Vec::with_capacity(100);
 
             for _ in 0..100 {
@@ -400,12 +371,10 @@ mod tests {
                 _padding2: [0u8; 7],
             }));
 
-            // Verify the batch result is valid
             assert!(!batch_result.is_null());
             assert_eq!((*batch_result).count, 100);
             assert!((*batch_result).success);
 
-            // Free should handle large batch correctly without memory issues
             kreuzberg_free_batch_result(batch_result);
         }
     }
@@ -413,31 +382,20 @@ mod tests {
     #[test]
     fn test_repeated_allocation_deallocation() {
         unsafe {
-            // Stress test: 1000 iterations of allocation/deallocation
-            // This catches memory leaks, corruption, and use-after-free issues
             for _ in 0..1000 {
                 let result = create_mock_extraction_result();
 
-                // Verify the result is valid
                 assert!(!result.is_null());
                 assert!((*result).success);
 
-                // Free the result
                 kreuzberg_free_result(result);
             }
-
-            // If we got here without crashing or leaking, the memory management is sound
         }
     }
-
-    // ==================== Box/Vec Symmetry Test ====================
 
     #[test]
     fn test_box_vec_symmetry() {
         unsafe {
-            // This test verifies the fix for the allocation/deallocation bug
-            // Create a Vec, convert to boxed slice, then verify correct deallocation
-
             let mut vec = Vec::with_capacity(5);
             vec.push(42u32);
             vec.push(100u32);
@@ -445,27 +403,20 @@ mod tests {
 
             let len = vec.len();
 
-            // Convert to boxed slice (this is what kreuzberg_batch_extract_files_sync does)
             let boxed_slice = vec.into_boxed_slice();
             let raw_ptr = Box::into_raw(boxed_slice) as *mut u32;
 
-            // Verify we can read the values
             assert_eq!(*raw_ptr.add(0), 42);
             assert_eq!(*raw_ptr.add(1), 100);
             assert_eq!(*raw_ptr.add(2), 255);
 
-            // Now deallocate using the correct method (from kreuzberg_free_batch_result)
-            // IMPORTANT: Must use Box::from_raw with slice pointer, not Vec::from_raw_parts
             let _boxed_slice = Box::from_raw(std::ptr::slice_from_raw_parts_mut(raw_ptr, len));
-
-            // If we got here without crashing, the symmetry is correct
         }
     }
 
     #[test]
     fn test_box_vec_symmetry_pointers() {
         unsafe {
-            // Test with pointer types (as used in CBatchResult)
             let vec: Vec<*mut CExtractionResult> = vec![
                 create_mock_extraction_result(),
                 create_mock_extraction_result(),
@@ -474,11 +425,9 @@ mod tests {
 
             let len = vec.len();
 
-            // Convert to boxed slice
             let boxed_slice = vec.into_boxed_slice();
             let raw_ptr = Box::into_raw(boxed_slice) as *mut *mut CExtractionResult;
 
-            // Free individual results first
             for i in 0..len {
                 let result_ptr = *raw_ptr.add(i);
                 if !result_ptr.is_null() {
@@ -486,14 +435,9 @@ mod tests {
                 }
             }
 
-            // Now free the array itself
             let _boxed_slice = Box::from_raw(std::ptr::slice_from_raw_parts_mut(raw_ptr, len));
-
-            // If we got here without crashing, the symmetry is correct
         }
     }
-
-    // ==================== FFI Function Smoke Tests ====================
 
     #[test]
     fn test_version_not_null() {
@@ -504,7 +448,6 @@ mod tests {
             let version_str = CStr::from_ptr(version).to_str().unwrap();
             assert!(!version_str.is_empty(), "Version string should not be empty");
 
-            // Verify it looks like a version string (has dots or numbers)
             assert!(
                 version_str.contains('.') || version_str.chars().any(|c| c.is_numeric()),
                 "Version string should contain version info"
@@ -515,21 +458,14 @@ mod tests {
     #[test]
     fn test_null_config_handling() {
         unsafe {
-            // Test that functions handle NULL config gracefully
-            // kreuzberg_batch_extract_files_sync with NULL config should use defaults
-
-            // Create a valid file paths array
             let path1 = CString::new("/tmp/test1.txt").unwrap();
             let path2 = CString::new("/tmp/test2.txt").unwrap();
             let paths = [path1.as_ptr(), path2.as_ptr()];
 
-            // Create a file_config_jsons array with NULL entries (use base config for all)
             let file_configs: [*const c_char; 2] = [ptr::null(), ptr::null()];
 
-            // This should not crash with NULL config (though it may fail due to missing files)
             let result = kreuzberg_batch_extract_files_sync(paths.as_ptr(), file_configs.as_ptr(), 2, ptr::null());
 
-            // Result might be NULL due to file not existing, but it shouldn't crash
             if !result.is_null() {
                 kreuzberg_free_batch_result(result);
             }
@@ -539,7 +475,6 @@ mod tests {
     #[test]
     fn test_extraction_result_free_with_null_fields() {
         unsafe {
-            // Test freeing a result where most fields are NULL
             let result = Box::into_raw(Box::new(CExtractionResult {
                 content: CString::new("content").unwrap().into_raw(),
                 mime_type: CString::new("text/plain").unwrap().into_raw(),
@@ -570,7 +505,6 @@ mod tests {
                 _padding1: [0u8; 7],
             }));
 
-            // Should not crash when freeing result with NULL fields
             kreuzberg_free_result(result);
         }
     }
@@ -578,8 +512,6 @@ mod tests {
     #[test]
     fn test_extraction_result_free_all_fields_allocated() {
         unsafe {
-            // Test freeing a result where ALL 21 string fields are allocated
-            // This verifies that kreuzberg_free_result properly frees all fields
             let result = Box::into_raw(Box::new(CExtractionResult {
                 content: CString::new("test content").unwrap().into_raw(),
                 mime_type: CString::new("application/pdf").unwrap().into_raw(),
@@ -612,7 +544,6 @@ mod tests {
                 _padding1: [0u8; 7],
             }));
 
-            // Should properly free all 20 allocated string fields without leaking memory
             kreuzberg_free_result(result);
         }
     }
@@ -620,7 +551,6 @@ mod tests {
     #[test]
     fn test_string_allocation_deallocation() {
         unsafe {
-            // Test string cloning and freeing
             let original = CString::new("test string").unwrap();
             let cloned = kreuzberg_clone_string(original.as_ptr());
 
@@ -629,7 +559,6 @@ mod tests {
             let cloned_str = CStr::from_ptr(cloned).to_str().unwrap();
             assert_eq!(cloned_str, "test string", "Cloned string should match original");
 
-            // Free the cloned string
             kreuzberg_free_string(cloned);
         }
     }
@@ -637,7 +566,6 @@ mod tests {
     #[test]
     fn test_clone_null_string() {
         unsafe {
-            // Cloning NULL should return NULL and set error
             clear_last_error();
             let cloned = kreuzberg_clone_string(ptr::null());
 
@@ -653,7 +581,6 @@ mod tests {
     #[test]
     fn test_batch_result_success_field() {
         unsafe {
-            // Test that success field is properly set
             let c_results: Vec<*mut CExtractionResult> = Vec::new();
             let results_array = c_results.into_boxed_slice();
             let results_ptr = Box::into_raw(results_array) as *mut *mut CExtractionResult;
@@ -674,7 +601,6 @@ mod tests {
     #[test]
     fn test_last_error_cleared() {
         unsafe {
-            // Test that clear_last_error works
             set_last_error("test error".to_string());
 
             let error = kreuzberg_last_error();
@@ -686,8 +612,6 @@ mod tests {
             assert!(error_after.is_null(), "Error should be cleared");
         }
     }
-
-    // ==================== Additional Safety Net Tests (PR #1) ====================
 
     /// Test CExtractionResult size exactly matches FFI contract
     #[test]
@@ -921,7 +845,6 @@ mod tests {
     #[test]
     fn test_clear_ocr_backends_doesnt_crash() {
         unsafe {
-            // This should not crash even if called multiple times
             kreuzberg_clear_ocr_backends();
             kreuzberg_clear_ocr_backends();
         }
@@ -931,7 +854,6 @@ mod tests {
     #[test]
     fn test_clear_post_processors_doesnt_crash() {
         unsafe {
-            // This should not crash even if called multiple times
             kreuzberg_clear_post_processors();
             kreuzberg_clear_post_processors();
         }
@@ -941,7 +863,6 @@ mod tests {
     #[test]
     fn test_clear_validators_doesnt_crash() {
         unsafe {
-            // This should not crash even if called multiple times
             kreuzberg_clear_validators();
             kreuzberg_clear_validators();
         }
@@ -951,7 +872,6 @@ mod tests {
     #[test]
     fn test_clear_document_extractors_doesnt_crash() {
         unsafe {
-            // This should not crash even if called multiple times
             kreuzberg_clear_document_extractors();
             kreuzberg_clear_document_extractors();
         }
@@ -961,7 +881,6 @@ mod tests {
     #[test]
     fn test_list_functions_return_non_null() {
         unsafe {
-            // All list functions should return non-NULL JSON arrays (even if empty)
             let ocr = kreuzberg_list_ocr_backends();
             assert!(!ocr.is_null(), "list_ocr_backends should return non-NULL");
             kreuzberg_free_string(ocr);
@@ -990,7 +909,6 @@ mod tests {
     /// Test numeric validation functions with edge cases
     #[test]
     fn test_numeric_validation_edge_cases() {
-        // Test Tesseract PSM validation with invalid values
         assert_eq!(
             kreuzberg_validate_tesseract_psm(-1),
             0,
@@ -1000,7 +918,6 @@ mod tests {
         assert_eq!(kreuzberg_validate_tesseract_psm(13), 1, "PSM 13 should be valid");
         assert_eq!(kreuzberg_validate_tesseract_psm(14), 0, "PSM 14 should be invalid");
 
-        // Test Tesseract OEM validation
         assert_eq!(
             kreuzberg_validate_tesseract_oem(-1),
             0,
@@ -1010,7 +927,6 @@ mod tests {
         assert_eq!(kreuzberg_validate_tesseract_oem(3), 1, "OEM 3 should be valid");
         assert_eq!(kreuzberg_validate_tesseract_oem(4), 0, "OEM 4 should be invalid");
 
-        // Test confidence validation
         assert_eq!(
             kreuzberg_validate_confidence(-0.1),
             0,
@@ -1025,7 +941,6 @@ mod tests {
             "1.1 confidence should be invalid"
         );
 
-        // Test DPI validation
         assert_eq!(kreuzberg_validate_dpi(0), 0, "0 DPI should be invalid");
         assert_eq!(kreuzberg_validate_dpi(-1), 0, "-1 DPI should be invalid");
         assert_eq!(kreuzberg_validate_dpi(1), 1, "1 DPI should be valid");
@@ -1034,7 +949,6 @@ mod tests {
         assert_eq!(kreuzberg_validate_dpi(2400), 1, "2400 DPI should be valid");
         assert_eq!(kreuzberg_validate_dpi(2401), 0, "2401 DPI should be invalid");
 
-        // Test chunking params validation
         assert_eq!(
             kreuzberg_validate_chunking_params(0, 0),
             0,

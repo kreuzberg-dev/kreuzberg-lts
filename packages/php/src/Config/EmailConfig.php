@@ -27,8 +27,7 @@ readonly class EmailConfig
      */
     public function __construct(
         public ?int $msgFallbackCodepage = null,
-    ) {
-    }
+    ) {}
 
     /**
      * Create configuration from array data.
@@ -39,9 +38,7 @@ readonly class EmailConfig
     {
         $msgFallbackCodepage = $data['msg_fallback_codepage'] ?? null;
 
-        return new self(
-            msgFallbackCodepage: is_int($msgFallbackCodepage) ? $msgFallbackCodepage : null,
-        );
+        return new self(msgFallbackCodepage: is_int($msgFallbackCodepage) ? $msgFallbackCodepage : null);
     }
 
     /**

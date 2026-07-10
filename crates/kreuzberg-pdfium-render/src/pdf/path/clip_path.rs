@@ -92,9 +92,6 @@ impl<'a> Drop for PdfClipPath<'a> {
     #[inline]
     fn drop(&mut self) {
         if !self.ownership.is_owned() {
-            // Responsibility for de-allocation lies with us, not Pdfium, since
-            // the clip path is not attached to a page, a page object, or an annotation.
-
             self.bindings.FPDF_DestroyClipPath(self.handle)
         }
     }

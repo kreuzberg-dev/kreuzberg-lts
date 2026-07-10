@@ -19,8 +19,7 @@ readonly class BoundingBox
         public float $y0,
         public float $x1,
         public float $y1,
-    ) {
-    }
+    ) {}
 
     /**
      * Create BoundingBox from array returned by extension.
@@ -34,12 +33,7 @@ readonly class BoundingBox
         $x1 = is_numeric($data['x1'] ?? null) ? (float) $data['x1'] : 0.0;
         $y1 = is_numeric($data['y1'] ?? null) ? (float) $data['y1'] : 0.0;
 
-        return new self(
-            x0: $x0,
-            y0: $y0,
-            x1: $x1,
-            y1: $y1,
-        );
+        return new self(x0: $x0, y0: $y0, x1: $x1, y1: $y1);
     }
 }
 
@@ -63,8 +57,7 @@ readonly class ElementMetadata
         public ?BoundingBox $coordinates = null,
         public ?int $elementIndex = null,
         public array $additional = [],
-    ) {
-    }
+    ) {}
 
     /**
      * Create ElementMetadata from array returned by extension.
@@ -130,8 +123,7 @@ readonly class Element
         public string $elementType,
         public string $text,
         public ElementMetadata $metadata,
-    ) {
-    }
+    ) {}
 
     /**
      * Create Element from array returned by extension.

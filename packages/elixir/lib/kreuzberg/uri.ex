@@ -13,17 +13,17 @@ defmodule Kreuzberg.Uri do
   """
 
   @type t :: %__MODULE__{
-          url: String.t(),
-          label: String.t() | nil,
-          page: integer() | nil,
-          kind: String.t()
-        }
+  url: String.t(),
+  label: String.t() | nil,
+  page: integer() | nil,
+  kind: String.t()
+  }
 
   defstruct [
-    :label,
-    :page,
-    url: "",
-    kind: "hyperlink"
+  :label,
+  :page,
+  url: "",
+  kind: "hyperlink"
   ]
 
   @doc """
@@ -47,10 +47,10 @@ defmodule Kreuzberg.Uri do
   @spec from_map(map()) :: t()
   def from_map(data) when is_map(data) do
     %__MODULE__{
-      url: data["url"] || "",
-      label: data["label"],
-      page: data["page"],
-      kind: data["kind"] || "hyperlink"
+    url: data["url"] || "",
+    label: data["label"],
+    page: data["page"],
+    kind: data["kind"] || "hyperlink"
     }
   end
 
@@ -71,10 +71,10 @@ defmodule Kreuzberg.Uri do
   @spec to_map(t()) :: map()
   def to_map(%__MODULE__{} = uri) do
     %{
-      "url" => uri.url,
-      "label" => uri.label,
-      "page" => uri.page,
-      "kind" => uri.kind
+    "url" => uri.url,
+    "label" => uri.label,
+    "page" => uri.page,
+    "kind" => uri.kind
     }
   end
 end

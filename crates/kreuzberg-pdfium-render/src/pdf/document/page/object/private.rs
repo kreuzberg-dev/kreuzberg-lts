@@ -1,11 +1,4 @@
 pub(crate) mod internal {
-    // We want to make the PdfPageObjectPrivate trait private while providing a blanket
-    // implementation of PdfPageObjectCommon for any type T where T: PdfPageObjectPrivate.
-    // Rust complains, however, that by doing so we are leaking the private trait outside
-    // the crate.
-
-    // Instead of making the PdfPageObjectPrivate trait private, we leave it public but place it
-    // inside this pub(crate) module in order to prevent it from being visible outside the crate.
 
     use crate::bindgen::{FPDF_ANNOTATION, FPDF_DOCUMENT, FPDF_PAGE, FPDF_PAGEOBJECT, FS_MATRIX, FS_RECTF};
     use crate::bindings::PdfiumLibraryBindings;
@@ -123,8 +116,6 @@ pub(crate) mod internal {
         }
 
         /// Removes this [PdfPageObject] from the [PdfPageAnnotationsObjects] collection that contains it.
-        // We use inversion of control here so that PdfPageAnnotationsObjects doesn't need to care
-        // whether the page object being removed is a single object or a group.
         fn remove_object_from_annotation(&mut self) -> Result<(), PdfiumError> {
             match self.ownership() {
                 PdfPageObjectOwnership::AttachedAnnotation(ownership) => {
@@ -174,11 +165,6 @@ pub(crate) mod internal {
             }
         }
 
-        // Perform a linear scan over the given annotation's page objects collection,
-        // returning the index of this object if it exists in the collection. Matching
-        // an object to its index in a page objects collection is necessary, for instance,
-        // when removing objects from annotations; Pdfium only allows removing objects
-        // from annotations by index.
         fn get_index_for_annotation(&self, annotation_handle: FPDF_ANNOTATION) -> Option<i32> {
             let mut result = None;
 
@@ -204,9 +190,6 @@ pub(crate) mod internal {
         fn bounds_impl(&self) -> Result<PdfQuadPoints, PdfiumError> {
             match PdfPageObjectType::from_pdfium(self.bindings().FPDFPageObj_GetType(self.object_handle()) as u32) {
                 Ok(PdfPageObjectType::Text) | Ok(PdfPageObjectType::Image) => {
-                    // Text and image page objects support tight fitting bounds via the
-                    // FPDFPageObject_GetRotatedBounds() function.
-
                     let mut points = PdfQuadPoints::ZERO.as_pdfium();
 
                     let result = self
@@ -216,8 +199,6 @@ pub(crate) mod internal {
                     PdfQuadPoints::from_pdfium_as_result(result, points, self.bindings())
                 }
                 _ => {
-                    // All other page objects support the FPDFPageObj_GetBounds() function.
-
                     let mut left = 0.0;
 
                     let mut bottom = 0.0;
@@ -383,9 +364,6 @@ pub(crate) mod internal {
         #[inline]
         fn drop_impl(&self) {
             if !self.ownership().is_owned() {
-                // Responsibility for de-allocation lies with us, not Pdfium, since
-                // the object is not attached to a page or an annotation.
-
                 self.bindings().FPDFPageObj_Destroy(self.object_handle());
             }
         }
@@ -399,9 +377,6 @@ mod tests {
 
     #[test]
     fn test_object_get_translation() -> Result<(), PdfiumError> {
-        // Tests to make sure we can retrieve the correct horizontal and vertical translation deltas
-        // from an object after applying a translation transformation.
-
         let pdfium = test_bind_to_pdfium();
 
         let mut document = pdfium.create_new_pdf()?;
@@ -431,9 +406,6 @@ mod tests {
 
     #[test]
     fn test_object_get_scale() -> Result<(), PdfiumError> {
-        // Tests to make sure we can retrieve the correct horizontal and vertical scale factors
-        // from an object after applying a scale transformation.
-
         let pdfium = test_bind_to_pdfium();
 
         let mut document = pdfium.create_new_pdf()?;
@@ -463,9 +435,6 @@ mod tests {
 
     #[test]
     fn test_object_get_rotation() -> Result<(), PdfiumError> {
-        // Tests to make sure we can retrieve the correct clockwise rotation angle from an object
-        // after applying a rotation transformation.
-
         let pdfium = test_bind_to_pdfium();
 
         let mut document = pdfium.create_new_pdf()?;
@@ -487,17 +456,14 @@ mod tests {
         assert_eq!(object.get_rotation_clockwise_degrees(), 35.0);
         assert_eq!(object.get_horizontal_translation().value, 0.0);
         assert_eq!(object.get_vertical_translation().value, 0.0);
-        assert_eq!(object.get_horizontal_scale(), 0.819_152_06); // Rotating affects the scale factors
-        assert_eq!(object.get_vertical_scale(), 0.819_152_06); // Rotating affects the scale factors
+        assert_eq!(object.get_horizontal_scale(), 0.819_152_06);
+        assert_eq!(object.get_vertical_scale(), 0.819_152_06);
 
         Ok(())
     }
 
     #[test]
     fn test_object_get_skew() -> Result<(), PdfiumError> {
-        // Tests to make sure we can retrieve the correct skew axes values from an object
-        // after applying a skew transformation.
-
         let pdfium = test_bind_to_pdfium();
 
         let mut document = pdfium.create_new_pdf()?;
@@ -516,8 +482,8 @@ mod tests {
 
         let object = page.objects_mut().add_path_object(object)?;
 
-        assert_eq!((object.get_x_axis_skew_degrees() * 10.0).round() / 10.0, 15.5); // Handles the returned value being a tiny bit off, e.g. 15.4999 instead of 15.5
-        assert_eq!((object.get_y_axis_skew_degrees() * 10.0).round() / 10.0, 25.5); // Handles the returned value being a tiny bit off, e.g. 25.4999 instead of 25.5
+        assert_eq!((object.get_x_axis_skew_degrees() * 10.0).round() / 10.0, 15.5);
+        assert_eq!((object.get_y_axis_skew_degrees() * 10.0).round() / 10.0, 25.5);
         assert_eq!(object.get_horizontal_translation().value, 0.0);
         assert_eq!(object.get_vertical_translation().value, 0.0);
         assert_eq!(object.get_horizontal_scale(), 1.0);
@@ -525,7 +491,7 @@ mod tests {
         assert_eq!(
             (object.get_rotation_counter_clockwise_degrees() * 10.0).round() / 10.0,
             15.5
-        ); // Rotation angle will be the same as the x axis skew angle.
+        );
 
         Ok(())
     }

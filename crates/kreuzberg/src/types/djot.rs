@@ -5,7 +5,6 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
-// Import Metadata and Table from parent module
 use super::Table;
 use super::metadata::Metadata;
 

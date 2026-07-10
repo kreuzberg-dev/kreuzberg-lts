@@ -21,7 +21,6 @@ defmodule KreuzbergTest.Unit.AsyncAPITest do
   alias Kreuzberg.AsyncAPI
   alias Kreuzberg.ExtractionConfig
 
-  # Helper function to create temporary directories
   defp create_temp_dir do
     base = System.tmp_dir!()
     dir = Path.join(base, "kreuzberg_test_#{:erlang.unique_integer([:positive])}")
@@ -29,7 +28,6 @@ defmodule KreuzbergTest.Unit.AsyncAPITest do
     {:ok, dir}
   end
 
-  # ===== extract_async/2-3 Tests =====
 
   describe "extract_async/2" do
     @tag :unit
@@ -54,15 +52,15 @@ defmodule KreuzbergTest.Unit.AsyncAPITest do
       {:ok, result} = Task.await(task)
 
       assert %Kreuzberg.ExtractionResult{
-               content: _,
-               mime_type: _,
-               metadata: _,
-               tables: _,
-               detected_languages: _,
-               chunks: _,
-               images: _,
-               pages: _
-             } = result
+      content: _,
+      mime_type: _,
+      metadata: _,
+      tables: _,
+      detected_languages: _,
+      chunks: _,
+      images: _,
+      pages: _
+      } = result
     end
 
     @tag :unit
@@ -132,9 +130,9 @@ defmodule KreuzbergTest.Unit.AsyncAPITest do
     @tag :unit
     test "accepts map with string keys" do
       task =
-        AsyncAPI.extract_async("Test content", "text/plain", %{
-          "use_cache" => false
-        })
+      AsyncAPI.extract_async("Test content", "text/plain", %{
+      "use_cache" => false
+      })
 
       {:ok, result} = Task.await(task)
       assert result.content == "Test content"
@@ -175,7 +173,6 @@ defmodule KreuzbergTest.Unit.AsyncAPITest do
     end
   end
 
-  # ===== extract_file_async/2-3 Tests =====
 
   describe "extract_file_async/2" do
     @tag :unit
@@ -237,11 +234,11 @@ defmodule KreuzbergTest.Unit.AsyncAPITest do
       {:ok, result} = Task.await(task)
 
       assert %Kreuzberg.ExtractionResult{
-               content: _,
-               mime_type: _,
-               metadata: _,
-               tables: _
-             } = result
+      content: _,
+      mime_type: _,
+      metadata: _,
+      tables: _
+      } = result
     end
 
     @tag :unit
@@ -362,7 +359,6 @@ defmodule KreuzbergTest.Unit.AsyncAPITest do
     end
   end
 
-  # ===== batch_extract_files_async/2-3 Tests =====
 
   describe "batch_extract_files_async/2" do
     @tag :unit
@@ -430,15 +426,15 @@ defmodule KreuzbergTest.Unit.AsyncAPITest do
       result = hd(results)
 
       assert %Kreuzberg.ExtractionResult{
-               content: _,
-               mime_type: _,
-               metadata: _,
-               tables: _,
-               detected_languages: _,
-               chunks: _,
-               images: _,
-               pages: _
-             } = result
+      content: _,
+      mime_type: _,
+      metadata: _,
+      tables: _,
+      detected_languages: _,
+      chunks: _,
+      images: _,
+      pages: _
+      } = result
     end
 
     @tag :unit
@@ -585,7 +581,6 @@ defmodule KreuzbergTest.Unit.AsyncAPITest do
     end
   end
 
-  # ===== batch_extract_bytes_async/3-4 Tests =====
 
   describe "batch_extract_bytes_async/3" do
     @tag :unit
@@ -629,15 +624,15 @@ defmodule KreuzbergTest.Unit.AsyncAPITest do
       result = hd(results)
 
       assert %Kreuzberg.ExtractionResult{
-               content: _,
-               mime_type: _,
-               metadata: _,
-               tables: _,
-               detected_languages: _,
-               chunks: _,
-               images: _,
-               pages: _
-             } = result
+      content: _,
+      mime_type: _,
+      metadata: _,
+      tables: _,
+      detected_languages: _,
+      chunks: _,
+      images: _,
+      pages: _
+      } = result
     end
 
     @tag :unit
@@ -678,8 +673,8 @@ defmodule KreuzbergTest.Unit.AsyncAPITest do
     @tag :unit
     test "handles different content sizes" do
       data_list = [
-        "Short",
-        "This is a much longer content with multiple words and lines\nMultiline content"
+      "Short",
+      "This is a much longer content with multiple words and lines\nMultiline content"
       ]
 
       task = AsyncAPI.batch_extract_bytes_async(data_list, "text/plain")
@@ -798,7 +793,6 @@ defmodule KreuzbergTest.Unit.AsyncAPITest do
     end
   end
 
-  # ===== Cross-Function Tests =====
 
   describe "async API concurrent operations" do
     @tag :unit
@@ -808,7 +802,6 @@ defmodule KreuzbergTest.Unit.AsyncAPITest do
       file = Path.join(dir, "mixed.txt")
       File.write!(file, "File content")
 
-      # Mix different async operations
       task1 = AsyncAPI.extract_async("Binary 1", "text/plain")
       task2 = AsyncAPI.extract_file_async(file, "text/plain")
       task3 = AsyncAPI.batch_extract_bytes_async(["Binary 2", "Binary 3"], "text/plain")
@@ -828,11 +821,10 @@ defmodule KreuzbergTest.Unit.AsyncAPITest do
 
     @tag :unit
     test "many concurrent extract_async operations" do
-      # Create 10 concurrent tasks
       tasks =
-        for i <- 1..10 do
-          AsyncAPI.extract_async("Content #{i}", "text/plain")
-        end
+      for i <- 1..10 do
+        AsyncAPI.extract_async("Content #{i}", "text/plain")
+      end
 
       results = Task.await_many(tasks)
 
@@ -892,14 +884,9 @@ defmodule KreuzbergTest.Unit.AsyncAPITest do
     @tag :skip
     test "tasks can be awaited multiple times with Task.await" do
       # NOTE: This test documents a limitation of Elixir tasks.
-      # Task.await/2 can only be called once per task. Calling it a second time
-      # will timeout because the task result has already been claimed by the first await.
-      # If you need to reuse task results, capture the result from the first await
-      # and reuse it instead of awaiting the task multiple times.
       task = AsyncAPI.extract_async("Reusable content", "text/plain")
 
       result1 = Task.await(task)
-      # This second await will timeout - tasks can only be awaited once
       result2 = Task.await(task)
 
       assert result1 == result2
@@ -916,7 +903,6 @@ defmodule KreuzbergTest.Unit.AsyncAPITest do
 
       task = AsyncAPI.batch_extract_files_async([file1, file2], "text/plain")
 
-      # Single Task should resolve to a list of results
       {:ok, results} = Task.await(task)
       assert is_list(results)
       assert length(results) == 2
@@ -927,7 +913,6 @@ defmodule KreuzbergTest.Unit.AsyncAPITest do
       data_list = ["Item 1", "Item 2", "Item 3"]
       task = AsyncAPI.batch_extract_bytes_async(data_list, "text/plain")
 
-      # Single Task should resolve to a list of results
       {:ok, results} = Task.await(task)
       assert is_list(results)
       assert length(results) == 3
@@ -937,12 +922,10 @@ defmodule KreuzbergTest.Unit.AsyncAPITest do
   describe "async API configuration validation" do
     @tag :unit
     test "extract_async validates configuration on task execution" do
-      # Invalid config should fail when task is awaited, not when created
       config = %{"invalid_key" => "value"}
       task = AsyncAPI.extract_async("content", "text/plain", config)
 
       assert %Task{} = task
-      # Task may or may not fail depending on validation strictness
       _result = Task.await(task)
     end
 

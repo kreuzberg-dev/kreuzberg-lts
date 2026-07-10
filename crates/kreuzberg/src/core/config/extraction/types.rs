@@ -82,7 +82,6 @@ pub struct LanguageDetectionConfig {
     pub detect_multiple: bool,
 }
 
-// Default value functions
 fn default_true() -> bool {
     true
 }

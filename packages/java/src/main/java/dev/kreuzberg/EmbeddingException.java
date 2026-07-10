@@ -16,19 +16,19 @@ package dev.kreuzberg;
  * @since 4.6.0
  */
 public final class EmbeddingException extends KreuzbergException {
-	private static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = 1L;
 
-	/**
+    /**
 	 * Constructs a new Embedding exception with the specified message.
 	 *
 	 * @param message
 	 *            the detail message explaining why embedding generation failed
 	 */
-	public EmbeddingException(String message) {
-		super(message, ErrorCode.EMBEDDING);
-	}
+    public EmbeddingException(String message) {
+        super(message, ErrorCode.EMBEDDING);
+    }
 
-	/**
+    /**
 	 * Constructs a new Embedding exception with the specified message and cause.
 	 *
 	 * @param message
@@ -36,7 +36,7 @@ public final class EmbeddingException extends KreuzbergException {
 	 * @param cause
 	 *            the cause of the embedding failure
 	 */
-	public EmbeddingException(String message, Throwable cause) {
-		super(message, ErrorCode.EMBEDDING, null, cause);
-	}
+    public EmbeddingException(String message, Throwable cause) {
+        super(message, ErrorCode.EMBEDDING, null, cause);
+    }
 }

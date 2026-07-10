@@ -254,10 +254,7 @@ final class ErrorHandlingTest extends TestCase
 
             $this->fail('Expected KreuzbergException to be thrown');
         } catch (KreuzbergException $e) {
-            $this->assertNotEmpty(
-                $e->getMessage(),
-                'Exception should have a meaningful error message',
-            );
+            $this->assertNotEmpty($e->getMessage(), 'Exception should have a meaningful error message');
             $this->assertIsString($e->getMessage());
         }
     }

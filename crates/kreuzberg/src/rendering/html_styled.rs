@@ -22,10 +22,6 @@ use crate::rendering::common::{NestingKind, RenderState, render_annotated_text_w
 use crate::types::document_structure::{AnnotationKind, ContentLayer};
 use crate::types::internal::{ElementKind, InternalDocument};
 
-// ============================================================================
-// Theme CSS
-// ============================================================================
-
 fn theme_css(theme: &HtmlTheme) -> &'static str {
     match theme {
         HtmlTheme::Unstyled => "",
@@ -137,10 +133,6 @@ p .kb-code { background: var(--kb-code-bg); color: var(--kb-code-color); padding
 .kb-page-break { border: none; border-top: 1px dashed var(--kb-border-color); margin: 2em 0; }
 "#;
 
-// ============================================================================
-// StyledHtmlRenderer
-// ============================================================================
-
 /// Styled HTML renderer.
 ///
 /// Implements the [`Renderer`] trait; registered as `"html"` when the
@@ -158,11 +150,9 @@ impl StyledHtmlRenderer {
     /// Loads `css_file` from disk and concatenates all CSS sources. Returns
     /// an error if `css_file` is set but cannot be read.
     /// Maximum size in bytes for a CSS file loaded via `css_file`.
-    const MAX_CSS_FILE_SIZE: u64 = 1_048_576; // 1 MiB
+    const MAX_CSS_FILE_SIZE: u64 = 1_048_576;
 
     pub fn new(config: HtmlOutputConfig) -> Result<Self> {
-        // Validate class_prefix: only allow alphanumerics, hyphens, and underscores
-        // to prevent HTML attribute injection.
         if !config
             .class_prefix
             .chars()
@@ -174,8 +164,6 @@ impl StyledHtmlRenderer {
             )));
         }
 
-        // Warn when using a non-default class_prefix with a non-unstyled theme,
-        // since built-in theme CSS targets `.kb-*` selectors.
         if config.class_prefix != "kb-" && config.theme != HtmlTheme::Unstyled {
             tracing::warn!(
                 "html_output.class_prefix is {:?} but theme is {:?}; \
@@ -189,7 +177,6 @@ impl StyledHtmlRenderer {
         let mut css = theme_css(&config.theme).to_owned();
 
         if let Some(ref path) = config.css_file {
-            // Check file size before reading to prevent excessive memory usage.
             let metadata = std::fs::metadata(path).map_err(|e| KreuzbergError::Parsing {
                 message: format!("html_output.css_file \"{}\": {}", path.display(), e),
                 source: None,
@@ -215,9 +202,6 @@ impl StyledHtmlRenderer {
             css.push_str(inline);
         }
 
-        // Sanitize resolved CSS: strip `</style>` sequences (case-insensitive)
-        // to prevent style block breakout. This is a minimal defense; callers
-        // serving HTML to untrusted users should sanitize CSS at the application layer.
         let css = css.replace("</style>", "").replace("</STYLE>", "");
 
         Ok(Self {
@@ -235,7 +219,6 @@ impl Renderer for StyledHtmlRenderer {
     fn render(&self, doc: &InternalDocument) -> Result<String> {
         let p = &self.config.class_prefix;
 
-        // Capacity heuristic: element text × 3 for tag overhead, capped at 64 MB.
         let text_bytes: usize = doc.elements.iter().map(|e| e.text.len()).sum();
         let cap = (text_bytes * 3).min(64 * 1024 * 1024);
         let mut buf = String::with_capacity(cap);
@@ -256,27 +239,20 @@ impl Renderer for StyledHtmlRenderer {
     }
 }
 
-// ============================================================================
-// Element rendering
-// ============================================================================
-
 fn esc(text: &str) -> String {
     escape(text).to_string()
 }
 
 fn render_elements(doc: &InternalDocument, p: &str, buf: &mut String) {
     let mut state = RenderState::default();
-    // Track current list ordered-ness for ListEnd
     let mut list_ordered_stack: Vec<bool> = Vec::new();
 
     for elem in &doc.elements {
-        // Skip non-body layers in the main content pass.
         if !matches!(elem.layer, ContentLayer::Body) {
             continue;
         }
 
         match elem.kind {
-            // ── Headings ──────────────────────────────────────────────
             ElementKind::Title => {
                 write!(buf, r#"<h1 class="{p}doc-title">{}</h1>"#, esc(&elem.text)).unwrap();
             }
@@ -290,12 +266,10 @@ fn render_elements(doc: &InternalDocument, p: &str, buf: &mut String) {
                 .unwrap();
             }
 
-            // ── Paragraph ─────────────────────────────────────────────
             ElementKind::Paragraph | ElementKind::OcrText { .. } => {
                 write!(buf, r#"<p class="{p}p">{}</p>"#, render_inline(doc, elem, p)).unwrap();
             }
 
-            // ── Lists ─────────────────────────────────────────────────
             ElementKind::ListStart { ordered } => {
                 list_ordered_stack.push(ordered);
                 state.push_container(NestingKind::List { ordered, item_count: 0 }, elem.depth);
@@ -318,7 +292,6 @@ fn render_elements(doc: &InternalDocument, p: &str, buf: &mut String) {
                 write!(buf, r#"<li class="{p}li">{}</li>"#, render_inline(doc, elem, p)).unwrap();
             }
 
-            // ── Blockquote ────────────────────────────────────────────
             ElementKind::QuoteStart => {
                 state.push_container(NestingKind::BlockQuote, elem.depth);
                 write!(buf, r#"<blockquote class="{p}blockquote">"#).unwrap();
@@ -328,7 +301,6 @@ fn render_elements(doc: &InternalDocument, p: &str, buf: &mut String) {
                 buf.push_str("</blockquote>");
             }
 
-            // ── Code ──────────────────────────────────────────────────
             ElementKind::Code => {
                 let lang = elem
                     .attributes
@@ -354,7 +326,6 @@ fn render_elements(doc: &InternalDocument, p: &str, buf: &mut String) {
                 }
             }
 
-            // ── Formula ───────────────────────────────────────────────
             ElementKind::Formula => {
                 write!(
                     buf,
@@ -364,7 +335,6 @@ fn render_elements(doc: &InternalDocument, p: &str, buf: &mut String) {
                 .unwrap();
             }
 
-            // ── Footnotes & citations ─────────────────────────────────
             ElementKind::FootnoteDefinition => {
                 let anchor = elem.anchor.as_deref().unwrap_or("");
                 write!(
@@ -389,12 +359,10 @@ fn render_elements(doc: &InternalDocument, p: &str, buf: &mut String) {
                 write!(buf, r#"<cite class="{p}citation">{}</cite>"#, esc(&elem.text)).unwrap();
             }
 
-            // ── Slides ────────────────────────────────────────────────
             ElementKind::Slide { number } => {
                 write!(buf, r#"<section class="{p}slide" data-slide="{number}">"#).unwrap();
             }
 
-            // ── Definition lists ──────────────────────────────────────
             ElementKind::DefinitionTerm => {
                 write!(buf, r#"<dt class="{p}dt">{}</dt>"#, render_inline(doc, elem, p)).unwrap();
             }
@@ -402,7 +370,6 @@ fn render_elements(doc: &InternalDocument, p: &str, buf: &mut String) {
                 write!(buf, r#"<dd class="{p}dd">{}</dd>"#, render_inline(doc, elem, p)).unwrap();
             }
 
-            // ── Admonitions ───────────────────────────────────────────
             ElementKind::Admonition => {
                 let kind = elem
                     .attributes
@@ -419,19 +386,14 @@ fn render_elements(doc: &InternalDocument, p: &str, buf: &mut String) {
                 .unwrap();
             }
 
-            // ── Raw / metadata blocks ─────────────────────────────────
             ElementKind::RawBlock => {
                 // SAFETY: RawBlock elements are only created by internal extractors
-                // (e.g. HTML pass-through from email/HTML sources). They are never
-                // populated from untrusted user input. If this invariant changes,
-                // this must be updated to escape content.
                 buf.push_str(&elem.text);
             }
             ElementKind::MetadataBlock => {
                 write!(buf, r#"<dl class="{p}metadata">{}</dl>"#, esc(&elem.text)).unwrap();
             }
 
-            // ── Group ─────────────────────────────────────────────────
             ElementKind::GroupStart => {
                 state.push_container(NestingKind::Group, elem.depth);
                 write!(buf, r#"<div class="{p}group">"#).unwrap();
@@ -441,21 +403,18 @@ fn render_elements(doc: &InternalDocument, p: &str, buf: &mut String) {
                 buf.push_str("</div>");
             }
 
-            // ── Table ─────────────────────────────────────────────────
             ElementKind::Table { table_index } => {
                 if let Some(table) = doc.tables.get(table_index as usize) {
                     render_table(table, p, buf);
                 }
             }
 
-            // ── Image ─────────────────────────────────────────────────
             ElementKind::Image { image_index } => {
                 if let Some(image) = doc.images.get(image_index as usize) {
                     render_image(image, &elem.text, p, buf);
                 }
             }
 
-            // ── Page break ────────────────────────────────────────────
             ElementKind::PageBreak => {
                 let page = elem.page.unwrap_or(0);
                 write!(buf, r#"<hr class="{p}page-break" data-page="{page}">"#).unwrap();
@@ -463,10 +422,6 @@ fn render_elements(doc: &InternalDocument, p: &str, buf: &mut String) {
         }
     }
 }
-
-// ============================================================================
-// Inline annotation rendering
-// ============================================================================
 
 fn render_inline(_doc: &InternalDocument, elem: &crate::types::internal::InternalElement, p: &str) -> String {
     if elem.annotations.is_empty() {
@@ -490,15 +445,10 @@ fn render_inline(_doc: &InternalDocument, elem: &crate::types::internal::Interna
     )
 }
 
-// ============================================================================
-// Table rendering
-// ============================================================================
-
 fn render_table(table: &crate::types::tables::Table, p: &str, buf: &mut String) {
     write!(buf, r#"<table class="{p}table">"#).unwrap();
     let mut rows = table.cells.iter().peekable();
 
-    // First row → thead
     if let Some(header_row) = rows.next() {
         write!(buf, r#"<thead class="{p}thead"><tr class="{p}tr">"#).unwrap();
         for cell in header_row {
@@ -507,7 +457,6 @@ fn render_table(table: &crate::types::tables::Table, p: &str, buf: &mut String) 
         buf.push_str("</tr></thead>");
     }
 
-    // Remaining rows → tbody
     if rows.peek().is_some() {
         write!(buf, r#"<tbody class="{p}tbody">"#).unwrap();
         for row in rows {
@@ -522,10 +471,6 @@ fn render_table(table: &crate::types::tables::Table, p: &str, buf: &mut String) 
 
     buf.push_str("</table>");
 }
-
-// ============================================================================
-// Image rendering
-// ============================================================================
 
 fn render_image(image: &crate::types::ExtractedImage, alt: &str, p: &str, buf: &mut String) {
     use base64::Engine as _;
@@ -546,10 +491,6 @@ fn render_image(image: &crate::types::ExtractedImage, alt: &str, p: &str, buf: &
     )
     .unwrap();
 }
-
-// ============================================================================
-// Tests
-// ============================================================================
 
 #[cfg(test)]
 mod tests {

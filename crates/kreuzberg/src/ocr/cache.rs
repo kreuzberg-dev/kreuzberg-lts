@@ -41,7 +41,6 @@ impl OcrCache {
         match rmp_serde::from_slice::<OcrExtractionResult>(&cached_bytes) {
             Ok(result) => Ok(Some(result)),
             Err(_) => {
-                // Stale cache entry (schema changed). Delete and treat as miss.
                 let _ = fs::remove_file(&cache_path);
                 Ok(None)
             }

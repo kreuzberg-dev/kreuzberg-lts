@@ -42,33 +42,33 @@ const ocrBackendRegistry = new Map<string, OcrBackendProtocol>();
  * ```
  */
 export function registerOcrBackend(backend: OcrBackendProtocol): void {
-	if (!backend) {
-		throw new Error("Backend cannot be null or undefined");
-	}
+  if (!backend) {
+    throw new Error("Backend cannot be null or undefined");
+  }
 
-	if (typeof backend.name !== "function") {
-		throw new Error("Backend must implement name() method");
-	}
+  if (typeof backend.name !== "function") {
+    throw new Error("Backend must implement name() method");
+  }
 
-	if (typeof backend.supportedLanguages !== "function") {
-		throw new Error("Backend must implement supportedLanguages() method");
-	}
+  if (typeof backend.supportedLanguages !== "function") {
+    throw new Error("Backend must implement supportedLanguages() method");
+  }
 
-	if (typeof backend.processImage !== "function") {
-		throw new Error("Backend must implement processImage() method");
-	}
+  if (typeof backend.processImage !== "function") {
+    throw new Error("Backend must implement processImage() method");
+  }
 
-	const backendName = backend.name();
+  const backendName = backend.name();
 
-	if (!backendName || typeof backendName !== "string") {
-		throw new Error("Backend name must be a non-empty string");
-	}
+  if (!backendName || typeof backendName !== "string") {
+    throw new Error("Backend name must be a non-empty string");
+  }
 
-	if (ocrBackendRegistry.has(backendName)) {
-		console.warn(`OCR backend "${backendName}" is already registered and will be replaced`);
-	}
+  if (ocrBackendRegistry.has(backendName)) {
+    console.warn(`OCR backend "${backendName}" is already registered and will be replaced`);
+  }
 
-	ocrBackendRegistry.set(backendName, backend);
+  ocrBackendRegistry.set(backendName, backend);
 }
 
 /**
@@ -88,7 +88,7 @@ export function registerOcrBackend(backend: OcrBackendProtocol): void {
  * ```
  */
 export function getOcrBackend(name: string): OcrBackendProtocol | undefined {
-	return ocrBackendRegistry.get(name);
+  return ocrBackendRegistry.get(name);
 }
 
 /**
@@ -105,7 +105,7 @@ export function getOcrBackend(name: string): OcrBackendProtocol | undefined {
  * ```
  */
 export function listOcrBackends(): string[] {
-	return Array.from(ocrBackendRegistry.keys());
+  return Array.from(ocrBackendRegistry.keys());
 }
 
 /**
@@ -122,23 +122,23 @@ export function listOcrBackends(): string[] {
  * ```
  */
 export async function unregisterOcrBackend(name: string): Promise<void> {
-	const backend = ocrBackendRegistry.get(name);
+  const backend = ocrBackendRegistry.get(name);
 
-	if (!backend) {
-		return;
-	}
+  if (!backend) {
+    return;
+  }
 
-	if (typeof backend.shutdown === "function") {
-		try {
-			await backend.shutdown();
-		} catch (error) {
-			console.warn(
-				`Error shutting down OCR backend "${name}": ${error instanceof Error ? error.message : String(error)}`,
-			);
-		}
-	}
+  if (typeof backend.shutdown === "function") {
+    try {
+      await backend.shutdown();
+    } catch (error) {
+      console.warn(
+        `Error shutting down OCR backend "${name}": ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
+  }
 
-	ocrBackendRegistry.delete(name);
+  ocrBackendRegistry.delete(name);
 }
 
 /**
@@ -155,19 +155,19 @@ export async function unregisterOcrBackend(name: string): Promise<void> {
  * ```
  */
 export async function clearOcrBackends(): Promise<void> {
-	const backends = Array.from(ocrBackendRegistry.entries());
+  const backends = Array.from(ocrBackendRegistry.entries());
 
-	for (const [name, backend] of backends) {
-		if (typeof backend.shutdown === "function") {
-			try {
-				await backend.shutdown();
-			} catch (error) {
-				console.warn(
-					`Error shutting down OCR backend "${name}": ${error instanceof Error ? error.message : String(error)}`,
-				);
-			}
-		}
-	}
+  for (const [name, backend] of backends) {
+    if (typeof backend.shutdown === "function") {
+      try {
+        await backend.shutdown();
+      } catch (error) {
+        console.warn(
+          `Error shutting down OCR backend "${name}": ${error instanceof Error ? error.message : String(error)}`,
+        );
+      }
+    }
+  }
 
-	ocrBackendRegistry.clear();
+  ocrBackendRegistry.clear();
 }

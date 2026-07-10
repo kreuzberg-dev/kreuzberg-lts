@@ -1,4 +1,4 @@
-version: '3'
+version: "3"
 
 tasks:
   install:
@@ -96,7 +96,6 @@ tasks:
       - echo "Updating Elixir dependencies to latest versions..."
       - cmd: echo "Note - Elixir requires manual mix.exs edits for major version updates"
       - mix deps.get
-      # `mix hex.outdated` exits non-zero when any dep is outdated — informational only here.
       - mix hex.outdated || true
       - mix deps.update --all
       - echo "Checking remaining outdated dependencies..."

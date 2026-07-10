@@ -2,7 +2,6 @@ using System;
 using System.Runtime.CompilerServices;
 using Xunit;
 
-// Assembly-level attributes must come first
 [assembly: CollectionBehavior(DisableTestParallelization = true)]
 
 namespace Kreuzberg.Tests;
@@ -32,33 +31,21 @@ internal static class PdfiumInitializer
 
     public static void Initialize()
     {
-        // Double-checked locking to ensure initialization happens exactly once
         if (s_initialized)
-            return;
+        return;
 
         lock (s_lock)
         {
             if (s_initialized)
-                return;
+            return;
 
             try
             {
                 System.Console.WriteLine("[Test Init] Loading native library...");
 
-                // Only load the FFI library - let Rust handle Pdfium initialization lazily
-                // Pdfium will be initialized on first PDF extraction call from Rust
                 NativeTestHelper.EnsureNativeLibraryLoaded();
 
                 // NOTE: We intentionally do NOT register ProcessExit/DomainUnload handlers
-                // that call into the native library. On Windows, calling FFI functions during
-                // process shutdown can cause crashes because:
-                // 1. The native DLL may already be partially unloaded
-                // 2. The Rust runtime may be in an inconsistent state
-                // 3. Thread-local storage may have been destroyed
-                //
-                // Instead, we rely on the Rust library to clean up its own resources when
-                // the DLL is unloaded. The managed resources (GCHandlePool, InteropUtilities)
-                // have their own ProcessExit handlers that clean up managed memory safely.
 
                 System.Console.WriteLine("[Test Init] Native library loaded. Pdfium will initialize lazily on first use.");
                 s_initialized = true;
@@ -66,7 +53,7 @@ internal static class PdfiumInitializer
             catch (Exception ex)
             {
                 System.Console.WriteLine($"[Test Init] Warning: {ex.Message}");
-                s_initialized = true; // Mark as initialized to avoid repeated attempts
+                s_initialized = true;
             }
         }
     }

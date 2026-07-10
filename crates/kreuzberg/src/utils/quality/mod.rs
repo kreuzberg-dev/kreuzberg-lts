@@ -8,7 +8,6 @@ mod heuristics;
 mod patterns;
 mod scoring;
 
-// Re-export public API
 pub use scoring::calculate_quality_score;
 
 use crate::text::utf8_validation;
@@ -16,10 +15,6 @@ use memchr::{memchr, memchr3};
 use patterns::*;
 use regex::Regex;
 use std::borrow::Cow;
-
-// ============================================================================
-// Text Cleaning and Normalization
-// ============================================================================
 
 /// Apply the quality heuristics and return a cleaned representation of the text.
 ///
@@ -88,10 +83,6 @@ pub fn normalize_spaces(text: &str) -> String {
 
     result
 }
-
-// ============================================================================
-// Internal Cleaning Functions
-// ============================================================================
 
 #[inline]
 fn clean_scripts<'a>(text: Cow<'a, str>) -> Cow<'a, str> {
@@ -213,10 +204,6 @@ fn normalize_whitespace_cow<'a>(text: Cow<'a, str>) -> Cow<'a, str> {
 
     result
 }
-
-// ============================================================================
-// ASCII Fast-Path Optimizations
-// ============================================================================
 
 fn clean_repeated_punctuation_ascii(text: &str) -> Option<String> {
     if !text.is_ascii() {
@@ -389,10 +376,6 @@ pub(crate) fn collapse_scattered_ascii(text: &str) -> Option<String> {
     }
 }
 
-// ============================================================================
-// Utility Functions
-// ============================================================================
-
 fn chain_replacements<'a>(mut text: Cow<'a, str>, replacements: &[(&Regex, &str)]) -> Cow<'a, str> {
     for (pattern, replacement) in replacements {
         if pattern.is_match(&text) {
@@ -413,10 +396,6 @@ where
         Cow::Borrowed(text)
     }
 }
-
-// ============================================================================
-// Tests
-// ============================================================================
 
 #[cfg(all(test, feature = "quality"))]
 mod tests {

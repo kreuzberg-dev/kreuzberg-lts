@@ -5,7 +5,6 @@ use super::error::Result;
 use super::parser::Record;
 
 // ---------------------------------------------------------------------------
-// Document model
 // ---------------------------------------------------------------------------
 
 /// An extracted HWP document, consisting of one or more body-text sections.
@@ -34,29 +33,17 @@ impl HwpDocument {
     }
 }
 
-// ---------------------------------------------------------------------------
-// Section
-// ---------------------------------------------------------------------------
-
 /// A body-text section containing a flat list of paragraphs.
 #[derive(Debug, Default)]
 pub struct Section {
     pub paragraphs: Vec<Paragraph>,
 }
 
-// ---------------------------------------------------------------------------
-// Paragraph
-// ---------------------------------------------------------------------------
-
 /// A single paragraph; may or may not carry a text payload.
 #[derive(Debug, Default)]
 pub struct Paragraph {
     pub text: Option<ParaText>,
 }
-
-// ---------------------------------------------------------------------------
-// ParaText — decodes a TAG_PARA_TEXT (0x43) record
-// ---------------------------------------------------------------------------
 
 /// Plain text content decoded from a ParaText record (tag 0x43).
 #[derive(Debug)]
@@ -84,13 +71,7 @@ impl ParaText {
         while i < chars.len() {
             let ch = chars[i];
             match ch {
-                0x0000 => {} // null — 1 u16, no parameters
-                // HWP 5.x control characters that occupy 8 u16 units total
-                // (the control char itself + 7 parameter units):
-                //   0x0001–0x0008: inline extended controls
-                //   0x0009:        tab
-                //   0x000B–0x000C: drawing objects, reserved
-                //   0x000E–0x001F: extended controls (field, bookmark, etc.)
+                0x0000 => {}
                 0x0001..=0x0008 => {
                     i += 7;
                 }
@@ -98,12 +79,12 @@ impl ParaText {
                     content.push('\t');
                     i += 7;
                 }
-                0x000A => content.push('\n'), // line feed — 1 u16
-                0x000D => {}                  // paragraph end — 1 u16
+                0x000A => content.push('\n'),
+                0x000D => {}
                 0x000B..=0x000C | 0x000E..=0x001F => {
                     i += 7;
                 }
-                0xF020..=0xF07F => {} // HWP private-use controls — skip
+                0xF020..=0xF07F => {}
                 _ => {
                     if let Some(c) = char::from_u32(ch as u32) {
                         content.push(c);

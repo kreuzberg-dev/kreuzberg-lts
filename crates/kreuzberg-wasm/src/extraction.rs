@@ -143,8 +143,6 @@ pub fn extract_bytes_wasm(data: Uint8Array, mime_type: String, config: Option<Js
 /// ```
 #[wasm_bindgen(js_name = extractFile)]
 pub fn extract_file_wasm(file: &web_sys::File, mime_type: Option<String>, config: Option<JsValue>) -> js_sys::Promise {
-    // `file` is borrowed so it must be cloned to move into the async block;
-    // `mime_type` and `config` are owned values that can be moved directly.
     let file_clone = file.clone();
 
     wasm_bindgen_futures::future_to_promise(async move {
@@ -282,8 +280,6 @@ pub fn batch_extract_bytes_wasm(
 
         let mut results = Vec::with_capacity(items.len());
         for (data, mime, file_config) in &items {
-            // When there is a per-file override we must build a new config struct; otherwise
-            // we pass a reference to the shared Arc so no full struct clone is needed.
             let effective_config;
             let config_ref = match file_config {
                 Some(fc) => {

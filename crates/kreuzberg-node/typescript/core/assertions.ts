@@ -18,10 +18,10 @@
  * @internal
  */
 export function assertUint8Array(value: unknown, name: string): Uint8Array {
-	if (!(value instanceof Uint8Array)) {
-		throw new TypeError(`${name} must be a Uint8Array`);
-	}
-	return value;
+  if (!(value instanceof Uint8Array)) {
+    throw new TypeError(`${name} must be a Uint8Array`);
+  }
+  return value;
 }
 
 /**
@@ -35,18 +35,18 @@ export function assertUint8Array(value: unknown, name: string): Uint8Array {
  * @internal
  */
 export function assertUint8ArrayList(values: unknown, name: string): Uint8Array[] {
-	if (!Array.isArray(values)) {
-		throw new TypeError(`${name} must be an array of Uint8Array`);
-	}
+  if (!Array.isArray(values)) {
+    throw new TypeError(`${name} must be an array of Uint8Array`);
+  }
 
-	const array = values as unknown[];
-	return array.map((value, index) => {
-		try {
-			return assertUint8Array(value, `${name}[${index}]`);
-		} catch {
-			throw new TypeError(`${name}[${index}] must be a Uint8Array`);
-		}
-	});
+  const array = values as unknown[];
+  return array.map((value, index) => {
+    try {
+      return assertUint8Array(value, `${name}[${index}]`);
+    } catch {
+      throw new TypeError(`${name}[${index}] must be a Uint8Array`);
+    }
+  });
 }
 
 /**
@@ -58,7 +58,7 @@ export function assertUint8ArrayList(values: unknown, name: string): Uint8Array[
  * @internal
  */
 export function assertUnreachable(value: never): never {
-	throw new Error(`This code should be unreachable, but got: ${JSON.stringify(value)}`);
+  throw new Error(`This code should be unreachable, but got: ${JSON.stringify(value)}`);
 }
 
 /**
@@ -70,5 +70,5 @@ export function assertUnreachable(value: never): never {
  * @internal
  */
 export function assertNever(value: never): never {
-	throw new Error(`Expected code to be unreachable but got: ${JSON.stringify(value)}`);
+  throw new Error(`Expected code to be unreachable but got: ${JSON.stringify(value)}`);
 }

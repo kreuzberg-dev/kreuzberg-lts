@@ -29,7 +29,6 @@ pub(crate) const MAX_DECODE_PIXELS: u64 = 64_000_000;
 ///
 /// Returns `KreuzbergError::Parsing` when the image data cannot be decoded.
 pub(crate) fn decode_with_pixel_cap(bytes: &[u8]) -> Result<image::DynamicImage> {
-    // --- header probe (no pixel allocation) ---
     let probe = image::ImageReader::new(Cursor::new(bytes))
         .with_guessed_format()
         .map_err(|e| KreuzbergError::image_processing(format!("image format probe failed: {e}")))?;
@@ -46,7 +45,6 @@ pub(crate) fn decode_with_pixel_cap(bytes: &[u8]) -> Result<image::DynamicImage>
         )));
     }
 
-    // --- full decode ---
     let reader = image::ImageReader::new(Cursor::new(bytes))
         .with_guessed_format()
         .map_err(|e| KreuzbergError::image_processing(format!("image format probe failed: {e}")))?;
@@ -85,7 +83,6 @@ mod tests {
 
     #[test]
     fn decode_with_pixel_cap_rejects_oversized_image() {
-        // 8000 × 9000 = 72 MP, above the 64 MP cap
         let img = DynamicImage::ImageRgb8(RgbImage::new(8000, 9000));
         let png = encode_png(img);
         let result = decode_with_pixel_cap(&png);

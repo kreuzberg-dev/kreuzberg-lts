@@ -29,17 +29,12 @@ use serde_yaml_ng::Value as YamlValue;
 /// assert!(remaining.contains("# Content"));
 /// ```
 pub fn extract_frontmatter(content: &str) -> (Option<YamlValue>, String) {
-    // Frontmatter must start at the beginning of the document
     if !content.starts_with("---") {
         return (None, content.to_string());
     }
 
-    // Skip opening delimiter
     let rest = &content[3..];
 
-    // Find the closing delimiter
-    // We need to find "---" or "..." on its own line (not embedded in YAML content)
-    // The delimiter must be preceded by a newline and followed by newline or EOF
     let mut end_pos = None;
     let mut search_start = 0;
 
@@ -51,10 +46,8 @@ pub fn extract_frontmatter(content: &str) -> (Option<YamlValue>, String) {
             break;
         }
 
-        // Check if we have "---" or "..." at the start of a line
         let remaining = &rest[after_newline..];
         if remaining.starts_with("---") || remaining.starts_with("...") {
-            // Verify it's on its own line (followed by newline or EOF)
             let delimiter_end = after_newline + 3;
             if delimiter_end >= rest.len() || rest.as_bytes()[delimiter_end] == b'\n' {
                 end_pos = Some(absolute_pos);
@@ -67,12 +60,9 @@ pub fn extract_frontmatter(content: &str) -> (Option<YamlValue>, String) {
 
     if let Some(end) = end_pos {
         let frontmatter_str = &rest[..end];
-        // Skip past the closing delimiter and any following newline
-        let after_delimiter = end + 1; // Skip the newline before delimiter
+        let after_delimiter = end + 1;
         let remaining_start = if after_delimiter + 3 < rest.len() {
-            // Skip "---" or "..."
             let after_delim = after_delimiter + 3;
-            // Skip trailing newline after delimiter if present
             if after_delim < rest.len() && rest.as_bytes()[after_delim] == b'\n' {
                 after_delim + 1
             } else {
@@ -88,13 +78,11 @@ pub fn extract_frontmatter(content: &str) -> (Option<YamlValue>, String) {
             ""
         };
 
-        // Try to parse the frontmatter as YAML
         match serde_yaml_ng::from_str::<YamlValue>(frontmatter_str) {
             Ok(value) => (Some(value), remaining.to_string()),
             Err(_) => (None, content.to_string()),
         }
     } else {
-        // No closing delimiter found
         (None, content.to_string())
     }
 }
@@ -124,26 +112,22 @@ pub fn extract_frontmatter(content: &str) -> (Option<YamlValue>, String) {
 pub fn extract_metadata_from_yaml(yaml: &YamlValue) -> Metadata {
     let mut metadata = Metadata::default();
 
-    // Title
     if let Some(title) = yaml.get("title").and_then(|v| v.as_str())
         && metadata.title.is_none()
     {
         metadata.title = Some(title.to_string());
     }
 
-    // Author
     if let Some(author) = yaml.get("author").and_then(|v| v.as_str())
         && metadata.created_by.is_none()
     {
         metadata.created_by = Some(author.to_string());
     }
 
-    // Date (map to created_at)
     if let Some(date) = yaml.get("date").and_then(|v| v.as_str()) {
         metadata.created_at = Some(date.to_string());
     }
 
-    // Keywords (support both string and array)
     if let Some(keywords) = yaml.get("keywords") {
         match keywords {
             YamlValue::String(s) if metadata.keywords.is_none() => {
@@ -159,27 +143,22 @@ pub fn extract_metadata_from_yaml(yaml: &YamlValue) -> Metadata {
         }
     }
 
-    // Description (map to subject)
     if let Some(description) = yaml.get("description").and_then(|v| v.as_str()) {
         metadata.subject = Some(description.to_string());
     }
 
-    // Abstract
     if let Some(abstract_val) = yaml.get("abstract").and_then(|v| v.as_str()) {
         metadata.abstract_text = Some(abstract_val.to_string());
     }
 
-    // Subject (overrides description if both present)
     if let Some(subject) = yaml.get("subject").and_then(|v| v.as_str()) {
         metadata.subject = Some(subject.to_string());
     }
 
-    // Category
     if let Some(category) = yaml.get("category").and_then(|v| v.as_str()) {
         metadata.category = Some(category.to_string());
     }
 
-    // Tags (support both string and array)
     if let Some(tags) = yaml.get("tags") {
         match tags {
             YamlValue::String(s) => {
@@ -193,14 +172,12 @@ pub fn extract_metadata_from_yaml(yaml: &YamlValue) -> Metadata {
         }
     }
 
-    // Language
     if let Some(language) = yaml.get("language").and_then(|v| v.as_str())
         && metadata.language.is_none()
     {
         metadata.language = Some(language.to_string());
     }
 
-    // Version
     if let Some(version) = yaml.get("version").and_then(|v| v.as_str()) {
         metadata.document_version = Some(version.to_string());
     }
@@ -266,7 +243,6 @@ pub fn cells_to_markdown(cells: &[Vec<String>]) -> String {
 
     let mut md = String::new();
 
-    // Header row
     md.push('|');
     for cell in &cells[0] {
         md.push(' ');
@@ -275,14 +251,12 @@ pub fn cells_to_markdown(cells: &[Vec<String>]) -> String {
     }
     md.push('\n');
 
-    // Separator row
     md.push('|');
     for _ in &cells[0] {
         md.push_str(" --- |");
     }
     md.push('\n');
 
-    // Data rows
     for row in &cells[1..] {
         md.push('|');
         for cell in row {
@@ -371,7 +345,6 @@ mod tests {
         let content = "---\ntitle: Test\nauthor: John\n\n# Content";
         let (yaml, remaining) = extract_frontmatter(content);
 
-        // No closing delimiter, should return None
         assert!(yaml.is_none());
         assert_eq!(remaining, content);
     }

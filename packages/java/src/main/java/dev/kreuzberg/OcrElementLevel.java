@@ -10,18 +10,18 @@ package dev.kreuzberg;
  * @since 4.4.0
  */
 public final class OcrElementLevel {
-	/** Word-level OCR element. */
-	public static final String WORD = "word";
+    /** Word-level OCR element. */
+    public static final String WORD = "word";
 
-	/** Line-level OCR element. */
-	public static final String LINE = "line";
+    /** Line-level OCR element. */
+    public static final String LINE = "line";
 
-	/** Block-level OCR element. */
-	public static final String BLOCK = "block";
+    /** Block-level OCR element. */
+    public static final String BLOCK = "block";
 
-	/** Page-level OCR element. */
-	public static final String PAGE = "page";
+    /** Page-level OCR element. */
+    public static final String PAGE = "page";
 
-	private OcrElementLevel() {
-	}
+    private OcrElementLevel() {
+    }
 }

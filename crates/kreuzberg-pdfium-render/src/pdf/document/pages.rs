@@ -52,8 +52,6 @@ pub enum PdfPageMode {
 impl PdfPageMode {
     #[inline]
     pub(crate) fn from_pdfium(page_mode: i32) -> Option<Self> {
-        // The PAGEMODE_* enum constants are a mixture of i32 and u32 values :/
-
         if page_mode == PAGEMODE_UNKNOWN {
             return Some(PdfPageMode::UnsetOrUnknown);
         }
@@ -246,13 +244,6 @@ impl<'a> PdfPages<'a> {
         result
     }
 
-    // TODO: AJRC - 5/2/23 - remove deprecated PdfPages::delete_page_range() function in 0.9.0
-    // as part of tracking issue: https://github.com/ajrcarey/pdfium-render/issues/36
-    // TODO: AJRC - 5/2/23 - if PdfDocument::pages() returned a &PdfPages reference (rather than an
-    // owned PdfPages instance), and if PdfPages::get() returned a &PdfPage reference (rather than an
-    // owned PdfPage instance), then it might be possible to reinstate this function, as Rust
-    // would be able to manage the reference lifetimes safely. Tracking issue:
-    // https://github.com/ajrcarey/pdfium-render/issues/47
     /// Deletes the page at the given index from this [PdfPages] collection.
     #[deprecated(
         since = "0.7.30",
@@ -271,13 +262,6 @@ impl<'a> PdfPages<'a> {
         Ok(())
     }
 
-    // TODO: AJRC - 5/2/23 - remove deprecated PdfPages::delete_page_range() function in 0.9.0
-    // as part of tracking issue: https://github.com/ajrcarey/pdfium-render/issues/36
-    // TODO: AJRC - 5/2/23 - if PdfDocument::pages() returned a &PdfPages reference (rather than an
-    // owned PdfPages instance), and if PdfPages::get() returned a &PdfPage reference (rather than an
-    // owned PdfPage instance), then it might be possible to reinstate this function, as Rust
-    // would be able to manage the reference lifetimes safely. Tracking issue:
-    // https://github.com/ajrcarey/pdfium-render/issues/47
     /// Deletes all pages in the given range from this [PdfPages] collection.
     #[deprecated(
         since = "0.7.30",
@@ -286,7 +270,7 @@ impl<'a> PdfPages<'a> {
     #[doc(hidden)]
     pub fn delete_page_range(&mut self, range: Range<PdfPageIndex>) -> Result<(), PdfiumError> {
         for index in range.rev() {
-            #[allow(deprecated)] // Both functions will be removed at the same time.
+            #[allow(deprecated)]
             self.delete_page_at_index(index)?;
         }
 
@@ -450,30 +434,12 @@ impl<'a> PdfPages<'a> {
         if page_handle.is_null() {
             Err(PdfiumError::PdfiumLibraryInternalError(PdfiumInternalError::Unknown))
         } else {
-            // The page's label (if any) is retrieved by index rather than by using the
-            // FPDF_PAGE handle. Since the index of any particular page can change
-            // (if other pages are inserted or removed), it's better if we don't treat the
-            // page index as an immutable property of the PdfPage; instead, we look up the label now.
-
-            // (Pdfium does not currently include an FPDF_SetPageLabel() function, so the label
-            // _will_ be an immutable property of the PdfPage for its entire lifetime.)
-
             let label = {
-                // Retrieving the label text from Pdfium is a two-step operation. First, we call
-                // FPDF_GetPageLabel() with a null buffer; this will retrieve the length of
-                // the label text in bytes. If the length is zero, then there is no such tag.
-
-                // If the length is non-zero, then we reserve a byte buffer of the given
-                // length and call FPDF_GetPageLabel() again with a pointer to the buffer;
-                // this will write the label text to the buffer in UTF16LE format.
-
                 let buffer_length =
                     self.bindings
                         .FPDF_GetPageLabel(self.document_handle, index as c_int, std::ptr::null_mut(), 0);
 
                 if buffer_length == 0 {
-                    // The label is not present.
-
                     None
                 } else {
                     let mut buffer = create_byte_buffer(buffer_length as usize);
@@ -598,8 +564,6 @@ mod tests {
 
     #[test]
     fn test_page_size() -> Result<(), PdfiumError> {
-        // Tests the dimensions of each page in a sample file.
-
         let pdfium = test_bind_to_pdfium();
 
         let document = pdfium.load_pdf_from_file(&test_fixture_path("page-sizes-test.pdf"), None)?;
@@ -616,8 +580,6 @@ mod tests {
 
     #[test]
     fn test_page_sizes() -> Result<(), PdfiumError> {
-        // Tests the dimensions of all pages in a sample file.
-
         let pdfium = test_bind_to_pdfium();
 
         let document = pdfium.load_pdf_from_file(&test_fixture_path("page-sizes-test.pdf"), None)?;
@@ -658,9 +620,6 @@ mod tests {
 
     #[test]
     fn copy_page_range_from_document() -> Result<(), PdfiumError> {
-        // Tests that copy_page_range_from_document() copies the expected
-        // number of pages.
-
         let pdfium = test_bind_to_pdfium();
 
         let max_page_count = 200;
@@ -682,7 +641,7 @@ mod tests {
 
             let source_from_page_index = source.pages().len() / 2 - i;
             let source_to_page_index = source.pages().len() / 2 + i;
-            let source_page_range_len = source_to_page_index - source_from_page_index + 1; // Page ranges are inclusive
+            let source_page_range_len = source_to_page_index - source_from_page_index + 1;
 
             destination.pages_mut().copy_page_range_from_document(
                 &source,

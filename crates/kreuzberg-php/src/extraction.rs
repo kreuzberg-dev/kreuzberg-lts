@@ -16,14 +16,8 @@ use crate::types::ExtractionResult;
 pub(crate) fn should_extract_tables(config_json: &Option<String>) -> PhpResult<bool> {
     if let Some(json) = config_json {
         match serde_json::from_str::<serde_json::Value>(json) {
-            Ok(value) => {
-                // Look for extract_tables field in the JSON config
-                Ok(value.get("extract_tables").and_then(|v| v.as_bool()).unwrap_or(true))
-            }
-            Err(_) => {
-                // If JSON parsing fails, default to true (extract tables)
-                Ok(true)
-            }
+            Ok(value) => Ok(value.get("extract_tables").and_then(|v| v.as_bool()).unwrap_or(true)),
+            Err(_) => Ok(true),
         }
     } else {
         Ok(true)
@@ -74,7 +68,6 @@ pub fn kreuzberg_extract_file(
         None => Default::default(),
     };
 
-    // Check if tables should be extracted from config
     let extract_tables = should_extract_tables(&config_json)?;
 
     let result = kreuzberg::extract_file_sync(&path, mime_type.as_deref(), &rust_config).map_err(to_php_exception)?;
@@ -183,7 +176,6 @@ pub fn kreuzberg_extract_bytes(
         }
     }
 
-    // Check if tables should be extracted from config
     let extract_tables = should_extract_tables(&config_json)?;
 
     let result = kreuzberg::extract_bytes_sync(data.as_ref(), &mime_type, &rust_config).map_err(to_php_exception)?;
@@ -241,7 +233,6 @@ pub fn kreuzberg_batch_extract_files(
         None => Default::default(),
     };
 
-    // Check if tables should be extracted from config
     let extract_tables = should_extract_tables(&config_json)?;
 
     let items: Vec<(std::path::PathBuf, Option<kreuzberg::FileExtractionConfig>)> = match file_configs_json {
@@ -328,7 +319,6 @@ pub fn kreuzberg_batch_extract_bytes(
         None => Default::default(),
     };
 
-    // Check if tables should be extracted from config
     let extract_tables = should_extract_tables(&config_json)?;
 
     let items: Vec<(Vec<u8>, String, Option<kreuzberg::FileExtractionConfig>)> = match file_configs_json {

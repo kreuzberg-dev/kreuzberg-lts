@@ -17,8 +17,8 @@ import { getBinding } from "../core/binding.js";
  * ```
  */
 export function listDocumentExtractors(): string[] {
-	const binding = getBinding();
-	return binding.listDocumentExtractors();
+  const binding = getBinding();
+  return binding.listDocumentExtractors();
 }
 
 /**
@@ -38,8 +38,8 @@ export function listDocumentExtractors(): string[] {
  * ```
  */
 export function unregisterDocumentExtractor(name: string): void {
-	const binding = getBinding();
-	binding.unregisterDocumentExtractor(name);
+  const binding = getBinding();
+  binding.unregisterDocumentExtractor(name);
 }
 
 /**
@@ -57,8 +57,8 @@ export function unregisterDocumentExtractor(name: string): void {
  * ```
  */
 export function clearDocumentExtractors(): void {
-	const binding = getBinding();
-	binding.clearDocumentExtractors();
+  const binding = getBinding();
+  binding.clearDocumentExtractors();
 }
 
 /**
@@ -80,10 +80,8 @@ export function clearDocumentExtractors(): void {
  * ```
  */
 export function getDocumentExtractor(name: string): unknown {
-	// Note: This function is not directly exposed by the native binding
-	// It's a helper function that uses listDocumentExtractors to check if an extractor exists
-	const extractors = listDocumentExtractors();
-	return extractors.includes(name) ? { name } : null;
+  const extractors = listDocumentExtractors();
+  return extractors.includes(name) ? { name } : null;
 }
 
 /**
@@ -103,7 +101,7 @@ export function getDocumentExtractor(name: string): unknown {
  * ```
  */
 export function registerDocumentExtractor(_name: string): void {
-	throw new Error(
-		"registerDocumentExtractor is not available. Document extractors must be registered at the Rust level.",
-	);
+  throw new Error(
+    "registerDocumentExtractor is not available. Document extractors must be registered at the Rust level.",
+  );
 }

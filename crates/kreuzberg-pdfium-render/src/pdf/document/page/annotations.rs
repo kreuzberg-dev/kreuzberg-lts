@@ -310,9 +310,6 @@ impl<'a> PdfPageAnnotations<'a> {
         )
     }
 
-    // Convenience functions for creating and positioning markup annotations
-    // in a single function call.
-
     /// Creates a new [PdfPageSquigglyAnnotation] annotation and positions it underneath the given
     /// [PdfPageObject], coloring it with the given [PdfColor].
     ///
@@ -331,8 +328,6 @@ impl<'a> PdfPageAnnotations<'a> {
         contents: Option<&str>,
     ) -> Result<PdfPageSquigglyAnnotation<'a>, PdfiumError> {
         let mut annotation = self.create_squiggly_annotation()?;
-
-        // The annotation will not display if it is not positioned.
 
         let bounds = object.bounds()?;
 
@@ -385,8 +380,6 @@ impl<'a> PdfPageAnnotations<'a> {
     ) -> Result<PdfPageUnderlineAnnotation<'a>, PdfiumError> {
         let mut annotation = self.create_underline_annotation()?;
 
-        // The annotation will not display if it is not positioned.
-
         let bounds = object.bounds()?;
 
         annotation.set_position(bounds.left(), bounds.bottom())?;
@@ -423,8 +416,6 @@ impl<'a> PdfPageAnnotations<'a> {
     ) -> Result<PdfPageStrikeoutAnnotation<'a>, PdfiumError> {
         let mut annotation = self.create_strikeout_annotation()?;
 
-        // The annotation will not display if it is not positioned.
-
         let bounds = object.bounds()?;
 
         annotation.set_position(bounds.left(), bounds.bottom())?;
@@ -460,8 +451,6 @@ impl<'a> PdfPageAnnotations<'a> {
         contents: Option<&str>,
     ) -> Result<PdfPageHighlightAnnotation<'a>, PdfiumError> {
         let mut annotation = self.create_highlight_annotation()?;
-
-        // The annotation will not display if it is not positioned.
 
         let bounds = object.bounds()?;
 

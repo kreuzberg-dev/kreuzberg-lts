@@ -21,13 +21,13 @@ defmodule KreuzbergTest.Unit.ErrorTest do
 
     test "handles all error reason types" do
       reasons = [
-        :invalid_format,
-        :invalid_config,
-        :ocr_error,
-        :extraction_error,
-        :io_error,
-        :nif_error,
-        :unknown_error
+      :invalid_format,
+      :invalid_config,
+      :ocr_error,
+      :extraction_error,
+      :io_error,
+      :nif_error,
+      :unknown_error
       ]
 
       Enum.each(reasons, fn reason ->
@@ -85,13 +85,13 @@ defmodule KreuzbergTest.Unit.ErrorTest do
 
     test "handles complex nested context structures" do
       context = %{
-        "file_info" => %{
-          "name" => "document.pdf",
-          "size" => 1024,
-          "nested" => %{"deep" => "value"}
-        },
-        "extraction_config" => %{"extract_images" => true},
-        "errors" => ["error1", "error2"]
+      "file_info" => %{
+      "name" => "document.pdf",
+      "size" => 1024,
+      "nested" => %{"deep" => "value"}
+      },
+      "extraction_config" => %{"extract_images" => true},
+      "errors" => ["error1", "error2"]
       }
 
       error = Error.new("Extraction failed", :extraction_error, context)
@@ -102,13 +102,13 @@ defmodule KreuzbergTest.Unit.ErrorTest do
 
     test "handles context with various value types" do
       context = %{
-        "string" => "value",
-        "integer" => 42,
-        "float" => 3.14,
-        "boolean" => true,
-        "list" => [1, 2, 3],
-        "map" => %{"nested" => "data"},
-        "null" => nil
+      "string" => "value",
+      "integer" => 42,
+      "float" => 3.14,
+      "boolean" => true,
+      "list" => [1, 2, 3],
+      "map" => %{"nested" => "data"},
+      "null" => nil
       }
 
       error = Error.new("Test", :unknown_error, context)
@@ -132,9 +132,7 @@ defmodule KreuzbergTest.Unit.ErrorTest do
       original_context = %{"key" => "value"}
       error = Error.new("Message", :extraction_error, original_context)
 
-      # Verify context is preserved
       assert error.context == original_context
-      # Verify it's the same reference or equal
       assert error.context["key"] == "value"
     end
   end
@@ -166,9 +164,9 @@ defmodule KreuzbergTest.Unit.ErrorTest do
 
     test "handles errors with complex context in string" do
       context = %{
-        "file" => "test.pdf",
-        "supported" => ["pdf", "docx"],
-        "provided" => "xyz"
+      "file" => "test.pdf",
+      "supported" => ["pdf", "docx"],
+      "provided" => "xyz"
       }
 
       error = Error.new("Unsupported format", :invalid_format, context)
@@ -250,8 +248,8 @@ defmodule KreuzbergTest.Unit.ErrorTest do
 
     test "formats complex context in message" do
       context = %{
-        "file_info" => %{"name" => "doc.pdf"},
-        "errors" => ["err1", "err2"]
+      "file_info" => %{"name" => "doc.pdf"},
+      "errors" => ["err1", "err2"]
       }
 
       error = Error.new("Validation failed", :extraction_error, context)
@@ -263,7 +261,6 @@ defmodule KreuzbergTest.Unit.ErrorTest do
     end
 
     test "handles message/1 with nil values safely" do
-      # Ensure error with nil values doesn't raise
       error = %Error{message: nil, reason: :unknown_error, context: nil}
 
       message = Error.message(error)
@@ -282,42 +279,42 @@ defmodule KreuzbergTest.Unit.ErrorTest do
 
     test "exception can be caught and inspected" do
       result =
-        try do
-          raise Error, message: "Caught error", reason: :extraction_error
-        rescue
-          e in Error ->
-            {e.message, e.reason}
-        end
+      try do
+        raise Error, message: "Caught error", reason: :extraction_error
+      rescue
+        e in Error ->
+        {e.message, e.reason}
+      end
 
       assert result == {"Caught error", :extraction_error}
     end
 
     test "exception context is accessible when caught" do
       result =
-        try do
-          context = %{"file" => "test.pdf"}
+      try do
+        context = %{"file" => "test.pdf"}
 
-          raise Error,
-            message: "Error with context",
-            reason: :invalid_format,
-            context: context
-        rescue
-          e in Error ->
-            {e.message, e.reason, e.context}
-        end
+        raise Error,
+        message: "Error with context",
+        reason: :invalid_format,
+        context: context
+      rescue
+        e in Error ->
+        {e.message, e.reason, e.context}
+      end
 
       assert result == {"Error with context", :invalid_format, %{"file" => "test.pdf"}}
     end
 
     test "multiple errors can be raised independently" do
       errors =
-        Enum.map(1..5, fn i ->
-          try do
-            raise Error, message: "Error #{i}", reason: :unknown_error
-          rescue
-            e in Error -> e
-          end
-        end)
+      Enum.map(1..5, fn i ->
+        try do
+          raise Error, message: "Error #{i}", reason: :unknown_error
+        rescue
+          e in Error -> e
+        end
+      end)
 
       assert length(errors) == 5
 
@@ -330,14 +327,14 @@ defmodule KreuzbergTest.Unit.ErrorTest do
       context = %{"key" => "value", "nested" => %{"deep" => 42}}
 
       caught_error =
-        try do
-          raise Error,
-            message: "Original error",
-            reason: :extraction_error,
-            context: context
-        rescue
-          e in Error -> e
-        end
+      try do
+        raise Error,
+        message: "Original error",
+        reason: :extraction_error,
+        context: context
+      rescue
+        e in Error -> e
+      end
 
       assert caught_error.message == "Original error"
       assert caught_error.reason == :extraction_error
@@ -393,15 +390,15 @@ defmodule KreuzbergTest.Unit.ErrorTest do
   describe "edge cases and error handling" do
     test "handles error with all possible fields populated" do
       error =
-        Error.new(
-          "Comprehensive error message",
-          :extraction_error,
-          %{
-            "file" => "test.pdf",
-            "size" => 1024,
-            "error_details" => %{"code" => 500}
-          }
-        )
+      Error.new(
+      "Comprehensive error message",
+      :extraction_error,
+      %{
+      "file" => "test.pdf",
+      "size" => 1024,
+      "error_details" => %{"code" => 500}
+      }
+      )
 
       assert error.message == "Comprehensive error message"
       assert error.reason == :extraction_error
@@ -427,7 +424,6 @@ defmodule KreuzbergTest.Unit.ErrorTest do
     test "exception message delegates to message/1 callback" do
       error = Error.new("Test message", :io_error)
 
-      # Exception.message/1 should call our custom message/1
       assert Exception.message(error) == Error.message(error)
     end
   end
@@ -444,9 +440,9 @@ defmodule KreuzbergTest.Unit.ErrorTest do
 
     test "collects multiple errors" do
       errors = [
-        Error.new("Error 1", :io_error),
-        Error.new("Error 2", :invalid_format),
-        Error.new("Error 3", :extraction_error)
+      Error.new("Error 1", :io_error),
+      Error.new("Error 2", :invalid_format),
+      Error.new("Error 3", :extraction_error)
       ]
 
       assert length(errors) == 3

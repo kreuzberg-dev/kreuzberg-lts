@@ -23,8 +23,7 @@ readonly class BibtexMetadata
         public array $authors = [],
         public ?YearRange $yearRange = null,
         public ?array $entryTypes = null,
-    ) {
-    }
+    ) {}
 
     /**
      * @param array<string, mixed> $data

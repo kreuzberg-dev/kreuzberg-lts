@@ -29,12 +29,11 @@ pub struct PptMetadata {
     pub last_author: Option<String>,
 }
 
-// PowerPoint record types for text extraction
-const RT_TEXT_CHARS_ATOM: u16 = 0x0FA0; // Unicode (UTF-16LE) text
-const RT_TEXT_BYTES_ATOM: u16 = 0x0FA8; // ANSI (CP1252) text
-const RT_SLIDE_LIST_WITH_TEXT: u16 = 0x0FF0; // Container for slide text
-const RT_MAIN_MASTER: u16 = 0x03F8; // Main master slide
-const RT_NOTES: u16 = 0x03F0; // Notes container
+const RT_TEXT_CHARS_ATOM: u16 = 0x0FA0;
+const RT_TEXT_BYTES_ATOM: u16 = 0x0FA8;
+const RT_SLIDE_LIST_WITH_TEXT: u16 = 0x0FF0;
+const RT_MAIN_MASTER: u16 = 0x03F8;
+const RT_NOTES: u16 = 0x03F0;
 
 /// Extract text from PPT bytes.
 ///
@@ -56,16 +55,13 @@ pub fn extract_ppt_text_with_options(content: &[u8], include_master_slides: bool
     let mut comp = cfb::CompoundFile::open(cursor)
         .map_err(|e| KreuzbergError::parsing(format!("Failed to open PPT as OLE container: {e}")))?;
 
-    // Extract metadata from summary information
     let metadata = extract_ppt_metadata(&mut comp);
 
-    // Read the PowerPoint Document stream
     let ppt_stream = read_stream(&mut comp, "/PowerPoint Document")?;
     if ppt_stream.is_empty() {
         return Err(KreuzbergError::parsing("PowerPoint Document stream is empty"));
     }
 
-    // Extract text from the stream
     let (texts, slide_count, speaker_notes) = extract_texts_from_records(&ppt_stream, include_master_slides)?;
 
     let text = texts
@@ -99,16 +95,11 @@ fn extract_texts_from_records(data: &[u8], include_master_slides: bool) -> Resul
     let mut current_notes_texts: Vec<String> = Vec::new();
 
     while pos + 8 <= data.len() {
-        // Record header: 8 bytes
-        // Bytes 0-1: recVer (4 bits) + recInstance (12 bits)
-        // Bytes 2-3: recType (16 bits)
-        // Bytes 4-7: recLen (32 bits)
         let rec_ver_instance = u16::from_le_bytes([data[pos], data[pos + 1]]);
         let rec_ver = rec_ver_instance & 0x000F;
         let rec_type = u16::from_le_bytes([data[pos + 2], data[pos + 3]]);
         let rec_len = u32::from_le_bytes([data[pos + 4], data[pos + 5], data[pos + 6], data[pos + 7]]) as usize;
 
-        // Prevent infinite loops on invalid data
         if rec_len > data.len() - pos {
             break;
         }
@@ -119,19 +110,16 @@ fn extract_texts_from_records(data: &[u8], include_master_slides: bool) -> Resul
 
         match rec_type {
             RT_SLIDE_LIST_WITH_TEXT => {
-                // Start tracking slide text
                 if in_slide_text && !current_slide_texts.is_empty() {
                     texts.push(current_slide_texts.join("\n"));
                     current_slide_texts.clear();
                 }
                 in_slide_text = true;
                 slide_count += 1;
-                // Recurse into container
                 pos += 8;
                 continue;
             }
             RT_NOTES => {
-                // Notes container -- track it
                 if in_notes && !current_notes_texts.is_empty() {
                     let notes_text = current_notes_texts.join("\n");
                     let trimmed = notes_text.trim().to_string();
@@ -145,13 +133,10 @@ fn extract_texts_from_records(data: &[u8], include_master_slides: bool) -> Resul
                 continue;
             }
             RT_MAIN_MASTER if !include_master_slides => {
-                // Skip entire master slide container to avoid extracting
-                // placeholder text like "Click to edit Master title style"
                 pos = content_end;
                 continue;
             }
             RT_TEXT_CHARS_ATOM => {
-                // Unicode (UTF-16LE) text
                 if content_end <= data.len() {
                     let text_data = &data[content_start..content_end];
                     let chars: Vec<u16> = text_data
@@ -175,7 +160,6 @@ fn extract_texts_from_records(data: &[u8], include_master_slides: bool) -> Resul
                 continue;
             }
             RT_TEXT_BYTES_ATOM => {
-                // ANSI (CP1252) text
                 if content_end <= data.len() {
                     let text_data = &data[content_start..content_end];
                     let text: String = text_data.iter().map(|&b| cp1252_to_char(b)).collect();
@@ -198,20 +182,16 @@ fn extract_texts_from_records(data: &[u8], include_master_slides: bool) -> Resul
         }
 
         if is_container {
-            // Step into container records to find nested text atoms
             pos += 8;
         } else {
-            // Skip non-container records
             pos = content_end;
         }
     }
 
-    // Flush any remaining slide text
     if !current_slide_texts.is_empty() {
         texts.push(current_slide_texts.join("\n"));
     }
 
-    // Flush any remaining notes
     if !current_notes_texts.is_empty() {
         let notes_text = current_notes_texts.join("\n");
         let trimmed = notes_text.trim().to_string();
@@ -220,7 +200,6 @@ fn extract_texts_from_records(data: &[u8], include_master_slides: bool) -> Resul
         }
     }
 
-    // If no SlideListWithText containers found but we have text, count it
     if slide_count == 0 && !texts.is_empty() {
         slide_count = 1;
     }
@@ -235,21 +214,18 @@ fn clean_ppt_text(text: &str) -> String {
     for c in text.chars() {
         match c {
             '\r' => result.push('\n'),
-            '\x0B' => result.push('\n'),                    // Vertical tab
-            c if c < '\x20' && c != '\n' && c != '\t' => {} // Skip control chars
+            '\x0B' => result.push('\n'),
+            c if c < '\x20' && c != '\n' && c != '\t' => {}
             _ => result.push(c),
         }
     }
 
-    // Trim trailing whitespace from each line
     let cleaned = result
         .lines()
         .map(|line| line.trim_end())
         .collect::<Vec<_>>()
         .join("\n");
 
-    // Filter out placeholder bullet text from slide masters/layouts.
-    // These appear as lines containing only bullet-like characters (*, -, etc.)
     let trimmed = cleaned.trim();
     if trimmed.chars().all(|c| c == '*' || c == '\n' || c.is_whitespace()) {
         return String::new();
@@ -383,7 +359,6 @@ fn read_property_value(data: &[u8], offset: usize) -> Option<String> {
 
     match vt_type {
         30 => {
-            // VT_LPSTR
             let len =
                 u32::from_le_bytes([data[offset + 4], data[offset + 5], data[offset + 6], data[offset + 7]]) as usize;
             if len == 0 || offset + 8 + len > data.len() {
@@ -394,7 +369,6 @@ fn read_property_value(data: &[u8], offset: usize) -> Option<String> {
             Some(String::from_utf8_lossy(&trimmed).to_string())
         }
         31 => {
-            // VT_LPWSTR
             let len =
                 u32::from_le_bytes([data[offset + 4], data[offset + 5], data[offset + 6], data[offset + 7]]) as usize;
             if len == 0 || offset + 8 + len * 2 > data.len() {

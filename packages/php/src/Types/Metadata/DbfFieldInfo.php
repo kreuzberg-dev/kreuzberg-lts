@@ -12,8 +12,7 @@ readonly class DbfFieldInfo
     public function __construct(
         public string $name,
         public string $fieldType,
-    ) {
-    }
+    ) {}
 
     /**
      * @param array<string, mixed> $data

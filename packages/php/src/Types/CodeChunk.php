@@ -19,8 +19,7 @@ readonly class CodeChunk
         public string $language,
         public CodeSpan $span,
         public ?CodeChunkContext $context = null,
-    ) {
-    }
+    ) {}
 
     /**
      * @param array<string, mixed> $data

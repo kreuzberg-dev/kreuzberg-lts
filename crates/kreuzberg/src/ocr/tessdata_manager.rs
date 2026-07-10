@@ -234,7 +234,6 @@ mod tests {
         let temp_dir = TempDir::new().unwrap();
         let manager = TessdataManager::new(Some(temp_dir.path().to_path_buf()));
 
-        // Pre-populate all files so no downloads occur
         for code in all_download_codes() {
             fs::write(temp_dir.path().join(format!("{code}.traineddata")), "fake").unwrap();
         }

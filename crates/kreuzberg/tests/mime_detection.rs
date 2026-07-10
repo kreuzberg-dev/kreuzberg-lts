@@ -327,7 +327,6 @@ async fn test_mime_detection_nonexistent_file() {
     assert!(result.is_err(), "Should fail for nonexistent file");
 
     let error = result.unwrap_err();
-    // File existence check returns Io error (NotFound), not Validation error
     assert!(
         matches!(error, kreuzberg::KreuzbergError::Io(_)),
         "Should return Io error for nonexistent file"

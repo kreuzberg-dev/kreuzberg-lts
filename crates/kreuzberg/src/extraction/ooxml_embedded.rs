@@ -40,7 +40,6 @@ pub async fn extract_ooxml_embedded_objects(
         Err(_) => return (children, warnings),
     };
 
-    // Collect embedding file names first to avoid borrow issues with the archive.
     let embedding_names: Vec<String> = (0..archive.len())
         .filter_map(|i| {
             let file = archive.by_index(i).ok()?;
@@ -61,13 +60,11 @@ pub async fn extract_ooxml_embedded_objects(
     child_config.max_archive_depth = config.max_archive_depth.saturating_sub(1);
 
     for entry_name in &embedding_names {
-        // Extract the filename portion (after the prefix).
         let filename = entry_name
             .strip_prefix(embeddings_prefix)
             .unwrap_or(entry_name)
             .to_string();
 
-        // Read the embedded file bytes.
         let data = match archive.by_name(entry_name) {
             Ok(mut file) => {
                 let mut buf = Vec::with_capacity(file.size() as usize);
@@ -87,11 +84,8 @@ pub async fn extract_ooxml_embedded_objects(
             continue;
         }
 
-        // Skip OLE compound binary files unless we can identify their actual format.
-        // OLE files start with the magic bytes D0 CF 11 E0 (Microsoft Compound File).
         let is_ole_binary = data.len() >= 4 && data[0..4] == [0xD0, 0xCF, 0x11, 0xE0];
         if is_ole_binary {
-            // oleObject*.bin files are OLE containers — skip with warning.
             warnings.push(ProcessingWarning {
                 source: Cow::Owned(format!("{}_embedded_objects", source_label)),
                 message: Cow::Owned(format!(
@@ -102,7 +96,6 @@ pub async fn extract_ooxml_embedded_objects(
             continue;
         }
 
-        // Detect MIME type from magic bytes first, then fall back to extension.
         let detected_mime = crate::core::mime::detect_mime_type_from_bytes(&data).ok().or_else(|| {
             std::path::Path::new(&filename)
                 .extension()
@@ -114,7 +107,6 @@ pub async fn extract_ooxml_embedded_objects(
         let file_mime = match detected_mime {
             Some(m) if m != "application/octet-stream" => m,
             _ => {
-                // Unknown format — skip silently.
                 continue;
             }
         };

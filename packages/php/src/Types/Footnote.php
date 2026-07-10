@@ -15,8 +15,7 @@ readonly class Footnote
     public function __construct(
         public string $label,
         public string $content,
-    ) {
-    }
+    ) {}
 
     /**
      * Create Footnote from array.
@@ -31,9 +30,6 @@ readonly class Footnote
         /** @var string $content */
         $content = $data['content'] ?? '';
 
-        return new self(
-            label: $label,
-            content: $content,
-        );
+        return new self(label: $label, content: $content);
     }
 }

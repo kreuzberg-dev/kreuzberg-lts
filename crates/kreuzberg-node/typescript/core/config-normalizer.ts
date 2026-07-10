@@ -10,20 +10,20 @@
  */
 
 import type {
-	ChunkingConfig,
-	ExtractionConfig,
-	HtmlConversionOptions,
-	HtmlPreprocessingOptions,
-	ImageExtractionConfig,
-	KeywordConfig,
-	LanguageDetectionConfig,
-	LayoutDetectionConfig,
-	OcrConfig,
-	PageExtractionConfig,
-	PdfConfig,
-	PostProcessorConfig,
-	TesseractConfig,
-	TokenReductionConfig,
+  ChunkingConfig,
+  ExtractionConfig,
+  HtmlConversionOptions,
+  HtmlPreprocessingOptions,
+  ImageExtractionConfig,
+  KeywordConfig,
+  LanguageDetectionConfig,
+  LayoutDetectionConfig,
+  OcrConfig,
+  PageExtractionConfig,
+  PdfConfig,
+  PostProcessorConfig,
+  TesseractConfig,
+  TokenReductionConfig,
 } from "../types.js";
 
 /**
@@ -42,9 +42,9 @@ type NativeExtractionConfig = Record<string, unknown>;
  * @internal
  */
 function setIfDefined<T>(target: NativeExtractionConfig, key: string, value: T | undefined): void {
-	if (value !== undefined) {
-		target[key] = value;
-	}
+  if (value !== undefined) {
+    target[key] = value;
+  }
 }
 
 /**
@@ -55,15 +55,15 @@ function setIfDefined<T>(target: NativeExtractionConfig, key: string, value: T |
  * @internal
  */
 function normalizeTesseractConfig(config?: TesseractConfig) {
-	if (!config) {
-		return undefined;
-	}
+  if (!config) {
+    return undefined;
+  }
 
-	const normalized: NativeExtractionConfig = {};
-	setIfDefined(normalized, "psm", config.psm);
-	setIfDefined(normalized, "enableTableDetection", config.enableTableDetection);
-	setIfDefined(normalized, "tesseditCharWhitelist", config.tesseditCharWhitelist);
-	return normalized;
+  const normalized: NativeExtractionConfig = {};
+  setIfDefined(normalized, "psm", config.psm);
+  setIfDefined(normalized, "enableTableDetection", config.enableTableDetection);
+  setIfDefined(normalized, "tesseditCharWhitelist", config.tesseditCharWhitelist);
+  return normalized;
 }
 
 /**
@@ -74,24 +74,24 @@ function normalizeTesseractConfig(config?: TesseractConfig) {
  * @internal
  */
 function normalizeOcrConfig(ocr?: OcrConfig): NativeExtractionConfig | undefined {
-	if (!ocr) {
-		return undefined;
-	}
+  if (!ocr) {
+    return undefined;
+  }
 
-	const normalized: NativeExtractionConfig = {
-		backend: ocr.backend,
-	};
-	setIfDefined(normalized, "language", ocr.language);
+  const normalized: NativeExtractionConfig = {
+    backend: ocr.backend,
+  };
+  setIfDefined(normalized, "language", ocr.language);
 
-	const tesseract = normalizeTesseractConfig(ocr.tesseractConfig);
-	if (tesseract) {
-		setIfDefined(normalized, "tesseractConfig", tesseract);
-	}
+  const tesseract = normalizeTesseractConfig(ocr.tesseractConfig);
+  if (tesseract) {
+    setIfDefined(normalized, "tesseractConfig", tesseract);
+  }
 
-	setIfDefined(normalized, "paddleOcrConfig", ocr.paddleOcrConfig);
-	setIfDefined(normalized, "elementConfig", ocr.elementConfig);
+  setIfDefined(normalized, "paddleOcrConfig", ocr.paddleOcrConfig);
+  setIfDefined(normalized, "elementConfig", ocr.elementConfig);
 
-	return normalized;
+  return normalized;
 }
 
 /**
@@ -102,20 +102,20 @@ function normalizeOcrConfig(ocr?: OcrConfig): NativeExtractionConfig | undefined
  * @internal
  */
 function normalizeChunkingConfig(chunking?: ChunkingConfig): NativeExtractionConfig | undefined {
-	if (!chunking) {
-		return undefined;
-	}
+  if (!chunking) {
+    return undefined;
+  }
 
-	const normalized: NativeExtractionConfig = {};
-	setIfDefined(normalized, "maxChars", chunking.maxChars);
-	setIfDefined(normalized, "maxOverlap", chunking.maxOverlap);
-	setIfDefined(normalized, "preset", chunking.preset);
-	setIfDefined(normalized, "embedding", chunking.embedding);
-	setIfDefined(normalized, "enabled", chunking.enabled);
-	setIfDefined(normalized, "sizingType", chunking.sizingType);
-	setIfDefined(normalized, "sizingModel", chunking.sizingModel);
-	setIfDefined(normalized, "sizingCacheDir", chunking.sizingCacheDir);
-	return normalized;
+  const normalized: NativeExtractionConfig = {};
+  setIfDefined(normalized, "maxChars", chunking.maxChars);
+  setIfDefined(normalized, "maxOverlap", chunking.maxOverlap);
+  setIfDefined(normalized, "preset", chunking.preset);
+  setIfDefined(normalized, "embedding", chunking.embedding);
+  setIfDefined(normalized, "enabled", chunking.enabled);
+  setIfDefined(normalized, "sizingType", chunking.sizingType);
+  setIfDefined(normalized, "sizingModel", chunking.sizingModel);
+  setIfDefined(normalized, "sizingCacheDir", chunking.sizingCacheDir);
+  return normalized;
 }
 
 /**
@@ -126,18 +126,18 @@ function normalizeChunkingConfig(chunking?: ChunkingConfig): NativeExtractionCon
  * @internal
  */
 function normalizeImageExtractionConfig(images?: ImageExtractionConfig): NativeExtractionConfig | undefined {
-	if (!images) {
-		return undefined;
-	}
+  if (!images) {
+    return undefined;
+  }
 
-	const normalized: NativeExtractionConfig = {};
-	setIfDefined(normalized, "extractImages", images.extractImages);
-	setIfDefined(normalized, "targetDpi", images.targetDpi);
-	setIfDefined(normalized, "maxImageDimension", images.maxImageDimension);
-	setIfDefined(normalized, "autoAdjustDpi", images.autoAdjustDpi);
-	setIfDefined(normalized, "minDpi", images.minDpi);
-	setIfDefined(normalized, "maxDpi", images.maxDpi);
-	return normalized;
+  const normalized: NativeExtractionConfig = {};
+  setIfDefined(normalized, "extractImages", images.extractImages);
+  setIfDefined(normalized, "targetDpi", images.targetDpi);
+  setIfDefined(normalized, "maxImageDimension", images.maxImageDimension);
+  setIfDefined(normalized, "autoAdjustDpi", images.autoAdjustDpi);
+  setIfDefined(normalized, "minDpi", images.minDpi);
+  setIfDefined(normalized, "maxDpi", images.maxDpi);
+  return normalized;
 }
 
 /**
@@ -148,19 +148,19 @@ function normalizeImageExtractionConfig(images?: ImageExtractionConfig): NativeE
  * @internal
  */
 function normalizePdfConfig(pdf?: PdfConfig): NativeExtractionConfig | undefined {
-	if (!pdf) {
-		return undefined;
-	}
+  if (!pdf) {
+    return undefined;
+  }
 
-	const normalized: NativeExtractionConfig = {};
-	setIfDefined(normalized, "extractImages", pdf.extractImages);
-	setIfDefined(normalized, "passwords", pdf.passwords);
-	setIfDefined(normalized, "extractMetadata", pdf.extractMetadata);
-	setIfDefined(normalized, "hierarchy", pdf.hierarchy);
-	setIfDefined(normalized, "extractAnnotations", pdf.extractAnnotations);
-	setIfDefined(normalized, "topMarginFraction", pdf.topMarginFraction);
-	setIfDefined(normalized, "bottomMarginFraction", pdf.bottomMarginFraction);
-	return normalized;
+  const normalized: NativeExtractionConfig = {};
+  setIfDefined(normalized, "extractImages", pdf.extractImages);
+  setIfDefined(normalized, "passwords", pdf.passwords);
+  setIfDefined(normalized, "extractMetadata", pdf.extractMetadata);
+  setIfDefined(normalized, "hierarchy", pdf.hierarchy);
+  setIfDefined(normalized, "extractAnnotations", pdf.extractAnnotations);
+  setIfDefined(normalized, "topMarginFraction", pdf.topMarginFraction);
+  setIfDefined(normalized, "bottomMarginFraction", pdf.bottomMarginFraction);
+  return normalized;
 }
 
 /**
@@ -171,14 +171,14 @@ function normalizePdfConfig(pdf?: PdfConfig): NativeExtractionConfig | undefined
  * @internal
  */
 function normalizeTokenReductionConfig(tokenReduction?: TokenReductionConfig): NativeExtractionConfig | undefined {
-	if (!tokenReduction) {
-		return undefined;
-	}
+  if (!tokenReduction) {
+    return undefined;
+  }
 
-	const normalized: NativeExtractionConfig = {};
-	setIfDefined(normalized, "mode", tokenReduction.mode);
-	setIfDefined(normalized, "preserveImportantWords", tokenReduction.preserveImportantWords);
-	return normalized;
+  const normalized: NativeExtractionConfig = {};
+  setIfDefined(normalized, "mode", tokenReduction.mode);
+  setIfDefined(normalized, "preserveImportantWords", tokenReduction.preserveImportantWords);
+  return normalized;
 }
 
 /**
@@ -189,17 +189,17 @@ function normalizeTokenReductionConfig(tokenReduction?: TokenReductionConfig): N
  * @internal
  */
 function normalizeLanguageDetectionConfig(
-	languageDetection?: LanguageDetectionConfig,
+  languageDetection?: LanguageDetectionConfig,
 ): NativeExtractionConfig | undefined {
-	if (!languageDetection) {
-		return undefined;
-	}
+  if (!languageDetection) {
+    return undefined;
+  }
 
-	const normalized: NativeExtractionConfig = {};
-	setIfDefined(normalized, "enabled", languageDetection.enabled);
-	setIfDefined(normalized, "minConfidence", languageDetection.minConfidence);
-	setIfDefined(normalized, "detectMultiple", languageDetection.detectMultiple);
-	return normalized;
+  const normalized: NativeExtractionConfig = {};
+  setIfDefined(normalized, "enabled", languageDetection.enabled);
+  setIfDefined(normalized, "minConfidence", languageDetection.minConfidence);
+  setIfDefined(normalized, "detectMultiple", languageDetection.detectMultiple);
+  return normalized;
 }
 
 /**
@@ -210,15 +210,15 @@ function normalizeLanguageDetectionConfig(
  * @internal
  */
 function normalizePostProcessorConfig(postprocessor?: PostProcessorConfig): NativeExtractionConfig | undefined {
-	if (!postprocessor) {
-		return undefined;
-	}
+  if (!postprocessor) {
+    return undefined;
+  }
 
-	const normalized: NativeExtractionConfig = {};
-	setIfDefined(normalized, "enabled", postprocessor.enabled);
-	setIfDefined(normalized, "enabledProcessors", postprocessor.enabledProcessors);
-	setIfDefined(normalized, "disabledProcessors", postprocessor.disabledProcessors);
-	return normalized;
+  const normalized: NativeExtractionConfig = {};
+  setIfDefined(normalized, "enabled", postprocessor.enabled);
+  setIfDefined(normalized, "enabledProcessors", postprocessor.enabledProcessors);
+  setIfDefined(normalized, "disabledProcessors", postprocessor.disabledProcessors);
+  return normalized;
 }
 
 /**
@@ -229,16 +229,16 @@ function normalizePostProcessorConfig(postprocessor?: PostProcessorConfig): Nati
  * @internal
  */
 function normalizeHtmlPreprocessing(options?: HtmlPreprocessingOptions): NativeExtractionConfig | undefined {
-	if (!options) {
-		return undefined;
-	}
+  if (!options) {
+    return undefined;
+  }
 
-	const normalized: NativeExtractionConfig = {};
-	setIfDefined(normalized, "enabled", options.enabled);
-	setIfDefined(normalized, "preset", options.preset);
-	setIfDefined(normalized, "removeNavigation", options.removeNavigation);
-	setIfDefined(normalized, "removeForms", options.removeForms);
-	return normalized;
+  const normalized: NativeExtractionConfig = {};
+  setIfDefined(normalized, "enabled", options.enabled);
+  setIfDefined(normalized, "preset", options.preset);
+  setIfDefined(normalized, "removeNavigation", options.removeNavigation);
+  setIfDefined(normalized, "removeForms", options.removeForms);
+  return normalized;
 }
 
 /**
@@ -250,46 +250,46 @@ function normalizeHtmlPreprocessing(options?: HtmlPreprocessingOptions): NativeE
  * @internal
  */
 function normalizeHtmlOptions(options?: HtmlConversionOptions): NativeExtractionConfig | undefined {
-	if (!options) {
-		return undefined;
-	}
+  if (!options) {
+    return undefined;
+  }
 
-	const normalized: NativeExtractionConfig = {};
-	setIfDefined(normalized, "headingStyle", options.headingStyle);
-	setIfDefined(normalized, "listIndentType", options.listIndentType);
-	setIfDefined(normalized, "listIndentWidth", options.listIndentWidth);
-	setIfDefined(normalized, "bullets", options.bullets);
-	setIfDefined(normalized, "strongEmSymbol", options.strongEmSymbol);
-	setIfDefined(normalized, "escapeAsterisks", options.escapeAsterisks);
-	setIfDefined(normalized, "escapeUnderscores", options.escapeUnderscores);
-	setIfDefined(normalized, "escapeMisc", options.escapeMisc);
-	setIfDefined(normalized, "escapeAscii", options.escapeAscii);
-	setIfDefined(normalized, "codeLanguage", options.codeLanguage);
-	setIfDefined(normalized, "autolinks", options.autolinks);
-	setIfDefined(normalized, "defaultTitle", options.defaultTitle);
-	setIfDefined(normalized, "brInTables", options.brInTables);
-	setIfDefined(normalized, "hocrSpatialTables", options.hocrSpatialTables);
-	setIfDefined(normalized, "highlightStyle", options.highlightStyle);
-	setIfDefined(normalized, "extractMetadata", options.extractMetadata);
-	setIfDefined(normalized, "whitespaceMode", options.whitespaceMode);
-	setIfDefined(normalized, "stripNewlines", options.stripNewlines);
-	setIfDefined(normalized, "wrap", options.wrap);
-	setIfDefined(normalized, "wrapWidth", options.wrapWidth);
-	setIfDefined(normalized, "convertAsInline", options.convertAsInline);
-	setIfDefined(normalized, "subSymbol", options.subSymbol);
-	setIfDefined(normalized, "supSymbol", options.supSymbol);
-	setIfDefined(normalized, "newlineStyle", options.newlineStyle);
-	setIfDefined(normalized, "codeBlockStyle", options.codeBlockStyle);
-	setIfDefined(normalized, "keepInlineImagesIn", options.keepInlineImagesIn);
-	setIfDefined(normalized, "encoding", options.encoding);
-	setIfDefined(normalized, "debug", options.debug);
-	setIfDefined(normalized, "stripTags", options.stripTags);
-	setIfDefined(normalized, "preserveTags", options.preserveTags);
+  const normalized: NativeExtractionConfig = {};
+  setIfDefined(normalized, "headingStyle", options.headingStyle);
+  setIfDefined(normalized, "listIndentType", options.listIndentType);
+  setIfDefined(normalized, "listIndentWidth", options.listIndentWidth);
+  setIfDefined(normalized, "bullets", options.bullets);
+  setIfDefined(normalized, "strongEmSymbol", options.strongEmSymbol);
+  setIfDefined(normalized, "escapeAsterisks", options.escapeAsterisks);
+  setIfDefined(normalized, "escapeUnderscores", options.escapeUnderscores);
+  setIfDefined(normalized, "escapeMisc", options.escapeMisc);
+  setIfDefined(normalized, "escapeAscii", options.escapeAscii);
+  setIfDefined(normalized, "codeLanguage", options.codeLanguage);
+  setIfDefined(normalized, "autolinks", options.autolinks);
+  setIfDefined(normalized, "defaultTitle", options.defaultTitle);
+  setIfDefined(normalized, "brInTables", options.brInTables);
+  setIfDefined(normalized, "hocrSpatialTables", options.hocrSpatialTables);
+  setIfDefined(normalized, "highlightStyle", options.highlightStyle);
+  setIfDefined(normalized, "extractMetadata", options.extractMetadata);
+  setIfDefined(normalized, "whitespaceMode", options.whitespaceMode);
+  setIfDefined(normalized, "stripNewlines", options.stripNewlines);
+  setIfDefined(normalized, "wrap", options.wrap);
+  setIfDefined(normalized, "wrapWidth", options.wrapWidth);
+  setIfDefined(normalized, "convertAsInline", options.convertAsInline);
+  setIfDefined(normalized, "subSymbol", options.subSymbol);
+  setIfDefined(normalized, "supSymbol", options.supSymbol);
+  setIfDefined(normalized, "newlineStyle", options.newlineStyle);
+  setIfDefined(normalized, "codeBlockStyle", options.codeBlockStyle);
+  setIfDefined(normalized, "keepInlineImagesIn", options.keepInlineImagesIn);
+  setIfDefined(normalized, "encoding", options.encoding);
+  setIfDefined(normalized, "debug", options.debug);
+  setIfDefined(normalized, "stripTags", options.stripTags);
+  setIfDefined(normalized, "preserveTags", options.preserveTags);
 
-	const preprocessing = normalizeHtmlPreprocessing(options.preprocessing);
-	setIfDefined(normalized, "preprocessing", preprocessing);
+  const preprocessing = normalizeHtmlPreprocessing(options.preprocessing);
+  setIfDefined(normalized, "preprocessing", preprocessing);
 
-	return normalized;
+  return normalized;
 }
 
 /**
@@ -300,19 +300,19 @@ function normalizeHtmlOptions(options?: HtmlConversionOptions): NativeExtraction
  * @internal
  */
 function normalizeKeywordConfig(config?: KeywordConfig): NativeExtractionConfig | undefined {
-	if (!config) {
-		return undefined;
-	}
+  if (!config) {
+    return undefined;
+  }
 
-	const normalized: NativeExtractionConfig = {};
-	setIfDefined(normalized, "algorithm", config.algorithm);
-	setIfDefined(normalized, "maxKeywords", config.maxKeywords);
-	setIfDefined(normalized, "minScore", config.minScore);
-	setIfDefined(normalized, "ngramRange", config.ngramRange);
-	setIfDefined(normalized, "language", config.language);
-	setIfDefined(normalized, "yakeParams", config.yakeParams);
-	setIfDefined(normalized, "rakeParams", config.rakeParams);
-	return normalized;
+  const normalized: NativeExtractionConfig = {};
+  setIfDefined(normalized, "algorithm", config.algorithm);
+  setIfDefined(normalized, "maxKeywords", config.maxKeywords);
+  setIfDefined(normalized, "minScore", config.minScore);
+  setIfDefined(normalized, "ngramRange", config.ngramRange);
+  setIfDefined(normalized, "language", config.language);
+  setIfDefined(normalized, "yakeParams", config.yakeParams);
+  setIfDefined(normalized, "rakeParams", config.rakeParams);
+  return normalized;
 }
 
 /**
@@ -323,15 +323,15 @@ function normalizeKeywordConfig(config?: KeywordConfig): NativeExtractionConfig 
  * @internal
  */
 function normalizePageConfig(pages?: PageExtractionConfig): NativeExtractionConfig | undefined {
-	if (!pages) {
-		return undefined;
-	}
+  if (!pages) {
+    return undefined;
+  }
 
-	const normalized: NativeExtractionConfig = {};
-	setIfDefined(normalized, "extractPages", pages.extractPages);
-	setIfDefined(normalized, "insertPageMarkers", pages.insertPageMarkers);
-	setIfDefined(normalized, "markerFormat", pages.markerFormat);
-	return normalized;
+  const normalized: NativeExtractionConfig = {};
+  setIfDefined(normalized, "extractPages", pages.extractPages);
+  setIfDefined(normalized, "insertPageMarkers", pages.insertPageMarkers);
+  setIfDefined(normalized, "markerFormat", pages.markerFormat);
+  return normalized;
 }
 
 /**
@@ -344,89 +344,89 @@ function normalizePageConfig(pages?: PageExtractionConfig): NativeExtractionConf
  * @internal
  */
 function normalizeExtractionConfig(config: ExtractionConfig | null): NativeExtractionConfig | null {
-	if (!config) {
-		return null;
-	}
+  if (!config) {
+    return null;
+  }
 
-	const normalized: NativeExtractionConfig = {};
-	setIfDefined(normalized, "useCache", config.useCache);
-	setIfDefined(normalized, "enableQualityProcessing", config.enableQualityProcessing);
-	setIfDefined(normalized, "forceOcr", config.forceOcr);
-	setIfDefined(normalized, "includeDocumentStructure", config.includeDocumentStructure);
-	setIfDefined(normalized, "maxConcurrentExtractions", config.maxConcurrentExtractions);
+  const normalized: NativeExtractionConfig = {};
+  setIfDefined(normalized, "useCache", config.useCache);
+  setIfDefined(normalized, "enableQualityProcessing", config.enableQualityProcessing);
+  setIfDefined(normalized, "forceOcr", config.forceOcr);
+  setIfDefined(normalized, "includeDocumentStructure", config.includeDocumentStructure);
+  setIfDefined(normalized, "maxConcurrentExtractions", config.maxConcurrentExtractions);
 
-	const ocr = normalizeOcrConfig(config.ocr);
-	setIfDefined(normalized, "ocr", ocr);
+  const ocr = normalizeOcrConfig(config.ocr);
+  setIfDefined(normalized, "ocr", ocr);
 
-	const chunking = normalizeChunkingConfig(config.chunking);
-	setIfDefined(normalized, "chunking", chunking);
+  const chunking = normalizeChunkingConfig(config.chunking);
+  setIfDefined(normalized, "chunking", chunking);
 
-	const images = normalizeImageExtractionConfig(config.images);
-	setIfDefined(normalized, "images", images);
+  const images = normalizeImageExtractionConfig(config.images);
+  setIfDefined(normalized, "images", images);
 
-	const pdf = normalizePdfConfig(config.pdfOptions);
-	setIfDefined(normalized, "pdfOptions", pdf);
+  const pdf = normalizePdfConfig(config.pdfOptions);
+  setIfDefined(normalized, "pdfOptions", pdf);
 
-	const tokenReduction = normalizeTokenReductionConfig(config.tokenReduction);
-	setIfDefined(normalized, "tokenReduction", tokenReduction);
+  const tokenReduction = normalizeTokenReductionConfig(config.tokenReduction);
+  setIfDefined(normalized, "tokenReduction", tokenReduction);
 
-	const languageDetection = normalizeLanguageDetectionConfig(config.languageDetection);
-	setIfDefined(normalized, "languageDetection", languageDetection);
+  const languageDetection = normalizeLanguageDetectionConfig(config.languageDetection);
+  setIfDefined(normalized, "languageDetection", languageDetection);
 
-	const postprocessor = normalizePostProcessorConfig(config.postprocessor);
-	setIfDefined(normalized, "postprocessor", postprocessor);
+  const postprocessor = normalizePostProcessorConfig(config.postprocessor);
+  setIfDefined(normalized, "postprocessor", postprocessor);
 
-	const keywords = normalizeKeywordConfig(config.keywords);
-	setIfDefined(normalized, "keywords", keywords);
+  const keywords = normalizeKeywordConfig(config.keywords);
+  setIfDefined(normalized, "keywords", keywords);
 
-	const pages = normalizePageConfig(config.pages);
-	setIfDefined(normalized, "pages", pages);
+  const pages = normalizePageConfig(config.pages);
+  setIfDefined(normalized, "pages", pages);
 
-	const htmlOptions = normalizeHtmlOptions(config.htmlOptions);
-	setIfDefined(normalized, "htmlOptions", htmlOptions);
+  const htmlOptions = normalizeHtmlOptions(config.htmlOptions);
+  setIfDefined(normalized, "htmlOptions", htmlOptions);
 
-	const layout = normalizeLayoutDetectionConfig(config.layout);
-	setIfDefined(normalized, "layout", layout);
+  const layout = normalizeLayoutDetectionConfig(config.layout);
+  setIfDefined(normalized, "layout", layout);
 
-	setIfDefined(normalized, "outputFormat", config.outputFormat);
-	setIfDefined(normalized, "resultFormat", config.resultFormat);
+  setIfDefined(normalized, "outputFormat", config.outputFormat);
+  setIfDefined(normalized, "resultFormat", config.resultFormat);
 
-	return normalized;
+  return normalized;
 }
 
 /**
  * Normalize layout detection configuration.
  */
 function normalizeLayoutDetectionConfig(config?: LayoutDetectionConfig): NativeExtractionConfig | undefined {
-	if (!config) {
-		return undefined;
-	}
+  if (!config) {
+    return undefined;
+  }
 
-	const normalized: NativeExtractionConfig = {};
-	setIfDefined(normalized, "preset", config.preset);
-	setIfDefined(normalized, "confidenceThreshold", config.confidenceThreshold);
-	setIfDefined(normalized, "applyHeuristics", config.applyHeuristics);
-	setIfDefined(normalized, "tableModel", config.tableModel);
-	return normalized;
+  const normalized: NativeExtractionConfig = {};
+  setIfDefined(normalized, "preset", config.preset);
+  setIfDefined(normalized, "confidenceThreshold", config.confidenceThreshold);
+  setIfDefined(normalized, "applyHeuristics", config.applyHeuristics);
+  setIfDefined(normalized, "tableModel", config.tableModel);
+  return normalized;
 }
 
 /**
  * Export public normalization functions for use by extraction modules.
  */
 export {
-	normalizeChunkingConfig,
-	normalizeExtractionConfig,
-	normalizeHtmlOptions,
-	normalizeHtmlPreprocessing,
-	normalizeImageExtractionConfig,
-	normalizeKeywordConfig,
-	normalizeLanguageDetectionConfig,
-	normalizeLayoutDetectionConfig,
-	normalizeOcrConfig,
-	normalizePageConfig,
-	normalizePdfConfig,
-	normalizePostProcessorConfig,
-	normalizeTesseractConfig,
-	normalizeTokenReductionConfig,
-	setIfDefined,
+  normalizeChunkingConfig,
+  normalizeExtractionConfig,
+  normalizeHtmlOptions,
+  normalizeHtmlPreprocessing,
+  normalizeImageExtractionConfig,
+  normalizeKeywordConfig,
+  normalizeLanguageDetectionConfig,
+  normalizeLayoutDetectionConfig,
+  normalizeOcrConfig,
+  normalizePageConfig,
+  normalizePdfConfig,
+  normalizePostProcessorConfig,
+  normalizeTesseractConfig,
+  normalizeTokenReductionConfig,
+  setIfDefined,
 };

@@ -102,7 +102,6 @@ const VALID_LANGUAGE_CODES: &[&str] = &[
     "slv",
     "swe",
     "tur",
-    // PaddleOCR-specific language codes (non-ISO but widely used)
     "ch",
     "chinese_cht",
     "latin",

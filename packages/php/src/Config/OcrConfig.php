@@ -99,8 +99,7 @@ readonly class OcrConfig
          * @default null
          */
         public ?string $vlmPrompt = null,
-    ) {
-    }
+    ) {}
 
     /**
      * Create configuration from array data.
@@ -238,16 +237,19 @@ readonly class OcrConfig
      */
     public function toArray(): array
     {
-        return array_filter([
-            'backend' => $this->backend,
-            'language' => $this->language,
-            'tesseract_config' => $this->tesseractConfig?->toArray(),
-            'paddle_ocr_config' => $this->paddleOcrConfig?->toArray(),
-            'image_preprocessing' => $this->imagePreprocessing?->toArray(),
-            'element_config' => $this->elementConfig?->toArray(),
-            'vlm_config' => $this->vlmConfig?->toArray(),
-            'vlm_prompt' => $this->vlmPrompt,
-        ], static fn ($value): bool => $value !== null);
+        return array_filter(
+            [
+                'backend' => $this->backend,
+                'language' => $this->language,
+                'tesseract_config' => $this->tesseractConfig?->toArray(),
+                'paddle_ocr_config' => $this->paddleOcrConfig?->toArray(),
+                'image_preprocessing' => $this->imagePreprocessing?->toArray(),
+                'element_config' => $this->elementConfig?->toArray(),
+                'vlm_config' => $this->vlmConfig?->toArray(),
+                'vlm_prompt' => $this->vlmPrompt,
+            ],
+            static fn($value): bool => $value !== null,
+        );
     }
 
     /**

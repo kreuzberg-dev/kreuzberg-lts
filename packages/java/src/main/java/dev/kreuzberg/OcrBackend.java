@@ -38,7 +38,7 @@ import java.util.List;
  */
 @FunctionalInterface
 public interface OcrBackend {
-	/**
+    /**
 	 * Process image bytes and extract text via OCR.
 	 *
 	 * <p>
@@ -51,14 +51,14 @@ public interface OcrBackend {
 	 *            JSON string containing OCR configuration
 	 * @return extracted text, or null on failure
 	 */
-	String processImage(byte[] imageBytes, String configJson);
+    String processImage(byte[] imageBytes, String configJson);
 
-	/**
+    /**
 	 * Languages supported by the backend.
 	 *
 	 * @return language codes (empty means all languages)
 	 */
-	default List<String> supportedLanguages() {
-		return Collections.emptyList();
-	}
+    default List<String> supportedLanguages() {
+        return Collections.emptyList();
+    }
 }

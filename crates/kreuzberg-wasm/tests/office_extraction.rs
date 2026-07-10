@@ -9,8 +9,6 @@
 use js_sys::Uint8Array;
 use kreuzberg_wasm::*;
 
-// --- Minimal test documents ---
-
 /// A minimal RTF document.
 const MINIMAL_RTF: &[u8] = b"{\\rtf1\\ansi{\\fonttbl{\\f0 Times New Roman;}}\\pard Hello from RTF!\\par}";
 
@@ -32,8 +30,6 @@ const MINIMAL_MARKDOWN: &[u8] = b"# Hello\n\nHello from Markdown.\n";
 /// A minimal FictionBook document.
 const MINIMAL_FB2: &[u8] = b"<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<FictionBook xmlns=\"http://www.gribuser.ru/xml/fictionbook/2.0\">\n  <body>\n    <section>\n      <p>Hello from FictionBook.</p>\n    </section>\n  </body>\n</FictionBook>";
 
-// --- RTF tests ---
-
 #[test]
 fn test_rtf_extraction_basic() {
     let data = unsafe { Uint8Array::view(MINIMAL_RTF) };
@@ -49,8 +45,6 @@ fn test_rtf_extraction_returns_object() {
         assert!(js_value.is_object(), "RTF result should be a JavaScript object");
     }
 }
-
-// --- reStructuredText tests ---
 
 #[test]
 fn test_rst_extraction_basic() {
@@ -68,8 +62,6 @@ fn test_rst_extraction_returns_object() {
     }
 }
 
-// --- Org-mode tests ---
-
 #[test]
 fn test_org_extraction_basic() {
     let data = unsafe { Uint8Array::view(MINIMAL_ORG) };
@@ -85,8 +77,6 @@ fn test_org_extraction_returns_object() {
         assert!(js_value.is_object(), "Org result should be a JavaScript object");
     }
 }
-
-// --- Typst tests ---
 
 #[test]
 fn test_typst_extraction_basic() {
@@ -104,8 +94,6 @@ fn test_typst_extraction_returns_object() {
     }
 }
 
-// --- BibTeX tests ---
-
 #[test]
 fn test_bibtex_extraction_basic() {
     let data = unsafe { Uint8Array::view(MINIMAL_BIBTEX) };
@@ -121,8 +109,6 @@ fn test_bibtex_extraction_returns_object() {
         assert!(js_value.is_object(), "BibTeX result should be a JavaScript object");
     }
 }
-
-// --- Markdown tests ---
 
 #[test]
 fn test_markdown_extraction_basic() {
@@ -140,8 +126,6 @@ fn test_markdown_extraction_returns_object() {
     }
 }
 
-// --- FictionBook tests ---
-
 #[test]
 fn test_fb2_extraction_basic() {
     let data = unsafe { Uint8Array::view(MINIMAL_FB2) };
@@ -157,8 +141,6 @@ fn test_fb2_extraction_returns_object() {
         assert!(js_value.is_object(), "FB2 result should be a JavaScript object");
     }
 }
-
-// --- Cross-format tests ---
 
 #[test]
 fn test_multiple_office_formats_no_state_leak() {

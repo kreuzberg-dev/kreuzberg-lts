@@ -17,9 +17,6 @@ defmodule KreuzbergTest.Unit.ValidatorsTest do
 
   alias Kreuzberg.Validators
 
-  # =============================================================================
-  # validate_chunking_params/1 Tests
-  # =============================================================================
 
   describe "validate_chunking_params/1" do
     @tag :unit
@@ -73,7 +70,6 @@ defmodule KreuzbergTest.Unit.ValidatorsTest do
     @tag :unit
     test "accepts when max_overlap equals max_chars" do
       params = %{"max_chars" => 1000, "max_overlap" => 1000}
-      # This might fail depending on implementation, but test the behavior
       result = Validators.validate_chunking_params(params)
       assert result == :ok or match?({:error, _}, result)
     end
@@ -131,9 +127,6 @@ defmodule KreuzbergTest.Unit.ValidatorsTest do
     end
   end
 
-  # =============================================================================
-  # validate_language_code/1 Tests
-  # =============================================================================
 
   describe "validate_language_code/1" do
     @tag :unit
@@ -247,9 +240,6 @@ defmodule KreuzbergTest.Unit.ValidatorsTest do
     end
   end
 
-  # =============================================================================
-  # validate_dpi/1 Tests
-  # =============================================================================
 
   describe "validate_dpi/1" do
     @tag :unit
@@ -339,9 +329,6 @@ defmodule KreuzbergTest.Unit.ValidatorsTest do
     end
   end
 
-  # =============================================================================
-  # validate_confidence/1 Tests
-  # =============================================================================
 
   describe "validate_confidence/1" do
     @tag :unit
@@ -440,9 +427,6 @@ defmodule KreuzbergTest.Unit.ValidatorsTest do
     end
   end
 
-  # =============================================================================
-  # validate_ocr_backend/1 Tests
-  # =============================================================================
 
   describe "validate_ocr_backend/1" do
     @tag :unit
@@ -498,14 +482,10 @@ defmodule KreuzbergTest.Unit.ValidatorsTest do
     @tag :unit
     test "error message lists valid options" do
       {:error, reason} = Validators.validate_ocr_backend("invalid")
-      # Check that error mentions valid backends
       assert String.contains?(reason, "tesseract") or String.contains?(reason, "backend")
     end
   end
 
-  # =============================================================================
-  # validate_binarization_method/1 Tests
-  # =============================================================================
 
   describe "validate_binarization_method/1" do
     @tag :unit
@@ -570,9 +550,6 @@ defmodule KreuzbergTest.Unit.ValidatorsTest do
     end
   end
 
-  # =============================================================================
-  # validate_tesseract_psm/1 Tests
-  # =============================================================================
 
   describe "validate_tesseract_psm/1" do
     @tag :unit
@@ -688,14 +665,11 @@ defmodule KreuzbergTest.Unit.ValidatorsTest do
 
       Enum.each(valid_psms, fn psm ->
         assert :ok = Validators.validate_tesseract_psm(psm),
-               "PSM #{psm} should be valid"
+        "PSM #{psm} should be valid"
       end)
     end
   end
 
-  # =============================================================================
-  # validate_tesseract_oem/1 Tests
-  # =============================================================================
 
   describe "validate_tesseract_oem/1" do
     @tag :unit
@@ -767,7 +741,7 @@ defmodule KreuzbergTest.Unit.ValidatorsTest do
 
       Enum.each(valid_oems, fn oem ->
         assert :ok = Validators.validate_tesseract_oem(oem),
-               "OEM #{oem} should be valid"
+        "OEM #{oem} should be valid"
       end)
     end
 
@@ -778,9 +752,6 @@ defmodule KreuzbergTest.Unit.ValidatorsTest do
     end
   end
 
-  # =============================================================================
-  # Cross-validator integration tests
-  # =============================================================================
 
   describe "cross-validator integration" do
     @tag :unit
@@ -813,7 +784,6 @@ defmodule KreuzbergTest.Unit.ValidatorsTest do
 
     @tag :unit
     test "typical extraction config values validate" do
-      # Simulate a typical configuration
       assert :ok = Validators.validate_language_code("en")
       assert :ok = Validators.validate_dpi(300)
       assert :ok = Validators.validate_confidence(0.5)
@@ -824,14 +794,10 @@ defmodule KreuzbergTest.Unit.ValidatorsTest do
     end
   end
 
-  # =============================================================================
-  # Error handling and type validation tests
-  # =============================================================================
 
   describe "error handling and messages" do
     @tag :unit
     test "all error returns are tagged with :error" do
-      # Test various validators return error tuples
       {:error, _} = Validators.validate_dpi(0)
       {:error, _} = Validators.validate_confidence(1.5)
       {:error, _} = Validators.validate_language_code("xx")

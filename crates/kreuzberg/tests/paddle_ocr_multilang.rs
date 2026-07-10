@@ -17,14 +17,9 @@ use kreuzberg::plugins::{OcrBackend, Plugin};
 use std::path::PathBuf;
 use tempfile::TempDir;
 
-// ============================================================================
-// Language Mapping Tests (non-ignored, no network needed)
-// ============================================================================
-
 /// Test that all PaddleOCR language codes map to correct script families.
 #[test]
 fn test_language_to_script_family_all_paddle_codes() {
-    // PP-OCRv5 families (11 families)
     assert_eq!(language_to_script_family("en"), "english");
     assert_eq!(language_to_script_family("ch"), "chinese");
     assert_eq!(language_to_script_family("japan"), "chinese");
@@ -45,7 +40,6 @@ fn test_language_to_script_family_all_paddle_codes() {
 /// Test that Tesseract-style language codes map correctly to PaddleOCR codes.
 #[test]
 fn test_language_to_script_family_tesseract_codes() {
-    // Tesseract codes should map via map_language_code first, then to families
     assert_eq!(map_language_code("eng"), Some("en"));
     assert_eq!(language_to_script_family("en"), "english");
 
@@ -89,7 +83,6 @@ fn test_language_to_script_family_tesseract_codes() {
 /// Test that ISO 639-1 language codes map correctly to PaddleOCR codes.
 #[test]
 fn test_language_to_script_family_iso639_codes() {
-    // ISO 639-1 codes (2-letter)
     assert_eq!(map_language_code("en"), Some("en"));
     assert_eq!(map_language_code("fr"), Some("french"));
     assert_eq!(map_language_code("de"), Some("german"));
@@ -104,7 +97,6 @@ fn test_language_to_script_family_iso639_codes() {
     assert_eq!(map_language_code("ta"), Some("tamil"));
     assert_eq!(map_language_code("te"), Some("telugu"));
 
-    // Verify they map to correct families
     assert_eq!(language_to_script_family("en"), "english");
     assert_eq!(language_to_script_family("french"), "latin");
     assert_eq!(language_to_script_family("german"), "latin");
@@ -123,7 +115,6 @@ fn test_language_to_script_family_iso639_codes() {
 /// Test that unknown language codes fall back to "english" script family.
 #[test]
 fn test_language_to_script_family_unknown_fallback() {
-    // Unknown codes should fall back to "english"
     assert_eq!(language_to_script_family("xyz"), "english");
     assert_eq!(language_to_script_family("unknown"), "english");
     assert_eq!(language_to_script_family("invalid"), "english");
@@ -134,54 +125,44 @@ fn test_language_to_script_family_unknown_fallback() {
 /// Test that map_language_code normalizes various formats to canonical PaddleOCR codes.
 #[test]
 fn test_map_language_code_normalization() {
-    // English variants
     assert_eq!(map_language_code("en"), Some("en"));
     assert_eq!(map_language_code("eng"), Some("en"));
     assert_eq!(map_language_code("english"), Some("en"));
 
-    // Chinese variants
     assert_eq!(map_language_code("ch"), Some("ch"));
     assert_eq!(map_language_code("chi_sim"), Some("ch"));
     assert_eq!(map_language_code("zho"), Some("ch"));
     assert_eq!(map_language_code("zh"), Some("ch"));
     assert_eq!(map_language_code("chinese"), Some("ch"));
 
-    // Traditional Chinese
     assert_eq!(map_language_code("chi_tra"), Some("chinese_cht"));
     assert_eq!(map_language_code("zh_tw"), Some("chinese_cht"));
     assert_eq!(map_language_code("zh_hant"), Some("chinese_cht"));
 
-    // Japanese
     assert_eq!(map_language_code("ja"), Some("japan"));
     assert_eq!(map_language_code("jpn"), Some("japan"));
     assert_eq!(map_language_code("japanese"), Some("japan"));
 
-    // Korean
     assert_eq!(map_language_code("ko"), Some("korean"));
     assert_eq!(map_language_code("kor"), Some("korean"));
     assert_eq!(map_language_code("korean"), Some("korean"));
 
-    // French
     assert_eq!(map_language_code("fr"), Some("french"));
     assert_eq!(map_language_code("fra"), Some("french"));
     assert_eq!(map_language_code("french"), Some("french"));
 
-    // German
     assert_eq!(map_language_code("de"), Some("german"));
     assert_eq!(map_language_code("deu"), Some("german"));
     assert_eq!(map_language_code("german"), Some("german"));
 
-    // Thai
     assert_eq!(map_language_code("th"), Some("thai"));
     assert_eq!(map_language_code("tha"), Some("thai"));
     assert_eq!(map_language_code("thai"), Some("thai"));
 
-    // Greek
     assert_eq!(map_language_code("el"), Some("greek"));
     assert_eq!(map_language_code("ell"), Some("greek"));
     assert_eq!(map_language_code("greek"), Some("greek"));
 
-    // Russian and other Cyrillic
     assert_eq!(map_language_code("ru"), Some("cyrillic"));
     assert_eq!(map_language_code("rus"), Some("cyrillic"));
     assert_eq!(map_language_code("russian"), Some("cyrillic"));
@@ -189,7 +170,6 @@ fn test_map_language_code_normalization() {
     assert_eq!(map_language_code("ukr"), Some("cyrillic"));
     assert_eq!(map_language_code("ukrainian"), Some("cyrillic"));
 
-    // Latin script languages (should map to "latin")
     assert_eq!(map_language_code("es"), Some("latin"));
     assert_eq!(map_language_code("spa"), Some("latin"));
     assert_eq!(map_language_code("spanish"), Some("latin"));
@@ -200,7 +180,6 @@ fn test_map_language_code_normalization() {
     assert_eq!(map_language_code("por"), Some("latin"));
     assert_eq!(map_language_code("portuguese"), Some("latin"));
 
-    // Arabic variants
     assert_eq!(map_language_code("ar"), Some("arabic"));
     assert_eq!(map_language_code("ara"), Some("arabic"));
     assert_eq!(map_language_code("arabic"), Some("arabic"));
@@ -209,7 +188,6 @@ fn test_map_language_code_normalization() {
     assert_eq!(map_language_code("ur"), Some("arabic"));
     assert_eq!(map_language_code("urdu"), Some("arabic"));
 
-    // Devanagari variants
     assert_eq!(map_language_code("hi"), Some("devanagari"));
     assert_eq!(map_language_code("hin"), Some("devanagari"));
     assert_eq!(map_language_code("hindi"), Some("devanagari"));
@@ -220,17 +198,14 @@ fn test_map_language_code_normalization() {
     assert_eq!(map_language_code("ne"), Some("devanagari"));
     assert_eq!(map_language_code("nepali"), Some("devanagari"));
 
-    // Tamil variants
     assert_eq!(map_language_code("ta"), Some("tamil"));
     assert_eq!(map_language_code("tam"), Some("tamil"));
     assert_eq!(map_language_code("tamil"), Some("tamil"));
 
-    // Telugu variants
     assert_eq!(map_language_code("te"), Some("telugu"));
     assert_eq!(map_language_code("tel"), Some("telugu"));
     assert_eq!(map_language_code("telugu"), Some("telugu"));
 
-    // Unknown codes should return None
     assert_eq!(map_language_code("xyz"), None);
     assert_eq!(map_language_code("unknown"), None);
     assert_eq!(map_language_code("invalid"), None);
@@ -239,10 +214,8 @@ fn test_map_language_code_normalization() {
 /// Test that SUPPORTED_LANGUAGES contains expected entries and correct count.
 #[test]
 fn test_supported_languages_list() {
-    // Should contain 15 entries (11 script families mapped to 15 language codes)
     assert_eq!(SUPPORTED_LANGUAGES.len(), 15);
 
-    // Verify key languages are present
     assert!(SUPPORTED_LANGUAGES.contains(&"ch"));
     assert!(SUPPORTED_LANGUAGES.contains(&"en"));
     assert!(SUPPORTED_LANGUAGES.contains(&"french"));
@@ -259,10 +232,6 @@ fn test_supported_languages_list() {
     assert!(SUPPORTED_LANGUAGES.contains(&"tamil"));
     assert!(SUPPORTED_LANGUAGES.contains(&"telugu"));
 }
-
-// ============================================================================
-// Model Manager Tests (non-ignored, no network needed)
-// ============================================================================
 
 /// Test that ModelManager creates the cache directory path correctly.
 #[test]
@@ -281,7 +250,6 @@ fn test_model_manager_rec_family_path() {
     let temp_dir = TempDir::new().unwrap();
     let _manager = ModelManager::new(temp_dir.path().to_path_buf());
 
-    // Test all 11 PP-OCRv5 script families
     let families = [
         "english",
         "chinese",
@@ -297,14 +265,10 @@ fn test_model_manager_rec_family_path() {
     ];
 
     for family in families {
-        // We can't call rec_family_path directly as it's private, but we can verify
-        // the cache structure via the public API
         let expected_path = temp_dir.path().join("rec").join(family);
 
-        // The path should not exist yet (no models cached)
         assert!(!expected_path.exists(), "Path should not exist yet for {}", family);
 
-        // After creating the directory structure manually, verify it matches expectation
         std::fs::create_dir_all(&expected_path).unwrap();
         assert!(expected_path.exists(), "Path should exist for {}", family);
         assert!(expected_path.ends_with(format!("rec/{}", family)));
@@ -317,7 +281,6 @@ fn test_model_manager_empty_cache_not_cached() {
     let temp_dir = TempDir::new().unwrap();
     let manager = ModelManager::new(temp_dir.path().to_path_buf());
 
-    // Should report as not cached
     assert!(!manager.are_shared_models_cached());
     assert!(!manager.is_rec_model_cached("english"));
     assert!(!manager.is_rec_model_cached("chinese"));
@@ -328,14 +291,9 @@ fn test_model_manager_empty_cache_not_cached() {
     assert!(!manager.are_models_cached());
 }
 
-// ============================================================================
-// Config Tests (non-ignored)
-// ============================================================================
-
 /// Test that all PaddleLanguage enum variants exist and match documentation.
 #[test]
 fn test_paddle_language_enum_variants() {
-    // Verify all documented variants exist
     let _english = PaddleLanguage::English;
     let _chinese = PaddleLanguage::Chinese;
     let _japanese = PaddleLanguage::Japanese;
@@ -349,7 +307,6 @@ fn test_paddle_language_enum_variants() {
     let _greek = PaddleLanguage::Greek;
     let _east_slavic = PaddleLanguage::EastSlavic;
 
-    // Verify codes match expectations
     assert_eq!(PaddleLanguage::English.code(), "en");
     assert_eq!(PaddleLanguage::Chinese.code(), "ch");
     assert_eq!(PaddleLanguage::Japanese.code(), "jpn");
@@ -393,10 +350,6 @@ fn test_paddle_ocr_config_with_cache_dir() {
     assert_eq!(config.resolve_cache_dir(), cache_path);
 }
 
-// ============================================================================
-// Backend Tests (non-ignored)
-// ============================================================================
-
 /// Test that PaddleOcrBackend::new() succeeds without errors.
 #[test]
 fn test_paddle_backend_creation() {
@@ -412,7 +365,6 @@ fn test_paddle_backend_creation() {
 fn test_paddle_backend_supports_language_expanded() {
     let backend = PaddleOcrBackend::new().unwrap();
 
-    // Direct PaddleOCR codes
     assert!(backend.supports_language("en"));
     assert!(backend.supports_language("ch"));
     assert!(backend.supports_language("japan"));
@@ -431,18 +383,16 @@ fn test_paddle_backend_supports_language_expanded() {
 fn test_paddle_backend_supports_tesseract_mapped_codes() {
     let backend = PaddleOcrBackend::new().unwrap();
 
-    // Tesseract codes that map to PaddleOCR codes
-    assert!(backend.supports_language("eng")); // → en
-    assert!(backend.supports_language("chi_sim")); // → ch
-    assert!(backend.supports_language("jpn")); // → japan
-    assert!(backend.supports_language("kor")); // → korean
-    assert!(backend.supports_language("fra")); // → french
-    assert!(backend.supports_language("deu")); // → german
-    assert!(backend.supports_language("tha")); // → thai
-    assert!(backend.supports_language("ell")); // → greek
-    assert!(backend.supports_language("rus")); // → cyrillic
+    assert!(backend.supports_language("eng"));
+    assert!(backend.supports_language("chi_sim"));
+    assert!(backend.supports_language("jpn"));
+    assert!(backend.supports_language("kor"));
+    assert!(backend.supports_language("fra"));
+    assert!(backend.supports_language("deu"));
+    assert!(backend.supports_language("tha"));
+    assert!(backend.supports_language("ell"));
+    assert!(backend.supports_language("rus"));
 
-    // ISO 639-1 codes
     assert!(backend.supports_language("en"));
     assert!(backend.supports_language("zh"));
     assert!(backend.supports_language("ja"));
@@ -453,10 +403,6 @@ fn test_paddle_backend_supports_tesseract_mapped_codes() {
     assert!(backend.supports_language("el"));
     assert!(backend.supports_language("ru"));
 }
-
-// ============================================================================
-// Integration Tests (ignored, require network + ONNX)
-// ============================================================================
 
 /// Test OCR with Chinese language and Chinese model.
 ///
@@ -496,18 +442,16 @@ async fn test_ocr_chinese_with_chinese_model() {
     let extraction = result.unwrap();
     println!("Chinese OCR result: {}", extraction.content);
 
-    // The result should contain Chinese characters (not empty after using Chinese model)
     assert!(
         !extraction.content.is_empty(),
         "Expected non-empty result from Chinese OCR"
     );
 
-    // Verify Chinese characters are present (Unicode range for CJK)
     let has_chinese_chars = extraction.content.chars().any(|c| {
         matches!(c,
-            '\u{4E00}'..='\u{9FFF}' | // CJK Unified Ideographs
-            '\u{3400}'..='\u{4DBF}' | // CJK Extension A
-            '\u{F900}'..='\u{FAFF}'   // CJK Compatibility Ideographs
+            '\u{4E00}'..='\u{9FFF}' |
+            '\u{3400}'..='\u{4DBF}' |
+            '\u{F900}'..='\u{FAFF}'
         )
     });
 
@@ -543,7 +487,6 @@ async fn test_ocr_concurrent_different_languages() {
 
     let mut tasks = JoinSet::new();
 
-    // English OCR task
     {
         let backend_clone = backend.clone();
         let image_path = test_documents_dir.join("images/test_hello_world.png");
@@ -561,7 +504,6 @@ async fn test_ocr_concurrent_different_languages() {
         }
     }
 
-    // Chinese OCR task
     {
         let backend_clone = backend.clone();
         let image_path = test_documents_dir.join("images/chi_sim_image.jpeg");
@@ -579,7 +521,6 @@ async fn test_ocr_concurrent_different_languages() {
         }
     }
 
-    // Wait for all tasks and verify results
     let mut results_count = 0;
     while let Some(result) = tasks.join_next().await {
         let (lang, ocr_result) = result.expect("Task panicked");
@@ -605,7 +546,6 @@ async fn test_ocr_concurrent_different_languages() {
         results_count += 1;
     }
 
-    // Should have completed both tasks
     assert!(results_count >= 2, "Expected at least 2 OCR tasks to complete");
     println!("Successfully completed {} concurrent OCR tasks", results_count);
 }

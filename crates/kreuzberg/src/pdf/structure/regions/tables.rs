@@ -35,9 +35,6 @@ pub(in crate::pdf::structure) fn extract_tables_from_layout_hints(
     let mut tables = Vec::new();
 
     for hint in &table_hints {
-        // Filter words that overlap the table hint bbox (≥20% of word area).
-        // HocrWord uses image coordinates (y=0 at top), while hint uses PDF
-        // coordinates (y=0 at bottom). Convert hint bbox to image coords.
         let hint_img_top = (page_height - hint.top).max(0.0);
         let hint_img_bottom = (page_height - hint.bottom).max(0.0);
 
@@ -76,15 +73,10 @@ pub(in crate::pdf::structure) fn extract_tables_from_layout_hints(
 
         tracing::trace!(matched_words = table_words.len(), "words overlapping table hint");
 
-        // Need at least 4 words for a meaningful table
         if table_words.len() < 4 {
             continue;
         }
 
-        // Adaptive column gap threshold based on word spacing statistics
-        // within the table region. Use the median inter-word gap on the same
-        // line as a baseline, then require a gap > 2x median to split columns.
-        // Falls back to width-based scaling when not enough data.
         let table_width = hint.right - hint.left;
         let col_gap = compute_adaptive_column_gap(&table_words, table_width);
         let table_cells = reconstruct_table(&table_words, col_gap, 0.5);
@@ -93,7 +85,6 @@ pub(in crate::pdf::structure) fn extract_tables_from_layout_hints(
             continue;
         }
 
-        // Bounding box from the layout hint (already in PDF coordinates)
         let bounding_box = Some(crate::types::BoundingBox {
             x0: hint.left as f64,
             y0: hint.bottom as f64,
@@ -101,16 +92,9 @@ pub(in crate::pdf::structure) fn extract_tables_from_layout_hints(
             y1: hint.top as f64,
         });
 
-        // Validate with layout_guided=true (relaxed thresholds)
         let table_cells = match post_process_table(table_cells, true, allow_single_column) {
             Some(cleaned) => cleaned,
             None => {
-                // Table reconstruction failed — the Table hint was a false positive.
-                // Do NOT emit a table with bounding_box: that would add the bbox to
-                // extracted_table_bboxes_by_page, suppressing legitimate text segments
-                // in assign_segments_to_regions (IoS >= 0.5 check). Instead, skip this
-                // hint entirely and let the text fall through as unassigned segments
-                // in the normal pipeline.
                 tracing::trace!(
                     page = page_index,
                     hint_left = hint.left,
@@ -122,8 +106,6 @@ pub(in crate::pdf::structure) fn extract_tables_from_layout_hints(
             }
         };
 
-        // Reject single-row tables — these are almost always false positives
-        // from the layout model (e.g., a line of text misclassified as Table).
         if table_cells.len() <= 1 {
             tracing::trace!(
                 page = page_index,
@@ -133,11 +115,6 @@ pub(in crate::pdf::structure) fn extract_tables_from_layout_hints(
             continue;
         }
 
-        // Reject tables with very few rows whose bbox covers most of the page.
-        // This catches body text that the layout model misclassifies as a Table:
-        // the table reconstructor splits prose into columns producing a wide,
-        // page-spanning "table" with only 2–3 rows. Real tables with few rows
-        // are compact and don't cover >50% of the page height.
         let hint_height = (hint.top - hint.bottom).abs();
         if table_cells.len() <= 3 && page_height > 0.0 && hint_height / page_height > 0.5 {
             tracing::trace!(
@@ -151,13 +128,6 @@ pub(in crate::pdf::structure) fn extract_tables_from_layout_hints(
             continue;
         }
 
-        // Reject degenerate tables with too many empty cells.
-        // False-positive Table hints (e.g. in RTL documents) often produce
-        // tables where most cells are empty because the content is not truly
-        // tabular. Skip these to avoid polluting output with markdown table
-        // formatting characters that hurt TF1.
-        // Use 55% threshold: real tables often have sparse optional columns
-        // (e.g., footnote markers, units), especially in scientific/financial docs.
         let total_cells: usize = table_cells.iter().map(|row| row.len()).sum();
         let empty_cells: usize = table_cells
             .iter()
@@ -174,9 +144,6 @@ pub(in crate::pdf::structure) fn extract_tables_from_layout_hints(
             continue;
         }
 
-        // Reject tables where total text content is very short relative to
-        // the number of cells. This catches false positives where a small
-        // amount of text is spread across a table grid.
         let total_text_len: usize = table_cells
             .iter()
             .flat_map(|row| row.iter())
@@ -192,9 +159,6 @@ pub(in crate::pdf::structure) fn extract_tables_from_layout_hints(
             continue;
         }
 
-        // Reject tables where most rows have only 1 filled cell.
-        // This pattern indicates non-tabular content forced into a grid
-        // (e.g., RTL text where each line becomes a "row" with one cell).
         if table_cells.len() >= 3 {
             let single_cell_rows = table_cells
                 .iter()
@@ -211,8 +175,6 @@ pub(in crate::pdf::structure) fn extract_tables_from_layout_hints(
             }
         }
 
-        // Table quality validation: reject tables that are actually multi-column
-        // prose, repeated page elements, or low-vocabulary repetitive content.
         if !is_well_formed_table(&table_cells) {
             tracing::trace!(
                 page = page_index,
@@ -223,7 +185,6 @@ pub(in crate::pdf::structure) fn extract_tables_from_layout_hints(
             continue;
         }
 
-        // Repair broken word spacing per-cell before rendering to markdown
         let repaired_cells: Vec<Vec<String>> = table_cells
             .iter()
             .map(|row| {
@@ -265,17 +226,14 @@ pub(in crate::pdf::structure) fn extract_tables_from_layout_hints(
 /// Falls back to width-based scaling when there aren't enough same-row word
 /// pairs to compute meaningful statistics.
 fn compute_adaptive_column_gap(words: &[crate::pdf::table_reconstruct::HocrWord], table_width: f32) -> u32 {
-    // Collect inter-word gaps on approximate rows
     let mut gaps: Vec<u32> = Vec::new();
 
     if words.len() >= 4 {
-        // Group words by approximate y-center (within median height / 2)
         let mut heights: Vec<u32> = words.iter().map(|w| w.height).collect();
         heights.sort_unstable();
         let median_h = heights[heights.len() / 2];
         let row_tolerance = (median_h / 2).max(3);
 
-        // Sort words by y-center then x
         let mut sorted: Vec<(u32, u32, u32)> = words
             .iter()
             .map(|w| {
@@ -285,7 +243,6 @@ fn compute_adaptive_column_gap(words: &[crate::pdf::table_reconstruct::HocrWord]
             .collect();
         sorted.sort_by_key(|&(yc, x, _)| (yc, x));
 
-        // Walk sorted words, group by approximate row
         let mut row_start = 0;
         while row_start < sorted.len() {
             let row_yc = sorted[row_start].0;
@@ -294,7 +251,6 @@ fn compute_adaptive_column_gap(words: &[crate::pdf::table_reconstruct::HocrWord]
                 row_end += 1;
             }
 
-            // Measure gaps between consecutive words on this row
             for i in row_start + 1..row_end {
                 let prev_right = sorted[i - 1].2;
                 let curr_left = sorted[i].1;
@@ -310,12 +266,10 @@ fn compute_adaptive_column_gap(words: &[crate::pdf::table_reconstruct::HocrWord]
     if gaps.len() >= 3 {
         gaps.sort_unstable();
         let median_gap = gaps[gaps.len() / 2];
-        // Column gap = 2x median word gap, clamped to [8, 40]
         let threshold = (median_gap * 2).clamp(8, 40);
         return threshold;
     }
 
-    // Fallback: width-based scaling with tighter defaults for narrow tables
     if table_width < 200.0 {
         10
     } else if table_width < 400.0 {
@@ -378,14 +332,12 @@ mod tests {
             make_word("D", 100, 30, 50, 12),
         ];
         let hints = vec![make_table_hint(0.3, 0.0, 0.0, 200.0, 800.0)];
-        // min_confidence = 0.5, hint has 0.3 → filtered
         let tables = extract_tables_from_layout_hints(&words, &hints, 0, 800.0, 0.5, false);
         assert!(tables.is_empty());
     }
 
     #[test]
     fn test_empty_region_too_few_words() {
-        // Only 2 words in the region — below the 4-word minimum
         let words = vec![make_word("A", 10, 10, 50, 12), make_word("B", 100, 10, 50, 12)];
         let hints = vec![make_table_hint(0.9, 0.0, 0.0, 200.0, 800.0)];
         let tables = extract_tables_from_layout_hints(&words, &hints, 0, 800.0, 0.5, false);
@@ -413,17 +365,14 @@ mod tests {
 
     #[test]
     fn test_words_outside_hint_bbox_excluded() {
-        // Words at (500, 500) are far from the hint bbox
         let words = vec![
             make_word("A", 500, 500, 50, 12),
             make_word("B", 560, 500, 50, 12),
             make_word("C", 500, 520, 50, 12),
             make_word("D", 560, 520, 50, 12),
         ];
-        // Hint covers (0, 0) to (100, 100) in PDF coords → image y = 700..800
         let hints = vec![make_table_hint(0.9, 0.0, 700.0, 100.0, 800.0)];
         let tables = extract_tables_from_layout_hints(&words, &hints, 0, 800.0, 0.5, false);
-        // Words at (500, 500) don't overlap the hint → too few words → empty
         assert!(tables.is_empty());
     }
 
@@ -435,7 +384,6 @@ mod tests {
             make_word("B", 10, 30, 50, 12),
             make_word("C", 100, 30, 50, 12),
         ];
-        // Only 3 non-empty words → below 4-word minimum
         let hints = vec![make_table_hint(0.9, 0.0, 0.0, 200.0, 800.0)];
         let tables = extract_tables_from_layout_hints(&words, &hints, 0, 800.0, 0.5, false);
         assert!(tables.is_empty());
@@ -443,8 +391,6 @@ mod tests {
 
     #[test]
     fn test_page_number_is_one_indexed() {
-        // Construct words that form a valid 2-column, multi-row table
-        // Rows at y=10 and y=40 in image coords, columns at x=10 and x=200
         let words = vec![
             make_word("Header1", 10, 10, 80, 15),
             make_word("Header2", 200, 10, 80, 15),
@@ -453,12 +399,10 @@ mod tests {
             make_word("Cell3", 10, 70, 80, 15),
             make_word("Cell4", 200, 70, 80, 15),
         ];
-        // Hint in PDF coords: bottom=700, top=800 → image top=0, image bottom=100
         let hints = vec![make_table_hint(0.9, 0.0, 700.0, 400.0, 800.0)];
         let tables = extract_tables_from_layout_hints(&words, &hints, 2, 800.0, 0.5, false);
-        // If a valid table is produced, its page_number should be page_index + 1
         for table in &tables {
-            assert_eq!(table.page_number, 3); // page_index=2 → page_number=3
+            assert_eq!(table.page_number, 3);
         }
     }
 }

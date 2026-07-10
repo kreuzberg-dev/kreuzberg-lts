@@ -20,7 +20,6 @@ use crate::pdfium::Pdfium;
 /// All other functions in the Pdfium API return a value indicating success or failure,
 /// but otherwise detailed error information for failed API calls is not available. In these
 /// cases, an error value of [PdfiumInternalError::Unknown] will be returned.
-// For more information, see: https://github.com/ajrcarey/pdfium-render/issues/78
 #[derive(Debug)]
 pub enum PdfiumInternalError {
     /// The document could not be loaded due to a file system error.

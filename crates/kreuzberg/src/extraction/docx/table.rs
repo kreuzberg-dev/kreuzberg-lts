@@ -12,8 +12,8 @@ use serde::{Deserialize, Serialize};
 pub struct TableProperties {
     pub style_id: Option<String>,
     pub width: Option<TableWidth>,
-    pub alignment: Option<String>, // "left", "center", "right"
-    pub layout: Option<String>,    // "fixed" or "autofit"
+    pub alignment: Option<String>,
+    pub layout: Option<String>,
     pub look: Option<TableLook>,
     pub borders: Option<TableBorders>,
     pub cell_margins: Option<CellMargins>,
@@ -25,7 +25,7 @@ pub struct TableProperties {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct TableWidth {
     pub value: i32,
-    pub width_type: String, // "dxa" (twips), "pct" (50ths of percent), "auto", "nil"
+    pub width_type: String,
 }
 
 /// Table look bitmask/flags controlling conditional formatting bands.
@@ -53,16 +53,16 @@ pub struct TableBorders {
 /// A single border specification.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct BorderStyle {
-    pub style: String,         // "single", "double", "dashed", "dotted", "none", etc.
-    pub size: Option<i32>,     // eighths of a point
-    pub color: Option<String>, // hex RGB or "auto"
-    pub space: Option<i32>,    // spacing in points
+    pub style: String,
+    pub size: Option<i32>,
+    pub color: Option<String>,
+    pub space: Option<i32>,
 }
 
 /// Cell margins (used for both table-level defaults and per-cell overrides).
 #[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq)]
 pub struct CellMargins {
-    pub top: Option<i32>, // twips
+    pub top: Option<i32>,
     pub bottom: Option<i32>,
     pub left: Option<i32>,
     pub right: Option<i32>,
@@ -71,8 +71,8 @@ pub struct CellMargins {
 /// Row-level properties from `<w:trPr>`.
 #[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq)]
 pub struct RowProperties {
-    pub height: Option<i32>,         // twips
-    pub height_rule: Option<String>, // "auto", "atLeast", "exact"
+    pub height: Option<i32>,
+    pub height_rule: Option<String>,
     pub is_header: bool,
     pub cant_split: bool,
 }
@@ -81,21 +81,21 @@ pub struct RowProperties {
 #[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq)]
 pub struct CellProperties {
     pub width: Option<TableWidth>,
-    pub grid_span: Option<u32>,         // column span (default 1)
-    pub v_merge: Option<VerticalMerge>, // vertical merge state
+    pub grid_span: Option<u32>,
+    pub v_merge: Option<VerticalMerge>,
     pub borders: Option<CellBorders>,
     pub shading: Option<CellShading>,
     pub margins: Option<CellMargins>,
-    pub vertical_align: Option<String>, // "top", "center", "bottom"
-    pub text_direction: Option<String>, // "lrTb", "tbRl", "btLr"
+    pub vertical_align: Option<String>,
+    pub text_direction: Option<String>,
     pub no_wrap: bool,
 }
 
 /// Vertical merge state.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum VerticalMerge {
-    Restart,  // Start of a new merged range
-    Continue, // Continuation of a previous merge
+    Restart,
+    Continue,
 }
 
 /// Per-cell borders (4 sides).
@@ -103,22 +103,22 @@ pub enum VerticalMerge {
 pub struct CellBorders {
     pub top: Option<BorderStyle>,
     pub bottom: Option<BorderStyle>,
-    pub left: Option<BorderStyle>,  // OOXML calls this "start" in LTR
-    pub right: Option<BorderStyle>, // OOXML calls this "end" in LTR
+    pub left: Option<BorderStyle>,
+    pub right: Option<BorderStyle>,
 }
 
 /// Cell shading/background.
 #[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq)]
 pub struct CellShading {
-    pub fill: Option<String>,  // background color hex or "auto"
-    pub color: Option<String>, // pattern color
-    pub val: Option<String>,   // pattern type: "clear", "solid", "pct10", etc.
+    pub fill: Option<String>,
+    pub color: Option<String>,
+    pub val: Option<String>,
 }
 
 /// Column widths from `<w:tblGrid>`.
 #[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq)]
 pub struct TableGrid {
-    pub columns: Vec<i32>, // column widths in twips
+    pub columns: Vec<i32>,
 }
 
 /// Parse table-level properties from streaming XML reader.
@@ -441,8 +441,6 @@ fn parse_width_element(e: &BytesStart) -> Option<TableWidth> {
 fn parse_table_look(e: &BytesStart) -> TableLook {
     let mut look = TableLook::default();
 
-    // Try individual boolean attributes first (OOXML 2012+ Transitional).
-    // Check if ANY individual attribute is present to distinguish from bitmask-only.
     let has_individual = get_attribute(e, b"firstRow").is_some()
         || get_attribute(e, b"lastRow").is_some()
         || get_attribute(e, b"firstColumn").is_some()
@@ -457,16 +455,15 @@ fn parse_table_look(e: &BytesStart) -> TableLook {
         look.last_column = get_attribute(e, b"lastColumn").as_deref() == Some("1");
         look.no_h_band = get_attribute(e, b"noHBand").as_deref() == Some("1");
         look.no_v_band = get_attribute(e, b"noVBand").as_deref() == Some("1");
-    } else if let Some(val_str) = get_attribute(e, b"val") {
-        // Fall back to legacy hex bitmask
-        if let Ok(mask) = i32::from_str_radix(&val_str, 16) {
-            look.first_row = (mask & 0x0020) != 0;
-            look.last_row = (mask & 0x0040) != 0;
-            look.first_column = (mask & 0x0080) != 0;
-            look.last_column = (mask & 0x0100) != 0;
-            look.no_h_band = (mask & 0x0200) != 0;
-            look.no_v_band = (mask & 0x0400) != 0;
-        }
+    } else if let Some(val_str) = get_attribute(e, b"val")
+        && let Ok(mask) = i32::from_str_radix(&val_str, 16)
+    {
+        look.first_row = (mask & 0x0020) != 0;
+        look.last_row = (mask & 0x0040) != 0;
+        look.first_column = (mask & 0x0080) != 0;
+        look.last_column = (mask & 0x0100) != 0;
+        look.no_h_band = (mask & 0x0200) != 0;
+        look.no_v_band = (mask & 0x0400) != 0;
     }
 
     look
@@ -476,7 +473,7 @@ fn parse_table_look(e: &BytesStart) -> TableLook {
 fn parse_vmerge(e: &BytesStart) -> VerticalMerge {
     match get_attribute(e, b"val") {
         Some(val) if val == "restart" => VerticalMerge::Restart,
-        _ => VerticalMerge::Continue, // Empty element or missing attribute = Continue
+        _ => VerticalMerge::Continue,
     }
 }
 
@@ -733,7 +730,7 @@ mod tests {
         reader.config_mut().trim_text(true);
 
         let mut buf = Vec::new();
-        reader.read_event_into(&mut buf).unwrap(); // Start(w:tblPr)
+        reader.read_event_into(&mut buf).unwrap();
         buf.clear();
 
         let props = parse_table_properties(&mut reader);
@@ -772,7 +769,7 @@ mod tests {
         reader.config_mut().trim_text(true);
 
         let mut buf = Vec::new();
-        reader.read_event_into(&mut buf).unwrap(); // Start(w:trPr)
+        reader.read_event_into(&mut buf).unwrap();
         buf.clear();
 
         let props = parse_row_properties(&mut reader);
@@ -795,7 +792,7 @@ mod tests {
         reader.config_mut().trim_text(true);
 
         let mut buf = Vec::new();
-        reader.read_event_into(&mut buf).unwrap(); // Start(w:tcPr)
+        reader.read_event_into(&mut buf).unwrap();
         buf.clear();
 
         let props = parse_cell_properties(&mut reader);
@@ -826,7 +823,7 @@ mod tests {
         reader.config_mut().trim_text(true);
 
         let mut buf = Vec::new();
-        reader.read_event_into(&mut buf).unwrap(); // Start(w:tcPr)
+        reader.read_event_into(&mut buf).unwrap();
         buf.clear();
 
         let props = parse_cell_properties(&mut reader);
@@ -854,7 +851,7 @@ mod tests {
         reader.config_mut().trim_text(true);
 
         let mut buf = Vec::new();
-        reader.read_event_into(&mut buf).unwrap(); // Start(w:tblGrid)
+        reader.read_event_into(&mut buf).unwrap();
         buf.clear();
 
         let grid = parse_table_grid(&mut reader);
@@ -870,13 +867,11 @@ mod tests {
         reader.config_mut().trim_text(true);
 
         let mut buf = Vec::new();
-        let event = reader.read_event_into(&mut buf).unwrap(); // Empty(w:tblLook)
+        let event = reader.read_event_into(&mut buf).unwrap();
 
         if let Event::Empty(e) = event {
             let look = parse_table_look(&e);
 
-            // 0x0460 = 0000_0100_0110_0000
-            // first_row (0x0020) = 1, last_row (0x0040) = 1, first_column (0x0080) = 0, etc.
             assert!(look.first_row);
             assert!(look.last_row);
             assert!(!look.first_column);
@@ -895,12 +890,11 @@ mod tests {
         reader.config_mut().trim_text(true);
 
         let mut buf = Vec::new();
-        reader.read_event_into(&mut buf).unwrap(); // Start(w:tcPr)
+        reader.read_event_into(&mut buf).unwrap();
         buf.clear();
 
         let props = parse_cell_properties(&mut reader);
 
-        // Bare <w:vMerge/> without val attribute should be Continue
         assert_eq!(props.v_merge, Some(VerticalMerge::Continue));
     }
 
@@ -912,10 +906,9 @@ mod tests {
         reader.config_mut().trim_text(true);
 
         let mut buf = Vec::new();
-        reader.read_event_into(&mut buf).unwrap(); // Empty(w:tblPr)
+        reader.read_event_into(&mut buf).unwrap();
         buf.clear();
 
-        // Consume the Empty event and test with default
         let props = TableProperties::default();
 
         assert!(props.style_id.is_none());
@@ -936,7 +929,7 @@ mod tests {
         reader.config_mut().trim_text(true);
 
         let mut buf = Vec::new();
-        reader.read_event_into(&mut buf).unwrap(); // Start(w:tblCellMar)
+        reader.read_event_into(&mut buf).unwrap();
         buf.clear();
 
         let margins = parse_cell_margins_element(&mut reader);
@@ -960,7 +953,7 @@ mod tests {
         reader.config_mut().trim_text(true);
 
         let mut buf = Vec::new();
-        reader.read_event_into(&mut buf).unwrap(); // Start(w:tblBorders)
+        reader.read_event_into(&mut buf).unwrap();
         buf.clear();
 
         let borders = parse_table_borders(&mut reader);

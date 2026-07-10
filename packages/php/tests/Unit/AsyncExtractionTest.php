@@ -37,9 +37,7 @@ final class AsyncExtractionTest extends TestCase
     #[Test]
     public function it_returns_deferred_result_from_extract_file_async(): void
     {
-        $deferred = \kreuzberg_extract_file_async(
-            $this->testDocumentsPath . '/pdf/code_and_formula.pdf',
-        );
+        $deferred = \kreuzberg_extract_file_async($this->testDocumentsPath . '/pdf/code_and_formula.pdf');
 
         $this->assertInstanceOf(DeferredResult::class, $deferred);
     }
@@ -47,22 +45,16 @@ final class AsyncExtractionTest extends TestCase
     #[Test]
     public function it_can_poll_deferred_result_readiness(): void
     {
-        $deferred = \kreuzberg_extract_file_async(
-            $this->testDocumentsPath . '/pdf/code_and_formula.pdf',
-        );
+        $deferred = \kreuzberg_extract_file_async($this->testDocumentsPath . '/pdf/code_and_formula.pdf');
 
-        // isReady should return a boolean (may be true or false depending on timing)
         $this->assertIsBool($deferred->isReady());
     }
 
     #[Test]
     public function it_can_get_result_from_deferred_blocking(): void
     {
-        $deferred = \kreuzberg_extract_file_async(
-            $this->testDocumentsPath . '/pdf/code_and_formula.pdf',
-        );
+        $deferred = \kreuzberg_extract_file_async($this->testDocumentsPath . '/pdf/code_and_formula.pdf');
 
-        // getResult blocks until the result is ready
         $result = $deferred->getResult();
 
         $this->assertNotEmpty($result->content);
@@ -72,9 +64,7 @@ final class AsyncExtractionTest extends TestCase
     #[Test]
     public function it_marks_deferred_as_ready_after_get_result(): void
     {
-        $deferred = \kreuzberg_extract_file_async(
-            $this->testDocumentsPath . '/pdf/code_and_formula.pdf',
-        );
+        $deferred = \kreuzberg_extract_file_async($this->testDocumentsPath . '/pdf/code_and_formula.pdf');
 
         $deferred->getResult();
 
@@ -84,15 +74,11 @@ final class AsyncExtractionTest extends TestCase
     #[Test]
     public function it_can_try_get_result_returning_null_or_value(): void
     {
-        $deferred = \kreuzberg_extract_file_async(
-            $this->testDocumentsPath . '/pdf/code_and_formula.pdf',
-        );
+        $deferred = \kreuzberg_extract_file_async($this->testDocumentsPath . '/pdf/code_and_formula.pdf');
 
-        // tryGetResult returns null if not ready, or the result if ready
         $result = $deferred->tryGetResult();
 
         if ($result === null) {
-            // Not ready yet, wait and try again
             $result = $deferred->getResult();
         }
 
@@ -102,11 +88,8 @@ final class AsyncExtractionTest extends TestCase
     #[Test]
     public function it_can_wait_with_timeout(): void
     {
-        $deferred = \kreuzberg_extract_file_async(
-            $this->testDocumentsPath . '/pdf/code_and_formula.pdf',
-        );
+        $deferred = \kreuzberg_extract_file_async($this->testDocumentsPath . '/pdf/code_and_formula.pdf');
 
-        // wait() with generous timeout should return the result
         $result = $deferred->wait(30000);
 
         $this->assertNotNull($result);
@@ -118,11 +101,9 @@ final class AsyncExtractionTest extends TestCase
     {
         $filePath = $this->testDocumentsPath . '/pdf/code_and_formula.pdf';
 
-        // Get sync result
         $kreuzberg = new Kreuzberg();
         $syncResult = $kreuzberg->extractFile($filePath);
 
-        // Get async result
         $deferred = \kreuzberg_extract_file_async($filePath);
         $asyncResult = $deferred->getResult();
 
@@ -171,12 +152,10 @@ final class AsyncExtractionTest extends TestCase
     {
         $filePath = $this->testDocumentsPath . '/pdf/code_and_formula.pdf';
 
-        // Launch multiple async extractions concurrently
         $deferred1 = \kreuzberg_extract_file_async($filePath);
         $deferred2 = \kreuzberg_extract_file_async($filePath);
         $deferred3 = \kreuzberg_extract_file_async($filePath);
 
-        // All should complete and return identical results
         $result1 = $deferred1->getResult();
         $result2 = $deferred2->getResult();
         $result3 = $deferred3->getResult();
@@ -189,9 +168,7 @@ final class AsyncExtractionTest extends TestCase
     public function kreuzberg_class_has_extract_file_async(): void
     {
         $kreuzberg = new Kreuzberg();
-        $deferred = $kreuzberg->extractFileAsync(
-            $this->testDocumentsPath . '/pdf/code_and_formula.pdf',
-        );
+        $deferred = $kreuzberg->extractFileAsync($this->testDocumentsPath . '/pdf/code_and_formula.pdf');
 
         $this->assertInstanceOf(DeferredResult::class, $deferred);
 
@@ -217,9 +194,7 @@ final class AsyncExtractionTest extends TestCase
     #[Test]
     public function kreuzberg_class_has_static_extract_file_async(): void
     {
-        $deferred = Kreuzberg::extractFileAsyncStatic(
-            $this->testDocumentsPath . '/pdf/code_and_formula.pdf',
-        );
+        $deferred = Kreuzberg::extractFileAsyncStatic($this->testDocumentsPath . '/pdf/code_and_formula.pdf');
 
         $this->assertInstanceOf(DeferredResult::class, $deferred);
 

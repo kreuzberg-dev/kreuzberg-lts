@@ -21,28 +21,23 @@ const distDir = path.join(__dirname, "..", "dist");
  * @param {string} filePath - Path to the file to fix
  */
 function fixModuleReferences(filePath) {
-	if (!fs.existsSync(filePath)) {
-		return false;
-	}
+  if (!fs.existsSync(filePath)) {
+    return false;
+  }
 
-	let content = fs.readFileSync(filePath, "utf-8");
-	const originalContent = content;
+  let content = fs.readFileSync(filePath, "utf-8");
+  const originalContent = content;
 
-	// Replace .js extensions with .d.ts in import/export statements
-	// Handles: from './types.js' -> from './types.d.ts'
-	// Handles: from '../types.js' -> from '../types.d.ts'
-	// Handles: from './adapters/wasm-adapter.js' -> from './adapters/wasm-adapter.d.ts'
-	content = content.replace(/(from\s+['"])(\.\.?\/[^'"]+)(\.js)(['"])/g, "$1$2.d.ts$4");
+  content = content.replace(/(from\s+['"])(\.\.?\/[^'"]+)(\.js)(['"])/g, "$1$2.d.ts$4");
 
-	// Also fix any import() type references
-	content = content.replace(/(import\(['"])(\.\.?\/[^'"]+)(\.js)(['"]\))/g, "$1$2.d.ts$4");
+  content = content.replace(/(import\(['"])(\.\.?\/[^'"]+)(\.js)(['"]\))/g, "$1$2.d.ts$4");
 
-	if (content !== originalContent) {
-		fs.writeFileSync(filePath, content);
-		return true;
-	}
+  if (content !== originalContent) {
+    fs.writeFileSync(filePath, content);
+    return true;
+  }
 
-	return false;
+  return false;
 }
 
 /**
@@ -51,19 +46,19 @@ function fixModuleReferences(filePath) {
  * @returns {string[]} Array of file paths
  */
 function findDtsFiles(dir) {
-	const files = [];
-	const entries = fs.readdirSync(dir, { withFileTypes: true });
+  const files = [];
+  const entries = fs.readdirSync(dir, { withFileTypes: true });
 
-	for (const entry of entries) {
-		const fullPath = path.join(dir, entry.name);
-		if (entry.isDirectory()) {
-			files.push(...findDtsFiles(fullPath));
-		} else if (entry.name.endsWith(".d.ts")) {
-			files.push(fullPath);
-		}
-	}
+  for (const entry of entries) {
+    const fullPath = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      files.push(...findDtsFiles(fullPath));
+    } else if (entry.name.endsWith(".d.ts")) {
+      files.push(fullPath);
+    }
+  }
 
-	return files;
+  return files;
 }
 
 console.log("Fixing module references in .d.ts files...\n");
@@ -72,14 +67,14 @@ const dtsFiles = findDtsFiles(distDir);
 let fixedCount = 0;
 
 for (const file of dtsFiles) {
-	if (fixModuleReferences(file)) {
-		console.log(`✓ Fixed ${path.relative(distDir, file)}`);
-		fixedCount++;
-	}
+  if (fixModuleReferences(file)) {
+    console.log(`✓ Fixed ${path.relative(distDir, file)}`);
+    fixedCount++;
+  }
 }
 
 if (fixedCount === 0) {
-	console.log("No fixes needed.");
+  console.log("No fixes needed.");
 } else {
-	console.log(`\nFixed ${fixedCount} file(s).`);
+  console.log(`\nFixed ${fixedCount} file(s).`);
 }

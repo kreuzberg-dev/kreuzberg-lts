@@ -48,7 +48,6 @@ pub(crate) fn extract_content_and_metadata(
                 extracted_content.push('\n');
             }
 
-            // Collect feed URLs from outline attributes
             let mut feed_urls = Vec::new();
             for outline in body.children().filter(|n| n.tag_name().name() == "outline") {
                 process_outline(outline, 0, &mut extracted_content);
@@ -191,19 +190,15 @@ fn convert_inline_html(text: &str) -> String {
 
     let mut result = text.to_string();
 
-    // Convert <strong>text</strong> and <b>text</b> to **text**
     let strong_re = Regex::new(r"<(?:strong|b)>(.*?)</(?:strong|b)>").expect("valid regex");
     result = strong_re.replace_all(&result, "**$1**").into_owned();
 
-    // Convert <em>text</em> and <i>text</i> to *text*
     let em_re = Regex::new(r"<(?:em|i)>(.*?)</(?:em|i)>").expect("valid regex");
     result = em_re.replace_all(&result, "*$1*").into_owned();
 
-    // Convert <a href="url">text</a> to [text](url)
     let link_re = Regex::new(r#"<a\s+href="([^"]*)"[^>]*>(.*?)</a>"#).expect("valid regex");
     result = link_re.replace_all(&result, "[$2]($1)").into_owned();
 
-    // Unescape \< and \>
     result = result.replace(r"\<", "<").replace(r"\>", ">");
 
     result
@@ -256,7 +251,6 @@ fn build_outline_internal(
 
     let attrs = extract_outline_attributes(node);
 
-    // Extract URIs from xmlUrl and htmlUrl attributes
     let label = if text.is_empty() { None } else { Some(text.to_string()) };
     if let Some(xml_url) = node.attribute("xmlUrl") {
         let trimmed = xml_url.trim();

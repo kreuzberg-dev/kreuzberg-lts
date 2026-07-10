@@ -50,16 +50,16 @@ defmodule Kreuzberg.Plugin.Supervisor do
   @spec child_spec(keyword()) :: Supervisor.child_spec()
   def child_spec(opts) do
     %{
-      id: __MODULE__,
-      start: {__MODULE__, :start_link, [opts]},
-      type: :supervisor
+    id: __MODULE__,
+    start: {__MODULE__, :start_link, [opts]},
+    type: :supervisor
     }
   end
 
   @impl true
   def init(_opts) do
     children = [
-      {Kreuzberg.Plugin.Registry, [name: Kreuzberg.Plugin.Registry]}
+    {Kreuzberg.Plugin.Registry, [name: Kreuzberg.Plugin.Registry]}
     ]
 
     Supervisor.init(children, strategy: :one_for_one)

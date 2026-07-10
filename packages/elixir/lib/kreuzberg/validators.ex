@@ -107,11 +107,10 @@ defmodule Kreuzberg.Validators do
   """
   @spec validate_chunking_params(map()) :: :ok | {:error, String.t()}
   def validate_chunking_params(params) when is_map(params) do
-    # Normalize keys to strings for consistent handling
     normalized = Helpers.normalize_map_keys(params)
 
     with {:ok, max_chars} <- fetch_positive_integer(normalized, "max_chars"),
-         {:ok, max_overlap} <- fetch_non_negative_integer(normalized, "max_overlap") do
+    {:ok, max_overlap} <- fetch_non_negative_integer(normalized, "max_overlap") do
       Native.validate_chunking_params(max_chars, max_overlap)
     end
   end
@@ -237,7 +236,6 @@ defmodule Kreuzberg.Validators do
     Native.validate_confidence(confidence)
   end
 
-  # Allow integers to be coerced to floats for convenience
   def validate_confidence(confidence) when is_integer(confidence) do
     Native.validate_confidence(confidence / 1.0)
   end
@@ -410,22 +408,21 @@ defmodule Kreuzberg.Validators do
     Native.validate_tesseract_oem(oem)
   end
 
-  # Private helper functions
 
   @doc false
   defp fetch_positive_integer(map, key) do
     case Map.fetch(map, key) do
       {:ok, value} when is_integer(value) and value > 0 ->
-        {:ok, value}
+      {:ok, value}
 
       {:ok, value} when is_integer(value) ->
-        {:error, "#{key} must be greater than 0"}
+      {:error, "#{key} must be greater than 0"}
 
       {:ok, _value} ->
-        {:error, "#{key} must be an integer"}
+      {:error, "#{key} must be an integer"}
 
       :error ->
-        {:error, "Missing required parameter: #{key}"}
+      {:error, "Missing required parameter: #{key}"}
     end
   end
 
@@ -433,16 +430,16 @@ defmodule Kreuzberg.Validators do
   defp fetch_non_negative_integer(map, key) do
     case Map.fetch(map, key) do
       {:ok, value} when is_integer(value) and value >= 0 ->
-        {:ok, value}
+      {:ok, value}
 
       {:ok, value} when is_integer(value) ->
-        {:error, "#{key} must be non-negative"}
+      {:error, "#{key} must be non-negative"}
 
       {:ok, _value} ->
-        {:error, "#{key} must be an integer"}
+      {:error, "#{key} must be an integer"}
 
       :error ->
-        {:error, "Missing required parameter: #{key}"}
+      {:error, "Missing required parameter: #{key}"}
     end
   end
 end

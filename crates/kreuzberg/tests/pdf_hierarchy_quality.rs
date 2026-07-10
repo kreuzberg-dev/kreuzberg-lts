@@ -193,17 +193,15 @@ fn calculate_quality_metrics(
     let mut false_positives = 0;
     let mut correct_levels = 0;
 
-    // For matching blocks, we use bounding box overlap and text similarity
     let mut matched_gt_indices: Vec<bool> = vec![false; ground_truth_blocks.len()];
 
     for extracted in extracted_blocks {
         let mut best_match_idx: Option<usize> = None;
         let mut best_overlap = 0.0;
 
-        // Find the best matching ground truth block by bounding box overlap
         for (gt_idx, gt_block) in ground_truth_blocks.iter().enumerate() {
             if matched_gt_indices[gt_idx] {
-                continue; // Already matched
+                continue;
             }
 
             let gt_bbox = gt_block.bbox.to_bbox();
@@ -219,7 +217,6 @@ fn calculate_quality_metrics(
             matched_gt_indices[gt_idx] = true;
             true_positives += 1;
 
-            // Check if the hierarchy level matches
             let gt_level = parse_level(&ground_truth_blocks[gt_idx].level);
             if extracted.hierarchy_level == gt_level {
                 correct_levels += 1;
@@ -229,7 +226,6 @@ fn calculate_quality_metrics(
         }
     }
 
-    // Count unmatched ground truth blocks as false negatives
     let false_negatives = matched_gt_indices.iter().filter(|&&m| !m).count();
 
     let total_blocks = extracted_blocks.len().max(ground_truth_blocks.len());
@@ -249,7 +245,6 @@ fn create_text_blocks_from_ground_truth(gt_blocks: &[GroundTruthBlock]) -> Vec<T
         .iter()
         .enumerate()
         .map(|(idx, gt_block)| {
-            // Estimate font size from bbox height
             let bbox = gt_block.bbox.to_bbox();
             let font_size = match gt_block.level.as_str() {
                 "H1" => 28.0,
@@ -258,7 +253,7 @@ fn create_text_blocks_from_ground_truth(gt_blocks: &[GroundTruthBlock]) -> Vec<T
                 "H4" => 16.0,
                 "H5" => 14.0,
                 "H6" => 12.0,
-                _ => 10.0, // Body
+                _ => 10.0,
             };
 
             TextBlock {
@@ -276,7 +271,6 @@ fn create_text_blocks_from_ground_truth(gt_blocks: &[GroundTruthBlock]) -> Vec<T
 
 #[test]
 fn test_hierarchy_quality_on_ground_truth() {
-    // Load ground truth data
     let ground_truth_path = "tests/data/hierarchy_ground_truth.json";
     let ground_truth_file = load_ground_truth(ground_truth_path).expect("Failed to load ground truth file");
 
@@ -287,18 +281,15 @@ fn test_hierarchy_quality_on_ground_truth() {
 
     let mut all_metrics: Vec<QualityMetrics> = Vec::new();
 
-    // Process each document
     for doc in &ground_truth_file.documents {
         println!("\nProcessing document: {}", doc.pdf_file);
 
         for page in &doc.pages {
             println!("  Page {}: {} blocks", page.page_number, page.blocks.len());
 
-            // Create text blocks from ground truth
             let text_blocks = create_text_blocks_from_ground_truth(&page.blocks);
 
-            // Cluster by font size
-            let k = (text_blocks.len() / 3).clamp(1, 6); // Estimate k clusters
+            let k = (text_blocks.len() / 3).clamp(1, 6);
             let clusters = cluster_font_sizes(&text_blocks, k).expect("Failed to cluster font sizes");
 
             println!(
@@ -307,10 +298,8 @@ fn test_hierarchy_quality_on_ground_truth() {
                 text_blocks.len()
             );
 
-            // Assign hierarchy levels from clusters
             let hierarchy_assignments = assign_hierarchy_levels_from_clusters(&text_blocks, &clusters);
 
-            // Convert to HierarchyBlock format
             let extracted_blocks: Vec<kreuzberg::pdf::hierarchy::HierarchyBlock> = hierarchy_assignments
                 .iter()
                 .map(|(block, level)| kreuzberg::pdf::hierarchy::HierarchyBlock {
@@ -321,7 +310,6 @@ fn test_hierarchy_quality_on_ground_truth() {
                 })
                 .collect();
 
-            // Calculate quality metrics
             let metrics = calculate_quality_metrics(&extracted_blocks, &page.blocks);
             all_metrics.push(metrics.clone());
 
@@ -332,7 +320,6 @@ fn test_hierarchy_quality_on_ground_truth() {
         }
     }
 
-    // Calculate average metrics
     if !all_metrics.is_empty() {
         let avg_precision = all_metrics.iter().map(|m| m.precision).sum::<f64>() / all_metrics.len() as f64;
         let avg_recall = all_metrics.iter().map(|m| m.recall).sum::<f64>() / all_metrics.len() as f64;
@@ -345,7 +332,6 @@ fn test_hierarchy_quality_on_ground_truth() {
         println!("Average F1 Score:       {:.4}", avg_f1);
         println!("Average Level Accuracy: {:.4}", avg_level_acc);
 
-        // Assert minimum F1 threshold
         assert!(
             avg_f1 > 0.85,
             "F1 score ({:.4}) must be greater than 0.85. Metrics: precision={:.4}, recall={:.4}, level_accuracy={:.4}",
@@ -359,7 +345,6 @@ fn test_hierarchy_quality_on_ground_truth() {
 
 #[test]
 fn test_hierarchy_clustering_consistency() {
-    // Arrange: Create a simple document with clear hierarchy
     let blocks = vec![
         TextBlock {
             text: "Title".to_string(),
@@ -403,18 +388,15 @@ fn test_hierarchy_clustering_consistency() {
         },
     ];
 
-    // Act: Cluster and assign hierarchies
     let clusters = cluster_font_sizes(&blocks, 4).expect("Clustering failed");
     let assignments = assign_hierarchy_levels_from_clusters(&blocks, &clusters);
 
-    // Assert: Verify hierarchy levels are correct
     assert_eq!(assignments.len(), 4);
     assert_eq!(assignments[0].1, HierarchyLevel::H1, "Largest text should be H1");
     assert_eq!(assignments[1].1, HierarchyLevel::H2, "Second largest should be H2");
     assert_eq!(assignments[2].1, HierarchyLevel::H3, "Third largest should be H3");
     assert_eq!(assignments[3].1, HierarchyLevel::Body, "Smallest text should be Body");
 
-    // Assert: F1 score should be perfect for this simple case
     let quality_metrics = calculate_quality_metrics(
         &assignments
             .iter()
@@ -478,7 +460,6 @@ fn test_hierarchy_clustering_consistency() {
 
 #[test]
 fn test_hierarchy_level_assignment() {
-    // Arrange: Create blocks and KMeans result
     let blocks = vec![
         TextBlock {
             text: "Main Title".to_string(),
@@ -514,10 +495,8 @@ fn test_hierarchy_level_assignment() {
 
     let kmeans_result = KMeansResult { labels: vec![0, 1, 2] };
 
-    // Act: Assign hierarchy levels using KMeans result
     let result = assign_hierarchy_levels(&blocks, &kmeans_result);
 
-    // Assert: Verify correct level assignments
     assert_eq!(result.len(), 3);
     assert_eq!(result[0].hierarchy_level, HierarchyLevel::H1);
     assert_eq!(result[1].hierarchy_level, HierarchyLevel::H2);
@@ -526,7 +505,6 @@ fn test_hierarchy_level_assignment() {
 
 #[test]
 fn test_quality_metrics_calculation() {
-    // Arrange: Create extracted blocks and ground truth
     let extracted = vec![
         kreuzberg::pdf::hierarchy::HierarchyBlock {
             text: "Title".to_string(),
@@ -575,10 +553,8 @@ fn test_quality_metrics_calculation() {
         },
     ];
 
-    // Act: Calculate metrics
     let metrics = calculate_quality_metrics(&extracted, &ground_truth);
 
-    // Assert: Verify metrics
     assert_eq!(metrics.true_positives, 2);
     assert_eq!(metrics.false_positives, 0);
     assert_eq!(metrics.false_negatives, 0);

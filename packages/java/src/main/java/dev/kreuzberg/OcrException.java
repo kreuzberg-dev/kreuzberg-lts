@@ -16,17 +16,17 @@ package dev.kreuzberg;
  * @since 4.0.0
  */
 public final class OcrException extends KreuzbergException {
-	/**
+    /**
 	 * Constructs a new OCR exception with the specified message.
 	 *
 	 * @param message
 	 *            the detail message explaining why OCR processing failed
 	 */
-	public OcrException(String message) {
-		super(message);
-	}
+    public OcrException(String message) {
+        super(message);
+    }
 
-	/**
+    /**
 	 * Constructs a new OCR exception with the specified message and cause.
 	 *
 	 * @param message
@@ -34,7 +34,7 @@ public final class OcrException extends KreuzbergException {
 	 * @param cause
 	 *            the cause of the OCR failure
 	 */
-	public OcrException(String message, Throwable cause) {
-		super(message, cause);
-	}
+    public OcrException(String message, Throwable cause) {
+        super(message, cause);
+    }
 }

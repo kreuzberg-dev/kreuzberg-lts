@@ -120,7 +120,6 @@ pub mod ocr_bridge;
 pub mod processor_bridge;
 pub mod validator_bridge;
 
-// Re-export public APIs for backward compatibility
 pub use common::json_value_to_py;
 pub use ocr_bridge::register_ocr_backend;
 pub use processor_bridge::{
@@ -128,7 +127,6 @@ pub use processor_bridge::{
 };
 pub use validator_bridge::{clear_validators, list_validators, register_validator, unregister_validator};
 
-// OCR backend management functions
 #[pyo3::pyfunction]
 pub fn unregister_ocr_backend(name: &str) -> pyo3::PyResult<()> {
     kreuzberg::plugins::unregister_ocr_backend(name)

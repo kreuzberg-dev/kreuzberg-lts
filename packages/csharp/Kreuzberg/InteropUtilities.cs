@@ -46,9 +46,6 @@ internal static class InteropUtilities
             _ = AllocUtf8Cached(mimeType, useCache: true);
         }
 
-        // Register cleanup handler to free cached native memory on process exit.
-        // This prevents crashes on Windows during process teardown when native
-        // memory is still allocated.
         AppDomain.CurrentDomain.ProcessExit += (_, _) => ClearCache();
     }
 

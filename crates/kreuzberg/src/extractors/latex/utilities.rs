@@ -37,7 +37,6 @@ pub fn extract_braced(text: &str, command: &str) -> Option<String> {
 ///
 /// Handles nested braces correctly and maintains proper depth tracking.
 pub fn read_braced_from_chars(chars: &mut std::iter::Peekable<std::str::Chars>) -> Option<String> {
-    // Skip whitespace before opening brace
     while let Some(&c) = chars.peek() {
         if c.is_whitespace() {
             chars.next();
@@ -46,11 +45,10 @@ pub fn read_braced_from_chars(chars: &mut std::iter::Peekable<std::str::Chars>) 
         }
     }
 
-    // Check for opening brace
     if chars.peek() != Some(&'{') {
         return None;
     }
-    chars.next(); // Consume '{'
+    chars.next();
 
     let mut content = String::new();
     let mut depth = 1;
@@ -80,7 +78,6 @@ pub fn read_braced_from_chars(chars: &mut std::iter::Peekable<std::str::Chars>) 
 /// Example: `\begin{itemize}` returns "itemize"
 /// Also handles `\begin {itemize}` (with space).
 pub fn extract_env_name(line: &str) -> Option<String> {
-    // Try without space first, then with space
     let start = line.find("\\begin{").or_else(|| line.find("\\begin {"))?;
     let brace_pos = line[start..].find('{')?;
     let after = &line[start + brace_pos + 1..];
@@ -112,7 +109,6 @@ pub fn collect_environment(lines: &[&str], start_idx: usize, env_name: &str) -> 
     let end_marker = format!("\\end{{{}}}", env_name);
     let begin_marker = format!("\\begin{{{}}}", env_name);
 
-    // Handle single-line environment: \begin{X}...\end{X} on same line
     let start_line = lines[start_idx];
     if let Some(begin_pos) = start_line.find(&begin_marker) {
         let after_begin = &start_line[begin_pos + begin_marker.len()..];
@@ -133,7 +129,6 @@ pub fn collect_environment(lines: &[&str], start_idx: usize, env_name: &str) -> 
         let line = lines[i];
         let trimmed = line.trim();
 
-        // Track nesting depth for same-named environments (both space variants)
         depth += trimmed.matches(&begin_marker).count() as isize;
         depth += trimmed.matches(&begin_marker_space).count() as isize;
         depth -= trimmed.matches(&end_marker).count() as isize;
@@ -159,7 +154,6 @@ pub fn extract_heading_title(line: &str, command: &str) -> Option<String> {
     let start = line.find(&prefix)?;
     let after = &line[start + prefix.len()..];
 
-    // Skip optional argument [...]
     let rest = if after.starts_with('[') {
         let bracket_end = after.find(']')?;
         &after[bracket_end + 1..]

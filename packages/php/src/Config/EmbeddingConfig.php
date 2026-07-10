@@ -69,8 +69,7 @@ readonly class EmbeddingConfig
          * @default null
          */
         public ?AccelerationConfig $acceleration = null,
-    ) {
-    }
+    ) {}
 
     /**
      * Create configuration from array data.
@@ -82,7 +81,6 @@ readonly class EmbeddingConfig
         /** @var string|array<string, string> $model */
         $model = $data['model'] ?? 'balanced';
         if (is_array($model)) {
-            // Handle Rust-format model: {"type": "preset", "name": "balanced"}
             /** @var string $model */
             $model = $model['name'] ?? 'balanced';
         } elseif (!is_string($model)) {
@@ -111,12 +109,7 @@ readonly class EmbeddingConfig
             $acceleration = AccelerationConfig::fromArray($accelerationData);
         }
 
-        return new self(
-            model: $model,
-            normalize: $normalize,
-            batchSize: $batchSize,
-            acceleration: $acceleration,
-        );
+        return new self(model: $model, normalize: $normalize, batchSize: $batchSize, acceleration: $acceleration);
     }
 
     /**
@@ -155,12 +148,15 @@ readonly class EmbeddingConfig
      */
     public function toArray(): array
     {
-        return array_filter([
-            'model' => $this->model,
-            'normalize' => $this->normalize,
-            'batch_size' => $this->batchSize,
-            'acceleration' => $this->acceleration?->toArray(),
-        ], static fn ($value): bool => $value !== null);
+        return array_filter(
+            [
+                'model' => $this->model,
+                'normalize' => $this->normalize,
+                'batch_size' => $this->batchSize,
+                'acceleration' => $this->acceleration?->toArray(),
+            ],
+            static fn($value): bool => $value !== null,
+        );
     }
 
     /**
@@ -173,15 +169,18 @@ readonly class EmbeddingConfig
      */
     public function toRustArray(): array
     {
-        return array_filter([
-            'model' => [
-                'type' => 'preset',
-                'name' => $this->model,
+        return array_filter(
+            [
+                'model' => [
+                    'type' => 'preset',
+                    'name' => $this->model,
+                ],
+                'normalize' => $this->normalize,
+                'batch_size' => $this->batchSize,
+                'acceleration' => $this->acceleration?->toArray(),
             ],
-            'normalize' => $this->normalize,
-            'batch_size' => $this->batchSize,
-            'acceleration' => $this->acceleration?->toArray(),
-        ], static fn ($value): bool => $value !== null);
+            static fn($value): bool => $value !== null,
+        );
     }
 
     /**

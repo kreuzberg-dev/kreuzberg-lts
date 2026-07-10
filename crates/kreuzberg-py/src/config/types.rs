@@ -365,7 +365,7 @@ impl ExtractionConfig {
         self.inner.result_format = match value.to_lowercase().as_str() {
             "unified" => kreuzberg::types::OutputFormat::Unified,
             "element_based" | "element-based" => kreuzberg::types::OutputFormat::ElementBased,
-            _ => kreuzberg::types::OutputFormat::Unified, // Default on invalid
+            _ => kreuzberg::types::OutputFormat::Unified,
         };
     }
 
@@ -391,7 +391,7 @@ impl ExtractionConfig {
             "html" => kreuzberg::core::config::formats::OutputFormat::Html,
             "json" => kreuzberg::core::config::formats::OutputFormat::Json,
             "structured" => kreuzberg::core::config::formats::OutputFormat::Structured,
-            _ => kreuzberg::core::config::formats::OutputFormat::Plain, // Default on invalid
+            _ => kreuzberg::core::config::formats::OutputFormat::Plain,
         };
     }
 

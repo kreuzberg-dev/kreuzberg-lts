@@ -12,13 +12,8 @@ class HeaderMetadata
     public int $depth;
     public int $htmlOffset;
 
-    public function __construct(
-        int $level,
-        string $text,
-        int $depth,
-        int $htmlOffset,
-        ?string $id = null,
-    ) {
+    public function __construct(int $level, string $text, int $depth, int $htmlOffset, ?string $id = null)
+    {
         $this->level = $level;
         $this->text = $text;
         $this->depth = $depth;

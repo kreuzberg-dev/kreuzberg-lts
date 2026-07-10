@@ -53,7 +53,6 @@ test_that("config builders accept extra arguments", {
   expect_equal(config$strategy, "semantic")
 })
 
-# --- Input validation tests ---
 
 test_that("ocr_config validates dpi is positive", {
   expect_error(ocr_config(dpi = -100), "dpi must be a positive")

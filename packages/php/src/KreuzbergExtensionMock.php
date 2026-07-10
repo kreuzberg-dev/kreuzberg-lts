@@ -36,38 +36,32 @@ class KreuzbergMockStorage
     }
 }
 
-// Only define if not already defined by the extension
 if (!function_exists('kreuzberg_extract_file')) {
     /**
      * @param string|null $config_json JSON-encoded configuration
      * @return array<string, mixed>
      */
-    function kreuzberg_extract_file(
-        string $filePath,
-        ?string $mimeType = null,
-        ?string $config_json = null,
-    ): array {
-        // Decode JSON config to array (matching native extension which accepts JSON string)
+    function kreuzberg_extract_file(string $filePath, ?string $mimeType = null, ?string $config_json = null): array
+    {
         /** @var array<string, mixed>|null $config */
         $config = $config_json !== null ? json_decode($config_json, true) : null;
 
-        // Validate configuration
         if ($config !== null) {
-            // Validate chunking config
             if (isset($config['chunking']) && is_array($config['chunking'])) {
                 if (isset($config['chunking']['max_chunk_size']) && $config['chunking']['max_chunk_size'] < 0) {
                     $maxChunkSizeValue = $config['chunking']['max_chunk_size'];
-                    throw new \Kreuzberg\Exceptions\KreuzbergException('[Validation] Invalid maxChunkSize: must be positive, got ' . (is_scalar($maxChunkSizeValue) ? (string)$maxChunkSizeValue : 'unknown'));
+                    throw new \Kreuzberg\Exceptions\KreuzbergException(
+                        '[Validation] Invalid maxChunkSize: must be positive, got '
+                        . (is_scalar($maxChunkSizeValue) ? (string) $maxChunkSizeValue : 'unknown'),
+                    );
                 }
             }
         }
 
-        // Check if it's a directory instead of a file
         if (is_dir($filePath)) {
             throw new \Kreuzberg\Exceptions\KreuzbergException("Path is a directory, not a file: $filePath");
         }
 
-        // Mock implementation - return basic extraction result
         if (!file_exists($filePath)) {
             throw new \Kreuzberg\Exceptions\KreuzbergException("File not found: $filePath");
         }
@@ -77,70 +71,64 @@ if (!function_exists('kreuzberg_extract_file')) {
             throw new \Kreuzberg\Exceptions\KreuzbergException("Failed to read file: $filePath");
         }
 
-        // If MIME type is not provided, detect it from the file
         if ($mimeType === null) {
             $ext = strtolower(pathinfo($filePath, PATHINFO_EXTENSION));
-            // If file has .pdf extension, treat it as PDF regardless of content
             if ($ext === 'pdf') {
                 $mimeType = 'application/pdf';
             } else {
                 $mimeType = kreuzberg_detect_mime_type_from_path($filePath);
-                // If the detected MIME type is just plain text and the content is very short,
-                // it might be a corrupted file without proper format markers
                 if ($mimeType === 'text/plain' && strlen($content) < 100) {
-                    // Check if it has any format-like content
                     if (!preg_match('/^(<?xml|<!DOCTYPE|{|\[|%|PK|\xFF\xD8\xFF|\x89PNG|GIF|BM)/i', $content)) {
-                        throw new \Kreuzberg\Exceptions\KreuzbergException('Unsupported or corrupted file format: could not detect document type');
+                        throw new \Kreuzberg\Exceptions\KreuzbergException(
+                            'Unsupported or corrupted file format: could not detect document type',
+                        );
                     }
                 }
             }
         }
 
-        // Validate the MIME type (already set by this point)
         try {
             kreuzberg_validate_mime_type($mimeType);
         } catch (\Exception $e) {
             throw new \Kreuzberg\Exceptions\KreuzbergException("Invalid MIME type: $mimeType");
         }
 
-        // Validate PDF files have valid signatures (allow leading content/comments)
         if ($mimeType === 'application/pdf') {
-            // PDFs can have comments before the "%PDF" header
             if (strpos($content, '%PDF') === false && strpos($content, '%!PS-Adobe') === false) {
                 throw new \Kreuzberg\Exceptions\KreuzbergException("Corrupted or invalid PDF file: $filePath");
             }
         }
 
-        // Validate mismatched MIME types - if the detected type doesn't match the provided one
         if ($mimeType !== kreuzberg_detect_mime_type_from_path($filePath)) {
-            // Only throw if provided MIME type doesn't match detected one
             $detectedType = kreuzberg_detect_mime_type_from_path($filePath);
             if ($mimeType !== $detectedType) {
-                // Check if the content actually matches what it claims to be
                 if ($mimeType === 'application/pdf' && !str_starts_with($content, '%PDF')) {
-                    throw new \Kreuzberg\Exceptions\KreuzbergException("MIME type mismatch: provided '$mimeType' but file appears to be '$detectedType'");
+                    throw new \Kreuzberg\Exceptions\KreuzbergException(
+                        "MIME type mismatch: provided '$mimeType' but file appears to be '$detectedType'",
+                    );
                 }
             }
         }
 
-        // Mock metadata with page count for PDFs
         $metadata = [];
         if (strpos($mimeType, 'pdf') !== false || $mimeType === 'application/pdf') {
             $metadata['page_count'] = 1;
         }
 
-        // Check if image extraction is enabled
         $images = [];
         $extractImages = false;
         if ($config !== null) {
             if (isset($config['extract_images'])) {
                 $extractImages = (bool) $config['extract_images'];
-            } elseif (isset($config['images']) && is_array($config['images']) && isset($config['images']['extract_images'])) {
+            } elseif (
+                isset($config['images'])
+                && is_array($config['images'])
+                && isset($config['images']['extract_images'])
+            ) {
                 $extractImages = (bool) $config['images']['extract_images'];
             }
         }
 
-        // If image extraction is enabled, return mock images with format data
         if ($extractImages) {
             $images = [
                 [
@@ -196,66 +184,58 @@ if (!function_exists('kreuzberg_extract_bytes')) {
      * @param string|null $config_json JSON-encoded configuration
      * @return array<string, mixed>
      */
-    function kreuzberg_extract_bytes(
-        string $data,
-        string $mimeType,
-        ?string $config_json = null,
-    ): array {
-        // Decode JSON config to array (matching native extension which accepts JSON string)
+    function kreuzberg_extract_bytes(string $data, string $mimeType, ?string $config_json = null): array
+    {
         /** @var array<string, mixed>|null $config */
         $config = $config_json !== null ? json_decode($config_json, true) : null;
 
-        // Validate input - only require non-empty for PDFs
         if (empty($data) && $mimeType === 'application/pdf') {
             throw new \Kreuzberg\Exceptions\KreuzbergException('Empty data provided');
         }
 
-        // Validate MIME type
         try {
             kreuzberg_validate_mime_type($mimeType);
         } catch (\Exception $e) {
             throw new \Kreuzberg\Exceptions\KreuzbergException("Invalid MIME type: $mimeType");
         }
 
-        // Validate PDF files have valid signatures (allow leading content/comments)
         if ($mimeType === 'application/pdf') {
-            // PDFs can have comments before the "%PDF" header
             if (strpos($data, '%PDF') === false && strpos($data, '%!PS-Adobe') === false) {
                 throw new \Kreuzberg\Exceptions\KreuzbergException('Corrupted or invalid PDF file');
             }
         }
 
-        // Validate mismatched MIME types
         $detectedType = kreuzberg_detect_mime_type($data);
         if ($mimeType !== $detectedType && $detectedType !== 'application/octet-stream') {
-            // Only throw if the detected type is clearly different and is not a generic type
-            if (($mimeType === 'application/pdf' && $detectedType !== 'application/pdf') ||
-                ($mimeType !== 'application/pdf' && $detectedType === 'application/pdf')) {
-                throw new \Kreuzberg\Exceptions\KreuzbergException("MIME type mismatch: provided '$mimeType' but data appears to be '$detectedType'");
+            if (
+                $mimeType === 'application/pdf' && $detectedType !== 'application/pdf'
+                || $mimeType !== 'application/pdf' && $detectedType === 'application/pdf'
+            ) {
+                throw new \Kreuzberg\Exceptions\KreuzbergException(
+                    "MIME type mismatch: provided '$mimeType' but data appears to be '$detectedType'",
+                );
             }
         }
 
-        // Validate configuration
         if ($config !== null) {
-            // Validate chunking config
             if (isset($config['chunking']) && is_array($config['chunking'])) {
                 if (isset($config['chunking']['max_chunk_size']) && $config['chunking']['max_chunk_size'] < 0) {
                     $maxChunkSizeValue = $config['chunking']['max_chunk_size'];
-                    throw new \Kreuzberg\Exceptions\KreuzbergException('[Validation] Invalid maxChunkSize: must be positive, got ' . (is_scalar($maxChunkSizeValue) ? (string)$maxChunkSizeValue : 'unknown'));
+                    throw new \Kreuzberg\Exceptions\KreuzbergException(
+                        '[Validation] Invalid maxChunkSize: must be positive, got '
+                        . (is_scalar($maxChunkSizeValue) ? (string) $maxChunkSizeValue : 'unknown'),
+                    );
                 }
             }
         }
 
-        // Mock implementation
         $content = 'Mock extraction result from bytes';
         $pages = [];
 
-        // Handle pages configuration
         if ($config !== null && isset($config['page']) && is_array($config['page'])) {
             /** @var array<string, mixed> $pageConfig */
             $pageConfig = $config['page'];
             if (isset($pageConfig['extract_pages']) && $pageConfig['extract_pages']) {
-                // Return mock pages
                 $pages = [
                     [
                         'content' => 'Page 1 content',
@@ -266,7 +246,6 @@ if (!function_exists('kreuzberg_extract_bytes')) {
                 ];
             }
 
-            // Handle page markers
             if (isset($pageConfig['insert_page_markers']) && $pageConfig['insert_page_markers']) {
                 /** @var string $markerFormat */
                 $markerFormat = $pageConfig['marker_format'] ?? '--- PAGE {page_num} ---';
@@ -275,24 +254,25 @@ if (!function_exists('kreuzberg_extract_bytes')) {
             }
         }
 
-        // Mock metadata with page count for PDFs
         $metadata = [];
         if ($mimeType === 'application/pdf') {
             $metadata['page_count'] = 1;
         }
 
-        // Check if image extraction is enabled
         $images = [];
         $extractImages = false;
         if ($config !== null) {
             if (isset($config['extract_images'])) {
                 $extractImages = (bool) $config['extract_images'];
-            } elseif (isset($config['images']) && is_array($config['images']) && isset($config['images']['extract_images'])) {
+            } elseif (
+                isset($config['images'])
+                && is_array($config['images'])
+                && isset($config['images']['extract_images'])
+            ) {
                 $extractImages = (bool) $config['images']['extract_images'];
             }
         }
 
-        // If image extraction is enabled, return mock images with format data
         if ($extractImages) {
             $images = [
                 [
@@ -330,12 +310,13 @@ if (!function_exists('kreuzberg_extract_bytes')) {
             'detected_languages' => ['en'],
             'chunks' => [],
             'images' => $images,
-            'pages' => $pages ?: [[
-                'page_number' => 1,
-                'content' => $content,
-                'tables' => [],
-                'images' => $images,
-            ]],
+            'pages' => $pages
+                ?: [[
+                    'page_number' => 1,
+                    'content' => $content,
+                    'tables' => [],
+                    'images' => $images,
+                ]],
             'keywords' => [],
         ];
     }
@@ -347,39 +328,38 @@ if (!function_exists('kreuzberg_batch_extract_files')) {
      * @param string|null $config_json JSON-encoded configuration
      * @return array<int, array<string, mixed>>
      */
-    function kreuzberg_batch_extract_files(
-        array $paths,
-        ?string $config_json = null,
-    ): array {
-        // Decode JSON config to array (matching native extension which accepts JSON string)
+    function kreuzberg_batch_extract_files(array $paths, ?string $config_json = null): array
+    {
         /** @var array<string, mixed>|null $config */
         $config = $config_json !== null ? json_decode($config_json, true) : null;
 
-        // Validate configuration
         if ($config !== null) {
-            // Validate chunking config
             if (isset($config['chunking']) && is_array($config['chunking'])) {
                 if (isset($config['chunking']['max_chunk_size']) && $config['chunking']['max_chunk_size'] < 0) {
                     $maxChunkSizeValue = $config['chunking']['max_chunk_size'];
-                    throw new \Kreuzberg\Exceptions\KreuzbergException('[Validation] Invalid maxChunkSize: must be positive, got ' . (is_scalar($maxChunkSizeValue) ? (string)$maxChunkSizeValue : 'unknown'));
+                    throw new \Kreuzberg\Exceptions\KreuzbergException(
+                        '[Validation] Invalid maxChunkSize: must be positive, got '
+                        . (is_scalar($maxChunkSizeValue) ? (string) $maxChunkSizeValue : 'unknown'),
+                    );
                 }
             }
         }
 
-        // Mock implementation
         $results = [];
 
-        // Check if image extraction is enabled
         $extractImages = false;
         if ($config !== null) {
             if (isset($config['extract_images'])) {
                 $extractImages = (bool) $config['extract_images'];
-            } elseif (isset($config['images']) && is_array($config['images']) && isset($config['images']['extract_images'])) {
+            } elseif (
+                isset($config['images'])
+                && is_array($config['images'])
+                && isset($config['images']['extract_images'])
+            ) {
                 $extractImages = (bool) $config['images']['extract_images'];
             }
         }
 
-        // Create mock images if extraction is enabled
         $images = [];
         if ($extractImages) {
             $images = [
@@ -411,14 +391,12 @@ if (!function_exists('kreuzberg_batch_extract_files')) {
         }
 
         foreach ($paths as $path) {
-            // Check if file exists
             if (!file_exists($path)) {
                 throw new \Kreuzberg\Exceptions\KreuzbergException("File not found: $path");
             }
 
             $mimeType = kreuzberg_detect_mime_type_from_path($path);
 
-            // Mock metadata with page count for PDFs
             $metadata = [];
             if ($mimeType === 'application/pdf') {
                 $metadata['page_count'] = 1;
@@ -452,45 +430,48 @@ if (!function_exists('kreuzberg_batch_extract_bytes')) {
      * @param string|null $config_json JSON-encoded configuration
      * @return array<int, array<string, mixed>>
      */
-    function kreuzberg_batch_extract_bytes(
-        array $dataList,
-        array $mimeTypes,
-        ?string $config_json = null,
-    ): array {
-        // Decode JSON config to array (matching native extension which accepts JSON string)
+    function kreuzberg_batch_extract_bytes(array $dataList, array $mimeTypes, ?string $config_json = null): array
+    {
         /** @var array<string, mixed>|null $config */
         $config = $config_json !== null ? json_decode($config_json, true) : null;
 
-        // Validate that array lengths match
         if (count($dataList) !== count($mimeTypes)) {
-            throw new \Kreuzberg\Exceptions\KreuzbergException('data_list and mime_types must have the same length (got ' . count($dataList) . ' and ' . count($mimeTypes) . ')');
+            throw new \Kreuzberg\Exceptions\KreuzbergException(
+                'data_list and mime_types must have the same length (got '
+                . count($dataList)
+                . ' and '
+                . count($mimeTypes)
+                . ')',
+            );
         }
 
-        // Validate configuration
         if ($config !== null) {
-            // Validate chunking config
             if (isset($config['chunking']) && is_array($config['chunking'])) {
                 if (isset($config['chunking']['max_chunk_size']) && $config['chunking']['max_chunk_size'] < 0) {
                     $maxChunkSizeValue = $config['chunking']['max_chunk_size'];
-                    throw new \Kreuzberg\Exceptions\KreuzbergException('[Validation] Invalid maxChunkSize: must be positive, got ' . (is_scalar($maxChunkSizeValue) ? (string)$maxChunkSizeValue : 'unknown'));
+                    throw new \Kreuzberg\Exceptions\KreuzbergException(
+                        '[Validation] Invalid maxChunkSize: must be positive, got '
+                        . (is_scalar($maxChunkSizeValue) ? (string) $maxChunkSizeValue : 'unknown'),
+                    );
                 }
             }
         }
 
-        // Mock implementation
         $results = [];
 
-        // Check if image extraction is enabled
         $extractImages = false;
         if ($config !== null) {
             if (isset($config['extract_images'])) {
                 $extractImages = (bool) $config['extract_images'];
-            } elseif (isset($config['images']) && is_array($config['images']) && isset($config['images']['extract_images'])) {
+            } elseif (
+                isset($config['images'])
+                && is_array($config['images'])
+                && isset($config['images']['extract_images'])
+            ) {
                 $extractImages = (bool) $config['images']['extract_images'];
             }
         }
 
-        // Create mock images if extraction is enabled
         $images = [];
         if ($extractImages) {
             $images = [
@@ -528,14 +509,12 @@ if (!function_exists('kreuzberg_batch_extract_bytes')) {
 
             $mimeType = $mimeTypes[$index] ?? 'application/octet-stream';
 
-            // Validate MIME type
             try {
                 kreuzberg_validate_mime_type($mimeType);
             } catch (\Exception $e) {
                 throw new \Kreuzberg\Exceptions\KreuzbergException("Invalid MIME type at index $index: $mimeType");
             }
 
-            // Mock metadata with page count for PDFs
             $metadata = [];
             if ($mimeType === 'application/pdf') {
                 $metadata['page_count'] = 1;
@@ -565,7 +544,6 @@ if (!function_exists('kreuzberg_batch_extract_bytes')) {
 if (!function_exists('kreuzberg_detect_mime_type')) {
     function kreuzberg_detect_mime_type(string $data): string
     {
-        // Mock implementation - simple magic number detection
         if (str_starts_with($data, '%PDF')) {
             return 'application/pdf';
         }
@@ -576,8 +554,6 @@ if (!function_exists('kreuzberg_detect_mime_type')) {
             return 'image/jpeg';
         }
         if (str_starts_with($data, 'PK')) {
-            // Could be .docx, .xlsx, .pptx, or other ZIP-based formats
-            // For now, detect based on content or return generic zip
             if (strpos($data, 'word/') !== false) {
                 return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
             }
@@ -598,8 +574,10 @@ if (!function_exists('kreuzberg_detect_mime_type')) {
         if (str_starts_with($data, 'II\x2a\x00') || str_starts_with($data, 'MM\x00\x2a')) {
             return 'image/tiff';
         }
-        // Check for text-based formats
-        if (strlen($data) > 0 && (ctype_print($data[0]) || $data[0] === "\n" || $data[0] === "\r" || $data[0] === "\t")) {
+        if (
+            strlen($data) > 0
+            && (ctype_print($data[0]) || $data[0] === "\n" || $data[0] === "\r" || $data[0] === "\t")
+        ) {
             if (str_starts_with($data, '<?xml') || str_starts_with($data, '<')) {
                 return 'application/xml';
             }
@@ -622,7 +600,6 @@ if (!function_exists('kreuzberg_detect_mime_type_from_bytes')) {
 if (!function_exists('kreuzberg_detect_mime_type_from_path')) {
     function kreuzberg_detect_mime_type_from_path(string $path): string
     {
-        // First try to detect by file extension
         $ext = strtolower(pathinfo($path, PATHINFO_EXTENSION));
 
         $mimeMap = [
@@ -677,7 +654,6 @@ if (!function_exists('kreuzberg_detect_mime_type_from_path')) {
             return $mimeMap[$ext];
         }
 
-        // Fall back to magic number detection
         $data = file_get_contents($path, false, null, 0, 512);
         if ($data === false) {
             return 'application/octet-stream';
@@ -689,7 +665,6 @@ if (!function_exists('kreuzberg_detect_mime_type_from_path')) {
 if (!function_exists('kreuzberg_validate_mime_type')) {
     function kreuzberg_validate_mime_type(string $mimeType): string
     {
-        // List of supported MIME types
         $supportedMimes = [
             'text/plain',
             'text/markdown',
@@ -744,7 +719,6 @@ if (!function_exists('kreuzberg_validate_mime_type')) {
             'application/vnd.ms-outlook-pst',
         ];
 
-        // Check if MIME type is in supported list or is an image type
         if (in_array($mimeType, $supportedMimes, true) || strpos($mimeType, 'image/') === 0) {
             return $mimeType;
         }

@@ -5,5 +5,5 @@ import org.jspecify.annotations.Nullable;
 
 /** JATS contributor with role. */
 public record ContributorRole(@JsonProperty("name") String name,
-		@JsonProperty("role") @Nullable String role) {
+    @JsonProperty("role") @Nullable String role) {
 }

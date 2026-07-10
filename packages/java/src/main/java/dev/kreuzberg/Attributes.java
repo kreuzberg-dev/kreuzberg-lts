@@ -16,60 +16,60 @@ import java.util.Optional;
  * syntax.
  */
 public final class Attributes {
-	private final Optional<String> id;
-	private final List<String> classes;
-	@JsonDeserialize(contentAs = KeyValue.class)
-	private final List<KeyValue> keyValues;
+    private final Optional<String> id;
+    private final List<String> classes;
+    @JsonDeserialize(contentAs = KeyValue.class)
+    private final List<KeyValue> keyValues;
 
-	@JsonCreator
-	public Attributes(@JsonProperty("id") String id, @JsonProperty("classes") List<String> classes,
-			@JsonProperty("key_values") List<KeyValue> keyValues) {
-		this.id = Optional.ofNullable(id);
-		this.classes = Collections.unmodifiableList(classes != null ? classes : Collections.emptyList());
-		this.keyValues = Collections.unmodifiableList(keyValues != null ? keyValues : Collections.emptyList());
-	}
+    @JsonCreator
+    public Attributes(@JsonProperty("id") String id, @JsonProperty("classes") List<String> classes,
+        @JsonProperty("key_values") List<KeyValue> keyValues) {
+        this.id = Optional.ofNullable(id);
+        this.classes = Collections.unmodifiableList(classes != null ? classes : Collections.emptyList());
+        this.keyValues = Collections.unmodifiableList(keyValues != null ? keyValues : Collections.emptyList());
+    }
 
-	public Optional<String> getId() {
-		return id;
-	}
+    public Optional<String> getId() {
+        return id;
+    }
 
-	public List<String> getClasses() {
-		return classes;
-	}
+    public List<String> getClasses() {
+        return classes;
+    }
 
-	public List<KeyValue> getKeyValues() {
-		return keyValues;
-	}
+    public List<KeyValue> getKeyValues() {
+        return keyValues;
+    }
 
-	@Override
-	public String toString() {
-		return "Attributes{" + "id=" + id + ", classes=" + classes + ", keyValues=" + keyValues + '}';
-	}
+    @Override
+    public String toString() {
+        return "Attributes{" + "id=" + id + ", classes=" + classes + ", keyValues=" + keyValues + '}';
+    }
 
-	/**
+    /**
 	 * Key-value pair for element attributes.
 	 */
-	public static final class KeyValue {
-		private final String key;
-		private final String value;
+    public static final class KeyValue {
+        private final String key;
+        private final String value;
 
-		@JsonCreator
-		public KeyValue(@JsonProperty("0") String key, @JsonProperty("1") String value) {
-			this.key = Objects.requireNonNull(key, "key must not be null");
-			this.value = Objects.requireNonNull(value, "value must not be null");
-		}
+        @JsonCreator
+        public KeyValue(@JsonProperty("0") String key, @JsonProperty("1") String value) {
+            this.key = Objects.requireNonNull(key, "key must not be null");
+            this.value = Objects.requireNonNull(value, "value must not be null");
+        }
 
-		public String getKey() {
-			return key;
-		}
+        public String getKey() {
+            return key;
+        }
 
-		public String getValue() {
-			return value;
-		}
+        public String getValue() {
+            return value;
+        }
 
-		@Override
-		public String toString() {
-			return key + "=" + value;
-		}
-	}
+        @Override
+        public String toString() {
+            return key + "=" + value;
+        }
+    }
 }

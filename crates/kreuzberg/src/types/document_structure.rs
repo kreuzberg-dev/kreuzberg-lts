@@ -18,10 +18,6 @@ use serde::{Deserialize, Serialize};
 
 use super::extraction::BoundingBox;
 
-// ============================================================================
-// Index and ID Types
-// ============================================================================
-
 /// Newtype for node indices into the `DocumentStructure::nodes` array.
 ///
 /// Uses `u32` for cross-platform consistency (WASM is 32-bit) and to avoid
@@ -68,7 +64,6 @@ impl NodeId {
             .bytes()
             .fold(0u64, |acc, b| acc.wrapping_mul(31).wrapping_add(b as u64));
 
-        // Use u64::MAX as sentinel for None to distinguish from Some(0)
         let page_hash = page.map(|p| p as u64).unwrap_or(u64::MAX);
 
         let combined = type_hash
@@ -94,10 +89,6 @@ impl std::fmt::Display for NodeId {
         write!(f, "{}", self.0)
     }
 }
-
-// ============================================================================
-// Document Structure
-// ============================================================================
 
 /// Top-level structured document representation.
 ///
@@ -215,10 +206,6 @@ pub struct DocumentNode {
     pub attributes: Option<HashMap<String, String>>,
 }
 
-// ============================================================================
-// Content Layer
-// ============================================================================
-
 /// Content layer classification for document nodes.
 ///
 /// Replaces separate body/furniture arrays with per-node granularity.
@@ -243,10 +230,6 @@ impl ContentLayer {
         *self == ContentLayer::Body
     }
 }
-
-// ============================================================================
-// Node Content (Tagged Enum)
-// ============================================================================
 
 /// Tagged enum for node content. Each variant carries only type-specific data.
 ///
@@ -358,10 +341,6 @@ pub enum NodeContent {
     MetadataBlock { entries: Vec<(String, String)> },
 }
 
-// ============================================================================
-// Table Grid
-// ============================================================================
-
 /// Structured table grid with cell-level metadata.
 ///
 /// Stores row/column dimensions and a flat list of cells with position info.
@@ -403,10 +382,6 @@ pub struct GridCell {
 fn default_span() -> u32 {
     1
 }
-
-// ============================================================================
-// Text Annotations
-// ============================================================================
 
 /// Inline text annotation — byte-range based formatting and links.
 ///
@@ -458,10 +433,6 @@ pub enum AnnotationKind {
     },
 }
 
-// ============================================================================
-// BoundingBox Conversions
-// ============================================================================
-
 /// Convert PDF hierarchy's `(f32, f32, f32, f32)` bounding box to canonical `BoundingBox`.
 ///
 /// The tuple order is `(left, top, right, bottom)` matching the PDF coordinate convention.
@@ -475,10 +446,6 @@ impl From<(f32, f32, f32, f32)> for BoundingBox {
         }
     }
 }
-
-// ============================================================================
-// NodeContent Helpers
-// ============================================================================
 
 impl NodeContent {
     /// Get the primary text content of this node, if it carries text.
@@ -541,10 +508,6 @@ impl NodeContent {
     }
 }
 
-// ============================================================================
-// DocumentStructure Methods
-// ============================================================================
-
 impl DocumentStructure {
     /// Create an empty `DocumentStructure`.
     pub fn new() -> Self {
@@ -595,7 +558,6 @@ impl DocumentStructure {
         for (i, node) in self.nodes.iter().enumerate() {
             let idx = i as u32;
 
-            // Validate parent reference
             if let Some(parent) = node.parent {
                 if parent.0 >= len {
                     return Err(format!(
@@ -611,7 +573,6 @@ impl DocumentStructure {
                 }
             }
 
-            // Validate child references
             for child in &node.children {
                 if child.0 >= len {
                     return Err(format!(
@@ -674,10 +635,6 @@ impl Default for DocumentStructure {
         Self::new()
     }
 }
-
-// ============================================================================
-// Tests
-// ============================================================================
 
 #[cfg(test)]
 mod tests {
@@ -752,7 +709,7 @@ mod tests {
     fn test_validation_catches_bad_parent() {
         let mut doc = DocumentStructure::new();
         let mut node = make_paragraph("Bad parent", Some(1), 0);
-        node.parent = Some(NodeIndex(99)); // Out of bounds
+        node.parent = Some(NodeIndex(99));
         doc.push_node(node);
 
         assert!(doc.validate().is_err());
@@ -762,7 +719,6 @@ mod tests {
     fn test_validation_catches_inconsistent_parent_child() {
         let mut doc = DocumentStructure::new();
 
-        // Parent node with no children listed
         let parent = DocumentNode {
             id: NodeId::generate("group", "", Some(1), 0),
             content: NodeContent::Group {
@@ -771,7 +727,7 @@ mod tests {
                 heading_text: None,
             },
             parent: None,
-            children: vec![], // No children listed
+            children: vec![],
             content_layer: ContentLayer::Body,
             page: Some(1),
             page_end: None,
@@ -781,7 +737,6 @@ mod tests {
         };
         doc.push_node(parent);
 
-        // Child claims parent, but parent doesn't list it
         let mut child = make_paragraph("Orphan child", Some(1), 1);
         child.parent = Some(NodeIndex(0));
         doc.push_node(child);
@@ -801,7 +756,7 @@ mod tests {
                 heading_text: None,
             },
             parent: None,
-            children: vec![NodeIndex(99)], // Out of bounds child
+            children: vec![NodeIndex(99)],
             content_layer: ContentLayer::Body,
             page: Some(1),
             page_end: None,
@@ -818,15 +773,12 @@ mod tests {
     fn test_body_and_furniture_roots() {
         let mut doc = DocumentStructure::new();
 
-        // Body node
         doc.push_node(make_paragraph("Body content", Some(1), 0));
 
-        // Header node
         let mut header = make_paragraph("Page header", Some(1), 1);
         header.content_layer = ContentLayer::Header;
         doc.push_node(header);
 
-        // Footer node
         let mut footer = make_paragraph("Page footer", Some(1), 2);
         footer.content_layer = ContentLayer::Footer;
         doc.push_node(footer);
@@ -855,11 +807,9 @@ mod tests {
         let id5 = NodeId::generate("heading", "Hello world", Some(1), 0);
         assert_ne!(id1, id5);
 
-        // Same content, different index → different ID (ensures uniqueness)
         let id6 = NodeId::generate("paragraph", "Hello world", Some(1), 1);
         assert_ne!(id1, id6);
 
-        // None vs Some(0) should produce different IDs (sentinel value)
         let id_none = NodeId::generate("paragraph", "Hello world", None, 0);
         let id_some_0 = NodeId::generate("paragraph", "Hello world", Some(0), 0);
         assert_ne!(id_none, id_some_0);
@@ -901,7 +851,6 @@ mod tests {
             None
         );
 
-        // New variants
         assert_eq!(
             NodeContent::Slide {
                 number: 1,
@@ -996,7 +945,6 @@ mod tests {
 
     #[test]
     fn test_new_annotation_serde_roundtrip() {
-        // Highlight
         let ann = TextAnnotation {
             start: 0,
             end: 5,
@@ -1006,7 +954,6 @@ mod tests {
         let de: TextAnnotation = serde_json::from_str(&json).expect("deserialize");
         assert_eq!(de.kind, AnnotationKind::Highlight);
 
-        // Color
         let ann = TextAnnotation {
             start: 0,
             end: 5,
@@ -1021,7 +968,6 @@ mod tests {
             _ => panic!("Expected Color"),
         }
 
-        // FontSize
         let ann = TextAnnotation {
             start: 0,
             end: 5,
@@ -1036,7 +982,6 @@ mod tests {
             _ => panic!("Expected FontSize"),
         }
 
-        // Custom
         let ann = TextAnnotation {
             start: 0,
             end: 5,
@@ -1058,7 +1003,6 @@ mod tests {
 
     #[test]
     fn test_new_node_content_serde_roundtrip() {
-        // Slide
         let content = NodeContent::Slide {
             number: 3,
             title: Some("My Slide".to_string()),
@@ -1068,7 +1012,6 @@ mod tests {
         assert_eq!(json.get("number").unwrap(), 3);
         assert_eq!(json.get("title").unwrap(), "My Slide");
 
-        // Citation
         let content = NodeContent::Citation {
             key: "doe2024".to_string(),
             text: "Doe (2024)".to_string(),
@@ -1077,7 +1020,6 @@ mod tests {
         assert_eq!(json.get("node_type").unwrap(), "citation");
         assert_eq!(json.get("key").unwrap(), "doe2024");
 
-        // MetadataBlock
         let content = NodeContent::MetadataBlock {
             entries: vec![
                 ("From".to_string(), "alice@example.com".to_string()),
@@ -1246,7 +1188,6 @@ mod tests {
         let node = make_paragraph("Simple", Some(1), 0);
         let json = serde_json::to_value(&node).expect("serialize");
 
-        // These should be skipped when empty/None
         assert!(json.get("parent").is_none());
         assert!(json.get("children").is_none());
         assert!(json.get("page_end").is_none());
@@ -1254,7 +1195,6 @@ mod tests {
         assert!(json.get("annotations").is_none());
         assert!(json.get("attributes").is_none());
 
-        // These should be present
         assert!(json.get("id").is_some());
         assert!(json.get("content").is_some());
         assert!(json.get("page").is_some());

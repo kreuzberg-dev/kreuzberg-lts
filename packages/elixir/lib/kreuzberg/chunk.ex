@@ -13,16 +13,16 @@ defmodule Kreuzberg.Chunk do
   """
 
   @type t :: %__MODULE__{
-          content: String.t(),
-          embedding: list(float()) | nil,
-          metadata: Kreuzberg.ChunkMetadata.t(),
-          chunk_type: String.t()
-        }
+  content: String.t(),
+  embedding: list(float()) | nil,
+  metadata: Kreuzberg.ChunkMetadata.t(),
+  chunk_type: String.t()
+  }
 
   defstruct content: "",
-            embedding: nil,
-            metadata: %Kreuzberg.ChunkMetadata{},
-            chunk_type: "unknown"
+  embedding: nil,
+  metadata: %Kreuzberg.ChunkMetadata{},
+  chunk_type: "unknown"
 
   @doc """
   Creates a new Chunk struct.
@@ -35,10 +35,10 @@ defmodule Kreuzberg.Chunk do
   @spec new(String.t(), keyword()) :: t()
   def new(content, opts \\ []) when is_binary(content) do
     %__MODULE__{
-      content: content,
-      embedding: Keyword.get(opts, :embedding),
-      metadata: Keyword.get(opts, :metadata, %Kreuzberg.ChunkMetadata{}),
-      chunk_type: Keyword.get(opts, :chunk_type, "unknown")
+    content: content,
+    embedding: Keyword.get(opts, :embedding),
+    metadata: Keyword.get(opts, :metadata, %Kreuzberg.ChunkMetadata{}),
+    chunk_type: Keyword.get(opts, :chunk_type, "unknown")
     }
   end
 
@@ -53,17 +53,17 @@ defmodule Kreuzberg.Chunk do
   @spec from_map(map()) :: t()
   def from_map(data) when is_map(data) do
     metadata =
-      case data["metadata"] do
-        nil -> %Kreuzberg.ChunkMetadata{}
-        %Kreuzberg.ChunkMetadata{} = m -> m
-        map when is_map(map) -> Kreuzberg.ChunkMetadata.from_map(map)
-      end
+    case data["metadata"] do
+      nil -> %Kreuzberg.ChunkMetadata{}
+      %Kreuzberg.ChunkMetadata{} = m -> m
+      map when is_map(map) -> Kreuzberg.ChunkMetadata.from_map(map)
+    end
 
     %__MODULE__{
-      content: data["content"] || "",
-      embedding: data["embedding"],
-      metadata: metadata,
-      chunk_type: data["chunk_type"] || "unknown"
+    content: data["content"] || "",
+    embedding: data["embedding"],
+    metadata: metadata,
+    chunk_type: data["chunk_type"] || "unknown"
     }
   end
 
@@ -73,10 +73,10 @@ defmodule Kreuzberg.Chunk do
   @spec to_map(t()) :: map()
   def to_map(%__MODULE__{} = chunk) do
     %{
-      "content" => chunk.content,
-      "embedding" => chunk.embedding,
-      "metadata" => Kreuzberg.ChunkMetadata.to_map(chunk.metadata),
-      "chunk_type" => chunk.chunk_type
+    "content" => chunk.content,
+    "embedding" => chunk.embedding,
+    "metadata" => Kreuzberg.ChunkMetadata.to_map(chunk.metadata),
+    "chunk_type" => chunk.chunk_type
     }
   end
 end

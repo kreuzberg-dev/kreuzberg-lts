@@ -16,19 +16,11 @@
 //! - `kreuzberg.model.*` — ML model inference attributes
 //! - `kreuzberg.error.*` — error classification attributes
 
-// ---------------------------------------------------------------------------
-// Operation
-// ---------------------------------------------------------------------------
-
 /// The top-level operation being performed.
 ///
 /// Values: `extract_file`, `extract_bytes`, `batch_extract`, `pipeline`,
 ///         `cache_lookup`, `cache_write`.
 pub const OPERATION: &str = "kreuzberg.operation";
-
-// ---------------------------------------------------------------------------
-// Document
-// ---------------------------------------------------------------------------
 
 /// Detected MIME type of the document (e.g. `application/pdf`).
 pub const DOCUMENT_MIME_TYPE: &str = "kreuzberg.document.mime_type";
@@ -39,19 +31,11 @@ pub const DOCUMENT_SIZE_BYTES: &str = "kreuzberg.document.size_bytes";
 /// Sanitised filename (no directory path — avoids PII in traces).
 pub const DOCUMENT_FILENAME: &str = "kreuzberg.document.filename";
 
-// ---------------------------------------------------------------------------
-// Extractor
-// ---------------------------------------------------------------------------
-
 /// Plugin name of the extractor that handled the request (e.g. `pdf-extractor`).
 pub const EXTRACTOR_NAME: &str = "kreuzberg.extractor.name";
 
 /// Priority value of the selected extractor (0–100).
 pub const EXTRACTOR_PRIORITY: &str = "kreuzberg.extractor.priority";
-
-// ---------------------------------------------------------------------------
-// Pipeline
-// ---------------------------------------------------------------------------
 
 /// Current pipeline stage.
 ///
@@ -63,19 +47,11 @@ pub const PIPELINE_STAGE: &str = "kreuzberg.pipeline.stage";
 /// Name of the individual post-processor being executed.
 pub const PIPELINE_PROCESSOR_NAME: &str = "kreuzberg.pipeline.processor_name";
 
-// ---------------------------------------------------------------------------
-// Cache
-// ---------------------------------------------------------------------------
-
 /// Whether the extraction cache was hit (`true` / `false`).
 pub const CACHE_HIT: &str = "kreuzberg.cache.hit";
 
 /// Cache key (content hash + config fingerprint).
 pub const CACHE_KEY: &str = "kreuzberg.cache.key";
-
-// ---------------------------------------------------------------------------
-// Batch
-// ---------------------------------------------------------------------------
 
 /// Number of items in a batch extraction request.
 pub const BATCH_SIZE: &str = "kreuzberg.batch.size";
@@ -83,19 +59,11 @@ pub const BATCH_SIZE: &str = "kreuzberg.batch.size";
 /// Zero-based index of the current item within a batch.
 pub const BATCH_INDEX: &str = "kreuzberg.batch.index";
 
-// ---------------------------------------------------------------------------
-// OCR
-// ---------------------------------------------------------------------------
-
 /// OCR backend name (e.g. `tesseract`, `paddle`).
 pub const OCR_BACKEND: &str = "kreuzberg.ocr.backend";
 
 /// ISO 639 language code(s) used for OCR (e.g. `eng`, `eng+deu`).
 pub const OCR_LANGUAGE: &str = "kreuzberg.ocr.language";
-
-// ---------------------------------------------------------------------------
-// Model inference
-// ---------------------------------------------------------------------------
 
 /// Name or identifier of the ML model (e.g. `rtdetr-layout`, `paddle-det-server`).
 pub const MODEL_NAME: &str = "kreuzberg.model.name";
@@ -103,16 +71,8 @@ pub const MODEL_NAME: &str = "kreuzberg.model.name";
 /// Model inference wall-clock duration in milliseconds.
 pub const MODEL_INFERENCE_MS: &str = "kreuzberg.model.inference_ms";
 
-// ---------------------------------------------------------------------------
-// Error
-// ---------------------------------------------------------------------------
-
 /// The `KreuzbergError` variant name (e.g. `Parsing`, `Timeout`, `UnsupportedFormat`).
 pub const ERROR_TYPE: &str = "kreuzberg.error.type";
-
-// ---------------------------------------------------------------------------
-// Standard OTel overrides (for convenience)
-// ---------------------------------------------------------------------------
 
 /// Sanitize a file path to return only the filename (no directory).
 ///
@@ -127,10 +87,6 @@ pub const OTEL_STATUS_CODE: &str = "otel.status_code";
 /// Human-readable error message.
 pub const ERROR_MESSAGE: &str = "error.message";
 
-// ---------------------------------------------------------------------------
-// Operation values (for use with OPERATION)
-// ---------------------------------------------------------------------------
-
 pub mod operations {
     pub const EXTRACT_FILE: &str = "extract_file";
     pub const EXTRACT_BYTES: &str = "extract_bytes";
@@ -139,10 +95,6 @@ pub mod operations {
     pub const CACHE_LOOKUP: &str = "cache_lookup";
     pub const CACHE_WRITE: &str = "cache_write";
 }
-
-// ---------------------------------------------------------------------------
-// Pipeline stage values (for use with PIPELINE_STAGE)
-// ---------------------------------------------------------------------------
 
 pub mod stages {
     pub const EXTRACTION: &str = "extraction";
@@ -154,10 +106,6 @@ pub mod stages {
     pub const LANGUAGE_DETECTION: &str = "language_detection";
     pub const TOKEN_REDUCTION: &str = "token_reduction";
 }
-
-// ---------------------------------------------------------------------------
-// Metric names
-// ---------------------------------------------------------------------------
 
 pub mod metrics {
     /// Counter: total extractions (labels: mime_type, extractor, status).
@@ -213,7 +161,6 @@ mod tests {
 
     #[test]
     fn sanitize_filename_empty_path_returns_unknown() {
-        // An empty path has no file_name component.
         let path = Path::new("");
         assert_eq!(sanitize_filename(path), "unknown");
     }
@@ -223,7 +170,6 @@ mod tests {
     fn sanitize_filename_non_utf8_path() {
         use std::ffi::OsStr;
         use std::os::unix::ffi::OsStrExt;
-        // 0xFF is not valid UTF-8.
         let bad = OsStr::from_bytes(&[0xFF, 0xFE]);
         let path = Path::new(bad);
         assert_eq!(sanitize_filename(path), "unknown");

@@ -22,8 +22,7 @@ readonly class Table
         public string $markdown,
         public int $pageNumber,
         public ?BoundingBox $boundingBox = null,
-    ) {
-    }
+    ) {}
 
     /**
      * @param array<string, mixed> $data
@@ -46,11 +45,6 @@ readonly class Table
             $boundingBox = BoundingBox::fromArray($boundingBoxData);
         }
 
-        return new self(
-            cells: $cells,
-            markdown: $markdown,
-            pageNumber: $pageNumber,
-            boundingBox: $boundingBox,
-        );
+        return new self(cells: $cells, markdown: $markdown, pageNumber: $pageNumber, boundingBox: $boundingBox);
     }
 }

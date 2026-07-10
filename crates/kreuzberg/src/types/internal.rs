@@ -26,10 +26,6 @@ use super::ocr_elements::{OcrBoundingGeometry, OcrConfidence, OcrElementLevel, O
 use super::tables::Table;
 use crate::types::ExtractedImage;
 
-// ============================================================================
-// ID Type
-// ============================================================================
-
 /// Deterministic element identifier, generated via blake3 hashing.
 ///
 /// Format: `"ie-{12 hex chars}"` (48 bits from blake3, ~281 trillion address space).
@@ -91,10 +87,6 @@ impl AsRef<str> for InternalElementId {
         self.as_str()
     }
 }
-
-// ============================================================================
-// Internal Document
-// ============================================================================
 
 /// The internal flat document representation.
 ///
@@ -197,8 +189,6 @@ impl InternalDocument {
 
     /// Push an element and return its index.
     pub fn push_element(&mut self, element: InternalElement) -> u32 {
-        // Safety: element count is bounded by available memory; u32::MAX (~4 billion)
-        // elements would require hundreds of GB, so truncation cannot occur in practice.
         let idx = self.elements.len() as u32;
         self.elements.push(element);
         idx
@@ -211,8 +201,6 @@ impl InternalDocument {
 
     /// Push a table and return its index (for use in `ElementKind::Table`).
     pub fn push_table(&mut self, table: Table) -> u32 {
-        // Safety: table count is bounded by document size; overflow at u32::MAX is
-        // practically unreachable (would require ~4 billion tables).
         let idx = self.tables.len() as u32;
         self.tables.push(table);
         idx
@@ -220,8 +208,6 @@ impl InternalDocument {
 
     /// Push an image and return its index (for use in `ElementKind::Image`).
     pub fn push_image(&mut self, image: ExtractedImage) -> u32 {
-        // Safety: image count is bounded by document size; overflow at u32::MAX is
-        // practically unreachable (would require ~4 billion images).
         let idx = self.images.len() as u32;
         self.images.push(image);
         idx
@@ -247,10 +233,6 @@ impl InternalDocument {
             .join("\n")
     }
 }
-
-// ============================================================================
-// Internal Element
-// ============================================================================
 
 /// A single element in the internal flat document.
 ///
@@ -297,7 +279,6 @@ pub struct InternalElement {
     /// citation key `"smith2024"`, figure label `"fig:diagram"`.
     pub anchor: Option<String>,
 
-    // === OCR-specific fields (zero-cost when None) ===
     /// OCR bounding geometry (rectangle or quadrilateral).
     pub ocr_geometry: Option<OcrBoundingGeometry>,
 
@@ -373,17 +354,12 @@ impl InternalElement {
     }
 }
 
-// ============================================================================
-// Element Kind
-// ============================================================================
-
 /// Semantic role of an internal element.
 ///
 /// Superset of [`NodeContent`](super::document_structure::NodeContent) variants
 /// plus OCR and container markers.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ElementKind {
-    // --- Text-carrying ---
     /// Document title.
     Title,
     /// Section heading with level (1-6).
@@ -415,7 +391,6 @@ pub enum ElementKind {
     /// Structured metadata block (frontmatter, email headers).
     MetadataBlock,
 
-    // --- Container markers (optional, improve tree precision) ---
     /// Start of a list container.
     ListStart { ordered: bool },
     /// End of a list container.
@@ -429,7 +404,6 @@ pub enum ElementKind {
     /// End of a generic group/section.
     GroupEnd,
 
-    // --- Structural ---
     /// Table reference. `table_index` is an index into `InternalDocument::tables`.
     Table { table_index: u32 },
     /// Image reference. `image_index` is an index into `InternalDocument::images`.
@@ -437,7 +411,6 @@ pub enum ElementKind {
     /// Page break marker.
     PageBreak,
 
-    // --- OCR ---
     /// OCR-detected text at a given hierarchical level.
     OcrText { level: OcrElementLevel },
 }
@@ -495,10 +468,6 @@ impl ElementKind {
     }
 }
 
-// ============================================================================
-// Relationships
-// ============================================================================
-
 /// A relationship between two elements in the document.
 ///
 /// During extraction, targets may be unresolved keys (`RelationshipTarget::Key`).
@@ -524,10 +493,8 @@ pub enum RelationshipTarget {
     Key(String),
 }
 
-// Re-export RelationshipKind from the public API module where it is defined.
 pub use super::document_structure::RelationshipKind;
 
-// Compile-time assertions: these types must be Send + Sync for concurrent extraction.
 const _: () = {
     #[allow(dead_code)]
     fn assert_send_sync<T: Send + Sync>() {}
@@ -537,10 +504,6 @@ const _: () = {
         assert_send_sync::<InternalElement>();
     }
 };
-
-// ============================================================================
-// Tests
-// ============================================================================
 
 #[cfg(test)]
 mod tests {
@@ -564,8 +527,7 @@ mod tests {
     fn test_internal_element_id_format() {
         let id = InternalElementId::generate("title", "Hello", None, 0);
         assert!(id.as_str().starts_with("ie-"));
-        // 12 hex chars = 6 bytes
-        assert_eq!(id.as_str().len(), 3 + 12); // "ie-" + 12 hex
+        assert_eq!(id.as_str().len(), 3 + 12);
     }
 
     #[test]

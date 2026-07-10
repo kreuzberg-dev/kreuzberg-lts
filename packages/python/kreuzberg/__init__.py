@@ -193,9 +193,6 @@ if TYPE_CHECKING:
 
 __version__ = version("kreuzberg")
 
-# These types are defined in the .pyi stub for static type checking but are not
-# exported from the compiled Rust bindings at runtime. We define Python-level
-# versions here so they can be imported and used at runtime.
 if not TYPE_CHECKING:
     from enum import Enum
     from typing import TypedDict
@@ -372,7 +369,6 @@ def _ensure_ocr_backend_registered(
 
     backend_name = config.ocr.backend
 
-    # Native Rust backends — skip Python-side registration, handled by Rust core
     if backend_name in ("tesseract", "paddleocr", "paddle-ocr"):
         return
 

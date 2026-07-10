@@ -80,10 +80,6 @@ pub enum PdfDestinationViewSettings {
 
 impl PdfDestinationViewSettings {
     pub(crate) fn from_pdfium(destination: &PdfDestination) -> Result<PdfDestinationViewSettings, PdfiumError> {
-        // We use a combination of calls to FPDFDest_GetLocationInPage() and
-        // FPDFDest_GetView() to account for all supported view settings
-        // in a null-safe manner.
-
         let mut has_x_value = destination.bindings.FALSE();
 
         let mut has_y_value = destination.bindings.FALSE();
@@ -120,9 +116,6 @@ impl PdfDestinationViewSettings {
             };
 
             let zoom = if destination.bindings.is_true(has_zoom_value) {
-                // The PDF specification states that a zoom value of 0 has the same meaning
-                // as a null value.
-
                 if zoom_value != 0.0 { Some(zoom_value) } else { None }
             } else {
                 None
@@ -175,9 +168,6 @@ impl PdfDestinationViewSettings {
             },
             PDFDEST_VIEW_FITR => {
                 if p_num_params == 4 {
-                    // Rectangle values are defined in p_params[] in the order
-                    // left, bottom, right, top.
-
                     let left = p_params[0];
                     let bottom = p_params[1];
                     let right = p_params[2];
@@ -225,9 +215,6 @@ pub struct PdfDestination<'a> {
 }
 
 impl<'a> PdfDestination<'a> {
-    // TODO: AJRC - 18/2/23 - as the PdfDestination struct is fleshed out, the example at
-    // examples/links.rs should be expanded to demonstrate the new functionality.
-
     pub(crate) fn from_pdfium(
         document_handle: FPDF_DOCUMENT,
         destination_handle: FPDF_DEST,

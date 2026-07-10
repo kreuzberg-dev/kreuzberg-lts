@@ -13,12 +13,7 @@ members = [
     "e2e/rust",
     "packages/elixir/native/kreuzberg_rustler",
 ]
-exclude = [
-    "packages/r/src/rust",
-    "packages/ruby/ext/kreuzberg_rb/native",
-    "test_apps/elixir",
-    "test_apps/rust",
-]
+exclude = ["packages/r/src/rust", "packages/ruby/ext/kreuzberg_rb/native", "test_apps/elixir", "test_apps/rust"]
 default-members = ["crates/kreuzberg", "crates/kreuzberg-cli"]
 resolver = "2"
 
@@ -33,7 +28,7 @@ homepage = "https://kreuzberg.dev"
 
 [workspace.dependencies]
 ahash = { version = "0.8.12", features = ["serde"] }
-anyhow = "1.0"
+anyhow = "1.0.103"
 async-trait = "0.1.89"
 base64 = "0.22.1"
 blake3 = "1"
@@ -41,26 +36,26 @@ bytes = { version = "1", features = ["serde"] }
 cfb = "0.14"
 chrono = "0.4"
 clap = { version = "4.6", features = ["derive", "color", "suggestions"] }
-comrak = { version = "0.52", default-features = false }
+comrak = { version = "0.53", default-features = false }
 console_error_panic_hook = "0.1"
 criterion = { version = "0.8", features = ["html_reports"] }
 ctor = "1.0"
-dbase = "0.7"
+dbase = "0.8"
 futures = "0.3"
-getrandom = { version = "0.4.2", features = ["wasm_js"] }
+getrandom = { version = "0.4.3", features = ["wasm_js"] }
 hex = "0.4.3"
-html-to-markdown-rs = { version = "3.5.7", default-features = false }
+html-to-markdown-rs = { version = "3.8.3", default-features = false }
 image = { version = "0.25.10", default-features = false }
-itertools = "0.14"
+itertools = "0.15"
 js-sys = "0.3"
 kreuzberg = { path = "./crates/kreuzberg", version = "4.9.9", default-features = false }
 kreuzberg-ffi = { path = "./crates/kreuzberg-ffi", version = "4.9.9" }
 lazy_static = "1.5.0"
 libc = "0.2.186"
-liter-llm = { version = "1.3", default-features = false, features = ["native-http", "tracing"] }
+liter-llm = { version = "1.9", default-features = false, features = ["native-http", "tracing"] }
 log = "0.4"
-lzma-rust2 = { version = "0.16.4" }
-memmap2 = "0.9"
+lzma-rust2 = { version = "0.16.5" }
+memmap2 = "0.9.11"
 minijinja = "2"
 num_cpus = "1.17.0"
 once_cell = "1.21.4"
@@ -88,7 +83,7 @@ tokio = { version = "1.52.3", features = [
 ] }
 toml = "1.1.2"
 tracing = "0.1"
-tree-sitter-language-pack = { version = "1.8.1", default-features = false, features = ["serde"] }
+tree-sitter-language-pack = { version = "1.12.5", default-features = false, features = ["serde"] }
 wasm-bindgen = { version = "0.2", features = ["enable-interning"] }
 wasm-bindgen-futures = "0.4"
 web-sys = { version = "0.3", features = [

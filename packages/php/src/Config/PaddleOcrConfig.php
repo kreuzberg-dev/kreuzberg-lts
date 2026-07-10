@@ -115,8 +115,7 @@ readonly class PaddleOcrConfig
          * @default null
          */
         public ?int $recBatchNum = null,
-    ) {
-    }
+    ) {}
 
     /**
      * Create configuration from array data.
@@ -227,17 +226,20 @@ readonly class PaddleOcrConfig
      */
     public function toArray(): array
     {
-        return array_filter([
-            'language' => $this->language,
-            'cache_dir' => $this->cacheDir,
-            'use_angle_cls' => $this->useAngleCls,
-            'enable_table_detection' => $this->enableTableDetection,
-            'det_db_thresh' => $this->detDbThresh,
-            'det_db_box_thresh' => $this->detDbBoxThresh,
-            'det_db_unclip_ratio' => $this->detDbUnclipRatio,
-            'det_limit_side_len' => $this->detLimitSideLen,
-            'rec_batch_num' => $this->recBatchNum,
-        ], static fn ($value): bool => $value !== null);
+        return array_filter(
+            [
+                'language' => $this->language,
+                'cache_dir' => $this->cacheDir,
+                'use_angle_cls' => $this->useAngleCls,
+                'enable_table_detection' => $this->enableTableDetection,
+                'det_db_thresh' => $this->detDbThresh,
+                'det_db_box_thresh' => $this->detDbBoxThresh,
+                'det_db_unclip_ratio' => $this->detDbUnclipRatio,
+                'det_limit_side_len' => $this->detLimitSideLen,
+                'rec_batch_num' => $this->recBatchNum,
+            ],
+            static fn($value): bool => $value !== null,
+        );
     }
 
     /**

@@ -13,8 +13,7 @@ use crate::safe::catch_native_panic;
 use rustler::{Binary, Encoder, Env, NifResult, Term};
 use std::path::PathBuf;
 
-// Constants for validation
-const MAX_BINARY_SIZE: usize = 500 * 1024 * 1024; // 500MB
+const MAX_BINARY_SIZE: usize = 500 * 1024 * 1024;
 
 /// Batch extract text and data from multiple files with default configuration
 #[rustler::nif(schedule = "DirtyCpu")]

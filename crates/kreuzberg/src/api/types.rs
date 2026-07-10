@@ -413,10 +413,6 @@ pub struct StructuredExtractionResponse {
     pub mime_type: String,
 }
 
-// ---------------------------------------------------------------------------
-// OpenWebUI compatibility types
-// ---------------------------------------------------------------------------
-
 /// OpenWebUI "External" engine response format.
 ///
 /// Returned by `PUT /process` for the OpenWebUI external document loader.

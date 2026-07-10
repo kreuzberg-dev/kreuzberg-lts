@@ -145,8 +145,7 @@ readonly class ChunkingConfig
          * @default false
          */
         public bool $prependHeadingContext = false,
-    ) {
-    }
+    ) {}
 
     /**
      * Create configuration from array data.
@@ -280,29 +279,34 @@ readonly class ChunkingConfig
      */
     public function toArray(): array
     {
-        // Use toRustArray() for embedding to get Rust-compatible format
         $embedding = $this->embedding !== null ? $this->embedding->toRustArray() : null;
 
         $sizing = null;
         if ($this->sizingType !== 'characters') {
-            $sizing = array_filter([
-                'type' => $this->sizingType,
-                'model' => $this->sizingModel,
-                'cache_dir' => $this->sizingCacheDir,
-            ], static fn ($value): bool => $value !== null);
+            $sizing = array_filter(
+                [
+                    'type' => $this->sizingType,
+                    'model' => $this->sizingModel,
+                    'cache_dir' => $this->sizingCacheDir,
+                ],
+                static fn($value): bool => $value !== null,
+            );
         }
 
-        $result = array_filter([
-            'max_chars' => $this->maxChars,
-            'max_overlap' => $this->maxOverlap,
-            'respect_sentences' => $this->respectSentences,
-            'respect_paragraphs' => $this->respectParagraphs,
-            'embedding' => $embedding,
-            'chunker_type' => $this->chunkerType !== 'text' ? $this->chunkerType : null,
-            'topic_threshold' => $this->topicThreshold,
-            'sizing' => $sizing,
-            'prepend_heading_context' => $this->prependHeadingContext,
-        ], static fn ($value): bool => $value !== null);
+        $result = array_filter(
+            [
+                'max_chars' => $this->maxChars,
+                'max_overlap' => $this->maxOverlap,
+                'respect_sentences' => $this->respectSentences,
+                'respect_paragraphs' => $this->respectParagraphs,
+                'embedding' => $embedding,
+                'chunker_type' => $this->chunkerType !== 'text' ? $this->chunkerType : null,
+                'topic_threshold' => $this->topicThreshold,
+                'sizing' => $sizing,
+                'prepend_heading_context' => $this->prependHeadingContext,
+            ],
+            static fn($value): bool => $value !== null,
+        );
 
         return $result;
     }

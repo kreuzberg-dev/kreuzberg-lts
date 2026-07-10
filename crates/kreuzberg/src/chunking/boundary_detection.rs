@@ -42,7 +42,7 @@ pub fn detect_plain_text_boundaries(text: &str) -> Vec<DetectedBoundary> {
                 is_header: true,
             });
         }
-        byte_offset += line.len() + 1; // +1 for the '\n' delimiter
+        byte_offset += line.len() + 1;
     }
 
     boundaries
@@ -76,7 +76,6 @@ fn is_all_caps_header(line: &str) -> bool {
 /// (not indented), followed by a space or end of line. Must contain at
 /// least one dot.
 fn is_numbered_section(line: &str) -> bool {
-    // Must not be indented
     if line.starts_with(' ') || line.starts_with('\t') {
         return false;
     }
@@ -86,37 +85,30 @@ fn is_numbered_section(line: &str) -> bool {
         return false;
     }
 
-    // Find the numbering prefix: digits and dots
     let prefix_end = trimmed
         .find(|ch: char| !ch.is_ascii_digit() && ch != '.')
         .unwrap_or(trimmed.len());
 
     let prefix = &trimmed[..prefix_end];
 
-    // Must have at least one dot
     if !prefix.contains('.') {
         return false;
     }
 
-    // Must start with a digit
     if !prefix.starts_with(|ch: char| ch.is_ascii_digit()) {
         return false;
     }
 
-    // After the numbering prefix, must be followed by space + text.
-    // Bare prefixes like "1." or "1.2." alone are not section headers.
     if prefix_end >= trimmed.len() {
         return false;
     }
     if !trimmed[prefix_end..].starts_with(' ') {
         return false;
     }
-    // Must have non-whitespace text after the prefix + space.
     if trimmed[prefix_end..].trim().is_empty() {
         return false;
     }
 
-    // No consecutive dots (reject malformed patterns like "1..2").
     if prefix.contains("..") {
         return false;
     }
@@ -134,7 +126,6 @@ fn is_title_line(line: &str) -> bool {
         return false;
     }
 
-    // Must start with uppercase alphabetic char (not indented).
     let first = match line.chars().next() {
         Some(ch) => ch,
         None => return false,
@@ -145,24 +136,19 @@ fn is_title_line(line: &str) -> bool {
 
     let words: Vec<&str> = line.split_whitespace().collect();
 
-    // Must have at least 2 words and no more than 8 (titles are short).
-    // Single words like "Note", "I", "To" are not titles.
     if words.len() < 2 || words.len() > MAX_TITLE_WORD_COUNT {
         return false;
     }
 
-    // Most words must start with an uppercase letter (title-case).
     let upper_start_count = words
         .iter()
         .filter(|w| w.chars().next().is_some_and(|c| c.is_uppercase()))
         .count();
-    // Allow small connectors (of, and, the, etc.) — require title-case majority.
     let (num, den) = TITLE_UPPERCASE_RATIO;
     if upper_start_count * den < words.len() * num {
         return false;
     }
 
-    // Must not end with sentence punctuation.
     if line.ends_with(['.', '!', '?', ';', ':']) {
         return false;
     }
@@ -173,8 +159,6 @@ fn is_title_line(line: &str) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    // --- is_all_caps_header ---
 
     #[test]
     fn all_caps_introduction() {
@@ -212,8 +196,6 @@ mod tests {
         assert!(!is_all_caps_header("12345"));
     }
 
-    // --- is_numbered_section ---
-
     #[test]
     fn numbered_simple() {
         assert!(is_numbered_section("1. Introduction"));
@@ -246,23 +228,18 @@ mod tests {
 
     #[test]
     fn not_numbered_bare_single_level() {
-        // "1." alone with no text is NOT a section header.
         assert!(!is_numbered_section("1."));
     }
 
     #[test]
     fn not_numbered_bare_two_level() {
-        // "1.2." alone with no text is NOT a section header.
         assert!(!is_numbered_section("1.2."));
     }
 
     #[test]
     fn not_numbered_whitespace_only_after_prefix() {
-        // "1. " with only whitespace after is NOT a section header.
         assert!(!is_numbered_section("1.   "));
     }
-
-    // --- is_title_line ---
 
     #[test]
     fn title_executive_summary() {
@@ -271,7 +248,6 @@ mod tests {
 
     #[test]
     fn not_title_single_word() {
-        // Single words are not titles (require at least 2 words).
         assert!(!is_title_line("Background"));
         assert!(!is_title_line("Note"));
         assert!(!is_title_line("Introduction"));
@@ -305,7 +281,6 @@ mod tests {
 
     #[test]
     fn not_title_ordinary_prose() {
-        // Ordinary short sentences should NOT be detected as titles.
         assert!(!is_title_line("The cat sat on the mat"));
         assert!(!is_title_line("I agree with you"));
         assert!(!is_title_line("Call me later"));
@@ -321,8 +296,6 @@ mod tests {
     fn not_title_too_many_words() {
         assert!(!is_title_line("This Is A Title With Way Too Many Words In It"));
     }
-
-    // --- detect_plain_text_boundaries ---
 
     #[test]
     fn detect_empty_text() {
@@ -344,15 +317,9 @@ mod tests {
 
         assert_eq!(result.len(), 2);
 
-        // "INTRODUCTION" starts at offset 0
         assert_eq!(result[0].byte_offset, 0);
         assert!(result[0].is_header);
 
-        // "CONCLUSION" starts after "INTRODUCTION\nSome body text here.\n"
-        // = 12 + 1 + 21 + 1 = 35... let me compute:
-        // "INTRODUCTION" = 12 bytes, + 1 for \n = offset 13
-        // "Some body text here." = 20 bytes, + 1 for \n = offset 34 (13 + 21)
-        // Wait: "Some body text here." is 20 chars. 13 + 20 + 1 = 34.
         let expected_offset = "INTRODUCTION".len() + 1 + "Some body text here.".len() + 1;
         assert_eq!(result[1].byte_offset, expected_offset);
         assert!(result[1].is_header);
@@ -363,11 +330,9 @@ mod tests {
         let text = "CHAPTER ONE\n\n1.2 Background\n\nExecutive Summary\n\nThis is body text.";
         let result = detect_plain_text_boundaries(text);
 
-        // CHAPTER ONE (all caps), 1.2 Background (numbered), Executive Summary (title)
         assert_eq!(result.len(), 3);
         assert!(result.iter().all(|b| b.is_header));
 
-        // Verify sorted by offset
         for window in result.windows(2) {
             assert!(window[0].byte_offset < window[1].byte_offset);
         }
@@ -375,7 +340,6 @@ mod tests {
 
     #[test]
     fn not_title_starts_with_space() {
-        // is_title_line checks that first char is alphabetic — space is not
         assert!(!is_title_line(" Leading space"));
     }
 
@@ -394,29 +358,21 @@ mod tests {
         assert!(!is_title_line("Is this a title?"));
     }
 
-    // --- Mixed header types ---
-
     #[test]
     fn detect_all_caps_and_numbered_in_same_document() {
         let text = "OVERVIEW\n\nSome body text.\n\n1.1 Subsection\n\nMore body text.";
         let result = detect_plain_text_boundaries(text);
-        // OVERVIEW (all caps) + 1.1 Subsection (numbered) = 2 boundaries
         assert_eq!(result.len(), 2, "should detect both ALL CAPS and numbered headers");
     }
 
-    // --- Unicode / CJK text should NOT be detected as ALL CAPS ---
-
     #[test]
     fn unicode_cjk_not_all_caps() {
-        // Chinese characters are not uppercase Latin — should not match.
         assert!(!is_all_caps_header("Chinese characters are not uppercase Latin"));
-        assert!(!is_all_caps_header("日本語テスト")); // has no uppercase Latin alpha
+        assert!(!is_all_caps_header("日本語テスト"));
     }
 
     #[test]
     fn unicode_hangul_not_all_caps() {
-        // Korean Hangul: alphabetic but has no uppercase concept.
-        // is_uppercase() returns false for Hangul, so it should not match.
         assert!(!is_all_caps_header("한국어 테스트"));
     }
 
@@ -424,8 +380,6 @@ mod tests {
     fn unicode_arabic_not_all_caps() {
         assert!(!is_all_caps_header("مرحبا بالعالم"));
     }
-
-    // --- Lines with only numbers / special chars ---
 
     #[test]
     fn numbers_and_special_chars_not_headers() {
@@ -439,7 +393,6 @@ mod tests {
     fn detect_only_numbers_line_not_boundary() {
         let text = "12345\n\nSome body text.\n\n67890";
         let result = detect_plain_text_boundaries(text);
-        // None of these lines should be detected as headers.
         assert!(
             result.is_empty(),
             "pure number/special-char lines should not be boundaries"
@@ -448,10 +401,8 @@ mod tests {
 
     #[test]
     fn detect_all_three_header_types_in_one_document() {
-        // ALL CAPS + numbered + title line in a single document.
         let text = "ABSTRACT\n\nSome abstract text here.\n\n1.1 Methods\n\nMethodology description.\n\nFinal Remarks\n\nFinal remarks about the study.";
         let result = detect_plain_text_boundaries(text);
-        // ABSTRACT (all caps) + 1.1 Methods (numbered) + Final Remarks (title) = 3 boundaries
         assert_eq!(
             result.len(),
             3,
@@ -459,7 +410,6 @@ mod tests {
             result.len(),
             result
         );
-        // Verify offsets are strictly increasing.
         for window in result.windows(2) {
             assert!(
                 window[0].byte_offset < window[1].byte_offset,
@@ -470,21 +420,15 @@ mod tests {
 
     #[test]
     fn unicode_chinese_text_not_all_caps() {
-        // Chinese characters have no uppercase concept — must not be detected.
-        assert!(!is_all_caps_header("\u{4e2d}\u{6587}\u{6d4b}\u{8bd5}")); // 中文测试
-        assert!(!is_all_caps_header("\u{7b2c}\u{4e00}\u{7ae0}")); // 第一章
+        assert!(!is_all_caps_header("\u{4e2d}\u{6587}\u{6d4b}\u{8bd5}"));
+        assert!(!is_all_caps_header("\u{7b2c}\u{4e00}\u{7ae0}"));
     }
 
     #[test]
     fn detect_chinese_text_not_boundary() {
-        // Full document with Chinese lines — none should be detected as ALL CAPS headers.
         let text = "\u{7b2c}\u{4e00}\u{7ae0}\n\n\u{8fd9}\u{662f}\u{6b63}\u{6587}\u{5185}\u{5bb9}\u{3002}";
         let result = detect_plain_text_boundaries(text);
-        // Chinese lines should not trigger is_all_caps_header, but may trigger
-        // is_title_line if they are short and don't end in sentence punctuation.
-        // The key point: they must not trigger is_all_caps_header.
         for boundary in &result {
-            // Verify boundaries only come from title_line or numbered, not all_caps.
             let line_at_offset = text[boundary.byte_offset..].lines().next().unwrap_or("");
             assert!(
                 !is_all_caps_header(line_at_offset.trim()),

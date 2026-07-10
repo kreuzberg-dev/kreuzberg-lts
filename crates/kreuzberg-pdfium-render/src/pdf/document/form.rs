@@ -19,8 +19,6 @@ use crate::pdf::document::PdfDocument;
 /// The internal definition type of a [PdfForm] embedded in a [PdfDocument].
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub enum PdfFormType {
-    // The FORMTYPE_COUNT constant simply specifies the number of form types supported
-    // by Pdfium; we do not need to expose it.
     None = FORMTYPE_NONE as isize,
     Acrobat = FORMTYPE_ACRO_FORM as isize,
     XfaFull = FORMTYPE_XFA_FULL as isize,
@@ -41,7 +39,6 @@ impl PdfFormType {
 
     #[inline]
     #[allow(dead_code)]
-    // The as_pdfium() function is not currently used, but we expect it to be in future
     pub(crate) fn as_pdfium(&self) -> u32 {
         match self {
             PdfFormType::None => FORMTYPE_NONE,
@@ -77,7 +74,6 @@ pub struct PdfForm<'a> {
     document_handle: FPDF_DOCUMENT,
 
     #[allow(dead_code)]
-    // The form_fill_info field is not currently used, but we expect it to be in future
     form_fill_info: Pin<Box<FPDF_FORMFILLINFO>>,
     bindings: &'a dyn PdfiumLibraryBindings,
 }
@@ -87,21 +83,6 @@ impl<'a> PdfForm<'a> {
     /// document handle.
     #[inline]
     pub(crate) fn from_pdfium(document_handle: FPDF_DOCUMENT, bindings: &'a dyn PdfiumLibraryBindings) -> Option<Self> {
-        // Pdfium does not load form field data or widgets (and therefore will not
-        // render them) until a call has been made to the
-        // FPDFDOC_InitFormFillEnvironment() function. This function takes a large
-        // struct, FPDF_FORMFILLINFO, which Pdfium uses to store a variety of form
-        // configuration information - mostly callback functions that should be called
-        // when the user interacts with a form field widget. Since pdfium-render has
-        // no concept of interactivity, we can leave all these set to None.
-
-        // We allocate the FPDF_FORMFILLINFO struct on the heap and pin its pointer location
-        // so Rust will not move it around. Pdfium retains the pointer location
-        // when we call FPDFDOC_InitFormFillEnvironment() and expects the pointer
-        // location to still be valid when we later call FPDFDOC_ExitFormFillEnvironment()
-        // during drop(); if we don't pin the struct's location it may move, and the
-        // call to FPDFDOC_ExitFormFillEnvironment() will segfault.
-
         let mut form_fill_info = Box::pin(FPDF_FORMFILLINFO {
             version: 2,
             Release: None,
@@ -143,8 +124,6 @@ impl<'a> PdfForm<'a> {
         let form_handle = bindings.FPDFDOC_InitFormFillEnvironment(document_handle, form_fill_info.deref_mut());
 
         if !form_handle.is_null() {
-            // There is a form embedded in this document, and we retrieved a valid handle to it.
-
             let form = PdfForm {
                 form_handle,
                 document_handle,
@@ -162,8 +141,6 @@ impl<'a> PdfForm<'a> {
                 None
             }
         } else {
-            // There is no form embedded in this document.
-
             None
         }
     }

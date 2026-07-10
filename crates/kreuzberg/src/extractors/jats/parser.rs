@@ -66,7 +66,6 @@ pub(super) fn extract_citation_text(reader: &mut Reader<&[u8]>) -> Result<String
     let mut in_person_group = false;
     let mut in_name = false;
 
-    // Structured citation fields
     let mut authors: Vec<String> = Vec::new();
     let mut current_surname = String::new();
     let mut current_given = String::new();
@@ -77,10 +76,8 @@ pub(super) fn extract_citation_text(reader: &mut Reader<&[u8]>) -> Result<String
     let mut fpage = String::new();
     let mut lpage = String::new();
 
-    // Current tag name for text collection
     let mut current_tag = String::new();
 
-    // Fallback for mixed-citation
     let mut mixed_text = String::new();
 
     loop {
@@ -191,33 +188,27 @@ pub(super) fn extract_citation_text(reader: &mut Reader<&[u8]>) -> Result<String
         }
     }
 
-    // If we parsed a mixed-citation, return its text directly
     if !mixed_text.is_empty() {
         return Ok(mixed_text);
     }
 
-    // Build formatted citation from structured fields
     let mut citation = String::new();
 
-    // Authors
     if !authors.is_empty() {
         citation.push_str(&authors.join(", "));
         citation.push_str(". ");
     }
 
-    // Article title
     if !article_title.is_empty() {
         citation.push_str(&article_title);
         citation.push_str(". ");
     }
 
-    // Source (journal name)
     if !source.is_empty() {
         citation.push_str(&source);
         citation.push('.');
     }
 
-    // Year, volume, pages
     if !year.is_empty() {
         citation.push(' ');
         citation.push_str(&year);

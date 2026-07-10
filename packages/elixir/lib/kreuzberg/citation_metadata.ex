@@ -15,42 +15,42 @@ defmodule Kreuzberg.CitationMetadata do
   """
 
   @type t :: %__MODULE__{
-          citation_count: non_neg_integer(),
-          format: String.t() | nil,
-          authors: list(String.t()),
-          year_range: Kreuzberg.YearRange.t() | nil,
-          dois: list(String.t()),
-          keywords: list(String.t())
-        }
+  citation_count: non_neg_integer(),
+  format: String.t() | nil,
+  authors: list(String.t()),
+  year_range: Kreuzberg.YearRange.t() | nil,
+  dois: list(String.t()),
+  keywords: list(String.t())
+  }
 
   defstruct citation_count: 0,
-            format: nil,
-            authors: [],
-            year_range: nil,
-            dois: [],
-            keywords: []
+  format: nil,
+  authors: [],
+  year_range: nil,
+  dois: [],
+  keywords: []
 
   @spec from_map(map()) :: t()
   def from_map(data) when is_map(data) do
     %__MODULE__{
-      citation_count: data["citation_count"] || 0,
-      format: data["format"],
-      authors: data["authors"] || [],
-      year_range: normalize_year_range(data["year_range"]),
-      dois: data["dois"] || [],
-      keywords: data["keywords"] || []
+    citation_count: data["citation_count"] || 0,
+    format: data["format"],
+    authors: data["authors"] || [],
+    year_range: normalize_year_range(data["year_range"]),
+    dois: data["dois"] || [],
+    keywords: data["keywords"] || []
     }
   end
 
   @spec to_map(t()) :: map()
   def to_map(%__MODULE__{} = meta) do
     %{
-      "citation_count" => meta.citation_count,
-      "format" => meta.format,
-      "authors" => meta.authors,
-      "year_range" => serialize_year_range(meta.year_range),
-      "dois" => meta.dois,
-      "keywords" => meta.keywords
+    "citation_count" => meta.citation_count,
+    "format" => meta.format,
+    "authors" => meta.authors,
+    "year_range" => serialize_year_range(meta.year_range),
+    "dois" => meta.dois,
+    "keywords" => meta.keywords
     }
   end
 

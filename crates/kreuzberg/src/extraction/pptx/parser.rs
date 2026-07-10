@@ -58,7 +58,6 @@ fn parse_group(node: &Node) -> Result<Vec<SlideElement>> {
     match tag_name {
         "sp" => {
             let position = extract_position(node);
-            // parse_sp returns None for shapes without txBody (e.g., image placeholders)
             if let Some(content) = parse_sp(node)? {
                 match content {
                     ParsedContent::Text(text) => elements.push(SlideElement::Text(text, position)),
@@ -92,7 +91,6 @@ fn parse_group(node: &Node) -> Result<Vec<SlideElement>> {
 /// - `type="title"` (general title, idx 0 in most slide layouts)
 /// - `type="ctrTitle"` (centered title, used on title slides)
 fn is_title_placeholder(sp_node: &Node) -> bool {
-    // Path: p:sp / p:nvSpPr / p:nvPr / p:ph[@type]
     let nv_sp_pr = sp_node
         .children()
         .find(|n| n.tag_name().name() == "nvSpPr" && n.tag_name().namespace() == Some(PRESENTATIONML_NAMESPACE));
@@ -113,21 +111,16 @@ fn is_title_placeholder(sp_node: &Node) -> bool {
 }
 
 fn parse_sp(sp_node: &Node) -> Result<Option<ParsedContent>> {
-    // Some shapes like image placeholders (<p:ph type="pic"/>) don't have txBody.
-    // These should be skipped gracefully - they contain no text to extract.
-    // GitHub Issue #321 Bug 1
     let tx_body_node = match sp_node
         .children()
         .find(|n| n.tag_name().name() == "txBody" && n.tag_name().namespace() == Some(PRESENTATIONML_NAMESPACE))
     {
         Some(node) => node,
-        None => return Ok(None), // Skip shapes without txBody
+        None => return Ok(None),
     };
 
     let is_title = is_title_placeholder(sp_node);
 
-    // Title placeholders should not be treated as lists even if they have
-    // paragraph-level properties that look like bullet markers.
     let is_list = !is_title
         && tx_body_node.descendants().any(|n| {
             n.is_element()
@@ -238,7 +231,6 @@ fn parse_pic(pic_node: &Node) -> Result<ImageReference> {
         .or_else(|| blip_node.attribute("r:embed"))
         .ok_or_else(|| KreuzbergError::parsing("Image embed attribute not found".to_string()))?;
 
-    // Extract alt text from nvPicPr > cNvPr descr attribute
     let description = pic_node
         .descendants()
         .find(|n| {
@@ -247,7 +239,6 @@ fn parse_pic(pic_node: &Node) -> Result<ImageReference> {
                 && n.tag_name().namespace() == Some(PRESENTATIONML_NAMESPACE)
         })
         .or_else(|| {
-            // Also check for non-namespaced cNvPr (common in pic elements)
             pic_node.descendants().find(|n| {
                 n.is_element()
                     && n.tag_name().name() == "cNvPr"
@@ -307,8 +298,6 @@ fn parse_list_properties(p_node: &Node) -> Result<(u32, bool, bool)> {
                 && n.tag_name().name() == "buAutoNum"
         });
 
-        // Check for any bullet marker: buAutoNum, buChar, or lvl attribute
-        // (but NOT buNone which explicitly disables bullets)
         let has_bu_none = p_pr_node.children().any(|n| {
             n.is_element() && n.tag_name().namespace() == Some(DRAWINGML_NAMESPACE) && n.tag_name().name() == "buNone"
         });
@@ -375,7 +364,6 @@ fn parse_run(r_node: &Node) -> Result<Run> {
             formatting.lang = lang_attr.to_string();
         }
 
-        // Capture hyperlink reference: <a:hlinkClick r:id="rIdN"/>
         if let Some(hlink_node) = r_pr_node.children().find(|n| {
             n.is_element()
                 && n.tag_name().name() == "hlinkClick"
@@ -418,7 +406,6 @@ pub(super) fn extract_position(node: &Node) -> ElementPosition {
                 .find(|n| n.tag_name().name() == "off" && n.tag_name().namespace() == Some(DRAWINGML_NAMESPACE))
                 .and_then(|off| off.attribute("y")?.parse::<i64>().ok())?;
 
-            // Extract extent (cx, cy) from a:ext element
             let (cx, cy) = xfrm
                 .children()
                 .find(|n| n.tag_name().name() == "ext" && n.tag_name().namespace() == Some(DRAWINGML_NAMESPACE))
@@ -499,10 +486,6 @@ pub(super) fn parse_presentation_rels(rels_data: &[u8]) -> Result<Vec<String>> {
         }
     }
 
-    // Sort slide paths to ensure correct ordering regardless of XML order.
-    // PowerPoint doesn't guarantee relationship order in the rels file.
-    // GitHub Issue #329: Without sorting, slides can be processed in wrong order,
-    // causing images to have incorrect page numbers.
     slide_paths.sort_by(|a, b| {
         fn slide_num(s: &str) -> u32 {
             s.rsplit('/')

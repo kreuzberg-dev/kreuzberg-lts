@@ -121,10 +121,10 @@ defmodule Kreuzberg.AsyncAPI do
       {:ok, result} = Task.await(task)
   """
   @spec extract_async(
-          binary(),
-          String.t(),
-          ExtractionConfig.t() | map() | keyword() | nil
-        ) :: Task.t({:ok, ExtractionResult.t()} | {:error, String.t()})
+  binary(),
+  String.t(),
+  ExtractionConfig.t() | map() | keyword() | nil
+  ) :: Task.t({:ok, ExtractionResult.t()} | {:error, String.t()})
   def extract_async(input, mime_type, config \\ nil) do
     Task.async(fn ->
       Kreuzberg.extract(input, mime_type, config)
@@ -175,10 +175,10 @@ defmodule Kreuzberg.AsyncAPI do
       results = Task.await_many(tasks)
   """
   @spec extract_file_async(
-          String.t() | Path.t(),
-          String.t() | nil,
-          ExtractionConfig.t() | map() | keyword() | nil
-        ) :: Task.t({:ok, ExtractionResult.t()} | {:error, String.t()})
+  String.t() | Path.t(),
+  String.t() | nil,
+  ExtractionConfig.t() | map() | keyword() | nil
+  ) :: Task.t({:ok, ExtractionResult.t()} | {:error, String.t()})
   def extract_file_async(path, mime_type \\ nil, config \\ nil) do
     Task.async(fn ->
       Kreuzberg.extract_file(path, mime_type, config)
@@ -228,10 +228,10 @@ defmodule Kreuzberg.AsyncAPI do
       {:ok, results} = Task.await(task)
   """
   @spec batch_extract_files_async(
-          [String.t() | Path.t()],
-          String.t() | nil,
-          ExtractionConfig.t() | map() | keyword() | nil
-        ) :: Task.t({:ok, [ExtractionResult.t()]} | {:error, String.t()})
+  [String.t() | Path.t()],
+  String.t() | nil,
+  ExtractionConfig.t() | map() | keyword() | nil
+  ) :: Task.t({:ok, [ExtractionResult.t()]} | {:error, String.t()})
   def batch_extract_files_async(paths, mime_type \\ nil, config \\ nil) do
     Task.async(fn ->
       Kreuzberg.BatchAPI.batch_extract_files(paths, mime_type, config)
@@ -283,10 +283,10 @@ defmodule Kreuzberg.AsyncAPI do
       {:ok, results} = Task.await(task)
   """
   @spec batch_extract_bytes_async(
-          [binary()],
-          String.t() | [String.t()],
-          ExtractionConfig.t() | map() | keyword() | nil
-        ) :: Task.t({:ok, [ExtractionResult.t()]} | {:error, String.t()})
+  [binary()],
+  String.t() | [String.t()],
+  ExtractionConfig.t() | map() | keyword() | nil
+  ) :: Task.t({:ok, [ExtractionResult.t()]} | {:error, String.t()})
   def batch_extract_bytes_async(data_list, mime_types, config \\ nil) do
     Task.async(fn ->
       Kreuzberg.BatchAPI.batch_extract_bytes(data_list, mime_types, config)

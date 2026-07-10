@@ -18,10 +18,10 @@ import java.util.Map;
 @SuppressWarnings("PMD.AvoidCatchingThrowable")
 public final class ErrorUtils {
 
-	private ErrorUtils() {
-	}
+    private ErrorUtils() {
+    }
 
-	/**
+    /**
 	 * Classify an error message and return the corresponding error code.
 	 *
 	 * <p>
@@ -51,23 +51,23 @@ public final class ErrorUtils {
 	 *             if FFI call fails
 	 * @since 4.0.0
 	 */
-	public static int classifyError(String message) throws KreuzbergException {
-		if (message == null) {
-			throw new IllegalArgumentException("message must not be null");
-		}
+    public static int classifyError(String message) throws KreuzbergException {
+        if (message == null) {
+            throw new IllegalArgumentException("message must not be null");
+        }
 
-		try (Arena arena = Arena.ofConfined()) {
-			MemorySegment messageSeg = KreuzbergFFI.allocateCString(arena, message);
+        try (Arena arena = Arena.ofConfined()) {
+            MemorySegment messageSeg = KreuzbergFFI.allocateCString(arena, message);
 
-			try {
-				return (int) KreuzbergFFI.KREUZBERG_CLASSIFY_ERROR.invoke(messageSeg);
-			} catch (Throwable e) {
-				throw new KreuzbergException("Failed to classify error", e);
-			}
-		}
-	}
+            try {
+                return (int) KreuzbergFFI.KREUZBERG_CLASSIFY_ERROR.invoke(messageSeg);
+            } catch (Throwable e) {
+                throw new KreuzbergException("Failed to classify error", e);
+            }
+        }
+    }
 
-	/**
+    /**
 	 * Get the human-readable name of an error code.
 	 *
 	 * <p>
@@ -81,21 +81,21 @@ public final class ErrorUtils {
 	 *             if FFI call fails
 	 * @since 4.0.0
 	 */
-	public static String getErrorCodeName(int code) throws KreuzbergException {
-		try {
-			MemorySegment namePtr = (MemorySegment) KreuzbergFFI.KREUZBERG_ERROR_CODE_NAME.invoke((long) code);
+    public static String getErrorCodeName(int code) throws KreuzbergException {
+        try {
+            MemorySegment namePtr = (MemorySegment) KreuzbergFFI.KREUZBERG_ERROR_CODE_NAME.invoke((long) code);
 
-			if (namePtr == null || namePtr.address() == 0) {
-				return "unknown";
-			}
+            if (namePtr == null || namePtr.address() == 0) {
+                return "unknown";
+            }
 
-			return KreuzbergFFI.readCString(namePtr);
-		} catch (Throwable e) {
-			throw new KreuzbergException("Failed to get error code name for code: " + code, e);
-		}
-	}
+            return KreuzbergFFI.readCString(namePtr);
+        } catch (Throwable e) {
+            throw new KreuzbergException("Failed to get error code name for code: " + code, e);
+        }
+    }
 
-	/**
+    /**
 	 * Get the human-readable description of an error code.
 	 *
 	 * <p>
@@ -108,21 +108,21 @@ public final class ErrorUtils {
 	 *             if FFI call fails
 	 * @since 4.0.0
 	 */
-	public static String getErrorCodeDescription(int code) throws KreuzbergException {
-		try {
-			MemorySegment descPtr = (MemorySegment) KreuzbergFFI.KREUZBERG_ERROR_CODE_DESCRIPTION.invoke((long) code);
+    public static String getErrorCodeDescription(int code) throws KreuzbergException {
+        try {
+            MemorySegment descPtr = (MemorySegment) KreuzbergFFI.KREUZBERG_ERROR_CODE_DESCRIPTION.invoke((long) code);
 
-			if (descPtr == null || descPtr.address() == 0) {
-				return "Unknown error";
-			}
+            if (descPtr == null || descPtr.address() == 0) {
+                return "Unknown error";
+            }
 
-			return KreuzbergFFI.readCString(descPtr);
-		} catch (Throwable e) {
-			throw new KreuzbergException("Failed to get error code description for code: " + code, e);
-		}
-	}
+            return KreuzbergFFI.readCString(descPtr);
+        } catch (Throwable e) {
+            throw new KreuzbergException("Failed to get error code description for code: " + code, e);
+        }
+    }
 
-	/**
+    /**
 	 * Get structured error details from the FFI layer.
 	 *
 	 * <p>
@@ -144,33 +144,32 @@ public final class ErrorUtils {
 	 *             if FFI call fails
 	 * @since 4.0.0
 	 */
-	public static Map<String, Object> getErrorDetails() throws KreuzbergException {
-		Map<String, Object> result = new HashMap<>();
+    public static Map<String, Object> getErrorDetails() throws KreuzbergException {
+        Map<String, Object> result = new HashMap<>();
 
-		try {
-			MemorySegment detailsPtr = (MemorySegment) KreuzbergFFI.KREUZBERG_GET_ERROR_DETAILS.invoke();
+        try {
+            MemorySegment detailsPtr = (MemorySegment) KreuzbergFFI.KREUZBERG_GET_ERROR_DETAILS.invoke();
 
-			if (detailsPtr == null || detailsPtr.address() == 0) {
-				return result;
-			}
+            if (detailsPtr == null || detailsPtr.address() == 0) {
+                return result;
+            }
 
-			try {
-				String errorMsg = KreuzbergFFI.readCString(detailsPtr);
-				if (errorMsg != null) {
-					result.put("message", errorMsg);
-				}
-			} finally {
-				// Free the heap-allocated CErrorDetails struct and its string fields
-				KreuzbergFFI.KREUZBERG_FREE_ERROR_DETAILS.invoke(detailsPtr);
-			}
+            try {
+                String errorMsg = KreuzbergFFI.readCString(detailsPtr);
+                if (errorMsg != null) {
+                    result.put("message", errorMsg);
+                }
+            } finally {
+                KreuzbergFFI.KREUZBERG_FREE_ERROR_DETAILS.invoke(detailsPtr);
+            }
 
-			return result;
-		} catch (Throwable e) {
-			throw new KreuzbergException("Failed to get error details", e);
-		}
-	}
+            return result;
+        } catch (Throwable e) {
+            throw new KreuzbergException("Failed to get error details", e);
+        }
+    }
 
-	/**
+    /**
 	 * Map error code integer to ErrorCode enum.
 	 *
 	 * @param code
@@ -178,7 +177,7 @@ public final class ErrorUtils {
 	 * @return the ErrorCode enum value
 	 * @since 4.0.0
 	 */
-	public static ErrorCode mapErrorCode(int code) {
-		return ErrorCode.fromCode(code);
-	}
+    public static ErrorCode mapErrorCode(int code) {
+        return ErrorCode.fromCode(code);
+    }
 }

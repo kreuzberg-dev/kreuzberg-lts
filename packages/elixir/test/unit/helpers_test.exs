@@ -35,7 +35,7 @@ defmodule KreuzbergTest.Unit.HelpersTest do
 
     test "handles nested maps" do
       input = %{
-        user: %{name: "John", details: %{age: 30}}
+      user: %{name: "John", details: %{age: 30}}
       }
 
       result = Helpers.normalize_map_keys(input)
@@ -45,15 +45,15 @@ defmodule KreuzbergTest.Unit.HelpersTest do
 
     test "handles deeply nested structures (3+ levels)" do
       input = %{
-        level1: %{
-          level2: %{
-            level3: %{
-              level4: %{
-                value: "deep"
-              }
-            }
-          }
-        }
+      level1: %{
+      level2: %{
+      level3: %{
+      level4: %{
+      value: "deep"
+      }
+      }
+      }
+      }
       }
 
       result = Helpers.normalize_map_keys(input)
@@ -88,7 +88,6 @@ defmodule KreuzbergTest.Unit.HelpersTest do
       input = [%{a: 1}, %{b: 2}]
       result = Helpers.normalize_map_keys(input)
 
-      # normalize_map_keys on non-maps just returns the value
       assert result == [%{a: 1}, %{b: 2}]
     end
   end
@@ -205,13 +204,13 @@ defmodule KreuzbergTest.Unit.HelpersTest do
 
     test "handles deeply nested map configuration" do
       config = %{
-        "extraction" => %{
-          "images" => %{
-            "ocr" => %{
-              "languages" => ["en", "de"]
-            }
-          }
-        }
+      "extraction" => %{
+      "images" => %{
+      "ocr" => %{
+      "languages" => ["en", "de"]
+      }
+      }
+      }
       }
 
       result = Helpers.validate_config(config)
@@ -230,8 +229,8 @@ defmodule KreuzbergTest.Unit.HelpersTest do
   describe "into_result/1 - map to ExtractionResult conversion" do
     test "converts simple native response to ExtractionResult" do
       native_response = %{
-        "content" => "extracted text",
-        "mime_type" => "text/plain"
+      "content" => "extracted text",
+      "mime_type" => "text/plain"
       }
 
       {:ok, result} = Helpers.into_result(native_response)
@@ -244,17 +243,17 @@ defmodule KreuzbergTest.Unit.HelpersTest do
 
     test "converts response with all fields" do
       native_response = %{
-        "content" => "text",
-        "mime_type" => "application/pdf",
-        "metadata" => %{
-          "title" => "Test",
-          "pages" => %{"total_count" => 10, "unit_type" => "page"}
-        },
-        "tables" => [%{"cells" => [["A", "B"]]}],
-        "detected_languages" => ["en"],
-        "chunks" => [%{"text" => "chunk"}],
-        "images" => [%{"path" => "img.png"}],
-        "pages" => [%{"number" => 1}]
+      "content" => "text",
+      "mime_type" => "application/pdf",
+      "metadata" => %{
+      "title" => "Test",
+      "pages" => %{"total_count" => 10, "unit_type" => "page"}
+      },
+      "tables" => [%{"cells" => [["A", "B"]]}],
+      "detected_languages" => ["en"],
+      "chunks" => [%{"text" => "chunk"}],
+      "images" => [%{"path" => "img.png"}],
+      "pages" => [%{"number" => 1}]
       }
 
       {:ok, result} = Helpers.into_result(native_response)
@@ -270,7 +269,7 @@ defmodule KreuzbergTest.Unit.HelpersTest do
 
     test "raises error when content is missing" do
       native_response = %{
-        "mime_type" => "text/plain"
+      "mime_type" => "text/plain"
       }
 
       assert {:error, reason} = Helpers.into_result(native_response)
@@ -279,7 +278,7 @@ defmodule KreuzbergTest.Unit.HelpersTest do
 
     test "raises error when mime_type is missing" do
       native_response = %{
-        "content" => "text"
+      "content" => "text"
       }
 
       assert {:error, reason} = Helpers.into_result(native_response)
@@ -288,8 +287,8 @@ defmodule KreuzbergTest.Unit.HelpersTest do
 
     test "handles atom keys in native response" do
       native_response = %{
-        content: "text",
-        mime_type: "text/plain"
+      content: "text",
+      mime_type: "text/plain"
       }
 
       {:ok, result} = Helpers.into_result(native_response)
@@ -300,9 +299,9 @@ defmodule KreuzbergTest.Unit.HelpersTest do
 
     test "handles mixed atom and string keys" do
       native_response = %{
-        "content" => "text",
-        "mime_type" => "text/plain",
-        "metadata" => %{authors: ["John"]}
+      "content" => "text",
+      "mime_type" => "text/plain",
+      "metadata" => %{authors: ["John"]}
       }
 
       {:ok, result} = Helpers.into_result(native_response)
@@ -314,8 +313,8 @@ defmodule KreuzbergTest.Unit.HelpersTest do
 
     test "defaults optional fields to nil or empty" do
       native_response = %{
-        "content" => "text",
-        "mime_type" => "text/plain"
+      "content" => "text",
+      "mime_type" => "text/plain"
       }
 
       {:ok, result} = Helpers.into_result(native_response)
@@ -330,10 +329,10 @@ defmodule KreuzbergTest.Unit.HelpersTest do
 
     test "handles nil values for optional fields" do
       native_response = %{
-        "content" => "text",
-        "mime_type" => "text/plain",
-        "detected_languages" => nil,
-        "chunks" => nil
+      "content" => "text",
+      "mime_type" => "text/plain",
+      "detected_languages" => nil,
+      "chunks" => nil
       }
 
       {:ok, result} = Helpers.into_result(native_response)
@@ -344,9 +343,9 @@ defmodule KreuzbergTest.Unit.HelpersTest do
 
     test "handles empty metadata map" do
       native_response = %{
-        "content" => "text",
-        "mime_type" => "text/plain",
-        "metadata" => %{}
+      "content" => "text",
+      "mime_type" => "text/plain",
+      "metadata" => %{}
       }
 
       {:ok, result} = Helpers.into_result(native_response)
@@ -356,12 +355,12 @@ defmodule KreuzbergTest.Unit.HelpersTest do
 
     test "handles nested maps in metadata" do
       native_response = %{
-        "content" => "text",
-        "mime_type" => "text/plain",
-        "metadata" => %{
-          "title" => "Test",
-          "authors" => ["John Doe"]
-        }
+      "content" => "text",
+      "mime_type" => "text/plain",
+      "metadata" => %{
+      "title" => "Test",
+      "authors" => ["John Doe"]
+      }
       }
 
       {:ok, result} = Helpers.into_result(native_response)
@@ -372,17 +371,17 @@ defmodule KreuzbergTest.Unit.HelpersTest do
 
     test "preserves complex nested structures" do
       native_response = %{
-        "content" => "text",
-        "mime_type" => "text/plain",
-        "tables" => [
-          %{
-            "cells" => [
-              ["A", "B"],
-              ["1", "2"],
-              [%{"nested" => "data"}, [1, 2, 3]]
-            ]
-          }
-        ]
+      "content" => "text",
+      "mime_type" => "text/plain",
+      "tables" => [
+      %{
+      "cells" => [
+      ["A", "B"],
+      ["1", "2"],
+      [%{"nested" => "data"}, [1, 2, 3]]
+      ]
+      }
+      ]
       }
 
       {:ok, result} = Helpers.into_result(native_response)
@@ -410,10 +409,10 @@ defmodule KreuzbergTest.Unit.HelpersTest do
 
     test "handles stats with various value types" do
       stats = %{
-        "count" => 10,
-        "size_mb" => 256.75,
-        "percentage" => 85.5,
-        "enabled" => true
+      "count" => 10,
+      "size_mb" => 256.75,
+      "percentage" => 85.5,
+      "enabled" => true
       }
 
       result = Helpers.normalize_stats_keys(stats)
@@ -448,25 +447,23 @@ defmodule KreuzbergTest.Unit.HelpersTest do
     end
 
     test "handles very deeply nested structures" do
-      # Create a 10-level deep structure
       input =
-        Enum.reduce(10..1//-1, %{level10: "value"}, fn i, acc ->
-          key = String.to_atom("level#{i}")
-          %{key => acc}
-        end)
+      Enum.reduce(10..1//-1, %{level10: "value"}, fn i, acc ->
+        key = String.to_atom("level#{i}")
+        %{key => acc}
+      end)
 
       result = Helpers.normalize_map_keys(input)
 
-      # Verify it normalized - the structure is deeply nested
       assert is_map(result)
       assert Map.has_key?(result, "level1")
     end
 
     test "handles large maps with many keys" do
       input =
-        Enum.reduce(1..1000, %{}, fn i, acc ->
-          Map.put(acc, String.to_atom("key#{i}"), "value#{i}")
-        end)
+      Enum.reduce(1..1000, %{}, fn i, acc ->
+        Map.put(acc, String.to_atom("key#{i}"), "value#{i}")
+      end)
 
       result = Helpers.normalize_map_keys(input)
 
@@ -480,15 +477,13 @@ defmodule KreuzbergTest.Unit.HelpersTest do
   describe "integration scenarios" do
     test "full pipeline: native response -> normalized -> into_result" do
       native_response = %{
-        content: "extracted text",
-        mime_type: "application/pdf",
-        metadata: %{title: "Test"}
+      content: "extracted text",
+      mime_type: "application/pdf",
+      metadata: %{title: "Test"}
       }
 
-      # Normalize the response
       normalized = Helpers.normalize_map_keys(native_response)
 
-      # Convert to result
       {:ok, result} = Helpers.into_result(normalized)
 
       assert result.content == "extracted text"
@@ -498,17 +493,17 @@ defmodule KreuzbergTest.Unit.HelpersTest do
 
     test "handles complex extraction response with all field types" do
       native_response = %{
-        "content" => "document text",
-        "mime_type" => "application/pdf",
-        "metadata" => %{
-          "authors" => ["John"],
-          "title" => "Document"
-        },
-        "tables" => [%{"cells" => [["Col1", "Col2"]]}],
-        "detected_languages" => ["en", "de"],
-        "chunks" => [%{"text" => "chunk1"}],
-        "images" => [%{"path" => "img.png"}],
-        "pages" => [%{"number" => 1}]
+      "content" => "document text",
+      "mime_type" => "application/pdf",
+      "metadata" => %{
+      "authors" => ["John"],
+      "title" => "Document"
+      },
+      "tables" => [%{"cells" => [["Col1", "Col2"]]}],
+      "detected_languages" => ["en", "de"],
+      "chunks" => [%{"text" => "chunk1"}],
+      "images" => [%{"path" => "img.png"}],
+      "pages" => [%{"number" => 1}]
       }
 
       {:ok, result} = Helpers.into_result(native_response)

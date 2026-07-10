@@ -10,14 +10,11 @@ export PKG_CONFIG_PATH="$root/crates/kreuzberg-ffi:${PKG_CONFIG_PATH:-}"
 export DYLD_LIBRARY_PATH="$root/target/debug:${DYLD_LIBRARY_PATH:-}"
 export LD_LIBRARY_PATH="$root/target/debug:${LD_LIBRARY_PATH:-}"
 
-# Go module directories in go.work
 workspace_dirs=(
   v4
   e2e/go
 )
 
-# Standalone modules NOT in go.work (duplicate module paths, need GOWORK=off)
-# Note: these have broken replace directives when run locally; they work in CI
 standalone_dirs=()
 
 failed=0

@@ -39,7 +39,6 @@ pub fn extract_structured_command(args: ExtractStructuredArgs) -> Result<()> {
         config_path,
         format,
     } = args;
-    // 1. Read and parse the JSON schema file
     let schema_str = std::fs::read_to_string(&schema_path).with_context(|| {
         format!(
             "Failed to read JSON schema file '{}'. Ensure the file exists and is readable.",
@@ -53,7 +52,6 @@ pub fn extract_structured_command(args: ExtractStructuredArgs) -> Result<()> {
         )
     })?;
 
-    // 2. Build ExtractionConfig with structured_extraction
     let mut config = super::load_config(config_path)?;
 
     let llm_config = LlmConfig {
@@ -75,7 +73,6 @@ pub fn extract_structured_command(args: ExtractStructuredArgs) -> Result<()> {
         llm: llm_config,
     });
 
-    // 3. Call kreuzberg::extract_file_sync()
     let path_str = path.to_string_lossy().to_string();
     let result = extract_file_sync(&path_str, None, &config).with_context(|| {
         format!(
@@ -84,7 +81,6 @@ pub fn extract_structured_command(args: ExtractStructuredArgs) -> Result<()> {
         )
     })?;
 
-    // 4. Output result.structured_output (or error if None)
     let structured = result.structured_output.with_context(|| {
         "Structured extraction completed but returned no structured output. \
          This may indicate the LLM failed to produce valid structured data matching the schema."
@@ -104,7 +100,6 @@ pub fn extract_structured_command(args: ExtractStructuredArgs) -> Result<()> {
             );
         }
         WireFormat::Text => {
-            // For text mode, pretty-print the JSON value
             println!(
                 "{}",
                 serde_json::to_string_pretty(&structured).context("Failed to serialize structured output to text")?

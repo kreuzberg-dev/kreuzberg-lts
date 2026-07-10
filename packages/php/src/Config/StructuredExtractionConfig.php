@@ -47,8 +47,7 @@ readonly class StructuredExtractionConfig
         public ?string $schemaDescription = null,
         public bool $strict = false,
         public ?string $prompt = null,
-    ) {
-    }
+    ) {}
 
     /**
      * Create configuration from array data.

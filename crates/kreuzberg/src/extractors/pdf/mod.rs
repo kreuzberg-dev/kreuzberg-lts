@@ -19,7 +19,6 @@ use std::path::Path;
 #[cfg(feature = "pdf")]
 use crate::pdf::error::PdfError;
 
-// Re-export for backward compatibility
 #[cfg(feature = "ocr")]
 pub use ocr::{NativeTextStats, OcrFallbackDecision, evaluate_native_text_for_ocr, evaluate_per_page_ocr};
 
@@ -49,7 +48,6 @@ struct LayoutDetectionBundle {
 #[cfg(all(feature = "pdf", feature = "layout-detection"))]
 fn run_layout_detection(content: &[u8], config: &ExtractionConfig) -> Option<LayoutDetectionBundle> {
     let base = config.layout.as_ref()?;
-    // Merge top-level acceleration into layout config if not already set.
     let mut owned;
     let layout_config = if base.acceleration.is_none() && config.acceleration.is_some() {
         owned = base.clone();
@@ -58,9 +56,6 @@ fn run_layout_detection(content: &[u8], config: &ExtractionConfig) -> Option<Lay
     } else {
         base
     };
-
-    // We no longer pre-render all images here because `detect_layout_for_document`
-    // now uses batched rendering under the hood to prevent OOMs.
 
     let mut engine = match crate::layout::take_or_create_engine(layout_config) {
         Ok(e) => e,
@@ -88,7 +83,6 @@ fn run_layout_detection(content: &[u8], config: &ExtractionConfig) -> Option<Lay
         }
     };
 
-    // Return engine to cache for reuse by subsequent extractions
     crate::layout::return_engine(engine);
     result
 }
@@ -120,14 +114,6 @@ fn run_layout_detection_ocr_pass(
         &mut engine,
         batch_size,
         |batch_res, _timings, _batch_imgs| {
-            // Reconstruct DetectionResult (pixel-space bbox) from PageLayoutResult (PDF-space bbox)
-            // We know:
-            // pixel_x * (page_width / img_width) = pdf_left
-            // page_height - pixel_y * (page_height / img_height) = pdf_top
-            // Solving for pixel_x and pixel_y:
-            // pixel_x = pdf_left * (img_width / page_width)
-            // pixel_y = (page_height - pdf_top) * (img_height / page_height)
-
             for res in batch_res {
                 let img_w = res.render_width_px as f32;
                 let img_h = res.render_height_px as f32;
@@ -195,15 +181,9 @@ async fn run_ocr_with_layout(
     let default_ocr_config = crate::core::config::OcrConfig::default();
     let ocr_config = config.ocr.as_ref().unwrap_or(&default_ocr_config);
 
-    // Run layout detection up front so it is available to both the pipeline
-    // path and the direct extract_with_ocr path below.  Without this, the
-    // pipeline branch (active whenever `paddle-ocr` is compiled in via the
-    // `full` feature) would silently skip layout detection entirely and always
-    // return empty tables.
     #[cfg(feature = "layout-detection")]
     let layout_detections = run_layout_detection_ocr_pass(content, config);
 
-    // Check for pipeline configuration
     if let Some(pipeline) = ocr_config.effective_pipeline() {
         let (text, _ocr_tables, ocr_elements, pipeline_doc, llm_usage) = ocr::run_ocr_pipeline(
             Some(content),
@@ -220,7 +200,7 @@ async fn run_ocr_with_layout(
 
     let (text, _mean_conf, ocr_tables, ocr_elements, ocr_doc, llm_usage) = extract_with_ocr(
         Some(content),
-        None, // Lazy stream 300 DPI pages in extract_with_ocr's batch loop
+        None,
         #[cfg(feature = "layout-detection")]
         layout_detections.as_deref(),
         config,
@@ -299,10 +279,8 @@ impl PdfExtractor {
         path: Option<&std::path::Path>,
     ) -> Result<InternalDocument> {
         tracing::debug!(format = "pdf", size_bytes = content.len(), "extraction starting");
-        let _ = &path; // used only when `ocr` feature is enabled
+        let _ = &path;
 
-        // Strip /Rotate from page dicts to work around pdfium text extraction bug
-        // where FPDFText_CountChars returns 0 for 90°/270° rotated pages.
         #[cfg(feature = "pdf")]
         let derotated = crate::pdf::text::strip_page_rotation(content);
         #[cfg(feature = "pdf")]
@@ -347,9 +325,6 @@ impl PdfExtractor {
             }
             #[cfg(all(not(target_arch = "wasm32"), feature = "tokio-runtime"))]
             {
-                // Run layout detection on the derotated bytes (shared by all tokio paths).
-                // Layout hints are plain data (Vec/f32/enum), so they are Send and can
-                // be moved into spawn_blocking if needed.
                 #[cfg(feature = "layout-detection")]
                 let layout_bundle = run_layout_detection(content, config);
                 #[cfg(feature = "layout-detection")]
@@ -361,7 +336,6 @@ impl PdfExtractor {
                 let layout_hints: Option<Vec<Vec<crate::pdf::structure::types::LayoutHint>>> = None;
 
                 if crate::core::batch_mode::is_batch_mode() {
-                    // Check cancellation before dispatching to the blocking thread pool.
                     if config.cancel_token.as_ref().map(|t| t.is_cancelled()).unwrap_or(false) {
                         return Err(crate::error::KreuzbergError::Cancelled);
                     }
@@ -403,7 +377,6 @@ impl PdfExtractor {
                         )
                         .map_err(|e| PdfError::ExtractionFailed(e.to_string()))?;
 
-                        // Populate layout_regions on pages from layout detection results.
                         #[cfg(feature = "layout-detection")]
                         if let Some(ref lr) = layout_results {
                             crate::extractors::pdf::pages::assign_layout_regions_to_pages(&mut page_contents, lr);
@@ -438,11 +411,6 @@ impl PdfExtractor {
                         Err(e) => return Err(e.into()),
                     }
                 } else {
-                    // Even in non-batch mode, `bind_pdfium` may spin with
-                    // `std::thread::sleep` when a cancellation token is provided
-                    // (waiting for `PDFIUM_OPERATION_LOCK`).  Running that sleep
-                    // on a Tokio worker thread would stall the runtime, so we
-                    // always dispatch to the blocking thread pool here.
                     let content_owned = content.to_vec();
                     let span = tracing::Span::current();
                     let config_owned = config.clone();
@@ -622,18 +590,6 @@ impl PdfExtractor {
                 );
             }
 
-            // When a pre-rendered structured document is available, the native text
-            // pipeline has already produced structured output with layout guidance,
-            // heading detection, table extraction, etc. OCR fallback on such documents
-            // often DEGRADES quality because:
-            // 1. OCR struggles with dot leaders (TOC pages), producing garbled text.
-            // 2. OCR on multi-column pages can interleave columns.
-            // 3. The per-page OCR trigger fires on a single weak page even when
-            //    most pages have excellent native text.
-            //
-            // Skip OCR when a pre-rendered document exists with substantive content,
-            // UNLESS the native text is critically broken (font encoding issues
-            // with mostly non-textual content, indicating the PDF has no real text layer).
             let total_chars = native_text.chars().count();
             let alnum_ws_chars = native_text
                 .chars()
@@ -697,18 +653,12 @@ impl PdfExtractor {
         #[cfg(not(feature = "ocr"))]
         let (text, used_ocr) = (native_text, false);
 
-        // Merge OCR-detected tables with native-extracted tables.
-        // When OCR was used, its TATR-detected tables may be more accurate for scanned pages.
         #[cfg(feature = "ocr")]
         if !ocr_tables.is_empty() {
             tables.extend(ocr_tables);
             tables.sort_by_key(|t| t.page_number);
         }
 
-        // Post-processing: use pre-rendered InternalDocument from initial document load if available.
-        // The document was rendered during the first document load to avoid redundant PDF parsing.
-        // OCR results already produce structured output via the hOCR path, so this only applies
-        // when native text extraction was used and structured output was requested.
         #[cfg(feature = "pdf")]
         let use_structured_doc = !used_ocr && pre_rendered_doc.is_some();
         tracing::debug!(
@@ -741,7 +691,6 @@ impl PdfExtractor {
             let max_images_per_page = config.images.as_ref().and_then(|i| i.max_images_per_page);
             let extract = move || -> std::result::Result<(Vec<crate::pdf::images::PdfImage>, u32), crate::pdf::error::PdfError> {
                 let mut pdf_images = crate::pdf::images::extract_images_from_pdf(&content_owned, max_images_per_page)?;
-                // Fallback: re-extract unusable images via pdfium bitmap rendering.
                 #[cfg(feature = "pdf")]
                 let fallback_count =
                     crate::pdf::images::reextract_raw_images_via_pdfium(&content_owned, &mut pdf_images).unwrap_or(0);
@@ -799,9 +748,6 @@ impl PdfExtractor {
             (None, None)
         };
 
-        // Finalize: apply pre-rendered structured document if available.
-        // Quality gate: if pre-rendered doc has >2x the words of native text,
-        // the layout pipeline added garbage. Fall back to native text in that case.
         #[cfg(feature = "pdf")]
         let use_structured_doc = if use_structured_doc {
             if let Some(ref doc) = pre_rendered_doc {
@@ -826,8 +772,6 @@ impl PdfExtractor {
 
         #[cfg(feature = "pdf")]
         let (text, used_structured_doc) = if use_structured_doc {
-            // We have a pre-rendered InternalDocument — we'll use it directly below.
-            // Extract text from the document for the plain-text fallback path.
             (text, true)
         } else {
             (text, false)
@@ -838,7 +782,6 @@ impl PdfExtractor {
 
         let final_pages = assign_tables_and_images_to_pages(page_contents, &tables, images.as_deref().unwrap_or(&[]));
 
-        // Refine PageInfo.is_blank in page_structure to match PageContent refinement
         if let (Some(final_pgs), Some(page_structure)) = (&final_pages, &mut pdf_metadata.page_structure)
             && let Some(ref mut page_infos) = page_structure.pages
         {
@@ -849,11 +792,6 @@ impl PdfExtractor {
             }
         }
 
-        // Always preserve the original document MIME type (e.g. application/pdf).
-        // The output format is tracked separately in metadata.output_format.
-        // Signal pre-formatted output so the pipeline doesn't double-convert.
-        // Only skip conversion for Markdown; Djot and HTML get the structured
-        // content but still need apply_output_format() for format-specific conversion.
         #[cfg(feature = "pdf")]
         let pre_formatted_output = if used_structured_doc && config.output_format == OutputFormat::Markdown {
             tracing::trace!("PDF extractor: signaling pre-formatted structured output to pipeline");
@@ -876,9 +814,6 @@ impl PdfExtractor {
             "final document path selection"
         );
 
-        // Build InternalDocument from the extracted data.
-        // When a pre-rendered InternalDocument is available, use it directly.
-        // Otherwise, fall back to splitting text on double newlines.
         #[cfg(feature = "pdf")]
         let mut doc = if used_structured_doc {
             if let Some(mut pre_doc) = pre_rendered_doc {
@@ -896,10 +831,7 @@ impl PdfExtractor {
                     format: Some(crate::types::FormatMetadata::Pdf(pdf_metadata.pdf_specific)),
                     ..Default::default()
                 };
-                // Tables are already embedded in the InternalDocument via push_table.
-                // Merge any tables not in the doc (e.g., OCR tables added later).
                 for table in tables {
-                    // Only add tables not already in the doc
                     if !pre_doc
                         .tables
                         .iter()
@@ -908,18 +840,12 @@ impl PdfExtractor {
                         pre_doc.tables.push(table);
                     }
                 }
-                // Do NOT overwrite pre_doc.images here. The structure pipeline already
-                // populated it via populate_images_from_pdfium with images indexed to match
-                // the ElementKind::Image { image_index } values in pre_doc.elements. Overwriting
-                // with the lopdf-extracted images (indexed 0, 1, 2...) would break that
-                // correspondence and cause image links to silently disappear from markdown output.
                 if let Some(warning) = image_fallback_warning.clone() {
                     pre_doc.processing_warnings.push(warning);
                 }
                 pre_doc.annotations = pdf_annotations;
                 pre_doc
             } else {
-                // Shouldn't happen since used_structured_doc was true, but fallback
                 let mut doc = InternalDocument::new("pdf");
                 doc.mime_type = std::borrow::Cow::Owned(mime_type.to_string());
                 for paragraph in text.split("\n\n") {
@@ -939,8 +865,6 @@ impl PdfExtractor {
                 doc
             }
         } else {
-            // When the OCR path produced a structured InternalDocument, use it
-            // instead of naively splitting text on double newlines.
             #[cfg(feature = "ocr")]
             let has_ocr_doc = ocr_internal_doc.is_some();
             #[cfg(feature = "ocr")]
@@ -985,16 +909,7 @@ impl PdfExtractor {
                 format: Some(crate::types::FormatMetadata::Pdf(pdf_metadata.pdf_specific)),
                 ..Default::default()
             };
-            // When the OCR path produced a structured InternalDocument, its tables are
-            // already embedded with matching ElementKind::Table indices. Overwriting
-            // doc.tables would break those references. Instead, merge any additional
-            // tables (e.g., native-extracted tables) that aren't already present.
-            // When no OCR doc was produced, assign all tables and create Table elements
-            // so they are rendered through comrak's build_table().
             if has_ocr_doc {
-                // The OCR doc already has tables with matching ElementKind::Table
-                // indices. Only merge tables not already present (e.g., native tables)
-                // and create corresponding elements for them.
                 for table in tables {
                     if !doc
                         .tables
@@ -1038,8 +953,6 @@ impl PdfExtractor {
             doc
         };
 
-        // Extract URIs from PDF annotations (links).
-        // Collect into a temp vec first to avoid borrow conflict with doc.annotations.
         {
             use crate::types::annotations::PdfAnnotationType;
             use crate::types::uri::{Uri, UriKind};
@@ -1076,7 +989,6 @@ impl PdfExtractor {
             }
         }
 
-        // Extract bookmarks/outlines as URIs.
         #[cfg(feature = "pdf")]
         {
             if let Ok(lopdf_doc) = lopdf::Document::load_mem(content) {
@@ -1087,7 +999,6 @@ impl PdfExtractor {
             }
         }
 
-        // Extract embedded files (PDF portfolios/attachments).
         #[cfg(all(feature = "pdf", feature = "tokio-runtime"))]
         {
             let (embedded_children, embedded_warnings) =
@@ -1103,10 +1014,8 @@ impl PdfExtractor {
             }
         }
 
-        // Attach pre-built per-page content so derive_extraction_result can use it.
         doc.prebuilt_pages = final_pages;
 
-        // Attach LLM usage accumulated during OCR so derive_extraction_result can transfer it.
         #[cfg(feature = "ocr")]
         if !ocr_llm_usage.is_empty() {
             doc.llm_usage = Some(ocr_llm_usage);
@@ -1385,9 +1294,6 @@ mod tests {
                 crate::core::config::OutputFormat::Plain,
             );
             // NOTE: The current PDF extractor doesn't assign page numbers to InternalDocument elements,
-            // so the derive pipeline's build_pages returns None even when extract_pages is true.
-            // Page data should be populated once the PDF extractor assigns page numbers to elements.
-            // For now, verify the extraction succeeds and content is present.
             assert!(
                 !extraction_result.content.is_empty(),
                 "Content should be extracted from PDF"

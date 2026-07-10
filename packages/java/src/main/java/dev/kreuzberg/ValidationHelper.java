@@ -18,10 +18,10 @@ import java.lang.foreign.MemorySegment;
  * @since 4.0.0
  */
 public final class ValidationHelper {
-	private ValidationHelper() {
-	}
+    private ValidationHelper() {
+    }
 
-	/**
+    /**
 	 * Validates a binarization method string.
 	 *
 	 * @param method
@@ -29,20 +29,20 @@ public final class ValidationHelper {
 	 * @throws KreuzbergException
 	 *             if the method is invalid
 	 */
-	public static void validateBinarizationMethod(String method) throws KreuzbergException {
-		if (method == null) {
-			throw new KreuzbergException("Binarization method cannot be null");
-		}
-		try (Arena arena = Arena.ofConfined()) {
-			MemorySegment methodSegment = KreuzbergFFI.allocateCString(arena, method);
-			checkValidationResult(KreuzbergFFI.KREUZBERG_VALIDATE_BINARIZATION_METHOD, new Object[]{methodSegment},
-					"Invalid binarization method: " + method);
-		} catch (Exception e) {
-			throw handleValidationException(e, "Failed to validate binarization method");
-		}
-	}
+    public static void validateBinarizationMethod(String method) throws KreuzbergException {
+        if (method == null) {
+            throw new KreuzbergException("Binarization method cannot be null");
+        }
+        try (Arena arena = Arena.ofConfined()) {
+            MemorySegment methodSegment = KreuzbergFFI.allocateCString(arena, method);
+            checkValidationResult(KreuzbergFFI.KREUZBERG_VALIDATE_BINARIZATION_METHOD, new Object[]{methodSegment},
+                "Invalid binarization method: " + method);
+        } catch (Exception e) {
+            throw handleValidationException(e, "Failed to validate binarization method");
+        }
+    }
 
-	/**
+    /**
 	 * Validates an OCR backend string.
 	 *
 	 * @param backend
@@ -51,20 +51,20 @@ public final class ValidationHelper {
 	 * @throws KreuzbergException
 	 *             if the backend is invalid
 	 */
-	public static void validateOcrBackend(String backend) throws KreuzbergException {
-		if (backend == null) {
-			throw new KreuzbergException("OCR backend cannot be null");
-		}
-		try (Arena arena = Arena.ofConfined()) {
-			MemorySegment backendSegment = KreuzbergFFI.allocateCString(arena, backend);
-			checkValidationResult(KreuzbergFFI.KREUZBERG_VALIDATE_OCR_BACKEND, new Object[]{backendSegment},
-					"Invalid OCR backend: " + backend);
-		} catch (Exception e) {
-			throw handleValidationException(e, "Failed to validate OCR backend");
-		}
-	}
+    public static void validateOcrBackend(String backend) throws KreuzbergException {
+        if (backend == null) {
+            throw new KreuzbergException("OCR backend cannot be null");
+        }
+        try (Arena arena = Arena.ofConfined()) {
+            MemorySegment backendSegment = KreuzbergFFI.allocateCString(arena, backend);
+            checkValidationResult(KreuzbergFFI.KREUZBERG_VALIDATE_OCR_BACKEND, new Object[]{backendSegment},
+                "Invalid OCR backend: " + backend);
+        } catch (Exception e) {
+            throw handleValidationException(e, "Failed to validate OCR backend");
+        }
+    }
 
-	/**
+    /**
 	 * Validates a language code (ISO 639-1 or 639-3 format).
 	 *
 	 * <p>
@@ -76,20 +76,20 @@ public final class ValidationHelper {
 	 * @throws KreuzbergException
 	 *             if the code is invalid
 	 */
-	public static void validateLanguageCode(String code) throws KreuzbergException {
-		if (code == null) {
-			throw new KreuzbergException("Language code cannot be null");
-		}
-		try (Arena arena = Arena.ofConfined()) {
-			MemorySegment codeSegment = KreuzbergFFI.allocateCString(arena, code);
-			checkValidationResult(KreuzbergFFI.KREUZBERG_VALIDATE_LANGUAGE_CODE, new Object[]{codeSegment},
-					"Invalid language code: " + code);
-		} catch (Exception e) {
-			throw handleValidationException(e, "Failed to validate language code");
-		}
-	}
+    public static void validateLanguageCode(String code) throws KreuzbergException {
+        if (code == null) {
+            throw new KreuzbergException("Language code cannot be null");
+        }
+        try (Arena arena = Arena.ofConfined()) {
+            MemorySegment codeSegment = KreuzbergFFI.allocateCString(arena, code);
+            checkValidationResult(KreuzbergFFI.KREUZBERG_VALIDATE_LANGUAGE_CODE, new Object[]{codeSegment},
+                "Invalid language code: " + code);
+        } catch (Exception e) {
+            throw handleValidationException(e, "Failed to validate language code");
+        }
+    }
 
-	/**
+    /**
 	 * Validates a token reduction level string.
 	 *
 	 * @param level
@@ -97,20 +97,20 @@ public final class ValidationHelper {
 	 * @throws KreuzbergException
 	 *             if the level is invalid
 	 */
-	public static void validateTokenReductionLevel(String level) throws KreuzbergException {
-		if (level == null) {
-			throw new KreuzbergException("Token reduction level cannot be null");
-		}
-		try (Arena arena = Arena.ofConfined()) {
-			MemorySegment levelSegment = KreuzbergFFI.allocateCString(arena, level);
-			checkValidationResult(KreuzbergFFI.KREUZBERG_VALIDATE_TOKEN_REDUCTION_LEVEL, new Object[]{levelSegment},
-					"Invalid token reduction level: " + level);
-		} catch (Exception e) {
-			throw handleValidationException(e, "Failed to validate token reduction level");
-		}
-	}
+    public static void validateTokenReductionLevel(String level) throws KreuzbergException {
+        if (level == null) {
+            throw new KreuzbergException("Token reduction level cannot be null");
+        }
+        try (Arena arena = Arena.ofConfined()) {
+            MemorySegment levelSegment = KreuzbergFFI.allocateCString(arena, level);
+            checkValidationResult(KreuzbergFFI.KREUZBERG_VALIDATE_TOKEN_REDUCTION_LEVEL, new Object[]{levelSegment},
+                "Invalid token reduction level: " + level);
+        } catch (Exception e) {
+            throw handleValidationException(e, "Failed to validate token reduction level");
+        }
+    }
 
-	/**
+    /**
 	 * Validates a Tesseract Page Segmentation Mode (PSM) value.
 	 *
 	 * @param psm
@@ -118,16 +118,16 @@ public final class ValidationHelper {
 	 * @throws KreuzbergException
 	 *             if the PSM is invalid
 	 */
-	public static void validateTesseractPsm(int psm) throws KreuzbergException {
-		try {
-			checkValidationResult(KreuzbergFFI.KREUZBERG_VALIDATE_TESSERACT_PSM, new Object[]{psm},
-					"Invalid Tesseract PSM: " + psm);
-		} catch (Exception e) {
-			throw handleValidationException(e, "Failed to validate Tesseract PSM");
-		}
-	}
+    public static void validateTesseractPsm(int psm) throws KreuzbergException {
+        try {
+            checkValidationResult(KreuzbergFFI.KREUZBERG_VALIDATE_TESSERACT_PSM, new Object[]{psm},
+                "Invalid Tesseract PSM: " + psm);
+        } catch (Exception e) {
+            throw handleValidationException(e, "Failed to validate Tesseract PSM");
+        }
+    }
 
-	/**
+    /**
 	 * Validates a Tesseract OCR Engine Mode (OEM) value.
 	 *
 	 * @param oem
@@ -135,16 +135,16 @@ public final class ValidationHelper {
 	 * @throws KreuzbergException
 	 *             if the OEM is invalid
 	 */
-	public static void validateTesseractOem(int oem) throws KreuzbergException {
-		try {
-			checkValidationResult(KreuzbergFFI.KREUZBERG_VALIDATE_TESSERACT_OEM, new Object[]{oem},
-					"Invalid Tesseract OEM: " + oem);
-		} catch (Exception e) {
-			throw handleValidationException(e, "Failed to validate Tesseract OEM");
-		}
-	}
+    public static void validateTesseractOem(int oem) throws KreuzbergException {
+        try {
+            checkValidationResult(KreuzbergFFI.KREUZBERG_VALIDATE_TESSERACT_OEM, new Object[]{oem},
+                "Invalid Tesseract OEM: " + oem);
+        } catch (Exception e) {
+            throw handleValidationException(e, "Failed to validate Tesseract OEM");
+        }
+    }
 
-	/**
+    /**
 	 * Validates an output format string.
 	 *
 	 * @param format
@@ -152,20 +152,20 @@ public final class ValidationHelper {
 	 * @throws KreuzbergException
 	 *             if the format is invalid
 	 */
-	public static void validateOutputFormat(String format) throws KreuzbergException {
-		if (format == null) {
-			throw new KreuzbergException("Output format cannot be null");
-		}
-		try (Arena arena = Arena.ofConfined()) {
-			MemorySegment formatSegment = KreuzbergFFI.allocateCString(arena, format);
-			checkValidationResult(KreuzbergFFI.KREUZBERG_VALIDATE_OUTPUT_FORMAT, new Object[]{formatSegment},
-					"Invalid output format: " + format);
-		} catch (Exception e) {
-			throw handleValidationException(e, "Failed to validate output format");
-		}
-	}
+    public static void validateOutputFormat(String format) throws KreuzbergException {
+        if (format == null) {
+            throw new KreuzbergException("Output format cannot be null");
+        }
+        try (Arena arena = Arena.ofConfined()) {
+            MemorySegment formatSegment = KreuzbergFFI.allocateCString(arena, format);
+            checkValidationResult(KreuzbergFFI.KREUZBERG_VALIDATE_OUTPUT_FORMAT, new Object[]{formatSegment},
+                "Invalid output format: " + format);
+        } catch (Exception e) {
+            throw handleValidationException(e, "Failed to validate output format");
+        }
+    }
 
-	/**
+    /**
 	 * Validates a confidence threshold value.
 	 *
 	 * <p>
@@ -176,16 +176,16 @@ public final class ValidationHelper {
 	 * @throws KreuzbergException
 	 *             if the confidence is invalid
 	 */
-	public static void validateConfidence(double confidence) throws KreuzbergException {
-		try {
-			checkValidationResult(KreuzbergFFI.KREUZBERG_VALIDATE_CONFIDENCE, new Object[]{confidence},
-					"Invalid confidence: " + confidence);
-		} catch (Exception e) {
-			throw handleValidationException(e, "Failed to validate confidence");
-		}
-	}
+    public static void validateConfidence(double confidence) throws KreuzbergException {
+        try {
+            checkValidationResult(KreuzbergFFI.KREUZBERG_VALIDATE_CONFIDENCE, new Object[]{confidence},
+                "Invalid confidence: " + confidence);
+        } catch (Exception e) {
+            throw handleValidationException(e, "Failed to validate confidence");
+        }
+    }
 
-	/**
+    /**
 	 * Validates a DPI (dots per inch) value.
 	 *
 	 * <p>
@@ -196,15 +196,15 @@ public final class ValidationHelper {
 	 * @throws KreuzbergException
 	 *             if the DPI is invalid
 	 */
-	public static void validateDpi(int dpi) throws KreuzbergException {
-		try {
-			checkValidationResult(KreuzbergFFI.KREUZBERG_VALIDATE_DPI, new Object[]{dpi}, "Invalid DPI: " + dpi);
-		} catch (Exception e) {
-			throw handleValidationException(e, "Failed to validate DPI");
-		}
-	}
+    public static void validateDpi(int dpi) throws KreuzbergException {
+        try {
+            checkValidationResult(KreuzbergFFI.KREUZBERG_VALIDATE_DPI, new Object[]{dpi}, "Invalid DPI: " + dpi);
+        } catch (Exception e) {
+            throw handleValidationException(e, "Failed to validate DPI");
+        }
+    }
 
-	/**
+    /**
 	 * Validates chunking parameters.
 	 *
 	 * <p>
@@ -217,16 +217,16 @@ public final class ValidationHelper {
 	 * @throws KreuzbergException
 	 *             if the parameters are invalid
 	 */
-	public static void validateChunkingParams(long maxChars, long maxOverlap) throws KreuzbergException {
-		try {
-			checkValidationResult(KreuzbergFFI.KREUZBERG_VALIDATE_CHUNKING_PARAMS, new Object[]{maxChars, maxOverlap},
-					"Invalid chunking parameters: maxChars=" + maxChars + ", maxOverlap=" + maxOverlap);
-		} catch (Exception e) {
-			throw handleValidationException(e, "Failed to validate chunking parameters");
-		}
-	}
+    public static void validateChunkingParams(long maxChars, long maxOverlap) throws KreuzbergException {
+        try {
+            checkValidationResult(KreuzbergFFI.KREUZBERG_VALIDATE_CHUNKING_PARAMS, new Object[]{maxChars, maxOverlap},
+                "Invalid chunking parameters: maxChars=" + maxChars + ", maxOverlap=" + maxOverlap);
+        } catch (Exception e) {
+            throw handleValidationException(e, "Failed to validate chunking parameters");
+        }
+    }
 
-	/**
+    /**
 	 * Checks the validation result and throws KreuzbergException if invalid.
 	 *
 	 * @param methodHandle
@@ -240,24 +240,24 @@ public final class ValidationHelper {
 	 * @throws KreuzbergException
 	 *             if validation fails
 	 */
-	@SuppressWarnings("PMD.AvoidCatchingThrowable")
-	private static void checkValidationResult(java.lang.invoke.MethodHandle methodHandle, Object[] args,
-			String fallbackMsg) throws Exception {
-		try {
-			int result = (int) methodHandle.invokeWithArguments(args);
-			if (result == 0) {
-				String errorMsg = getLastError();
-				String msg = errorMsg != null ? errorMsg : fallbackMsg;
-				throw new KreuzbergException(msg);
-			}
-		} catch (KreuzbergException e) {
-			throw e;
-		} catch (Throwable e) {
-			throw new Exception(e);
-		}
-	}
+    @SuppressWarnings("PMD.AvoidCatchingThrowable")
+    private static void checkValidationResult(java.lang.invoke.MethodHandle methodHandle, Object[] args,
+        String fallbackMsg) throws Exception {
+        try {
+            int result = (int) methodHandle.invokeWithArguments(args);
+            if (result == 0) {
+                String errorMsg = getLastError();
+                String msg = errorMsg != null ? errorMsg : fallbackMsg;
+                throw new KreuzbergException(msg);
+            }
+        } catch (KreuzbergException e) {
+            throw e;
+        } catch (Throwable e) {
+            throw new Exception(e);
+        }
+    }
 
-	/**
+    /**
 	 * Handles exceptions from validation, preserving stack traces.
 	 *
 	 * @param e
@@ -266,25 +266,25 @@ public final class ValidationHelper {
 	 *            the context of what was being validated
 	 * @return a KreuzbergException with the original exception as cause
 	 */
-	private static KreuzbergException handleValidationException(Exception e, String context) {
-		if (e instanceof KreuzbergException) {
-			return (KreuzbergException) e;
-		}
-		return new KreuzbergException(context, e);
-	}
+    private static KreuzbergException handleValidationException(Exception e, String context) {
+        if (e instanceof KreuzbergException) {
+            return (KreuzbergException) e;
+        }
+        return new KreuzbergException(context, e);
+    }
 
-	/**
+    /**
 	 * Gets the last error message from the FFI layer.
 	 *
 	 * @return the error message, or null if no error
 	 */
-	@SuppressWarnings("PMD.AvoidCatchingThrowable")
-	private static String getLastError() {
-		try {
-			MemorySegment errorSegment = (MemorySegment) KreuzbergFFI.KREUZBERG_LAST_ERROR.invoke();
-			return KreuzbergFFI.readCString(errorSegment);
-		} catch (Throwable e) {
-			return null;
-		}
-	}
+    @SuppressWarnings("PMD.AvoidCatchingThrowable")
+    private static String getLastError() {
+        try {
+            MemorySegment errorSegment = (MemorySegment) KreuzbergFFI.KREUZBERG_LAST_ERROR.invoke();
+            return KreuzbergFFI.readCString(errorSegment);
+        } catch (Throwable e) {
+            return null;
+        }
+    }
 }

@@ -10,10 +10,6 @@ use crate::types::internal::{ElementKind, InternalDocument};
 
 use super::common::{NestingKind, RenderState, get_language, handle_container_end, is_body_element, is_container_end};
 
-// ============================================================================
-// JSON Document Types
-// ============================================================================
-
 /// Top-level JSON document.
 #[derive(Debug, Serialize)]
 pub struct JsonDocument {
@@ -72,10 +68,6 @@ pub enum JsonNode {
     Blockquote { body: Vec<JsonNode> },
 }
 
-// ============================================================================
-// Section Stack
-// ============================================================================
-
 /// An open section on the stack, accumulating child nodes.
 struct OpenSection {
     heading: String,
@@ -83,19 +75,11 @@ struct OpenSection {
     body: Vec<JsonNode>,
 }
 
-// ============================================================================
-// List Accumulator
-// ============================================================================
-
 /// Tracks an open list being accumulated from ListStart..ListEnd markers.
 struct OpenList {
     ordered: bool,
     items: Vec<String>,
 }
-
-// ============================================================================
-// Renderer
-// ============================================================================
 
 /// Render an `InternalDocument` as a JSON tree string.
 ///
@@ -103,7 +87,6 @@ struct OpenList {
 /// Returns a JSON string (always valid JSON).
 pub fn render_json(doc: &InternalDocument) -> String {
     let json_doc = build_json_document(doc);
-    // serde_json::to_string should not fail on our types (no maps with non-string keys).
     serde_json::to_string(&json_doc).unwrap_or_else(|e| {
         tracing::error!(error = %e, "failed to serialize JSON document");
         r#"{"body":[]}"#.to_string()
@@ -125,7 +108,6 @@ fn build_json_document(doc: &InternalDocument) -> JsonDocument {
         }
 
         if is_container_end(elem) {
-            // Flush list/blockquote if ending
             match elem.kind {
                 ElementKind::ListEnd => {
                     if let Some(list) = open_list.take() {
@@ -156,13 +138,10 @@ fn build_json_document(doc: &InternalDocument) -> JsonDocument {
             }
 
             ElementKind::Heading { level } => {
-                // Flush any open list before starting a new section.
                 flush_list(&mut open_list, &mut root_body, &mut section_stack, &mut open_blockquote);
 
-                // Close sections at same or deeper level.
                 close_sections_to_level(&mut section_stack, &mut root_body, level);
 
-                // Open a new section.
                 section_stack.push(OpenSection {
                     heading: elem.text.clone(),
                     level,
@@ -174,7 +153,6 @@ fn build_json_document(doc: &InternalDocument) -> JsonDocument {
                 if elem.text.is_empty() {
                     continue;
                 }
-                // If inside an open list (orphan list items without markers), skip.
                 let node = JsonNode::Paragraph {
                     text: elem.text.clone(),
                 };
@@ -182,7 +160,6 @@ fn build_json_document(doc: &InternalDocument) -> JsonDocument {
             }
 
             ElementKind::ListStart { ordered } => {
-                // Flush any prior list.
                 flush_list(&mut open_list, &mut root_body, &mut section_stack, &mut open_blockquote);
                 state.push_container(NestingKind::List { ordered, item_count: 0 }, elem.depth);
                 open_list = Some(OpenList {
@@ -195,7 +172,6 @@ fn build_json_document(doc: &InternalDocument) -> JsonDocument {
                 if let Some(ref mut list) = open_list {
                     list.items.push(elem.text.clone());
                 } else {
-                    // Orphan list item without ListStart — create an inline list node.
                     let node = JsonNode::List {
                         ordered,
                         items: vec![elem.text.clone()],
@@ -271,7 +247,6 @@ fn build_json_document(doc: &InternalDocument) -> JsonDocument {
                 }
             }
 
-            // Container end markers, page breaks, footnotes, etc. — skip.
             ElementKind::ListEnd
             | ElementKind::QuoteEnd
             | ElementKind::GroupStart
@@ -289,16 +264,13 @@ fn build_json_document(doc: &InternalDocument) -> JsonDocument {
         }
     }
 
-    // Flush any remaining open list.
     flush_list(&mut open_list, &mut root_body, &mut section_stack, &mut open_blockquote);
 
-    // Flush any remaining open blockquote.
     if let Some(bq_body) = open_blockquote.take() {
         let node = JsonNode::Blockquote { body: bq_body };
         push_to_current(&mut root_body, &mut section_stack, &mut None, node);
     }
 
-    // Close all remaining open sections.
     close_sections_to_level(&mut section_stack, &mut root_body, 0);
 
     JsonDocument { title, body: root_body }
@@ -311,12 +283,10 @@ fn push_to_current(
     open_blockquote: &mut Option<Vec<JsonNode>>,
     node: JsonNode,
 ) {
-    // If inside a blockquote, push there.
     if let Some(bq) = open_blockquote {
         bq.push(node);
         return;
     }
-    // Otherwise, push to innermost open section or root.
     if let Some(section) = section_stack.last_mut() {
         section.body.push(node);
     } else {
@@ -335,7 +305,6 @@ fn close_sections_to_level(section_stack: &mut Vec<OpenSection>, root_body: &mut
                 level: section.level,
                 body: section.body,
             };
-            // Append to parent section or root.
             if let Some(parent) = section_stack.last_mut() {
                 parent.body.push(node);
             } else {
@@ -362,10 +331,6 @@ fn flush_list(
         push_to_current(root_body, section_stack, open_blockquote, node);
     }
 }
-
-// ============================================================================
-// Tests
-// ============================================================================
 
 #[cfg(test)]
 mod tests {
@@ -425,7 +390,6 @@ mod tests {
         assert_eq!(section["type"], "section");
         assert_eq!(section["heading"], "Chapter 1");
         assert_eq!(section["level"], 1);
-        // Body should have: paragraph "Intro" and a nested section
         assert_eq!(section["body"].as_array().unwrap().len(), 2);
         assert_eq!(section["body"][0]["type"], "paragraph");
         let sub_section = &section["body"][1];
@@ -476,7 +440,6 @@ mod tests {
         let code = &parsed["body"][0];
         assert_eq!(code["type"], "code");
         assert_eq!(code["text"], "some code");
-        // language should be absent (skip_serializing_if)
         assert!(code.get("language").is_none() || code["language"].is_null());
     }
 
@@ -533,7 +496,6 @@ mod tests {
         let json_str = render_json(&doc);
         let parsed: serde_json::Value = serde_json::from_str(&json_str).unwrap();
         assert_eq!(parsed["title"], "My Document");
-        // Title should not appear as a body node.
         assert_eq!(parsed["body"].as_array().unwrap().len(), 1);
         assert_eq!(parsed["body"][0]["type"], "paragraph");
     }
@@ -579,7 +541,6 @@ mod tests {
         b.push_formula("x^2", None, None);
         let doc = b.build();
         let json_str = render_json(&doc);
-        // Must be valid JSON.
         let result: Result<serde_json::Value, _> = serde_json::from_str(&json_str);
         assert!(result.is_ok(), "JSON output is not valid: {}", json_str);
     }

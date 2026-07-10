@@ -287,7 +287,6 @@ mod tests {
 
     #[test]
     fn test_chunk_with_same_start_and_end() {
-        // Zero-length boundaries are valid (empty pages)
         let boundaries = vec![PageBoundary {
             byte_start: 10,
             byte_end: 10,
@@ -310,7 +309,7 @@ mod tests {
                 byte_start: 100,
                 byte_end: 100,
                 page_number: 2,
-            }, // empty page
+            },
             PageBoundary {
                 byte_start: 100,
                 byte_end: 200,

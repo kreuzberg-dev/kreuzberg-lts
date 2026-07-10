@@ -17,159 +17,158 @@ import java.util.Map;
  * @since 4.0.0
  */
 public final class EmbeddingConfig {
-	private final Map<String, Object> model;
-	private final Boolean normalize;
-	private final Integer batchSize;
-	private final Integer dimensions;
-	private final Boolean useCache;
-	private final Boolean showDownloadProgress;
-	private final String cacheDir;
-	private final AccelerationConfig acceleration;
+    private final Map<String, Object> model;
+    private final Boolean normalize;
+    private final Integer batchSize;
+    private final Integer dimensions;
+    private final Boolean useCache;
+    private final Boolean showDownloadProgress;
+    private final String cacheDir;
+    private final AccelerationConfig acceleration;
 
-	private EmbeddingConfig(Builder builder) {
-		this.model = builder.model;
-		this.normalize = builder.normalize;
-		this.batchSize = builder.batchSize;
-		this.dimensions = builder.dimensions;
-		this.useCache = builder.useCache;
-		this.showDownloadProgress = builder.showDownloadProgress;
-		this.cacheDir = builder.cacheDir;
-		this.acceleration = builder.acceleration;
-	}
+    private EmbeddingConfig(Builder builder) {
+        this.model = builder.model;
+        this.normalize = builder.normalize;
+        this.batchSize = builder.batchSize;
+        this.dimensions = builder.dimensions;
+        this.useCache = builder.useCache;
+        this.showDownloadProgress = builder.showDownloadProgress;
+        this.cacheDir = builder.cacheDir;
+        this.acceleration = builder.acceleration;
+    }
 
-	public static Builder builder() {
-		return new Builder();
-	}
+    public static Builder builder() {
+        return new Builder();
+    }
 
-	/**
+    /**
 	 * Get the embedding model configuration.
 	 *
 	 * @return the model configuration map (with 'type' and 'name' keys), or null if
 	 *         not set
 	 */
-	public Map<String, Object> getModel() {
-		return model;
-	}
+    public Map<String, Object> getModel() {
+        return model;
+    }
 
-	/**
+    /**
 	 * Check if embeddings should be normalized to unit length.
 	 *
 	 * @return true if normalization is enabled, false otherwise, or null if not set
 	 */
-	public Boolean getNormalize() {
-		return normalize;
-	}
+    public Boolean getNormalize() {
+        return normalize;
+    }
 
-	/**
+    /**
 	 * Get the batch size for processing.
 	 *
 	 * @return the batch size, or null if not set
 	 */
-	public Integer getBatchSize() {
-		return batchSize;
-	}
+    public Integer getBatchSize() {
+        return batchSize;
+    }
 
-	/**
+    /**
 	 * Get the embedding dimensions.
 	 *
 	 * @return the dimensions, or null if not set
 	 */
-	public Integer getDimensions() {
-		return dimensions;
-	}
+    public Integer getDimensions() {
+        return dimensions;
+    }
 
-	/**
+    /**
 	 * Check if embeddings caching is enabled.
 	 *
 	 * @return true if caching is enabled, false otherwise, or null if not set
 	 */
-	public Boolean getUseCache() {
-		return useCache;
-	}
+    public Boolean getUseCache() {
+        return useCache;
+    }
 
-	/**
+    /**
 	 * Check if download progress should be shown.
 	 *
 	 * @return true if progress should be shown, false otherwise, or null if not set
 	 */
-	public Boolean getShowDownloadProgress() {
-		return showDownloadProgress;
-	}
+    public Boolean getShowDownloadProgress() {
+        return showDownloadProgress;
+    }
 
-	/**
+    /**
 	 * Get the custom cache directory for downloaded models.
 	 *
 	 * @return the cache directory path, or null if not set
 	 */
-	public String getCacheDir() {
-		return cacheDir;
-	}
+    public String getCacheDir() {
+        return cacheDir;
+    }
 
-	/**
+    /**
 	 * Get the acceleration configuration.
 	 *
 	 * @return the acceleration configuration, or null if not set
 	 * @since 4.5.0
 	 */
-	public AccelerationConfig getAcceleration() {
-		return acceleration;
-	}
+    public AccelerationConfig getAcceleration() {
+        return acceleration;
+    }
 
-	/**
+    /**
 	 * Convert configuration to map representation for serialization.
 	 *
 	 * @return map representation of this configuration
 	 */
-	public Map<String, Object> toMap() {
-		Map<String, Object> map = new HashMap<>();
-		if (model != null) {
-			map.put("model", model);
-		}
-		if (normalize != null) {
-			map.put("normalize", normalize);
-		}
-		if (batchSize != null) {
-			map.put("batch_size", batchSize);
-		}
-		if (dimensions != null) {
-			map.put("dimensions", dimensions);
-		}
-		if (useCache != null) {
-			map.put("use_cache", useCache);
-		}
-		if (showDownloadProgress != null) {
-			map.put("show_download_progress", showDownloadProgress);
-		}
-		if (cacheDir != null) {
-			map.put("cache_dir", cacheDir);
-		}
-		if (acceleration != null) {
-			map.put("acceleration", acceleration.toMap());
-		}
-		return map;
-	}
+    public Map<String, Object> toMap() {
+        Map<String, Object> map = new HashMap<>();
+        if (model != null) {
+            map.put("model", model);
+        }
+        if (normalize != null) {
+            map.put("normalize", normalize);
+        }
+        if (batchSize != null) {
+            map.put("batch_size", batchSize);
+        }
+        if (dimensions != null) {
+            map.put("dimensions", dimensions);
+        }
+        if (useCache != null) {
+            map.put("use_cache", useCache);
+        }
+        if (showDownloadProgress != null) {
+            map.put("show_download_progress", showDownloadProgress);
+        }
+        if (cacheDir != null) {
+            map.put("cache_dir", cacheDir);
+        }
+        if (acceleration != null) {
+            map.put("acceleration", acceleration.toMap());
+        }
+        return map;
+    }
 
-	/**
+    /**
 	 * Builder for constructing EmbeddingConfig instances.
 	 */
-	public static final class Builder {
-		private Map<String, Object> model;
-		private Boolean normalize;
-		private Integer batchSize = 32;
-		private Integer dimensions;
-		private Boolean useCache;
-		private Boolean showDownloadProgress;
-		private String cacheDir;
-		private AccelerationConfig acceleration;
+    public static final class Builder {
+        private Map<String, Object> model;
+        private Boolean normalize;
+        private Integer batchSize = 32;
+        private Integer dimensions;
+        private Boolean useCache;
+        private Boolean showDownloadProgress;
+        private String cacheDir;
+        private AccelerationConfig acceleration;
 
-		private Builder() {
-			// Default to balanced preset
-			this.model = new HashMap<>();
-			this.model.put("type", "preset");
-			this.model.put("name", "balanced");
-		}
+        private Builder() {
+            this.model = new HashMap<>();
+            this.model.put("type", "preset");
+            this.model.put("name", "balanced");
+        }
 
-		/**
+        /**
 		 * Set the embedding model using a preset name.
 		 *
 		 * <p>
@@ -186,14 +185,14 @@ public final class EmbeddingConfig {
 		 *            the preset name
 		 * @return this builder
 		 */
-		public Builder preset(String presetName) {
-			this.model = new HashMap<>();
-			this.model.put("type", "preset");
-			this.model.put("name", presetName);
-			return this;
-		}
+        public Builder preset(String presetName) {
+            this.model = new HashMap<>();
+            this.model.put("type", "preset");
+            this.model.put("name", presetName);
+            return this;
+        }
 
-		/**
+        /**
 		 * Set the embedding model configuration directly.
 		 *
 		 * <p>
@@ -203,12 +202,12 @@ public final class EmbeddingConfig {
 		 *            the model configuration map
 		 * @return this builder
 		 */
-		public Builder model(Map<String, Object> model) {
-			this.model = model;
-			return this;
-		}
+        public Builder model(Map<String, Object> model) {
+            this.model = model;
+            return this;
+        }
 
-		/**
+        /**
 		 * Set whether to normalize embedding vectors to unit length.
 		 *
 		 * <p>
@@ -218,12 +217,12 @@ public final class EmbeddingConfig {
 		 *            true to enable normalization, false otherwise
 		 * @return this builder
 		 */
-		public Builder normalize(Boolean normalize) {
-			this.normalize = normalize;
-			return this;
-		}
+        public Builder normalize(Boolean normalize) {
+            this.normalize = normalize;
+            return this;
+        }
 
-		/**
+        /**
 		 * Set the batch size for processing.
 		 *
 		 * <p>
@@ -241,12 +240,12 @@ public final class EmbeddingConfig {
 		 *            the batch size
 		 * @return this builder
 		 */
-		public Builder batchSize(Integer batchSize) {
-			this.batchSize = batchSize;
-			return this;
-		}
+        public Builder batchSize(Integer batchSize) {
+            this.batchSize = batchSize;
+            return this;
+        }
 
-		/**
+        /**
 		 * Set the embedding dimensions.
 		 *
 		 * <p>
@@ -257,12 +256,12 @@ public final class EmbeddingConfig {
 		 *            the number of dimensions
 		 * @return this builder
 		 */
-		public Builder dimensions(Integer dimensions) {
-			this.dimensions = dimensions;
-			return this;
-		}
+        public Builder dimensions(Integer dimensions) {
+            this.dimensions = dimensions;
+            return this;
+        }
 
-		/**
+        /**
 		 * Set whether to cache embeddings.
 		 *
 		 * <p>
@@ -272,12 +271,12 @@ public final class EmbeddingConfig {
 		 *            true to enable caching, false otherwise
 		 * @return this builder
 		 */
-		public Builder useCache(Boolean useCache) {
-			this.useCache = useCache;
-			return this;
-		}
+        public Builder useCache(Boolean useCache) {
+            this.useCache = useCache;
+            return this;
+        }
 
-		/**
+        /**
 		 * Set whether to show download progress for embedding models.
 		 *
 		 * <p>
@@ -287,12 +286,12 @@ public final class EmbeddingConfig {
 		 *            true to show progress, false otherwise
 		 * @return this builder
 		 */
-		public Builder showDownloadProgress(Boolean showDownloadProgress) {
-			this.showDownloadProgress = showDownloadProgress;
-			return this;
-		}
+        public Builder showDownloadProgress(Boolean showDownloadProgress) {
+            this.showDownloadProgress = showDownloadProgress;
+            return this;
+        }
 
-		/**
+        /**
 		 * Set a custom directory for caching downloaded models.
 		 *
 		 * <p>
@@ -302,12 +301,12 @@ public final class EmbeddingConfig {
 		 *            the cache directory path
 		 * @return this builder
 		 */
-		public Builder cacheDir(String cacheDir) {
-			this.cacheDir = cacheDir;
-			return this;
-		}
+        public Builder cacheDir(String cacheDir) {
+            this.cacheDir = cacheDir;
+            return this;
+        }
 
-		/**
+        /**
 		 * Set the acceleration configuration.
 		 *
 		 * @param acceleration
@@ -315,89 +314,88 @@ public final class EmbeddingConfig {
 		 * @return this builder for chaining
 		 * @since 4.5.0
 		 */
-		public Builder acceleration(AccelerationConfig acceleration) {
-			this.acceleration = acceleration;
-			return this;
-		}
+        public Builder acceleration(AccelerationConfig acceleration) {
+            this.acceleration = acceleration;
+            return this;
+        }
 
-		/**
+        /**
 		 * Build the EmbeddingConfig instance.
 		 *
 		 * @return a new EmbeddingConfig instance
 		 */
-		public EmbeddingConfig build() {
-			return new EmbeddingConfig(this);
-		}
-	}
+        public EmbeddingConfig build() {
+            return new EmbeddingConfig(this);
+        }
+    }
 
-	/**
+    /**
 	 * Create EmbeddingConfig from map representation.
 	 *
 	 * @param map
 	 *            the map containing configuration values
 	 * @return the parsed EmbeddingConfig, or null if map is null
 	 */
-	@SuppressWarnings("unchecked")
-	static EmbeddingConfig fromMap(Map<String, Object> map) {
-		if (map == null) {
-			return null;
-		}
-		Builder builder = builder();
-		Object modelValue = map.get("model");
-		if (modelValue instanceof Map) {
-			builder.model((Map<String, Object>) modelValue);
-		} else if (modelValue instanceof String) {
-			// Legacy: treat string as preset name
-			builder.preset((String) modelValue);
-		}
-		if (map.containsKey("normalize")) {
-			Object normalizeValue = map.get("normalize");
-			if (normalizeValue instanceof Boolean) {
-				builder.normalize((Boolean) normalizeValue);
-			} else if (normalizeValue == null) {
-				builder.normalize(true); // default when null
-			}
-		}
-		Object batchSizeValue = map.get("batch_size");
-		if (batchSizeValue instanceof Number) {
-			builder.batchSize(((Number) batchSizeValue).intValue());
-		}
-		Object dimensionsValue = map.get("dimensions");
-		if (dimensionsValue instanceof Number) {
-			builder.dimensions(((Number) dimensionsValue).intValue());
-		}
-		if (map.containsKey("use_cache")) {
-			Object useCacheValue = map.get("use_cache");
-			if (useCacheValue instanceof Boolean) {
-				builder.useCache((Boolean) useCacheValue);
-			} else if (useCacheValue == null) {
-				builder.useCache(false); // default when null
-			}
-		}
-		if (map.containsKey("show_download_progress")) {
-			Object showDownloadProgressValue = map.get("show_download_progress");
-			if (showDownloadProgressValue instanceof Boolean) {
-				builder.showDownloadProgress((Boolean) showDownloadProgressValue);
-			} else if (showDownloadProgressValue == null) {
-				builder.showDownloadProgress(true); // default when null
-			}
-		}
-		Object cacheDirValue = map.get("cache_dir");
-		if (cacheDirValue instanceof String) {
-			builder.cacheDir((String) cacheDirValue);
-		}
-		Map<String, Object> accelerationMap = asMap(map.get("acceleration"));
-		if (accelerationMap != null) {
-			builder.acceleration(AccelerationConfig.fromMap(accelerationMap));
-		}
-		return builder.build();
-	}
+    @SuppressWarnings("unchecked")
+    static EmbeddingConfig fromMap(Map<String, Object> map) {
+        if (map == null) {
+            return null;
+        }
+        Builder builder = builder();
+        Object modelValue = map.get("model");
+        if (modelValue instanceof Map) {
+            builder.model((Map<String, Object>) modelValue);
+        } else if (modelValue instanceof String) {
+            builder.preset((String) modelValue);
+        }
+        if (map.containsKey("normalize")) {
+            Object normalizeValue = map.get("normalize");
+            if (normalizeValue instanceof Boolean) {
+                builder.normalize((Boolean) normalizeValue);
+            } else if (normalizeValue == null) {
+                builder.normalize(true);
+            }
+        }
+        Object batchSizeValue = map.get("batch_size");
+        if (batchSizeValue instanceof Number) {
+            builder.batchSize(((Number) batchSizeValue).intValue());
+        }
+        Object dimensionsValue = map.get("dimensions");
+        if (dimensionsValue instanceof Number) {
+            builder.dimensions(((Number) dimensionsValue).intValue());
+        }
+        if (map.containsKey("use_cache")) {
+            Object useCacheValue = map.get("use_cache");
+            if (useCacheValue instanceof Boolean) {
+                builder.useCache((Boolean) useCacheValue);
+            } else if (useCacheValue == null) {
+                builder.useCache(false);
+            }
+        }
+        if (map.containsKey("show_download_progress")) {
+            Object showDownloadProgressValue = map.get("show_download_progress");
+            if (showDownloadProgressValue instanceof Boolean) {
+                builder.showDownloadProgress((Boolean) showDownloadProgressValue);
+            } else if (showDownloadProgressValue == null) {
+                builder.showDownloadProgress(true);
+            }
+        }
+        Object cacheDirValue = map.get("cache_dir");
+        if (cacheDirValue instanceof String) {
+            builder.cacheDir((String) cacheDirValue);
+        }
+        Map<String, Object> accelerationMap = asMap(map.get("acceleration"));
+        if (accelerationMap != null) {
+            builder.acceleration(AccelerationConfig.fromMap(accelerationMap));
+        }
+        return builder.build();
+    }
 
-	@SuppressWarnings({"unchecked", "PMD.ReturnEmptyCollectionRatherThanNull"})
-	private static Map<String, Object> asMap(Object value) {
-		if (value instanceof Map) {
-			return (Map<String, Object>) value;
-		}
-		return null;
-	}
+    @SuppressWarnings({"unchecked", "PMD.ReturnEmptyCollectionRatherThanNull"})
+    private static Map<String, Object> asMap(Object value) {
+        if (value instanceof Map) {
+            return (Map<String, Object>) value;
+        }
+        return null;
+    }
 }

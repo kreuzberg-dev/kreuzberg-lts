@@ -8,7 +8,8 @@ pub fn embed_impl(texts: Strings, config_json: Nullable<&str>) -> extendr_api::R
 
     let result = kreuzberg::embed_texts(&texts_vec, &config).map_err(kreuzberg_error)?;
 
-    let list = result.into_iter()
+    let list = result
+        .into_iter()
         .map(|v| v.into_iter().map(|f| f as f64).collect::<Doubles>().into_robj())
         .collect::<List>();
 

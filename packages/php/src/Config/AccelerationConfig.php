@@ -29,8 +29,7 @@ readonly class AccelerationConfig
     public function __construct(
         public string $provider = 'auto',
         public int $deviceId = 0,
-    ) {
-    }
+    ) {}
 
     /**
      * Create configuration from array data.
@@ -57,7 +56,6 @@ readonly class AccelerationConfig
     {
         $result = [];
 
-        // Only add non-default values
         if ($this->provider !== 'auto') {
             $result['provider'] = $this->provider;
         }

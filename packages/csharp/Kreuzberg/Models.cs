@@ -4507,9 +4507,6 @@ public sealed class LayoutDetectionConfig
     public AccelerationConfig? Acceleration { get; init; }
 }
 
-// ============================================================================
-// Tree-sitter ProcessResult types (serialized from Rust via serde)
-// ============================================================================
 
 /// <summary>
 /// Byte/line/column range in source code.

@@ -132,7 +132,6 @@ pub fn create_router_with_limits_and_server_config(
         extraction_service: Arc::new(std::sync::Mutex::new(extraction_service)),
     };
 
-    // CORS configuration based on ServerConfig
     let cors_layer = if server_config.cors_allows_all() {
         tracing::warn!(
             "CORS configured to allow all origins (default). This permits CSRF attacks. \
@@ -176,11 +175,9 @@ pub fn create_router_with_limits_and_server_config(
         .route("/cache/clear", delete(cache_clear_handler))
         .route("/cache/manifest", get(cache_manifest_handler))
         .route("/cache/warm", post(cache_warm_handler))
-        // OpenWebUI compatibility endpoints
         .route("/process", put(openweb_external_handler))
         .route("/v1/convert/file", post(openweb_docling_handler));
 
-    // Add OpenAPI schema endpoint if API feature is enabled
     #[cfg(feature = "api")]
     {
         router = router.route("/openapi.json", get(openapi_schema_handler));

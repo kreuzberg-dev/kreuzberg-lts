@@ -45,18 +45,12 @@ impl MarkdownExtractor {
         Self
     }
 
-    // Frontmatter utilities moved to shared frontmatter_utils module
-    // Text extraction and data URI decoding moved to shared markdown_utils module
-
-    // cells_to_markdown and extract_title_from_content moved to shared frontmatter_utils module
-
     /// Build an `InternalDocument` from pulldown-cmark events and optional YAML frontmatter.
     pub fn build_internal_document(events: &[Event], yaml: &Option<serde_yaml_ng::Value>) -> InternalDocument {
         use crate::types::builder;
         use crate::types::document_structure::TextAnnotation;
         let mut b = InternalDocumentBuilder::new("markdown");
 
-        // Emit frontmatter as a metadata block
         if let Some(serde_yaml_ng::Value::Mapping(map)) = yaml {
             let entries: Vec<(String, String)> = map
                 .iter()
@@ -88,7 +82,7 @@ impl MarkdownExtractor {
         let mut current_row: Vec<String> = Vec::new();
         let mut current_cell = String::new();
         let mut in_table_cell = false;
-        let mut list_stack: Vec<bool> = Vec::new(); // ordered flag
+        let mut list_stack: Vec<bool> = Vec::new();
         let mut list_item_text = String::new();
         let mut list_item_annotations: Vec<TextAnnotation> = Vec::new();
         let mut in_list_item = false;
@@ -157,8 +151,6 @@ impl MarkdownExtractor {
                     paragraph_text.clear();
                     paragraph_annotations.clear();
                 }
-                // Inline formatting — annotation tracking
-                // Annotations are tracked for paragraphs, headings, and list items.
                 Event::Start(Tag::Strong) => {
                     if in_paragraph {
                         annotation_starts.push((0, active_text_offset(&paragraph_text), None));
@@ -268,7 +260,6 @@ impl MarkdownExtractor {
                     if let Some(i) = annotation_starts.iter().rposition(|(k, _, _)| *k == 4) {
                         let (_, start, link_data) = annotation_starts.remove(i);
                         if let Some((url, title)) = link_data {
-                            // Collect the link label text from the active buffer
                             let label_text = if in_paragraph {
                                 let end = active_text_offset(&paragraph_text);
                                 if start < end {
@@ -296,7 +287,6 @@ impl MarkdownExtractor {
                             } else {
                                 None
                             };
-                            // Push URI (compute kind before moving url)
                             if !url.is_empty() {
                                 let kind = classify_uri(&url);
                                 b.push_uri(Uri {
@@ -398,12 +388,10 @@ impl MarkdownExtractor {
                 Event::Start(Tag::Image { dest_url, .. }) => {
                     in_image = true;
                     image_alt.clear();
-                    // Store image URL for URI collection on End
                     image_url = Some(dest_url.to_string());
                 }
                 Event::End(TagEnd::Image) => {
                     in_image = false;
-                    // Push a proper image element (no ExtractedImage data, use sentinel index)
                     let trimmed = image_alt.trim();
                     let desc = if trimmed.is_empty() { "" } else { trimmed };
                     {
@@ -427,7 +415,6 @@ impl MarkdownExtractor {
                             ocr_rotation: None,
                         });
                     }
-                    // Collect image URI
                     if let Some(url) = image_url.take().filter(|u| !u.is_empty()) {
                         b.push_uri(Uri {
                             url,
@@ -576,7 +563,7 @@ impl DocumentExtractor for MarkdownExtractor {
         config: &ExtractionConfig,
     ) -> Result<InternalDocument> {
         tracing::debug!(format = "markdown", size_bytes = content.len(), "extraction starting");
-        let _ = config; // config is used by the pipeline for image OCR
+        let _ = config;
         let text = String::from_utf8_lossy(content).into_owned();
 
         let (yaml, remaining_content) = extract_frontmatter(&text);
@@ -599,18 +586,12 @@ impl DocumentExtractor for MarkdownExtractor {
         let events: Vec<Event> = parser.collect();
 
         let mut extracted_images = Vec::new();
-        // Walk the AST only for images (data URI extraction)
         let _ = crate::extractors::markdown_utils::extract_text_from_events(&events, &mut extracted_images);
 
-        // Build InternalDocument from events and frontmatter
         let mut doc = Self::build_internal_document(&events, &yaml);
         doc.metadata = metadata;
         doc.mime_type = Cow::Owned(mime_type.to_string());
 
-        // Tables are already pushed by `build_internal_document` via the builder,
-        // so we do NOT push them again here (that would create duplicates).
-
-        // Add extracted images to InternalDocument
         if !extracted_images.is_empty() {
             for image in extracted_images {
                 doc.push_image(image);
@@ -948,7 +929,6 @@ nested:
 
     #[test]
     fn test_decode_data_uri_png() {
-        // 1x1 red PNG pixel (minimal valid PNG)
         let png_b64 =
             "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg==";
         let uri = format!("data:image/png;base64,{png_b64}");
@@ -963,7 +943,6 @@ nested:
 
     #[test]
     fn test_decode_data_uri_jpeg() {
-        // Minimal JPEG-like base64 (tests the decode path)
         let uri = "data:image/jpeg;base64,/9j/4AAQSkZJRg==";
 
         let image = crate::extractors::markdown_utils::decode_data_uri_image(uri, 3);
@@ -1067,8 +1046,6 @@ nested:
 
     #[tokio::test]
     async fn test_trimmed_paragraph_with_emoji() {
-        // Trimming paragraph text with multi-byte emoji must not produce
-        // annotations pointing past the trimmed text end.
         let md = b"  **bold** \xf0\x9f\x8e\x89 text  ";
 
         let extractor = MarkdownExtractor::new();

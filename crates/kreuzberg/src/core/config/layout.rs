@@ -157,8 +157,6 @@ mod tests {
 
     #[test]
     fn test_backward_compat_unknown_fields_ignored() {
-        // Old configs with "preset" field should still deserialize because
-        // serde ignores unknown fields by default.
         let json = r#"{"preset": "accurate", "apply_heuristics": true}"#;
         let config: LayoutDetectionConfig = serde_json::from_str(json).unwrap();
         assert!(config.apply_heuristics);
@@ -167,7 +165,6 @@ mod tests {
 
     #[test]
     fn test_backward_compat_old_table_model_field() {
-        // Old configs with table_model as a string should still work
         let json = r#"{"table_model": "slanet_wired"}"#;
         let config: LayoutDetectionConfig = serde_json::from_str(json).unwrap();
         assert_eq!(config.table_model, TableModel::SlanetWired);

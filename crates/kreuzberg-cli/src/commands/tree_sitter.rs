@@ -22,7 +22,6 @@ pub fn download_command(
     cache_dir: Option<PathBuf>,
     format: WireFormat,
 ) -> Result<()> {
-    // Apply custom cache directory if provided
     if let Some(ref dir) = cache_dir {
         let config = tree_sitter_language_pack::PackConfig {
             cache_dir: Some(dir.clone()),
@@ -45,7 +44,7 @@ pub fn download_command(
             groups: Some(group_list.clone()),
         };
         tree_sitter_language_pack::init(&config).context("Failed to download tree-sitter grammar groups")?;
-        count = 0; // init does not return a count
+        count = 0;
         description = format!("groups: {}", group_list.join(", "));
     } else if !languages.is_empty() {
         let refs: Vec<&str> = languages.iter().map(String::as_str).collect();

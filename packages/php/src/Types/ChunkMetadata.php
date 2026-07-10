@@ -27,8 +27,7 @@ readonly class ChunkMetadata
         public ?int $firstPage = null,
         public ?int $lastPage = null,
         public ?HeadingContext $headingContext = null,
-    ) {
-    }
+    ) {}
 
     /**
      * @param array<string, mixed> $data
@@ -58,9 +57,7 @@ readonly class ChunkMetadata
 
         /** @var array<string, mixed>|null $rawHeadingContext */
         $rawHeadingContext = is_array($data['heading_context'] ?? null) ? $data['heading_context'] : null;
-        $headingContext = $rawHeadingContext !== null
-            ? HeadingContext::fromArray($rawHeadingContext)
-            : null;
+        $headingContext = $rawHeadingContext !== null ? HeadingContext::fromArray($rawHeadingContext) : null;
 
         return new self(
             byteStart: $byteStart,

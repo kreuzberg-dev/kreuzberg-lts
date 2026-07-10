@@ -243,7 +243,6 @@ pub(super) fn parse_opf(xml: &str, opf_dir: &str) -> Result<(EpubPackageDocument
                 }
             }
 
-            // Find cover image via <meta name="cover" content="item-id"/>
             let mut cover_item_id = None;
             for node in root.descendants() {
                 if node.tag_name().name() == "meta"

@@ -18,7 +18,6 @@ func TestPointerValidityAfterFFICall(t *testing.T) {
 	testPDF := createTestPDF(t)
 	defer cleanup(testPDF)
 
-	// First call to establish baseline
 	result1, err := kreuzberg.ExtractFileSync(testPDF, nil)
 	if err != nil {
 		t.Fatalf("first extraction failed: %v", err)
@@ -27,7 +26,6 @@ func TestPointerValidityAfterFFICall(t *testing.T) {
 		t.Fatal("expected non-nil result")
 	}
 
-	// Second call with same file - should not affect first result
 	result2, err := kreuzberg.ExtractFileSync(testPDF, nil)
 	if err != nil {
 		t.Fatalf("second extraction failed: %v", err)
@@ -36,7 +34,6 @@ func TestPointerValidityAfterFFICall(t *testing.T) {
 		t.Fatal("expected non-nil result")
 	}
 
-	// Verify both results are still valid and have same content
 	if result1.Content != result2.Content {
 		t.Errorf("content mismatch after second FFI call: got %q, expected %q",
 			result1.Content, result2.Content)
@@ -54,8 +51,6 @@ func TestGoroutineCountStability(t *testing.T) {
 	testPDF := createTestPDF(t)
 	defer cleanup(testPDF)
 
-	// Wait for any background goroutines to settle
-	// Use a loop to let runtime stabilize
 	for i := 0; i < 10; i++ {
 		runtime.GC()
 		time.Sleep(10 * time.Millisecond)
@@ -63,7 +58,6 @@ func TestGoroutineCountStability(t *testing.T) {
 
 	initialGoroutines := runtime.NumGoroutine()
 
-	// Perform multiple extraction operations
 	for i := 0; i < 5; i++ {
 		result, err := kreuzberg.ExtractFileSync(testPDF, nil)
 		if err != nil {
@@ -72,12 +66,9 @@ func TestGoroutineCountStability(t *testing.T) {
 		if result == nil {
 			t.Fatalf("extraction %d returned nil result", i)
 		}
-		// Force result to be unused - go compiler won't optimize it away
 		_ = result.Content
 	}
 
-	// Wait for operations to fully complete and be cleaned up
-	// Use loop instead of single sleep for reliability
 	for i := 0; i < 20; i++ {
 		runtime.GC()
 		time.Sleep(5 * time.Millisecond)
@@ -86,7 +77,6 @@ func TestGoroutineCountStability(t *testing.T) {
 	finalGoroutines := runtime.NumGoroutine()
 	leakedGoroutines := finalGoroutines - initialGoroutines
 
-	// Should not spawn persistent goroutines (allow 1 for timing variance)
 	if leakedGoroutines > 1 {
 		t.Errorf("goroutine leak detected: initial=%d, final=%d, leaked=%d",
 			initialGoroutines, finalGoroutines, leakedGoroutines)
@@ -99,7 +89,6 @@ func TestGoroutineCleanupOnPanic(t *testing.T) {
 	testPDF := createTestPDF(t)
 	defer cleanup(testPDF)
 
-	// Establish baseline - settle runtime first
 	for i := 0; i < 10; i++ {
 		runtime.GC()
 		time.Sleep(5 * time.Millisecond)
@@ -125,12 +114,10 @@ func TestGoroutineCleanupOnPanic(t *testing.T) {
 				return
 			}
 
-			// Verify result is valid
 			if result == nil {
 				panic("nil result")
 			}
 
-			// Intentional panic to test cleanup
 			if index == 2 {
 				panic("test panic")
 			}
@@ -139,7 +126,6 @@ func TestGoroutineCleanupOnPanic(t *testing.T) {
 
 	wg.Wait()
 
-	// Wait for goroutines to fully exit (multiple cycles for safety)
 	for i := 0; i < 20; i++ {
 		runtime.GC()
 		time.Sleep(5 * time.Millisecond)
@@ -148,12 +134,10 @@ func TestGoroutineCleanupOnPanic(t *testing.T) {
 	finalGoroutines := runtime.NumGoroutine()
 	leakedGoroutines := finalGoroutines - initialGoroutines
 
-	// Verify panic handler was executed
 	if atomic.LoadInt32(&panicCount) == 0 {
 		t.Error("expected at least one panic to be caught")
 	}
 
-	// Should not have any persistent goroutines (allow 0)
 	if leakedGoroutines > 0 {
 		t.Errorf("goroutine leak detected: initial: %d, final: %d, leaked: %d",
 			initialGoroutines, finalGoroutines, leakedGoroutines)
@@ -167,7 +151,6 @@ func TestConcurrentGoroutineLeakDetection(t *testing.T) {
 	testPDF := createTestPDF(t)
 	defer cleanup(testPDF)
 
-	// Establish stable baseline
 	for i := 0; i < 10; i++ {
 		runtime.GC()
 		time.Sleep(5 * time.Millisecond)
@@ -195,7 +178,6 @@ func TestConcurrentGoroutineLeakDetection(t *testing.T) {
 
 	wg.Wait()
 
-	// Wait for all goroutines to exit
 	for i := 0; i < 30; i++ {
 		runtime.GC()
 		time.Sleep(5 * time.Millisecond)
@@ -204,7 +186,6 @@ func TestConcurrentGoroutineLeakDetection(t *testing.T) {
 	finalGoroutines := runtime.NumGoroutine()
 	leakedGoroutines := finalGoroutines - initialGoroutines
 
-	// Should not spawn persistent goroutines from operations
 	if leakedGoroutines > 1 {
 		t.Errorf("goroutine leak in concurrent operations: initial=%d, final=%d, leaked=%d",
 			initialGoroutines, finalGoroutines, leakedGoroutines)
@@ -217,7 +198,6 @@ func TestMultipleSequentialExtractions(t *testing.T) {
 	testPDF := createTestPDF(t)
 	defer cleanup(testPDF)
 
-	// Establish baseline goroutine count
 	for i := 0; i < 10; i++ {
 		runtime.GC()
 		time.Sleep(5 * time.Millisecond)
@@ -239,7 +219,6 @@ func TestMultipleSequentialExtractions(t *testing.T) {
 			t.Errorf("iteration %d: expected non-empty mime type", i)
 		}
 
-		// Verify consistency across iterations
 		if lastResult != nil && result.MimeType != lastResult.MimeType {
 			t.Errorf("iteration %d: mime type changed from %q to %q",
 				i, lastResult.MimeType, result.MimeType)
@@ -247,7 +226,6 @@ func TestMultipleSequentialExtractions(t *testing.T) {
 		lastResult = result
 	}
 
-	// Wait for cleanup
 	for i := 0; i < 20; i++ {
 		runtime.GC()
 		time.Sleep(5 * time.Millisecond)
@@ -256,7 +234,6 @@ func TestMultipleSequentialExtractions(t *testing.T) {
 	finalGoroutines := runtime.NumGoroutine()
 	leakedGoroutines := finalGoroutines - initialGoroutines
 
-	// Should not leak goroutines in sequential operations
 	if leakedGoroutines > 1 {
 		t.Errorf("goroutine leak in sequential operations: initial=%d, final=%d, leaked=%d",
 			initialGoroutines, finalGoroutines, leakedGoroutines)
@@ -272,7 +249,6 @@ func TestStringMarshalingSafety(t *testing.T) {
 	const iterations = 10
 	var firstJSON string
 
-	// Extract multiple times and verify JSON is consistent
 	for i := 0; i < iterations; i++ {
 		result, err := kreuzberg.ExtractFileSync(testPDF, nil)
 		if err != nil {
@@ -283,17 +259,14 @@ func TestStringMarshalingSafety(t *testing.T) {
 			t.Fatalf("iteration %d: expected non-nil result", i)
 		}
 
-		// Verify mime type is consistent
 		if result.MimeType == "" {
 			t.Errorf("iteration %d: mime type should not be empty", i)
 		}
 
-		// Verify metadata pointers don't reference empty strings
 		if result.Metadata.Language != nil && *result.Metadata.Language == "" {
 			t.Errorf("iteration %d: empty language pointer detected", i)
 		}
 
-		// Verify JSON marshaling is reproducible
 		jsonBytes, err := kreuzberg.ResultToJSON(result)
 		if err != nil {
 			t.Fatalf("iteration %d: JSON marshaling failed: %v", i, err)
@@ -333,17 +306,14 @@ func TestConcurrentResultReads(t *testing.T) {
 		go func(index int) {
 			defer wg.Done()
 
-			// Read all fields concurrently
 			content := result.Content
 			mimeType := result.MimeType
 
-			// Verify data consistency
 			if mimeType == "" {
 				t.Errorf("goroutine %d: empty mime type", index)
 			}
-			_ = content // Use content to avoid unused variable
+			_ = content
 
-			// Attempt JSON marshaling concurrently
 			_, err := kreuzberg.ResultToJSON(result)
 			if err != nil {
 				t.Errorf("goroutine %d: marshaling failed: %v", index, err)
@@ -351,14 +321,12 @@ func TestConcurrentResultReads(t *testing.T) {
 
 			atomic.AddInt32(&readCount, 1)
 
-			// Prevent compiler optimizations
 			_ = content
 		}(i)
 	}
 
 	wg.Wait()
 
-	// Verify all goroutines executed
 	if atomic.LoadInt32(&readCount) != numGoroutines {
 		t.Errorf("expected %d reads, got %d", numGoroutines, readCount)
 	}
@@ -368,14 +336,12 @@ func TestConcurrentResultReads(t *testing.T) {
 // do not leak goroutines, using goroutine count as a proxy for resource leaks.
 func TestBatchOperationGoroutineCleanup(t *testing.T) {
 
-	// Establish baseline goroutine count
 	for i := 0; i < 10; i++ {
 		runtime.GC()
 		time.Sleep(5 * time.Millisecond)
 	}
 	initialGoroutines := runtime.NumGoroutine()
 
-	// Batch operation that allocates many C structures
 	pdfBytes := generateTestPDFBytes(t)
 	items := make([]kreuzberg.BytesWithMime, 10)
 	for i := 0; i < 10; i++ {
@@ -396,7 +362,6 @@ func TestBatchOperationGoroutineCleanup(t *testing.T) {
 		t.Logf("batch returned %d results for %d items (expected %d)", len(results), len(items), len(items))
 	}
 
-	// Wait for cleanup cycles
 	for i := 0; i < 20; i++ {
 		runtime.GC()
 		time.Sleep(5 * time.Millisecond)
@@ -405,7 +370,6 @@ func TestBatchOperationGoroutineCleanup(t *testing.T) {
 	finalGoroutines := runtime.NumGoroutine()
 	leakedGoroutines := finalGoroutines - initialGoroutines
 
-	// Should not spawn persistent goroutines from batch operation
 	if leakedGoroutines > 1 {
 		t.Errorf("goroutine leak in batch operation: initial=%d, final=%d, leaked=%d",
 			initialGoroutines, finalGoroutines, leakedGoroutines)
@@ -415,7 +379,6 @@ func TestBatchOperationGoroutineCleanup(t *testing.T) {
 // TestErrorPathCleanup verifies that failed operations don't leak goroutines
 // and resources are properly cleaned up after error conditions.
 func TestErrorPathCleanup(t *testing.T) {
-	// Establish baseline goroutine count
 	for i := 0; i < 10; i++ {
 		runtime.GC()
 		time.Sleep(5 * time.Millisecond)
@@ -425,20 +388,17 @@ func TestErrorPathCleanup(t *testing.T) {
 	// Intentionally cause errors to verify cleanup
 	const errorIterations = 30
 	for i := 0; i < errorIterations; i++ {
-		// Invalid file path should trigger error path
 		_, err1 := kreuzberg.ExtractFileSync("/nonexistent/invalid/path/file.pdf", nil)
 		if err1 == nil {
 			t.Error("expected error for nonexistent file")
 		}
 
-		// Batch with empty path should trigger error path
 		_, err3 := kreuzberg.BatchExtractFilesSync([]string{""}, nil)
 		if err3 == nil {
 			t.Error("expected error for batch with empty path")
 		}
 	}
 
-	// Wait for cleanup (more time on ARM64 due to slower GC)
 	cleanupIterations := 20
 	if runtime.GOARCH == "arm64" {
 		cleanupIterations = 40
@@ -451,7 +411,6 @@ func TestErrorPathCleanup(t *testing.T) {
 	finalGoroutines := runtime.NumGoroutine()
 	leakedGoroutines := finalGoroutines - initialGoroutines
 
-	// Allow more tolerance on ARM64 due to platform-specific GC behavior
 	maxLeaked := 1
 	if runtime.GOARCH == "arm64" {
 		maxLeaked = 3
@@ -469,7 +428,6 @@ func TestContextCancellationCleanup(t *testing.T) {
 	testPDF := createTestPDF(t)
 	defer cleanup(testPDF)
 
-	// Establish baseline
 	for i := 0; i < 10; i++ {
 		runtime.GC()
 		time.Sleep(5 * time.Millisecond)
@@ -481,7 +439,7 @@ func TestContextCancellationCleanup(t *testing.T) {
 	var cancelledCount int32
 	for i := 0; i < iterations; i++ {
 		ctx, cancel := context.WithCancel(context.Background())
-		cancel() // Cancel immediately
+		cancel()
 
 		_, err := kreuzberg.ExtractFileWithContext(ctx, testPDF, nil)
 		if errors.Is(err, context.Canceled) {
@@ -489,7 +447,6 @@ func TestContextCancellationCleanup(t *testing.T) {
 		}
 	}
 
-	// Wait for cleanup
 	for i := 0; i < 20; i++ {
 		runtime.GC()
 		time.Sleep(5 * time.Millisecond)
@@ -498,12 +455,10 @@ func TestContextCancellationCleanup(t *testing.T) {
 	finalGoroutines := runtime.NumGoroutine()
 	leakedGoroutines := finalGoroutines - initialGoroutines
 
-	// Verify cancellation was respected
 	if atomic.LoadInt32(&cancelledCount) == 0 {
 		t.Error("expected context cancellation to be detected")
 	}
 
-	// Should not leak goroutines from canceled operations
 	if leakedGoroutines > 1 {
 		t.Errorf("goroutine leak in canceled operations: initial=%d, final=%d, leaked=%d",
 			initialGoroutines, finalGoroutines, leakedGoroutines)

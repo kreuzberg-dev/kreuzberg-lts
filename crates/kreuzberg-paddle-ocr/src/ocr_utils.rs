@@ -36,9 +36,6 @@ impl OcrUtils {
 
         let raw = img_src.as_raw();
 
-        // Write each channel plane as a contiguous slice. ndarray stores (1,3,H,W)
-        // in C-contiguous (row-major) order, so plane [0,ch] is a contiguous H*W block.
-        // This enables LLVM to auto-vectorize the inner loop (4-8 f32 ops per cycle).
         for ch in 0..3 {
             let norm = norm_vals[ch];
             let adj = adjusted[ch];
@@ -49,7 +46,6 @@ impl OcrUtils {
             let plane_slice = plane.into_slice().expect("contiguous memory");
 
             for (i, out) in plane_slice.iter_mut().enumerate() {
-                // raw is HWC: pixel i has R at raw[i*3], G at raw[i*3+1], B at raw[i*3+2]
                 *out = raw[i * 3 + ch] as f32 * norm - adj;
             }
         }
@@ -89,7 +85,6 @@ impl OcrUtils {
     pub fn get_rotate_crop_image(img_src: &image::RgbImage, box_points: &[Point]) -> image::RgbImage {
         let mut points = box_points.to_vec();
 
-        // Calculate bounding box
         let (min_x, min_y, max_x, max_y) = points.iter().fold(
             (u32::MAX, u32::MAX, 0u32, 0u32),
             |(min_x, min_y, max_x, max_y), point| {
@@ -102,7 +97,6 @@ impl OcrUtils {
             },
         );
 
-        // Crop image
         let img_crop = imageops::crop_imm(img_src, min_x, min_y, max_x - min_x, max_y - min_y).to_image();
 
         for point in &mut points {
@@ -110,13 +104,10 @@ impl OcrUtils {
             point.y = point.y.saturating_sub(min_y);
         }
 
-        // Ensure we have enough points for transformation
         if points.len() < 4 {
-            // Fallback: return the cropped image as-is if we don't have 4 points
             return img_crop;
         }
 
-        // Direct multiplication instead of .pow(2) — avoids integer power function overhead.
         let dx_w = (points[0].x as i32 - points[1].x as i32) as f32;
         let dy_w = (points[0].y as i32 - points[1].y as i32) as f32;
         let img_crop_width = (dx_w * dx_w + dy_w * dy_w).sqrt() as u32;
@@ -124,7 +115,6 @@ impl OcrUtils {
         let dy_h = (points[0].y as i32 - points[3].y as i32) as f32;
         let img_crop_height = (dx_h * dx_h + dy_h * dy_h).sqrt() as u32;
 
-        // Ensure dimensions are valid (non-zero)
         if img_crop_width == 0 || img_crop_height == 0 {
             return img_crop;
         }
@@ -146,7 +136,6 @@ impl OcrUtils {
         let projection = match Projection::from_control_points(src_points, dst_points) {
             Some(proj) => proj,
             None => {
-                // If projection cannot be created, return the cropped image as fallback
                 return img_crop;
             }
         };
@@ -160,7 +149,6 @@ impl OcrUtils {
             &mut part_img,
         );
 
-        // Rotate image if needed
         if part_img.height() >= part_img.width() * 3 / 2 {
             let mut rotated = image::RgbImage::new(part_img.height(), part_img.width());
 

@@ -128,7 +128,6 @@ impl DocumentExtractor for DocExtractor {
             ..Default::default()
         };
 
-        // Build elements from the extracted text
         let paragraphs: Vec<&str> = result.text.split("\n\n").collect();
         for (i, paragraph) in paragraphs.iter().enumerate() {
             let trimmed = paragraph.trim();
@@ -136,9 +135,6 @@ impl DocumentExtractor for DocExtractor {
                 continue;
             }
 
-            // Heuristic heading detection:
-            // A short paragraph (<=80 chars, single line, no trailing period)
-            // followed by a longer paragraph is likely a heading.
             let is_single_line = !trimmed.contains('\n');
             let is_short = trimmed.len() <= 80;
             let no_trailing_punct = !trimmed.ends_with('.') && !trimmed.ends_with(':') && !trimmed.ends_with(';');
@@ -162,7 +158,7 @@ impl DocumentExtractor for DocExtractor {
     }
 
     fn priority(&self) -> i32 {
-        60 // Higher than default (50) to take precedence
+        60
     }
 }
 
@@ -232,7 +228,6 @@ mod tests {
 
     #[tokio::test]
     async fn test_doc_paragraph_mapping() {
-        // Verify that paragraphs from DOC text map properly to DocumentStructure nodes
         let test_file =
             std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../test_documents/doc/unit_test_lists.doc");
         if !test_file.exists() {
@@ -252,7 +247,6 @@ mod tests {
             crate::extraction::derive::derive_extraction_result(result, true, crate::core::config::OutputFormat::Plain);
         assert!(result.document.is_some(), "Should produce document structure");
         let doc = result.document.unwrap();
-        // Should have at least one paragraph node
         let has_paragraph = doc.nodes.iter().any(|n| {
             matches!(
                 n.content,

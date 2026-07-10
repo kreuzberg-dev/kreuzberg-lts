@@ -57,11 +57,6 @@ use initialization::{get_processors_from_cache, initialize_features, initialize_
 pub async fn run_pipeline(doc: InternalDocument, config: &ExtractionConfig) -> Result<ExtractionResult> {
     #[cfg(all(feature = "ocr", feature = "tokio-runtime"))]
     let mut doc = doc;
-    // Pre-render markdown for the chunker's heading context resolution when:
-    // - Markdown chunking is configured
-    // - Output format is not already Markdown (which would produce formatted_content anyway)
-    // Plain-text rendering strips heading markers, so the markdown chunker needs
-    // a separate markdown rendering to build the heading hierarchy for chunk metadata.
     #[cfg(feature = "chunking")]
     let chunker_heading_source = {
         let needs_markdown = config.chunking.as_ref().is_some_and(|c| {
@@ -75,9 +70,6 @@ pub async fn run_pipeline(doc: InternalDocument, config: &ExtractionConfig) -> R
         }
     };
 
-    // Pre-render styled HTML before `doc` is consumed by `derive_extraction_result`.
-    // When `html` is active and the caller has configured `html_output`, we
-    // render the document here and inject the result after derivation.
     #[cfg(feature = "html")]
     let styled_html_prerender: Option<String> = {
         use crate::plugins::Renderer as _;
@@ -102,7 +94,6 @@ pub async fn run_pipeline(doc: InternalDocument, config: &ExtractionConfig) -> R
         }
     };
 
-    // 1. Process extracted images with OCR if configured
     #[cfg(all(feature = "ocr", feature = "tokio-runtime"))]
     if config.ocr.is_some() && !doc.images.is_empty() {
         let images_to_process = std::mem::take(&mut doc.images);
@@ -125,20 +116,15 @@ pub async fn run_pipeline(doc: InternalDocument, config: &ExtractionConfig) -> R
         }
     }
 
-    // 2. Derive ExtractionResult from InternalDocument
     let include_structure = config.include_document_structure;
     let mut result =
         crate::extraction::derive::derive_extraction_result(doc, include_structure, config.output_format.clone());
 
-    // Inject pre-rendered styled HTML (overrides the default render_html output).
     #[cfg(feature = "html")]
     if let Some(html) = styled_html_prerender {
         result.formatted_content = Some(html);
     }
 
-    // Temporarily store pre-rendered markdown for chunker heading context.
-    // Tracked separately so we can remove it after chunking — apply_output_format
-    // must not swap this into result.content when output_format is Plain.
     #[cfg(feature = "chunking")]
     let chunker_only_markdown = result.formatted_content.is_none();
     #[cfg(feature = "chunking")]
@@ -146,7 +132,6 @@ pub async fn run_pipeline(doc: InternalDocument, config: &ExtractionConfig) -> R
         result.formatted_content = Some(md);
     }
 
-    // 2. Run post-processing pipeline
     let pp_config = config.postprocessor.as_ref();
     let postprocessing_enabled = pp_config.is_none_or(|c| c.enabled);
 
@@ -169,8 +154,6 @@ pub async fn run_pipeline(doc: InternalDocument, config: &ExtractionConfig) -> R
 
     execute_chunking(&mut result, config)?;
 
-    // Clear temporary markdown if it was only stored for chunker heading context.
-    // This prevents apply_output_format from swapping it into result.content.
     #[cfg(feature = "chunking")]
     if chunker_only_markdown {
         result.formatted_content = None;
@@ -183,8 +166,6 @@ pub async fn run_pipeline(doc: InternalDocument, config: &ExtractionConfig) -> R
     apply_element_transform(&mut result, config);
     normalize_nfc(&mut result);
 
-    // Run LLM-based structured extraction BEFORE output formatting
-    // so extraction sees plain text, not markdown/HTML
     #[cfg(feature = "liter-llm")]
     if let Some(ref structured_config) = config.structured_extraction {
         match crate::llm::structured::extract_structured(&result.content, structured_config).await {
@@ -210,7 +191,6 @@ pub async fn run_pipeline(doc: InternalDocument, config: &ExtractionConfig) -> R
         });
     }
 
-    // Apply output format conversion as the final step
     apply_output_format(&mut result, config.output_format.clone());
 
     Ok(result)
@@ -244,7 +224,6 @@ pub async fn run_pipeline(doc: InternalDocument, config: &ExtractionConfig) -> R
 /// - Async validators
 #[cfg(not(feature = "tokio-runtime"))]
 pub fn run_pipeline_sync(doc: InternalDocument, config: &ExtractionConfig) -> Result<ExtractionResult> {
-    // Pre-render markdown for chunker heading context (same logic as async path).
     #[cfg(feature = "chunking")]
     let chunker_heading_source = {
         let needs_markdown = config.chunking.as_ref().is_some_and(|c| {
@@ -258,7 +237,6 @@ pub fn run_pipeline_sync(doc: InternalDocument, config: &ExtractionConfig) -> Re
         }
     };
 
-    // Pre-render styled HTML before `doc` is consumed (mirrors async path).
     #[cfg(feature = "html")]
     let styled_html_prerender: Option<String> = {
         use crate::plugins::Renderer as _;
@@ -283,12 +261,10 @@ pub fn run_pipeline_sync(doc: InternalDocument, config: &ExtractionConfig) -> Re
         }
     };
 
-    // 1. Derive ExtractionResult from InternalDocument
     let include_structure = config.include_document_structure;
     let mut result =
         crate::extraction::derive::derive_extraction_result(doc, include_structure, config.output_format.clone());
 
-    // Inject pre-rendered styled HTML.
     #[cfg(feature = "html")]
     if let Some(html) = styled_html_prerender {
         result.formatted_content = Some(html);
@@ -301,7 +277,6 @@ pub fn run_pipeline_sync(doc: InternalDocument, config: &ExtractionConfig) -> Re
         result.formatted_content = Some(md);
     }
 
-    // 2. Run synchronous post-processing
     execute_chunking(&mut result, config)?;
 
     #[cfg(feature = "chunking")]
@@ -315,7 +290,6 @@ pub fn run_pipeline_sync(doc: InternalDocument, config: &ExtractionConfig) -> Re
     apply_element_transform(&mut result, config);
     normalize_nfc(&mut result);
 
-    // Apply output format conversion as the final step
     apply_output_format(&mut result, config.output_format.clone());
 
     Ok(result)
@@ -345,6 +319,5 @@ fn normalize_nfc(result: &mut ExtractionResult) {
             }
         }
     }
-    // Suppress unused variable warning when quality feature is disabled
     let _ = result;
 }

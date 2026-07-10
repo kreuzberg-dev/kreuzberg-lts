@@ -210,7 +210,6 @@ fn extract_pdf_specific_metadata(document: &PdfDocument<'_>) -> Result<PdfMetada
         metadata.height = Some(page_rect.height().value.round() as i64);
     }
 
-    // Always capture page count
     metadata.page_count = Some(document.pages().len() as usize);
 
     Ok(metadata)

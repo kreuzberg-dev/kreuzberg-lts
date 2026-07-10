@@ -14,51 +14,50 @@ const WORKSPACE_ROOT = resolve(__dirname, "../../../..");
 const TEST_PDF = resolve(WORKSPACE_ROOT, "test_documents/pdf/tiny.pdf");
 
 describe("Render edge cases", () => {
-	it("rendering functions exist", () => {
-		expect(typeof renderPdfPageSync).toBe("function");
-		expect(typeof PdfPageIterator).toBe("function");
-	});
+  it("rendering functions exist", () => {
+    expect(typeof renderPdfPageSync).toBe("function");
+    expect(typeof PdfPageIterator).toBe("function");
+  });
 
-	it("renderPdfPageSync throws for nonexistent file", () => {
-		expect(() => renderPdfPageSync("/nonexistent/path/to/document.pdf", 0)).toThrow(/No such file/);
-	});
+  it("renderPdfPageSync throws for nonexistent file", () => {
+    expect(() => renderPdfPageSync("/nonexistent/path/to/document.pdf", 0)).toThrow(/No such file/);
+  });
 
-	it("renderPdfPageSync throws for out-of-bounds page index", () => {
-		if (!existsSync(TEST_PDF)) return;
-		expect(() => renderPdfPageSync(TEST_PDF, 9999)).toThrow(/not found/);
-	});
+  it("renderPdfPageSync throws for out-of-bounds page index", () => {
+    if (!existsSync(TEST_PDF)) return;
+    expect(() => renderPdfPageSync(TEST_PDF, 9999)).toThrow(/not found/);
+  });
 
-	it("renderPdfPageSync throws for negative page index", () => {
-		if (!existsSync(TEST_PDF)) return;
-		// Negative index wraps to large unsigned — triggers page not found
-		expect(() => renderPdfPageSync(TEST_PDF, -1)).toThrow();
-	});
+  it("renderPdfPageSync throws for negative page index", () => {
+    if (!existsSync(TEST_PDF)) return;
+    expect(() => renderPdfPageSync(TEST_PDF, -1)).toThrow();
+  });
 
-	it("PdfPageIterator throws for nonexistent file", () => {
-		expect(() => new PdfPageIterator("/nonexistent/path/to/document.pdf")).toThrow(/No such file|error/i);
-	});
+  it("PdfPageIterator throws for nonexistent file", () => {
+    expect(() => new PdfPageIterator("/nonexistent/path/to/document.pdf")).toThrow(/No such file|error/i);
+  });
 
-	it("PdfPageIterator.close is safe to call multiple times", () => {
-		if (!existsSync(TEST_PDF)) return;
-		const iter = new PdfPageIterator(TEST_PDF);
-		iter.close();
-		iter.close(); // Should not throw
-	});
+  it("PdfPageIterator.close is safe to call multiple times", () => {
+    if (!existsSync(TEST_PDF)) return;
+    const iter = new PdfPageIterator(TEST_PDF);
+    iter.close();
+    iter.close();
+  });
 
-	it("PdfPageIterator supports early termination", () => {
-		if (!existsSync(TEST_PDF)) return;
-		const iter = new PdfPageIterator(TEST_PDF);
-		const result = iter.next();
-		expect(result).not.toBeNull();
-		if (result) {
-			expect(result.pageIndex).toBe(0);
-			expect(result.data).toBeInstanceOf(Buffer);
-			expect(result.data.length).toBeGreaterThan(4);
-		}
-		iter.close(); // Close without exhausting
-	});
+  it("PdfPageIterator supports early termination", () => {
+    if (!existsSync(TEST_PDF)) return;
+    const iter = new PdfPageIterator(TEST_PDF);
+    const result = iter.next();
+    expect(result).not.toBeNull();
+    if (result) {
+      expect(result.pageIndex).toBe(0);
+      expect(result.data).toBeInstanceOf(Buffer);
+      expect(result.data.length).toBeGreaterThan(4);
+    }
+    iter.close();
+  });
 
-	it("renderPdfPageSync throws for empty path", () => {
-		expect(() => renderPdfPageSync("", 0)).toThrow();
-	});
+  it("renderPdfPageSync throws for empty path", () => {
+    expect(() => renderPdfPageSync("", 0)).toThrow();
+  });
 });

@@ -13,41 +13,41 @@ import com.fasterxml.jackson.annotation.JsonValue;
  * @since 0.8.0
  */
 public enum LinkType {
-	/** Anchor link (#section) */
-	ANCHOR("anchor"),
+    /** Anchor link (#section) */
+    ANCHOR("anchor"),
 
-	/** Internal link (same domain) */
-	INTERNAL("internal"),
+    /** Internal link (same domain) */
+    INTERNAL("internal"),
 
-	/** External link (different domain) */
-	EXTERNAL("external"),
+    /** External link (different domain) */
+    EXTERNAL("external"),
 
-	/** Email link (mailto:) */
-	EMAIL("email"),
+    /** Email link (mailto:) */
+    EMAIL("email"),
 
-	/** Phone link (tel:) */
-	PHONE("phone"),
+    /** Phone link (tel:) */
+    PHONE("phone"),
 
-	/** Other link type */
-	OTHER("other");
+    /** Other link type */
+    OTHER("other");
 
-	private final String wireValue;
+    private final String wireValue;
 
-	LinkType(String wireValue) {
-		this.wireValue = wireValue;
-	}
+    LinkType(String wireValue) {
+        this.wireValue = wireValue;
+    }
 
-	/**
+    /**
 	 * Get the wire format value for this link type.
 	 *
 	 * @return wire value used in serialization (lowercase)
 	 */
-	@JsonValue
-	public String wireValue() {
-		return wireValue;
-	}
+    @JsonValue
+    public String wireValue() {
+        return wireValue;
+    }
 
-	/**
+    /**
 	 * Parse a LinkType from its wire value.
 	 *
 	 * @param wireValue
@@ -56,13 +56,13 @@ public enum LinkType {
 	 * @throws IllegalArgumentException
 	 *             if the value is not recognized
 	 */
-	@JsonCreator
-	public static LinkType fromWireValue(String wireValue) {
-		for (LinkType type : values()) {
-			if (type.wireValue.equals(wireValue)) {
-				return type;
-			}
-		}
-		throw new IllegalArgumentException("Unknown LinkType: " + wireValue);
-	}
+    @JsonCreator
+    public static LinkType fromWireValue(String wireValue) {
+        for (LinkType type : values()) {
+            if (type.wireValue.equals(wireValue)) {
+                return type;
+            }
+        }
+        throw new IllegalArgumentException("Unknown LinkType: " + wireValue);
+    }
 }

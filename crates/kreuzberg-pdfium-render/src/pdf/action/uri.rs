@@ -30,22 +30,11 @@ impl<'a> PdfActionUri<'a> {
 
     /// Returns the URI path associated with this [PdfActionUri], if any.
     pub fn uri(&self) -> Result<String, PdfiumError> {
-        // Retrieving the URI path from Pdfium is a two-step operation. First, we call
-        // FPDFAction_GetURIPath() with a null buffer; this will retrieve the length of
-        // the path in bytes. If the length is zero, then there is no path associated
-        // with this action.
-
-        // If the length is non-zero, then we reserve a byte buffer of the given
-        // length and call FPDFAction_GetURIPath() again with a pointer to the buffer;
-        // this will write the path to the buffer as an array of 7-bit ASCII characters.
-
         let buffer_length = self
             .bindings()
             .FPDFAction_GetURIPath(self.document, self.handle, std::ptr::null_mut(), 0);
 
         if buffer_length == 0 {
-            // There is no URI path for this action.
-
             return Err(PdfiumError::NoUriForAction);
         }
 

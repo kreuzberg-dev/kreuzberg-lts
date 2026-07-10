@@ -1,24 +1,7 @@
-// A macro that creates transformation functions. The created functions require the containing
-// impl block to contain a private transform_impl() function. Both the specification of self and the
-// data type of the return value of transform_impl() can be passed as parameters into this macro.
-// This offers more flexibility than defining a trait; for instance, this macro can create functions
-// that operate on either &mut self or self, whereas a trait cannot.
 #[doc(hidden)]
 #[macro_export]
 macro_rules! create_transform_setters {
-    // Notes on the macro parameters specified below:
 
-    // $self_:ty - the type of self taken by each function, e.g. &self, Self, &mut self, ...
-    // $ret_:ty - The return value for each function, e.g. Self, Result<Self, ...>, (), Result<(), ...>
-    // This must match the return value of the private transform_impl() function.
-    // $doc_ref_:literal - The wording used to refer to the containing impl block, with no trailing punctuation.
-    // $doc_ref_period_:literal - The wording used to refer to the containing impl block, with a trailing period.
-    // $doc_ref_comma_:literal - The wording used to refer to the containing impl block, with a trailing comma.
-    // $custom_doc_:literal - Any custom documentation to include at the end of each function's doc comment.
-    // $reset_matrix_visibility_:ident -  An identifier indicating whether the reset_matrix() and
-    // reset_matrix_to_identity() functions created by this macro should be public or private.
-    // Not all transformable objects allow setting the transformation matrix directly; PdfPage is an
-    // example. For these objects, the set_matrix() function should be private.
     (
         $self_:ty,
         $ret_:ty,
@@ -93,8 +76,6 @@ macro_rules! create_transform_setters {
             )
         }
 
-        // TODO: AJRC - 29/7/22 - remove deprecated set_matrix() function in 0.9.0
-        // as part of tracking issue https://github.com/ajrcarey/pdfium-render/issues/36
         #[deprecated(
             since = "0.8.15",
             note = "This function has been renamed to better reflect its behaviour. Use the apply_matrix() function instead."
@@ -268,7 +249,7 @@ macro_rules! create_transform_setters {
             $doc_ref_period_,
             $doc_ref_comma_,
             $custom_doc_,
-            pub // Make the set_matrix() function public by default.
+            pub
         );
     };
     ($self_:ty, $ret_:ty, $doc_ref_:literal, $doc_ref_period_:literal, $doc_ref_comma_:literal) => {
@@ -278,17 +259,12 @@ macro_rules! create_transform_setters {
             $doc_ref_,
             $doc_ref_period_,
             $doc_ref_comma_,
-            "",  // No custom documentation for this set of setter functions.
-            pub  // Make the set_matrix() function public by default.
+            "",
+            pub
         );
     };
 }
 
-// A macro that creates functions that read the current transformation matrix. The created functions
-// require the containing impl block to contain a private get_matrix_impl() -> Result<PdfMatrix, PdfiumError>
-// function. This could be implemented as a trait, but for the sake of consistency with the
-// create_transform_setters!() macro (which could _not_ be implemented as a trait), we stick with
-// using a macro.
 #[doc(hidden)]
 #[macro_export]
 macro_rules! create_transform_getters {

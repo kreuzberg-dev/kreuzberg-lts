@@ -4,8 +4,6 @@ set -euo pipefail
 mode="${1:-check}"
 root="$(git rev-parse --show-toplevel)"
 
-# C# directories with .csproj or .slnx files
-# Each entry is "dir:target" where target is the solution/project file
 csharp_targets=(
   "packages/csharp:Kreuzberg.slnx"
   "e2e/csharp:Kreuzberg.E2E.csproj"

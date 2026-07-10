@@ -9,7 +9,6 @@ use crate::types::{BlockType, FormattedBlock, InlineElement, InlineType};
 pub fn render_block_to_djot(output: &mut String, block: &FormattedBlock, indent_level: usize) {
     let indent = "  ".repeat(indent_level);
 
-    // Render attributes if present
     let attrs_str = block.attributes.as_ref().map(render_attributes).unwrap_or_default();
 
     match block.block_type {
@@ -57,7 +56,6 @@ pub fn render_block_to_djot(output: &mut String, block: &FormattedBlock, indent_
                     output.push('\n');
                 }
             } else {
-                // Fall back to inline content if code field is empty
                 for elem in &block.inline_content {
                     output.push_str(&indent);
                     output.push_str(&elem.content);
@@ -73,12 +71,10 @@ pub fn render_block_to_djot(output: &mut String, block: &FormattedBlock, indent_
                 output.push_str(&attrs_str);
                 output.push('\n');
             }
-            // Render inline content as quoted
             output.push_str(&indent);
             output.push_str("> ");
             render_inline_content(output, &block.inline_content);
             output.push('\n');
-            // Render children (nested content)
             for child in &block.children {
                 let child_output = {
                     let mut s = String::new();
@@ -124,13 +120,11 @@ pub fn render_block_to_djot(output: &mut String, block: &FormattedBlock, indent_
                 output.push('\n');
             }
             for child in &block.children {
-                // Task list items use [ ] or [x] syntax
                 render_list_item(output, child, &indent, "- [ ] ");
             }
             output.push('\n');
         }
         BlockType::ListItem => {
-            // List items are typically rendered by their parent list
             output.push_str(&indent);
             render_inline_content(output, &block.inline_content);
             output.push('\n');
@@ -175,7 +169,6 @@ pub fn render_block_to_djot(output: &mut String, block: &FormattedBlock, indent_
             output.push_str(":::\n\n");
         }
         BlockType::Section => {
-            // Sections don't have special syntax, just render children
             if !attrs_str.is_empty() {
                 output.push_str(&indent);
                 output.push_str(&attrs_str);
@@ -190,7 +183,6 @@ pub fn render_block_to_djot(output: &mut String, block: &FormattedBlock, indent_
             output.push_str("---\n\n");
         }
         BlockType::RawBlock => {
-            // Raw blocks use ``` with format specifier
             output.push_str(&indent);
             output.push_str("```");
             if let Some(ref lang) = block.language {
@@ -328,7 +320,7 @@ pub fn render_inline_content(output: &mut String, elements: &[InlineElement]) {
                     .map(|s| s.as_str())
                     .unwrap_or("");
                 output.push_str("![");
-                output.push_str(&elem.content); // alt text
+                output.push_str(&elem.content);
                 output.push_str("](");
                 output.push_str(src);
                 output.push(')');
@@ -350,7 +342,6 @@ pub fn render_inline_content(output: &mut String, elements: &[InlineElement]) {
                 output.push('$');
             }
             InlineType::RawInline => {
-                // Raw inline uses `content`{=format}
                 let format = elem
                     .metadata
                     .as_ref()

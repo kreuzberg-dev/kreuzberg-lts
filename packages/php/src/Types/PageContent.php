@@ -33,8 +33,7 @@ readonly class PageContent
         public ?PageHierarchy $hierarchy = null,
         public ?bool $isBlank = null,
         public array $layoutRegions = [],
-    ) {
-    }
+    ) {}
 
     /**
      * @param array<string, mixed> $data
@@ -69,19 +68,19 @@ readonly class PageContent
             content: $content,
             tables: array_map(
                 /** @param array<string, mixed> $table */
-                static fn (array $table): Table => Table::fromArray($table),
+                static fn(array $table): Table => Table::fromArray($table),
                 $tablesData,
             ),
             images: array_map(
                 /** @param array<string, mixed> $image */
-                static fn (array $image): ExtractedImage => ExtractedImage::fromArray($image),
+                static fn(array $image): ExtractedImage => ExtractedImage::fromArray($image),
                 $imagesData,
             ),
             hierarchy: $hierarchyData !== null ? PageHierarchy::fromArray($hierarchyData) : null,
             isBlank: $isBlank,
             layoutRegions: array_map(
                 /** @param array<string, mixed> $region */
-                static fn (array $region): LayoutRegion => LayoutRegion::fromArray($region),
+                static fn(array $region): LayoutRegion => LayoutRegion::fromArray($region),
                 $layoutRegionsData,
             ),
         );

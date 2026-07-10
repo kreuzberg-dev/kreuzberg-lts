@@ -86,7 +86,7 @@ pub fn discover_config_as_json() -> Option<String> {
 pub fn list_embedding_presets() -> Result<String, String> {
     #[cfg(not(feature = "embeddings"))]
     {
-        return Ok("[]".to_string());
+        Ok("[]".to_string())
     }
 
     #[cfg(feature = "embeddings")]
@@ -112,7 +112,7 @@ pub fn get_embedding_preset(preset_name: &str) -> Result<String, String> {
     #[cfg(not(feature = "embeddings"))]
     {
         let _ = preset_name;
-        return Err("Embedding presets require the `embeddings` feature".to_string());
+        Err("Embedding presets require the `embeddings` feature".to_string())
     }
 
     #[cfg(feature = "embeddings")]
@@ -143,6 +143,7 @@ pub fn get_embedding_preset(preset_name: &str) -> Result<String, String> {
 
 #[cfg(test)]
 mod tests {
+    #[cfg(feature = "embeddings")]
     use super::*;
 
     #[cfg(feature = "embeddings")]

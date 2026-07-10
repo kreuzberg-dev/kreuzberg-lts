@@ -17,95 +17,95 @@ import { createRequire } from "node:module";
  * This interface defines the shape of methods available in the compiled native addon.
  */
 export interface NativeBinding {
-	extractFileSync(
-		filePath: string,
-		mimeType: string | null,
-		config: Record<string, unknown> | null,
-	): Record<string, unknown>;
-	extractFile(
-		filePath: string,
-		mimeType: string | null,
-		config: Record<string, unknown> | null,
-	): Promise<Record<string, unknown>>;
-	extractBytesSync(data: Buffer, mimeType: string, config: Record<string, unknown> | null): Record<string, unknown>;
-	extractBytes(
-		data: Buffer,
-		mimeType: string,
-		config: Record<string, unknown> | null,
-	): Promise<Record<string, unknown>>;
-	batchExtractFilesSync(paths: string[], config: Record<string, unknown> | null): Record<string, unknown>[];
-	batchExtractFiles(paths: string[], config: Record<string, unknown> | null): Promise<Record<string, unknown>[]>;
-	batchExtractBytesSync(
-		dataArray: Buffer[],
-		mimeTypes: string[],
-		config: Record<string, unknown> | null,
-	): Record<string, unknown>[];
-	batchExtractBytes(
-		dataArray: Buffer[],
-		mimeTypes: string[],
-		config: Record<string, unknown> | null,
-	): Promise<Record<string, unknown>[]>;
-	registerPostProcessor(processor: Record<string, unknown>): void;
-	unregisterPostProcessor(name: string): void;
-	clearPostProcessors(): void;
-	listPostProcessors(): string[];
-	registerValidator(validator: Record<string, unknown>): void;
-	unregisterValidator(name: string): void;
-	clearValidators(): void;
-	listValidators(): string[];
-	registerOcrBackend(backend: Record<string, unknown>): void;
-	unregisterOcrBackend(name: string): void;
-	clearOcrBackends(): void;
-	listOcrBackends(): string[];
-	registerDocumentExtractor(extractor: Record<string, unknown>): void;
-	unregisterDocumentExtractor(name: string): void;
-	clearDocumentExtractors(): void;
-	listDocumentExtractors(): string[];
-	detectMimeType(filePath: string): string;
-	detectMimeTypeFromBytes(data: Buffer): string;
-	detectMimeTypeFromPath(filePath: string, checkExists?: boolean): string;
-	validateMimeType(mimeType: string): string;
-	getExtensionsForMime(mimeType: string): string[];
-	listEmbeddingPresets(): string[];
-	getEmbeddingPreset(name: string): Record<string, unknown> | null;
-	getErrorCodeName(code: number): string;
-	getErrorCodeDescription(code: number): string;
-	classifyError(errorMessage: string): Record<string, unknown>;
-	getLastErrorCode(): number;
-	getLastPanicContext(): Record<string, unknown> | null;
-	loadExtractionConfigFromFile(filePath: string): Record<string, unknown>;
-	discoverExtractionConfig(): Record<string, unknown> | null;
-	createWorkerPool(size?: number): Record<string, unknown>;
-	getWorkerPoolStats(pool: Record<string, unknown>): Record<string, unknown>;
-	extractFileInWorker(
-		pool: Record<string, unknown>,
-		filePath: string,
-		mimeType: string | null,
-		config: Record<string, unknown> | null,
-	): Promise<Record<string, unknown>>;
-	batchExtractFilesInWorker(
-		pool: Record<string, unknown>,
-		paths: string[],
-		config: Record<string, unknown> | null,
-	): Promise<Record<string, unknown>[]>;
-	closeWorkerPool(pool: Record<string, unknown>): Promise<void>;
-	renderPdfPageSync(filePath: string, pageIndex: number, dpi?: number | null): Buffer;
-	renderPdfPage(filePath: string, pageIndex: number, dpi?: number | null): Promise<Buffer>;
-	iteratePdfPagesSync(filePath: string, dpi?: number | null): Array<{ pageIndex: number; data: Buffer }>;
-	iteratePdfPages(filePath: string, dpi?: number | null): Promise<Array<{ pageIndex: number; data: Buffer }>>;
-	pdfPageCount(filePath: string, dpi?: number | null): number;
-	embedSync(texts: string[], config: Record<string, unknown> | null): number[][];
-	embed(texts: string[], config: Record<string, unknown> | null): Promise<number[][]>;
-	JsPdfPageIterator: {
-		new (
-			filePath: string,
-			dpi?: number | null,
-		): {
-			next(): { pageIndex: number; data: Buffer } | null;
-			pageCount(): number;
-			close(): void;
-		};
-	};
+  extractFileSync(
+    filePath: string,
+    mimeType: string | null,
+    config: Record<string, unknown> | null,
+  ): Record<string, unknown>;
+  extractFile(
+    filePath: string,
+    mimeType: string | null,
+    config: Record<string, unknown> | null,
+  ): Promise<Record<string, unknown>>;
+  extractBytesSync(data: Buffer, mimeType: string, config: Record<string, unknown> | null): Record<string, unknown>;
+  extractBytes(
+    data: Buffer,
+    mimeType: string,
+    config: Record<string, unknown> | null,
+  ): Promise<Record<string, unknown>>;
+  batchExtractFilesSync(paths: string[], config: Record<string, unknown> | null): Record<string, unknown>[];
+  batchExtractFiles(paths: string[], config: Record<string, unknown> | null): Promise<Record<string, unknown>[]>;
+  batchExtractBytesSync(
+    dataArray: Buffer[],
+    mimeTypes: string[],
+    config: Record<string, unknown> | null,
+  ): Record<string, unknown>[];
+  batchExtractBytes(
+    dataArray: Buffer[],
+    mimeTypes: string[],
+    config: Record<string, unknown> | null,
+  ): Promise<Record<string, unknown>[]>;
+  registerPostProcessor(processor: Record<string, unknown>): void;
+  unregisterPostProcessor(name: string): void;
+  clearPostProcessors(): void;
+  listPostProcessors(): string[];
+  registerValidator(validator: Record<string, unknown>): void;
+  unregisterValidator(name: string): void;
+  clearValidators(): void;
+  listValidators(): string[];
+  registerOcrBackend(backend: Record<string, unknown>): void;
+  unregisterOcrBackend(name: string): void;
+  clearOcrBackends(): void;
+  listOcrBackends(): string[];
+  registerDocumentExtractor(extractor: Record<string, unknown>): void;
+  unregisterDocumentExtractor(name: string): void;
+  clearDocumentExtractors(): void;
+  listDocumentExtractors(): string[];
+  detectMimeType(filePath: string): string;
+  detectMimeTypeFromBytes(data: Buffer): string;
+  detectMimeTypeFromPath(filePath: string, checkExists?: boolean): string;
+  validateMimeType(mimeType: string): string;
+  getExtensionsForMime(mimeType: string): string[];
+  listEmbeddingPresets(): string[];
+  getEmbeddingPreset(name: string): Record<string, unknown> | null;
+  getErrorCodeName(code: number): string;
+  getErrorCodeDescription(code: number): string;
+  classifyError(errorMessage: string): Record<string, unknown>;
+  getLastErrorCode(): number;
+  getLastPanicContext(): Record<string, unknown> | null;
+  loadExtractionConfigFromFile(filePath: string): Record<string, unknown>;
+  discoverExtractionConfig(): Record<string, unknown> | null;
+  createWorkerPool(size?: number): Record<string, unknown>;
+  getWorkerPoolStats(pool: Record<string, unknown>): Record<string, unknown>;
+  extractFileInWorker(
+    pool: Record<string, unknown>,
+    filePath: string,
+    mimeType: string | null,
+    config: Record<string, unknown> | null,
+  ): Promise<Record<string, unknown>>;
+  batchExtractFilesInWorker(
+    pool: Record<string, unknown>,
+    paths: string[],
+    config: Record<string, unknown> | null,
+  ): Promise<Record<string, unknown>[]>;
+  closeWorkerPool(pool: Record<string, unknown>): Promise<void>;
+  renderPdfPageSync(filePath: string, pageIndex: number, dpi?: number | null): Buffer;
+  renderPdfPage(filePath: string, pageIndex: number, dpi?: number | null): Promise<Buffer>;
+  iteratePdfPagesSync(filePath: string, dpi?: number | null): Array<{ pageIndex: number; data: Buffer }>;
+  iteratePdfPages(filePath: string, dpi?: number | null): Promise<Array<{ pageIndex: number; data: Buffer }>>;
+  pdfPageCount(filePath: string, dpi?: number | null): number;
+  embedSync(texts: string[], config: Record<string, unknown> | null): number[][];
+  embed(texts: string[], config: Record<string, unknown> | null): Promise<number[][]>;
+  JsPdfPageIterator: {
+    new (
+      filePath: string,
+      dpi?: number | null,
+    ): {
+      next(): { pageIndex: number; data: Buffer } | null;
+      pageCount(): number;
+      close(): void;
+    };
+  };
 }
 
 /**
@@ -115,10 +115,10 @@ export interface NativeBinding {
  * @internal
  */
 function isNapiRuntime(): boolean {
-	if (typeof process === "undefined") return false;
-	if (process.versions?.["bun"]) return true;
-	if (process.versions?.node) return true;
-	return false;
+  if (typeof process === "undefined") return false;
+  if (process.versions?.["bun"]) return true;
+  if (process.versions?.node) return true;
+  return false;
 }
 
 /**
@@ -141,36 +141,36 @@ let bindingInitialized = false;
  * @internal
  */
 export function createNativeBindingError(error: unknown): Error {
-	const hintParts: string[] = [];
-	let detail = "Unknown error while requiring native module.";
+  const hintParts: string[] = [];
+  let detail = "Unknown error while requiring native module.";
 
-	if (error instanceof Error) {
-		detail = error.message || error.toString();
-		if (/pdfium/i.test(detail)) {
-			hintParts.push(
-				"Pdfium runtime library was not found. Ensure the bundled libpdfium (dll/dylib/so) is present next to the native module.",
-			);
-		}
-		return new Error(
-			[
-				"Failed to load Kreuzberg native bindings.",
-				hintParts.length ? hintParts.join(" ") : "",
-				"Report this error and attach the logs/stack trace for investigation.",
-				`Underlying error: ${detail}`,
-			]
-				.filter(Boolean)
-				.join(" "),
-			{ cause: error },
-		);
-	}
+  if (error instanceof Error) {
+    detail = error.message || error.toString();
+    if (/pdfium/i.test(detail)) {
+      hintParts.push(
+        "Pdfium runtime library was not found. Ensure the bundled libpdfium (dll/dylib/so) is present next to the native module.",
+      );
+    }
+    return new Error(
+      [
+        "Failed to load Kreuzberg native bindings.",
+        hintParts.length ? hintParts.join(" ") : "",
+        "Report this error and attach the logs/stack trace for investigation.",
+        `Underlying error: ${detail}`,
+      ]
+        .filter(Boolean)
+        .join(" "),
+      { cause: error },
+    );
+  }
 
-	return new Error(
-		[
-			"Failed to load Kreuzberg native bindings.",
-			"Report this error and attach the logs/stack trace for investigation.",
-			`Underlying error: ${String(error)}`,
-		].join(" "),
-	);
+  return new Error(
+    [
+      "Failed to load Kreuzberg native bindings.",
+      "Report this error and attach the logs/stack trace for investigation.",
+      `Underlying error: ${String(error)}`,
+    ].join(" "),
+  );
 }
 
 /**
@@ -179,58 +179,51 @@ export function createNativeBindingError(error: unknown): Error {
  * @internal
  */
 export function loadNativeBinding(): NativeBinding {
-	let localRequire: ((path: string) => unknown) | undefined;
+  let localRequire: ((path: string) => unknown) | undefined;
 
-	// In ESM bundled context, we must create require from import.meta.url first
-	// This ensures we get a proper require that can load .node files
-	try {
-		localRequire = createRequire(import.meta.url);
-	} catch {
-		// Fallback to global require if createRequire fails (e.g., in CJS)
-		if (typeof require !== "undefined") {
-			localRequire = require as (path: string) => unknown;
-		}
-	}
+  try {
+    localRequire = createRequire(import.meta.url);
+  } catch {
+    if (typeof require !== "undefined") {
+      localRequire = require as (path: string) => unknown;
+    }
+  }
 
-	if (!localRequire) {
-		throw new Error("Unable to resolve native binding loader (require not available).");
-	}
+  if (!localRequire) {
+    throw new Error("Unable to resolve native binding loader (require not available).");
+  }
 
-	// Load from package root index.js (NAPI-RS generated loader), not compiled barrel export
-	// When bundled: From dist/index.mjs, ../index.js points to package root index.js
-	// When unbundled: From dist/core/binding.js, ../../index.js points to package root index.js
-	// Since we're using bundle: true, use ../index.js
-	const loadedModule = localRequire("../index.js") as unknown;
+  const loadedModule = localRequire("../index.js") as unknown;
 
-	if (typeof loadedModule !== "object" || loadedModule === null) {
-		throw new Error(
-			"Native binding is not a valid object. " + "Ensure the native module is properly built and compatible.",
-		);
-	}
+  if (typeof loadedModule !== "object" || loadedModule === null) {
+    throw new Error(
+      "Native binding is not a valid object. " + "Ensure the native module is properly built and compatible.",
+    );
+  }
 
-	const module = loadedModule as Record<string, unknown>;
+  const module = loadedModule as Record<string, unknown>;
 
-	const requiredMethods = [
-		"extractFileSync",
-		"extractFile",
-		"extractBytesSync",
-		"extractBytes",
-		"batchExtractFilesSync",
-		"batchExtractFiles",
-		"batchExtractBytesSync",
-		"batchExtractBytes",
-	];
+  const requiredMethods = [
+    "extractFileSync",
+    "extractFile",
+    "extractBytesSync",
+    "extractBytes",
+    "batchExtractFilesSync",
+    "batchExtractFiles",
+    "batchExtractBytesSync",
+    "batchExtractBytes",
+  ];
 
-	for (const method of requiredMethods) {
-		if (typeof module[method] !== "function") {
-			throw new Error(
-				`Native binding is missing required method: ${method}. ` +
-					"Ensure the native module is properly built and compatible.",
-			);
-		}
-	}
+  for (const method of requiredMethods) {
+    if (typeof module[method] !== "function") {
+      throw new Error(
+        `Native binding is missing required method: ${method}. ` +
+          "Ensure the native module is properly built and compatible.",
+      );
+    }
+  }
 
-	return module as unknown as NativeBinding;
+  return module as unknown as NativeBinding;
 }
 
 /**
@@ -245,42 +238,42 @@ export function loadNativeBinding(): NativeBinding {
  * @internal
  */
 export function getBinding(): NativeBinding {
-	if (bindingInitialized) {
-		if (binding === null) {
-			throw new Error("Native binding was previously failed to load.");
-		}
-		return binding;
-	}
+  if (bindingInitialized) {
+    if (binding === null) {
+      throw new Error("Native binding was previously failed to load.");
+    }
+    return binding;
+  }
 
-	try {
-		if (isNapiRuntime()) {
-			binding = loadNativeBinding();
-			bindingInitialized = true;
-			return binding;
-		}
-	} catch (error) {
-		bindingInitialized = true;
-		throw createNativeBindingError(error);
-	}
+  try {
+    if (isNapiRuntime()) {
+      binding = loadNativeBinding();
+      bindingInitialized = true;
+      return binding;
+    }
+  } catch (error) {
+    bindingInitialized = true;
+    throw createNativeBindingError(error);
+  }
 
-	throw new Error(
-		"Failed to load Kreuzberg bindings. Neither NAPI (Node.js) nor WASM (browsers/Deno) bindings are available. " +
-			"Make sure you have installed the @kreuzberg/node package for Node.js/Bun.",
-	);
+  throw new Error(
+    "Failed to load Kreuzberg bindings. Neither NAPI (Node.js) nor WASM (browsers/Deno) bindings are available. " +
+      "Make sure you have installed the @kreuzberg/node package for Node.js/Bun.",
+  );
 }
 
 /**
  * @internal Allows tests to provide a mocked native binding.
  */
 export function __setBindingForTests(mock: unknown): void {
-	binding = mock as NativeBinding;
-	bindingInitialized = true;
+  binding = mock as NativeBinding;
+  bindingInitialized = true;
 }
 
 /**
  * @internal Resets the cached native binding for tests.
  */
 export function __resetBindingForTests(): void {
-	binding = null;
-	bindingInitialized = false;
+  binding = null;
+  bindingInitialized = false;
 }

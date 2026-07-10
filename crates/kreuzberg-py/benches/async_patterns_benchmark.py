@@ -9,7 +9,7 @@ Expected improvement: ~25-30x speedup based on spikard benchmarks.
 
 import asyncio
 import time
-from typing import Any, Union
+from typing import Any
 
 
 class SyncOcrBackend:
@@ -34,7 +34,7 @@ class AsyncOcrBackend:
         }
 
 
-async def benchmark_pattern(backend: Union[SyncOcrBackend, AsyncOcrBackend], num_iterations: int, pattern_name: str) -> float:
+async def benchmark_pattern(backend: SyncOcrBackend | AsyncOcrBackend, num_iterations: int, pattern_name: str) -> float:
     """Benchmark a specific pattern."""
     test_image = b"fake_image_data" * 100
 
@@ -67,11 +67,11 @@ async def run_benchmarks() -> None:
     print("\n" + "=" * 70)
     print("ASYNC CALLBACK PERFORMANCE BENCHMARK")
     print("=" * 70)
-    print(f"\nPattern: spawn_blocking (current)")
+    print("\nPattern: spawn_blocking (current)")
     print(f"  Latency per call: {spawn_blocking_latency:.3f} ms")
-    print(f"\nPattern: into_future (optimized)")
+    print("\nPattern: into_future (optimized)")
     print(f"  Latency per call: {into_future_latency:.3f} ms")
-    print(f"\nPerformance Improvement:")
+    print("\nPerformance Improvement:")
     print(f"  Speedup ratio: {speedup:.1f}x")
     print(f"  Time savings per call: {time_savings_ms:.3f} ms")
 
@@ -85,7 +85,7 @@ async def run_benchmarks() -> None:
     print(f"  Optimized approach: {optimized_time:.2f} seconds")
     print(f"  Total time savings: {batch_time_savings:.2f} seconds")
 
-    print(f"\nValidation:")
+    print("\nValidation:")
     if speedup >= 20:
         print(f"  ✓ PASS: Speedup {speedup:.1f}x exceeds expected minimum of 20x")
     elif speedup >= 1.5:

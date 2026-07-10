@@ -9,13 +9,7 @@ no-default-features = false
 feature-depth = 1
 
 [advisories]
-ignore = [
-    "RUSTSEC-2024-0436", # paste crate unmaintained - transitive dep from biblatex/tokenizers
-    "RUSTSEC-2025-0119", # number_prefix unmaintained - transitive dep from indicatif -> hf-hub -> fastembed
-    "RUSTSEC-2026-0115", # imageproc 0.26.1 fragile bounds check - transitive via fastembed; not on user-controlled input paths
-    "RUSTSEC-2026-0116", # imageproc 0.26.1 kernel bounds check - same upstream, no v4.9-LTS-compatible fix available
-    "RUSTSEC-2026-0117", # imageproc 0.26.1 NaN bounds check - same upstream, no v4.9-LTS-compatible fix available
-]
+ignore = ["RUSTSEC-2024-0436", "RUSTSEC-2025-0119"]
 
 [licenses]
 allow = [
@@ -33,20 +27,24 @@ allow = [
     "Unicode-DFS-2016",
     "bzip2-1.0.6",
     "BSL-1.0",
-    "OpenSSL",
-    "NCSA",
 ]
 confidence-threshold = 0.8
 
 # Per-crate exceptions for copyleft licenses.
 # These are pinned to specific crates — nothing else can use these licenses.
 exceptions = [
-    # cbindgen: build-time C header generator, not linked into binaries
-    { allow = ["MPL-2.0"], crate = "cbindgen" },
-    # option-ext: tiny utility (transitive dep of cbindgen)
-    { allow = ["MPL-2.0"], crate = "option-ext" },
-    # r-efi: UEFI bindings, platform-specific transitive dep, never linked
-    { allow = ["LGPL-2.1-or-later"], crate = "r-efi" },
+    { allow = [
+        "MPL-2.0",
+    ], crate = "cbindgen" },
+    { allow = [
+        "MPL-2.0",
+    ], crate = "colored" },
+    { allow = [
+        "MPL-2.0",
+    ], crate = "option-ext" },
+    { allow = [
+        "LGPL-2.1-or-later",
+    ], crate = "r-efi" },
 ]
 
 #[[licenses.clarify]]

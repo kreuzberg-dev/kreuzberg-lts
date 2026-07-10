@@ -12,12 +12,11 @@ declare(strict_types=1);
 namespace Kreuzberg\Tests\Unit;
 
 use Kreuzberg\Exceptions\KreuzbergException;
+use PHPUnit\Framework\Attributes\Test;
+use PHPUnit\Framework\TestCase;
 
 use function Kreuzberg\render_pdf_page;
 use function Kreuzberg\render_pdf_pages_iter;
-
-use PHPUnit\Framework\Attributes\Test;
-use PHPUnit\Framework\TestCase;
 
 final class RenderTest extends TestCase
 {
@@ -85,7 +84,6 @@ final class RenderTest extends TestCase
     {
         $this->expectException(KreuzbergException::class);
         foreach (render_pdf_pages_iter('/nonexistent/path/to/document.pdf') as $png) {
-            // should not reach here
         }
     }
 
@@ -105,7 +103,6 @@ final class RenderTest extends TestCase
         }
 
         $iter = render_pdf_pages_iter($pdfPath);
-        // Create but don't consume — just let it go out of scope
         unset($iter);
         $this->assertTrue(true, 'Iterator cleanup without consuming should not crash');
     }
@@ -122,9 +119,8 @@ final class RenderTest extends TestCase
             $this->assertSame(0, $pageIndex);
             $this->assertIsString($pngData);
             $this->assertGreaterThan(8, strlen($pngData));
-            // Verify PNG magic bytes
             $this->assertSame("\x89PNG", substr($pngData, 0, 4));
-            break; // Stop after first page
+            break;
         }
     }
 }

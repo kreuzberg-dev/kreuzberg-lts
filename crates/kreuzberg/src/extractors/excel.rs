@@ -89,7 +89,6 @@ impl ExcelExtractor {
         let mut additional = AHashMap::new();
         let wb_meta = &workbook.metadata;
 
-        // Map office metadata to standard Metadata fields
         let title = wb_meta.get("title").cloned();
         let subject = wb_meta.get("subject").cloned();
         let created_by = wb_meta.get("created_by").or_else(|| wb_meta.get("creator")).cloned();
@@ -105,7 +104,6 @@ impl ExcelExtractor {
         });
         let language = wb_meta.get("language").cloned();
 
-        // Put remaining metadata into additional map (excluding standard fields)
         for (key, value) in &workbook.metadata {
             match key.as_str() {
                 "sheet_count" | "sheet_names" | "title" | "subject" | "created_by" | "creator" | "modified_by"

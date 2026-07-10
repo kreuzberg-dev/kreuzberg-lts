@@ -21,9 +21,9 @@ defmodule Kreuzberg.OcrRotation do
   """
 
   @type t :: %__MODULE__{
-          angle_degrees: float() | nil,
-          confidence: float() | nil
-        }
+  angle_degrees: float() | nil,
+  confidence: float() | nil
+  }
 
   defstruct [:angle_degrees, :confidence]
 
@@ -48,8 +48,8 @@ defmodule Kreuzberg.OcrRotation do
   @spec from_map(map()) :: t()
   def from_map(data) when is_map(data) do
     %__MODULE__{
-      angle_degrees: to_float(data["angle_degrees"]),
-      confidence: to_float(data["confidence"])
+    angle_degrees: to_float(data["angle_degrees"]),
+    confidence: to_float(data["confidence"])
     }
   end
 
@@ -76,8 +76,8 @@ defmodule Kreuzberg.OcrRotation do
   @spec to_map(t()) :: map()
   def to_map(%__MODULE__{} = rotation) do
     %{
-      "angle_degrees" => rotation.angle_degrees,
-      "confidence" => rotation.confidence
+    "angle_degrees" => rotation.angle_degrees,
+    "confidence" => rotation.confidence
     }
   end
 

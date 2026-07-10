@@ -121,7 +121,6 @@ pub fn test_config_with_ocr() -> kreuzberg::core::config::ExtractionConfig {
     }
 }
 
-// PDF-specific test helpers (only available with pdf feature)
 #[cfg(feature = "pdf")]
 pub mod pdf_helpers {
     use kreuzberg::core::config::ExtractionConfig;

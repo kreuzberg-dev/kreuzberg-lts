@@ -19,8 +19,6 @@ pub fn json_to_robj(value: &Value) -> extendr_api::Result<Robj> {
             }
         }
         Value::String(s) => {
-            // R strings (CHARSXP) are C strings and cannot contain embedded NUL bytes.
-            // Strip them to avoid conversion errors.
             let sanitized = s.replace('\0', "");
             Ok(sanitized.into_robj())
         }
@@ -30,7 +28,10 @@ pub fn json_to_robj(value: &Value) -> extendr_api::Result<Robj> {
         }
         Value::Object(map) => {
             let names: Vec<&str> = map.keys().map(|k| k.as_str()).collect();
-            let values: Vec<Robj> = map.values().map(json_to_robj).collect::<extendr_api::Result<Vec<_>>>()?;
+            let values: Vec<Robj> = map
+                .values()
+                .map(json_to_robj)
+                .collect::<extendr_api::Result<Vec<_>>>()?;
             let list = List::from_names_and_values(names, values).map_err(to_r_error)?;
             Ok(list.into_robj())
         }

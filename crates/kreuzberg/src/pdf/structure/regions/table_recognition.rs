@@ -22,7 +22,6 @@ pub(in crate::pdf::structure) fn word_hint_iow(
     let word_rect = Rect::from_xywh(w.left as f32, w.top as f32, w.width as f32, w.height as f32);
     let region_rect = Rect::from_ltrb(region_left, region_top, region_right, region_bottom);
     if word_rect.area() <= 0.0 {
-        // Zero-area word: fall back to center-point containment (0 or 1)
         return if region_rect.contains_point(word_rect.center_x(), word_rect.center_y()) {
             1.0
         } else {
@@ -58,7 +57,6 @@ pub(in crate::pdf::structure) fn recognize_tables_for_native_page(
     let img_w = rgb_image.width();
     let img_h = rgb_image.height();
 
-    // Scale factors: PDF points → rendered image pixels
     let sx = img_w as f32 / page_result.page_width_pts;
     let sy = img_h as f32 / page_result.page_height_pts;
 
@@ -68,11 +66,6 @@ pub(in crate::pdf::structure) fn recognize_tables_for_native_page(
             if h.class != LayoutHintClass::Table || h.confidence < 0.5 {
                 return false;
             }
-            // Structural hint guard relaxed: region assignment now handles
-            // text/table overlap correctly by assigning segments to Table
-            // regions instead of suppressing them. Small tables on structured
-            // pages are now allowed through since double-counting is prevented
-            // by the region-first assembly approach.
             true
         })
         .collect();
@@ -80,9 +73,6 @@ pub(in crate::pdf::structure) fn recognize_tables_for_native_page(
     let mut tables = Vec::new();
 
     for hint in &table_hints {
-        // Convert hint bbox from PDF coords to rendered image pixel coords.
-        // PDF: y=0 at bottom, increases upward.
-        // Image: y=0 at top, increases downward.
         let px_left = (hint.left * sx).round().max(0.0) as u32;
         let px_top = ((page_height - hint.top) * sy).round().max(0.0) as u32;
         let px_right = (hint.right * sx).round().min(img_w as f32) as u32;
@@ -95,10 +85,6 @@ pub(in crate::pdf::structure) fn recognize_tables_for_native_page(
             continue;
         }
 
-        // Guard: skip TATR on extremely large crops that would slow inference.
-        // DETR preprocessing resizes the crop (shortest edge → 800, cap 1333),
-        // so even large crops are feasible; 4M pixels (~2000x2000) is generous
-        // enough for tables rendered from the ~640px layout image.
         if (crop_w as u64) * (crop_h as u64) > 4_000_000 {
             tracing::debug!(
                 page = page_index,
@@ -109,10 +95,8 @@ pub(in crate::pdf::structure) fn recognize_tables_for_native_page(
             continue;
         }
 
-        // Crop table region from rendered image
         let cropped = image::imageops::crop_imm(&rgb_image, px_left, px_top, crop_w, crop_h).to_image();
 
-        // Run TATR inference
         let tatr_result = match tatr_model.recognize(&cropped) {
             Ok(r) => r,
             Err(e) => {
@@ -121,7 +105,6 @@ pub(in crate::pdf::structure) fn recognize_tables_for_native_page(
             }
         };
 
-        // Check if TATR detected any rows and columns
         if tatr_result.rows.is_empty() || tatr_result.columns.is_empty() {
             tracing::debug!(
                 page = page_index,
@@ -132,9 +115,6 @@ pub(in crate::pdf::structure) fn recognize_tables_for_native_page(
             continue;
         }
 
-        // Build cell grid from row × column intersections.
-        // Pass the table hint bbox converted to crop-relative pixel coords
-        // so that rows are widened to the full table extent.
         let table_bbox_crop = [0.0_f32, 0.0, crop_w as f32, crop_h as f32];
         let cell_grid = crate::layout::models::tatr::build_cell_grid(&tatr_result, Some(table_bbox_crop));
         let num_rows = cell_grid.len();
@@ -154,11 +134,6 @@ pub(in crate::pdf::structure) fn recognize_tables_for_native_page(
             continue;
         }
 
-        // Filter words that overlap the table hint bbox (≥20% of word area).
-        // HocrWord uses image coordinates (y=0 at top).
-        // Pad the hint bbox slightly (3% width, 2% height) so edge words
-        // (e.g. row numbers at the left margin) are not excluded by a
-        // tight-fitting RT-DETR bbox.
         let hint_width = hint.right - hint.left;
         let hint_height = hint.top - hint.bottom;
         let pad_x = hint_width * 0.03;
@@ -181,9 +156,6 @@ pub(in crate::pdf::structure) fn recognize_tables_for_native_page(
             })
             .collect();
 
-        // Match words to cells and build markdown table.
-        // Cell bboxes are in crop-pixel space; words are in PDF coords.
-        // Convert cell bboxes to PDF coords for matching.
         let (grid, markdown) = build_tatr_grid_table(&cell_grid, &table_words, px_left as f32, px_top as f32, sx, sy);
 
         tracing::debug!(
@@ -199,7 +171,6 @@ pub(in crate::pdf::structure) fn recognize_tables_for_native_page(
             continue;
         }
 
-        // Validate: reject TATR output if too few cells have content.
         let total_cells = num_rows * num_cols;
         let filled_cells = grid
             .iter()
@@ -261,8 +232,6 @@ fn build_tatr_grid_table(
         return (Vec::new(), String::new());
     }
 
-    // Convert all cell bboxes from crop-pixel space to HocrWord coordinate
-    // space (PDF point units, image-oriented y).
     let mut converted_cells: Vec<Vec<(f32, f32, f32, f32)>> = Vec::with_capacity(num_rows);
     for row in cell_grid {
         let mut conv_row = Vec::with_capacity(num_cols);
@@ -276,9 +245,6 @@ fn build_tatr_grid_table(
         converted_cells.push(conv_row);
     }
 
-    // Best-match assignment: assign each word to the single cell with the
-    // highest IoW, preventing the same word from appearing in multiple cells.
-    // Store (word_index, cx, cy) per cell for reading-order sorting.
     let mut cell_words: Vec<Vec<Vec<(usize, f32, f32)>>> = (0..num_rows)
         .map(|_| (0..num_cols).map(|_| Vec::new()).collect())
         .collect();
@@ -306,7 +272,6 @@ fn build_tatr_grid_table(
         }
     }
 
-    // Build the text grid from the assigned words.
     let mut grid: Vec<Vec<String>> = Vec::with_capacity(num_rows);
     for row_cells in &cell_words {
         let mut grid_row = vec![String::new(); num_cols];
@@ -314,7 +279,6 @@ fn build_tatr_grid_table(
             if cell_word_indices.is_empty() {
                 continue;
             }
-            // Sort words within the cell by reading order (y then x).
             let mut sorted = cell_word_indices.clone();
             sorted.sort_by(|a, b| a.2.total_cmp(&b.2).then_with(|| a.1.total_cmp(&b.1)));
             let text: String = sorted
@@ -332,9 +296,6 @@ fn build_tatr_grid_table(
     (grid, markdown)
 }
 
-// Word-to-cell matching is now handled inline in build_tatr_grid_table
-// using best-match assignment (each word assigned to exactly one cell).
-
 /// Detect and fix vertically-oriented table header text.
 ///
 /// PDFs with rotated column headers (common in wide tables) produce garbled
@@ -351,7 +312,6 @@ fn fix_vertical_header_text(text: &str) -> String {
     let single_chars = tokens.iter().filter(|t| t.len() == 1).count();
     let ratio = single_chars as f32 / tokens.len() as f32;
     if ratio > 0.7 {
-        // Join all tokens and reverse to get original reading order.
         let joined: String = tokens.concat();
         joined.chars().rev().collect()
     } else {
@@ -377,9 +337,7 @@ fn render_grid_as_markdown(grid: &[Vec<String>]) -> String {
         md.push('|');
         for col in 0..max_cols {
             let raw_cell = row.get(col).map(|s| s.as_str()).unwrap_or("");
-            // Fix vertically-oriented header text (spaced single chars in reverse).
             let cell = fix_vertical_header_text(raw_cell);
-            // Escape pipe characters first, then HTML entities
             let pipe_escaped = cell.replace('|', "\\|");
             let escaped = escape_html_entities(&pipe_escaped);
             md.push(' ');
@@ -402,10 +360,6 @@ fn render_grid_as_markdown(grid: &[Vec<String>]) -> String {
     }
     md
 }
-
-// ---------------------------------------------------------------------------
-// SLANeXT-based table recognition
-// ---------------------------------------------------------------------------
 
 /// Recognize tables on a native PDF page using SLANeXT structure prediction.
 ///
@@ -451,12 +405,7 @@ pub(in crate::pdf::structure) fn recognize_tables_slanet(
         return Vec::new();
     }
 
-    // When a classifier is provided, classify the first table region on this page
-    // to decide between wired and wireless SLANeXT variants.
-    // `slanet_model` is the primary (wired or forced variant).
-    // `classifier` provides (classifier, alternative_model) for auto-selection.
     let active_model: &mut crate::layout::models::slanet::SlanetModel = if let Some((cls, alt_model)) = classifier {
-        // Crop the first table hint for classification
         let first_hint = table_hints[0];
         let px_left = (first_hint.left * sx).round().max(0.0) as u32;
         let px_top = ((page_height - first_hint.top) * sy).round().max(0.0) as u32;
@@ -472,14 +421,14 @@ pub(in crate::pdf::structure) fn recognize_tables_slanet(
                     page = page_index,
                     "TableClassifier: page classified as wireless, using wireless SLANeXT"
                 );
-                alt_model // alt_model is wireless
+                alt_model
             }
             Ok(crate::layout::models::table_classifier::TableType::Wired) => {
                 tracing::debug!(
                     page = page_index,
                     "TableClassifier: page classified as wired, using wired SLANeXT"
                 );
-                slanet_model // slanet_model is wired
+                slanet_model
             }
             Err(e) => {
                 tracing::warn!(page = page_index, "TableClassifier failed: {e}, defaulting to wired");
@@ -498,8 +447,6 @@ pub(in crate::pdf::structure) fn recognize_tables_slanet(
         "SLANeXT: running full-page inference"
     );
 
-    // Run SLANeXT on the FULL page image (not a crop).
-    // SLANeXT expects complete table context to detect structure.
     let slanet_result = match active_model.recognize(&rgb_image) {
         Ok(r) => r,
         Err(e) => {
@@ -527,19 +474,14 @@ pub(in crate::pdf::structure) fn recognize_tables_slanet(
         "SLANeXT: full-page inference result"
     );
 
-    // For each RT-DETR table hint, find SLANeXT cells that overlap it,
-    // then match words and build a markdown table.
     let mut tables = Vec::new();
 
     for hint in &table_hints {
-        // Convert hint bbox to image coordinates (for cell matching)
         let hint_img_left = hint.left * sx;
         let hint_img_top = (page_height - hint.top) * sy;
         let hint_img_right = hint.right * sx;
         let hint_img_bottom = (page_height - hint.bottom) * sy;
 
-        // Find SLANeXT cells whose center falls within this table region.
-        // Cell bboxes are in original image pixel coords (from SLANeXT decode).
         let mut matching_cells: Vec<&crate::layout::models::slanet::SlanetCell> = Vec::new();
         for cell in &slanet_result.cells {
             let cx = (cell.bbox[0] + cell.bbox[2]) / 2.0;
@@ -559,7 +501,6 @@ pub(in crate::pdf::structure) fn recognize_tables_slanet(
             continue;
         }
 
-        // Determine grid dimensions from matching cells
         let max_row = matching_cells.iter().map(|c| c.row).max().unwrap_or(0);
         let max_col = matching_cells.iter().map(|c| c.col).max().unwrap_or(0);
         let num_rows = max_row + 1;
@@ -573,8 +514,6 @@ pub(in crate::pdf::structure) fn recognize_tables_slanet(
             "SLANeXT: cells matched to table hint"
         );
 
-        // Filter words overlapping the table hint bbox.
-        // HocrWord uses image coordinates (y=0 at top), so flip the hint's PDF y-coords.
         let hint_img_top = (page_height - hint.top).max(0.0);
         let hint_img_bottom = (page_height - hint.bottom).max(0.0);
 
@@ -588,9 +527,6 @@ pub(in crate::pdf::structure) fn recognize_tables_slanet(
             })
             .collect();
 
-        // Build markdown by matching words to SLANeXT cells.
-        // Cell bboxes are in image pixel coords; words are in PDF coords.
-        // Convert cell bboxes to PDF coord space for matching.
         let (grid, markdown) = build_slanet_cells_table(&matching_cells, num_rows, num_cols, &table_words, sx, sy);
 
         if markdown.is_empty() {
@@ -598,7 +534,6 @@ pub(in crate::pdf::structure) fn recognize_tables_slanet(
             continue;
         }
 
-        // Validate: reject if too few cells have content
         let total_cells = num_rows * num_cols;
         let filled_cells = grid
             .iter()
@@ -651,7 +586,6 @@ fn build_slanet_cells_table(
         return (Vec::new(), String::new());
     }
 
-    // Renumber rows/cols to be 0-based relative to the filtered cell set.
     let min_row = cells.iter().map(|c| c.row).min().unwrap_or(0);
     let min_col = cells.iter().map(|c| c.col).min().unwrap_or(0);
 
@@ -660,8 +594,6 @@ fn build_slanet_cells_table(
 
     let mut grid: Vec<Vec<String>> = (0..grid_rows).map(|_| vec![String::new(); grid_cols]).collect();
 
-    // Convert cell bboxes from image pixel coords to PDF/HocrWord coords.
-    // Image pixel → PDF: x_pdf = x_px / sx, y_pdf = y_px / sy
     let converted_cells: Vec<(usize, usize, f32, f32, f32, f32)> = cells
         .iter()
         .map(|cell| {
@@ -680,7 +612,6 @@ fn build_slanet_cells_table(
         })
         .collect();
 
-    // Best-match word-to-cell assignment
     let mut word_assignments: Vec<(usize, usize, f32, f32)> = Vec::new();
 
     for (wi, &word) in words.iter().enumerate() {
@@ -702,7 +633,6 @@ fn build_slanet_cells_table(
         }
     }
 
-    // Group words by cell and sort by reading order
     let mut cell_word_groups: Vec<Vec<(usize, f32, f32)>> = vec![Vec::new(); cells.len()];
     for &(wi, cell_idx, cx, cy) in &word_assignments {
         if cell_idx < cell_word_groups.len() {

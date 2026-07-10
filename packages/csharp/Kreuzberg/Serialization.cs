@@ -46,14 +46,14 @@ internal class PageConfigConverter : JsonConverter<PageConfig>
             switch (propertyName?.ToLowerInvariant())
             {
                 case "extract_pages":
-                    extractPages = reader.TokenType == JsonTokenType.Null ? null : reader.GetBoolean();
-                    break;
+                extractPages = reader.TokenType == JsonTokenType.Null ? null : reader.GetBoolean();
+                break;
                 case "insert_page_markers":
-                    insertPageMarkers = reader.TokenType == JsonTokenType.Null ? null : reader.GetBoolean();
-                    break;
+                insertPageMarkers = reader.TokenType == JsonTokenType.Null ? null : reader.GetBoolean();
+                break;
                 case "marker_format":
-                    markerFormat = reader.TokenType == JsonTokenType.Null ? null : reader.GetString();
-                    break;
+                markerFormat = reader.TokenType == JsonTokenType.Null ? null : reader.GetString();
+                break;
             }
         }
 
@@ -136,13 +136,12 @@ internal class EmbeddingConfigConverter : JsonConverter<EmbeddingConfig>
             switch (propertyName?.ToLowerInvariant())
             {
                 case "model":
-                    if (reader.TokenType == JsonTokenType.String)
+                if (reader.TokenType == JsonTokenType.String)
                     {
                         model = reader.GetString();
                     }
                     else if (reader.TokenType == JsonTokenType.StartObject)
                     {
-                        // Rust sends model as tagged enum: {"type":"preset","name":"balanced"}
                         string? modelType = null;
                         string? modelName = null;
                         string? modelId = null;
@@ -167,19 +166,19 @@ internal class EmbeddingConfigConverter : JsonConverter<EmbeddingConfig>
                     {
                         model = null;
                     }
-                    break;
+                break;
                 case "batch_size":
-                    batchSize = reader.TokenType == JsonTokenType.Null ? null : reader.GetInt32();
-                    break;
+                batchSize = reader.TokenType == JsonTokenType.Null ? null : reader.GetInt32();
+                break;
                 case "normalize":
-                    normalize = reader.TokenType == JsonTokenType.Null ? null : reader.GetBoolean();
-                    break;
+                normalize = reader.TokenType == JsonTokenType.Null ? null : reader.GetBoolean();
+                break;
                 case "dimensions":
-                    dimensions = reader.TokenType == JsonTokenType.Null ? null : reader.GetInt32();
-                    break;
+                dimensions = reader.TokenType == JsonTokenType.Null ? null : reader.GetInt32();
+                break;
                 case "use_cache":
-                    useCache = reader.TokenType == JsonTokenType.Null ? null : reader.GetBoolean();
-                    break;
+                useCache = reader.TokenType == JsonTokenType.Null ? null : reader.GetBoolean();
+                break;
             }
         }
 
@@ -200,7 +199,6 @@ internal class EmbeddingConfigConverter : JsonConverter<EmbeddingConfig>
         writer.WritePropertyName("model");
         if (!string.IsNullOrEmpty(value.Model))
         {
-            // Wrap simple model name as Rust preset tagged enum
             writer.WriteStartObject();
             writer.WritePropertyName("type");
             writer.WriteStringValue("preset");
@@ -273,26 +271,26 @@ internal class KeywordConfigConverter : JsonConverter<KeywordConfig>
             switch (propertyName?.ToLowerInvariant())
             {
                 case "algorithm":
-                    algorithm = reader.TokenType == JsonTokenType.Null ? null : reader.GetString();
-                    break;
+                algorithm = reader.TokenType == JsonTokenType.Null ? null : reader.GetString();
+                break;
                 case "max_keywords":
-                    maxKeywords = reader.TokenType == JsonTokenType.Null ? null : reader.GetInt32();
-                    break;
+                maxKeywords = reader.TokenType == JsonTokenType.Null ? null : reader.GetInt32();
+                break;
                 case "min_score":
-                    minScore = reader.TokenType == JsonTokenType.Null ? null : reader.GetDouble();
-                    break;
+                minScore = reader.TokenType == JsonTokenType.Null ? null : reader.GetDouble();
+                break;
                 case "ngram_range":
-                    ngramRange = reader.TokenType == JsonTokenType.Null ? null : JsonSerializer.Deserialize<List<int>>(ref reader, options);
-                    break;
+                ngramRange = reader.TokenType == JsonTokenType.Null ? null : JsonSerializer.Deserialize<List<int>>(ref reader, options);
+                break;
                 case "language":
-                    language = reader.TokenType == JsonTokenType.Null ? null : reader.GetString();
-                    break;
+                language = reader.TokenType == JsonTokenType.Null ? null : reader.GetString();
+                break;
                 case "yake_params":
-                    yakeParams = reader.TokenType == JsonTokenType.Null ? null : JsonSerializer.Deserialize<YakeParamsConfig>(ref reader, options);
-                    break;
+                yakeParams = reader.TokenType == JsonTokenType.Null ? null : JsonSerializer.Deserialize<YakeParamsConfig>(ref reader, options);
+                break;
                 case "rake_params":
-                    rakeParams = reader.TokenType == JsonTokenType.Null ? null : JsonSerializer.Deserialize<RakeParamsConfig>(ref reader, options);
-                    break;
+                rakeParams = reader.TokenType == JsonTokenType.Null ? null : JsonSerializer.Deserialize<RakeParamsConfig>(ref reader, options);
+                break;
             }
         }
 
@@ -407,17 +405,17 @@ internal class HtmlPreprocessingOptionsConverter : JsonConverter<HtmlPreprocessi
             switch (propertyName?.ToLowerInvariant())
             {
                 case "enabled":
-                    enabled = reader.TokenType == JsonTokenType.Null ? null : reader.GetBoolean();
-                    break;
+                enabled = reader.TokenType == JsonTokenType.Null ? null : reader.GetBoolean();
+                break;
                 case "preset":
-                    preset = reader.TokenType == JsonTokenType.Null ? null : reader.GetString();
-                    break;
+                preset = reader.TokenType == JsonTokenType.Null ? null : reader.GetString();
+                break;
                 case "remove_navigation":
-                    removeNavigation = reader.TokenType == JsonTokenType.Null ? null : reader.GetBoolean();
-                    break;
+                removeNavigation = reader.TokenType == JsonTokenType.Null ? null : reader.GetBoolean();
+                break;
                 case "remove_forms":
-                    removeForms = reader.TokenType == JsonTokenType.Null ? null : reader.GetBoolean();
-                    break;
+                removeForms = reader.TokenType == JsonTokenType.Null ? null : reader.GetBoolean();
+                break;
             }
         }
 
@@ -521,98 +519,98 @@ internal class HtmlConversionOptionsConverter : JsonConverter<HtmlConversionOpti
             switch (propertyName?.ToLowerInvariant())
             {
                 case "heading_style":
-                    headingStyle = reader.TokenType == JsonTokenType.Null ? null : reader.GetString();
-                    break;
+                headingStyle = reader.TokenType == JsonTokenType.Null ? null : reader.GetString();
+                break;
                 case "list_indent_type":
-                    listIndentType = reader.TokenType == JsonTokenType.Null ? null : reader.GetString();
-                    break;
+                listIndentType = reader.TokenType == JsonTokenType.Null ? null : reader.GetString();
+                break;
                 case "list_indent_width":
-                    listIndentWidth = reader.TokenType == JsonTokenType.Null ? null : reader.GetInt32();
-                    break;
+                listIndentWidth = reader.TokenType == JsonTokenType.Null ? null : reader.GetInt32();
+                break;
                 case "bullets":
-                    bullets = reader.TokenType == JsonTokenType.Null ? null : reader.GetString();
-                    break;
+                bullets = reader.TokenType == JsonTokenType.Null ? null : reader.GetString();
+                break;
                 case "strong_em_symbol":
-                    strongEmSymbol = reader.TokenType == JsonTokenType.Null ? null : reader.GetString();
-                    break;
+                strongEmSymbol = reader.TokenType == JsonTokenType.Null ? null : reader.GetString();
+                break;
                 case "escape_asterisks":
-                    escapeAsterisks = reader.TokenType == JsonTokenType.Null ? null : reader.GetBoolean();
-                    break;
+                escapeAsterisks = reader.TokenType == JsonTokenType.Null ? null : reader.GetBoolean();
+                break;
                 case "escape_underscores":
-                    escapeUnderscores = reader.TokenType == JsonTokenType.Null ? null : reader.GetBoolean();
-                    break;
+                escapeUnderscores = reader.TokenType == JsonTokenType.Null ? null : reader.GetBoolean();
+                break;
                 case "escape_misc":
-                    escapeMisc = reader.TokenType == JsonTokenType.Null ? null : reader.GetBoolean();
-                    break;
+                escapeMisc = reader.TokenType == JsonTokenType.Null ? null : reader.GetBoolean();
+                break;
                 case "escape_ascii":
-                    escapeAscii = reader.TokenType == JsonTokenType.Null ? null : reader.GetBoolean();
-                    break;
+                escapeAscii = reader.TokenType == JsonTokenType.Null ? null : reader.GetBoolean();
+                break;
                 case "code_language":
-                    codeLanguage = reader.TokenType == JsonTokenType.Null ? null : reader.GetString();
-                    break;
+                codeLanguage = reader.TokenType == JsonTokenType.Null ? null : reader.GetString();
+                break;
                 case "autolinks":
-                    autolinks = reader.TokenType == JsonTokenType.Null ? null : reader.GetBoolean();
-                    break;
+                autolinks = reader.TokenType == JsonTokenType.Null ? null : reader.GetBoolean();
+                break;
                 case "default_title":
-                    defaultTitle = reader.TokenType == JsonTokenType.Null ? null : reader.GetString();
-                    break;
+                defaultTitle = reader.TokenType == JsonTokenType.Null ? null : reader.GetString();
+                break;
                 case "br_in_tables":
-                    brInTables = reader.TokenType == JsonTokenType.Null ? null : reader.GetBoolean();
-                    break;
+                brInTables = reader.TokenType == JsonTokenType.Null ? null : reader.GetBoolean();
+                break;
                 case "hocr_spatial_tables":
-                    hocrSpatialTables = reader.TokenType == JsonTokenType.Null ? null : reader.GetBoolean();
-                    break;
+                hocrSpatialTables = reader.TokenType == JsonTokenType.Null ? null : reader.GetBoolean();
+                break;
                 case "highlight_style":
-                    highlightStyle = reader.TokenType == JsonTokenType.Null ? null : reader.GetString();
-                    break;
+                highlightStyle = reader.TokenType == JsonTokenType.Null ? null : reader.GetString();
+                break;
                 case "extract_metadata":
-                    extractMetadata = reader.TokenType == JsonTokenType.Null ? null : reader.GetBoolean();
-                    break;
+                extractMetadata = reader.TokenType == JsonTokenType.Null ? null : reader.GetBoolean();
+                break;
                 case "whitespace_mode":
-                    whitespaceMode = reader.TokenType == JsonTokenType.Null ? null : reader.GetString();
-                    break;
+                whitespaceMode = reader.TokenType == JsonTokenType.Null ? null : reader.GetString();
+                break;
                 case "strip_newlines":
-                    stripNewlines = reader.TokenType == JsonTokenType.Null ? null : reader.GetBoolean();
-                    break;
+                stripNewlines = reader.TokenType == JsonTokenType.Null ? null : reader.GetBoolean();
+                break;
                 case "wrap":
-                    wrap = reader.TokenType == JsonTokenType.Null ? null : reader.GetBoolean();
-                    break;
+                wrap = reader.TokenType == JsonTokenType.Null ? null : reader.GetBoolean();
+                break;
                 case "wrap_width":
-                    wrapWidth = reader.TokenType == JsonTokenType.Null ? null : reader.GetInt32();
-                    break;
+                wrapWidth = reader.TokenType == JsonTokenType.Null ? null : reader.GetInt32();
+                break;
                 case "convert_as_inline":
-                    convertAsInline = reader.TokenType == JsonTokenType.Null ? null : reader.GetBoolean();
-                    break;
+                convertAsInline = reader.TokenType == JsonTokenType.Null ? null : reader.GetBoolean();
+                break;
                 case "sub_symbol":
-                    subSymbol = reader.TokenType == JsonTokenType.Null ? null : reader.GetString();
-                    break;
+                subSymbol = reader.TokenType == JsonTokenType.Null ? null : reader.GetString();
+                break;
                 case "sup_symbol":
-                    supSymbol = reader.TokenType == JsonTokenType.Null ? null : reader.GetString();
-                    break;
+                supSymbol = reader.TokenType == JsonTokenType.Null ? null : reader.GetString();
+                break;
                 case "newline_style":
-                    newlineStyle = reader.TokenType == JsonTokenType.Null ? null : reader.GetString();
-                    break;
+                newlineStyle = reader.TokenType == JsonTokenType.Null ? null : reader.GetString();
+                break;
                 case "code_block_style":
-                    codeBlockStyle = reader.TokenType == JsonTokenType.Null ? null : reader.GetString();
-                    break;
+                codeBlockStyle = reader.TokenType == JsonTokenType.Null ? null : reader.GetString();
+                break;
                 case "keep_inline_images_in":
-                    keepInlineImagesIn = reader.TokenType == JsonTokenType.Null ? null : JsonSerializer.Deserialize<List<string>>(ref reader, options);
-                    break;
+                keepInlineImagesIn = reader.TokenType == JsonTokenType.Null ? null : JsonSerializer.Deserialize<List<string>>(ref reader, options);
+                break;
                 case "encoding":
-                    encoding = reader.TokenType == JsonTokenType.Null ? null : reader.GetString();
-                    break;
+                encoding = reader.TokenType == JsonTokenType.Null ? null : reader.GetString();
+                break;
                 case "debug":
-                    debug = reader.TokenType == JsonTokenType.Null ? null : reader.GetBoolean();
-                    break;
+                debug = reader.TokenType == JsonTokenType.Null ? null : reader.GetBoolean();
+                break;
                 case "strip_tags":
-                    stripTags = reader.TokenType == JsonTokenType.Null ? null : JsonSerializer.Deserialize<List<string>>(ref reader, options);
-                    break;
+                stripTags = reader.TokenType == JsonTokenType.Null ? null : JsonSerializer.Deserialize<List<string>>(ref reader, options);
+                break;
                 case "preserve_tags":
-                    preserveTags = reader.TokenType == JsonTokenType.Null ? null : JsonSerializer.Deserialize<List<string>>(ref reader, options);
-                    break;
+                preserveTags = reader.TokenType == JsonTokenType.Null ? null : JsonSerializer.Deserialize<List<string>>(ref reader, options);
+                break;
                 case "preprocessing":
-                    preprocessing = reader.TokenType == JsonTokenType.Null ? null : JsonSerializer.Deserialize<HtmlPreprocessingOptions>(ref reader, options);
-                    break;
+                preprocessing = reader.TokenType == JsonTokenType.Null ? null : JsonSerializer.Deserialize<HtmlPreprocessingOptions>(ref reader, options);
+                break;
             }
         }
 
@@ -654,30 +652,25 @@ internal class HtmlConversionOptionsConverter : JsonConverter<HtmlConversionOpti
 
     public override void Write(Utf8JsonWriter writer, HtmlConversionOptions value, JsonSerializerOptions options)
     {
-        // Check if all properties are null - if so, write empty object for FFI contract
         bool hasAnyValue = value.HeadingStyle != null || value.ListIndentType != null ||
-                           value.ListIndentWidth.HasValue || value.Bullets != null ||
-                           value.StrongEmSymbol != null || value.EscapeAsterisks.HasValue ||
-                           value.EscapeUnderscores.HasValue || value.EscapeMisc.HasValue ||
-                           value.EscapeAscii.HasValue || value.CodeLanguage != null ||
-                           value.Autolinks.HasValue || value.DefaultTitle != null ||
-                           value.BrInTables.HasValue || value.HocrSpatialTables.HasValue ||
-                           value.HighlightStyle != null || value.ExtractMetadata.HasValue ||
-                           value.WhitespaceMode != null || value.StripNewlines.HasValue ||
-                           value.Wrap.HasValue || value.WrapWidth.HasValue ||
-                           value.ConvertAsInline.HasValue || value.SubSymbol != null ||
-                           value.SupSymbol != null || value.NewlineStyle != null ||
-                           value.CodeBlockStyle != null || value.KeepInlineImagesIn != null ||
-                           value.Encoding != null || value.Debug.HasValue ||
-                           value.StripTags != null || value.PreserveTags != null ||
-                           value.Preprocessing != null;
+        value.ListIndentWidth.HasValue || value.Bullets != null ||
+        value.StrongEmSymbol != null || value.EscapeAsterisks.HasValue ||
+        value.EscapeUnderscores.HasValue || value.EscapeMisc.HasValue ||
+        value.EscapeAscii.HasValue || value.CodeLanguage != null ||
+        value.Autolinks.HasValue || value.DefaultTitle != null ||
+        value.BrInTables.HasValue || value.HocrSpatialTables.HasValue ||
+        value.HighlightStyle != null || value.ExtractMetadata.HasValue ||
+        value.WhitespaceMode != null || value.StripNewlines.HasValue ||
+        value.Wrap.HasValue || value.WrapWidth.HasValue ||
+        value.ConvertAsInline.HasValue || value.SubSymbol != null ||
+        value.SupSymbol != null || value.NewlineStyle != null ||
+        value.CodeBlockStyle != null || value.KeepInlineImagesIn != null ||
+        value.Encoding != null || value.Debug.HasValue ||
+        value.StripTags != null || value.PreserveTags != null ||
+        value.Preprocessing != null;
 
         if (!hasAnyValue)
         {
-            // When no values are set, serialize as {} (empty object).
-            // The Rust FFI parser (crates/kreuzberg-ffi/src/config.rs:parse_html_options)
-            // requires html_options to be a JSON object, not null. An empty object {}
-            // tells FFI to use all default ConversionOptions values.
             writer.WriteStartObject();
             writer.WriteEndObject();
             return;
@@ -967,7 +960,6 @@ public class AttributesDictionaryConverter : JsonConverter<Dictionary<string, st
 
         if (reader.TokenType == JsonTokenType.StartArray)
         {
-            // Array of arrays format: [["k1","v1"],["k2","v2"]]
             while (reader.Read())
             {
                 if (reader.TokenType == JsonTokenType.EndArray)
@@ -977,7 +969,6 @@ public class AttributesDictionaryConverter : JsonConverter<Dictionary<string, st
 
                 if (reader.TokenType == JsonTokenType.StartArray)
                 {
-                    // Read key
                     reader.Read();
                     if (reader.TokenType != JsonTokenType.String)
                     {
@@ -985,7 +976,6 @@ public class AttributesDictionaryConverter : JsonConverter<Dictionary<string, st
                     }
                     var key = reader.GetString() ?? string.Empty;
 
-                    // Read value
                     reader.Read();
                     if (reader.TokenType != JsonTokenType.String)
                     {
@@ -995,7 +985,6 @@ public class AttributesDictionaryConverter : JsonConverter<Dictionary<string, st
 
                     result[key] = value;
 
-                    // Read end of inner array
                     reader.Read();
                     if (reader.TokenType != JsonTokenType.EndArray)
                     {
@@ -1006,7 +995,6 @@ public class AttributesDictionaryConverter : JsonConverter<Dictionary<string, st
         }
         else if (reader.TokenType == JsonTokenType.StartObject)
         {
-            // Object format (fallback): {"k1":"v1","k2":"v2"}
             while (reader.Read())
             {
                 if (reader.TokenType == JsonTokenType.EndObject)
@@ -1075,35 +1063,34 @@ internal class MetadataConverter : JsonConverter<Metadata>
             switch (propertyName?.ToLowerInvariant())
             {
                 case "language":
-                    metadata.Language = reader.TokenType == JsonTokenType.Null ? null : reader.GetString();
-                    break;
+                metadata.Language = reader.TokenType == JsonTokenType.Null ? null : reader.GetString();
+                break;
                 case "title":
-                    metadata.Title = reader.TokenType == JsonTokenType.Null ? null : reader.GetString();
-                    break;
+                metadata.Title = reader.TokenType == JsonTokenType.Null ? null : reader.GetString();
+                break;
                 case "authors":
-                    if (reader.TokenType != JsonTokenType.Null)
+                if (reader.TokenType != JsonTokenType.Null)
                     {
                         metadata.Authors = JsonSerializer.Deserialize<List<string>>(ref reader, options);
                     }
-                    break;
+                break;
                 case "created_at":
-                    metadata.CreatedAt = reader.TokenType == JsonTokenType.Null ? null : reader.GetString();
-                    break;
+                metadata.CreatedAt = reader.TokenType == JsonTokenType.Null ? null : reader.GetString();
+                break;
                 case "modified_at":
-                    metadata.ModifiedAt = reader.TokenType == JsonTokenType.Null ? null : reader.GetString();
-                    break;
+                metadata.ModifiedAt = reader.TokenType == JsonTokenType.Null ? null : reader.GetString();
+                break;
                 case "created_by":
-                    metadata.CreatedBy = reader.TokenType == JsonTokenType.Null ? null : reader.GetString();
-                    break;
+                metadata.CreatedBy = reader.TokenType == JsonTokenType.Null ? null : reader.GetString();
+                break;
                 case "modified_by":
-                    metadata.ModifiedBy = reader.TokenType == JsonTokenType.Null ? null : reader.GetString();
-                    break;
+                metadata.ModifiedBy = reader.TokenType == JsonTokenType.Null ? null : reader.GetString();
+                break;
                 case "subject":
-                    metadata.Subject = reader.TokenType == JsonTokenType.Null ? null : reader.GetString();
-                    break;
+                metadata.Subject = reader.TokenType == JsonTokenType.Null ? null : reader.GetString();
+                break;
                 case "format_type":
-                    // format_type is handled as part of the flattened FormatMetadata
-                    if (reader.TokenType != JsonTokenType.Null)
+                if (reader.TokenType != JsonTokenType.Null)
                     {
                         var formatStr = reader.GetString();
                         if (!string.IsNullOrEmpty(formatStr))
@@ -1111,37 +1098,35 @@ internal class MetadataConverter : JsonConverter<Metadata>
                             formatFields["format_type"] = formatStr;
                         }
                     }
-                    break;
+                break;
                 case "image_preprocessing":
-                    if (reader.TokenType != JsonTokenType.Null)
+                if (reader.TokenType != JsonTokenType.Null)
                     {
                         metadata.ImagePreprocessing = JsonSerializer.Deserialize<ImagePreprocessingMetadata>(ref reader, options);
                     }
-                    break;
+                break;
                 case "json_schema":
-                    if (reader.TokenType != JsonTokenType.Null)
+                if (reader.TokenType != JsonTokenType.Null)
                     {
                         using var jsonSchemaDoc = JsonDocument.ParseValue(ref reader);
                         metadata.JsonSchema = JsonNode.Parse(jsonSchemaDoc.RootElement.GetRawText());
                     }
-                    break;
+                break;
                 case "error":
-                    if (reader.TokenType != JsonTokenType.Null)
+                if (reader.TokenType != JsonTokenType.Null)
                     {
                         metadata.Error = JsonSerializer.Deserialize<ErrorMetadata>(ref reader, options);
                     }
-                    break;
+                break;
                 case "pages":
-                    if (reader.TokenType != JsonTokenType.Null)
+                if (reader.TokenType != JsonTokenType.Null)
                     {
                         metadata.Pages = JsonSerializer.Deserialize<PageStructure>(ref reader, options);
                     }
-                    break;
+                break;
                 case "keywords":
-                    if (reader.TokenType == JsonTokenType.StartArray)
+                if (reader.TokenType == JsonTokenType.StartArray)
                     {
-                        // Keywords can be simple strings or extracted keyword objects.
-                        // Parse as JsonElement to inspect the first element.
                         using (var keywordsDoc = JsonDocument.ParseValue(ref reader))
                         {
                             var keywordsEl = keywordsDoc.RootElement;
@@ -1152,7 +1137,6 @@ internal class MetadataConverter : JsonConverter<Metadata>
                             }
                             else
                             {
-                                // Extracted keywords (objects) - extract text values into Keywords
                                 var extracted = Serialization.TryDeserializeExtractedKeywords(keywordsEl);
                                 if (extracted != null && metadata.Keywords == null)
                                 {
@@ -1161,14 +1145,12 @@ internal class MetadataConverter : JsonConverter<Metadata>
                             }
                         }
                     }
-                    break;
+                break;
                 case "extracted_keywords":
-                    if (reader.TokenType == JsonTokenType.StartArray)
+                if (reader.TokenType == JsonTokenType.StartArray)
                     {
                         using (var ekDoc = JsonDocument.ParseValue(ref reader))
                         {
-                            // extracted_keywords in metadata JSON is for backward compat;
-                            // extract text values into Keywords
                             var extracted = Serialization.TryDeserializeExtractedKeywords(ekDoc.RootElement);
                             if (extracted != null && metadata.Keywords == null)
                             {
@@ -1176,34 +1158,33 @@ internal class MetadataConverter : JsonConverter<Metadata>
                             }
                         }
                     }
-                    break;
+                break;
                 case "category":
-                    metadata.Category = reader.TokenType == JsonTokenType.Null ? null : reader.GetString();
-                    break;
+                metadata.Category = reader.TokenType == JsonTokenType.Null ? null : reader.GetString();
+                break;
                 case "tags":
-                    if (reader.TokenType != JsonTokenType.Null)
+                if (reader.TokenType != JsonTokenType.Null)
                     {
                         metadata.Tags = JsonSerializer.Deserialize<List<string>>(ref reader, options);
                     }
-                    break;
+                break;
                 case "document_version":
-                    metadata.DocumentVersion = reader.TokenType == JsonTokenType.Null ? null : reader.GetString();
-                    break;
+                metadata.DocumentVersion = reader.TokenType == JsonTokenType.Null ? null : reader.GetString();
+                break;
                 case "abstract_text":
-                    metadata.AbstractText = reader.TokenType == JsonTokenType.Null ? null : reader.GetString();
-                    break;
+                metadata.AbstractText = reader.TokenType == JsonTokenType.Null ? null : reader.GetString();
+                break;
                 case "output_format":
-                    metadata.OutputFormat = reader.TokenType == JsonTokenType.Null ? null : reader.GetString();
-                    break;
+                metadata.OutputFormat = reader.TokenType == JsonTokenType.Null ? null : reader.GetString();
+                break;
                 case "extraction_duration_ms":
-                    if (reader.TokenType == JsonTokenType.Number)
+                if (reader.TokenType == JsonTokenType.Number)
                     {
                         metadata.ExtractionDurationMs = reader.GetInt64();
                     }
-                    break;
+                break;
                 default:
-                    // Store format-specific fields
-                    if (reader.TokenType == JsonTokenType.StartObject)
+                if (reader.TokenType == JsonTokenType.StartObject)
                     {
                         using var doc = JsonDocument.ParseValue(ref reader);
                         formatFields[propertyName!] = JsonNode.Parse(doc.RootElement.GetRawText());
@@ -1215,9 +1196,6 @@ internal class MetadataConverter : JsonConverter<Metadata>
                     }
                     else if (reader.TokenType != JsonTokenType.Null)
                     {
-                        // Handle all scalar JSON types (string, number, boolean)
-                        // reader.GetString() only works for String tokens; use JsonDocument
-                        // to parse any scalar value type correctly.
                         using var scalarDoc = JsonDocument.ParseValue(ref reader);
                         var node = JsonNode.Parse(scalarDoc.RootElement.GetRawText());
                         if (node != null)
@@ -1225,11 +1203,10 @@ internal class MetadataConverter : JsonConverter<Metadata>
                             formatFields[propertyName!] = node;
                         }
                     }
-                    break;
+                break;
             }
         }
 
-        // Apply format-specific metadata
         ApplyFormatMetadataFromNode(metadata, formatFields);
 
         return metadata;
@@ -1353,10 +1330,9 @@ internal class MetadataConverter : JsonConverter<Metadata>
             writer.WriteNumberValue(value.ExtractionDurationMs.Value);
         }
 
-        // Write format-specific fields
         WriteFormatFields(writer, value, options);
 
-#pragma warning disable CS0618 // Obsolete member access (internal serialization support)
+        #pragma warning disable CS0618
         if (value.Additional != null)
         {
             foreach (var kvp in value.Additional)
@@ -1365,7 +1341,7 @@ internal class MetadataConverter : JsonConverter<Metadata>
                 JsonSerializer.Serialize(writer, kvp.Value, options);
             }
         }
-#pragma warning restore CS0618
+        #pragma warning restore CS0618
 
         writer.WriteEndObject();
     }
@@ -1394,35 +1370,35 @@ internal class MetadataConverter : JsonConverter<Metadata>
         switch (metadata.Format.Type)
         {
             case FormatType.Pdf:
-                SerializeFormatField(metadata.Format.Pdf);
-                break;
+            SerializeFormatField(metadata.Format.Pdf);
+            break;
             case FormatType.Excel:
-                SerializeFormatField(metadata.Format.Excel);
-                break;
+            SerializeFormatField(metadata.Format.Excel);
+            break;
             case FormatType.Email:
-                SerializeFormatField(metadata.Format.Email);
-                break;
+            SerializeFormatField(metadata.Format.Email);
+            break;
             case FormatType.Pptx:
-                SerializeFormatField(metadata.Format.Pptx);
-                break;
+            SerializeFormatField(metadata.Format.Pptx);
+            break;
             case FormatType.Archive:
-                SerializeFormatField(metadata.Format.Archive);
-                break;
+            SerializeFormatField(metadata.Format.Archive);
+            break;
             case FormatType.Image:
-                SerializeFormatField(metadata.Format.Image);
-                break;
+            SerializeFormatField(metadata.Format.Image);
+            break;
             case FormatType.Xml:
-                SerializeFormatField(metadata.Format.Xml);
-                break;
+            SerializeFormatField(metadata.Format.Xml);
+            break;
             case FormatType.Text:
-                SerializeFormatField(metadata.Format.Text);
-                break;
+            SerializeFormatField(metadata.Format.Text);
+            break;
             case FormatType.Html:
-                SerializeFormatField(metadata.Format.Html);
-                break;
+            SerializeFormatField(metadata.Format.Html);
+            break;
             case FormatType.Ocr:
-                SerializeFormatField(metadata.Format.Ocr);
-                break;
+            SerializeFormatField(metadata.Format.Ocr);
+            break;
         }
     }
 
@@ -1437,59 +1413,59 @@ internal class MetadataConverter : JsonConverter<Metadata>
         switch (metadata.Format.Type)
         {
             case FormatType.Pdf:
-                metadata.Format.Pdf = DeserializeFromNode<PdfMetadata>(formatFields);
-                break;
+            metadata.Format.Pdf = DeserializeFromNode<PdfMetadata>(formatFields);
+            break;
             case FormatType.Excel:
-                metadata.Format.Excel = DeserializeFromNode<ExcelMetadata>(formatFields);
-                break;
+            metadata.Format.Excel = DeserializeFromNode<ExcelMetadata>(formatFields);
+            break;
             case FormatType.Email:
-                metadata.Format.Email = DeserializeFromNode<EmailMetadata>(formatFields);
-                break;
+            metadata.Format.Email = DeserializeFromNode<EmailMetadata>(formatFields);
+            break;
             case FormatType.Pptx:
-                metadata.Format.Pptx = DeserializeFromNode<PptxMetadata>(formatFields);
-                break;
+            metadata.Format.Pptx = DeserializeFromNode<PptxMetadata>(formatFields);
+            break;
             case FormatType.Archive:
-                metadata.Format.Archive = DeserializeFromNode<ArchiveMetadata>(formatFields);
-                break;
+            metadata.Format.Archive = DeserializeFromNode<ArchiveMetadata>(formatFields);
+            break;
             case FormatType.Image:
-                metadata.Format.Image = DeserializeFromNode<ImageMetadata>(formatFields);
-                break;
+            metadata.Format.Image = DeserializeFromNode<ImageMetadata>(formatFields);
+            break;
             case FormatType.Xml:
-                metadata.Format.Xml = DeserializeFromNode<XmlMetadata>(formatFields);
-                break;
+            metadata.Format.Xml = DeserializeFromNode<XmlMetadata>(formatFields);
+            break;
             case FormatType.Text:
-                metadata.Format.Text = DeserializeFromNode<TextMetadata>(formatFields);
-                break;
+            metadata.Format.Text = DeserializeFromNode<TextMetadata>(formatFields);
+            break;
             case FormatType.Html:
-                metadata.Format.Html = DeserializeHtmlMetadataFromNode(formatFields);
-                break;
+            metadata.Format.Html = DeserializeHtmlMetadataFromNode(formatFields);
+            break;
             case FormatType.Ocr:
-                metadata.Format.Ocr = DeserializeFromNode<OcrMetadata>(formatFields);
-                break;
+            metadata.Format.Ocr = DeserializeFromNode<OcrMetadata>(formatFields);
+            break;
             case FormatType.Csv:
-                metadata.Format.Csv = DeserializeFromNode<CsvMetadata>(formatFields);
-                break;
+            metadata.Format.Csv = DeserializeFromNode<CsvMetadata>(formatFields);
+            break;
             case FormatType.Bibtex:
-                metadata.Format.Bibtex = DeserializeFromNode<BibtexMetadata>(formatFields);
-                break;
+            metadata.Format.Bibtex = DeserializeFromNode<BibtexMetadata>(formatFields);
+            break;
             case FormatType.Citation:
-                metadata.Format.Citation = DeserializeFromNode<CitationMetadata>(formatFields);
-                break;
+            metadata.Format.Citation = DeserializeFromNode<CitationMetadata>(formatFields);
+            break;
             case FormatType.FictionBook:
-                metadata.Format.FictionBook = DeserializeFromNode<FictionBookMetadata>(formatFields);
-                break;
+            metadata.Format.FictionBook = DeserializeFromNode<FictionBookMetadata>(formatFields);
+            break;
             case FormatType.Dbf:
-                metadata.Format.Dbf = DeserializeFromNode<DbfMetadata>(formatFields);
-                break;
+            metadata.Format.Dbf = DeserializeFromNode<DbfMetadata>(formatFields);
+            break;
             case FormatType.Jats:
-                metadata.Format.Jats = DeserializeFromNode<JatsMetadata>(formatFields);
-                break;
+            metadata.Format.Jats = DeserializeFromNode<JatsMetadata>(formatFields);
+            break;
             case FormatType.Epub:
-                metadata.Format.Epub = DeserializeFromNode<EpubMetadata>(formatFields);
-                break;
+            metadata.Format.Epub = DeserializeFromNode<EpubMetadata>(formatFields);
+            break;
             case FormatType.Pst:
-                metadata.Format.Pst = DeserializeFromNode<PstMetadata>(formatFields);
-                break;
+            metadata.Format.Pst = DeserializeFromNode<PstMetadata>(formatFields);
+            break;
         }
     }
 
@@ -1511,7 +1487,6 @@ internal class MetadataConverter : JsonConverter<Metadata>
         {
             var htmlMetadata = new HtmlMetadata();
 
-            // Extract scalar fields
             if (node.TryGetPropertyValue("title", out var title) && title?.GetValueKind() != JsonValueKind.Null)
             {
                 htmlMetadata.Title = title!.AsValue().GetValue<string>();
@@ -1541,8 +1516,6 @@ internal class MetadataConverter : JsonConverter<Metadata>
                 htmlMetadata.TextDirection = textDirection!.AsValue().GetValue<string>();
             }
 
-            // Extract keywords list - only if they are strings (HTML meta keywords)
-            // If keywords are objects, they're extracted keywords (YAKE/RAKE) and handled separately
             if (node.TryGetPropertyValue("keywords", out var keywords) && keywords?.GetValueKind() == JsonValueKind.Array)
             {
                 var keywordsArray = keywords.AsArray();
@@ -1551,18 +1524,15 @@ internal class MetadataConverter : JsonConverter<Metadata>
                     var firstKeyword = keywordsArray[0];
                     if (firstKeyword?.GetValueKind() == JsonValueKind.String)
                     {
-                        // It's a string array - HTML meta keywords
                         var keywordsList = JsonSerializer.Deserialize<List<string>>(keywords.ToJsonString(), Serialization.Options);
                         if (keywordsList != null && keywordsList.Count > 0)
                         {
                             htmlMetadata.Keywords = keywordsList;
                         }
                     }
-                    // If it's an object array, it's extracted keywords - handled at the metadata level
                 }
             }
 
-            // Extract open_graph dictionary
             if (node.TryGetPropertyValue("open_graph", out var openGraph) && openGraph?.GetValueKind() != JsonValueKind.Null)
             {
                 var ogDict = JsonSerializer.Deserialize<Dictionary<string, string>>(openGraph!.ToJsonString(), Serialization.Options);
@@ -1572,7 +1542,6 @@ internal class MetadataConverter : JsonConverter<Metadata>
                 }
             }
 
-            // Extract twitter_card dictionary
             if (node.TryGetPropertyValue("twitter_card", out var twitterCard) && twitterCard?.GetValueKind() != JsonValueKind.Null)
             {
                 var tcDict = JsonSerializer.Deserialize<Dictionary<string, string>>(twitterCard!.ToJsonString(), Serialization.Options);
@@ -1582,7 +1551,6 @@ internal class MetadataConverter : JsonConverter<Metadata>
                 }
             }
 
-            // Extract meta_tags dictionary
             if (node.TryGetPropertyValue("meta_tags", out var metaTags) && metaTags?.GetValueKind() != JsonValueKind.Null)
             {
                 var mtDict = JsonSerializer.Deserialize<Dictionary<string, string>>(metaTags!.ToJsonString(), Serialization.Options);
@@ -1592,7 +1560,6 @@ internal class MetadataConverter : JsonConverter<Metadata>
                 }
             }
 
-            // Extract headers list
             if (node.TryGetPropertyValue("headers", out var headers) && headers?.GetValueKind() != JsonValueKind.Null)
             {
                 var headersList = JsonSerializer.Deserialize<List<HeaderMetadata>>(headers!.ToJsonString(), Serialization.Options);
@@ -1602,7 +1569,6 @@ internal class MetadataConverter : JsonConverter<Metadata>
                 }
             }
 
-            // Extract links list
             if (node.TryGetPropertyValue("links", out var links) && links?.GetValueKind() != JsonValueKind.Null)
             {
                 var linksList = JsonSerializer.Deserialize<List<LinkMetadata>>(links!.ToJsonString(), Serialization.Options);
@@ -1612,7 +1578,6 @@ internal class MetadataConverter : JsonConverter<Metadata>
                 }
             }
 
-            // Extract images list
             if (node.TryGetPropertyValue("images", out var images) && images?.GetValueKind() != JsonValueKind.Null)
             {
                 var imagesList = JsonSerializer.Deserialize<List<HtmlImageMetadata>>(images!.ToJsonString(), Serialization.Options);
@@ -1622,7 +1587,6 @@ internal class MetadataConverter : JsonConverter<Metadata>
                 }
             }
 
-            // Extract structured_data list
             if (node.TryGetPropertyValue("structured_data", out var structuredData) && structuredData?.GetValueKind() != JsonValueKind.Null)
             {
                 var sdList = JsonSerializer.Deserialize<List<StructuredData>>(structuredData!.ToJsonString(), Serialization.Options);
@@ -1675,7 +1639,7 @@ public static class Serialization
     /// </summary>
     internal static JsonSerializerOptions GetJsonSerializerOptions()
     {
-#if NET7_0_OR_GREATER
+        #if NET7_0_OR_GREATER
         var options = new JsonSerializerOptions
         {
             PropertyNameCaseInsensitive = true,
@@ -1685,9 +1649,9 @@ public static class Serialization
             TypeInfoResolver = KreuzbergJsonContext.Default
         };
         return options;
-#else
+        #else
         return Options;
-#endif
+        #endif
     }
 
     private static readonly FrozenDictionary<FormatType, string[]> FormatFields = new Dictionary<FormatType, string[]>
@@ -1885,11 +1849,11 @@ public static class Serialization
     /// </summary>
     public static ExtractionConfig ParseConfig(string json)
     {
-#if NET7_0_OR_GREATER
+        #if NET7_0_OR_GREATER
         return JsonSerializer.Deserialize<ExtractionConfig>(json, GetJsonSerializerOptions()) ?? new ExtractionConfig();
-#else
+        #else
         return JsonSerializer.Deserialize<ExtractionConfig>(json, Options) ?? new ExtractionConfig();
-#endif
+        #endif
     }
 
     internal static Metadata ParseMetadata(string? metadataJson)
@@ -1921,9 +1885,6 @@ public static class Serialization
 
         if (root.TryGetProperty("keywords", out var metaKeywords) && metaKeywords.ValueKind == JsonValueKind.Array)
         {
-            // Keywords can be either simple strings (document metadata) or
-            // objects with text/score/algorithm (extracted keywords from YAKE/RAKE).
-            // Check the first element to determine the format.
             using var enumerator = metaKeywords.EnumerateArray();
             if (enumerator.MoveNext() && enumerator.Current.ValueKind == JsonValueKind.String)
             {
@@ -1931,7 +1892,6 @@ public static class Serialization
             }
             else
             {
-                // Extracted keywords (objects) - extract text values into Keywords
                 var extracted = TryDeserializeExtractedKeywords(metaKeywords);
                 if (extracted != null && metadata.Keywords == null)
                 {
@@ -1942,8 +1902,6 @@ public static class Serialization
 
         if (root.TryGetProperty("extracted_keywords", out var extractedKw) && extractedKw.ValueKind == JsonValueKind.Array)
         {
-            // extracted_keywords in metadata JSON is for backward compat;
-            // extract text values into Keywords
             var extracted = TryDeserializeExtractedKeywords(extractedKw);
             if (extracted != null && metadata.Keywords == null)
             {
@@ -2033,9 +1991,8 @@ public static class Serialization
             recognized.UnionWith(FormatFields.GetValueOrDefault(detectedFormat, Array.Empty<string>()));
         }
 
-        recognized.Add("keywords"); // Mark as recognized
+        recognized.Add("keywords");
 
-        // Create Format object with detected format type
         metadata.Format = new FormatMetadata { Type = detectedFormat };
         ApplyFormatMetadata(root, metadata);
         var additional = new JsonObject();
@@ -2052,12 +2009,12 @@ public static class Serialization
             }
         }
 
-#pragma warning disable CS0618 // Obsolete member access (internal serialization support)
+        #pragma warning disable CS0618
         if (additional.Count > 0)
         {
             metadata.Additional = additional;
         }
-#pragma warning restore CS0618
+        #pragma warning restore CS0618
 
         return metadata;
     }
@@ -2068,73 +2025,69 @@ public static class Serialization
         switch (metadata.Format.Type)
         {
             case FormatType.Pdf:
-                try
+            try
                 {
                     metadata.Format.Pdf = DeserializeElement<PdfMetadata>(root);
                 }
                 catch (JsonException)
                 {
-                    // When keyword extraction is enabled, the flattened JSON may contain
-                    // keyword objects in the "keywords" field instead of simple strings,
-                    // which causes PdfMetadata deserialization to fail. Fall back to
-                    // extracting PDF-specific fields manually.
                     metadata.Format.Pdf = ExtractPdfMetadataLenient(root);
                 }
-                break;
+            break;
             case FormatType.Excel:
-                metadata.Format.Excel = DeserializeElement<ExcelMetadata>(root);
-                break;
+            metadata.Format.Excel = DeserializeElement<ExcelMetadata>(root);
+            break;
             case FormatType.Email:
-                metadata.Format.Email = DeserializeElement<EmailMetadata>(root);
-                break;
+            metadata.Format.Email = DeserializeElement<EmailMetadata>(root);
+            break;
             case FormatType.Pptx:
-                metadata.Format.Pptx = DeserializeElement<PptxMetadata>(root);
-                break;
+            metadata.Format.Pptx = DeserializeElement<PptxMetadata>(root);
+            break;
             case FormatType.Archive:
-                metadata.Format.Archive = DeserializeElement<ArchiveMetadata>(root);
-                break;
+            metadata.Format.Archive = DeserializeElement<ArchiveMetadata>(root);
+            break;
             case FormatType.Image:
-                metadata.Format.Image = DeserializeElement<ImageMetadata>(root);
-                break;
+            metadata.Format.Image = DeserializeElement<ImageMetadata>(root);
+            break;
             case FormatType.Xml:
-                metadata.Format.Xml = DeserializeElement<XmlMetadata>(root);
-                break;
+            metadata.Format.Xml = DeserializeElement<XmlMetadata>(root);
+            break;
             case FormatType.Text:
-                metadata.Format.Text = DeserializeElement<TextMetadata>(root);
-                break;
+            metadata.Format.Text = DeserializeElement<TextMetadata>(root);
+            break;
             case FormatType.Html:
-                metadata.Format.Html = ExtractHtmlMetadata(root);
-                break;
+            metadata.Format.Html = ExtractHtmlMetadata(root);
+            break;
             case FormatType.Ocr:
-                metadata.Format.Ocr = DeserializeElement<OcrMetadata>(root);
-                break;
+            metadata.Format.Ocr = DeserializeElement<OcrMetadata>(root);
+            break;
             case FormatType.Csv:
-                metadata.Format.Csv = DeserializeElement<CsvMetadata>(root);
-                break;
+            metadata.Format.Csv = DeserializeElement<CsvMetadata>(root);
+            break;
             case FormatType.Bibtex:
-                metadata.Format.Bibtex = DeserializeElement<BibtexMetadata>(root);
-                break;
+            metadata.Format.Bibtex = DeserializeElement<BibtexMetadata>(root);
+            break;
             case FormatType.Citation:
-                metadata.Format.Citation = DeserializeElement<CitationMetadata>(root);
-                break;
+            metadata.Format.Citation = DeserializeElement<CitationMetadata>(root);
+            break;
             case FormatType.FictionBook:
-                metadata.Format.FictionBook = DeserializeElement<FictionBookMetadata>(root);
-                break;
+            metadata.Format.FictionBook = DeserializeElement<FictionBookMetadata>(root);
+            break;
             case FormatType.Dbf:
-                metadata.Format.Dbf = DeserializeElement<DbfMetadata>(root);
-                break;
+            metadata.Format.Dbf = DeserializeElement<DbfMetadata>(root);
+            break;
             case FormatType.Jats:
-                metadata.Format.Jats = DeserializeElement<JatsMetadata>(root);
-                break;
+            metadata.Format.Jats = DeserializeElement<JatsMetadata>(root);
+            break;
             case FormatType.Epub:
-                metadata.Format.Epub = DeserializeElement<EpubMetadata>(root);
-                break;
+            metadata.Format.Epub = DeserializeElement<EpubMetadata>(root);
+            break;
             case FormatType.Pst:
-                metadata.Format.Pst = DeserializeElement<PstMetadata>(root);
-                break;
+            metadata.Format.Pst = DeserializeElement<PstMetadata>(root);
+            break;
             default:
-                metadata.Format.Type = FormatType.Unknown;
-                break;
+            metadata.Format.Type = FormatType.Unknown;
+            break;
         }
     }
 
@@ -2147,33 +2100,32 @@ public static class Serialization
         var pdf = new PdfMetadata();
 
         if (root.TryGetProperty("title", out var title) && title.ValueKind == JsonValueKind.String)
-            pdf.Title = title.GetString();
+        pdf.Title = title.GetString();
         if (root.TryGetProperty("subject", out var subject) && subject.ValueKind == JsonValueKind.String)
-            pdf.Subject = subject.GetString();
+        pdf.Subject = subject.GetString();
         if (root.TryGetProperty("author", out var author) && author.ValueKind == JsonValueKind.String)
-            pdf.Author = author.GetString();
+        pdf.Author = author.GetString();
         if (root.TryGetProperty("creator", out var creator) && creator.ValueKind == JsonValueKind.String)
-            pdf.Creator = creator.GetString();
+        pdf.Creator = creator.GetString();
         if (root.TryGetProperty("producer", out var producer) && producer.ValueKind == JsonValueKind.String)
-            pdf.Producer = producer.GetString();
+        pdf.Producer = producer.GetString();
         if (root.TryGetProperty("creation_date", out var creationDate) && creationDate.ValueKind == JsonValueKind.String)
-            pdf.CreationDate = creationDate.GetString();
+        pdf.CreationDate = creationDate.GetString();
         if (root.TryGetProperty("modification_date", out var modificationDate) && modificationDate.ValueKind == JsonValueKind.String)
-            pdf.ModificationDate = modificationDate.GetString();
+        pdf.ModificationDate = modificationDate.GetString();
         if (root.TryGetProperty("page_count", out var pageCount) && pageCount.ValueKind == JsonValueKind.Number)
-            pdf.PageCount = pageCount.GetInt32();
+        pdf.PageCount = pageCount.GetInt32();
 
-        // Try to extract keywords as string list; skip if they are keyword objects
         if (root.TryGetProperty("keywords", out var keywords) && keywords.ValueKind == JsonValueKind.Array)
         {
             var stringKeywords = new List<string>();
             foreach (var item in keywords.EnumerateArray())
             {
                 if (item.ValueKind == JsonValueKind.String)
-                    stringKeywords.Add(item.GetString()!);
+                stringKeywords.Add(item.GetString()!);
             }
             if (stringKeywords.Count > 0)
-                pdf.Keywords = stringKeywords;
+            pdf.Keywords = stringKeywords;
         }
 
         return pdf;
@@ -2205,7 +2157,6 @@ public static class Serialization
     {
         var htmlMetadata = new HtmlMetadata();
 
-        // Extract scalar fields
         if (root.TryGetProperty("title", out var title) && title.ValueKind != JsonValueKind.Null)
         {
             htmlMetadata.Title = title.GetString();
@@ -2247,29 +2198,23 @@ public static class Serialization
 
         }
 
-        // Extract keywords list - only if they are strings (HTML meta keywords)
-        // If keywords are objects, they're extracted keywords (YAKE/RAKE) and handled separately
         if (root.TryGetProperty("keywords", out var keywords) && keywords.ValueKind == JsonValueKind.Array)
         {
-            // Check if this is a string array (HTML meta keywords) vs object array (extracted keywords)
             using var keywordsEnumerator = keywords.EnumerateArray();
             if (keywordsEnumerator.MoveNext())
             {
                 var firstKeyword = keywordsEnumerator.Current;
                 if (firstKeyword.ValueKind == JsonValueKind.String)
                 {
-                    // It's a string array - HTML meta keywords
                     var keywordsList = DeserializeElement<List<string>>(keywords);
                     if (keywordsList != null && keywordsList.Count > 0)
                     {
                         htmlMetadata.Keywords = keywordsList;
                     }
                 }
-                // If it's an object array, it's extracted keywords - handled at the metadata level
             }
         }
 
-        // Extract open_graph dictionary
         if (root.TryGetProperty("open_graph", out var openGraph) && openGraph.ValueKind != JsonValueKind.Null)
         {
             var ogDict = DeserializeElement<Dictionary<string, string>>(openGraph);
@@ -2280,7 +2225,6 @@ public static class Serialization
             }
         }
 
-        // Extract twitter_card dictionary
         if (root.TryGetProperty("twitter_card", out var twitterCard) && twitterCard.ValueKind != JsonValueKind.Null)
         {
             var tcDict = DeserializeElement<Dictionary<string, string>>(twitterCard);
@@ -2291,7 +2235,6 @@ public static class Serialization
             }
         }
 
-        // Extract meta_tags dictionary
         if (root.TryGetProperty("meta_tags", out var metaTags) && metaTags.ValueKind != JsonValueKind.Null)
         {
             var mtDict = DeserializeElement<Dictionary<string, string>>(metaTags);
@@ -2302,7 +2245,6 @@ public static class Serialization
             }
         }
 
-        // Extract headers list
         if (root.TryGetProperty("headers", out var headers) && headers.ValueKind != JsonValueKind.Null)
         {
             var headersList = DeserializeElement<List<HeaderMetadata>>(headers);
@@ -2313,7 +2255,6 @@ public static class Serialization
             }
         }
 
-        // Extract links list
         if (root.TryGetProperty("links", out var links) && links.ValueKind != JsonValueKind.Null)
         {
             var linksList = DeserializeElement<List<LinkMetadata>>(links);
@@ -2324,7 +2265,6 @@ public static class Serialization
             }
         }
 
-        // Extract images list
         if (root.TryGetProperty("images", out var images) && images.ValueKind != JsonValueKind.Null)
         {
             var imagesList = DeserializeElement<List<HtmlImageMetadata>>(images);
@@ -2335,7 +2275,6 @@ public static class Serialization
             }
         }
 
-        // Extract structured_data list
         if (root.TryGetProperty("structured_data", out var structuredData) && structuredData.ValueKind != JsonValueKind.Null)
         {
             var sdList = DeserializeElement<List<StructuredData>>(structuredData);
@@ -2346,7 +2285,6 @@ public static class Serialization
             }
         }
 
-        // Return the metadata object (always, even if empty, since we want the structure)
         return htmlMetadata;
     }
 
@@ -2438,7 +2376,7 @@ public static class Serialization
 
         AddFormatFields(metadata, node);
 
-#pragma warning disable CS0618 // Obsolete member access (internal serialization support)
+        #pragma warning disable CS0618
         if (metadata.Additional != null)
         {
             foreach (var kvp in metadata.Additional)
@@ -2446,7 +2384,7 @@ public static class Serialization
                 node[kvp.Key] = kvp.Value?.DeepClone();
             }
         }
-#pragma warning restore CS0618
+        #pragma warning restore CS0618
 
         return node;
     }
@@ -2474,37 +2412,37 @@ public static class Serialization
         switch (metadata.Format.Type)
         {
             case FormatType.Pdf:
-                Merge(metadata.Format.Pdf);
-                break;
+            Merge(metadata.Format.Pdf);
+            break;
             case FormatType.Excel:
-                Merge(metadata.Format.Excel);
-                break;
+            Merge(metadata.Format.Excel);
+            break;
             case FormatType.Email:
-                Merge(metadata.Format.Email);
-                break;
+            Merge(metadata.Format.Email);
+            break;
             case FormatType.Pptx:
-                Merge(metadata.Format.Pptx);
-                break;
+            Merge(metadata.Format.Pptx);
+            break;
             case FormatType.Archive:
-                Merge(metadata.Format.Archive);
-                break;
+            Merge(metadata.Format.Archive);
+            break;
             case FormatType.Image:
-                Merge(metadata.Format.Image);
-                break;
+            Merge(metadata.Format.Image);
+            break;
             case FormatType.Xml:
-                Merge(metadata.Format.Xml);
-                break;
+            Merge(metadata.Format.Xml);
+            break;
             case FormatType.Text:
-                Merge(metadata.Format.Text);
-                break;
+            Merge(metadata.Format.Text);
+            break;
             case FormatType.Html:
-                Merge(metadata.Format.Html);
-                break;
+            Merge(metadata.Format.Html);
+            break;
             case FormatType.Ocr:
-                Merge(metadata.Format.Ocr);
-                break;
+            Merge(metadata.Format.Ocr);
+            break;
             default:
-                break;
+            break;
         }
     }
 
@@ -2576,33 +2514,30 @@ public static class Serialization
             return null;
         }
 
-        // Check if the first element is an object (extracted keyword) or a string (format keyword)
         using var enumerator = keywordsArray.EnumerateArray();
         if (!enumerator.MoveNext())
         {
-            return null; // Empty array
+            return null;
         }
 
         var firstElement = enumerator.Current;
         if (firstElement.ValueKind != JsonValueKind.Object)
         {
-            return null; // It's a string array (format-specific keywords)
+            return null;
         }
 
-        // Check if the object has the expected ExtractedKeyword properties
         if (!firstElement.TryGetProperty("text", out _))
         {
-            return null; // Not an extracted keyword object
+            return null;
         }
 
-        // Deserialize as extracted keywords
         try
         {
             return JsonSerializer.Deserialize<List<ExtractedKeyword>>(keywordsArray.GetRawText(), Options);
         }
         catch
         {
-            return null; // Deserialization failed, probably not extracted keywords
+            return null;
         }
     }
 

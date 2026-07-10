@@ -14,38 +14,38 @@ defmodule Kreuzberg.BibtexMetadata do
   """
 
   @type t :: %__MODULE__{
-          entry_count: non_neg_integer(),
-          citation_keys: list(String.t()),
-          authors: list(String.t()),
-          year_range: Kreuzberg.YearRange.t() | nil,
-          entry_types: map() | nil
-        }
+  entry_count: non_neg_integer(),
+  citation_keys: list(String.t()),
+  authors: list(String.t()),
+  year_range: Kreuzberg.YearRange.t() | nil,
+  entry_types: map() | nil
+  }
 
   defstruct entry_count: 0,
-            citation_keys: [],
-            authors: [],
-            year_range: nil,
-            entry_types: nil
+  citation_keys: [],
+  authors: [],
+  year_range: nil,
+  entry_types: nil
 
   @spec from_map(map()) :: t()
   def from_map(data) when is_map(data) do
     %__MODULE__{
-      entry_count: data["entry_count"] || 0,
-      citation_keys: data["citation_keys"] || [],
-      authors: data["authors"] || [],
-      year_range: normalize_year_range(data["year_range"]),
-      entry_types: data["entry_types"]
+    entry_count: data["entry_count"] || 0,
+    citation_keys: data["citation_keys"] || [],
+    authors: data["authors"] || [],
+    year_range: normalize_year_range(data["year_range"]),
+    entry_types: data["entry_types"]
     }
   end
 
   @spec to_map(t()) :: map()
   def to_map(%__MODULE__{} = meta) do
     %{
-      "entry_count" => meta.entry_count,
-      "citation_keys" => meta.citation_keys,
-      "authors" => meta.authors,
-      "year_range" => serialize_year_range(meta.year_range),
-      "entry_types" => meta.entry_types
+    "entry_count" => meta.entry_count,
+    "citation_keys" => meta.citation_keys,
+    "authors" => meta.authors,
+    "year_range" => serialize_year_range(meta.year_range),
+    "entry_types" => meta.entry_types
     }
   end
 

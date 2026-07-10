@@ -5,8 +5,8 @@
 
 use crate::error_handling::{kreuzberg_error, runtime_error};
 use crate::helpers::ruby_value_to_json;
-use magnus::{Error, RArray, RHash, Ruby, TryConvert, Value, scan_args::get_kwargs, scan_args::scan_args};
 use magnus::value::ReprValue;
+use magnus::{Error, RArray, RHash, Ruby, TryConvert, Value, scan_args::get_kwargs, scan_args::scan_args};
 
 /// Parse an optional Ruby value (Hash or nil) into a `kreuzberg::EmbeddingConfig`.
 fn parse_embedding_config(ruby: &Ruby, config_val: Option<Value>) -> Result<kreuzberg::EmbeddingConfig, Error> {
@@ -17,8 +17,7 @@ fn parse_embedding_config(ruby: &Ruby, config_val: Option<Value>) -> Result<kreu
                 return Ok(Default::default());
             }
             let json = ruby_value_to_json(val)?;
-            serde_json::from_value(json)
-                .map_err(|e| runtime_error(format!("Invalid embedding config: {}", e)))
+            serde_json::from_value(json).map_err(|e| runtime_error(format!("Invalid embedding config: {}", e)))
         }
     }
 }
@@ -38,10 +37,7 @@ fn embeddings_to_ruby(ruby: &Ruby, embeddings: Vec<Vec<f32>>) -> Result<RArray, 
 
 /// Parse keyword args common to `embed_sync` and `embed`.
 /// Returns `(texts, config)`.
-fn parse_embed_args(
-    ruby: &Ruby,
-    args: &[Value],
-) -> Result<(Vec<String>, kreuzberg::EmbeddingConfig), Error> {
+fn parse_embed_args(ruby: &Ruby, args: &[Value]) -> Result<(Vec<String>, kreuzberg::EmbeddingConfig), Error> {
     let parsed = scan_args::<(), (), (), (), RHash, ()>(args)?;
     let kw = parsed.keywords;
 
@@ -49,15 +45,11 @@ fn parse_embed_args(
     let (texts_val,) = kw_args.required;
     let (config_opt,) = kw_args.optional;
 
-    let texts_arr = RArray::try_convert(texts_val)
-        .map_err(|_| runtime_error("texts must be an Array".to_string()))?;
+    let texts_arr = RArray::try_convert(texts_val).map_err(|_| runtime_error("texts must be an Array".to_string()))?;
     let texts: Vec<String> = texts_arr
         .into_iter()
         .enumerate()
-        .map(|(i, v)| {
-            String::try_convert(v)
-                .map_err(|_| runtime_error(format!("texts[{}] must be a String", i)))
-        })
+        .map(|(i, v)| String::try_convert(v).map_err(|_| runtime_error(format!("texts[{}] must be a String", i))))
         .collect::<Result<_, _>>()?;
 
     let config = parse_embedding_config(ruby, config_opt)?;

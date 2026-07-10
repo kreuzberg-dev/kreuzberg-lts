@@ -52,7 +52,6 @@ pub fn resolve_heading_context(byte_start: usize, heading_map: &[HeadingEntry]) 
         if offset > byte_start {
             break;
         }
-        // Pop headings at same or deeper level (they've been superseded).
         while stack.last().is_some_and(|h| h.level >= level) {
             stack.pop();
         }
@@ -128,7 +127,6 @@ mod tests {
             (10, 2, "Section A".to_string()),
             (30, 2, "Section B".to_string()),
         ];
-        // Chunk at byte 15 is under h1 > h2("Section A")
         let ctx = resolve_heading_context(15, &map).unwrap();
         assert_eq!(ctx.headings.len(), 2);
         assert_eq!(ctx.headings[0].level, 1);
@@ -140,7 +138,6 @@ mod tests {
     #[test]
     fn test_resolve_heading_context_root() {
         let map = vec![(10, 1, "Title".to_string())];
-        // Chunk at byte 0 is before any heading
         let ctx = resolve_heading_context(0, &map);
         assert!(ctx.is_none());
     }
@@ -151,9 +148,8 @@ mod tests {
             (0, 1, "Title".to_string()),
             (10, 2, "Section A".to_string()),
             (20, 3, "Subsection".to_string()),
-            (30, 2, "Section B".to_string()), // This supersedes h3 "Subsection"
+            (30, 2, "Section B".to_string()),
         ];
-        // Chunk at byte 35 should be h1 > h2("Section B"), no h3
         let ctx = resolve_heading_context(35, &map).unwrap();
         assert_eq!(ctx.headings.len(), 2);
         assert_eq!(ctx.headings[1].text, "Section B");

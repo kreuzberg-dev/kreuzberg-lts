@@ -23,10 +23,6 @@ use ort::{inputs, session::Session, value::Tensor};
 use crate::layout::error::LayoutError;
 use crate::layout::session::build_session;
 
-// ---------------------------------------------------------------------------
-// Constants
-// ---------------------------------------------------------------------------
-
 /// SLANeXT fixed input dimensions.
 const INPUT_SIZE: u32 = 512;
 
@@ -53,61 +49,57 @@ const SOS_TOKEN_IDX: usize = 0;
 ///
 /// Source: PaddleOCR table_structure_dict_ch.txt with "sos" prepended and "eos" appended.
 const TOKEN_DICT: [&str; VOCAB_SIZE] = [
-    "sos",             // 0
-    "<thead>",         // 1
-    "</thead>",        // 2
-    "<tbody>",         // 3
-    "</tbody>",        // 4
-    "<tr>",            // 5
-    "</tr>",           // 6
-    "<td>",            // 7
-    "<td",             // 8  (start of td with attributes)
-    ">",               // 9  (close of td with attributes)
-    "</td>",           // 10
-    " colspan=\"2\"",  // 11
-    " colspan=\"3\"",  // 12
-    " colspan=\"4\"",  // 13
-    " colspan=\"5\"",  // 14
-    " colspan=\"6\"",  // 15
-    " colspan=\"7\"",  // 16
-    " colspan=\"8\"",  // 17
-    " colspan=\"9\"",  // 18
-    " colspan=\"10\"", // 19
-    " colspan=\"11\"", // 20
-    " colspan=\"12\"", // 21
-    " colspan=\"13\"", // 22
-    " colspan=\"14\"", // 23
-    " colspan=\"15\"", // 24
-    " colspan=\"16\"", // 25
-    " colspan=\"17\"", // 26
-    " colspan=\"18\"", // 27
-    " colspan=\"19\"", // 28
-    " colspan=\"20\"", // 29
-    " rowspan=\"2\"",  // 30
-    " rowspan=\"3\"",  // 31
-    " rowspan=\"4\"",  // 32
-    " rowspan=\"5\"",  // 33
-    " rowspan=\"6\"",  // 34
-    " rowspan=\"7\"",  // 35
-    " rowspan=\"8\"",  // 36
-    " rowspan=\"9\"",  // 37
-    " rowspan=\"10\"", // 38
-    " rowspan=\"11\"", // 39
-    " rowspan=\"12\"", // 40
-    " rowspan=\"13\"", // 41
-    " rowspan=\"14\"", // 42
-    " rowspan=\"15\"", // 43
-    " rowspan=\"16\"", // 44
-    " rowspan=\"17\"", // 45
-    " rowspan=\"18\"", // 46
-    " rowspan=\"19\"", // 47
-    " rowspan=\"20\"", // 48
-    "eos",             // 49
+    "sos",
+    "<thead>",
+    "</thead>",
+    "<tbody>",
+    "</tbody>",
+    "<tr>",
+    "</tr>",
+    "<td>",
+    "<td",
+    ">",
+    "</td>",
+    " colspan=\"2\"",
+    " colspan=\"3\"",
+    " colspan=\"4\"",
+    " colspan=\"5\"",
+    " colspan=\"6\"",
+    " colspan=\"7\"",
+    " colspan=\"8\"",
+    " colspan=\"9\"",
+    " colspan=\"10\"",
+    " colspan=\"11\"",
+    " colspan=\"12\"",
+    " colspan=\"13\"",
+    " colspan=\"14\"",
+    " colspan=\"15\"",
+    " colspan=\"16\"",
+    " colspan=\"17\"",
+    " colspan=\"18\"",
+    " colspan=\"19\"",
+    " colspan=\"20\"",
+    " rowspan=\"2\"",
+    " rowspan=\"3\"",
+    " rowspan=\"4\"",
+    " rowspan=\"5\"",
+    " rowspan=\"6\"",
+    " rowspan=\"7\"",
+    " rowspan=\"8\"",
+    " rowspan=\"9\"",
+    " rowspan=\"10\"",
+    " rowspan=\"11\"",
+    " rowspan=\"12\"",
+    " rowspan=\"13\"",
+    " rowspan=\"14\"",
+    " rowspan=\"15\"",
+    " rowspan=\"16\"",
+    " rowspan=\"17\"",
+    " rowspan=\"18\"",
+    " rowspan=\"19\"",
+    " rowspan=\"20\"",
+    "eos",
 ];
-
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
 
 /// A single cell detected by SLANeXT.
 #[derive(Debug, Clone)]
@@ -137,10 +129,6 @@ pub struct SlanetResult {
     /// Raw HTML structure tokens (for debugging).
     pub structure_tokens: Vec<&'static str>,
 }
-
-// ---------------------------------------------------------------------------
-// Model
-// ---------------------------------------------------------------------------
 
 /// SLANeXT table structure recognition model.
 ///
@@ -223,7 +211,6 @@ impl SlanetModel {
             "SLANeXT: ONNX inference complete"
         );
 
-        // Extract float outputs
         let mut float_outputs: Vec<(Vec<usize>, Vec<f32>)> = Vec::new();
         for (_name, value) in outputs.iter() {
             if let Ok(view) = value.try_extract_tensor::<f32>() {
@@ -240,7 +227,6 @@ impl SlanetModel {
             )));
         }
 
-        // Identify bbox output (last dim == 8) vs structure logits (last dim == VOCAB_SIZE)
         let (bbox_shape, bbox_data, logits_shape, logits_data) = if float_outputs[0].0.last() == Some(&8) {
             let (bs, bd) = float_outputs.remove(0);
             let (ls, ld) = float_outputs.remove(0);
@@ -272,11 +258,8 @@ impl SlanetModel {
             });
         }
 
-        // Decode structure tokens via argmax.
-        // Track (vocab_index, sequence_position) for each token so we can
-        // index into the bbox tensor by sequence position.
         let mut tokens: Vec<&'static str> = Vec::new();
-        let mut token_entries: Vec<(usize, usize)> = Vec::new(); // (vocab_idx, seq_pos)
+        let mut token_entries: Vec<(usize, usize)> = Vec::new();
         let mut scores: Vec<f32> = Vec::new();
 
         for t in 0..seq_len {
@@ -285,18 +268,16 @@ impl SlanetModel {
 
             let (idx, score) = argmax_with_score(logits_slice);
 
-            // Stop at EOS
             if t > 0 && idx == EOS_TOKEN_IDX {
                 break;
             }
-            // Skip SOS
             if idx == SOS_TOKEN_IDX {
                 continue;
             }
 
             if idx < VOCAB_SIZE {
                 tokens.push(TOKEN_DICT[idx]);
-                token_entries.push((idx, t)); // store sequence position
+                token_entries.push((idx, t));
                 scores.push(score);
             }
         }
@@ -313,9 +294,6 @@ impl SlanetModel {
             "SLANeXT: decoded structure tokens"
         );
 
-        // Extract cell bboxes for <td> tokens and build grid.
-        // Bboxes are indexed by SEQUENCE POSITION (not td count) in the
-        // output tensor: bbox_data[seq_pos * 8 .. seq_pos * 8 + 8].
         let mut cells = Vec::new();
         let mut current_row: usize = 0;
         let mut current_col: usize = 0;
@@ -336,7 +314,6 @@ impl SlanetModel {
                     max_cols = max_cols.max(current_col);
                 }
                 "<td>" | "<td" => {
-                    // This is a cell — extract its bbox using the sequence position
                     let bbox_offset = seq_pos * 8;
                     if bbox_offset + 8 <= bbox_data.len() {
                         let polygon = [
@@ -350,24 +327,16 @@ impl SlanetModel {
                             bbox_data[bbox_offset + 7],
                         ];
 
-                        // Convert normalized polygon coords to original image pixel coords.
-                        // MinerU bbox decode (table_structure_utils.py:351-355):
-                        //   bbox[0::2] *= w  (original width)
-                        //   bbox[1::2] *= h  (original height)
-                        // Bboxes are normalized [0,1] relative to the original image.
                         let mut pixel_polygon = polygon;
-                        // x coordinates (indices 0, 2, 4, 6) — scale by original width
                         pixel_polygon[0] = polygon[0] * orig_w;
                         pixel_polygon[2] = polygon[2] * orig_w;
                         pixel_polygon[4] = polygon[4] * orig_w;
                         pixel_polygon[6] = polygon[6] * orig_w;
-                        // y coordinates (indices 1, 3, 5, 7) — scale by original height
                         pixel_polygon[1] = polygon[1] * orig_h;
                         pixel_polygon[3] = polygon[3] * orig_h;
                         pixel_polygon[5] = polygon[5] * orig_h;
                         pixel_polygon[7] = polygon[7] * orig_h;
 
-                        // Clamp to image bounds
                         for i in (0..8).step_by(2) {
                             pixel_polygon[i] = pixel_polygon[i].clamp(0.0, orig_w);
                         }
@@ -375,7 +344,6 @@ impl SlanetModel {
                             pixel_polygon[i] = pixel_polygon[i].clamp(0.0, orig_h);
                         }
 
-                        // Derive axis-aligned bbox from polygon
                         let left = pixel_polygon[0]
                             .min(pixel_polygon[2])
                             .min(pixel_polygon[4])
@@ -410,24 +378,17 @@ impl SlanetModel {
                         });
                     }
                     if token == "<td>" {
-                        // Simple td — immediately advance column
                         current_col += 1;
                     } else {
-                        // <td with attributes — wait for ">" to close
                         in_td = true;
                     }
                 }
                 ">" if in_td => {
-                    // Close of <td ...> with attributes
                     current_col += 1;
                     in_td = false;
                 }
-                "</td>" => {
-                    // End of cell content — nothing to do
-                }
-                _ => {
-                    // colspan/rowspan attributes, thead/tbody tags — skip for grid tracking
-                }
+                "</td>" => {}
+                _ => {}
             }
         }
         max_cols = max_cols.max(current_col);
@@ -452,10 +413,6 @@ impl SlanetModel {
     }
 }
 
-// ---------------------------------------------------------------------------
-// Preprocessing
-// ---------------------------------------------------------------------------
-
 /// Preprocess an image for SLANeXT inference.
 ///
 /// Pipeline:
@@ -470,27 +427,16 @@ fn preprocess_slanet(img: &RgbImage) -> Array4<f32> {
     let orig_w = img.width();
     let orig_h = img.height();
 
-    // Aspect-preserving resize: scale to fit within INPUT_SIZE × INPUT_SIZE
     let scale = (INPUT_SIZE as f32 / orig_w as f32).min(INPUT_SIZE as f32 / orig_h as f32);
     let new_w = (orig_w as f32 * scale).round().max(1.0) as u32;
     let new_h = (orig_h as f32 * scale).round().max(1.0) as u32;
 
-    let resized = image::imageops::resize(
-        img,
-        new_w,
-        new_h,
-        image::imageops::FilterType::Triangle, // Bilinear, matches PaddleOCR's cv2.resize default
-    );
+    let resized = image::imageops::resize(img, new_w, new_h, image::imageops::FilterType::Triangle);
 
     let w = INPUT_SIZE as usize;
     let h = INPUT_SIZE as usize;
     let hw = h * w;
 
-    // PaddleOCR uses BGR channel order (OpenCV convention).
-    // Normalization constants are applied per BGR channel:
-    //   Channel 0 (B): mean=0.485, std=0.229
-    //   Channel 1 (G): mean=0.456, std=0.224
-    //   Channel 2 (R): mean=0.406, std=0.225
     const INV_255: f32 = 1.0 / 255.0;
     let alpha_b = INV_255 / IMAGENET_STD_BGR[0];
     let alpha_g = INV_255 / IMAGENET_STD_BGR[1];
@@ -499,7 +445,6 @@ fn preprocess_slanet(img: &RgbImage) -> Array4<f32> {
     let beta_g = -IMAGENET_MEAN_BGR[1] / IMAGENET_STD_BGR[1];
     let beta_r = -IMAGENET_MEAN_BGR[2] / IMAGENET_STD_BGR[2];
 
-    // Initialize with zero-padding values (normalized 0 in BGR):
     let mut data = vec![0.0f32; 3 * hw];
     for i in 0..hw {
         data[i] = beta_b;
@@ -507,7 +452,6 @@ fn preprocess_slanet(img: &RgbImage) -> Array4<f32> {
         data[2 * hw + i] = beta_r;
     }
 
-    // Copy resized image into top-left corner (RGB input → BGR output)
     let resized_pixels = resized.as_raw();
     let rw = new_w as usize;
     let rh = new_h as usize;
@@ -521,7 +465,6 @@ fn preprocess_slanet(img: &RgbImage) -> Array4<f32> {
             let r = resized_pixels[src_idx] as f32;
             let g = resized_pixels[src_idx + 1] as f32;
             let b = resized_pixels[src_idx + 2] as f32;
-            // Output: BGR channel order
             data[dst_idx] = b * alpha_b + beta_b;
             data[hw + dst_idx] = g * alpha_g + beta_g;
             data[2 * hw + dst_idx] = r * alpha_r + beta_r;
@@ -530,10 +473,6 @@ fn preprocess_slanet(img: &RgbImage) -> Array4<f32> {
 
     Array4::from_shape_vec((1, 3, h, w), data).expect("shape mismatch in preprocess_slanet")
 }
-
-// ---------------------------------------------------------------------------
-// Utility
-// ---------------------------------------------------------------------------
 
 /// Argmax with maximum score (softmax not needed — we just want the index).
 fn argmax_with_score(logits: &[f32]) -> (usize, f32) {
@@ -545,7 +484,6 @@ fn argmax_with_score(logits: &[f32]) -> (usize, f32) {
             max_idx = i;
         }
     }
-    // Convert logit to probability via softmax for confidence scoring
     let max_logit = max_val;
     let sum_exp: f32 = logits.iter().map(|&v| (v - max_logit).exp()).sum();
     let prob = 1.0 / sum_exp;

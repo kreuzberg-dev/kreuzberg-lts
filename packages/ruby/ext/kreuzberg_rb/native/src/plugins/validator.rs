@@ -1,8 +1,11 @@
 //! Validator plugin registration and management
 
-use crate::{error_handling::{kreuzberg_error, runtime_error}, gc_guarded_value::GcGuardedValue};
-use magnus::{Error, Value, scan_args::scan_args, Ruby};
+use crate::{
+    error_handling::{kreuzberg_error, runtime_error},
+    gc_guarded_value::GcGuardedValue,
+};
 use magnus::value::ReprValue;
+use magnus::{Error, Ruby, Value, scan_args::scan_args};
 use std::sync::Arc;
 
 /// Register a validator plugin
@@ -60,11 +63,12 @@ pub fn register_validator(args: &[Value]) -> Result<(), Error> {
 
             tokio::task::block_in_place(|| {
                 let ruby = Ruby::get().expect("Ruby not initialized");
-                let result_hash =
-                    crate::result::extraction_result_to_ruby(&ruby, result_clone).map_err(|e| kreuzberg::KreuzbergError::Plugin {
+                let result_hash = crate::result::extraction_result_to_ruby(&ruby, result_clone).map_err(|e| {
+                    kreuzberg::KreuzbergError::Plugin {
                         message: format!("Failed to convert result to Ruby: {}", e),
                         plugin_name: validator_name.clone(),
-                    })?;
+                    }
+                })?;
 
                 validator
                     .funcall::<_, _, magnus::Value>("call", (result_hash,))
@@ -89,10 +93,7 @@ pub fn register_validator(args: &[Value]) -> Result<(), Error> {
     });
 
     let registry = kreuzberg::get_validator_registry();
-    registry
-        .write()
-        .register(validator_impl)
-        .map_err(kreuzberg_error)?;
+    registry.write().register(validator_impl).map_err(kreuzberg_error)?;
 
     Ok(())
 }

@@ -53,9 +53,9 @@ import type { ExtractionConfig, ExtractionResult } from "../types.js";
  * ```
  */
 export function batchExtractFilesSync(paths: string[], config: ExtractionConfig | null = null): ExtractionResult[] {
-	const normalizedConfig = normalizeExtractionConfig(config);
-	const rawResults = getBinding().batchExtractFilesSync(paths, normalizedConfig);
-	return rawResults.map(convertResult);
+  const normalizedConfig = normalizeExtractionConfig(config);
+  const rawResults = getBinding().batchExtractFilesSync(paths, normalizedConfig);
+  return rawResults.map(convertResult);
 }
 
 /**
@@ -94,12 +94,12 @@ export function batchExtractFilesSync(paths: string[], config: ExtractionConfig 
  * ```
  */
 export async function batchExtractFiles(
-	paths: string[],
-	config: ExtractionConfig | null = null,
+  paths: string[],
+  config: ExtractionConfig | null = null,
 ): Promise<ExtractionResult[]> {
-	const normalizedConfig = normalizeExtractionConfig(config);
-	const rawResults = await getBinding().batchExtractFiles(paths, normalizedConfig);
-	return rawResults.map(convertResult);
+  const normalizedConfig = normalizeExtractionConfig(config);
+  const rawResults = await getBinding().batchExtractFiles(paths, normalizedConfig);
+  return rawResults.map(convertResult);
 }
 
 /**
@@ -140,19 +140,19 @@ export async function batchExtractFiles(
  * ```
  */
 export function batchExtractBytesSync(
-	dataList: Uint8Array[],
-	mimeTypes: string[],
-	config: ExtractionConfig | null = null,
+  dataList: Uint8Array[],
+  mimeTypes: string[],
+  config: ExtractionConfig | null = null,
 ): ExtractionResult[] {
-	const buffers = assertUint8ArrayList(dataList, "dataList").map((data) => Buffer.from(data));
+  const buffers = assertUint8ArrayList(dataList, "dataList").map((data) => Buffer.from(data));
 
-	if (buffers.length !== mimeTypes.length) {
-		throw new TypeError("dataList and mimeTypes must have the same length");
-	}
+  if (buffers.length !== mimeTypes.length) {
+    throw new TypeError("dataList and mimeTypes must have the same length");
+  }
 
-	const normalizedConfig = normalizeExtractionConfig(config);
-	const rawResults = getBinding().batchExtractBytesSync(buffers, mimeTypes, normalizedConfig);
-	return rawResults.map(convertResult);
+  const normalizedConfig = normalizeExtractionConfig(config);
+  const rawResults = getBinding().batchExtractBytesSync(buffers, mimeTypes, normalizedConfig);
+  return rawResults.map(convertResult);
 }
 
 /**
@@ -197,17 +197,17 @@ export function batchExtractBytesSync(
  * ```
  */
 export async function batchExtractBytes(
-	dataList: Uint8Array[],
-	mimeTypes: string[],
-	config: ExtractionConfig | null = null,
+  dataList: Uint8Array[],
+  mimeTypes: string[],
+  config: ExtractionConfig | null = null,
 ): Promise<ExtractionResult[]> {
-	const buffers = assertUint8ArrayList(dataList, "dataList").map((data) => Buffer.from(data));
+  const buffers = assertUint8ArrayList(dataList, "dataList").map((data) => Buffer.from(data));
 
-	if (buffers.length !== mimeTypes.length) {
-		throw new TypeError("dataList and mimeTypes must have the same length");
-	}
+  if (buffers.length !== mimeTypes.length) {
+    throw new TypeError("dataList and mimeTypes must have the same length");
+  }
 
-	const normalizedConfig = normalizeExtractionConfig(config);
-	const rawResults = await getBinding().batchExtractBytes(buffers, mimeTypes, normalizedConfig);
-	return rawResults.map(convertResult);
+  const normalizedConfig = normalizeExtractionConfig(config);
+  const rawResults = await getBinding().batchExtractBytes(buffers, mimeTypes, normalizedConfig);
+  return rawResults.map(convertResult);
 }

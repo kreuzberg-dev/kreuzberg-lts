@@ -22,7 +22,6 @@ pub fn parse_extraction_config_from_json(json_str: &str) -> FfiResult<Extraction
     let mut config: ExtractionConfig =
         serde_json::from_value(json_value.clone()).map_err(|e| format!("Invalid configuration structure: {}", e))?;
 
-    // Parse HTML options if present (complex nested structure)
     if let Some(html_opts_val) = json_value.get("html_options") {
         config.html_options = Some(super::html::parse_html_options(html_opts_val)?);
     }

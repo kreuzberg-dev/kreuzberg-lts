@@ -54,11 +54,9 @@ pub unsafe extern "C" fn kreuzberg_free_batch_result(batch_result: *mut CBatchRe
 
     let batch = unsafe { Box::from_raw(batch_result) };
 
-    // Free individual results first, then the array
     if !batch.results.is_null() {
         if batch.count > 0 {
             unsafe {
-                // Free each individual result
                 for i in 0..batch.count {
                     let result_ptr = *batch.results.add(i);
                     if !result_ptr.is_null() {
@@ -68,12 +66,8 @@ pub unsafe extern "C" fn kreuzberg_free_batch_result(batch_result: *mut CBatchRe
             }
         }
 
-        // Free the results array itself (was created with into_boxed_slice())
-        // IMPORTANT: Must use Box::from_raw with slice pointer, not Vec::from_raw_parts
-        // because the array was allocated as Box<[T]>, not Vec<T>
         unsafe {
             let _boxed_slice = Box::from_raw(std::ptr::slice_from_raw_parts_mut(batch.results, batch.count));
-            // Box will be dropped here, freeing the array allocation
         };
     }
 }
@@ -337,7 +331,6 @@ mod tests {
 
     #[test]
     fn test_free_string_null() {
-        // Should not crash on NULL
         unsafe { kreuzberg_free_string(ptr::null_mut()) };
     }
 
@@ -345,7 +338,6 @@ mod tests {
     fn test_free_string_valid() {
         let s = CString::new("test string").unwrap().into_raw();
         unsafe { kreuzberg_free_string(s) };
-        // If we get here without crashing, the test passed
     }
 
     #[test]
@@ -361,19 +353,16 @@ mod tests {
 
         assert!(!cloned.is_null());
 
-        // Verify the cloned string matches
         unsafe {
             let cloned_str = CStr::from_ptr(cloned);
             assert_eq!(cloned_str.to_str().unwrap(), "test string");
 
-            // Free the cloned string
             kreuzberg_free_string(cloned);
         }
     }
 
     #[test]
     fn test_clone_and_free_cycle() {
-        // Test multiple clone and free cycles
         for _ in 0..100 {
             let original = CString::new("test").unwrap();
             let cloned = unsafe { kreuzberg_clone_string(original.as_ptr()) };
@@ -384,30 +373,23 @@ mod tests {
 
     #[test]
     fn test_free_result_null() {
-        // Should not crash on NULL
         unsafe { kreuzberg_free_result(ptr::null_mut()) };
     }
 
     #[test]
     fn test_free_result_all_fields() {
-        // Test freeing a result with all 12 string fields populated
         let result = create_test_result();
         unsafe { kreuzberg_free_result(result) };
-        // If we get here without crashing, the test passed
     }
 
     #[test]
     fn test_free_result_partial_fields() {
-        // Test freeing a result with some NULL fields
         let result = create_partial_result();
         unsafe { kreuzberg_free_result(result) };
-        // If we get here without crashing, the test passed
     }
 
     #[test]
     fn test_free_result_page_structure_and_pages_json() {
-        // Regression test: ensure page_structure_json and pages_json are freed
-        // These were missing in the original implementation before PR #3
         let result = Box::into_raw(Box::new(CExtractionResult {
             content: CString::new("test").unwrap().into_raw(),
             mime_type: CString::new("text/plain").unwrap().into_raw(),
@@ -439,12 +421,10 @@ mod tests {
         }));
 
         unsafe { kreuzberg_free_result(result) };
-        // If we get here without crashing or leaking, the test passed
     }
 
     #[test]
     fn test_free_result_elements_json() {
-        // Test: ensure elements_json is freed
         let result = Box::into_raw(Box::new(CExtractionResult {
             content: CString::new("test").unwrap().into_raw(),
             mime_type: CString::new("text/plain").unwrap().into_raw(),
@@ -478,18 +458,15 @@ mod tests {
         }));
 
         unsafe { kreuzberg_free_result(result) };
-        // If we get here without crashing or leaking, the test passed
     }
 
     #[test]
     fn test_free_batch_result_null() {
-        // Should not crash on NULL
         unsafe { kreuzberg_free_batch_result(ptr::null_mut()) };
     }
 
     #[test]
     fn test_free_batch_result_empty() {
-        // Test freeing a batch with 0 results
         let batch = Box::into_raw(Box::new(CBatchResult {
             results: ptr::null_mut(),
             count: 0,
@@ -502,7 +479,6 @@ mod tests {
 
     #[test]
     fn test_free_batch_result_single() {
-        // Test freeing a batch with 1 result
         let result = create_test_result();
         let results_array = vec![result].into_boxed_slice();
         let results_ptr = Box::into_raw(results_array) as *mut *mut CExtractionResult;
@@ -519,7 +495,6 @@ mod tests {
 
     #[test]
     fn test_free_batch_result_multiple() {
-        // Test freeing a batch with 100 results
         let mut results = Vec::new();
         for _ in 0..100 {
             results.push(create_test_result());
@@ -540,17 +515,11 @@ mod tests {
 
     #[test]
     fn test_free_batch_result_box_vec_symmetry() {
-        // Regression test for Box/Vec mismatch bug fixed in PR #3
-        // This test ensures we use Box::from_raw with slice pointer,
-        // not Vec::from_raw_parts, which would cause a segfault
-
-        // Create results using Box<[T]> allocation (same as production code)
         let mut results = Vec::new();
         for _ in 0..10 {
             results.push(create_test_result());
         }
 
-        // Convert to boxed slice (this is what production code does)
         let results_array = results.into_boxed_slice();
         let count = results_array.len();
         let results_ptr = Box::into_raw(results_array) as *mut *mut CExtractionResult;
@@ -562,13 +531,11 @@ mod tests {
             _padding2: [0u8; 7],
         }));
 
-        // This should NOT segfault
         unsafe { kreuzberg_free_batch_result(batch) };
     }
 
     #[test]
     fn test_free_batch_result_with_null_results() {
-        // Test freeing a batch where some results are NULL
         let results = vec![
             create_test_result(),
             ptr::null_mut(),
@@ -591,7 +558,6 @@ mod tests {
 
     #[test]
     fn test_memory_stress_test() {
-        // Stress test: allocate and free 1000 results
         for _ in 0..1000 {
             let result = create_test_result();
             unsafe { kreuzberg_free_result(result) };
@@ -600,7 +566,6 @@ mod tests {
 
     #[test]
     fn test_memory_stress_test_batch() {
-        // Stress test: allocate and free 100 batches of 10 results each
         for _ in 0..100 {
             let mut results = Vec::new();
             for _ in 0..10 {

@@ -49,7 +49,6 @@ async fn test_embed_valid_texts() {
     assert!(embed_response.dimensions > 0);
     assert!(!embed_response.model.is_empty());
 
-    // Verify embeddings have correct dimensions
     for embedding in &embed_response.embeddings {
         assert_eq!(embedding.len(), embed_response.dimensions);
     }
@@ -194,7 +193,6 @@ async fn test_embed_batch() {
     assert_eq!(embed_response.count, 10);
     assert_eq!(embed_response.embeddings.len(), 10);
 
-    // Verify all embeddings have the same dimensions
     let first_dim = embed_response.embeddings[0].len();
     for embedding in &embed_response.embeddings {
         assert_eq!(embedding.len(), first_dim);
@@ -263,7 +261,6 @@ async fn test_embed_malformed_json() {
 async fn test_embed_rejects_json_array() {
     let app = create_router(ExtractionConfig::default());
 
-    // Send a JSON array instead of object
     let response = app
         .oneshot(
             Request::builder()
@@ -276,7 +273,6 @@ async fn test_embed_rejects_json_array() {
         .await
         .expect("Operation failed");
 
-    // Should reject with 400 or 422, NOT 200
     assert!(
         response.status() == StatusCode::BAD_REQUEST || response.status() == StatusCode::UNPROCESSABLE_ENTITY,
         "Expected 400 or 422, got {}",
@@ -289,7 +285,6 @@ async fn test_embed_rejects_json_array() {
 async fn test_embed_rejects_simple_json_array() {
     let app = create_router(ExtractionConfig::default());
 
-    // Send a simple string array instead of object with texts field
     let response = app
         .oneshot(
             Request::builder()
@@ -304,7 +299,6 @@ async fn test_embed_rejects_simple_json_array() {
 
     assert_eq!(response.status(), StatusCode::BAD_REQUEST);
 
-    // Check that error response contains helpful message
     let body = axum::body::to_bytes(response.into_body(), usize::MAX)
         .await
         .expect("Failed to read response body");
@@ -328,7 +322,6 @@ async fn test_embed_deterministic() {
         "texts": ["Deterministic test"]
     });
 
-    // First call
     let response1 = app
         .clone()
         .oneshot(
@@ -351,7 +344,6 @@ async fn test_embed_deterministic() {
         .expect("Failed to convert to bytes");
     let embed_response1: EmbedResponse = serde_json::from_slice(&body1).expect("Failed to deserialize");
 
-    // Second call with same text
     let response2 = app
         .oneshot(
             Request::builder()
@@ -373,7 +365,6 @@ async fn test_embed_deterministic() {
         .expect("Failed to convert to bytes");
     let embed_response2: EmbedResponse = serde_json::from_slice(&body2).expect("Failed to deserialize");
 
-    // Compare embeddings - they should be identical
     assert_eq!(embed_response1.embeddings.len(), embed_response2.embeddings.len());
     assert_eq!(embed_response1.embeddings[0], embed_response2.embeddings[0]);
 }
@@ -384,7 +375,6 @@ async fn test_embed_deterministic() {
 async fn test_embed_different_presets() {
     let app = create_router(ExtractionConfig::default());
 
-    // Test with "fast" preset
     let request_fast = json!({
         "texts": ["Test text"],
         "config": {
@@ -417,7 +407,6 @@ async fn test_embed_different_presets() {
         .expect("Operation failed");
     let embed_fast: EmbedResponse = serde_json::from_slice(&body_fast).expect("Failed to deserialize");
 
-    // Test with "balanced" preset
     let request_balanced = json!({
         "texts": ["Test text"],
         "config": {
@@ -449,7 +438,6 @@ async fn test_embed_different_presets() {
         .expect("Operation failed");
     let embed_balanced: EmbedResponse = serde_json::from_slice(&body_balanced).expect("Failed to deserialize");
 
-    // Different presets should have different dimensions
     assert_ne!(embed_fast.dimensions, embed_balanced.dimensions);
     assert_eq!(embed_fast.model, "fast");
     assert_eq!(embed_balanced.model, "balanced");

@@ -88,7 +88,6 @@ impl DocumentExtractor for CsvExtractor {
         let has_header = detect_header(&rows);
         let column_types = infer_column_types(&rows, has_header);
 
-        // Build markdown table before moving rows into Table::cells
         let markdown = build_markdown_table(&rows);
 
         let table = Table {
@@ -114,7 +113,6 @@ impl DocumentExtractor for CsvExtractor {
             },
         };
 
-        // Build InternalDocument with the table
         let mut builder = InternalDocumentBuilder::new("csv");
         let cloned_table = Table {
             cells: table.cells.clone(),
@@ -144,7 +142,7 @@ impl DocumentExtractor for CsvExtractor {
     }
 
     fn priority(&self) -> i32 {
-        60 // Higher than PlainTextExtractor (50) to take precedence
+        60
     }
 }
 
@@ -188,7 +186,6 @@ fn parse_csv(text: &str, delimiter: char) -> Vec<Vec<String>> {
     while let Some(c) = chars.next() {
         if in_quotes {
             if c == '"' {
-                // Check for escaped quote ("")
                 if chars.peek() == Some(&'"') {
                     current_field.push('"');
                     chars.next();
@@ -233,7 +230,6 @@ fn parse_csv(text: &str, delimiter: char) -> Vec<Vec<String>> {
         }
     }
 
-    // Flush last field/row
     if !current_field.is_empty() || !current_row.is_empty() {
         current_row.push(current_field);
         if !current_row.iter().all(|f| f.is_empty()) {
@@ -253,12 +249,10 @@ fn parse_csv(text: &str, delimiter: char) -> Vec<Vec<String>> {
 /// When the `quality` feature is enabled, uses chardetng for more sophisticated
 /// encoding detection. Without it, tries common encodings in order.
 fn decode_csv_bytes(content: &[u8]) -> String {
-    // Fast path: valid UTF-8.
     if let Ok(s) = utf8_validation::from_utf8(content) {
         return s.to_string();
     }
 
-    // Non-UTF-8 content: use encoding detection.
     #[cfg(feature = "quality")]
     {
         crate::utils::safe_decode(content, None)
@@ -276,17 +270,15 @@ fn decode_csv_bytes(content: &[u8]) -> String {
 /// selecting the first one that decodes without errors.
 #[cfg(not(feature = "quality"))]
 fn decode_csv_bytes_fallback(content: &[u8]) -> String {
-    // Common encoding labels used in CSV files, especially in East Asia
     let encoding_labels = [
-        "shift_jis",    // Japanese Shift-JIS (common for CSV from Japanese systems)
-        "windows-31j",  // Windows CP932 (Microsoft's Shift-JIS variant)
-        "windows-1252", // Western European (common default)
-        "iso-8859-1",   // Latin-1 fallback
-        "gb18030",      // Simplified Chinese
-        "big5",         // Traditional Chinese
+        "shift_jis",
+        "windows-31j",
+        "windows-1252",
+        "iso-8859-1",
+        "gb18030",
+        "big5",
     ];
 
-    // Try each encoding and use the first one that decodes without errors
     for label in &encoding_labels {
         if let Some(encoding) = encoding_rs::Encoding::for_label(label.as_bytes()) {
             let (decoded, _, had_errors) = encoding.decode(content);
@@ -296,14 +288,11 @@ fn decode_csv_bytes_fallback(content: &[u8]) -> String {
         }
     }
 
-    // If all encodings had errors, try Shift-JIS anyway
-    // This handles files with a few garbled characters gracefully
     if let Some(shift_jis) = encoding_rs::Encoding::for_label(b"shift_jis") {
         let (decoded, _, _) = shift_jis.decode(content);
         return decoded.into_owned();
     }
 
-    // Final fallback: lossy UTF-8 conversion
     String::from_utf8_lossy(content).into_owned()
 }
 
@@ -323,7 +312,6 @@ fn detect_header(rows: &[Vec<String>]) -> bool {
         return false;
     }
 
-    // Check if first row has no numeric values
     let first_row_has_number = first_row.iter().any(|cell| {
         let trimmed = cell.trim();
         !trimmed.is_empty() && trimmed.parse::<f64>().is_ok()
@@ -333,7 +321,6 @@ fn detect_header(rows: &[Vec<String>]) -> bool {
         return false;
     }
 
-    // Check if at least one data row has numeric values
     let data_rows = &rows[1..rows.len().min(6)];
 
     data_rows.iter().any(|row| {
@@ -365,7 +352,6 @@ fn infer_column_types(rows: &[Vec<String>], has_header: bool) -> Vec<String> {
 
     let data_rows = &rows[data_start..scan_end];
 
-    // Pre-compiled date regexes (LazyLock statics)
     let date_patterns: &[&regex::Regex] = &[&DATE_RE_ISO, &DATE_RE_US, &DATE_RE_EU];
 
     (0..col_count)
@@ -429,7 +415,6 @@ fn build_markdown_table(rows: &[Vec<String>]) -> String {
         }
         markdown.push('\n');
 
-        // Add separator after first row (header)
         if i == 0 {
             markdown.push('|');
             for _ in 0..col_count {
@@ -517,10 +502,8 @@ mod tests {
             .await
             .expect("CSV extraction should succeed");
 
-        // Tables should be populated in the InternalDocument
         assert!(!result.tables.is_empty());
 
-        // Metadata should contain CSV-specific fields via FormatMetadata
         if let Some(FormatMetadata::Csv(csv_meta)) = &result.metadata.format {
             assert!(csv_meta.has_header);
         } else {
@@ -539,7 +522,6 @@ mod tests {
             .await
             .expect("CSV extraction with quoted fields should succeed");
 
-        // Tables should be populated
         assert!(!result.tables.is_empty());
     }
 
@@ -573,20 +555,16 @@ mod tests {
 
     #[test]
     fn test_decode_csv_bytes_shift_jis() {
-        // Shift-JIS encoded CSV: "名前,年齢,住所"
-        // This is the header row from test_mskanji.csv
         let shift_jis_data = vec![
             0x96u8, 0xbc, 0x91, 0x4f, 0x2c, 0x94, 0x4e, 0x97, 0xee, 0x2c, 0x8f, 0x5a, 0x8f, 0x8a,
         ];
 
         let decoded = decode_csv_bytes(&shift_jis_data);
 
-        // Should decode to correct Japanese text
         assert!(decoded.contains("名前"), "Should contain '名前' (Name)");
         assert!(decoded.contains("年齢"), "Should contain '年齢' (Age)");
         assert!(decoded.contains("住所"), "Should contain '住所' (Address)");
 
-        // Should NOT contain replacement characters (mojibake)
         assert!(
             !decoded.contains("□"),
             "Should not contain mojibake replacement characters"
@@ -599,7 +577,6 @@ mod tests {
 
     #[test]
     fn test_decode_csv_bytes_utf8() {
-        // UTF-8 encoded data should pass through unchanged
         let utf8_data = "名前,年齢,住所".as_bytes();
         let decoded = decode_csv_bytes(utf8_data);
         assert_eq!(decoded, "名前,年齢,住所");
@@ -679,7 +656,6 @@ mod tests {
         let config = ExtractionConfig::default();
         let result = extractor.extract_bytes(&content, "text/csv", &config).await.unwrap();
 
-        // Tables should be populated
         assert!(!result.tables.is_empty());
     }
 }

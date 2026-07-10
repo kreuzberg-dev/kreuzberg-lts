@@ -635,7 +635,6 @@ async fn test_extract_octet_stream_with_known_extension_detects_mime() {
         .await
         .expect("Operation failed");
 
-    // Should succeed because .txt is auto-detected from the filename
     assert_eq!(response.status(), StatusCode::OK);
 }
 

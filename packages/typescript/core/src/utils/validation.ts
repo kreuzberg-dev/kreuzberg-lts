@@ -12,24 +12,24 @@
 let nativeModule: Record<string, any>;
 
 function getNativeModule(): Record<string, any> {
-	if (!nativeModule) {
-		try {
-			nativeModule = require("kreuzberg-node");
-		} catch (error) {
-			throw new Error(
-				`Unable to load native kreuzberg-node module: ${error instanceof Error ? error.message : String(error)}`,
-			);
-		}
-	}
-	return nativeModule;
+  if (!nativeModule) {
+    try {
+      nativeModule = require("kreuzberg-node");
+    } catch (error) {
+      throw new Error(
+        `Unable to load native kreuzberg-node module: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
+  }
+  return nativeModule;
 }
 
 /**
  * Interface for a single validation rule
  */
 interface ValidationRule<T> {
-	validatorName: string;
-	errorMessage: (value: T) => string;
+  validatorName: string;
+  errorMessage: (value: T) => string;
 }
 
 /**
@@ -40,12 +40,12 @@ interface ValidationRule<T> {
  * @returns A validator function that throws on invalid input
  */
 function createValidator<T>(rule: ValidationRule<T>): (value: T) => void {
-	return (value: T): void => {
-		const validator = getNativeModule()[rule.validatorName];
-		if (!validator(value)) {
-			throw new Error(rule.errorMessage(value));
-		}
-	};
+  return (value: T): void => {
+    const validator = getNativeModule()[rule.validatorName];
+    if (!validator(value)) {
+      throw new Error(rule.errorMessage(value));
+    }
+  };
 }
 
 /**
@@ -57,15 +57,15 @@ function createValidator<T>(rule: ValidationRule<T>): (value: T) => void {
  * @returns A validator function that throws on invalid input
  */
 function createMultiParamValidator<T extends any[]>(
-	rule: ValidationRule<T>,
-	_paramCount: number,
+  rule: ValidationRule<T>,
+  _paramCount: number,
 ): (...args: T) => void {
-	return (...args: T): void => {
-		const validator = getNativeModule()[rule.validatorName];
-		if (!validator(...args)) {
-			throw new Error(rule.errorMessage(args));
-		}
-	};
+  return (...args: T): void => {
+    const validator = getNativeModule()[rule.validatorName];
+    if (!validator(...args)) {
+      throw new Error(rule.errorMessage(args));
+    }
+  };
 }
 
 /**
@@ -73,55 +73,55 @@ function createMultiParamValidator<T extends any[]>(
  * Each rule maps to a native validator function and provides error messaging.
  */
 const VALIDATION_RULES = {
-	binarizationMethod: {
-		validatorName: "validateBinarizationMethod",
-		errorMessage: (value: string) => `Invalid binarization method: ${value}`,
-	} as ValidationRule<string>,
+  binarizationMethod: {
+    validatorName: "validateBinarizationMethod",
+    errorMessage: (value: string) => `Invalid binarization method: ${value}`,
+  } as ValidationRule<string>,
 
-	ocrBackend: {
-		validatorName: "validateOcrBackend",
-		errorMessage: (value: string) => `Invalid OCR backend: ${value}`,
-	} as ValidationRule<string>,
+  ocrBackend: {
+    validatorName: "validateOcrBackend",
+    errorMessage: (value: string) => `Invalid OCR backend: ${value}`,
+  } as ValidationRule<string>,
 
-	languageCode: {
-		validatorName: "validateLanguageCode",
-		errorMessage: (value: string) => `Invalid language code: ${value}`,
-	} as ValidationRule<string>,
+  languageCode: {
+    validatorName: "validateLanguageCode",
+    errorMessage: (value: string) => `Invalid language code: ${value}`,
+  } as ValidationRule<string>,
 
-	tokenReductionLevel: {
-		validatorName: "validateTokenReductionLevel",
-		errorMessage: (value: string) => `Invalid token reduction level: ${value}`,
-	} as ValidationRule<string>,
+  tokenReductionLevel: {
+    validatorName: "validateTokenReductionLevel",
+    errorMessage: (value: string) => `Invalid token reduction level: ${value}`,
+  } as ValidationRule<string>,
 
-	tesseractPsm: {
-		validatorName: "validateTesseractPsm",
-		errorMessage: (value: number) => `Invalid Tesseract PSM: ${value}. Valid range: 0-13`,
-	} as ValidationRule<number>,
+  tesseractPsm: {
+    validatorName: "validateTesseractPsm",
+    errorMessage: (value: number) => `Invalid Tesseract PSM: ${value}. Valid range: 0-13`,
+  } as ValidationRule<number>,
 
-	tesseractOem: {
-		validatorName: "validateTesseractOem",
-		errorMessage: (value: number) => `Invalid Tesseract OEM: ${value}. Valid range: 0-3`,
-	} as ValidationRule<number>,
+  tesseractOem: {
+    validatorName: "validateTesseractOem",
+    errorMessage: (value: number) => `Invalid Tesseract OEM: ${value}. Valid range: 0-3`,
+  } as ValidationRule<number>,
 
-	outputFormat: {
-		validatorName: "validateOutputFormat",
-		errorMessage: (value: string) => `Invalid output format: ${value}`,
-	} as ValidationRule<string>,
+  outputFormat: {
+    validatorName: "validateOutputFormat",
+    errorMessage: (value: string) => `Invalid output format: ${value}`,
+  } as ValidationRule<string>,
 
-	confidence: {
-		validatorName: "validateConfidence",
-		errorMessage: (value: number) => `Invalid confidence: ${value}. Valid range: 0.0-1.0`,
-	} as ValidationRule<number>,
+  confidence: {
+    validatorName: "validateConfidence",
+    errorMessage: (value: number) => `Invalid confidence: ${value}. Valid range: 0.0-1.0`,
+  } as ValidationRule<number>,
 
-	dpi: {
-		validatorName: "validateDpi",
-		errorMessage: (value: number) => `Invalid DPI: ${value}. Valid range: 1-2400`,
-	} as ValidationRule<number>,
+  dpi: {
+    validatorName: "validateDpi",
+    errorMessage: (value: number) => `Invalid DPI: ${value}. Valid range: 1-2400`,
+  } as ValidationRule<number>,
 
-	chunkingParams: {
-		validatorName: "validateChunkingParams",
-		errorMessage: (args: [number, number]) => `Invalid chunking params: maxChars=${args[0]}, maxOverlap=${args[1]}`,
-	} as ValidationRule<[number, number]>,
+  chunkingParams: {
+    validatorName: "validateChunkingParams",
+    errorMessage: (args: [number, number]) => `Invalid chunking params: maxChars=${args[0]}, maxOverlap=${args[1]}`,
+  } as ValidationRule<[number, number]>,
 };
 
 /**
@@ -350,8 +350,8 @@ export const validateChunkingParams = createMultiParamValidator(VALIDATION_RULES
  * ```
  */
 export async function getValidBinarizationMethods(): Promise<string[]> {
-	const getter = getNativeModule()["getValidBinarizationMethods"];
-	return getter();
+  const getter = getNativeModule()["getValidBinarizationMethods"];
+  return getter();
 }
 
 /**
@@ -368,8 +368,8 @@ export async function getValidBinarizationMethods(): Promise<string[]> {
  * ```
  */
 export async function getValidLanguageCodes(): Promise<string[]> {
-	const getter = getNativeModule()["getValidLanguageCodes"];
-	return getter();
+  const getter = getNativeModule()["getValidLanguageCodes"];
+  return getter();
 }
 
 /**
@@ -386,8 +386,8 @@ export async function getValidLanguageCodes(): Promise<string[]> {
  * ```
  */
 export async function getValidOcrBackends(): Promise<string[]> {
-	const getter = getNativeModule()["getValidOcrBackends"];
-	return getter();
+  const getter = getNativeModule()["getValidOcrBackends"];
+  return getter();
 }
 
 /**
@@ -404,6 +404,6 @@ export async function getValidOcrBackends(): Promise<string[]> {
  * ```
  */
 export async function getValidTokenReductionLevels(): Promise<string[]> {
-	const getter = getNativeModule()["getValidTokenReductionLevels"];
-	return getter();
+  const getter = getNativeModule()["getValidTokenReductionLevels"];
+  return getter();
 }

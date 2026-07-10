@@ -172,7 +172,7 @@ impl OcrRotation {
                 1 => 180.0,
                 2 => 90.0,
                 3 => 270.0,
-                _ => unreachable!(), // validated above
+                _ => unreachable!(),
             },
             confidence: Some((angle_score as f64).clamp(0.0, 1.0)),
         })
@@ -206,7 +206,7 @@ impl OcrElementLevel {
         match level {
             1 => Self::Page,
             2 => Self::Block,
-            3 => Self::Block, // Paragraph treated as Block
+            3 => Self::Block,
             4 => Self::Line,
             5 => Self::Word,
             _ => Self::Line,
@@ -352,7 +352,6 @@ mod tests {
 
     #[test]
     fn test_quadrilateral_to_aabb() {
-        // Slightly rotated quad
         let geom = OcrBoundingGeometry::Quadrilateral {
             points: [(10, 22), (108, 20), (110, 72), (12, 74)],
         };
@@ -373,7 +372,6 @@ mod tests {
     #[test]
     fn test_confidence_from_paddle() {
         let conf = OcrConfidence::from_paddle(0.95, 0.88);
-        // Use approximate comparison due to f32 -> f64 precision
         assert!(conf.detection.is_some());
         assert!((conf.detection.unwrap() - 0.95).abs() < 0.001);
         assert!((conf.recognition - 0.88).abs() < 0.001);
@@ -383,19 +381,16 @@ mod tests {
     fn test_rotation_from_paddle() {
         let rot = OcrRotation::from_paddle(1, 0.92).expect("Valid angle_index");
         assert_eq!(rot.angle_degrees, 180.0);
-        // Use approximate comparison due to f32 -> f64 precision
         assert!(rot.confidence.is_some());
         assert!((rot.confidence.unwrap() - 0.92).abs() < 0.001);
     }
 
     #[test]
     fn test_rotation_from_paddle_invalid_angle_index() {
-        // Test that invalid angle indices are rejected
         assert!(OcrRotation::from_paddle(-1, 0.92).is_err());
         assert!(OcrRotation::from_paddle(4, 0.92).is_err());
         assert!(OcrRotation::from_paddle(100, 0.92).is_err());
 
-        // Valid indices should succeed
         assert!(OcrRotation::from_paddle(0, 0.92).is_ok());
         assert!(OcrRotation::from_paddle(1, 0.92).is_ok());
         assert!(OcrRotation::from_paddle(2, 0.92).is_ok());

@@ -25,17 +25,17 @@ import { getWasmModule, isInitialized } from "../extraction/internal.js";
  * ```
  */
 export function detectMimeFromBytes(data: Uint8Array): string {
-	if (!isInitialized()) {
-		throw new Error("WASM module not initialized. Call initWasm() first.");
-	}
+  if (!isInitialized()) {
+    throw new Error("WASM module not initialized. Call initWasm() first.");
+  }
 
-	const wasm = getWasmModule();
+  const wasm = getWasmModule();
 
-	try {
-		return wasm.detectMimeFromBytes(data);
-	} catch (error) {
-		throw wrapWasmError(error, "detecting MIME type from bytes");
-	}
+  try {
+    return wasm.detectMimeFromBytes(data);
+  } catch (error) {
+    throw wrapWasmError(error, "detecting MIME type from bytes");
+  }
 }
 
 /**
@@ -54,15 +54,15 @@ export function detectMimeFromBytes(data: Uint8Array): string {
  * ```
  */
 export function getExtensionsForMime(mimeType: string): string[] {
-	if (!isInitialized()) {
-		throw new Error("WASM module not initialized. Call initWasm() first.");
-	}
+  if (!isInitialized()) {
+    throw new Error("WASM module not initialized. Call initWasm() first.");
+  }
 
-	const wasm = getWasmModule();
+  const wasm = getWasmModule();
 
-	try {
-		return wasm.getExtensionsForMime(mimeType);
-	} catch (error) {
-		throw wrapWasmError(error, "getting extensions for MIME type");
-	}
+  try {
+    return wasm.getExtensionsForMime(mimeType);
+  } catch (error) {
+    throw wrapWasmError(error, "getting extensions for MIME type");
+  }
 }

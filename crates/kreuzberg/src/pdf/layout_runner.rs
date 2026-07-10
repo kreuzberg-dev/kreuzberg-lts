@@ -156,9 +156,7 @@ fn pixel_to_pdf_bbox(
     PdfLayoutBBox {
         left: pixel.x1 * sx,
         right: pixel.x2 * sx,
-        // Pixel y1 (top) maps to PDF top (higher y value)
         top: page_height_pts - (pixel.y1 * sy),
-        // Pixel y2 (bottom) maps to PDF bottom (lower y value)
         bottom: page_height_pts - (pixel.y2 * sy),
     }
 }
@@ -196,11 +194,6 @@ fn detection_to_page_result(
     }
 }
 
-// Thread-local layout engine for parallel detection.
-//
-// Each rayon worker thread creates its own `LayoutEngine` on first use,
-// amortising the ~1-2 s model-load cost across the pages it processes.
-// Memory cost is ~250 MB per active rayon worker thread.
 thread_local! {
     static TL_ENGINE: RefCell<Option<LayoutEngine>> = const { RefCell::new(None) };
 }
@@ -236,16 +229,12 @@ where
     let pages = document.pages();
     let page_count = pages.len() as usize;
 
-    // Capture the engine config so each rayon worker can create its own
-    // LayoutEngine on first use (thread-local, ~250 MB per worker).
     let engine_config = engine.config().clone();
 
-    // Time budget: 30 s wall-clock overall.
     const MAX_LAYOUT_MS: f64 = 30_000.0;
 
     let mut all_timings = Vec::with_capacity(page_count);
 
-    // We'll process in chunks of `batch_size`
     for batch_start in (0..page_count).step_by(batch_size) {
         let batch_end = (batch_start + batch_size).min(page_count);
 
@@ -257,13 +246,11 @@ where
                 "Layout detection time budget already exceeded before inference"
             );
 
-            // Just return empty results for the remaining pages
             let mut empty_results = Vec::with_capacity(page_count - batch_start);
             let mut empty_timings = Vec::with_capacity(page_count - batch_start);
             let empty_images = Vec::with_capacity(page_count - batch_start);
 
             for i in batch_start..page_count {
-                // To avoid getting dimensions for dummy return, we just guess or try to get it if cheap
                 let (page_w, page_h) = if let Ok(page) = pages.get(i as i32) {
                     (page.width().value, page.height().value)
                 } else {
@@ -341,7 +328,6 @@ where
             0.0
         };
 
-        // Run inference in parallel for this batch
         #[cfg(not(target_arch = "wasm32"))]
         let mut parallel_results: Vec<std::result::Result<(PageLayoutResult, PageTiming), String>> = batch_images
             .par_iter()
@@ -518,7 +504,6 @@ pub fn detect_layout_for_images(
 ) -> Result<Vec<DetectionResult>> {
     const LAYOUT_BATCH_SIZE: usize = 4;
 
-    // Pre-convert any non-RGB8 images once so we can borrow them in chunks.
     let rgb_owned: Vec<Option<image::RgbImage>> = images
         .iter()
         .map(|img| match img {
@@ -571,8 +556,6 @@ mod tests {
 
     #[test]
     fn test_pixel_to_pdf_bbox_full_page() {
-        // Full page bounding box: pixel (0,0)-(612,792) for a 612x792 image
-        // Should map to PDF (0,0)-(612,792) at 72 DPI (1:1 mapping)
         let pixel = BBox::new(0.0, 0.0, 612.0, 792.0);
         let pdf = pixel_to_pdf_bbox(&pixel, 612, 792, 612.0, 792.0);
         assert!((pdf.left - 0.0).abs() < 0.01);
@@ -583,8 +566,6 @@ mod tests {
 
     #[test]
     fn test_pixel_to_pdf_bbox_top_quarter() {
-        // Top-left quarter in pixel space: (0,0)-(306,396)
-        // In PDF space: left=0, right=306, bottom=396, top=792
         let pixel = BBox::new(0.0, 0.0, 306.0, 396.0);
         let pdf = pixel_to_pdf_bbox(&pixel, 612, 792, 612.0, 792.0);
         assert!((pdf.left - 0.0).abs() < 0.01);
@@ -599,8 +580,6 @@ mod tests {
 
     #[test]
     fn test_pixel_to_pdf_bbox_bottom_quarter() {
-        // Bottom-right quarter in pixel space: (306,396)-(612,792)
-        // In PDF space: left=306, right=612, bottom=0, top=396
         let pixel = BBox::new(306.0, 396.0, 612.0, 792.0);
         let pdf = pixel_to_pdf_bbox(&pixel, 612, 792, 612.0, 792.0);
         assert!((pdf.left - 306.0).abs() < 0.01);
@@ -615,8 +594,6 @@ mod tests {
 
     #[test]
     fn test_pixel_to_pdf_bbox_scaled_image() {
-        // Image rendered at different resolution than page points
-        // Image: 640x640, Page: 612x792
         let pixel = BBox::new(0.0, 0.0, 640.0, 640.0);
         let pdf = pixel_to_pdf_bbox(&pixel, 640, 640, 612.0, 792.0);
         assert!((pdf.left - 0.0).abs() < 0.01);
@@ -627,10 +604,8 @@ mod tests {
 
     #[test]
     fn test_pixel_to_pdf_bbox_center_region() {
-        // Center region: pixel (160,160)-(480,480) on 640x640 image, page 612x792
         let pixel = BBox::new(160.0, 160.0, 480.0, 480.0);
         let pdf = pixel_to_pdf_bbox(&pixel, 640, 640, 612.0, 792.0);
-        // sx = 612/640 = 0.95625, sy = 792/640 = 1.2375
         let sx = 612.0 / 640.0;
         let sy = 792.0 / 640.0;
         assert!((pdf.left - 160.0 * sx).abs() < 0.01);
@@ -643,14 +618,12 @@ mod tests {
     fn test_pixel_to_pdf_bbox_preserves_width() {
         let pixel = BBox::new(100.0, 200.0, 400.0, 500.0);
         let pdf = pixel_to_pdf_bbox(&pixel, 612, 792, 612.0, 792.0);
-        // Width should be preserved at 1:1 scale
-        let pixel_width = 300.0; // 400 - 100
+        let pixel_width = 300.0;
         assert!((pdf.width() - pixel_width).abs() < 0.01);
     }
 
     #[test]
     fn test_pixel_to_pdf_bbox_y_flip() {
-        // A box near the top in pixel space should be near the top in PDF space (high y)
         let top_pixel = BBox::new(0.0, 0.0, 100.0, 50.0);
         let top_pdf = pixel_to_pdf_bbox(&top_pixel, 612, 792, 612.0, 792.0);
         assert!(
@@ -659,7 +632,6 @@ mod tests {
             top_pdf.top
         );
 
-        // A box near the bottom in pixel space should be near the bottom in PDF space (low y)
         let bottom_pixel = BBox::new(0.0, 742.0, 100.0, 792.0);
         let bottom_pdf = pixel_to_pdf_bbox(&bottom_pixel, 612, 792, 612.0, 792.0);
         assert!(
@@ -699,7 +671,6 @@ mod tests {
         assert_eq!(result.regions.len(), 2);
         assert_eq!(result.regions[0].class, LayoutClass::Title);
         assert!((result.regions[0].confidence - 0.95).abs() < 0.001);
-        // Title should be near the top of the page (high y)
         assert!(result.regions[0].bbox.top > 700.0);
         assert_eq!(result.regions[1].class, LayoutClass::Text);
         assert_eq!(result.render_width_px, 640);

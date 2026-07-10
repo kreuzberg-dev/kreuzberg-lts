@@ -27,8 +27,7 @@ readonly class ConcurrencyConfig
      */
     public function __construct(
         public ?int $maxThreads = null,
-    ) {
-    }
+    ) {}
 
     /**
      * Create configuration from array data.
@@ -39,9 +38,7 @@ readonly class ConcurrencyConfig
     {
         $maxThreads = $data['max_threads'] ?? null;
 
-        return new self(
-            maxThreads: is_int($maxThreads) ? $maxThreads : null,
-        );
+        return new self(maxThreads: is_int($maxThreads) ? $maxThreads : null);
     }
 
     /**

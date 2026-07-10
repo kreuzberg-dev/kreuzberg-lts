@@ -61,7 +61,6 @@ impl ExtractionConfig {
             validate_chunking_params, validate_language_code, validate_ocr_backend, validate_token_reduction_level,
         };
 
-        // KREUZBERG_OCR_LANGUAGE override
         if let Ok(lang) = std::env::var("KREUZBERG_OCR_LANGUAGE") {
             validate_language_code(&lang)?;
             if self.ocr.is_none() {
@@ -72,7 +71,6 @@ impl ExtractionConfig {
             }
         }
 
-        // KREUZBERG_OCR_BACKEND override
         if let Ok(backend) = std::env::var("KREUZBERG_OCR_BACKEND") {
             validate_ocr_backend(&backend)?;
             if self.ocr.is_none() {
@@ -83,7 +81,6 @@ impl ExtractionConfig {
             }
         }
 
-        // KREUZBERG_CHUNKING_MAX_CHARS override
         if let Ok(max_chars_str) = std::env::var("KREUZBERG_CHUNKING_MAX_CHARS") {
             let max_chars: usize = max_chars_str.parse().map_err(|_| KreuzbergError::Validation {
                 message: format!(
@@ -105,13 +102,11 @@ impl ExtractionConfig {
             }
 
             if let Some(ref mut chunking) = self.chunking {
-                // Validate against current overlap before updating
                 validate_chunking_params(max_chars, chunking.overlap)?;
                 chunking.max_characters = max_chars;
             }
         }
 
-        // KREUZBERG_CHUNKING_MAX_OVERLAP override
         if let Ok(max_overlap_str) = std::env::var("KREUZBERG_CHUNKING_MAX_OVERLAP") {
             let max_overlap: usize = max_overlap_str.parse().map_err(|_| KreuzbergError::Validation {
                 message: format!(
@@ -126,13 +121,11 @@ impl ExtractionConfig {
             }
 
             if let Some(ref mut chunking) = self.chunking {
-                // Validate against current max_characters before updating
                 validate_chunking_params(chunking.max_characters, max_overlap)?;
                 chunking.overlap = max_overlap;
             }
         }
 
-        // KREUZBERG_CACHE_ENABLED override
         if let Ok(cache_str) = std::env::var("KREUZBERG_CACHE_ENABLED") {
             let cache_enabled = match cache_str.to_lowercase().as_str() {
                 "true" => true,
@@ -150,7 +143,6 @@ impl ExtractionConfig {
             self.use_cache = cache_enabled;
         }
 
-        // KREUZBERG_TOKEN_REDUCTION_MODE override
         if let Ok(mode) = std::env::var("KREUZBERG_TOKEN_REDUCTION_MODE") {
             validate_token_reduction_level(&mode)?;
             if self.token_reduction.is_none() {
@@ -164,7 +156,6 @@ impl ExtractionConfig {
             }
         }
 
-        // KREUZBERG_OUTPUT_FORMAT override
         if let Ok(val) = std::env::var("KREUZBERG_OUTPUT_FORMAT") {
             self.output_format = val.parse().map_err(|e: String| KreuzbergError::Validation {
                 message: format!("Invalid value for KREUZBERG_OUTPUT_FORMAT: {}", e),
@@ -172,7 +163,6 @@ impl ExtractionConfig {
             })?;
         }
 
-        // KREUZBERG_CHUNKING_TOKENIZER override
         #[cfg(feature = "chunking-tokenizers")]
         if let Ok(model) = std::env::var("KREUZBERG_CHUNKING_TOKENIZER") {
             if model.is_empty() {
@@ -191,8 +181,6 @@ impl ExtractionConfig {
             }
         }
 
-        // KREUZBERG_LAYOUT_PRESET override (backward compat: enables layout detection).
-        // Only one model (RT-DETR) exists, so the specific preset value is ignored.
         #[cfg(feature = "layout-detection")]
         if let Ok(preset) = std::env::var("KREUZBERG_LAYOUT_PRESET") {
             let lower = preset.to_lowercase();
@@ -208,11 +196,9 @@ impl ExtractionConfig {
             if self.layout.is_none() {
                 self.layout = Some(super::super::layout::LayoutDetectionConfig::default());
             }
-            // preset value is accepted but ignored -- only RT-DETR is available
             let _ = lower;
         }
 
-        // KREUZBERG_DISABLE_OCR override
         if let Ok(val) = std::env::var("KREUZBERG_DISABLE_OCR") {
             self.disable_ocr = match val.to_lowercase().as_str() {
                 "true" | "1" => true,
@@ -229,7 +215,6 @@ impl ExtractionConfig {
             };
         }
 
-        // KREUZBERG_LLM_MODEL override
         if let Ok(value) = std::env::var("KREUZBERG_LLM_MODEL") {
             if value.is_empty() {
                 return Err(KreuzbergError::Validation {
@@ -259,7 +244,6 @@ impl ExtractionConfig {
             }
         }
 
-        // KREUZBERG_LLM_API_KEY override
         if let Ok(value) = std::env::var("KREUZBERG_LLM_API_KEY") {
             if value.is_empty() {
                 return Err(KreuzbergError::Validation {
@@ -289,7 +273,6 @@ impl ExtractionConfig {
             }
         }
 
-        // KREUZBERG_LLM_BASE_URL override
         if let Ok(value) = std::env::var("KREUZBERG_LLM_BASE_URL") {
             if value.is_empty() {
                 return Err(KreuzbergError::Validation {
@@ -319,7 +302,6 @@ impl ExtractionConfig {
             }
         }
 
-        // KREUZBERG_VLM_OCR_MODEL override
         if let Ok(value) = std::env::var("KREUZBERG_VLM_OCR_MODEL") {
             if value.is_empty() {
                 return Err(KreuzbergError::Validation {
@@ -347,7 +329,6 @@ impl ExtractionConfig {
             }
         }
 
-        // KREUZBERG_VLM_EMBEDDING_MODEL override
         if let Ok(value) = std::env::var("KREUZBERG_VLM_EMBEDDING_MODEL") {
             if value.is_empty() {
                 return Err(KreuzbergError::Validation {

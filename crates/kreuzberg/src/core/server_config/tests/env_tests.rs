@@ -17,7 +17,6 @@ fn test_apply_env_host_override() {
 
     assert_eq!(config.host, "192.168.1.1");
 
-    // Cleanup
     unsafe {
         if let Some(orig) = original {
             std::env::set_var("KREUZBERG_HOST", orig);
@@ -40,7 +39,6 @@ fn test_apply_env_port_override() {
 
     assert_eq!(config.port, 5000);
 
-    // Cleanup
     unsafe {
         if let Some(orig) = original {
             std::env::set_var("KREUZBERG_PORT", orig);
@@ -69,7 +67,6 @@ fn test_apply_env_port_invalid() {
             .contains("KREUZBERG_PORT must be a valid u16")
     );
 
-    // Cleanup
     unsafe {
         if let Some(orig) = original {
             std::env::set_var("KREUZBERG_PORT", orig);
@@ -94,7 +91,6 @@ fn test_apply_env_cors_origins_override() {
     assert!(config.cors_origins.contains(&"https://example.com".to_string()));
     assert!(config.cors_origins.contains(&"https://other.com".to_string()));
 
-    // Cleanup
     unsafe {
         if let Some(orig) = original {
             std::env::set_var("KREUZBERG_CORS_ORIGINS", orig);
@@ -117,7 +113,6 @@ fn test_apply_env_max_request_body_bytes_override() {
 
     assert_eq!(config.max_request_body_bytes, 52_428_800);
 
-    // Cleanup
     unsafe {
         if let Some(orig) = original {
             std::env::set_var("KREUZBERG_MAX_REQUEST_BODY_BYTES", orig);
@@ -140,7 +135,6 @@ fn test_apply_env_max_multipart_field_bytes_override() {
 
     assert_eq!(config.max_multipart_field_bytes, 78_643_200);
 
-    // Cleanup
     unsafe {
         if let Some(orig) = original {
             std::env::set_var("KREUZBERG_MAX_MULTIPART_FIELD_BYTES", orig);
@@ -171,7 +165,6 @@ fn test_apply_env_multiple_overrides() {
     assert_eq!(config.cors_origins.len(), 1);
     assert_eq!(config.cors_origins[0], "https://api.example.com");
 
-    // Cleanup
     unsafe {
         if let Some(orig) = host_orig {
             std::env::set_var("KREUZBERG_HOST", orig);

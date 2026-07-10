@@ -75,7 +75,6 @@ impl ReductionLevelArg {
 /// clap command with `#[command(flatten)]`.
 #[derive(Debug, Default, clap::Args)]
 pub struct ExtractionOverrides {
-    // ── OCR ───────────────────────────────────────────────────────────
     /// Enable or disable OCR. When true, configures an OCR backend
     /// (default: tesseract). When false, removes any OCR configuration.
     #[arg(long)]
@@ -119,7 +118,6 @@ pub struct ExtractionOverrides {
     #[arg(long)]
     pub vlm_prompt: Option<String>,
 
-    // ── Chunking ─────────────────────────────────────────────────────
     /// Enable or disable text chunking.
     #[arg(long)]
     pub chunk: Option<bool>,
@@ -137,7 +135,6 @@ pub struct ExtractionOverrides {
     #[arg(long)]
     pub chunking_tokenizer: Option<String>,
 
-    // ── Output ────────────────────────────────────────────────────────
     /// Content rendering format (plain, markdown, djot, html).
     /// Controls the format of extracted content.
     #[arg(long, value_enum)]
@@ -151,7 +148,6 @@ pub struct ExtractionOverrides {
     #[arg(long)]
     pub include_structure: Option<bool>,
 
-    // ── Quality & detection ──────────────────────────────────────────
     /// Enable quality post-processing.
     #[arg(long)]
     pub quality: Option<bool>,
@@ -160,7 +156,6 @@ pub struct ExtractionOverrides {
     #[arg(long)]
     pub detect_language: Option<bool>,
 
-    // ── Layout detection ─────────────────────────────────────────────
     /// Enable layout detection with default model settings (RT-DETR v2).
     /// Use `--layout` to enable or `--layout false` to explicitly disable.
     #[cfg(feature = "layout-detection")]
@@ -180,7 +175,6 @@ pub struct ExtractionOverrides {
     )]
     pub layout_table_model: Option<String>,
 
-    // ── Acceleration & concurrency ───────────────────────────────────
     /// ONNX Runtime execution provider for model inference.
     #[arg(long, value_enum)]
     pub acceleration: Option<AccelerationArg>,
@@ -193,7 +187,6 @@ pub struct ExtractionOverrides {
     #[arg(long, help = "Limit total threads for constrained environments")]
     pub max_threads: Option<usize>,
 
-    // ── Pages ─────────────────────────────────────────────────────────
     /// Extract pages as a separate array in results.
     #[arg(long)]
     pub extract_pages: Option<bool>,
@@ -202,7 +195,6 @@ pub struct ExtractionOverrides {
     #[arg(long)]
     pub page_markers: Option<bool>,
 
-    // ── Images ────────────────────────────────────────────────────────
     /// Enable image extraction from documents.
     #[arg(long)]
     pub extract_images: Option<bool>,
@@ -211,7 +203,6 @@ pub struct ExtractionOverrides {
     #[arg(long)]
     pub target_dpi: Option<i32>,
 
-    // ── PDF ───────────────────────────────────────────────────────────
     /// Password(s) for encrypted PDFs. Can be specified multiple times.
     #[arg(long)]
     pub pdf_password: Vec<String>,
@@ -226,18 +217,15 @@ pub struct ExtractionOverrides {
     #[arg(long)]
     pub pdf_extract_metadata: Option<bool>,
 
-    // ── Token reduction ──────────────────────────────────────────────
     /// Token reduction level (off, light, moderate, aggressive, maximum).
     #[arg(long, value_enum)]
     pub token_reduction: Option<ReductionLevelArg>,
 
-    // ── Email ─────────────────────────────────────────────────────────
     /// Windows codepage fallback for MSG files without codepage metadata.
     /// Common values: 1250 (Central European), 1251 (Cyrillic), 1252 (Western).
     #[arg(long)]
     pub msg_codepage: Option<u32>,
 
-    // ── Cache ─────────────────────────────────────────────────────────
     /// Cache namespace for tenant isolation.
     #[arg(long)]
     pub cache_namespace: Option<String>,
@@ -246,7 +234,6 @@ pub struct ExtractionOverrides {
     #[arg(long)]
     pub cache_ttl_secs: Option<u64>,
 
-    // ── HTML styled output ────────────────────────────────────────────
     /// Built-in colour theme for styled HTML output (default, github, dark, light, unstyled).
     /// Implies --content-format html and enables the styled HTML renderer.
     #[cfg(feature = "html")]
@@ -280,7 +267,6 @@ impl ExtractionOverrides {
     /// Call this before `apply()` to surface user-friendly errors for
     /// invalid or contradictory options.
     pub fn validate(&self) -> Result<()> {
-        // Chunking validation
         if let Some(size) = self.chunk_size {
             if size == 0 {
                 bail!("Invalid chunk size: {size}. Chunk size must be greater than 0.");
@@ -299,14 +285,12 @@ impl ExtractionOverrides {
             bail!("Invalid chunk overlap: {overlap}. Overlap ({overlap}) must be less than chunk size ({size}).");
         }
 
-        // Target DPI validation
         if let Some(dpi) = self.target_dpi
             && (!(36..=2400).contains(&dpi))
         {
             bail!("Invalid target DPI: {dpi}. Value must be between 36 and 2400.");
         }
 
-        // Layout validation
         #[cfg(feature = "layout-detection")]
         {
             if let Some(conf) = self.layout_confidence
@@ -319,7 +303,6 @@ impl ExtractionOverrides {
             }
         }
 
-        // Chunking tokenizer feature validation
         #[cfg(not(feature = "chunking-tokenizers"))]
         if self.chunking_tokenizer.is_some() {
             bail!(
@@ -328,12 +311,10 @@ impl ExtractionOverrides {
             );
         }
 
-        // force_ocr + disable_ocr conflict
         if self.force_ocr == Some(true) && self.disable_ocr == Some(true) {
             bail!("--force-ocr and --disable-ocr cannot both be true");
         }
 
-        // OCR backend validation
         if let Some(ref backend) = self.ocr_backend
             && !["tesseract", "paddle-ocr", "easyocr", "vlm"].contains(&backend.as_str())
         {
@@ -343,7 +324,6 @@ impl ExtractionOverrides {
             );
         }
 
-        // VLM OCR validation
         if self.vlm_api_key.is_some() && self.vlm_model.is_none() {
             bail!("--vlm-api-key requires --vlm-model to be specified");
         }
@@ -351,7 +331,6 @@ impl ExtractionOverrides {
             bail!("--vlm-prompt requires --vlm-model to be specified");
         }
 
-        // Concurrency validation
         if let Some(0) = self.max_concurrent {
             bail!("--max-concurrent must be at least 1");
         }
@@ -385,8 +364,6 @@ impl ExtractionOverrides {
         self.apply_html_styled(config);
     }
 
-    // ── Private helpers ──────────────────────────────────────────────
-
     fn apply_ocr(&self, config: &mut ExtractionConfig) {
         if let Some(ocr_flag) = self.ocr {
             if ocr_flag {
@@ -402,7 +379,6 @@ impl ExtractionOverrides {
                         _ => "eng".to_string(),
                     },
                 };
-                // Preserve existing paddle_ocr_config and element_config from config file/inline JSON
                 let existing_paddle_config = config.ocr.as_ref().and_then(|o| o.paddle_ocr_config.clone());
                 let existing_element_config = config.ocr.as_ref().and_then(|o| o.element_config.clone());
                 let auto_rotate = self.ocr_auto_rotate.unwrap_or(false);
@@ -426,7 +402,6 @@ impl ExtractionOverrides {
             }
         }
 
-        // Override language on existing OCR config when --ocr-language is used without --ocr
         if self.ocr.is_none()
             && let Some(ref lang) = self.ocr_language
             && let Some(ref mut existing_ocr) = config.ocr
@@ -434,7 +409,6 @@ impl ExtractionOverrides {
             existing_ocr.language = lang.clone();
         }
 
-        // Override auto_rotate on existing OCR config when used without --ocr
         if self.ocr.is_none()
             && let Some(rotate) = self.ocr_auto_rotate
             && let Some(ref mut existing_ocr) = config.ocr
@@ -465,7 +439,6 @@ impl ExtractionOverrides {
                 max_tokens: None,
             };
 
-            // If OCR config already exists, update it; otherwise create a new one
             let ocr = config.ocr.get_or_insert_with(|| OcrConfig {
                 enabled: true,
                 backend: "vlm".to_string(),
@@ -492,7 +465,6 @@ impl ExtractionOverrides {
     }
 
     fn apply_chunking(&self, config: &mut ExtractionConfig) {
-        // --chunking-tokenizer implicitly enables chunking
         let chunk = if self.chunking_tokenizer.is_some() && self.chunk.is_none() {
             Some(true)
         } else {
@@ -531,8 +503,6 @@ impl ExtractionOverrides {
                 chunking.overlap = overlap;
             }
 
-            // Clamp overlap when it exceeds max_characters (can happen when
-            // only --chunk-overlap is provided against an existing config).
             if chunking.overlap >= chunking.max_characters {
                 chunking.overlap = chunking.max_characters / 4;
             }
@@ -587,7 +557,6 @@ impl ExtractionOverrides {
     fn apply_layout(&self, config: &mut ExtractionConfig) {
         #[cfg(feature = "layout-detection")]
         {
-            // --layout false explicitly disables layout detection
             if self.layout == Some(false) {
                 config.layout = None;
                 return;
@@ -675,8 +644,6 @@ impl ExtractionOverrides {
             }
         }
 
-        // Handle pdf_password even without pdfium features for the
-        // common case where pdf is enabled through other means.
         #[cfg(not(any(feature = "bundled-pdfium", feature = "static-pdfium")))]
         if !self.pdf_password.is_empty() {
             let pdf_opts = config.pdf_options.get_or_insert_with(Default::default);
@@ -720,7 +687,6 @@ impl ExtractionOverrides {
                 || self.html_no_embed_css;
 
             if has_flag {
-                // Force content format to HTML when any styled HTML flag is used.
                 config.output_format = kreuzberg::OutputFormat::Html;
 
                 let mut html_cfg = config.html_output.clone().unwrap_or_default();
@@ -765,8 +731,6 @@ mod tests {
     fn default_overrides() -> ExtractionOverrides {
         ExtractionOverrides::default()
     }
-
-    // ── OCR tests ────────────────────────────────────────────────────
 
     #[test]
     fn test_ocr_default_language_tesseract() {
@@ -846,7 +810,6 @@ mod tests {
             ..default_overrides()
         };
         overrides.apply(&mut config);
-        // No OCR config exists, so --ocr-language alone doesn't create one
         assert!(config.ocr.is_none());
     }
 
@@ -892,8 +855,6 @@ mod tests {
         assert!(config.ocr.is_none());
     }
 
-    // ── Chunking tests ───────────────────────────────────────────────
-
     #[test]
     fn test_chunking_enabled_defaults() {
         let mut config = ExtractionConfig::default();
@@ -935,8 +896,6 @@ mod tests {
         overrides.apply(&mut config);
         assert!(config.chunking.is_none());
     }
-
-    // ── Validation tests ─────────────────────────────────────────────
 
     #[test]
     fn test_validate_chunk_size_zero() {
@@ -1016,8 +975,6 @@ mod tests {
         assert!(overrides.validate().is_ok());
     }
 
-    // ── Layout tests ─────────────────────────────────────────────────
-
     #[cfg(feature = "layout-detection")]
     #[test]
     fn test_layout_table_model_applied() {
@@ -1044,8 +1001,6 @@ mod tests {
         assert_eq!(layout.confidence_threshold, Some(0.7));
     }
 
-    // ── Acceleration tests ───────────────────────────────────────────
-
     #[test]
     fn test_acceleration_applied() {
         let mut config = ExtractionConfig::default();
@@ -1057,8 +1012,6 @@ mod tests {
         let accel = config.acceleration.unwrap();
         assert_eq!(accel.provider, ExecutionProviderType::Cpu);
     }
-
-    // ── Pages tests ──────────────────────────────────────────────────
 
     #[test]
     fn test_extract_pages_applied() {
@@ -1074,8 +1027,6 @@ mod tests {
         assert!(pages.insert_page_markers);
     }
 
-    // ── Images tests ─────────────────────────────────────────────────
-
     #[test]
     fn test_extract_images_applied() {
         let mut config = ExtractionConfig::default();
@@ -1090,8 +1041,6 @@ mod tests {
         assert_eq!(images.target_dpi, 150);
     }
 
-    // ── Token reduction tests ────────────────────────────────────────
-
     #[test]
     fn test_token_reduction_applied() {
         let mut config = ExtractionConfig::default();
@@ -1104,8 +1053,6 @@ mod tests {
         assert_eq!(reduction.mode, "aggressive");
     }
 
-    // ── Email tests ──────────────────────────────────────────────────
-
     #[test]
     fn test_msg_codepage_applied() {
         let mut config = ExtractionConfig::default();
@@ -1117,8 +1064,6 @@ mod tests {
         let email = config.email.unwrap();
         assert_eq!(email.msg_fallback_codepage, Some(1251));
     }
-
-    // ── Concurrency tests ────────────────────────────────────────────
 
     #[test]
     fn test_max_concurrent_applied() {
@@ -1142,8 +1087,6 @@ mod tests {
         let concurrency = config.concurrency.unwrap();
         assert_eq!(concurrency.max_threads, Some(2));
     }
-
-    // ── Include structure tests ──────────────────────────────────────
 
     #[test]
     fn test_include_structure_applied() {
@@ -1198,10 +1141,6 @@ mod tests {
         }
     }
 
-    // ── No-op when no flags provided ─────────────────────────────────
-
-    // ── Overlap clamping tests ─────────────────────────────────────
-
     #[test]
     fn test_chunk_overlap_clamped_on_existing_config() {
         let mut config = ExtractionConfig {
@@ -1212,14 +1151,12 @@ mod tests {
             }),
             ..Default::default()
         };
-        // Provide only --chunk-overlap with a value exceeding max_characters
         let overrides = ExtractionOverrides {
             chunk_overlap: Some(1500),
             ..default_overrides()
         };
         overrides.apply(&mut config);
         let chunking = config.chunking.unwrap();
-        // overlap should be clamped to max_characters / 4
         assert_eq!(chunking.overlap, 800 / 4);
         assert_eq!(chunking.max_characters, 800);
     }
@@ -1234,7 +1171,6 @@ mod tests {
             }),
             ..Default::default()
         };
-        // Provide a valid overlap that is less than max_characters
         let overrides = ExtractionOverrides {
             chunk_overlap: Some(200),
             ..default_overrides()
@@ -1244,8 +1180,6 @@ mod tests {
         assert_eq!(chunking.overlap, 200);
         assert_eq!(chunking.max_characters, 800);
     }
-
-    // ── Chunking tokenizer feature validation ───────────────────────
 
     #[cfg(not(feature = "chunking-tokenizers"))]
     #[test]
@@ -1261,8 +1195,6 @@ mod tests {
         );
     }
 
-    // ── No-op when no flags provided ─────────────────────────────────
-
     #[test]
     fn test_no_overrides_leaves_config_unchanged() {
         let original = ExtractionConfig::default();
@@ -1270,7 +1202,6 @@ mod tests {
         let overrides = default_overrides();
         overrides.apply(&mut config);
 
-        // Spot-check critical fields remain at defaults
         assert!(config.ocr.is_none());
         assert!(config.chunking.is_none());
         assert!(config.use_cache);

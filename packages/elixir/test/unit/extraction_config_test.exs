@@ -112,15 +112,15 @@ defmodule KreuzbergTest.Unit.ExtractionConfigTest do
     @tag :unit
     test "validates config with all nested fields as nil" do
       config = %ExtractionConfig{
-        chunking: nil,
-        ocr: nil,
-        language_detection: nil,
-        postprocessor: nil,
-        images: nil,
-        pages: nil,
-        token_reduction: nil,
-        keywords: nil,
-        pdf_options: nil
+      chunking: nil,
+      ocr: nil,
+      language_detection: nil,
+      postprocessor: nil,
+      images: nil,
+      pages: nil,
+      token_reduction: nil,
+      keywords: nil,
+      pdf_options: nil
       }
 
       assert {:ok, _} = ExtractionConfig.validate(config)
@@ -129,18 +129,18 @@ defmodule KreuzbergTest.Unit.ExtractionConfigTest do
     @tag :unit
     test "validates config with all flags and nested options" do
       config = %ExtractionConfig{
-        use_cache: true,
-        enable_quality_processing: false,
-        force_ocr: true,
-        chunking: %{"size" => 256},
-        ocr: %{"backend" => "tesseract"},
-        language_detection: %{"enabled" => true},
-        postprocessor: %{"enabled" => true},
-        images: %{"quality" => 90},
-        pages: %{"limit" => 100},
-        token_reduction: %{"enabled" => false},
-        keywords: %{"extract" => true},
-        pdf_options: %{"extract_metadata" => true}
+      use_cache: true,
+      enable_quality_processing: false,
+      force_ocr: true,
+      chunking: %{"size" => 256},
+      ocr: %{"backend" => "tesseract"},
+      language_detection: %{"enabled" => true},
+      postprocessor: %{"enabled" => true},
+      images: %{"quality" => 90},
+      pages: %{"limit" => 100},
+      token_reduction: %{"enabled" => false},
+      keywords: %{"extract" => true},
+      pdf_options: %{"extract_metadata" => true}
       }
 
       assert {:ok, _} = ExtractionConfig.validate(config)
@@ -149,10 +149,10 @@ defmodule KreuzbergTest.Unit.ExtractionConfigTest do
     @tag :unit
     test "validates multiple configs sequentially" do
       configs = [
-        %ExtractionConfig{use_cache: true},
-        %ExtractionConfig{force_ocr: false},
-        %ExtractionConfig{chunking: %{"size" => 1024}},
-        %ExtractionConfig{}
+      %ExtractionConfig{use_cache: true},
+      %ExtractionConfig{force_ocr: false},
+      %ExtractionConfig{chunking: %{"size" => 1024}},
+      %ExtractionConfig{}
       ]
 
       Enum.each(configs, fn config ->
@@ -295,8 +295,8 @@ defmodule KreuzbergTest.Unit.ExtractionConfigTest do
     @tag :unit
     test "multiple invalid nested fields - reports first error" do
       config = %ExtractionConfig{
-        chunking: "invalid",
-        ocr: "invalid"
+      chunking: "invalid",
+      ocr: "invalid"
       }
 
       assert {:error, _reason} = ExtractionConfig.validate(config)
@@ -327,18 +327,18 @@ defmodule KreuzbergTest.Unit.ExtractionConfigTest do
     @tag :unit
     test "converts struct with all fields set" do
       config = %ExtractionConfig{
-        chunking: %{"size" => 512},
-        ocr: %{"backend" => "tesseract"},
-        language_detection: %{"enabled" => true},
-        postprocessor: %{"enabled" => true},
-        images: %{"quality" => 90},
-        pages: %{"limit" => 100},
-        token_reduction: %{"enabled" => false},
-        keywords: %{"extract" => true},
-        pdf_options: %{"extract_metadata" => true},
-        use_cache: false,
-        enable_quality_processing: false,
-        force_ocr: true
+      chunking: %{"size" => 512},
+      ocr: %{"backend" => "tesseract"},
+      language_detection: %{"enabled" => true},
+      postprocessor: %{"enabled" => true},
+      images: %{"quality" => 90},
+      pages: %{"limit" => 100},
+      token_reduction: %{"enabled" => false},
+      keywords: %{"extract" => true},
+      pdf_options: %{"extract_metadata" => true},
+      use_cache: false,
+      enable_quality_processing: false,
+      force_ocr: true
       }
 
       result = ExtractionConfig.to_map(config)
@@ -350,7 +350,6 @@ defmodule KreuzbergTest.Unit.ExtractionConfigTest do
       assert result["images"] == %{"quality" => 90}
       assert result["pages"] == %{"limit" => 100}
       assert result["token_reduction"] == %{"enabled" => false}
-      # Keywords field gets default values added by normalize_keywords_config
       assert result["keywords"]["extract"] == true
       assert result["keywords"]["algorithm"] == "yake"
       assert result["keywords"]["max_keywords"] == 10
@@ -365,8 +364,8 @@ defmodule KreuzbergTest.Unit.ExtractionConfigTest do
     @tag :unit
     test "returned map has string keys" do
       config = %ExtractionConfig{
-        chunking: %{"size" => 256},
-        use_cache: true
+      chunking: %{"size" => 256},
+      use_cache: true
       }
 
       result = ExtractionConfig.to_map(config)
@@ -389,9 +388,9 @@ defmodule KreuzbergTest.Unit.ExtractionConfigTest do
     @tag :unit
     test "preserves custom boolean values" do
       config = %ExtractionConfig{
-        use_cache: false,
-        enable_quality_processing: false,
-        force_ocr: true
+      use_cache: false,
+      enable_quality_processing: false,
+      force_ocr: true
       }
 
       result = ExtractionConfig.to_map(config)
@@ -455,8 +454,8 @@ defmodule KreuzbergTest.Unit.ExtractionConfigTest do
     @tag :unit
     test "preserves nested maps in plain map" do
       input = %{
-        "chunking" => %{"size" => 512},
-        ocr: %{"backend" => "tesseract"}
+      "chunking" => %{"size" => 512},
+      ocr: %{"backend" => "tesseract"}
       }
 
       result = ExtractionConfig.to_map(input)
@@ -500,8 +499,8 @@ defmodule KreuzbergTest.Unit.ExtractionConfigTest do
     @tag :unit
     test "handles keyword list with nested maps" do
       input = [
-        chunking: %{"size" => 256},
-        ocr: %{"backend" => "tesseract"}
+      chunking: %{"size" => 256},
+      ocr: %{"backend" => "tesseract"}
       ]
 
       result = ExtractionConfig.to_map(input)
@@ -558,9 +557,9 @@ defmodule KreuzbergTest.Unit.ExtractionConfigTest do
     @tag :unit
     test "updating multiple fields" do
       config = %ExtractionConfig{
-        use_cache: false,
-        force_ocr: true,
-        chunking: %{"size" => 1024}
+      use_cache: false,
+      force_ocr: true,
+      chunking: %{"size" => 1024}
       }
 
       assert config.use_cache == false
@@ -571,8 +570,8 @@ defmodule KreuzbergTest.Unit.ExtractionConfigTest do
     @tag :unit
     test "partial updates preserve other fields" do
       config = %ExtractionConfig{
-        use_cache: false,
-        chunking: %{"size" => 512}
+      use_cache: false,
+      chunking: %{"size" => 512}
       }
 
       updated = %{config | force_ocr: true}
@@ -587,9 +586,9 @@ defmodule KreuzbergTest.Unit.ExtractionConfigTest do
     @tag :unit
     test "struct to map to struct preserves values" do
       original = %ExtractionConfig{
-        use_cache: false,
-        force_ocr: true,
-        chunking: %{"size" => 256}
+      use_cache: false,
+      force_ocr: true,
+      chunking: %{"size" => 256}
       }
 
       map = ExtractionConfig.to_map(original)
@@ -601,8 +600,8 @@ defmodule KreuzbergTest.Unit.ExtractionConfigTest do
     @tag :unit
     test "validate preserves config unchanged" do
       config = %ExtractionConfig{
-        chunking: %{"size" => 512},
-        use_cache: false
+      chunking: %{"size" => 512},
+      use_cache: false
       }
 
       {:ok, validated} = ExtractionConfig.validate(config)
@@ -613,9 +612,9 @@ defmodule KreuzbergTest.Unit.ExtractionConfigTest do
     @tag :unit
     test "validate then to_map produces correct result" do
       config = %ExtractionConfig{
-        use_cache: false,
-        force_ocr: true,
-        ocr: %{"backend" => "tesseract"}
+      use_cache: false,
+      force_ocr: true,
+      ocr: %{"backend" => "tesseract"}
       }
 
       {:ok, _} = ExtractionConfig.validate(config)
@@ -631,30 +630,30 @@ defmodule KreuzbergTest.Unit.ExtractionConfigTest do
     @tag :unit
     test "error messages distinguish between types" do
       configs = [
-        {%ExtractionConfig{use_cache: "string"}, "string"},
-        {%ExtractionConfig{use_cache: 42}, "integer"},
-        {%ExtractionConfig{use_cache: 3.14}, "float"},
-        {%ExtractionConfig{use_cache: []}, "list"},
-        {%ExtractionConfig{use_cache: :atom}, "atom"},
-        {%ExtractionConfig{use_cache: %{}}, "map"}
+      {%ExtractionConfig{use_cache: "string"}, "string"},
+      {%ExtractionConfig{use_cache: 42}, "integer"},
+      {%ExtractionConfig{use_cache: 3.14}, "float"},
+      {%ExtractionConfig{use_cache: []}, "list"},
+      {%ExtractionConfig{use_cache: :atom}, "atom"},
+      {%ExtractionConfig{use_cache: %{}}, "map"}
       ]
 
       Enum.each(configs, fn {config, expected_type} ->
         {:error, reason} = ExtractionConfig.validate(config)
 
         assert String.contains?(reason, expected_type),
-               "Error should mention #{expected_type}: #{reason}"
+        "Error should mention #{expected_type}: #{reason}"
       end)
     end
 
     @tag :unit
     test "nested field error messages identify correct type" do
       invalid_values = [
-        {"string", 100},
-        {1, 200},
-        {3.14, 300},
-        {[], 400},
-        {:atom, 500}
+      {"string", 100},
+      {1, 200},
+      {3.14, 300},
+      {[], 400},
+      {:atom, 500}
       ]
 
       Enum.each(invalid_values, fn {invalid_val, _count} ->
@@ -666,15 +665,12 @@ defmodule KreuzbergTest.Unit.ExtractionConfigTest do
 
     @tag :unit
     test "unknown type fallthrough case" do
-      # Testing that all types are properly identified - if somehow we get an unknown type
       config = %ExtractionConfig{use_cache: %{}}
       {:error, reason} = ExtractionConfig.validate(config)
-      # The error should still contain field name
       assert String.contains?(reason, "use_cache")
     end
   end
 
-  # Helper to assert nothing was raised
   defp assert_nothing_raised(func) do
     func.()
     assert true

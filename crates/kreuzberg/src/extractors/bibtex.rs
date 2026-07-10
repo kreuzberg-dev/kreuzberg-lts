@@ -91,7 +91,6 @@ impl DocumentExtractor for BibtexExtractor {
         let mut entry_types_map: AHashMap<String, i32> = AHashMap::new();
         let mut formatted_entries = String::new();
 
-        // Build InternalDocument with citation elements
         let mut builder = InternalDocumentBuilder::new("bibtex");
 
         match Bibliography::parse(&bibtex_str) {
@@ -100,21 +99,17 @@ impl DocumentExtractor for BibtexExtractor {
                     let key = entry.key.clone();
                     let entry_type = entry.entry_type.clone();
 
-                    // Track start position for citation text
                     let entry_start = formatted_entries.len();
 
-                    // Collect all entry fields as attributes
                     let mut entry_fields: AHashMap<String, String> = AHashMap::new();
                     entry_fields.insert("entry_type".to_string(), entry_type.to_string());
 
-                    // Format as @type{key, with key on the same line
                     formatted_entries.push_str(&format!("@{}{{{},\n", entry_type, key));
 
                     for (field_name, field_chunks) in &entry.fields {
                         let field_text = field_chunks.format_verbatim();
                         formatted_entries.push_str(&format!("  {} = {{{}}},\n", field_name, field_text));
 
-                        // Store every field as an attribute
                         entry_fields.insert(field_name.to_lowercase(), field_text.clone());
 
                         if field_name.to_lowercase() == "author" {
@@ -135,8 +130,6 @@ impl DocumentExtractor for BibtexExtractor {
 
                     formatted_entries.push_str("}\n\n");
 
-                    // Extract URIs from URL and DOI fields.
-                    // Use entry title as label when available, falling back to BibTeX key.
                     let link_label = entry_fields
                         .get("title")
                         .filter(|t| !t.is_empty())
@@ -157,11 +150,9 @@ impl DocumentExtractor for BibtexExtractor {
                         ));
                     }
 
-                    // Build citation element with attributes.
                     let citation_text = formatted_entries[entry_start..].trim().to_string();
                     let idx = builder.push_citation(&citation_text, &key, None);
 
-                    // Attach Link annotations for url (hyperlink) and doi (citation).
                     let mut link_annotations = Vec::new();
                     let text_len = citation_text.len() as u32;
 
@@ -200,7 +191,6 @@ impl DocumentExtractor for BibtexExtractor {
                         builder.set_annotations(idx, link_annotations);
                     }
 
-                    // Store per-entry fields in additional metadata
                     let fields_json: serde_json::Map<String, serde_json::Value> = entry_fields
                         .iter()
                         .map(|(k, v)| (k.clone(), serde_json::json!(v)))
@@ -221,12 +211,10 @@ impl DocumentExtractor for BibtexExtractor {
                 #[cfg(feature = "otel")]
                 tracing::warn!("BibTeX parsing failed, returning raw content: {}", _err);
                 formatted_entries = bibtex_str.to_string();
-                // Push as a single code block when parsing fails
                 builder.push_code(&formatted_entries, None, None, None);
             }
         }
 
-        // Build typed BibtexMetadata
         let citation_keys: Vec<String> = entries_vec.iter().map(|(k, _)| k.clone()).collect();
 
         let mut authors_list: Vec<String> = authors_set.into_iter().collect();
@@ -261,7 +249,6 @@ impl DocumentExtractor for BibtexExtractor {
             entry_types,
         };
 
-        // Store per-entry field maps as additional (complex JSON data)
         let mut additional: AHashMap<Cow<'static, str>, serde_json::Value> = AHashMap::new();
         let entries_metadata: Vec<serde_json::Value> = entries_vec
             .iter()
@@ -601,7 +588,6 @@ Some random text that's not valid BibTeX"#;
 
         let metadata = &result.metadata;
 
-        // Check that entries metadata contains all fields
         let entries = metadata.additional.get(&Cow::Borrowed("entries"));
         assert!(entries.is_some(), "Should have entries metadata");
         let entries_array = entries
@@ -654,7 +640,6 @@ Some random text that's not valid BibTeX"#;
             .await
             .expect("Should extract with document structure");
 
-        // The InternalDocument should have citation elements
         assert!(!result.elements.is_empty(), "Document should have elements");
     }
 }

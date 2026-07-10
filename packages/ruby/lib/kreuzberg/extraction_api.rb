@@ -15,16 +15,16 @@ module Kreuzberg
     # @example Extract with explicit MIME type
     # @example Extract with OCR enabled
     def extract_file_sync(path:, mime_type: nil, config: nil)
-      # Validate that the file exists
       path_str = path.to_s
       raise Errors::IOError, "File not found: #{path_str}" unless File.exist?(path_str)
 
       opts = normalize_config(config)
       hash = if mime_type
-               native_extract_file_sync(path_str, mime_type.to_s, **opts)
-             else
-               native_extract_file_sync(path_str, **opts)
-             end
+        native_extract_file_sync(path_str, mime_type.to_s, **opts)
+      else
+        native_extract_file_sync(path_str, **opts)
+      end
+
       result = Result.new(hash)
       record_cache_entry!(result, opts)
       result
@@ -98,7 +98,6 @@ module Kreuzberg
     #   config = Kreuzberg::Config::Extraction.new(force_ocr: true)
     #   results = Kreuzberg.batch_extract_files_sync(paths, config: config)
     def batch_extract_files_sync(paths:, config: nil)
-      # Validate that all files exist
       paths.each do |path|
         path_str = path.to_s
         raise Errors::IOError, "File not found: #{path_str}" unless File.exist?(path_str)
@@ -142,16 +141,16 @@ module Kreuzberg
     #   )
     #   result = Kreuzberg.extract_file("document.pdf", config: config)
     def extract_file(path:, mime_type: nil, config: nil)
-      # Validate that the file exists
       path_str = path.to_s
       raise Errors::IOError, "File not found: #{path_str}" unless File.exist?(path_str)
 
       opts = normalize_config(config)
       hash = if mime_type
-               native_extract_file(path_str, mime_type.to_s, **opts)
-             else
-               native_extract_file(path_str, **opts)
-             end
+        native_extract_file(path_str, mime_type.to_s, **opts)
+      else
+        native_extract_file(path_str, **opts)
+      end
+
       result = Result.new(hash)
       record_cache_entry!(result, opts)
       result
@@ -364,7 +363,7 @@ module Kreuzberg
     # @raise [Errors::ParsingError] If rendering fails
     def render_pdf_page(path, page_index, dpi: 150)
       path_str = path.to_s
-      raise ArgumentError, 'page_index must be non-negative' if page_index.negative?
+      raise ArgumentError, "page_index must be non-negative" if page_index.negative?
       raise Errors::IOError, "File not found: #{path_str}" unless File.exist?(path_str)
 
       native_render_pdf_page(path_str, page_index, dpi)

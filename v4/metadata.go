@@ -78,7 +78,6 @@ func (m *Metadata) decodeCoreFields(raw map[string]json.RawMessage) {
 	m.Subject = decodeRawString(raw, "subject")
 	m.Authors = decodeRawStringSlice(raw, "authors")
 	m.Keywords = decodeRawStringSlice(raw, "keywords")
-	// If keywords field contains objects (from keyword extraction), try to extract text values
 	if m.Keywords == nil {
 		if value, exists := raw["keywords"]; exists {
 			var keywordObjects []struct {
@@ -309,7 +308,6 @@ func (p *PdfMetadata) UnmarshalJSON(data []byte) error {
 		return nil
 	}
 
-	// Standard decode failed; decode field-by-field, skipping type mismatches.
 	raw := map[string]json.RawMessage{}
 	if err := json.Unmarshal(data, &raw); err != nil {
 		return err
@@ -318,7 +316,6 @@ func (p *PdfMetadata) UnmarshalJSON(data []byte) error {
 	tryUnmarshal := func(key string, target any) {
 		if v, ok := raw[key]; ok {
 			if err := json.Unmarshal(v, target); err != nil {
-				// Intentionally ignore type-mismatch errors in fallback decoding.
 				_ = err
 			}
 		}

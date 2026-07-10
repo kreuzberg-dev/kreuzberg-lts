@@ -3,8 +3,8 @@
 //! Provides utilities for converting between Ruby and JSON values,
 //! accessing keyword arguments, and managing cache directories.
 
-use magnus::{Error, RArray, RHash, Ruby, Symbol, Value, TryConvert, IntoValue};
 use magnus::value::ReprValue;
+use magnus::{Error, IntoValue, RArray, RHash, Ruby, Symbol, TryConvert, Value};
 use std::fs;
 use std::path::{Path, PathBuf};
 

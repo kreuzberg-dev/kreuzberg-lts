@@ -59,19 +59,16 @@ if (-not $tesseractCacheHit) {
   }
   else {
     Write-Host "✓ Tesseract installed"
-    # Ensure tessdata directory exists and is accessible
     $tesseractPath = "C:\Program Files\Tesseract-OCR"
     if (Test-Path $tesseractPath) {
       Write-Host "  Configuring Tesseract data paths..."
 
-      # Create tessdata directory if it doesn't exist
       $tessdataPath = "$tesseractPath\tessdata"
       if (-not (Test-Path $tessdataPath)) {
         Write-Host "  Creating tessdata directory at: $tessdataPath"
         New-Item -ItemType Directory -Path $tessdataPath -Force | Out-Null
       }
 
-      # Download English language data if not present
       if (-not (Test-Path "$tessdataPath\eng.traineddata")) {
         Write-Host "  Downloading English language data..."
         try {
@@ -84,7 +81,6 @@ if (-not $tesseractCacheHit) {
         }
       }
 
-      # Download OSD data if not present (needed for orientation detection)
       if (-not (Test-Path "$tessdataPath\osd.traineddata")) {
         Write-Host "  Downloading OSD data..."
         try {
@@ -166,7 +162,6 @@ foreach ($path in $paths) {
   }
 }
 
-# Ensure TESSDATA_PREFIX is set for Windows OCR tests
 $tesseractPath = "C:\Program Files\Tesseract-OCR"
 if (Test-Path $tesseractPath) {
   $tessdataPath = "$tesseractPath\tessdata"
@@ -188,11 +183,9 @@ try {
   Write-Host "  Found at: $tesseractPath"
   Write-Host "  Command type: $($tesseractCmd.CommandType)"
 
-  # Get installation directory
   $tesseractDir = Split-Path -Parent $tesseractPath
   Write-Host "  Installation directory: $tesseractDir"
 
-  # Check for tessdata
   $tessdataPath = Join-Path $tesseractDir "tessdata"
   if (Test-Path $tessdataPath) {
     Write-Host "  tessdata directory: $tessdataPath"
@@ -218,7 +211,6 @@ try {
     Write-Host "⚠ Warning: Tesseract found but failed to run: $($_.Exception.Message)"
   }
 
-  # Set TESSDATA_PREFIX environment variable for tests
   if (Test-Path $tessdataPath) {
     Write-Host ""
     Write-Host "Setting TESSDATA_PREFIX environment variable..."
@@ -266,7 +258,6 @@ Write-Host "CMake:"
 try {
   & cmake --version
   Write-Host "✓ CMake available"
-  # Export CMAKE environment variable for immediate availability in build scripts
   $cmakePath = (Get-Command cmake -ErrorAction Stop).Source
   if ($cmakePath) {
     Add-Content -Path $env:GITHUB_ENV -Value "CMAKE=$cmakePath"

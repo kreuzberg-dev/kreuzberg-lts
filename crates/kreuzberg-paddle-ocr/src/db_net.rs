@@ -62,8 +62,6 @@ impl DbNet {
         let tensor = Tensor::from_array(input_tensors)?;
 
         // SAFETY: ONNX Runtime's C API (OrtRun) is thread-safe for concurrent inference
-        // on the same session. The ort crate's `&mut self` requirement is overly
-        // conservative. This matches the pattern used in kreuzberg's embedding engine.
         #[allow(unsafe_code)]
         let outputs = unsafe {
             let session_ptr = session as *const Session as *mut Session;
@@ -141,11 +139,8 @@ impl DbNet {
             imageproc::contrast::ThresholdType::Binary,
         );
 
-        // RapidOCR and PaddleOCR reference do NOT apply dilation before contour extraction.
-        // Dilation merges adjacent text regions, causing word concatenation.
         let img_contours: Vec<imageproc::contours::Contour<i32>> = imageproc::contours::find_contours(&threshold_img);
 
-        // Pre-allocate based on contour count to avoid repeated reallocations.
         let mut rs_boxes = Vec::with_capacity(img_contours.len());
 
         for contour in img_contours {
@@ -213,7 +208,6 @@ impl DbNet {
             .map(|p| imageproc::point::Point::new(p.x as f32, p.y as f32))
             .collect();
 
-        // Direct multiplication instead of .powi(2) — avoids function call overhead.
         let dx_w = rect_points[0].x - rect_points[1].x;
         let dy_w = rect_points[0].y - rect_points[1].y;
         let width = (dx_w * dx_w + dy_w * dy_w).sqrt();
@@ -266,13 +260,11 @@ impl DbNet {
         contour: &imageproc::contours::Contour<i32>,
         f_map_mat: &image::ImageBuffer<image::Luma<f32>, Vec<f32>>,
     ) -> Result<f32, OcrError> {
-        // Initialize boundary values
         let mut xmin = i32::MAX;
         let mut xmax = i32::MIN;
         let mut ymin = i32::MAX;
         let mut ymax = i32::MIN;
 
-        // Find contour bounding box
         for point in contour.points.iter() {
             let x = point.x;
             let y = point.y;
@@ -328,7 +320,6 @@ impl DbNet {
         box_points: &[imageproc::point::Point<f32>],
         unclip_ratio: f32,
     ) -> Result<Vec<imageproc::point::Point<i32>>, OcrError> {
-        // Direct multiplication instead of .powi(2) — avoids function call overhead.
         let dx_w = box_points[0].x - box_points[1].x;
         let dy_w = box_points[0].y - box_points[1].y;
         let clip_rect_width = (dx_w * dx_w + dy_w * dy_w).sqrt();
@@ -411,7 +402,6 @@ impl DbNet {
             y0 = y1;
         }
 
-        // Closing segment back to first point
         let dx = box_points[0].x as f64 - x0;
         let dy = box_points[0].y as f64 - y0;
         length += (dx * dx + dy * dy).sqrt();

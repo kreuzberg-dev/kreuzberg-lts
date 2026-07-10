@@ -30,25 +30,25 @@ defmodule Kreuzberg.OcrElement do
   """
 
   @type t :: %__MODULE__{
-          text: String.t(),
-          geometry: Kreuzberg.OcrBoundingGeometry.t() | nil,
-          confidence: Kreuzberg.OcrConfidence.t() | nil,
-          level: String.t() | nil,
-          rotation: Kreuzberg.OcrRotation.t() | nil,
-          page_number: integer() | nil,
-          parent_id: String.t() | nil,
-          backend_metadata: map() | nil
-        }
+  text: String.t(),
+  geometry: Kreuzberg.OcrBoundingGeometry.t() | nil,
+  confidence: Kreuzberg.OcrConfidence.t() | nil,
+  level: String.t() | nil,
+  rotation: Kreuzberg.OcrRotation.t() | nil,
+  page_number: integer() | nil,
+  parent_id: String.t() | nil,
+  backend_metadata: map() | nil
+  }
 
   defstruct [
-    :geometry,
-    :confidence,
-    :level,
-    :rotation,
-    :page_number,
-    :parent_id,
-    :backend_metadata,
-    text: ""
+  :geometry,
+  :confidence,
+  :level,
+  :rotation,
+  :page_number,
+  :parent_id,
+  :backend_metadata,
+  text: ""
   ]
 
   @doc """
@@ -81,38 +81,38 @@ defmodule Kreuzberg.OcrElement do
   @spec from_map(map()) :: t()
   def from_map(data) when is_map(data) do
     geometry =
-      case data["geometry"] do
-        nil -> nil
-        %Kreuzberg.OcrBoundingGeometry{} = g -> g
-        map when is_map(map) -> Kreuzberg.OcrBoundingGeometry.from_map(map)
-        _ -> nil
-      end
+    case data["geometry"] do
+      nil -> nil
+      %Kreuzberg.OcrBoundingGeometry{} = g -> g
+      map when is_map(map) -> Kreuzberg.OcrBoundingGeometry.from_map(map)
+      _ -> nil
+    end
 
     confidence =
-      case data["confidence"] do
-        nil -> nil
-        %Kreuzberg.OcrConfidence{} = c -> c
-        map when is_map(map) -> Kreuzberg.OcrConfidence.from_map(map)
-        _ -> nil
-      end
+    case data["confidence"] do
+      nil -> nil
+      %Kreuzberg.OcrConfidence{} = c -> c
+      map when is_map(map) -> Kreuzberg.OcrConfidence.from_map(map)
+      _ -> nil
+    end
 
     rotation =
-      case data["rotation"] do
-        nil -> nil
-        %Kreuzberg.OcrRotation{} = r -> r
-        map when is_map(map) -> Kreuzberg.OcrRotation.from_map(map)
-        _ -> nil
-      end
+    case data["rotation"] do
+      nil -> nil
+      %Kreuzberg.OcrRotation{} = r -> r
+      map when is_map(map) -> Kreuzberg.OcrRotation.from_map(map)
+      _ -> nil
+    end
 
     %__MODULE__{
-      text: data["text"] || "",
-      geometry: geometry,
-      confidence: confidence,
-      level: data["level"],
-      rotation: rotation,
-      page_number: data["page_number"],
-      parent_id: data["parent_id"],
-      backend_metadata: data["backend_metadata"]
+    text: data["text"] || "",
+    geometry: geometry,
+    confidence: confidence,
+    level: data["level"],
+    rotation: rotation,
+    page_number: data["page_number"],
+    parent_id: data["parent_id"],
+    backend_metadata: data["backend_metadata"]
     }
   end
 
@@ -145,26 +145,26 @@ defmodule Kreuzberg.OcrElement do
   @spec to_map(t()) :: map()
   def to_map(%__MODULE__{} = element) do
     %{
-      "text" => element.text,
-      "geometry" =>
-        case element.geometry do
-          nil -> nil
-          g -> Kreuzberg.OcrBoundingGeometry.to_map(g)
-        end,
-      "confidence" =>
-        case element.confidence do
-          nil -> nil
-          c -> Kreuzberg.OcrConfidence.to_map(c)
-        end,
-      "level" => element.level,
-      "rotation" =>
-        case element.rotation do
-          nil -> nil
-          r -> Kreuzberg.OcrRotation.to_map(r)
-        end,
-      "page_number" => element.page_number,
-      "parent_id" => element.parent_id,
-      "backend_metadata" => element.backend_metadata
+    "text" => element.text,
+    "geometry" =>
+    case element.geometry do
+      nil -> nil
+      g -> Kreuzberg.OcrBoundingGeometry.to_map(g)
+    end,
+    "confidence" =>
+    case element.confidence do
+      nil -> nil
+      c -> Kreuzberg.OcrConfidence.to_map(c)
+    end,
+    "level" => element.level,
+    "rotation" =>
+    case element.rotation do
+      nil -> nil
+      r -> Kreuzberg.OcrRotation.to_map(r)
+    end,
+    "page_number" => element.page_number,
+    "parent_id" => element.parent_id,
+    "backend_metadata" => element.backend_metadata
     }
   end
 end

@@ -77,7 +77,6 @@ fn parse_pages(content: &[u8]) -> Result<PagesData> {
     let iwa_paths = super::collect_iwa_paths(content)?;
     let metadata = extract_metadata_from_zip(content);
 
-    // Separate document-content IWA files from annotations and data records
     let mut doc_paths: Vec<&String> = Vec::new();
     let mut other_paths: Vec<&String> = Vec::new();
 
@@ -90,7 +89,6 @@ fn parse_pages(content: &[u8]) -> Result<PagesData> {
         }
     }
 
-    // If no document-specific paths were found, treat all paths as document content
     if doc_paths.is_empty() {
         doc_paths = iwa_paths.iter().collect();
         other_paths.clear();
@@ -193,13 +191,10 @@ impl DocumentExtractor for PagesExtractor {
 fn build_pages_internal_document(data: &PagesData) -> InternalDocument {
     let mut builder = InternalDocumentBuilder::new("pages");
 
-    // Apply metadata
     if data.metadata.title.is_some() || data.metadata.authors.is_some() {
         builder.set_metadata(data.metadata.clone());
     }
 
-    // Emit the first text block as the document title if it looks like one
-    // (short, no sentence-ending punctuation, appears before body text).
     let texts = &data.document_texts;
     let mut start_idx = 0;
     if let Some(first) = texts.first() {
@@ -210,7 +205,6 @@ fn build_pages_internal_document(data: &PagesData) -> InternalDocument {
         }
     }
 
-    // Emit remaining document text with heading detection
     for text in &texts[start_idx..] {
         let trimmed = text.trim();
         if trimmed.is_empty() {
@@ -224,7 +218,6 @@ fn build_pages_internal_document(data: &PagesData) -> InternalDocument {
         }
     }
 
-    // Emit supplementary text (annotations, data records) under a separate section
     if !data.supplementary_texts.is_empty() {
         let has_body = !data.document_texts.is_empty();
         if has_body {

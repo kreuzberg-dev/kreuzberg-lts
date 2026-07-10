@@ -52,7 +52,6 @@ impl OcrBackend for VlmOcrBackend {
             .as_ref()
             .ok_or_else(|| crate::KreuzbergError::validation("VLM OCR requires vlm_config to be set"))?;
 
-        // Detect MIME type from image bytes
         let mime = infer::get(image_bytes).map(|t| t.mime_type()).unwrap_or("image/png");
 
         let (text, usage) = vlm_ocr(
@@ -112,17 +111,13 @@ pub async fn vlm_ocr(
 ) -> crate::Result<(String, Option<crate::types::LlmUsage>)> {
     let client = super::client::create_client(config)?;
 
-    // Base64-encode the image into a data URL.
     let b64 = base64::engine::general_purpose::STANDARD.encode(image_bytes);
     let data_url = format!("data:{image_mime_type};base64,{b64}");
 
-    // Use the caller-supplied Jinja2 template if provided, otherwise fall back to the
-    // built-in default.  The template receives `{{ language }}` as a context variable.
     let template = vlm_prompt.unwrap_or(super::prompts::VLM_OCR_TEMPLATE);
     let ctx = minijinja::context! { language => language };
     let prompt = super::prompts::render_template(template, &ctx)?;
 
-    // Build a multi-part user message with text prompt + image.
     let message = Message::User(UserMessage {
         content: UserContent::Parts(vec![
             ContentPart::Text { text: prompt },
@@ -136,8 +131,6 @@ pub async fn vlm_ocr(
         name: None,
     });
 
-    // Use mutable default because `stream` is pub(crate) in liter-llm; struct-init
-    // syntax with `..Default::default()` won't compile across the crate boundary.
     #[allow(clippy::field_reassign_with_default)]
     let request = {
         let mut req = ChatCompletionRequest::default();
@@ -159,13 +152,12 @@ pub async fn vlm_ocr(
 
     let usage = super::usage::extract_usage_from_chat(&response, "vlm_ocr");
 
-    // Extract the text content from the first choice.
     let text = response
         .choices
         .first()
-        .and_then(|choice| choice.message.content.as_deref())
-        .ok_or_else(|| crate::KreuzbergError::ocr(format!("VLM OCR returned no content (model={})", config.model)))?
-        .to_string();
+        .and_then(|choice| choice.message.content.as_ref())
+        .and_then(liter_llm::AssistantContent::as_text)
+        .ok_or_else(|| crate::KreuzbergError::ocr(format!("VLM OCR returned no content (model={})", config.model)))?;
 
     Ok((text, usage))
 }
@@ -205,7 +197,6 @@ mod tests {
         let custom_prompt = "Extract all text from this document image. \
                              Preserve formatting and use latex for mathematical formulas.";
 
-        // When a custom template is supplied it must be rendered instead of the default.
         let ctx = minijinja::context! { language => "eng" };
         let prompt = super::super::prompts::render_template(custom_prompt, &ctx).unwrap();
 

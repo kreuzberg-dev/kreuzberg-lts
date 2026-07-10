@@ -139,7 +139,6 @@ pub(super) fn finalize_inline_element(state: &mut ExtractionState, container: &C
         let content = std::mem::take(&mut state.current_text);
         let mut meta = None;
 
-        // For raw inline, include the format
         if matches!(container, Container::RawInline { .. })
             && let Some(fmt) = state.raw_format.take()
         {

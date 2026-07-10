@@ -93,10 +93,6 @@ impl InternalDocumentBuilder {
         self.doc
     }
 
-    // ========================================================================
-    // Heading
-    // ========================================================================
-
     /// Push a heading element.
     ///
     /// Auto-sets depth from the heading level and generates an anchor slug
@@ -109,10 +105,6 @@ impl InternalDocumentBuilder {
         self.doc.push_element(elem)
     }
 
-    // ========================================================================
-    // Paragraph
-    // ========================================================================
-
     /// Push a paragraph element.
     pub fn push_paragraph(
         &mut self,
@@ -123,10 +115,6 @@ impl InternalDocumentBuilder {
     ) -> u32 {
         self.push_simple(ElementKind::Paragraph, text, page, bbox, annotations, None, None)
     }
-
-    // ========================================================================
-    // Lists
-    // ========================================================================
 
     /// Push a `ListStart` marker and increment depth.
     pub fn push_list(&mut self, ordered: bool) {
@@ -151,10 +139,6 @@ impl InternalDocumentBuilder {
         self.push_simple(kind, text, page, bbox, annotations, None, None)
     }
 
-    // ========================================================================
-    // Table
-    // ========================================================================
-
     /// Push a table element. The table data is stored separately in
     /// `InternalDocument::tables` and referenced by index.
     pub fn push_table(&mut self, table: Table, page: Option<u32>, bbox: Option<BoundingBox>) -> u32 {
@@ -174,16 +158,11 @@ impl InternalDocumentBuilder {
         let table = Table {
             cells: cells.to_vec(),
             markdown,
-            // 0 means "no page information available"; pages are otherwise 1-indexed.
             page_number: page.map(|p| p as usize).unwrap_or(0),
             bounding_box: None,
         };
         self.push_table(table, page, bbox)
     }
-
-    // ========================================================================
-    // Image
-    // ========================================================================
 
     /// Push an image element. The image data is stored separately in
     /// `InternalDocument::images` and referenced by index.
@@ -200,10 +179,6 @@ impl InternalDocumentBuilder {
         self.push_simple(kind, text, page, bbox, Vec::new(), None, None)
     }
 
-    // ========================================================================
-    // Code
-    // ========================================================================
-
     /// Push a code block element. Language is stored in attributes.
     pub fn push_code(
         &mut self,
@@ -216,18 +191,10 @@ impl InternalDocumentBuilder {
         self.push_simple(ElementKind::Code, text, page, bbox, Vec::new(), attrs, None)
     }
 
-    // ========================================================================
-    // Formula
-    // ========================================================================
-
     /// Push a math formula element.
     pub fn push_formula(&mut self, text: &str, page: Option<u32>, bbox: Option<BoundingBox>) -> u32 {
         self.push_simple(ElementKind::Formula, text, page, bbox, Vec::new(), None, None)
     }
-
-    // ========================================================================
-    // Footnotes
-    // ========================================================================
 
     /// Push a footnote reference marker.
     ///
@@ -244,7 +211,6 @@ impl InternalDocumentBuilder {
             None,
             Some(key),
         );
-        // Record relationship
         self.doc.push_relationship(Relationship {
             source: idx,
             target: RelationshipTarget::Key(key.to_string()),
@@ -266,18 +232,10 @@ impl InternalDocumentBuilder {
         )
     }
 
-    // ========================================================================
-    // Citation
-    // ========================================================================
-
     /// Push a citation / bibliographic reference element.
     pub fn push_citation(&mut self, text: &str, key: &str, page: Option<u32>) -> u32 {
         self.push_simple(ElementKind::Citation, text, page, None, Vec::new(), None, Some(key))
     }
-
-    // ========================================================================
-    // Quotes
-    // ========================================================================
 
     /// Push a `QuoteStart` marker and increment depth.
     pub fn push_quote_start(&mut self) {
@@ -289,19 +247,11 @@ impl InternalDocumentBuilder {
         self.push_container_end(ElementKind::QuoteEnd);
     }
 
-    // ========================================================================
-    // Page Break
-    // ========================================================================
-
     /// Push a page break marker at depth 0.
     pub fn push_page_break(&mut self) {
         let elem = self.make_element(ElementKind::PageBreak, "", 0, None, None, None);
         self.doc.push_element(elem);
     }
-
-    // ========================================================================
-    // Slide
-    // ========================================================================
 
     /// Push a slide element.
     pub fn push_slide(&mut self, number: u32, title: Option<&str>, page: Option<u32>) -> u32 {
@@ -310,10 +260,6 @@ impl InternalDocumentBuilder {
         let attrs = title.map(|t| single_attr("title", t));
         self.push_simple(kind, text, page, None, Vec::new(), attrs, None)
     }
-
-    // ========================================================================
-    // Admonition
-    // ========================================================================
 
     /// Push an admonition / callout element (note, warning, tip, etc.).
     /// Kind and optional title are stored in attributes.
@@ -327,10 +273,6 @@ impl InternalDocumentBuilder {
         self.push_simple(ElementKind::Admonition, text, page, None, Vec::new(), Some(attrs), None)
     }
 
-    // ========================================================================
-    // Raw Block
-    // ========================================================================
-
     /// Push a raw block preserved verbatim. Format is stored in attributes.
     pub fn push_raw_block(&mut self, format: &str, content: &str, page: Option<u32>) -> u32 {
         self.push_simple(
@@ -343,10 +285,6 @@ impl InternalDocumentBuilder {
             None,
         )
     }
-
-    // ========================================================================
-    // Metadata Block
-    // ========================================================================
 
     /// Push a structured metadata block (frontmatter, email headers).
     /// Entries are stored in attributes.
@@ -368,18 +306,10 @@ impl InternalDocumentBuilder {
         )
     }
 
-    // ========================================================================
-    // Title
-    // ========================================================================
-
     /// Push a title element.
     pub fn push_title(&mut self, text: &str, page: Option<u32>, bbox: Option<BoundingBox>) -> u32 {
         self.push_simple(ElementKind::Title, text, page, bbox, Vec::new(), None, None)
     }
-
-    // ========================================================================
-    // Definition Term / Description
-    // ========================================================================
 
     /// Push a definition term element.
     pub fn push_definition_term(&mut self, text: &str, page: Option<u32>) -> u32 {
@@ -398,10 +328,6 @@ impl InternalDocumentBuilder {
             None,
         )
     }
-
-    // ========================================================================
-    // OCR Text
-    // ========================================================================
 
     /// Push an OCR text element with OCR-specific fields populated.
     #[allow(clippy::too_many_arguments)]
@@ -423,10 +349,6 @@ impl InternalDocumentBuilder {
         self.doc.push_element(elem)
     }
 
-    // ========================================================================
-    // Groups
-    // ========================================================================
-
     /// Push a `GroupStart` marker and increment depth.
     pub fn push_group_start(&mut self, label: Option<&str>, page: Option<u32>) {
         let attrs = label.map(|l| single_attr("label", l));
@@ -437,10 +359,6 @@ impl InternalDocumentBuilder {
     pub fn push_group_end(&mut self) {
         self.push_container_end(ElementKind::GroupEnd);
     }
-
-    // ========================================================================
-    // Relationships
-    // ========================================================================
 
     /// Push a relationship between two elements.
     pub fn push_relationship(&mut self, source: u32, target: RelationshipTarget, kind: RelationshipKind) {
@@ -482,10 +400,6 @@ impl InternalDocumentBuilder {
         }
     }
 
-    // ========================================================================
-    // Raw Element Push
-    // ========================================================================
-
     /// Push a pre-constructed `InternalElement` directly.
     ///
     /// Useful when the caller needs to construct an element with fields
@@ -495,10 +409,6 @@ impl InternalDocumentBuilder {
         self.node_count += 1;
         self.doc.push_element(element)
     }
-
-    // ========================================================================
-    // Container Helpers (DRY start/end logic)
-    // ========================================================================
 
     /// Push a container start marker and increment depth.
     fn push_container_start(&mut self, kind: ElementKind, page: Option<u32>) {
@@ -522,10 +432,6 @@ impl InternalDocumentBuilder {
         self.depth = self.depth.saturating_sub(1);
         self.push_simple(kind, "", None, None, Vec::new(), None, None);
     }
-
-    // ========================================================================
-    // Internal Helpers
-    // ========================================================================
 
     /// Get the next index and increment the counter.
     fn next_index(&mut self) -> u32 {
@@ -621,7 +527,7 @@ fn cells_to_markdown(cells: &[Vec<String>]) -> String {
 /// leading/trailing hyphens.
 fn slugify(text: &str) -> String {
     let mut result = String::with_capacity(text.len());
-    let mut prev_dash = true; // treat start as dash to avoid leading dash
+    let mut prev_dash = true;
     for c in text.chars() {
         if c.is_alphanumeric() {
             for lc in c.to_lowercase() {
@@ -639,7 +545,6 @@ fn slugify(text: &str) -> String {
     result
 }
 
-// Compile-time assertion: InternalDocumentBuilder must be Send + Sync for concurrent extraction.
 const _: () = {
     #[allow(dead_code)]
     fn assert_send_sync<T: Send + Sync>() {}
@@ -648,10 +553,6 @@ const _: () = {
         assert_send_sync::<InternalDocumentBuilder>();
     }
 };
-
-// ============================================================================
-// Tests
-// ============================================================================
 
 #[cfg(test)]
 mod tests {
@@ -678,7 +579,7 @@ mod tests {
         let elem = &doc.elements[0];
         assert_eq!(elem.text, "Introduction");
         assert_eq!(elem.kind, ElementKind::Heading { level: 1 });
-        assert_eq!(elem.depth, 0); // level 1 -> depth 0
+        assert_eq!(elem.depth, 0);
         assert_eq!(elem.anchor.as_deref(), Some("introduction"));
         assert_eq!(elem.page, Some(1));
     }
@@ -736,7 +637,6 @@ mod tests {
         assert_eq!(b.depth, 0);
 
         let doc = b.build();
-        // ListStart + 2 items + ListEnd
         assert_eq!(doc.elements.len(), 4);
         assert_eq!(doc.elements[0].kind, ElementKind::ListStart { ordered: false });
         assert_eq!(doc.elements[1].kind, ElementKind::ListItem { ordered: false });
@@ -757,15 +657,13 @@ mod tests {
         b.end_list();
 
         let doc = b.build();
-        // Outer ListStart(depth=0), item(depth=1), inner ListStart(depth=1),
-        // inner item(depth=2), inner ListEnd(depth=1), outer ListEnd(depth=0)
         assert_eq!(doc.elements.len(), 6);
-        assert_eq!(doc.elements[0].depth, 0); // outer list start
-        assert_eq!(doc.elements[1].depth, 1); // outer item
-        assert_eq!(doc.elements[2].depth, 1); // inner list start
-        assert_eq!(doc.elements[3].depth, 2); // inner item
-        assert_eq!(doc.elements[4].depth, 1); // inner list end
-        assert_eq!(doc.elements[5].depth, 0); // outer list end
+        assert_eq!(doc.elements[0].depth, 0);
+        assert_eq!(doc.elements[1].depth, 1);
+        assert_eq!(doc.elements[2].depth, 1);
+        assert_eq!(doc.elements[3].depth, 2);
+        assert_eq!(doc.elements[4].depth, 1);
+        assert_eq!(doc.elements[5].depth, 0);
     }
 
     #[test]
@@ -857,7 +755,6 @@ mod tests {
         assert_eq!(doc.elements[0].kind, ElementKind::FootnoteRef);
         assert_eq!(doc.elements[0].text, "1");
         assert_eq!(doc.elements[0].anchor.as_deref(), Some("fn1"));
-        // Check relationship
         assert_eq!(doc.relationships.len(), 1);
         assert_eq!(doc.relationships[0].source, 0);
         assert_eq!(doc.relationships[0].kind, RelationshipKind::FootnoteReference);
@@ -912,7 +809,7 @@ mod tests {
     fn test_push_page_break() {
         let mut b = InternalDocumentBuilder::new("pdf");
         b.push_list(false);
-        b.push_page_break(); // should be depth 0 regardless
+        b.push_page_break();
         b.end_list();
         let doc = b.build();
 
@@ -1071,10 +968,6 @@ mod tests {
         assert_eq!(elem_bbox.y1, 50.0);
     }
 
-    // ====================================================================
-    // Slug generation tests
-    // ====================================================================
-
     #[test]
     fn test_slugify_basic() {
         assert_eq!(slugify("Hello World"), "hello-world");
@@ -1102,7 +995,6 @@ mod tests {
 
     #[test]
     fn test_slugify_unicode() {
-        // Unicode alphanumeric chars are preserved
         assert_eq!(slugify("Über Cool"), "über-cool");
     }
 
@@ -1110,10 +1002,6 @@ mod tests {
     fn test_slugify_empty() {
         assert_eq!(slugify(""), "");
     }
-
-    // ====================================================================
-    // Integration-style test
-    // ====================================================================
 
     #[test]
     fn test_full_document_construction() {
@@ -1151,12 +1039,9 @@ mod tests {
 
         assert_eq!(doc.metadata.title.as_deref(), Some("Test Document"));
         assert_eq!(doc.source_format, "markdown");
-        // Count: 2 headings + 2 paragraphs + ListStart + 2 items + ListEnd +
-        //        code + formula + fnref + fndef + QuoteStart + paragraph + QuoteEnd + PageBreak
         assert_eq!(doc.elements.len(), 16);
         assert_eq!(doc.relationships.len(), 1);
 
-        // Verify heading anchors
         assert_eq!(doc.elements[0].anchor.as_deref(), Some("introduction"));
         assert_eq!(doc.elements[2].anchor.as_deref(), Some("details"));
     }

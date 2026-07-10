@@ -59,27 +59,27 @@ import type { ExtractionConfig, ExtractionResult } from "../types.js";
  * ```
  */
 export function extractFileSync(
-	filePath: string,
-	mimeTypeOrConfig?: string | null | ExtractionConfig,
-	maybeConfig?: ExtractionConfig | null,
+  filePath: string,
+  mimeTypeOrConfig?: string | null | ExtractionConfig,
+  maybeConfig?: ExtractionConfig | null,
 ): ExtractionResult {
-	let mimeType: string | null = null;
-	let config: ExtractionConfig | null = null;
+  let mimeType: string | null = null;
+  let config: ExtractionConfig | null = null;
 
-	if (typeof mimeTypeOrConfig === "string") {
-		mimeType = mimeTypeOrConfig;
-		config = maybeConfig ?? null;
-	} else if (mimeTypeOrConfig !== null && typeof mimeTypeOrConfig === "object") {
-		config = mimeTypeOrConfig;
-		mimeType = null;
-	} else {
-		config = maybeConfig ?? null;
-		mimeType = null;
-	}
+  if (typeof mimeTypeOrConfig === "string") {
+    mimeType = mimeTypeOrConfig;
+    config = maybeConfig ?? null;
+  } else if (mimeTypeOrConfig !== null && typeof mimeTypeOrConfig === "object") {
+    config = mimeTypeOrConfig;
+    mimeType = null;
+  } else {
+    config = maybeConfig ?? null;
+    mimeType = null;
+  }
 
-	const normalizedConfig = normalizeExtractionConfig(config);
-	const rawResult = getBinding().extractFileSync(filePath, mimeType, normalizedConfig);
-	return convertResult(rawResult);
+  const normalizedConfig = normalizeExtractionConfig(config);
+  const rawResult = getBinding().extractFileSync(filePath, mimeType, normalizedConfig);
+  return convertResult(rawResult);
 }
 
 /**
@@ -121,27 +121,27 @@ export function extractFileSync(
  * ```
  */
 export async function extractFile(
-	filePath: string,
-	mimeTypeOrConfig?: string | null | ExtractionConfig,
-	maybeConfig?: ExtractionConfig | null,
+  filePath: string,
+  mimeTypeOrConfig?: string | null | ExtractionConfig,
+  maybeConfig?: ExtractionConfig | null,
 ): Promise<ExtractionResult> {
-	let mimeType: string | null = null;
-	let config: ExtractionConfig | null = null;
+  let mimeType: string | null = null;
+  let config: ExtractionConfig | null = null;
 
-	if (typeof mimeTypeOrConfig === "string") {
-		mimeType = mimeTypeOrConfig;
-		config = maybeConfig ?? null;
-	} else if (mimeTypeOrConfig !== null && typeof mimeTypeOrConfig === "object") {
-		config = mimeTypeOrConfig;
-		mimeType = null;
-	} else {
-		config = maybeConfig ?? null;
-		mimeType = null;
-	}
+  if (typeof mimeTypeOrConfig === "string") {
+    mimeType = mimeTypeOrConfig;
+    config = maybeConfig ?? null;
+  } else if (mimeTypeOrConfig !== null && typeof mimeTypeOrConfig === "object") {
+    config = mimeTypeOrConfig;
+    mimeType = null;
+  } else {
+    config = maybeConfig ?? null;
+    mimeType = null;
+  }
 
-	const normalizedConfig = normalizeExtractionConfig(config);
-	const rawResult = await getBinding().extractFile(filePath, mimeType, normalizedConfig);
-	return convertResult(rawResult);
+  const normalizedConfig = normalizeExtractionConfig(config);
+  const rawResult = await getBinding().extractFile(filePath, mimeType, normalizedConfig);
+  return convertResult(rawResult);
 }
 
 /**
@@ -172,21 +172,21 @@ export async function extractFile(
  * ```
  */
 export function extractBytesSync(
-	dataOrPath: Uint8Array | string,
-	mimeType: string,
-	config: ExtractionConfig | null = null,
+  dataOrPath: Uint8Array | string,
+  mimeType: string,
+  config: ExtractionConfig | null = null,
 ): ExtractionResult {
-	let data: Uint8Array;
-	if (typeof dataOrPath === "string") {
-		data = readFileSync(dataOrPath);
-	} else {
-		data = dataOrPath;
-	}
+  let data: Uint8Array;
+  if (typeof dataOrPath === "string") {
+    data = readFileSync(dataOrPath);
+  } else {
+    data = dataOrPath;
+  }
 
-	const validated = assertUint8Array(data, "data");
-	const normalizedConfig = normalizeExtractionConfig(config);
-	const rawResult = getBinding().extractBytesSync(Buffer.from(validated), mimeType, normalizedConfig);
-	return convertResult(rawResult);
+  const validated = assertUint8Array(data, "data");
+  const normalizedConfig = normalizeExtractionConfig(config);
+  const rawResult = getBinding().extractBytesSync(Buffer.from(validated), mimeType, normalizedConfig);
+  return convertResult(rawResult);
 }
 
 /**
@@ -217,22 +217,22 @@ export function extractBytesSync(
  * ```
  */
 export async function extractBytes(
-	dataOrPath: Uint8Array | string,
-	mimeType: string,
-	config: ExtractionConfig | null = null,
+  dataOrPath: Uint8Array | string,
+  mimeType: string,
+  config: ExtractionConfig | null = null,
 ): Promise<ExtractionResult> {
-	let data: Uint8Array;
-	if (typeof dataOrPath === "string") {
-		data = readFileSync(dataOrPath);
-	} else {
-		data = dataOrPath;
-	}
+  let data: Uint8Array;
+  if (typeof dataOrPath === "string") {
+    data = readFileSync(dataOrPath);
+  } else {
+    data = dataOrPath;
+  }
 
-	const validated = assertUint8Array(data, "data");
-	if (process.env["KREUZBERG_DEBUG_OCR"] === "1") {
-		console.log("[TypeScript] Debug input header:", Array.from(validated.slice(0, 8)));
-	}
-	const normalizedConfig = normalizeExtractionConfig(config);
-	const rawResult = await getBinding().extractBytes(Buffer.from(validated), mimeType, normalizedConfig);
-	return convertResult(rawResult);
+  const validated = assertUint8Array(data, "data");
+  if (process.env["KREUZBERG_DEBUG_OCR"] === "1") {
+    console.log("[TypeScript] Debug input header:", Array.from(validated.slice(0, 8)));
+  }
+  const normalizedConfig = normalizeExtractionConfig(config);
+  const rawResult = await getBinding().extractBytes(Buffer.from(validated), mimeType, normalizedConfig);
+  return convertResult(rawResult);
 }

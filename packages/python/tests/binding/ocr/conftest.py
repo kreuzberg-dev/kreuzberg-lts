@@ -24,12 +24,10 @@ def mock_ocr_libraries() -> Generator[None, None, None]:
     It injects mock modules into sys.modules so that pytest.importorskip() will pass
     and allow the OCR backend tests to run with mocks.
     """
-    # Create mock easyocr module with necessary attributes
     easyocr_mock = MagicMock()
     easyocr_mock.Reader = Mock()
     sys.modules["easyocr"] = easyocr_mock
 
-    # Create mock torch module (used by easyocr for CUDA detection)
     torch_mock = MagicMock()
     torch_mock.cuda = MagicMock()
     torch_mock.cuda.is_available = Mock(return_value=False)
@@ -37,6 +35,5 @@ def mock_ocr_libraries() -> Generator[None, None, None]:
 
     yield
 
-    # Clean up mocks after session
     sys.modules.pop("easyocr", None)
     sys.modules.pop("torch", None)

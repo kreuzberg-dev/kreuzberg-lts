@@ -15,10 +15,8 @@ pub fn convert_extraction_result_to_term<'a>(
     env: Env<'a>,
     result: &kreuzberg::types::ExtractionResult,
 ) -> Result<Term<'a>, String> {
-    // Create a JSON representation and convert to Elixir term
     let result_json = serde_json::to_value(result).map_err(|e| format!("Failed to serialize result: {}", e))?;
 
-    // Convert JSON to Elixir term
     let term = json_to_term(env, &result_json).map_err(|e| format!("Failed to convert to Elixir term: {}", e))?;
 
     Ok(term)
@@ -75,7 +73,6 @@ pub fn json_to_term<'a>(env: Env<'a>, value: &serde_json::Value) -> Result<Term<
 /// Recursively converts Elixir terms to JSON values for deserialization.
 /// Handles atoms, booleans, numbers, strings, lists, and maps.
 pub fn term_to_json(term: Term) -> Result<serde_json::Value, String> {
-    // Handle nil (atom)
     if let Ok(atom_str) = term.atom_to_string() {
         return Ok(match atom_str.as_str() {
             "nil" => serde_json::Value::Null,
@@ -85,35 +82,29 @@ pub fn term_to_json(term: Term) -> Result<serde_json::Value, String> {
         });
     }
 
-    // Handle booleans
     if let Ok(b) = term.decode::<bool>() {
         return Ok(serde_json::Value::Bool(b));
     }
 
-    // Handle integers
     if let Ok(i) = term.decode::<i64>() {
         return Ok(serde_json::Value::Number(serde_json::Number::from(i)));
     }
 
-    // Handle floats
     if let Ok(f) = term.decode::<f64>()
         && let Some(num) = serde_json::Number::from_f64(f)
     {
         return Ok(serde_json::Value::Number(num));
     }
 
-    // Handle strings
     if let Ok(s) = term.decode::<String>() {
         return Ok(serde_json::Value::String(s));
     }
 
-    // Handle lists
     if let Ok(list) = term.decode::<Vec<Term>>() {
         let items: Result<Vec<_>, _> = list.into_iter().map(term_to_json).collect();
         return Ok(serde_json::Value::Array(items?));
     }
 
-    // Handle maps
     if let Ok(map) = term.decode::<HashMap<String, Term>>() {
         let mut obj = serde_json::Map::new();
         for (k, v) in map {

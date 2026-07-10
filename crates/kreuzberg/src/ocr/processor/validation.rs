@@ -62,14 +62,12 @@ pub(super) fn validate_language_and_traineddata(language: &str, tessdata_path: &
 ///
 /// Path to tessdata directory if found, otherwise empty string
 pub(super) fn resolve_tessdata_path() -> String {
-    // 1. TESSDATA_PREFIX env var (explicit override)
     if let Ok(path) = env::var("TESSDATA_PREFIX")
         && !path.is_empty()
     {
         return path;
     }
 
-    // 2. KREUZBERG_CACHE_DIR/tessdata (downloaded by `cache warm` command)
     if let Ok(cache_dir) = env::var("KREUZBERG_CACHE_DIR") {
         let tessdata = PathBuf::from(cache_dir).join("tessdata");
         if tessdata.exists() {
@@ -77,7 +75,6 @@ pub(super) fn resolve_tessdata_path() -> String {
         }
     }
 
-    // 3. Bundled tessdata (compiled-in path from build.rs)
     if let Some(bundled) = option_env!("TESSDATA_PREFIX_BUNDLED") {
         let tessdata = PathBuf::from(bundled).join("tessdata");
         if tessdata.exists() {
@@ -85,7 +82,6 @@ pub(super) fn resolve_tessdata_path() -> String {
         }
     }
 
-    // 4. System fallback paths
     let fallback_paths = [
         "/opt/homebrew/share/tessdata",
         "/opt/homebrew/opt/tesseract/share/tessdata",
@@ -139,7 +135,6 @@ pub(super) fn resolve_all_installed_languages(tessdata_path: &str) -> Result<Str
         OcrError::TesseractInitializationFailed(format!("Failed to read tessdata directory '{}': {}", tessdata_path, e))
     })?;
 
-    // Non-language traineddata files to exclude (special-purpose data, not OCR languages)
     const EXCLUDED: &[&str] = &["osd", "equ"];
 
     let mut languages: Vec<String> = entries
@@ -205,7 +200,6 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         let tessdata = dir.path();
 
-        // Create mock traineddata files
         std::fs::write(tessdata.join("eng.traineddata"), b"").unwrap();
         std::fs::write(tessdata.join("fra.traineddata"), b"").unwrap();
         std::fs::write(tessdata.join("deu.traineddata"), b"").unwrap();

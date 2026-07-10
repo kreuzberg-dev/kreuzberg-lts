@@ -49,7 +49,6 @@ pub async fn openweb_external_handler(
         )));
     }
 
-    // Extract MIME type from Content-Type header, stripping any parameters (e.g. charset)
     let mime_type = headers
         .get(axum::http::header::CONTENT_TYPE)
         .and_then(|v| v.to_str().ok())
@@ -57,21 +56,18 @@ pub async fn openweb_external_handler(
         .unwrap_or("application/octet-stream")
         .to_string();
 
-    // Extract filename from X-Filename header (URL-encoded by OpenWebUI)
     let filename = headers
         .get("X-Filename")
         .and_then(|v| v.to_str().ok())
         .map(|v| urlencoding::decode(v).unwrap_or_else(|_| v.into()).into_owned())
         .unwrap_or_else(|| "unknown".to_string());
 
-    // Detect MIME type from filename if the header was generic
     let mime_type = if mime_type == "application/octet-stream" {
         crate::core::mime::detect_mime_type(&filename, false).unwrap_or(mime_type)
     } else {
         mime_type
     };
 
-    // Build extraction config with markdown output
     let mut config = (*state.default_config).clone();
     config.output_format = crate::core::config::OutputFormat::Markdown;
 
@@ -135,7 +131,6 @@ pub async fn openweb_docling_handler(
 
             let mut mime_type = content_type.unwrap_or_else(|| "application/octet-stream".to_string());
 
-            // Detect from filename if generic
             if mime_type == "application/octet-stream"
                 && let Some(ref name) = file_name
                 && let Ok(detected) = crate::core::mime::detect_mime_type(name, false)
@@ -154,7 +149,6 @@ pub async fn openweb_docling_handler(
         ))
     })?;
 
-    // Build extraction config with markdown output
     let mut config = (*state.default_config).clone();
     config.output_format = crate::core::config::OutputFormat::Markdown;
 

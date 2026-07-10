@@ -27,8 +27,7 @@ class PanicContext
         public readonly ?string $function,
         public readonly ?string $message,
         public readonly ?int $timestampSecs,
-    ) {
-    }
+    ) {}
 
     /**
      * Create a PanicContext from a JSON string.
@@ -59,7 +58,9 @@ class PanicContext
             line: isset($data['line']) && is_int($data['line']) ? $data['line'] : null,
             function: isset($data['function']) && is_string($data['function']) ? $data['function'] : null,
             message: isset($data['message']) && is_string($data['message']) ? $data['message'] : null,
-            timestampSecs: isset($data['timestamp_secs']) && is_int($data['timestamp_secs']) ? $data['timestamp_secs'] : null,
+            timestampSecs: isset($data['timestamp_secs']) && is_int($data['timestamp_secs'])
+                ? $data['timestamp_secs']
+                : null,
         );
     }
 }

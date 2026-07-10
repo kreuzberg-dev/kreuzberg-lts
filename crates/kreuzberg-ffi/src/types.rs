@@ -281,9 +281,7 @@ mod tests {
     fn test_c_string_guard_drop() {
         let original = CString::new("test string").unwrap();
         let guard = CStringGuard::new(original);
-        // Guard should automatically free the string when it goes out of scope
         drop(guard);
-        // If this test completes without crashing, the RAII behavior is working
     }
 
     /// Test CStringGuard RAII behavior - into_raw transfer
@@ -295,7 +293,6 @@ mod tests {
 
         assert!(!ptr.is_null(), "into_raw should return a non-null pointer");
 
-        // Manually free the string since we took ownership
         unsafe {
             let _ = CString::from_raw(ptr);
         }
@@ -322,14 +319,11 @@ mod tests {
         let original = CString::new("test").unwrap();
         let mut guard = CStringGuard::new(original);
 
-        // Manually set to null to simulate into_raw behavior
         let ptr = guard.ptr;
         guard.ptr = ptr::null_mut();
 
-        // This should not attempt to free anything
         drop(guard);
 
-        // Clean up the actual pointer
         unsafe {
             let _ = CString::from_raw(ptr);
         }
@@ -340,7 +334,6 @@ mod tests {
     fn test_c_extraction_result_field_offsets() {
         use std::mem::offset_of;
 
-        // All pointer fields should be 8 bytes each
         assert_eq!(offset_of!(CExtractionResult, annotations_json), 0);
         assert_eq!(offset_of!(CExtractionResult, chunks_json), 8);
         assert_eq!(offset_of!(CExtractionResult, children_json), 16);
@@ -393,7 +386,6 @@ mod tests {
     #[test]
     fn test_structs_can_be_zeroed() {
         unsafe {
-            // These should not panic if the types are properly repr(C)
             let _result: CExtractionResult = std::mem::zeroed();
             let _batch: CBatchResult = std::mem::zeroed();
             let _bytes: CBytesWithMime = std::mem::zeroed();

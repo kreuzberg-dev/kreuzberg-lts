@@ -43,11 +43,9 @@ impl PptxExtractor {
     fn strip_ordered_prefix(line: &str) -> Option<&str> {
         let bytes = line.as_bytes();
         let mut i = 0;
-        // Consume digits
         while i < bytes.len() && bytes[i].is_ascii_digit() {
             i += 1;
         }
-        // Need at least one digit followed by ". "
         if i == 0 || i + 2 > bytes.len() {
             return None;
         }
@@ -63,7 +61,6 @@ impl PptxExtractor {
         let mut slide_num: u32 = 0;
         let mut in_notes = false;
 
-        // Split the content into logical blocks separated by blank lines.
         let blocks: Vec<&str> = content.split("\n\n").collect();
 
         for block in &blocks {
@@ -72,15 +69,11 @@ impl PptxExtractor {
                 continue;
             }
 
-            // Skip notes sections (### Notes: or Notes:)
             if trimmed.starts_with("### Notes:") || trimmed == "Notes:" {
                 in_notes = true;
                 continue;
             }
 
-            // A `# Title` heading marks a new slide title.
-            // We render it as a ## heading (not a Slide element) to avoid
-            // the `---` separator that the Slide renderer inserts.
             if let Some(title_text) = trimmed.strip_prefix("# ") {
                 in_notes = false;
                 slide_num += 1;
@@ -91,16 +84,10 @@ impl PptxExtractor {
                 continue;
             }
 
-            // If we're inside a notes section, skip content that looks like
-            // continuation notes (not a slide heading or other content).
-            // However, any non-notes, non-heading block means we've moved past
-            // the notes into the next slide's body content. Reset in_notes so
-            // untitled slides (slides with no `# Title` heading) are not lost.
             if in_notes {
                 in_notes = false;
             }
 
-            // Table block: starts with |
             if trimmed.starts_with('|') {
                 let cells = Self::parse_markdown_table(trimmed);
                 if !cells.is_empty() {
@@ -109,15 +96,11 @@ impl PptxExtractor {
                 continue;
             }
 
-            // Process remaining lines: lists and paragraphs.
-            // We track whether we are inside an unordered or ordered list so
-            // that we can emit proper ListStart / ListEnd wrappers.
-            let mut in_list: Option<bool> = None; // Some(ordered)
+            let mut in_list: Option<bool> = None;
 
             for line in trimmed.lines() {
                 let lt = line.trim();
                 if lt.is_empty() {
-                    // Close any open list on blank line
                     if in_list.is_some() {
                         builder.end_list();
                         in_list = None;
@@ -125,9 +108,6 @@ impl PptxExtractor {
                     continue;
                 }
 
-                // Detect list item type from the trimmed line.
-                // Unordered: "- text"
-                // Ordered:   "1. text", "2. text", etc.
                 let list_match = if let Some(item_text) = lt.strip_prefix("- ") {
                     Some((false, item_text))
                 } else {
@@ -135,7 +115,6 @@ impl PptxExtractor {
                 };
 
                 if let Some((ordered, item_text)) = list_match {
-                    // Start a new list or switch list type if needed
                     match in_list {
                         Some(prev_ordered) if prev_ordered != ordered => {
                             builder.end_list();
@@ -150,7 +129,6 @@ impl PptxExtractor {
                     }
                     builder.push_list_item(item_text, ordered, vec![], Some(slide_num), None);
                 } else {
-                    // Close any open list before emitting a paragraph
                     if in_list.is_some() {
                         builder.end_list();
                         in_list = None;
@@ -159,13 +137,11 @@ impl PptxExtractor {
                 }
             }
 
-            // Close any trailing open list at end of block
             if in_list.is_some() {
                 builder.end_list();
             }
         }
 
-        // If no slides were found, create a default slide
         if slide_num == 0 && slide_count > 0 {
             builder.push_slide(1, None, Some(1));
         }
@@ -181,11 +157,9 @@ impl PptxExtractor {
             if trimmed.is_empty() {
                 continue;
             }
-            // Skip separator rows like |---|---|
             if trimmed.contains("---") {
                 continue;
             }
-            // Parse pipe-separated cells
             let row: Vec<String> = trimmed
                 .trim_matches('|')
                 .split('|')
@@ -209,12 +183,10 @@ impl PptxExtractor {
     ) -> InternalDocument {
         let mut additional: AHashMap<Cow<'static, str>, serde_json::Value> = AHashMap::new();
 
-        // Populate image_count and table_count on PptxMetadata struct
         let mut pptx_metadata = pptx_result.metadata;
         pptx_metadata.image_count = Some(pptx_result.image_count);
         pptx_metadata.table_count = Some(pptx_result.table_count);
 
-        // Map office metadata to standard Metadata fields
         let office_meta = &pptx_result.office_metadata;
         let title = office_meta.get("title").cloned();
         let subject = office_meta.get("subject").cloned();
@@ -230,15 +202,11 @@ impl PptxExtractor {
                 .collect()
         });
 
-        // Put remaining office metadata into additional map
         for (key, value) in &pptx_result.office_metadata {
             match key.as_str() {
-                // Skip fields already mapped to standard Metadata fields
                 "title" | "subject" | "created_by" | "modified_by" | "created_at" | "modified_at" | "author"
                 | "keywords" => {}
-                // Skip slide_count — already in PptxMetadata.slide_count (as a numeric type)
                 "slide_count" => {}
-                // Numeric fields: parse as JSON numbers so they serialize as integers, not strings
                 "notes_count" | "hidden_slides" => {
                     let json_value = value
                         .parse::<u64>()
@@ -275,12 +243,10 @@ impl PptxExtractor {
 
         doc.metadata = metadata;
 
-        // Push hyperlink URIs discovered in slides
         for (url, label) in pptx_result.hyperlinks {
             doc.push_uri(Uri::hyperlink(&url, label));
         }
 
-        // Transfer images
         if extract_images {
             doc.images = pptx_result.images;
         }
@@ -337,7 +303,7 @@ impl DocumentExtractor for PptxExtractor {
                         extract_images,
                         page_config: config.pages.clone(),
                         plain,
-                        include_structure: false, // we build InternalDocument separately
+                        include_structure: false,
                         inject_placeholders,
                     };
                     let span = tracing::Span::current();
@@ -376,7 +342,6 @@ impl DocumentExtractor for PptxExtractor {
 
         let mut doc = Self::build_document_from_result(pptx_result, mime_type, extract_images);
 
-        // Recursively extract embedded objects from ppt/embeddings/
         if config.max_archive_depth > 0 {
             let (children, embed_warnings) = crate::extraction::ooxml_embedded::extract_ooxml_embedded_objects(
                 content,

@@ -66,15 +66,15 @@ defmodule Kreuzberg.LegacyAPI do
   """
   @deprecated "Use Kreuzberg.extract/3 with ExtractionConfig.ocr map instead. Removes in v2.0.0."
   @spec extract_with_ocr(binary(), String.t(), boolean()) ::
-          {:ok, ExtractionResult.t()} | {:error, String.t()}
+  {:ok, ExtractionResult.t()} | {:error, String.t()}
   def extract_with_ocr(input, mime_type, enable_ocr)
-      when is_binary(input) and is_binary(mime_type) do
+  when is_binary(input) and is_binary(mime_type) do
     config =
-      if enable_ocr do
-        %ExtractionConfig{ocr: %{"backend" => "tesseract"}}
-      else
-        nil
-      end
+    if enable_ocr do
+      %ExtractionConfig{ocr: %{"backend" => "tesseract"}}
+    else
+      nil
+    end
 
     Kreuzberg.extract(input, mime_type, config)
   end
@@ -124,12 +124,12 @@ defmodule Kreuzberg.LegacyAPI do
   """
   @deprecated "Use Kreuzberg.extract/3 with ExtractionConfig.chunking map instead. Removes in v2.0.0."
   @spec extract_with_chunking(binary(), String.t(), integer(), integer()) ::
-          {:ok, ExtractionResult.t()} | {:error, String.t()}
+  {:ok, ExtractionResult.t()} | {:error, String.t()}
   def extract_with_chunking(input, mime_type, chunk_size, overlap)
-      when is_binary(input) and is_binary(mime_type) and is_integer(chunk_size) and
-             is_integer(overlap) do
+  when is_binary(input) and is_binary(mime_type) and is_integer(chunk_size) and
+  is_integer(overlap) do
     config = %ExtractionConfig{
-      chunking: %{"max_chars" => chunk_size, "max_overlap" => overlap}
+    chunking: %{"max_chars" => chunk_size, "max_overlap" => overlap}
     }
 
     Kreuzberg.extract(input, mime_type, config)
@@ -187,7 +187,7 @@ defmodule Kreuzberg.LegacyAPI do
   """
   @deprecated "Use Kreuzberg.extract_file/3 with ExtractionConfig struct. Removes in v2.0.0."
   @spec extract_file_legacy(String.t() | Path.t(), String.t() | nil, keyword()) ::
-          {:ok, ExtractionResult.t()} | {:error, String.t()}
+  {:ok, ExtractionResult.t()} | {:error, String.t()}
   def extract_file_legacy(path, mime_type \\ nil, opts \\ []) do
     config = convert_legacy_opts_to_config(opts)
     Kreuzberg.extract_file(path, mime_type, config)
@@ -225,7 +225,7 @@ defmodule Kreuzberg.LegacyAPI do
   """
   @deprecated "Use Kreuzberg.extract/3 with ExtractionConfig struct. Removes in v2.0.0."
   @spec extract_with_options(binary(), String.t(), keyword()) ::
-          {:ok, ExtractionResult.t()} | {:error, String.t()}
+  {:ok, ExtractionResult.t()} | {:error, String.t()}
   def extract_with_options(input, mime_type, opts \\ []) do
     config = convert_legacy_opts_to_config(opts)
     Kreuzberg.extract(input, mime_type, config)
@@ -244,7 +244,7 @@ defmodule Kreuzberg.LegacyAPI do
   """
   @deprecated "Validation is now automatic in extraction functions. Removes in v2.0.0."
   @spec validate_extraction_request(binary(), String.t(), keyword()) ::
-          :ok | {:error, String.t()}
+  :ok | {:error, String.t()}
   def validate_extraction_request(input, mime_type, _opts \\ []) do
     cond do
       not is_binary(input) -> {:error, "Input must be binary"}
@@ -254,26 +254,25 @@ defmodule Kreuzberg.LegacyAPI do
     end
   end
 
-  # Private helpers
 
   @doc false
   defp convert_legacy_opts_to_config(opts) do
     %ExtractionConfig{
-      use_cache: Keyword.get(opts, :use_cache, true),
-      force_ocr: Keyword.get(opts, :force_ocr, false),
-      enable_quality_processing: Keyword.get(opts, :enable_quality_processing, true),
-      output_format: Keyword.get(opts, :output_format, "plain"),
-      result_format: Keyword.get(opts, :result_format, "unified"),
-      ocr: convert_ocr_opts(Keyword.get(opts, :ocr, nil)),
-      chunking:
-        convert_chunking_opts(
-          Keyword.get(opts, :chunk_size, nil),
-          Keyword.get(opts, :overlap, nil)
-        ),
-      language_detection: Keyword.get(opts, :language_detection, nil),
-      postprocessor: Keyword.get(opts, :postprocessor, nil),
-      images: Keyword.get(opts, :images, nil),
-      keywords: Keyword.get(opts, :keywords, nil)
+    use_cache: Keyword.get(opts, :use_cache, true),
+    force_ocr: Keyword.get(opts, :force_ocr, false),
+    enable_quality_processing: Keyword.get(opts, :enable_quality_processing, true),
+    output_format: Keyword.get(opts, :output_format, "plain"),
+    result_format: Keyword.get(opts, :result_format, "unified"),
+    ocr: convert_ocr_opts(Keyword.get(opts, :ocr, nil)),
+    chunking:
+    convert_chunking_opts(
+    Keyword.get(opts, :chunk_size, nil),
+    Keyword.get(opts, :overlap, nil)
+    ),
+    language_detection: Keyword.get(opts, :language_detection, nil),
+    postprocessor: Keyword.get(opts, :postprocessor, nil),
+    images: Keyword.get(opts, :images, nil),
+    keywords: Keyword.get(opts, :keywords, nil)
     }
   end
 

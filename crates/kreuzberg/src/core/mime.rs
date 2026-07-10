@@ -77,13 +77,11 @@ struct FormatEntry {
 /// (extension-to-MIME mapping) and `SUPPORTED_MIME_TYPES` (validation set) are
 /// derived from this array automatically.
 static FORMATS: &[FormatEntry] = &[
-    // ── Plain text ──────────────────────────────────────────────────────
     FormatEntry {
         extensions: &["txt"],
         mime_type: "text/plain",
         aliases: &[],
     },
-    // Plain text variants handled by extractors (no file extension mapping)
     FormatEntry {
         extensions: &[],
         mime_type: "text/troff",
@@ -104,7 +102,6 @@ static FORMATS: &[FormatEntry] = &[
         mime_type: "text/x-dokuwiki",
         aliases: &[],
     },
-    // ── Markdown ────────────────────────────────────────────────────────
     FormatEntry {
         extensions: &["md", "markdown"],
         mime_type: "text/markdown",
@@ -130,31 +127,26 @@ static FORMATS: &[FormatEntry] = &[
         mime_type: "text/x-multimarkdown",
         aliases: &[],
     },
-    // ── MDX ─────────────────────────────────────────────────────────────
     FormatEntry {
         extensions: &["mdx"],
         mime_type: "text/mdx",
         aliases: &["text/x-mdx"],
     },
-    // ── Djot ────────────────────────────────────────────────────────────
     FormatEntry {
         extensions: &["djot"],
         mime_type: "text/x-djot",
         aliases: &["text/djot"],
     },
-    // ── PDF ─────────────────────────────────────────────────────────────
     FormatEntry {
         extensions: &["pdf"],
         mime_type: "application/pdf",
         aliases: &[],
     },
-    // ── HTML ────────────────────────────────────────────────────────────
     FormatEntry {
         extensions: &["html", "htm"],
         mime_type: "text/html",
         aliases: &["application/xhtml+xml"],
     },
-    // ── Word processing ─────────────────────────────────────────────────
     FormatEntry {
         extensions: &["docx"],
         mime_type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
@@ -185,7 +177,6 @@ static FORMATS: &[FormatEntry] = &[
         mime_type: "application/vnd.oasis.opendocument.text",
         aliases: &[],
     },
-    // ── Presentations ───────────────────────────────────────────────────
     FormatEntry {
         extensions: &["pptx"],
         mime_type: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
@@ -216,7 +207,6 @@ static FORMATS: &[FormatEntry] = &[
         mime_type: "application/vnd.ms-powerpoint",
         aliases: &[],
     },
-    // ── Spreadsheets ────────────────────────────────────────────────────
     FormatEntry {
         extensions: &["xlsx"],
         mime_type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -257,13 +247,11 @@ static FORMATS: &[FormatEntry] = &[
         mime_type: "application/vnd.oasis.opendocument.spreadsheet",
         aliases: &[],
     },
-    // ── dBASE ──────────────────────────────────────────────────────────
     FormatEntry {
         extensions: &["dbf"],
         mime_type: "application/x-dbf",
         aliases: &["application/dbase"],
     },
-    // ── Hangul ─────────────────────────────────────────────────────────
     FormatEntry {
         extensions: &["hwp"],
         mime_type: "application/x-hwp",
@@ -274,7 +262,6 @@ static FORMATS: &[FormatEntry] = &[
         mime_type: "application/haansofthwpx",
         aliases: &[],
     },
-    // ── Images ──────────────────────────────────────────────────────────
     FormatEntry {
         extensions: &["bmp"],
         mime_type: "image/bmp",
@@ -350,7 +337,6 @@ static FORMATS: &[FormatEntry] = &[
         mime_type: "image/x-portable-pixmap",
         aliases: &[],
     },
-    // ── Data formats ────────────────────────────────────────────────────
     FormatEntry {
         extensions: &["csv"],
         mime_type: "text/csv",
@@ -396,7 +382,6 @@ static FORMATS: &[FormatEntry] = &[
         mime_type: "image/svg+xml",
         aliases: &[],
     },
-    // ── Email ───────────────────────────────────────────────────────────
     FormatEntry {
         extensions: &["eml"],
         mime_type: "message/rfc822",
@@ -412,7 +397,6 @@ static FORMATS: &[FormatEntry] = &[
         mime_type: "application/vnd.ms-outlook-pst",
         aliases: &[],
     },
-    // ── Archives ────────────────────────────────────────────────────────
     FormatEntry {
         extensions: &["zip"],
         mime_type: "application/zip",
@@ -433,7 +417,6 @@ static FORMATS: &[FormatEntry] = &[
         mime_type: "application/x-7z-compressed",
         aliases: &[],
     },
-    // ── Document / academic formats ─────────────────────────────────────
     FormatEntry {
         extensions: &["rst"],
         mime_type: "text/x-rst",
@@ -509,7 +492,6 @@ static FORMATS: &[FormatEntry] = &[
         mime_type: "application/x-typst",
         aliases: &["text/x-typst"],
     },
-    // ── Apple iWork ─────────────────────────────────────────────────────
     FormatEntry {
         extensions: &["pages"],
         mime_type: "application/x-iwork-pages-sffpages",
@@ -525,9 +507,6 @@ static FORMATS: &[FormatEntry] = &[
         mime_type: "application/x-iwork-keynote-sffkey",
         aliases: &[],
     },
-    // ── Source code (tree-sitter) ──────────────────────────────────────
-    // No file extension mapping — detection is dynamic via TSLP's
-    // detect_language_from_extension() as a fallback in detect_mime_type().
     FormatEntry {
         extensions: &[],
         mime_type: "text/x-source-code",
@@ -596,10 +575,6 @@ pub fn detect_mime_type(path: impl AsRef<Path>, check_exists: bool) -> Result<St
         return Ok(mime_type.to_string());
     }
 
-    // Tree-sitter detection: check if the extension belongs to a known
-    // programming language *before* falling back to mime_guess, which returns
-    // language-specific MIME types (e.g. "text/x-python") that are not in our
-    // supported set.
     #[cfg(feature = "tree-sitter")]
     {
         if let Some(ext) = &extension {
@@ -654,8 +629,6 @@ pub fn validate_mime_type(mime_type: &str) -> Result<String> {
         return Ok(mime_type.to_string());
     }
 
-    // Case-insensitive fallback: MIME types are case-insensitive per RFC 2045.
-    // This handles common mismatches like "macroEnabled" vs "macroenabled".
     let lower = mime_type.to_ascii_lowercase();
     for supported in SUPPORTED_MIME_TYPES.iter() {
         if supported.to_ascii_lowercase() == lower {
@@ -718,7 +691,6 @@ pub fn detect_mime_type_from_bytes(content: &[u8]) -> Result<String> {
     if let Some(kind) = infer::get(content) {
         let mime_type = kind.mime_type();
 
-        // Check if ZIP is actually an Office Open XML format
         if mime_type == "application/zip"
             && let Some(office_mime) = detect_office_format_from_zip(content)
         {
@@ -730,7 +702,6 @@ pub fn detect_mime_type_from_bytes(content: &[u8]) -> Result<String> {
         }
     }
 
-    // PST (Outlook Personal Folders) magic signature: "!BDN" at offset 0
     if content.len() >= 4 && content[..4] == [0x21, 0x42, 0x44, 0x4E] {
         return Ok(PST_MIME_TYPE.to_string());
     }
@@ -756,7 +727,6 @@ pub fn detect_mime_type_from_bytes(content: &[u8]) -> Result<String> {
             return Ok(PDF_MIME_TYPE.to_string());
         }
 
-        // Tree-sitter fallback: detect language from shebang line.
         #[cfg(feature = "tree-sitter")]
         if tree_sitter_language_pack::detect_language_from_content(trimmed).is_some() {
             return Ok(SOURCE_CODE_MIME_TYPE.to_string());
@@ -786,17 +756,14 @@ pub fn detect_mime_type_from_bytes(content: &[u8]) -> Result<String> {
 /// This function scans the ZIP's local file headers without fully parsing the archive,
 /// making it efficient for MIME type detection.
 fn detect_office_format_from_zip(content: &[u8]) -> Option<&'static str> {
-    // Office format markers - these are file paths within the ZIP that identify the format
     const DOCX_MARKER: &[u8] = b"word/document.xml";
     const XLSX_MARKER: &[u8] = b"xl/workbook.xml";
     const PPTX_MARKER: &[u8] = b"ppt/presentation.xml";
 
-    // Apple iWork markers
     const PAGES_MARKER: &[u8] = b"Index/Document.iwa";
     const NUMBERS_MARKER: &[u8] = b"Index/CalculationEngine.iwa";
     const KEYNOTE_MARKER: &[u8] = b"Index/Presentation.iwa";
 
-    // Check iWork first (before generic Office) since iWork ZIPs also contain XML
     if contains_subsequence(content, PAGES_MARKER) {
         return Some(IWORK_PAGES_MIME_TYPE);
     }
@@ -807,7 +774,6 @@ fn detect_office_format_from_zip(content: &[u8]) -> Option<&'static str> {
         return Some(IWORK_KEYNOTE_MIME_TYPE);
     }
 
-    // Check for each Office marker using a sliding window search
     if contains_subsequence(content, DOCX_MARKER) {
         return Some(DOCX_MIME_TYPE);
     }
@@ -1062,7 +1028,6 @@ mod tests {
         File::create(&file_path).unwrap();
 
         let _result = detect_mime_type(&file_path, true);
-        // Files without extensions may or may not be detected via mime_guess fallback
     }
 
     #[test]
@@ -1106,22 +1071,10 @@ mod tests {
 
     #[test]
     fn test_detect_office_format_from_zip_bytes() {
-        // Test DOCX detection - minimal ZIP with word/document.xml marker
-        // This is a valid ZIP local file header with "word/document.xml" as filename
         let docx_bytes: &[u8] = &[
-            0x50, 0x4b, 0x03, 0x04, // ZIP local file header signature
-            0x14, 0x00, // version needed
-            0x00, 0x00, // general purpose bit flag
-            0x00, 0x00, // compression method (stored)
-            0x00, 0x00, // last mod time
-            0x00, 0x00, // last mod date
-            0x00, 0x00, 0x00, 0x00, // crc-32
-            0x00, 0x00, 0x00, 0x00, // compressed size
-            0x00, 0x00, 0x00, 0x00, // uncompressed size
-            0x11, 0x00, // file name length (17)
-            0x00, 0x00, // extra field length
-            b'w', b'o', b'r', b'd', b'/', b'd', b'o', b'c', b'u', b'm', b'e', b'n', b't', b'.', b'x', b'm',
-            b'l', // "word/document.xml"
+            0x50, 0x4b, 0x03, 0x04, 0x14, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x11, 0x00, 0x00, 0x00, b'w', b'o', b'r', b'd', b'/', b'd',
+            b'o', b'c', b'u', b'm', b'e', b'n', b't', b'.', b'x', b'm', b'l',
         ];
         let mime = detect_mime_type_from_bytes(docx_bytes).unwrap();
         assert_eq!(
@@ -1129,14 +1082,10 @@ mod tests {
             "Should detect DOCX from ZIP with word/document.xml"
         );
 
-        // Test XLSX detection
         let xlsx_bytes: &[u8] = &[
-            0x50, 0x4b, 0x03, 0x04, // ZIP signature
-            0x14, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-            0x00, 0x00, 0x00, 0x00, 0x0f, 0x00, // file name length (15)
-            0x00, 0x00, // extra field length
-            b'x', b'l', b'/', b'w', b'o', b'r', b'k', b'b', b'o', b'o', b'k', b'.', b'x', b'm',
-            b'l', // "xl/workbook.xml"
+            0x50, 0x4b, 0x03, 0x04, 0x14, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0f, 0x00, 0x00, 0x00, b'x', b'l', b'/', b'w', b'o', b'r',
+            b'k', b'b', b'o', b'o', b'k', b'.', b'x', b'm', b'l',
         ];
         let mime = detect_mime_type_from_bytes(xlsx_bytes).unwrap();
         assert_eq!(
@@ -1144,14 +1093,10 @@ mod tests {
             "Should detect XLSX from ZIP with xl/workbook.xml"
         );
 
-        // Test PPTX detection
         let pptx_bytes: &[u8] = &[
-            0x50, 0x4b, 0x03, 0x04, // ZIP signature
-            0x14, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-            0x00, 0x00, 0x00, 0x00, 0x14, 0x00, // file name length (20)
-            0x00, 0x00, // extra field length
-            b'p', b'p', b't', b'/', b'p', b'r', b'e', b's', b'e', b'n', b't', b'a', b't', b'i', b'o', b'n', b'.', b'x',
-            b'm', b'l', // "ppt/presentation.xml"
+            0x50, 0x4b, 0x03, 0x04, 0x14, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x14, 0x00, 0x00, 0x00, b'p', b'p', b't', b'/', b'p', b'r',
+            b'e', b's', b'e', b'n', b't', b'a', b't', b'i', b'o', b'n', b'.', b'x', b'm', b'l',
         ];
         let mime = detect_mime_type_from_bytes(pptx_bytes).unwrap();
         assert_eq!(
@@ -1159,13 +1104,10 @@ mod tests {
             "Should detect PPTX from ZIP with ppt/presentation.xml"
         );
 
-        // Test plain ZIP (no Office markers)
         let plain_zip_bytes: &[u8] = &[
-            0x50, 0x4b, 0x03, 0x04, // ZIP signature
-            0x14, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-            0x00, 0x00, 0x00, 0x00, 0x08, 0x00, // file name length (8)
-            0x00, 0x00, // extra field length
-            b't', b'e', b's', b't', b'.', b't', b'x', b't', // "test.txt"
+            0x50, 0x4b, 0x03, 0x04, 0x14, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x08, 0x00, 0x00, 0x00, b't', b'e', b's', b't', b'.', b't',
+            b'x', b't',
         ];
         let mime = detect_mime_type_from_bytes(plain_zip_bytes).unwrap();
         assert_eq!(mime, "application/zip", "Plain ZIP should remain as application/zip");
@@ -1173,11 +1115,7 @@ mod tests {
 
     #[test]
     fn test_detect_pst_from_bytes() {
-        // PST magic signature: "!BDN" followed by format-specific bytes
-        let pst_bytes: &[u8] = &[
-            0x21, 0x42, 0x44, 0x4E, // "!BDN" magic signature
-            0x00, 0x00, 0x00, 0x00, // padding (real PST files have more header data)
-        ];
+        let pst_bytes: &[u8] = &[0x21, 0x42, 0x44, 0x4E, 0x00, 0x00, 0x00, 0x00];
         let mime = detect_mime_type_from_bytes(pst_bytes).unwrap();
         assert_eq!(mime, PST_MIME_TYPE, "Should detect PST from magic bytes");
     }
@@ -1224,7 +1162,6 @@ mod tests {
 
     #[test]
     fn test_formats_registry_consistency() {
-        // Every extension in EXT_TO_MIME should map to a MIME type that is in SUPPORTED_MIME_TYPES
         for (ext, mime) in EXT_TO_MIME.iter() {
             assert!(
                 SUPPORTED_MIME_TYPES.contains(mime),
@@ -1237,16 +1174,13 @@ mod tests {
 
     #[test]
     fn test_formats_registry_mdx() {
-        // MDX extension mapping
         assert_eq!(EXT_TO_MIME.get("mdx"), Some(&"text/mdx"));
-        // MDX MIME types are valid
         assert!(SUPPORTED_MIME_TYPES.contains("text/mdx"));
         assert!(SUPPORTED_MIME_TYPES.contains("text/x-mdx"));
     }
 
     #[test]
     fn test_formats_registry_aliases() {
-        // Verify key aliases are in SUPPORTED_MIME_TYPES
         assert!(
             SUPPORTED_MIME_TYPES.contains("text/x-markdown"),
             "text/x-markdown alias"

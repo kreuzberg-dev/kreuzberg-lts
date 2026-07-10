@@ -21,7 +21,6 @@ use std::borrow::Cow;
 ///
 /// Returns `Cow::Borrowed` when no replacements are needed (zero-cost for clean text).
 pub(crate) fn fix_pdf_control_chars(text: &str) -> Cow<'_, str> {
-    // Quick scan: skip allocation if no problematic chars exist.
     if !text.bytes().any(|b| b < 0x20 && b != b'\t' && b != b'\n' && b != b'\r') {
         return Cow::Borrowed(text);
     }
@@ -31,15 +30,12 @@ pub(crate) fn fix_pdf_control_chars(text: &str) -> Cow<'_, str> {
 
     for (i, &ch) in chars.iter().enumerate() {
         if matches!(ch, '\u{0001}'..='\u{001F}') && ch != '\t' && ch != '\n' && ch != '\r' {
-            // Check if the control char is between alphanumeric/word characters.
-            // If so, it likely represents a hyphen from a broken ToUnicode mapping.
             let prev_is_word = i > 0 && (chars[i - 1].is_alphanumeric() || chars[i - 1] == '-');
             let next_is_word = i + 1 < chars.len() && (chars[i + 1].is_alphanumeric() || chars[i + 1] == '-');
 
             if prev_is_word && next_is_word {
                 result.push('-');
             }
-            // Otherwise, drop the control character entirely.
         } else {
             result.push(ch);
         }
@@ -260,7 +256,6 @@ pub fn extract_text_from_pdf_document(
 /// Returns `Cow::Borrowed` if no `/Rotate` entries were patched,
 /// or `Cow::Owned` with patched bytes if any `/Rotate` entries were blanked.
 pub(crate) fn strip_page_rotation(pdf_bytes: &[u8]) -> Cow<'_, [u8]> {
-    // Quick scan: if /Rotate doesn't appear at all, skip allocation.
     if !has_rotate_marker(pdf_bytes) {
         return Cow::Borrowed(pdf_bytes);
     }
@@ -276,13 +271,11 @@ pub(crate) fn strip_page_rotation(pdf_bytes: &[u8]) -> Cow<'_, [u8]> {
 
         let key_end = offset + 7;
 
-        // Skip whitespace between key and value
         let mut val_start = key_end;
         while val_start < patched.len() && patched[val_start].is_ascii_whitespace() {
             val_start += 1;
         }
 
-        // Read the integer value
         let mut val_end = val_start;
         if val_end < patched.len() && patched[val_end] == b'-' {
             val_end += 1;
@@ -291,7 +284,6 @@ pub(crate) fn strip_page_rotation(pdf_bytes: &[u8]) -> Cow<'_, [u8]> {
             val_end += 1;
         }
 
-        // Only blank if we found a numeric value after /Rotate
         if val_end > val_start {
             for byte in &mut patched[offset..val_end] {
                 *byte = b' ';
@@ -367,7 +359,6 @@ fn extract_text_lazy_fast_path(document: &PdfDocument<'_>) -> Result<PdfTextExtr
 
         let cleaned_text = fix_pdf_control_chars(&page_text);
 
-        // Convert embedded HTML markup to markdown if detected.
         #[cfg(feature = "html")]
         let cleaned_text: std::borrow::Cow<'_, str> = if contains_html_markup(&cleaned_text) {
             std::borrow::Cow::Owned(convert_html_page_text(&cleaned_text))
@@ -421,7 +412,6 @@ fn extract_text_lazy_with_tracking(
         None
     };
 
-    // Check if hierarchy extraction is enabled
     let should_extract_hierarchy = extraction_config
         .and_then(|cfg| cfg.pdf_options.as_ref())
         .and_then(|pdf_cfg| pdf_cfg.hierarchy.as_ref())
@@ -466,18 +456,15 @@ fn extract_text_lazy_with_tracking(
             sample_count += 1;
         }
 
-        // Insert page marker before the page content (for ALL pages including page 1)
         if config.insert_page_markers {
             let marker = config.marker_format.replace("{page_num}", &page_number.to_string());
             content.push_str(&marker);
         } else if page_idx > 0 {
-            // Only add separator between pages when markers are disabled
             content.push_str("\n\n");
         }
 
         let cleaned_text = fix_pdf_control_chars(&page_text_ref);
 
-        // Convert embedded HTML markup to markdown if detected.
         #[cfg(feature = "html")]
         let cleaned_text: std::borrow::Cow<'_, str> = if contains_html_markup(&cleaned_text) {
             std::borrow::Cow::Owned(convert_html_page_text(&cleaned_text))
@@ -496,7 +483,6 @@ fn extract_text_lazy_with_tracking(
         });
 
         if let Some(ref mut pages) = page_contents {
-            // Extract hierarchy if enabled
             let hierarchy = if should_extract_hierarchy {
                 extract_page_hierarchy(&page, hierarchy_config.as_ref())?
             } else {
@@ -548,27 +534,23 @@ fn extract_page_hierarchy(
     };
     use crate::types::HierarchicalBlock;
 
-    // Check if config is present and hierarchy is enabled
     let config = match hierarchy_config {
         Some(cfg) if cfg.enabled => cfg,
         _ => return Ok(None),
     };
 
-    // Extract characters with font information
     let char_data = extract_chars_with_fonts(page)?;
 
     if char_data.is_empty() {
         return Ok(None);
     }
 
-    // Merge characters into text blocks
     let text_blocks = merge_chars_into_blocks(char_data);
 
     if text_blocks.is_empty() {
         return Ok(None);
     }
 
-    // Cluster by font sizes
     let k_clusters = config.k_clusters.min(text_blocks.len());
     let clusters = cluster_font_sizes(&text_blocks, k_clusters)?;
 
@@ -576,12 +558,10 @@ fn extract_page_hierarchy(
         return Ok(None);
     }
 
-    // Assign hierarchy levels using KMeans-based clustering
     let kmeans_result = crate::pdf::hierarchy::KMeansResult {
         labels: text_blocks
             .iter()
             .map(|block| {
-                // Find which cluster this block belongs to
                 let mut min_dist = f32::INFINITY;
                 let mut best_cluster = 0u32;
                 for (idx, cluster) in clusters.iter().enumerate() {
@@ -598,7 +578,6 @@ fn extract_page_hierarchy(
 
     let hierarchy_blocks = assign_hierarchy_levels(&text_blocks, &kmeans_result);
 
-    // Convert to output format
     let blocks: Vec<HierarchicalBlock> = hierarchy_blocks
         .into_iter()
         .map(|hb| HierarchicalBlock {
@@ -747,13 +726,11 @@ mod html_detection_tests {
 
     #[test]
     fn test_rejects_math_angle_brackets() {
-        // Mathematical < and > should not trigger
         assert!(!contains_html_markup("if x < y then z > 0"));
     }
 
     #[test]
     fn test_rejects_code_generics() {
-        // Rust/Java generics like Vec<T> should not trigger unless they look like HTML
         assert!(!contains_html_markup("Vec<String>"));
     }
 }
@@ -796,14 +773,9 @@ mod cache_regression_tests {
         eprintln!("Warm 1: {:?}", warm1);
         eprintln!("Warm 2: {:?}", warm2);
 
-        // All extractions must produce identical content
         assert_eq!(text1, text2);
         assert_eq!(text2, text3);
 
-        // Warm calls may be faster due to the Pdfium singleton pattern - this is expected.
-        // The singleton initializes Pdfium once and reuses it for subsequent calls.
-        // What we DO want to verify is that warm1 and warm2 have similar performance,
-        // which indicates consistent behavior after initialization.
         let warm1_micros = warm1.as_micros().max(1);
         let warm2_micros = warm2.as_micros().max(1);
         let warm_ratio = if warm1_micros > warm2_micros {
@@ -812,7 +784,6 @@ mod cache_regression_tests {
             warm2_micros / warm1_micros
         };
 
-        // After initialization, subsequent calls should have similar performance (within 5x)
         assert!(
             warm_ratio < 5,
             "Warm calls have inconsistent performance ({}x difference) - warm1: {:?}, warm2: {:?}",
@@ -821,7 +792,6 @@ mod cache_regression_tests {
             warm2
         );
 
-        // Log the cold/warm ratio for informational purposes
         let cold_warm_ratio = cold.as_micros() / warm1_micros;
         eprintln!(
             "Cold/Warm ratio: {}x (expected due to singleton initialization)",

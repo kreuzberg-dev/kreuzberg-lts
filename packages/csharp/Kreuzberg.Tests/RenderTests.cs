@@ -1,7 +1,4 @@
-// Hand-written binding-specific edge case tests for PDF rendering.
 // Happy-path render tests are auto-generated from fixtures in e2e/.
-// These tests cover error handling, validation, and lifecycle patterns
-// that vary per language and can't be generated uniformly.
 
 using System;
 using System.Collections.Generic;
@@ -63,9 +60,7 @@ public class RenderTests : TestBase
 
         var iter = PdfPageIterator.Open(path);
         iter.Dispose();
-        // Double dispose should be safe
         iter.Dispose();
-        // After dispose, PageCount returns 0
         Assert.Equal(0, iter.PageCount);
     }
 
@@ -95,11 +90,9 @@ public class RenderTests : TestBase
         Assert.NotNull(page);
         Assert.Equal(0, page.PageIndex);
         Assert.True(page.Data.Length > 8, "PNG data should be longer than 8 bytes");
-        // PNG magic bytes: 89 50 4E 47 0D 0A 1A 0A
         Assert.Equal(0x89, page.Data[0]);
         Assert.Equal(0x50, page.Data[1]);
         Assert.Equal(0x4E, page.Data[2]);
         Assert.Equal(0x47, page.Data[3]);
-        // Close without exhausting the iterator
     }
 }

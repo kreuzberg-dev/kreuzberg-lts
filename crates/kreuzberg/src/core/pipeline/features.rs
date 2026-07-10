@@ -45,8 +45,6 @@ fn recompute_boundaries_from_pages(content: &str, pages: &[crate::types::PageCon
             .collect::<Vec<_>>()
             .join("\n\n");
 
-        // Try normalized exact match first. PDF page text can contain trailing
-        // spaces that render_plain strips before chunking.
         if let Some(pos) = content[search_offset..].find(normalized.as_str()) {
             let byte_start = search_offset + pos;
             let byte_end = content.floor_char_boundary(byte_start + normalized.len());
@@ -59,7 +57,6 @@ fn recompute_boundaries_from_pages(content: &str, pages: &[crate::types::PageCon
             continue;
         }
 
-        // Fallback: search for first non-empty line of page content.
         if let Some(line) = page.content.lines().find(|l| !l.trim().is_empty()).map(|l| l.trim())
             && let Some(pos) = content[search_offset..].find(line)
         {
@@ -75,7 +72,6 @@ fn recompute_boundaries_from_pages(content: &str, pages: &[crate::types::PageCon
             continue;
         }
 
-        // Last resort: skip this page
         tracing::debug!(
             page = page.page_number,
             "Could not locate page content in rendered text — skipping page boundary"
@@ -104,10 +100,8 @@ fn try_code_chunks(result: &ExtractionResult) -> Option<Vec<crate::types::extrac
         .iter()
         .enumerate()
         .map(|(i, cc)| {
-            // All code chunks are classified as CodeBlock regardless of node type.
             let chunk_type = ChunkType::CodeBlock;
 
-            // Build heading context from context_path.
             let heading_context = if cc.metadata.context_path.is_empty() {
                 None
             } else {
@@ -150,7 +144,6 @@ fn try_code_chunks(result: &ExtractionResult) -> Option<Vec<crate::types::extrac
 pub(super) fn execute_chunking(result: &mut ExtractionResult, config: &ExtractionConfig) -> Result<()> {
     #[cfg(feature = "chunking")]
     if let Some(ref chunking_config) = config.chunking {
-        // For code extractions with TSLP chunks, bypass text-splitter and map directly.
         #[cfg(feature = "tree-sitter")]
         if let Some(code_chunks) = try_code_chunks(result) {
             result.chunks = Some(code_chunks);

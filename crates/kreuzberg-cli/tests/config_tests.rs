@@ -23,9 +23,6 @@ fn create_test_config(dir: &TempDir, name: &str, content: &str) -> PathBuf {
 
 #[test]
 fn test_output_format_flag_plain() {
-    // Test that --output-format plain works
-    // This test verifies the flag is properly recognized
-
     let config = kreuzberg::core::config::ExtractionConfig::default();
     assert_eq!(
         config.output_format,
@@ -36,7 +33,6 @@ fn test_output_format_flag_plain() {
 
 #[test]
 fn test_output_format_flag_markdown() {
-    // Test that --output-format markdown is parsed correctly
     let markdown_format = kreuzberg::core::config::OutputFormat::Markdown;
     assert_eq!(
         format!("{:?}", markdown_format),
@@ -47,7 +43,6 @@ fn test_output_format_flag_markdown() {
 
 #[test]
 fn test_output_format_flag_html() {
-    // Test that --output-format html is parsed correctly
     let html_format = kreuzberg::core::config::OutputFormat::Html;
     assert_eq!(
         format!("{:?}", html_format),
@@ -58,7 +53,6 @@ fn test_output_format_flag_html() {
 
 #[test]
 fn test_extraction_config_with_output_format() {
-    // Test that ExtractionConfig can be created with specific output_format
     let mut config = kreuzberg::core::config::ExtractionConfig::default();
 
     config.output_format = kreuzberg::core::config::OutputFormat::Markdown;
@@ -77,7 +71,6 @@ fn test_extraction_config_with_output_format() {
 
 #[test]
 fn test_config_json_parsing_complete() {
-    // Test that complete JSON config can be parsed
     let json = serde_json::json!({
         "use_cache": true,
         "enable_quality_processing": true,
@@ -99,10 +92,8 @@ fn test_config_json_parsing_complete() {
 
 #[test]
 fn test_config_merge_precedence_cli_overrides_default() {
-    // Test that CLI arguments override defaults
     let mut config = kreuzberg::core::config::ExtractionConfig::default();
 
-    // Simulate CLI override
     config.use_cache = false;
     config.force_ocr = true;
 
@@ -112,12 +103,10 @@ fn test_config_merge_precedence_cli_overrides_default() {
 
 #[test]
 fn test_config_merge_precedence_cli_overrides_file() {
-    // Test that CLI arguments override config file settings
     let mut file_config = kreuzberg::core::config::ExtractionConfig::default();
     file_config.use_cache = true;
     file_config.force_ocr = false;
 
-    // Simulate CLI override
     let mut final_config = file_config.clone();
     final_config.use_cache = false;
 
@@ -130,7 +119,6 @@ fn test_config_merge_precedence_cli_overrides_file() {
 
 #[test]
 fn test_config_file_precedence_over_defaults() {
-    // Test that config file values override defaults
     let json = serde_json::json!({
         "use_cache": false,
         "force_ocr": true,
@@ -152,7 +140,6 @@ fn test_config_file_precedence_over_defaults() {
 
 #[test]
 fn test_output_format_serialization() {
-    // Test that output_format serializes to expected string values
     let plain = kreuzberg::core::config::OutputFormat::Plain;
     let plain_json = serde_json::to_value(plain).expect("Failed to serialize Plain");
     assert_eq!(plain_json, "plain");
@@ -168,7 +155,6 @@ fn test_output_format_serialization() {
 
 #[test]
 fn test_output_format_deserialization() {
-    // Test that output_format can be deserialized from string values
     let plain: kreuzberg::core::config::OutputFormat =
         serde_json::from_value(serde_json::json!("plain")).expect("Failed to deserialize plain");
     assert_eq!(plain, kreuzberg::core::config::OutputFormat::Plain);
@@ -184,7 +170,6 @@ fn test_output_format_deserialization() {
 
 #[test]
 fn test_extraction_config_roundtrip_with_output_format() {
-    // Test that output_format survives serialization roundtrip
     let original = kreuzberg::core::config::ExtractionConfig {
         output_format: kreuzberg::core::config::OutputFormat::Markdown,
         ..kreuzberg::core::config::ExtractionConfig::default()
@@ -202,7 +187,6 @@ fn test_extraction_config_roundtrip_with_output_format() {
 
 #[test]
 fn test_config_with_all_output_formats() {
-    // Test that all output format variants can be set and retrieved
     let formats = vec![
         kreuzberg::core::config::OutputFormat::Plain,
         kreuzberg::core::config::OutputFormat::Markdown,
@@ -229,7 +213,6 @@ fn test_config_with_all_output_formats() {
 
 #[test]
 fn test_config_partial_json_with_output_format() {
-    // Test that partial JSON config with only output_format is valid
     let json = serde_json::json!({
         "output_format": "markdown",
     });
@@ -243,18 +226,15 @@ fn test_config_partial_json_with_output_format() {
         "output_format should be set from partial config"
     );
 
-    // Other fields should have defaults
     assert!(config.use_cache, "use_cache should have default value");
 }
 
 #[test]
 fn test_config_complete_json_structure() {
-    // Test that a complete config JSON has all necessary fields
     let config = kreuzberg::core::config::ExtractionConfig::default();
     let json = serde_json::to_value(&config).expect("Failed to serialize");
     let obj = json.as_object().expect("Should be object");
 
-    // Verify critical fields are present
     assert!(obj.contains_key("output_format"), "Should have output_format");
     assert!(obj.contains_key("use_cache"), "Should have use_cache");
     assert!(
@@ -267,7 +247,6 @@ fn test_config_complete_json_structure() {
 
 #[test]
 fn test_invalid_output_format_rejected() {
-    // Test that invalid output format values are rejected
     let json = serde_json::json!({
         "output_format": "invalid_format",
     });
@@ -279,7 +258,6 @@ fn test_invalid_output_format_rejected() {
 
 #[test]
 fn test_config_case_sensitivity() {
-    // Test that format values are case-insensitive due to rename_all = "lowercase"
     let plain_lowercase = serde_json::json!({"output_format": "plain"});
     let result: Result<kreuzberg::core::config::ExtractionConfig, _> = serde_json::from_value(plain_lowercase);
 
@@ -290,7 +268,6 @@ fn test_config_case_sensitivity() {
 
 #[test]
 fn test_output_format_field_is_required_in_serialization() {
-    // Test that output_format is always included in serialization
     let config = kreuzberg::core::config::ExtractionConfig::default();
     let json = serde_json::to_value(&config).expect("Failed to serialize");
 
@@ -302,10 +279,8 @@ fn test_output_format_field_is_required_in_serialization() {
 
 #[test]
 fn test_result_format_and_output_format_independent() {
-    // Test that result_format and output_format are independent fields
     let mut config = kreuzberg::core::config::ExtractionConfig::default();
 
-    // Set both to different values
     config.output_format = kreuzberg::core::config::OutputFormat::Markdown;
 
     let json = serde_json::to_value(&config).expect("Failed to serialize");
@@ -319,7 +294,6 @@ fn test_result_format_and_output_format_independent() {
 
 #[test]
 fn test_extraction_config_clone_preserves_format() {
-    // Test that cloning config preserves output_format
     let original = kreuzberg::core::config::ExtractionConfig {
         output_format: kreuzberg::core::config::OutputFormat::Html,
         ..kreuzberg::core::config::ExtractionConfig::default()

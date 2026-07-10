@@ -79,7 +79,6 @@ namespace Kreuzberg.Tests
             var config2 = JsonSerializer.Deserialize<ExtractionConfig>(json1, _jsonOptions);
             var json2 = JsonSerializer.Serialize(config2, _jsonOptions);
 
-            // Parse both JSONs and compare
             var element1 = JsonDocument.Parse(json1).RootElement;
             var element2 = JsonDocument.Parse(json2).RootElement;
 
@@ -180,7 +179,6 @@ namespace Kreuzberg.Tests
             var config = new ExtractionConfig { UseCache = true };
             var json = JsonSerializer.Serialize(config, _jsonOptions);
 
-            // Should not throw
             var _ = JsonDocument.Parse(json);
             Assert.NotEmpty(json);
         }
@@ -197,10 +195,8 @@ namespace Kreuzberg.Tests
 
             var json = JsonSerializer.Serialize(config, prettyOptions);
 
-            // Pretty JSON should have newlines
             Assert.Contains("\n", json);
 
-            // Should still be valid JSON
             var _ = JsonDocument.Parse(json);
         }
     }

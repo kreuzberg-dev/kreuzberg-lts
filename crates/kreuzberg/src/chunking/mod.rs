@@ -53,7 +53,6 @@
 use once_cell::sync::OnceCell;
 use std::sync::Arc;
 
-// Module declarations
 pub mod boundaries;
 pub mod boundary_detection;
 mod builder;
@@ -68,10 +67,9 @@ mod tokenizer_cache;
 pub mod validation;
 mod yaml_section;
 
-// Re-export submodule types and functions
 pub use boundaries::{calculate_page_range, validate_page_boundaries};
 pub use classifier::classify_chunk;
-pub use config::{ChunkSizing, ChunkerType, ChunkingConfig, ChunkingResult}; // ChunkingConfig re-exported from core::config::processing
+pub use config::{ChunkSizing, ChunkerType, ChunkingConfig, ChunkingResult};
 pub use core::{chunk_text, chunk_text_with_heading_source, chunk_text_with_type, chunk_texts_batch};
 pub use processor::ChunkingProcessor;
 pub use validation::{ADAPTIVE_VALIDATION_THRESHOLD, precompute_utf8_boundaries, validate_utf8_boundaries};

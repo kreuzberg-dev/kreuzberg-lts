@@ -80,8 +80,6 @@ pub async fn extract_bytes(content: &[u8], mime_type: &str, config: &ExtractionC
             mime::validate_mime_type(mime_type)?
         };
 
-        // Native DOC/PPT extractors are registered in the plugin registry.
-        // When the office feature is disabled, these MIME types are unsupported.
         #[cfg(not(feature = "office"))]
         match validated_mime.as_str() {
             LEGACY_WORD_MIME_TYPE => {
@@ -97,7 +95,6 @@ pub async fn extract_bytes(content: &[u8], mime_type: &str, config: &ExtractionC
             _ => {}
         }
 
-        // Suppress unused import warnings when office feature is enabled
         #[cfg(feature = "office")]
         {
             let _ = LEGACY_WORD_MIME_TYPE;

@@ -63,8 +63,7 @@ readonly class PostProcessorConfig
          * @default null
          */
         public mixed $config = null,
-    ) {
-    }
+    ) {}
 
     /**
      * Create configuration from array data.
@@ -87,11 +86,7 @@ readonly class PostProcessorConfig
             $name = (string) $name;
         }
 
-        return new self(
-            enabled: $enabled,
-            name: $name,
-            config: $data['config'] ?? null,
-        );
+        return new self(enabled: $enabled, name: $name, config: $data['config'] ?? null);
     }
 
     /**

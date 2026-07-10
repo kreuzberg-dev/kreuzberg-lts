@@ -1,5 +1,4 @@
-"""
-Sync version from Cargo.toml workspace to all package manifests.
+"""Sync version from Cargo.toml workspace to all package manifests.
 
 This script reads the version from Cargo.toml [workspace.package] and updates:
 - All package.json files (TypeScript/Node.js packages)
@@ -14,7 +13,6 @@ import json
 import re
 import sys
 from pathlib import Path
-from typing import List, Tuple
 
 
 def get_repo_root() -> Path:
@@ -30,11 +28,7 @@ def get_workspace_version(repo_root: Path) -> str:
         raise FileNotFoundError(f"Cargo.toml not found at {cargo_toml}")
 
     content = cargo_toml.read_text()
-    match = re.search(
-        r'^\[workspace\.package\]\s*\nversion\s*=\s*"([^"]+)"',
-        content,
-        re.MULTILINE
-    )
+    match = re.search(r'^\[workspace\.package\]\s*\nversion\s*=\s*"([^"]+)"', content, re.MULTILINE)
 
     if not match:
         raise ValueError("Could not find version in Cargo.toml [workspace.package]")
@@ -42,9 +36,8 @@ def get_workspace_version(repo_root: Path) -> str:
     return match.group(1)
 
 
-def update_package_json(file_path: Path, version: str) -> Tuple[bool, str, str]:
-    """
-    Update a package.json file.
+def update_package_json(file_path: Path, version: str) -> tuple[bool, str, str]:
+    """Update a package.json file.
 
     Returns: (changed, old_version, new_version)
     """
@@ -79,9 +72,8 @@ def update_package_json(file_path: Path, version: str) -> Tuple[bool, str, str]:
     return changed, old_version, version
 
 
-def update_pyproject_toml(file_path: Path, version: str) -> Tuple[bool, str, str]:
-    """
-    Update a pyproject.toml file.
+def update_pyproject_toml(file_path: Path, version: str) -> tuple[bool, str, str]:
+    """Update a pyproject.toml file.
 
     Returns: (changed, old_version, new_version)
     """
@@ -91,19 +83,13 @@ def update_pyproject_toml(file_path: Path, version: str) -> Tuple[bool, str, str
     old_version = match.group(1) if match else "NOT FOUND"
 
     if old_version != version:
-        content = re.sub(
-            r'^(version\s*=\s*)"[^"]+"',
-            rf'\1"{version}"',
-            content,
-            count=1,
-            flags=re.MULTILINE
-        )
+        content = re.sub(r'^(version\s*=\s*)"[^"]+"', rf'\1"{version}"', content, count=1, flags=re.MULTILINE)
 
     dep_version = version.replace("rc.", "rc")
     dep_pattern = r'(kreuzberg\s*==\s*")([^"]+)(")'
     dep_match = re.search(dep_pattern, content)
     if dep_match and dep_match.group(2) != dep_version:
-        content = re.sub(dep_pattern, rf'\g<1>{dep_version}\g<3>', content)
+        content = re.sub(dep_pattern, rf"\g<1>{dep_version}\g<3>", content)
 
     if content != original_content:
         file_path.write_text(content)
@@ -112,9 +98,8 @@ def update_pyproject_toml(file_path: Path, version: str) -> Tuple[bool, str, str
     return False, old_version, version
 
 
-def update_ruby_version(file_path: Path, version: str) -> Tuple[bool, str, str]:
-    """
-    Update Ruby version.rb file.
+def update_ruby_version(file_path: Path, version: str) -> tuple[bool, str, str]:
+    """Update Ruby version.rb file.
 
     Returns: (changed, old_version, new_version)
     """
@@ -136,9 +121,8 @@ def update_ruby_version(file_path: Path, version: str) -> Tuple[bool, str, str]:
     return True, old_version, version
 
 
-def update_cargo_toml(file_path: Path, version: str) -> Tuple[bool, str, str]:
-    """
-    Update a Cargo.toml file that has hardcoded version (not using workspace).
+def update_cargo_toml(file_path: Path, version: str) -> tuple[bool, str, str]:
+    """Update a Cargo.toml file that has hardcoded version (not using workspace).
 
     Returns: (changed, old_version, new_version)
     """
@@ -148,18 +132,12 @@ def update_cargo_toml(file_path: Path, version: str) -> Tuple[bool, str, str]:
     old_version = match.group(1) if match else "NOT FOUND"
 
     if old_version != version:
-        content = re.sub(
-            r'^(version\s*=\s*)"[^"]+"',
-            rf'\1"{version}"',
-            content,
-            count=1,
-            flags=re.MULTILINE
-        )
+        content = re.sub(r'^(version\s*=\s*)"[^"]+"', rf'\1"{version}"', content, count=1, flags=re.MULTILINE)
 
     dep_pattern = r'(kreuzberg\s*=\s*")([^"]+)(")'
     dep_match = re.search(dep_pattern, content)
     if dep_match and dep_match.group(2) != version:
-        content = re.sub(dep_pattern, rf'\g<1>{version}\g<3>', content)
+        content = re.sub(dep_pattern, rf"\g<1>{version}\g<3>", content)
 
     if content != original_content:
         file_path.write_text(content)
@@ -168,15 +146,14 @@ def update_cargo_toml(file_path: Path, version: str) -> Tuple[bool, str, str]:
     return False, old_version, version
 
 
-def update_go_mod(file_path: Path, version: str) -> Tuple[bool, str, str]:
-    """
-    Update a go.mod file module version in require statements.
+def update_go_mod(file_path: Path, version: str) -> tuple[bool, str, str]:
+    """Update a go.mod file module version in require statements.
 
     Returns: (changed, old_version, new_version)
     """
     content = file_path.read_text()
 
-    pattern = r'(github\.com/kreuzberg-dev/kreuzberg-lts(?:/[^\s]+)?\s+)v([0-9]+\.[0-9]+\.[0-9]+(?:-[^\s]+)?)'
+    pattern = r"(github\.com/kreuzberg-dev/kreuzberg-lts(?:/[^\s]+)?\s+)v([0-9]+\.[0-9]+\.[0-9]+(?:-[^\s]+)?)"
     match = re.search(pattern, content)
     old_version = match.group(2) if match else "NOT FOUND"
 
@@ -186,12 +163,7 @@ def update_go_mod(file_path: Path, version: str) -> Tuple[bool, str, str]:
     if not re.search(pattern, content):
         return False, "NOT FOUND", version
 
-    new_content = re.sub(
-        pattern,
-        rf'\g<1>v{version}',
-        content,
-        flags=re.MULTILINE
-    )
+    new_content = re.sub(pattern, rf"\g<1>v{version}", content, flags=re.MULTILINE)
 
     if new_content != content:
         file_path.write_text(new_content)
@@ -200,9 +172,8 @@ def update_go_mod(file_path: Path, version: str) -> Tuple[bool, str, str]:
     return False, old_version, version
 
 
-def update_text_file(file_path: Path, pattern: str, repl: str) -> Tuple[bool, str, str]:
-    """
-    Update a plain text file using regex substitution.
+def update_text_file(file_path: Path, pattern: str, repl: str) -> tuple[bool, str, str]:
+    """Update a plain text file using regex substitution.
 
     Returns: (changed, old_value, new_value)
     """
@@ -237,9 +208,8 @@ def normalize_rubygems_version(version: str) -> str:
     return f"{base}.pre.{prerelease.replace('-', '.')}"
 
 
-def update_composer_json(file_path: Path, version: str) -> Tuple[bool, str, str]:
-    """
-    Update a composer.json file.
+def update_composer_json(file_path: Path, version: str) -> tuple[bool, str, str]:
+    """Update a composer.json file.
 
     Returns: (changed, old_version, new_version)
     """
@@ -257,9 +227,8 @@ def update_composer_json(file_path: Path, version: str) -> Tuple[bool, str, str]
     return changed, old_version, version
 
 
-def update_mix_exs(file_path: Path, version: str) -> Tuple[bool, str, str]:
-    """
-    Update Elixir mix.exs file.
+def update_mix_exs(file_path: Path, version: str) -> tuple[bool, str, str]:
+    """Update Elixir mix.exs file.
 
     Returns: (changed, old_version, new_version)
     """
@@ -270,11 +239,7 @@ def update_mix_exs(file_path: Path, version: str) -> Tuple[bool, str, str]:
     if old_version == version:
         return False, old_version, version
 
-    new_content = re.sub(
-        r'(@version\s+)"[^"]+"',
-        rf'\1"{version}"',
-        content
-    )
+    new_content = re.sub(r'(@version\s+)"[^"]+"', rf'\1"{version}"', content)
 
     if new_content != content:
         file_path.write_text(new_content)
@@ -283,26 +248,19 @@ def update_mix_exs(file_path: Path, version: str) -> Tuple[bool, str, str]:
     return False, old_version, version
 
 
-def update_r_description(file_path: Path, version: str) -> Tuple[bool, str, str]:
-    """
-    Update an R DESCRIPTION file's Version field.
+def update_r_description(file_path: Path, version: str) -> tuple[bool, str, str]:
+    """Update an R DESCRIPTION file's Version field.
 
     Returns: (changed, old_version, new_version)
     """
     content = file_path.read_text()
-    match = re.search(r'^Version:\s*(.+)$', content, re.MULTILINE)
+    match = re.search(r"^Version:\s*(.+)$", content, re.MULTILINE)
     old_version = match.group(1).strip() if match else "NOT FOUND"
 
     if old_version == version:
         return False, old_version, version
 
-    new_content = re.sub(
-        r'^(Version:\s*).+$',
-        rf'\g<1>{version}',
-        content,
-        count=1,
-        flags=re.MULTILINE
-    )
+    new_content = re.sub(r"^(Version:\s*).+$", rf"\g<1>{version}", content, count=1, flags=re.MULTILINE)
 
     if new_content != content:
         file_path.write_text(new_content)
@@ -322,8 +280,8 @@ def main():
 
     print(f"\n📦 Syncing version {version} from Cargo.toml\n")
 
-    updated_files: List[str] = []
-    unchanged_files: List[str] = []
+    updated_files: list[str] = []
+    unchanged_files: list[str] = []
 
     for pkg_json in repo_root.rglob("package.json"):
         if any(part in pkg_json.parts for part in ["node_modules", ".git", "target", "dist", "bin", "obj", "tmp"]):
@@ -385,7 +343,6 @@ def main():
         else:
             unchanged_files.append(str(rel_path))
 
-    # R native extension Cargo.toml (has its own [workspace] so needs explicit handling)
     r_native_cargo = repo_root / "packages/r/src/rust/Cargo.toml"
     if r_native_cargo.exists():
         changed, old_ver, new_ver = update_cargo_toml(r_native_cargo, version)
@@ -397,7 +354,6 @@ def main():
         else:
             unchanged_files.append(str(rel_path))
 
-    # Ruby native extension Cargo.toml (has its own [workspace] so needs explicit handling)
     ruby_native_cargo = repo_root / "packages/ruby/ext/kreuzberg_rb/native/Cargo.toml"
     if ruby_native_cargo.exists():
         changed, old_ver, new_ver = update_cargo_toml(ruby_native_cargo, version)
@@ -409,7 +365,6 @@ def main():
         else:
             unchanged_files.append(str(rel_path))
 
-    # Elixir native extension Cargo.toml
     elixir_native_cargo = repo_root / "packages/elixir/native/kreuzberg_rustler/Cargo.toml"
     if elixir_native_cargo.exists():
         changed, old_ver, new_ver = update_cargo_toml(elixir_native_cargo, version)
@@ -443,33 +398,31 @@ def main():
         else:
             unchanged_files.append(str(rel_path))
 
-    # Parse version components for C header defines
     version_parts = version.split(".")
     v_major = version_parts[0] if len(version_parts) > 0 else "0"
     v_minor = version_parts[1] if len(version_parts) > 1 else "0"
     v_patch = version_parts[2].split("-")[0] if len(version_parts) > 2 else "0"
 
     text_targets = [
-        # C FFI header version defines
         (
             repo_root / "crates/kreuzberg-ffi/kreuzberg.h",
-            r'(#define KREUZBERG_VERSION_MAJOR )\d+',
-            rf'\g<1>{v_major}',
+            r"(#define KREUZBERG_VERSION_MAJOR )\d+",
+            rf"\g<1>{v_major}",
         ),
         (
             repo_root / "crates/kreuzberg-ffi/kreuzberg.h",
-            r'(#define KREUZBERG_VERSION_MINOR )\d+',
-            rf'\g<1>{v_minor}',
+            r"(#define KREUZBERG_VERSION_MINOR )\d+",
+            rf"\g<1>{v_minor}",
         ),
         (
             repo_root / "crates/kreuzberg-ffi/kreuzberg.h",
-            r'(#define KREUZBERG_VERSION_PATCH )\d+',
-            rf'\g<1>{v_patch}',
+            r"(#define KREUZBERG_VERSION_PATCH )\d+",
+            rf"\g<1>{v_patch}",
         ),
         (
             repo_root / "crates/kreuzberg-ffi/kreuzberg.h",
             r'(#define KREUZBERG_VERSION ")[^"]+(")',
-            rf'\g<1>{version}\g<2>',
+            rf"\g<1>{version}\g<2>",
         ),
         (
             repo_root / "crates/kreuzberg-node/typescript/index.ts",
@@ -478,12 +431,12 @@ def main():
         ),
         (
             repo_root / "packages/typescript/tests/binding/cli.spec.ts",
-            r'kreuzberg-cli ([0-9A-Za-z\.\-]+)',
-            f'kreuzberg-cli {version}',
+            r"kreuzberg-cli ([0-9A-Za-z\.\-]+)",
+            f"kreuzberg-cli {version}",
         ),
         (
             repo_root / "packages/ruby/Gemfile.lock",
-            r'(^\s{4}kreuzberg \()[^\)]+(\))',
+            r"(^\s{4}kreuzberg \()[^\)]+(\))",
             rf"\g<1>{normalize_rubygems_version(version)}\g<2>",
         ),
         (
@@ -501,7 +454,6 @@ def main():
             r'^(kreuzberg-paddle-ocr\s*=\s*\{\s*path\s*=\s*"[^"]+"\s*,\s*version\s*=\s*")[^"]+("\s*,\s*optional\s*=\s*true\s*\})',
             rf"\g<1>{version}\g<2>",
         ),
-        # Workspace dependency versions in root Cargo.toml
         (
             repo_root / "Cargo.toml",
             r'^(kreuzberg\s*=\s*\{\s*path\s*=\s*"[^"]+"\s*,\s*version\s*=\s*")[^"]+("\s*,\s*default-features)',
@@ -524,37 +476,37 @@ def main():
         ),
         (
             repo_root / "crates/kreuzberg-node/tests/binding/cli.spec.ts",
-            r'kreuzberg-cli ([0-9A-Za-z\.\-]+)',
-            f'kreuzberg-cli {version}',
+            r"kreuzberg-cli ([0-9A-Za-z\.\-]+)",
+            f"kreuzberg-cli {version}",
         ),
         (
             repo_root / "packages/java/README.md",
-            r'\d+\.\d+\.\d+(?:-[a-zA-Z0-9.]+)?',
+            r"\d+\.\d+\.\d+(?:-[a-zA-Z0-9.]+)?",
             version,
         ),
         (
             repo_root / "packages/java/pom.xml",
-            r'(<artifactId>kreuzberg</artifactId>\s*<version>)([^<]+)(</version>)',
+            r"(<artifactId>kreuzberg</artifactId>\s*<version>)([^<]+)(</version>)",
             rf"\g<1>{version}\g<3>",
         ),
         (
             repo_root / "v4/README.md",
-            r'\d+\.\d+\.\d+(?:-[a-zA-Z0-9.]+)?',
+            r"\d+\.\d+\.\d+(?:-[a-zA-Z0-9.]+)?",
             version,
         ),
         (
             repo_root / "v4/doc.go",
-            r'\d+\.\d+\.\d+(?:-[a-zA-Z0-9.]+)?',
+            r"\d+\.\d+\.\d+(?:-[a-zA-Z0-9.]+)?",
             version,
         ),
         (
             repo_root / "e2e/java/pom.xml",
-            r'(<artifactId>kreuzberg</artifactId>\s*<version>)([^<]+)(</version>)',
+            r"(<artifactId>kreuzberg</artifactId>\s*<version>)([^<]+)(</version>)",
             rf"\g<1>{version}\g<3>",
         ),
         (
             repo_root / "e2e/java/pom.xml",
-            r'(<systemPath>\$\{project\.basedir\}/\.\./\.\./packages/java/target/kreuzberg-)[^<]+(\.jar</systemPath>)',
+            r"(<systemPath>\$\{project\.basedir\}/\.\./\.\./packages/java/target/kreuzberg-)[^<]+(\.jar</systemPath>)",
             rf"\g<1>{version}\g<2>",
         ),
         (
@@ -567,58 +519,51 @@ def main():
             r'(PackageReference Include="Kreuzberg" Version=")([^"]+)(")',
             rf"\g<1>{version}\g<3>",
         ),
-        # README config for generated READMEs
         (
             repo_root / "scripts/readme_config.yaml",
             r'^(version:\s*")[^"]+(")$',
             rf"\g<1>{version}\g<2>",
         ),
-        # PHP package.xml
         (
             repo_root / "packages/php/package.xml",
-            r'(<release>)[^<]+(</release>)',
+            r"(<release>)[^<]+(</release>)",
             rf"\g<1>{version}\g<2>",
         ),
         (
             repo_root / "packages/php/package.xml",
-            r'(<api>)[^<]+(</api>)',
-            rf"\g<1>{version}\g<2>",
-        ),
-        # test_apps Java pom.xml versions
-        (
-            repo_root / "test_apps/java/pom.xml",
-            r'(<kreuzberg\.version>)[^<]+(</kreuzberg\.version>)',
+            r"(<api>)[^<]+(</api>)",
             rf"\g<1>{version}\g<2>",
         ),
         (
             repo_root / "test_apps/java/pom.xml",
-            r'(<artifactId>kreuzberg</artifactId>\s*<version>)([^<]+)(</version>)',
+            r"(<kreuzberg\.version>)[^<]+(</kreuzberg\.version>)",
+            rf"\g<1>{version}\g<2>",
+        ),
+        (
+            repo_root / "test_apps/java/pom.xml",
+            r"(<artifactId>kreuzberg</artifactId>\s*<version>)([^<]+)(</version>)",
             rf"\g<1>{version}\g<3>",
         ),
-        # E2E Java pom.xml kreuzberg.version property
         (
             repo_root / "e2e/java/pom.xml",
-            r'(<kreuzberg\.version>)[^<]+(</kreuzberg\.version>)',
-            rf"\g<1>{version}\g<2>",
-        ),
-        # E2E generator template kreuzberg.version property
-        # WASM E2E Java pom.xml versions
-        (
-            repo_root / "crates/kreuzberg-wasm/e2e/java/pom.xml",
-            r'(<kreuzberg\.version>)[^<]+(</kreuzberg\.version>)',
+            r"(<kreuzberg\.version>)[^<]+(</kreuzberg\.version>)",
             rf"\g<1>{version}\g<2>",
         ),
         (
             repo_root / "crates/kreuzberg-wasm/e2e/java/pom.xml",
-            r'(<artifactId>kreuzberg</artifactId>\s*<version>)([^<]+)(</version>)',
+            r"(<kreuzberg\.version>)[^<]+(</kreuzberg\.version>)",
+            rf"\g<1>{version}\g<2>",
+        ),
+        (
+            repo_root / "crates/kreuzberg-wasm/e2e/java/pom.xml",
+            r"(<artifactId>kreuzberg</artifactId>\s*<version>)([^<]+)(</version>)",
             rf"\g<1>{version}\g<3>",
         ),
         (
             repo_root / "crates/kreuzberg-wasm/e2e/java/pom.xml",
-            r'(<systemPath>\$\{project\.basedir\}/\.\./\.\./packages/java/target/kreuzberg-)[^<]+(\.jar</systemPath>)',
+            r"(<systemPath>\$\{project\.basedir\}/\.\./\.\./packages/java/target/kreuzberg-)[^<]+(\.jar</systemPath>)",
             rf"\g<1>{version}\g<2>",
         ),
-        # Doc API reference version examples
         (
             repo_root / "docs/reference/api-csharp.md",
             r'(PackageReference Include="Kreuzberg" Version=")([^"]+)(")',
@@ -626,123 +571,113 @@ def main():
         ),
         (
             repo_root / "docs/reference/api-go.md",
-            r'\d+\.\d+\.\d+(?:-[a-zA-Z0-9.]+)?',
+            r"\d+\.\d+\.\d+(?:-[a-zA-Z0-9.]+)?",
             version,
         ),
         (
             repo_root / "docs/reference/api-java.md",
-            r'\d+\.\d+\.\d+(?:-[a-zA-Z0-9.]+)?',
+            r"\d+\.\d+\.\d+(?:-[a-zA-Z0-9.]+)?",
             version,
         ),
-        # Doc comments with version examples
         (
             repo_root / "crates/kreuzberg-php/src/lib.rs",
             r'(Version string in semver format \(e\.g\., ")([^"]+)("\))',
-            rf'\g<1>{version}\g<3>',
+            rf"\g<1>{version}\g<3>",
         ),
         (
             repo_root / "packages/csharp/Kreuzberg/KreuzbergClient.cs",
             r'(Version string in format ")([^"]+)(" or similar)',
-            rf'\g<1>{version}\g<3>',
+            rf"\g<1>{version}\g<3>",
         ),
-        # C# PackageReleaseNotes
         (
             repo_root / "packages/csharp/Kreuzberg/Kreuzberg.csproj",
-            r'(<PackageReleaseNotes>Version )[^<]+(</PackageReleaseNotes>)',
-            rf'\g<1>{version}\g<2>',
+            r"(<PackageReleaseNotes>Version )[^<]+(</PackageReleaseNotes>)",
+            rf"\g<1>{version}\g<2>",
         ),
-        # Elixir README dependency constraint
         (
             repo_root / "packages/elixir/README.md",
             r'(kreuzberg:\s*"~>\s*)\d+\.\d+(")',
-            rf'\g<1>{".".join(version.split(".")[:2])}\g<2>',
+            rf"\g<1>{'.'.join(version.split('.')[:2])}\g<2>",
         ),
-        # Go README badge filter and version references
         (
             repo_root / "v4/README.md",
-            r'(filter=v)\d+\.\d+\.\d+',
-            rf'\g<1>{version}',
+            r"(filter=v)\d+\.\d+\.\d+",
+            rf"\g<1>{version}",
         ),
-        # All README badge filters
         (
             repo_root / "README.md",
-            r'(filter=v)\d+\.\d+\.\d+',
-            rf'\g<1>{version}',
+            r"(filter=v)\d+\.\d+\.\d+",
+            rf"\g<1>{version}",
         ),
         (
             repo_root / "packages/python/README.md",
-            r'(filter=v)\d+\.\d+\.\d+',
-            rf'\g<1>{version}',
+            r"(filter=v)\d+\.\d+\.\d+",
+            rf"\g<1>{version}",
         ),
         (
             repo_root / "packages/ruby/README.md",
-            r'(filter=v)\d+\.\d+\.\d+',
-            rf'\g<1>{version}',
+            r"(filter=v)\d+\.\d+\.\d+",
+            rf"\g<1>{version}",
         ),
         (
             repo_root / "packages/php/README.md",
-            r'(filter=v)\d+\.\d+\.\d+',
-            rf'\g<1>{version}',
+            r"(filter=v)\d+\.\d+\.\d+",
+            rf"\g<1>{version}",
         ),
         (
             repo_root / "packages/elixir/README.md",
-            r'(filter=v)\d+\.\d+\.\d+',
-            rf'\g<1>{version}',
+            r"(filter=v)\d+\.\d+\.\d+",
+            rf"\g<1>{version}",
         ),
         (
             repo_root / "packages/csharp/README.md",
-            r'(filter=v)\d+\.\d+\.\d+',
-            rf'\g<1>{version}',
+            r"(filter=v)\d+\.\d+\.\d+",
+            rf"\g<1>{version}",
         ),
         (
             repo_root / "crates/kreuzberg-node/README.md",
-            r'(filter=v)\d+\.\d+\.\d+',
-            rf'\g<1>{version}',
+            r"(filter=v)\d+\.\d+\.\d+",
+            rf"\g<1>{version}",
         ),
         (
             repo_root / "crates/kreuzberg-wasm/README.md",
-            r'(filter=v)\d+\.\d+\.\d+',
-            rf'\g<1>{version}',
+            r"(filter=v)\d+\.\d+\.\d+",
+            rf"\g<1>{version}",
         ),
         (
             repo_root / "crates/kreuzberg/README.md",
-            r'(filter=v)\d+\.\d+\.\d+',
-            rf'\g<1>{version}',
+            r"(filter=v)\d+\.\d+\.\d+",
+            rf"\g<1>{version}",
         ),
-        # Rust crate README version banner
         (
             repo_root / "crates/kreuzberg/README.md",
-            r'(> \*\*🚀 Version )\d+\.\d+\.\d+[^*]*(\*\*)',
-            rf'\g<1>{version} Release\g<2>',
+            r"(> \*\*🚀 Version )\d+\.\d+\.\d+[^*]*(\*\*)",
+            rf"\g<1>{version} Release\g<2>",
         ),
-        # Docs: Installation guide Java Maven/Gradle versions
         (
             repo_root / "docs/getting-started/installation.md",
-            r'(<version>)\d+\.\d+\.\d+(?:-[a-zA-Z0-9.]+)?(</version>)',
-            rf'\g<1>{version}\g<2>',
+            r"(<version>)\d+\.\d+\.\d+(?:-[a-zA-Z0-9.]+)?(</version>)",
+            rf"\g<1>{version}\g<2>",
         ),
         (
             repo_root / "docs/getting-started/installation.md",
             r"(implementation 'dev\.kreuzberg:kreuzberg:)\d+\.\d+\.\d+(?:-[a-zA-Z0-9.]+)?(')",
             rf"\g<1>{version}\g<2>",
         ),
-        # Docs: Elixir API reference Hex dependency version
         (
             repo_root / "docs/reference/api-elixir.md",
             r'(\{:kreuzberg, "~> )\d+\.\d+\.\d+(?:-[a-zA-Z0-9.]+)?("\})',
-            rf'\g<1>{version}\g<2>',
+            rf"\g<1>{version}\g<2>",
         ),
-        # Docs: Environment variables reference header version
         (
             repo_root / "docs/reference/environment-variables.md",
-            r'(This document covers all KREUZBERG_\* environment variables for version )\d+\.\d+\.\d+(?:-[a-zA-Z0-9.]+)?(\.)$',
-            rf'\g<1>{version}\g<2>',
+            r"(This document covers all KREUZBERG_\* environment variables for version )\d+\.\d+\.\d+(?:-[a-zA-Z0-9.]+)?(\.)$",
+            rf"\g<1>{version}\g<2>",
         ),
-        # Docs: API server guide health check response version
         (
             repo_root / "docs/guides/api-server.md",
             r'("version": ")\d+\.\d+\.\d+(?:-[a-zA-Z0-9.]+)?(")',
-            rf'\g<1>{version}\g<2>',
+            rf"\g<1>{version}\g<2>",
         ),
     ]
 
@@ -768,9 +703,10 @@ def main():
 
         content = cargo_toml.read_text()
         if re.search(r'^version\s*=\s*"[^"]+"', content, re.MULTILINE):
-            # Check if version is using workspace inheritance
-            has_version_workspace = re.search(r'^\s*version\s*\.workspace\s*=\s*true', content, re.MULTILINE)
-            has_version_in_workspace_table = re.search(r'^\[package\].*?^\s*version\s*=.*?workspace\s*=\s*true', content, re.MULTILINE | re.DOTALL)
+            has_version_workspace = re.search(r"^\s*version\s*\.workspace\s*=\s*true", content, re.MULTILINE)
+            has_version_in_workspace_table = re.search(
+                r"^\[package\].*?^\s*version\s*=.*?workspace\s*=\s*true", content, re.MULTILINE | re.DOTALL
+            )
 
             if not has_version_workspace and not has_version_in_workspace_table:
                 changed, old_ver, new_ver = update_cargo_toml(cargo_toml, version)
@@ -795,7 +731,6 @@ def main():
         elif old_ver != "NOT FOUND":
             unchanged_files.append(str(rel_path))
 
-    # Sync vendored C headers from generated FFI header
     generated_header = repo_root / "crates/kreuzberg-ffi/kreuzberg.h"
     vendored_headers = [
         repo_root / "v4/internal/ffi/kreuzberg.h",
@@ -813,7 +748,6 @@ def main():
                 else:
                     unchanged_files.append(str(vendored.relative_to(repo_root)))
 
-    # Sync Go DefaultVersion constant
     go_install_main = repo_root / "v4/cmd/install/main.go"
     if go_install_main.exists():
         content = go_install_main.read_text()
@@ -829,7 +763,7 @@ def main():
         elif old_pattern:
             unchanged_files.append(str(go_install_main.relative_to(repo_root)))
 
-    print(f"\n📊 Summary:")
+    print("\n📊 Summary:")
     print(f"   Updated: {len(updated_files)} files")
     print(f"   Unchanged: {len(unchanged_files)} files")
 

@@ -30,7 +30,6 @@ fn test_page_markers_inserted_when_enabled() {
 
     let result = extract_file_sync(&file_path, None, &config).expect("Failed to extract PDF with page markers");
 
-    // Default marker format is "\n\n<!-- PAGE {page_num} -->\n\n"
     assert!(
         result.content.contains("<!-- PAGE"),
         "Content should contain page markers when insert_page_markers is true. Content: {}",
@@ -56,7 +55,6 @@ fn test_page_1_gets_marker() {
 
     let result = extract_file_sync(&file_path, None, &config).expect("Failed to extract PDF with page markers");
 
-    // Page 1 should have a marker at the start
     assert!(
         result.content.contains("<!-- PAGE 1 -->"),
         "Content should contain marker for page 1. Content start: {}",
@@ -109,13 +107,11 @@ fn test_page_num_placeholder_replacement() {
 
     let result = extract_file_sync(&file_path, None, &config).expect("Failed to extract PDF with custom markers");
 
-    // Should NOT contain the placeholder itself
     assert!(
         !result.content.contains("{page_num}"),
         "Placeholder should be replaced, not appear in output"
     );
 
-    // Should contain actual page number
     assert!(
         result.content.contains("[PAGE 1]"),
         "Should contain marker with actual page number"
@@ -141,7 +137,6 @@ fn test_markers_and_extract_pages_together() {
 
     let result = extract_file_sync(&file_path, None, &config).expect("Failed to extract PDF with both features");
 
-    // Should have both features working
     assert!(
         result.pages.is_some(),
         "Pages array should be present when extract_pages is true"
@@ -171,7 +166,6 @@ fn test_no_markers_when_disabled() {
 
     let result = extract_file_sync(&file_path, None, &config).expect("Failed to extract PDF without markers");
 
-    // Should NOT contain default marker pattern
     assert!(
         !result.content.contains("<!-- PAGE"),
         "Content should not contain markers when insert_page_markers is false"
@@ -197,11 +191,9 @@ fn test_marker_appears_before_content() {
 
     let result = extract_file_sync(&file_path, None, &config).expect("Failed to extract PDF with markers");
 
-    // The marker should appear at or near the start
     let marker_pos = result.content.find("[[PAGE 1]]");
     assert!(marker_pos.is_some(), "Marker should be present");
 
-    // Marker should be very early in the content (within first 50 chars)
     let pos = marker_pos.expect("Operation failed");
     assert!(
         pos < 50,
@@ -232,7 +224,6 @@ fn test_multi_page_markers() {
     if let Some(ref pages) = result.pages {
         let page_count = pages.len();
 
-        // Check that we have markers for each page
         for page_num in 1..=page_count.min(3) {
             let marker = format!("<!-- PAGE {} -->", page_num);
             assert!(
@@ -258,8 +249,6 @@ fn test_default_marker_format() {
 /// Test that empty page still gets a marker.
 #[test]
 fn test_empty_page_gets_marker() {
-    // This would require a specific test PDF with an empty page
-    // For now, we just verify the logic doesn't skip pages based on content length
     let config = PageConfig {
         insert_page_markers: true,
         ..Default::default()

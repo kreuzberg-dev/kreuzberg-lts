@@ -111,7 +111,6 @@ fn parse_dbf(content: &[u8]) -> Result<DbfParsed> {
 
     let record_count = records.len();
 
-    // Detect field types from the first record and build rows simultaneously
     let mut field_types: Vec<String> = vec!["Unknown".to_string(); field_names.len()];
     let mut rows: Vec<Vec<String>> = Vec::with_capacity(records.len());
     let mut first_row = true;

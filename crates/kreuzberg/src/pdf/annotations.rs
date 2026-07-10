@@ -29,8 +29,6 @@ pub fn extract_annotations_from_document(document: &PdfDocument<'_>) -> Vec<PdfA
         let page_annotations = page.annotations();
 
         for annotation in page_annotations.iter() {
-            // Skip widget (form field) and popup annotations -- they are not
-            // user-facing content annotations.
             let pdfium_type = annotation.annotation_type();
             if matches!(
                 pdfium_type,
@@ -41,10 +39,8 @@ pub fn extract_annotations_from_document(document: &PdfDocument<'_>) -> Vec<PdfA
 
             let annotation_type = map_annotation_type(pdfium_type);
 
-            // Extract content text. For link annotations, try to get the URI.
             let content = extract_annotation_content(&annotation);
 
-            // Extract bounding box.
             let bounding_box = annotation.bounds().ok().map(|rect| BoundingBox {
                 x0: rect.left().value as f64,
                 y0: rect.bottom().value as f64,
@@ -83,7 +79,6 @@ fn map_annotation_type(pdfium_type: PdfPageAnnotationType) -> PdfAnnotationType 
 /// For link annotations, attempts to retrieve the URI from the associated
 /// action. Falls back to the generic `contents()` method for all types.
 fn extract_annotation_content(annotation: &PdfPageAnnotation<'_>) -> Option<String> {
-    // For link annotations, try to extract the URI.
     if let Some(link_annot) = annotation.as_link_annotation()
         && let Ok(link) = link_annot.link()
         && let Some(action) = link.action()
@@ -94,7 +89,6 @@ fn extract_annotation_content(annotation: &PdfPageAnnotation<'_>) -> Option<Stri
         return Some(uri);
     }
 
-    // Fall back to the generic annotation contents.
     let contents = annotation.contents();
     contents.filter(|s| !s.is_empty())
 }

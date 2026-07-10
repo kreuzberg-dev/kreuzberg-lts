@@ -4,8 +4,5 @@
  */
 
 export default async function initPdfium() {
-	// Return a mock PDFium module
-	return {
-		// Dummy implementation for testing
-	};
+  return {};
 }

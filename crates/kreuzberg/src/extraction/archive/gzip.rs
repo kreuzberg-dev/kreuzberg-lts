@@ -55,7 +55,6 @@ pub fn decompress_gzip(bytes: &[u8], limits: &SecurityLimits) -> Result<Vec<u8>>
 pub fn extract_gzip(bytes: &[u8], limits: &SecurityLimits) -> Result<(ArchiveMetadata, AHashMap<String, String>)> {
     let decompressed = decompress_gzip_limited(bytes, limits.max_archive_size as u64)?;
 
-    // Check if the decompressed data is a TAR archive
     if is_tar_archive(&decompressed) {
         let mut metadata = super::tar::extract_tar_metadata(&decompressed, limits)?;
         metadata.format = "GZIP+TAR".to_string();
@@ -63,10 +62,9 @@ pub fn extract_gzip(bytes: &[u8], limits: &SecurityLimits) -> Result<(ArchiveMet
         return Ok((metadata, contents));
     }
 
-    // Re-read header for filename (lightweight - no decompression)
     let mut decoder = GzDecoder::new(bytes);
     let mut _discard = [0u8; 1];
-    let _ = decoder.read(&mut _discard); // trigger header read
+    let _ = decoder.read(&mut _discard);
     let filename = decoder
         .header()
         .and_then(|h| h.filename())
@@ -104,7 +102,6 @@ pub fn extract_gzip(bytes: &[u8], limits: &SecurityLimits) -> Result<(ArchiveMet
 pub fn extract_gzip_metadata(bytes: &[u8], limits: &SecurityLimits) -> Result<ArchiveMetadata> {
     let decompressed = decompress_gzip_limited(bytes, limits.max_archive_size as u64)?;
 
-    // Check if the decompressed data is a TAR archive
     if is_tar_archive(&decompressed) {
         let mut metadata = super::tar::extract_tar_metadata(&decompressed, limits)?;
         metadata.format = "GZIP+TAR".to_string();
@@ -143,7 +140,6 @@ pub fn extract_gzip_metadata(bytes: &[u8], limits: &SecurityLimits) -> Result<Ar
 pub fn extract_gzip_text_content(bytes: &[u8], limits: &SecurityLimits) -> Result<AHashMap<String, String>> {
     let decompressed = decompress_gzip_limited(bytes, limits.max_archive_size as u64)?;
 
-    // Check if the decompressed data is a TAR archive
     if is_tar_archive(&decompressed) {
         return super::tar::extract_tar_text_content(&decompressed, limits);
     }
@@ -176,7 +172,6 @@ type GzipWithBytesResult = (ArchiveMetadata, AHashMap<String, String>, AHashMap<
 pub fn extract_gzip_with_bytes(bytes: &[u8], limits: &SecurityLimits) -> Result<GzipWithBytesResult> {
     let decompressed = decompress_gzip_limited(bytes, limits.max_archive_size as u64)?;
 
-    // Check if the decompressed data is a TAR archive
     if is_tar_archive(&decompressed) {
         let mut metadata = super::tar::extract_tar_metadata(&decompressed, limits)?;
         metadata.format = "GZIP+TAR".to_string();
@@ -185,7 +180,6 @@ pub fn extract_gzip_with_bytes(bytes: &[u8], limits: &SecurityLimits) -> Result<
         return Ok((metadata, contents, file_bytes));
     }
 
-    // Re-read header for filename (lightweight - no decompression)
     let mut decoder = GzDecoder::new(bytes);
     let mut _discard = [0u8; 1];
     let _ = decoder.read(&mut _discard);

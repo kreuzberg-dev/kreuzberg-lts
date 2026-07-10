@@ -1,4 +1,4 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -7,105 +7,100 @@
     <meta http-equiv="Cross-Origin-Embedder-Policy" content="require-corp" />
     <title>Kreuzberg | Live Demo</title>
 
-    <!-- SEO Meta Tags -->
     <link rel="icon" type="image/x-icon" href="./assets/favicon.ico" />
-    <meta name="description" content="Extract text, tables, and metadata from 88+ file formats directly in your browser using WebAssembly. No uploading to a server required." />
+    <meta
+      name="description"
+      content="Extract text, tables, and metadata from 88+ file formats directly in your browser using WebAssembly. No uploading to a server required."
+    />
     <meta property="og:title" content="Kreuzberg | Live Demo" />
     <meta property="og:description" content="Secure, in-browser document intelligence and text extraction." />
     <meta property="og:url" content="https://kreuzberg.dev" />
     <meta property="og:type" content="website" />
 
-    <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@100..800&family=Exo+2:ital,wght@0,100..900;1,100..900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Sora:wght@100..800&family=Exo+2:ital,wght@0,100..900;1,100..900&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
 
-    <!-- Tailwind CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
-      tailwind.config = {
-        theme: {
-          extend: {
-            fontFamily: {
-              sora: ["Sora", "sans-serif"],
-              exo: ["Exo 2", "sans-serif"],
-              mono: ["JetBrains Mono", "monospace"],
-            },
-            colors: {
-              black: "#323040",
-              green: "#58FBDA",
-              "green-100": "#e6f6f3",
-              purple: "#da2ae0",
-              "dark-purple": "#26203a",
-              "grey-50": "#f6f5f9",
-              "app-red": "#ff456d",
-            },
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sora: ["Sora", "sans-serif"],
+            exo: ["Exo 2", "sans-serif"],
+            mono: ["JetBrains Mono", "monospace"],
+          },
+          colors: {
+            black: "#323040",
+            green: "#58FBDA",
+            "green-100": "#e6f6f3",
+            purple: "#da2ae0",
+            "dark-purple": "#26203a",
+            "grey-50": "#f6f5f9",
+            "app-red": "#ff456d",
           },
         },
-      };
+      },
+    };
     </script>
 
     <style>
-      body {
-        font-family: "Exo 2", sans-serif;
-        background-color: #323040;
-        color: white;
-         font-optical-sizing: auto;
-      }
+    body {
+      font-family: "Exo 2", sans-serif;
+      background-color: #323040;
+      color: white;
+       font-optical-sizing: auto;
+    }
 
-      /* Premium conic gradient border from Na'aman's React component */
-      .gradient-border-conic {
-        position: relative;
-        border-radius: 22px;
-      }
+    /* Premium conic gradient border from Na'aman's React component */
+    .gradient-border-conic {
+      position: relative;
+      border-radius: 22px;
+    }
 
-      .gradient-border-conic::before {
-        content: "";
-        pointer-events: none;
-        position: absolute;
-        inset: 0;
-        z-index: 10;
-        border-radius: 22px;
-        padding: 2px;
-        background-image: conic-gradient(from 90deg, #58FBDA, #da2ae0, #58FBDA);
-        -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-        mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-        -webkit-mask-composite: xor;
-        mask-composite: exclude;
-      }
+    .gradient-border-conic::before {
+      content: "";
+      pointer-events: none;
+      position: absolute;
+      inset: 0;
+      z-index: 10;
+      border-radius: 22px;
+      padding: 2px;
+      background-image: conic-gradient(from 90deg, #58FBDA, #da2ae0, #58FBDA);
+      -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      -webkit-mask-composite: xor;
+      mask-composite: exclude;
+    }
 
-      @keyframes blob {
-        0% { transform: translate(0px, 0px) scale(1); }
-        33% { transform: translate(30px, -50px) scale(1.1); }
-        66% { transform: translate(-20px, 20px) scale(0.9); }
-        100% { transform: translate(0px, 0px) scale(1); }
-      }
-      .animate-blob { animation: blob 7s infinite; }
-      .animation-delay-2000 { animation-delay: 2s; }
-
-
+    @keyframes blob {
+      0% { transform: translate(0px, 0px) scale(1); }
+      33% { transform: translate(30px, -50px) scale(1.1); }
+      66% { transform: translate(-20px, 20px) scale(0.9); }
+      100% { transform: translate(0px, 0px) scale(1); }
+    }
+    .animate-blob { animation: blob 7s infinite; }
+    .animation-delay-2000 { animation-delay: 2s; }
     </style>
   </head>
 
   <body class="min-h-screen flex flex-col bg-black relative overflow-x-hidden">
-    <!-- Animated Background Blobs -->
-   <div class="pointer-events-none fixed inset-0 z-[-1]">
-      <div
-        class="absolute top-0 right-0 -translate-x-1/4 -translate-y-1/4 md:left-auto md:translate-x-[20%] md:translate-y-[-20%]"
-      >
+    <div class="pointer-events-none fixed inset-0 z-[-1]">
+      <div class="absolute top-0 right-0 -translate-x-1/4 -translate-y-1/4 md:left-auto md:translate-x-[20%] md:translate-y-[-20%]">
         <div class="relative">
-          <div
-            class="animation-delay-2000 absolute top-0 right-0 h-[300px] w-[300px] animate-blob rounded-full bg-green opacity-50 mix-blend-multiply blur-[80px] filter md:top-30 md:h-[600px] md:w-[600px]"
-          ></div>
-          <div
-            class="absolute top-20 right-0 h-[300px] w-[300px] animate-blob rounded-full bg-purple opacity-50 mix-blend-multiply blur-[80px] filter md:top-90 md:h-[600px] md:w-[600px]"
-          ></div>
+          <div class="animation-delay-2000 absolute top-0 right-0 h-[300px] w-[300px] animate-blob rounded-full bg-green opacity-50 mix-blend-multiply blur-[80px] filter md:top-30 md:h-[600px] md:w-[600px]">
+          </div>
+          <div class="absolute top-20 right-0 h-[300px] w-[300px] animate-blob rounded-full bg-purple opacity-50 mix-blend-multiply blur-[80px] filter md:top-90 md:h-[600px] md:w-[600px]">
+          </div>
         </div>
       </div>
     </div>
 
-    <!-- Header -->
-   <header class="w-full px-4 py-4 lg:px-6 lg:py-6">
+    <header class="w-full px-4 py-4 lg:px-6 lg:py-6">
       <div class="grid grid-cols-[1fr_1fr] items-center gap-4 w-full max-w-9xl mx-auto px-4 md:px-0">
         <a href="/" aria-label="Go to home" class="justify-self-start">
           <img
@@ -122,9 +117,7 @@
             target="_blank"
             aria-label="Join our Discord"
           >
-            <button
-              class="flex size-9 cursor-pointer items-center justify-center rounded-[8px] border border-green bg-dark-purple p-0 transition-colors hover:bg-black lg:size-10 xl:size-11"
-            >
+            <button class="flex size-9 cursor-pointer items-center justify-center rounded-[8px] border border-green bg-dark-purple p-0 transition-colors hover:bg-black lg:size-10 xl:size-11">
               <img src="./assets/icons/discord-white-bg.svg" alt="Discord" class="w-6 h-6" />
             </button>
           </a>
@@ -135,21 +128,15 @@
             target="_blank"
             aria-label="View on GitHub"
           >
-            <button
-              class="group flex cursor-pointer items-center gap-2 border border-green transition-colors hover:bg-black h-9 rounded-[8px] bg-dark-purple px-3 py-2 lg:h-12 lg:rounded-[12px] lg:px-4 lg:py-3"
-            >
+            <button class="group flex cursor-pointer items-center gap-2 border border-green transition-colors hover:bg-black h-9 rounded-[8px] bg-dark-purple px-3 py-2 lg:h-12 lg:rounded-[12px] lg:px-4 lg:py-3">
               <img src="./assets/icons/github-white-bg.svg" alt="GitHub" class="w-6 h-6" />
-              <span
-                class="font-normal text-base text-white hidden font-sora lg:block"
-                >View on GitHub</span
-              >
+              <span class="font-normal text-base text-white hidden font-sora lg:block">View on GitHub</span>
             </button>
           </a>
         </div>
       </div>
     </header>
 
-    <!-- Main Content -->
     <main class="flex flex-1 w-full">
       <div class="w-full h-full px-4 md:px-[60px] pb-[40px]">
         <div class="flex flex-col items-center gap-10 md:gap-[60px]">
@@ -158,14 +145,13 @@
               Live Demo
             </h1>
             <p class="text-base md:text-2xl font-light text-grey-50 px-4 md:px-0">
-              Drop a file. Kreuzberg extracts text, tables, and metadata - no
-              server, no upload, no API <br class="hidden md:block" />
+              Drop a file. Kreuzberg extracts text, tables, and metadata - no server, no upload, no API <br
+                class="hidden md:block"
+              />
               key. Everything runs in your browser via WASM.
             </p>
           </div>
-          <div
-            class="relative w-full max-w-[1063px] bg-black rounded-[22px] gradient-border-conic p-6 md:p-10 flex flex-col items-center gap-8"
-          >
+          <div class="relative w-full max-w-[1063px] bg-black rounded-[22px] gradient-border-conic p-6 md:p-10 flex flex-col items-center gap-8">
             <div
               id="btn-back"
               style="display: none"
@@ -182,14 +168,13 @@
                 Try it yourself!
               </p>
               <p class="text-[14px] font-light text-white leading-[18px]">
-                Processed internally in your browser via WebAssembly. Your file
-                never leaves your device.
+                Processed internally in your browser via WebAssembly. Your file never leaves your device.
               </p>
             </div>
 
             <div
-            id="file-info"
-            style="display: none;"
+              id="file-info"
+              style="display: none;"
               class="p-3 border border-green rounded-[12px] w-full flex items-center justify-between"
             >
               <div class="flex items-center gap-3">
@@ -200,7 +185,7 @@
                 <p id="file-size-display" class="font-light text-sm text-white">4.00MB</p>
               </div>
               <img
-               id="btn-remove-file"
+                id="btn-remove-file"
                 src="./assets/icons/close.svg"
                 alt="Close"
                 class="size-[24px] cursor-pointer hover:opacity-80 transition-opacity"
@@ -215,26 +200,24 @@
               <div class="space-y-1">
                 <p class="text-base font-semibold text-white">File too large</p>
                 <p class="text-sm font-light text-white">
-                  File exceeds the 1MB sandbox limit. Reduce file size or use
-                  the API for larger documents.
+                  File exceeds the 1MB sandbox limit. Reduce file size or use the API for larger documents.
                 </p>
               </div>
             </div>
 
             <div
-            id="output-screen"
-            style="display: none;"
+              id="output-screen"
+              style="display: none;"
               class="min-h-[500px] h-[865px] max-h-[90vh] md:max-h-none w-full flex flex-col gap-8 bg-dark-purple p-6 md:p-10 rounded-[12px]"
             >
               <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <p class="font-bold text-2xl text-green-100">Output</p>
-                <div
-                  class="relative inline-flex w-full sm:w-[238px] h-[38px] items-center rounded-[16px] bg-dark-purple border border-green p-1 text-slate-400"
-                >
+                <div class="relative inline-flex w-full sm:w-[238px] h-[38px] items-center rounded-[16px] bg-dark-purple border border-green p-1 text-slate-400">
                   <div
                     id="tab-indicator"
                     class="absolute left-1 top-1 bottom-1 w-[calc(50%-4px)] sm:w-[114px] rounded-[12px] bg-green transition-transform duration-300 ease-in-out"
-                  ></div>
+                  >
+                  </div>
                   <button
                     id="tab-markdown"
                     onclick="switchTab('markdown')"
@@ -256,7 +239,10 @@
                 class="w-full h-full bg-black rounded-[12px] px-6 py-8 overflow-y-auto text-sm"
               >
                 <div class="w-full h-6 flex items-center justify-end gap-2">
-                  <span id="copy-feedback" class="text-green text-xs font-sora font-semibold opacity-0 transition-opacity duration-300">
+                  <span
+                    id="copy-feedback"
+                    class="text-green text-xs font-sora font-semibold opacity-0 transition-opacity duration-300"
+                  >
                     Copied!
                   </span>
                   <img
@@ -266,20 +252,17 @@
                     class="size-[24px] cursor-pointer hover:opacity-80 transition-opacity"
                   />
                 </div>
-                <!-- Markdown Content -->
                 <div
                   id="content-markdown"
-                  class="block text-white  whitespace-pre-wrap"
+                  class="block text-white whitespace-pre-wrap"
                 >
                   # Markdown output will appear here...
                 </div>
-                <!-- JSON Content -->
                 <div
                   id="content-json"
-                  class="hidden text-green  whitespace-pre-wrap"
+                  class="hidden text-green whitespace-pre-wrap"
                 >
-                  { "status": "waiting", "message": "JSON output will appear
-                  here..." }
+                  { "status": "waiting", "message": "JSON output will appear here..." }
                 </div>
               </div>
             </div>
@@ -324,73 +307,73 @@
     </footer>
 
     <script type="module">
-      import { enableOcr, extractFromFile, initWasm } from 'https://cdn.jsdelivr.net/npm/@kreuzberg/wasm@latest/dist/index.js';
+    import { enableOcr, extractFromFile, initWasm } from 'https://cdn.jsdelivr.net/npm/@kreuzberg/wasm@latest/dist/index.js';
 
-      const dropZone = document.getElementById("dropZone");
-      const fileInput = document.getElementById("fileInput");
-      const uploadScreen = document.getElementById("upload-screen");
-      const fileInfo = document.getElementById("file-info");
-      const outputScreen = document.getElementById("output-screen");
-      const btnBack = document.getElementById("btn-back");
+    const dropZone = document.getElementById("dropZone");
+    const fileInput = document.getElementById("fileInput");
+    const uploadScreen = document.getElementById("upload-screen");
+    const fileInfo = document.getElementById("file-info");
+    const outputScreen = document.getElementById("output-screen");
+    const btnBack = document.getElementById("btn-back");
 
-      // ── Init WASM on page load ─────────────────────────────────────────────
-      let wasmReady = false;
-      try {
-        await initWasm('https://cdn.jsdelivr.net/npm/@kreuzberg/wasm@latest/dist/pkg/kreuzberg_wasm_bg.wasm');
-        // Enable OCR so image files (WebP, PNG, JPEG, etc.) can be extracted.
-        // Without this the Rust-side OCR plugin registry stays empty and any
-        // image upload fails with "OCR backend 'tesseract' not registered".
-        await enableOcr();
-        wasmReady = true;
-      } catch (e) {
-        console.error('WASM initialization failed:', e);
-      }
+    // ── Init WASM on page load ─────────────────────────────────────────────
+    let wasmReady = false;
+    try {
+      await initWasm('https://cdn.jsdelivr.net/npm/@kreuzberg/wasm@latest/dist/pkg/kreuzberg_wasm_bg.wasm');
+      // Enable OCR so image files (WebP, PNG, JPEG, etc.) can be extracted.
+      // Without this the Rust-side OCR plugin registry stays empty and any
+      // image upload fails with "OCR backend 'tesseract' not registered".
+      await enableOcr();
+      wasmReady = true;
+    } catch (e) {
+      console.error('WASM initialization failed:', e);
+    }
 
-      // ── Drag & Drop ────────────────────────────────────────────────────────
-      ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-        dropZone.addEventListener(eventName, preventDefaults, false);
-      });
-      function preventDefaults(e) {
-        e.preventDefault();
-        e.stopPropagation();
-      }
-      ['dragenter', 'dragover'].forEach(eventName => {
-        dropZone.addEventListener(eventName, () => {
-          dropZone.classList.add('border-green');
-          dropZone.classList.remove('border-gray-500');
-        }, false);
-      });
-      ['dragleave', 'drop'].forEach(eventName => {
-        dropZone.addEventListener(eventName, () => {
-          dropZone.classList.remove('border-green');
-          dropZone.classList.add('border-gray-500');
-        }, false);
-      });
-      fileInput.addEventListener('change', (e) => {
-        if (e.target.files && e.target.files.length > 0) processFile(e.target.files[0]);
+    // ── Drag & Drop ────────────────────────────────────────────────────────
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+      dropZone.addEventListener(eventName, preventDefaults, false);
+    });
+    function preventDefaults(e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    ['dragenter', 'dragover'].forEach(eventName => {
+      dropZone.addEventListener(eventName, () => {
+        dropZone.classList.add('border-green');
+        dropZone.classList.remove('border-gray-500');
       }, false);
-      dropZone.addEventListener('drop', (e) => {
-        const dt = e.dataTransfer;
-        if (dt?.files && dt.files.length > 0) processFile(dt.files[0]);
+    });
+    ['dragleave', 'drop'].forEach(eventName => {
+      dropZone.addEventListener(eventName, () => {
+        dropZone.classList.remove('border-green');
+        dropZone.classList.add('border-gray-500');
       }, false);
+    });
+    fileInput.addEventListener('change', (e) => {
+      if (e.target.files && e.target.files.length > 0) processFile(e.target.files[0]);
+    }, false);
+    dropZone.addEventListener('drop', (e) => {
+      const dt = e.dataTransfer;
+      if (dt?.files && dt.files.length > 0) processFile(dt.files[0]);
+    }, false);
 
-      // ── Markdown Renderer ──────────────────────────────────────────────────
-      function renderMarkdown(md) {
-        let html = md
-          .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-          .replace(/```([\w]*)?\n([\s\S]*?)```/gm, (_, lang, code) =>
-            `<pre style="background:#1a172a;padding:12px;border-radius:8px;overflow-x:auto"><code${lang ? ` class="language-${lang}"` : ''}>${code.trimEnd()}</code></pre>`)
-          .replace(/^###### (.+)$/gm, '<h6 style="font-size:0.85em;font-weight:700;margin:8px 0">$1</h6>')
-          .replace(/^##### (.+)$/gm,  '<h5 style="font-size:0.9em;font-weight:700;margin:8px 0">$1</h5>')
-          .replace(/^#### (.+)$/gm,   '<h4 style="font-size:1em;font-weight:700;margin:10px 0">$1</h4>')
-          .replace(/^### (.+)$/gm,    '<h3 style="font-size:1.1em;font-weight:700;margin:12px 0">$1</h3>')
-          .replace(/^## (.+)$/gm,     '<h2 style="font-size:1.2em;font-weight:700;margin:14px 0;color:#58FBDA">$1</h2>')
-          .replace(/^# (.+)$/gm,      '<h1 style="font-size:1.4em;font-weight:700;margin:16px 0;color:#58FBDA">$1</h1>')
-          .replace(/^---+$/gm, '<hr style="border-color:#58FBDA33;margin:16px 0">')
-          .replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>')
-          .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-          .replace(/\*(.+?)\*/g, '<em>$1</em>')
-          .replace(/`([^`]+)`/g, '<code style="background:#1a172a;padding:2px 6px;border-radius:4px;font-family:JetBrains Mono,monospace">$1</code>')
+    // ── Markdown Renderer ──────────────────────────────────────────────────
+    function renderMarkdown(md) {
+      let html = md
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+        .replace(/```([\w]*)?\n([\s\S]*?)```/gm, (_, lang, code) =>
+          `<pre style="background:#1a172a;padding:12px;border-radius:8px;overflow-x:auto"><code${lang ? ` class="language-${lang}"` : ''}>${code.trimEnd()}</code></pre>`)
+        .replace(/^###### (.+)$/gm, '<h6 style="font-size:0.85em;font-weight:700;margin:8px 0">$1</h6>')
+        .replace(/^##### (.+)$/gm,  '<h5 style="font-size:0.9em;font-weight:700;margin:8px 0">$1</h5>')
+        .replace(/^#### (.+)$/gm,   '<h4 style="font-size:1em;font-weight:700;margin:10px 0">$1</h4>')
+        .replace(/^### (.+)$/gm,    '<h3 style="font-size:1.1em;font-weight:700;margin:12px 0">$1</h3>')
+        .replace(/^## (.+)$/gm,     '<h2 style="font-size:1.2em;font-weight:700;margin:14px 0;color:#58FBDA">$1</h2>')
+        .replace(/^# (.+)$/gm,      '<h1 style="font-size:1.4em;font-weight:700;margin:16px 0;color:#58FBDA">$1</h1>')
+        .replace(/^---+$/gm, '<hr style="border-color:#58FBDA33;margin:16px 0">')
+        .replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>')
+        .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+        .replace(/\*(.+?)\*/g, '<em>$1</em>')
+        .replace(/`([^`]+)`/g, '<code style="background:#1a172a;padding:2px 6px;border-radius:4px;font-family:JetBrains Mono,monospace">$1</code>')
           .replace(/^&gt; (.+)$/gm, '<blockquote style="border-left:3px solid #58FBDA;padding-left:12px;color:#aaa;margin:8px 0">$1</blockquote>')
           .replace(/^[ \t]*[-*+] (.+)$/gm, '<li>$1</li>')
           .replace(/^[ \t]*\d+\. (.+)$/gm, '<oli>$1</oli>');

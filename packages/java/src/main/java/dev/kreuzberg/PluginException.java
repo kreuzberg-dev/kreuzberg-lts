@@ -23,9 +23,9 @@ import java.util.Objects;
  * @since 4.0.0
  */
 public final class PluginException extends KreuzbergException {
-	private final String pluginName;
+    private final String pluginName;
 
-	/**
+    /**
 	 * Constructs a new plugin exception with the specified plugin name and message.
 	 *
 	 * @param pluginName
@@ -35,13 +35,13 @@ public final class PluginException extends KreuzbergException {
 	 * @throws NullPointerException
 	 *             if pluginName is null
 	 */
-	public PluginException(String pluginName, String message) {
-		super("Plugin error in '" + Objects.requireNonNull(pluginName, "pluginName must not be null") + "': "
-				+ message);
-		this.pluginName = pluginName;
-	}
+    public PluginException(String pluginName, String message) {
+        super("Plugin error in '" + Objects.requireNonNull(pluginName, "pluginName must not be null") + "': "
+            + message);
+        this.pluginName = pluginName;
+    }
 
-	/**
+    /**
 	 * Constructs a new plugin exception with the specified plugin name, message and
 	 * cause.
 	 *
@@ -54,18 +54,18 @@ public final class PluginException extends KreuzbergException {
 	 * @throws NullPointerException
 	 *             if pluginName is null
 	 */
-	public PluginException(String pluginName, String message, Throwable cause) {
-		super("Plugin error in '" + Objects.requireNonNull(pluginName, "pluginName must not be null") + "': " + message,
-				cause);
-		this.pluginName = pluginName;
-	}
+    public PluginException(String pluginName, String message, Throwable cause) {
+        super("Plugin error in '" + Objects.requireNonNull(pluginName, "pluginName must not be null") + "': " + message,
+            cause);
+        this.pluginName = pluginName;
+    }
 
-	/**
+    /**
 	 * Returns the name of the plugin that threw this error.
 	 *
 	 * @return the plugin name
 	 */
-	public String getPluginName() {
-		return pluginName;
-	}
+    public String getPluginName() {
+        return pluginName;
+    }
 }

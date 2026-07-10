@@ -152,7 +152,6 @@ accent = "custom"
 icon = "moon"
 name = "Switch to dark mode"
 
-# --- Markdown Extensions ---
 
 [project.markdown_extensions.admonition]
 
@@ -197,9 +196,7 @@ base_path = [".", "docs"]
 check_paths = true
 
 [project.markdown_extensions.pymdownx.superfences]
-custom_fences = [
-    { name = "mermaid", class = "mermaid", format = "pymdownx.superfences.fence_code_format" },
-]
+custom_fences = [{ name = "mermaid", class = "mermaid", format = "pymdownx.superfences.fence_code_format" }]
 
 [project.markdown_extensions.pymdownx.tabbed]
 alternate_style = true
@@ -211,7 +208,6 @@ case = "lower"
 [project.markdown_extensions.pymdownx.tasklist]
 custom_checkbox = true
 
-# --- Plugins ---
 
 [project.plugins.search]
 
@@ -232,7 +228,6 @@ show_submodules = false
 docstring_style = "google"
 docstring_section_style = "spacy"
 
-# --- Extra ---
 
 [project.extra]
 

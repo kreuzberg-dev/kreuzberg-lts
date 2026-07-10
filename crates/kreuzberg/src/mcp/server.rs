@@ -131,7 +131,7 @@ impl KreuzbergMcp {
         let result = svc.call(request).await.map_err(map_kreuzberg_error_to_mcp)?;
 
         let response = format_extraction_result_for_wire(&result, use_toon);
-        Ok(CallToolResult::success(vec![Content::text(response)]))
+        Ok(CallToolResult::success(vec![ContentBlock::text(response)]))
     }
 
     /// Extract content from base64-encoded bytes.
@@ -178,7 +178,7 @@ impl KreuzbergMcp {
         let result = svc.call(request).await.map_err(map_kreuzberg_error_to_mcp)?;
 
         let response = format_extraction_result_for_wire(&result, use_toon);
-        Ok(CallToolResult::success(vec![Content::text(response)]))
+        Ok(CallToolResult::success(vec![ContentBlock::text(response)]))
     }
 
     /// Extract content from multiple files in parallel.
@@ -256,7 +256,7 @@ impl KreuzbergMcp {
         } else {
             serde_json::to_string_pretty(&results).unwrap_or_default()
         };
-        Ok(CallToolResult::success(vec![Content::text(response)]))
+        Ok(CallToolResult::success(vec![ContentBlock::text(response)]))
     }
 
     /// Detect the MIME type of a file.
@@ -275,7 +275,7 @@ impl KreuzbergMcp {
 
         let mime_type = detect_mime_type(&params.path, params.use_content).map_err(map_kreuzberg_error_to_mcp)?;
 
-        Ok(CallToolResult::success(vec![Content::text(mime_type)]))
+        Ok(CallToolResult::success(vec![ContentBlock::text(mime_type)]))
     }
 
     /// Get cache statistics.
@@ -313,7 +313,7 @@ impl KreuzbergMcp {
             stats.newest_file_age_days
         );
 
-        Ok(CallToolResult::success(vec![Content::text(response)]))
+        Ok(CallToolResult::success(vec![ContentBlock::text(response)]))
     }
 
     /// List all supported document formats.
@@ -329,7 +329,7 @@ impl KreuzbergMcp {
     ) -> Result<CallToolResult, rmcp::ErrorData> {
         let formats = crate::list_supported_formats();
         let response = serde_json::to_string_pretty(&formats).unwrap_or_default();
-        Ok(CallToolResult::success(vec![Content::text(response)]))
+        Ok(CallToolResult::success(vec![ContentBlock::text(response)]))
     }
 
     /// Clear the cache.
@@ -361,7 +361,7 @@ impl KreuzbergMcp {
             freed_mb
         );
 
-        Ok(CallToolResult::success(vec![Content::text(response)]))
+        Ok(CallToolResult::success(vec![ContentBlock::text(response)]))
     }
 
     /// Get Kreuzberg version information.
@@ -379,7 +379,7 @@ impl KreuzbergMcp {
             "version": env!("CARGO_PKG_VERSION"),
         });
 
-        Ok(CallToolResult::success(vec![Content::text(
+        Ok(CallToolResult::success(vec![ContentBlock::text(
             serde_json::to_string_pretty(&response).unwrap_or_default(),
         )]))
     }
@@ -428,7 +428,7 @@ impl KreuzbergMcp {
             "models": entries,
         });
 
-        Ok(CallToolResult::success(vec![Content::text(
+        Ok(CallToolResult::success(vec![ContentBlock::text(
             serde_json::to_string_pretty(&response).unwrap_or_default(),
         )]))
     }
@@ -446,7 +446,6 @@ impl KreuzbergMcp {
         &self,
         Parameters(params): Parameters<super::params::CacheWarmParams>,
     ) -> Result<CallToolResult, rmcp::ErrorData> {
-        // Validate embedding_model is not an empty string
         if let Some(ref name) = params.embedding_model
             && name.trim().is_empty()
         {
@@ -544,7 +543,7 @@ impl KreuzbergMcp {
             "already_cached": already_cached,
         });
 
-        Ok(CallToolResult::success(vec![Content::text(
+        Ok(CallToolResult::success(vec![ContentBlock::text(
             serde_json::to_string_pretty(&response).unwrap_or_default(),
         )]))
     }
@@ -624,7 +623,6 @@ async fn extract_structured_impl(
         .clone();
     let result = svc.call(request).await.map_err(map_kreuzberg_error_to_mcp)?;
 
-    // Build structured extraction config from params
     let structured_config = crate::core::config::llm::StructuredExtractionConfig {
         schema: params.schema,
         schema_name: params.schema_name,
@@ -652,7 +650,7 @@ async fn extract_structured_impl(
         "mime_type": result.mime_type.as_ref(),
     });
 
-    Ok(CallToolResult::success(vec![Content::text(
+    Ok(CallToolResult::success(vec![ContentBlock::text(
         serde_json::to_string_pretty(&response).unwrap_or_default(),
     )]))
 }
@@ -687,7 +685,6 @@ fn embed_text_impl(params: super::params::EmbedTextParams) -> Result<CallToolRes
         ));
     }
 
-    // When `model` is set, use LLM-based embeddings via liter-llm
     let (config, model_name) = if let Some(ref model) = params.model {
         let llm_config = crate::core::config::llm::LlmConfig {
             model: model.clone(),
@@ -738,7 +735,7 @@ fn embed_text_impl(params: super::params::EmbedTextParams) -> Result<CallToolRes
         "count": params.texts.len(),
     });
 
-    Ok(CallToolResult::success(vec![Content::text(
+    Ok(CallToolResult::success(vec![ContentBlock::text(
         serde_json::to_string_pretty(&response).unwrap_or_default(),
     )]))
 }
@@ -828,7 +825,7 @@ fn chunk_text_impl(params: super::params::ChunkTextParams) -> Result<CallToolRes
         }).collect::<Vec<_>>(),
     });
 
-    Ok(CallToolResult::success(vec![Content::text(
+    Ok(CallToolResult::success(vec![ContentBlock::text(
         serde_json::to_string_pretty(&response).unwrap_or_default(),
     )]))
 }
@@ -1295,12 +1292,11 @@ mod tests {
         assert!(result.is_ok());
         let call_result = result.unwrap();
         if let Some(content) = call_result.content.first() {
-            match &content.raw {
-                RawContent::Text(text) => {
-                    let parsed: serde_json::Value = serde_json::from_str(&text.text).expect("Should be valid JSON");
-                    assert_eq!(parsed["version"], env!("CARGO_PKG_VERSION"));
-                }
-                _ => panic!("Expected text content"),
+            if let Some(text) = content.as_text() {
+                let parsed: serde_json::Value = serde_json::from_str(&text.text).expect("Should be valid JSON");
+                assert_eq!(parsed["version"], env!("CARGO_PKG_VERSION"));
+            } else {
+                panic!("Expected text content");
             }
         } else {
             panic!("Expected content in result");
@@ -1318,14 +1314,13 @@ mod tests {
         assert!(result.is_ok());
         let call_result = result.unwrap();
         if let Some(content) = call_result.content.first() {
-            match &content.raw {
-                RawContent::Text(text) => {
-                    let parsed: serde_json::Value = serde_json::from_str(&text.text).expect("Should be valid JSON");
-                    assert!(parsed.get("kreuzberg_version").is_some());
-                    assert!(parsed.get("model_count").is_some());
-                    assert!(parsed.get("models").is_some());
-                }
-                _ => panic!("Expected text content"),
+            if let Some(text) = content.as_text() {
+                let parsed: serde_json::Value = serde_json::from_str(&text.text).expect("Should be valid JSON");
+                assert!(parsed.get("kreuzberg_version").is_some());
+                assert!(parsed.get("model_count").is_some());
+                assert!(parsed.get("models").is_some());
+            } else {
+                panic!("Expected text content");
             }
         } else {
             panic!("Expected content in result");
@@ -1349,13 +1344,12 @@ mod tests {
         assert!(result.is_ok());
         let call_result = result.unwrap();
         if let Some(content) = call_result.content.first() {
-            match &content.raw {
-                RawContent::Text(text) => {
-                    let parsed: serde_json::Value = serde_json::from_str(&text.text).expect("Should be valid JSON");
-                    assert!(parsed.get("chunk_count").is_some());
-                    assert!(parsed.get("chunks").is_some());
-                }
-                _ => panic!("Expected text content"),
+            if let Some(text) = content.as_text() {
+                let parsed: serde_json::Value = serde_json::from_str(&text.text).expect("Should be valid JSON");
+                assert!(parsed.get("chunk_count").is_some());
+                assert!(parsed.get("chunks").is_some());
+            } else {
+                panic!("Expected text content");
             }
         } else {
             panic!("Expected content in result");

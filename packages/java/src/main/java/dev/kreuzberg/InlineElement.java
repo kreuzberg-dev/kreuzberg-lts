@@ -14,38 +14,38 @@ import java.util.Optional;
  * Represents text with formatting, links, images, etc.
  */
 public final class InlineElement {
-	private final InlineType elementType;
-	private final String content;
-	private final Optional<Attributes> attributes;
-	private final Optional<Map<String, String>> metadata;
+    private final InlineType elementType;
+    private final String content;
+    private final Optional<Attributes> attributes;
+    private final Optional<Map<String, String>> metadata;
 
-	@JsonCreator
-	public InlineElement(@JsonProperty("element_type") InlineType elementType, @JsonProperty("content") String content,
-			@JsonProperty("attributes") Attributes attributes, @JsonProperty("metadata") Map<String, String> metadata) {
-		this.elementType = Objects.requireNonNull(elementType, "elementType must not be null");
-		this.content = Objects.requireNonNull(content, "content must not be null");
-		this.attributes = Optional.ofNullable(attributes);
-		this.metadata = Optional.ofNullable(metadata != null ? Collections.unmodifiableMap(metadata) : null);
-	}
+    @JsonCreator
+    public InlineElement(@JsonProperty("element_type") InlineType elementType, @JsonProperty("content") String content,
+        @JsonProperty("attributes") Attributes attributes, @JsonProperty("metadata") Map<String, String> metadata) {
+        this.elementType = Objects.requireNonNull(elementType, "elementType must not be null");
+        this.content = Objects.requireNonNull(content, "content must not be null");
+        this.attributes = Optional.ofNullable(attributes);
+        this.metadata = Optional.ofNullable(metadata != null ? Collections.unmodifiableMap(metadata) : null);
+    }
 
-	public InlineType getElementType() {
-		return elementType;
-	}
+    public InlineType getElementType() {
+        return elementType;
+    }
 
-	public String getContent() {
-		return content;
-	}
+    public String getContent() {
+        return content;
+    }
 
-	public Optional<Attributes> getAttributes() {
-		return attributes;
-	}
+    public Optional<Attributes> getAttributes() {
+        return attributes;
+    }
 
-	public Optional<Map<String, String>> getMetadata() {
-		return metadata;
-	}
+    public Optional<Map<String, String>> getMetadata() {
+        return metadata;
+    }
 
-	@Override
-	public String toString() {
-		return "InlineElement{" + "elementType=" + elementType + ", contentLength=" + content.length() + '}';
-	}
+    @Override
+    public String toString() {
+        return "InlineElement{" + "elementType=" + elementType + ", contentLength=" + content.length() + '}';
+    }
 }

@@ -10,7 +10,6 @@ use std::sync::OnceLock;
 
 /// Collection of all kreuzberg metric instruments.
 pub struct ExtractionMetrics {
-    // -- Counters --
     /// Total extractions (attributes: mime_type, extractor, status).
     pub extraction_total: Counter<u64>,
     /// Cache hits.
@@ -20,7 +19,6 @@ pub struct ExtractionMetrics {
     /// Total batch requests (attributes: status).
     pub batch_total: Counter<u64>,
 
-    // -- Histograms --
     /// Extraction wall-clock duration in milliseconds (attributes: mime_type, extractor).
     pub extraction_duration_ms: Histogram<f64>,
     /// Input document size in bytes (attributes: mime_type).
@@ -34,7 +32,6 @@ pub struct ExtractionMetrics {
     /// Batch total duration in milliseconds.
     pub batch_duration_ms: Histogram<f64>,
 
-    // -- Gauges --
     /// Currently in-flight extractions.
     pub concurrent_extractions: UpDownCounter<i64>,
 }

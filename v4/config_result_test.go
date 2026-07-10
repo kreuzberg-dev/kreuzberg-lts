@@ -430,7 +430,6 @@ func TestResultGetPageCount(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if tt.result == nil {
-				// Test that nil result returns 0 (no error when nil)
 				if tt.wantErr {
 					t.Errorf("expected error for nil result, but wantErr=true and we can't call on nil")
 				} else if tt.wantCount != 0 {

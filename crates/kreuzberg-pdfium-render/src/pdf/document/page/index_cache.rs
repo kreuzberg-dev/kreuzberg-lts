@@ -41,9 +41,6 @@ impl PdfPageIndexCache {
     /// Sets the currently cached properties for the given raw document and page handles.
     #[inline]
     fn set(&mut self, document: FPDF_DOCUMENT, page: FPDF_PAGE, props: PdfPageCachedProperties) {
-        // Keep track of the maximum page index for this document. We'll need to know this
-        // if we have to shuffle indices to accommodate page insertions or deletions.
-
         match self.documents_by_maximum_index.get(&document).copied() {
             Some(maximum) => {
                 if props.index > maximum {
@@ -68,14 +65,9 @@ impl PdfPageIndexCache {
             self.indices_by_page.remove(&(document, props.index));
 
             if self.documents_by_maximum_index.get(&document).copied() == Some(props.index) {
-                // This page had the maximum page index for this document. Now that it's been removed
-                // from the cache, we need to find the new maximum page index for this document.
-
                 let keys = self.indices_by_page.keys();
 
                 if keys.len() == 0 {
-                    // There's no longer any page indices cached for this document.
-
                     self.documents_by_maximum_index.remove(&document);
                 } else {
                     let mut maximum = 0;
@@ -103,12 +95,8 @@ impl PdfPageIndexCache {
         match self.documents_by_maximum_index.get(&document).copied() {
             Some(maximum_index_for_document) => {
                 if maximum_index_for_document > index {
-                    // Shuffle down all page indices in the document after the given index position.
-
                     for index in (index..=maximum_index_for_document).rev() {
                         if let Some(page) = self.indices_by_page.get(&(document, index)).copied() {
-                            // Update the indices of this page.
-
                             let props = self.remove(document, page);
 
                             let content_regeneration_strategy = if let Some(props) = props {
@@ -133,8 +121,6 @@ impl PdfPageIndexCache {
                     .insert(document, maximum_index_for_document + count);
             }
             None => {
-                // This is the first page index we're caching for this document.
-
                 self.documents_by_maximum_index.insert(document, index + count - 1);
             }
         }
@@ -144,11 +130,7 @@ impl PdfPageIndexCache {
     /// a deletion of the given number of pages at the given index position.
     #[inline]
     fn delete(&mut self, document: FPDF_DOCUMENT, index: PdfPageIndex, count: PdfPageIndex) {
-        // Shuffle up all page indices in the document after the given index position.
-
         let mut maximum_index_for_document = self.documents_by_maximum_index.get(&document).copied().unwrap_or(0);
-
-        // Remove the deleted pages from the cache.
 
         for index in index..index + count {
             if let Some(page) = self.indices_by_page.get(&(document, index)).copied() {
@@ -157,12 +139,8 @@ impl PdfPageIndexCache {
         }
 
         if maximum_index_for_document > index {
-            // Shuffle up all page indices in the document after the given index position.
-
             for index in index + 1..=maximum_index_for_document {
                 if let Some(page) = self.indices_by_page.get(&(document, index)).copied() {
-                    // Update the indices of this page.
-
                     let props = self.remove(document, page);
 
                     let content_regeneration_strategy = if let Some(props) = props {
@@ -185,14 +163,10 @@ impl PdfPageIndexCache {
             maximum_index_for_document = index;
         }
 
-        // Update the maximum index position for this document.
-
         if maximum_index_for_document >= count {
             self.documents_by_maximum_index
                 .insert(document, maximum_index_for_document - count);
         } else {
-            // There's no longer any page indices cached for this document.
-
             self.documents_by_maximum_index.remove(&document);
         }
     }
@@ -201,9 +175,6 @@ impl PdfPageIndexCache {
     fn lock() -> MutexGuard<'static, PdfPageIndexCache> {
         PAGE_INDEX_CACHE.lock().unwrap()
     }
-
-    // The remaining methods in this implementation take care of thread-safe locking.
-    // These methods form the public API of the cache.
 
     /// Caches the given properties for the given raw document and page handles.
     #[inline]
@@ -269,7 +240,6 @@ impl PdfPageIndexCache {
     pub(crate) fn clear_document(document: FPDF_DOCUMENT) {
         let mut cache = Self::lock();
 
-        // Collect all page handles for this document
         let page_handles: Vec<FPDF_PAGE> = cache
             .pages_by_index
             .keys()
@@ -277,12 +247,10 @@ impl PdfPageIndexCache {
             .map(|(_, page)| *page)
             .collect();
 
-        // Remove all entries for this document
         for page_handle in page_handles {
             cache.remove(document, page_handle);
         }
 
-        // Remove document from maximum index tracking
         cache.documents_by_maximum_index.remove(&document);
     }
 }
@@ -306,24 +274,14 @@ mod tests {
         assert!(PdfPageIndexCache::lock().pages_by_index.is_empty());
 
         {
-            // Now let's create a blank page and get a handle to it...
-
             let _page = document.pages_mut().create_page_at_start(PdfPagePaperSize::a4())?;
-
-            // ... and confirm the cache updated.
 
             assert_eq!(PdfPageIndexCache::lock().pages_by_index.len(), 1);
         }
 
-        // The page has dropped out of scope. Confirm the cache got cleaned up.
-
         assert!(PdfPageIndexCache::lock().pages_by_index.is_empty());
 
-        // Get a new handle to the page...
-
         let _page = document.pages().first();
-
-        // ... and confirm the cache updated.
 
         assert_eq!(PdfPageIndexCache::lock().pages_by_index.len(), 1);
 
@@ -337,18 +295,11 @@ mod tests {
         let mut document_0 = pdfium.create_new_pdf()?;
 
         {
-            // Create three blank pages.
-
             for _ in 1..=3 {
                 document_0.pages_mut().create_page_at_end(PdfPagePaperSize::a4())?;
             }
 
-            // Since we haven't retrieved any references to these pages, the index cache
-            // should be empty.
-
             assert!(PdfPageIndexCache::lock().pages_by_index.is_empty());
-
-            // Check that the cache gets populated as we retrieve references to pages.
 
             let document_0_page_0 = document_0.pages().get(0)?;
 
@@ -361,8 +312,6 @@ mod tests {
             let document_0_page_2 = document_0.pages().get(2)?;
 
             assert_eq!(PdfPageIndexCache::lock().pages_by_index.len(), 3);
-
-            // Check the cached indices are correct.
 
             assert!(
                 PdfPageIndexCache::lock()
@@ -417,24 +366,14 @@ mod tests {
                 2
             );
 
-            // Now, while we still have references to those pages, let's create a second document
-            // and make sure that references to the second document are also stored correctly.
-
             let mut document_1 = pdfium.create_new_pdf()?;
 
             {
-                // Create four blank pages.
-
                 for _ in 1..=4 {
                     document_1.pages_mut().create_page_at_end(PdfPagePaperSize::a4())?;
                 }
 
-                // Since we haven't retrieved any references to these pages, the index cache
-                // should only contain the references to the pages from the first document.
-
                 assert_eq!(PdfPageIndexCache::lock().pages_by_index.len(), 3);
-
-                // Check that the cache gets populated as we retrieve references to pages.
 
                 let document_1_page_0 = document_1.pages().get(0)?;
 
@@ -451,8 +390,6 @@ mod tests {
                 let document_1_page_3 = document_1.pages().get(3)?;
 
                 assert_eq!(PdfPageIndexCache::lock().pages_by_index.len(), 7);
-
-                // Check the cached indices are correct.
 
                 assert!(
                     PdfPageIndexCache::lock()
@@ -521,14 +458,8 @@ mod tests {
                 );
             }
 
-            // At this point, the pages from document_1 have been dropped. Those pages should
-            // have been removed from the cache.
-
             assert_eq!(PdfPageIndexCache::lock().pages_by_index.len(), 3);
         }
-
-        // At this point, the pages from document_0 have been dropped. Those pages should
-        // have been removed from the cache; the cache should now be empty.
 
         assert!(PdfPageIndexCache::lock().pages_by_index.is_empty());
 
@@ -542,11 +473,7 @@ mod tests {
         let mut document = pdfium.create_new_pdf()?;
 
         let page_handle = {
-            // Create a new page...
-
             let page = document.pages_mut().create_page_at_start(PdfPagePaperSize::a4())?;
-
-            // ... confirm the index of the page is cached...
 
             assert!(
                 PdfPageIndexCache::lock()
@@ -561,13 +488,8 @@ mod tests {
                 0
             );
 
-            // ... and return the handle of the page.
-
             page.page_handle()
         };
-
-        // At this point, the page itself has been dropped, so the page handle is no longer valid.
-        // Attempting to retrieve the cached index for the page should return None.
 
         assert!(PdfPageIndexCache::lock().get(document.handle(), page_handle).is_none());
 
@@ -576,15 +498,9 @@ mod tests {
 
     #[test]
     fn test_insert_pages_at_index() -> Result<(), PdfiumError> {
-        // Create a document with 100 pages, caching the index position of each page.
-
         let pdfium = test_bind_to_pdfium();
 
         let mut document = pdfium.create_new_pdf()?;
-
-        // To cache the index position of each page, we have to hold a reference to each page.
-        // We use a Vec to do this. Create the Vec inside a sub-scope, to ensure its lifetime
-        // is shorter than document and pdfium.
 
         {
             let mut pages = Vec::new();
@@ -623,8 +539,6 @@ mod tests {
                 );
             }
 
-            // Our cache now holds 100 index positions. Insert a new page at the start of the document...
-
             let inserted = document.pages_mut().create_page_at_start(PdfPagePaperSize::a4())?;
 
             assert_eq!(PdfPageIndexCache::lock().pages_by_index.len(), 101);
@@ -655,8 +569,6 @@ mod tests {
                 0
             );
 
-            // ... and check that the index positions for all other pages have correctly shuffled down.
-
             for (index, page) in pages.iter().enumerate() {
                 assert!(
                     PdfPageIndexCache::lock()
@@ -671,8 +583,6 @@ mod tests {
                     index as PdfPageIndex + 1
                 );
             }
-
-            // Our cache now holds 101 index positions. Insert a new page at position 50...
 
             let inserted = document.pages_mut().create_page_at_index(PdfPagePaperSize::a4(), 50)?;
 
@@ -704,14 +614,7 @@ mod tests {
                 50
             );
 
-            // ... and check that the index positions for pages before position 50 _haven't_ changed,
-            // while the index positions for pages _after_ position 50 _have_ shuffled down.
-
             for (index, page) in pages.iter().enumerate() {
-                // We compare against an index position of 49 rather than 50 because we've already
-                // inserted one page at the beginning of the document. This insertion at index position
-                // 50 is our _second_ insertion into the page sequence.
-
                 if index < 49 {
                     assert!(
                         PdfPageIndexCache::lock()
@@ -749,15 +652,9 @@ mod tests {
 
     #[test]
     fn test_delete_pages_at_index() -> Result<(), PdfiumError> {
-        // Create a document with 100 pages, caching the index position of each page.
-
         let pdfium = test_bind_to_pdfium();
 
         let mut document = pdfium.create_new_pdf()?;
-
-        // To cache the index position of each page, we have to hold a reference to each page.
-        // We use a Vec to do this. Create the Vec inside a sub-scope, to ensure its lifetime
-        // is shorter than document and pdfium.
 
         {
             let mut pages = Vec::new();
@@ -794,8 +691,6 @@ mod tests {
                 );
             }
 
-            // Our cache now holds 100 index positions. Delete the page at the start of the document...
-
             pages.first_mut().unwrap().take().unwrap().delete()?;
 
             assert_eq!(PdfPageIndexCache::lock().pages_by_index.len(), 99);
@@ -813,12 +708,8 @@ mod tests {
                 98
             );
 
-            // ... and check that the index positions for all other pages have correctly shuffled up.
-
             for (index, page) in pages.iter().enumerate() {
                 if index == 0 {
-                    // This page no longer exists.
-
                     assert!(page.is_none());
                 } else {
                     assert!(page.is_some());
@@ -833,8 +724,6 @@ mod tests {
                     );
                 }
             }
-
-            // Our cache now holds 99 index positions. Delete the page at index position 50...
 
             pages.get_mut(50).unwrap().take().unwrap().delete()?;
 
@@ -853,13 +742,8 @@ mod tests {
                 97
             );
 
-            // ... and check that the index positions for pages before position 50 _haven't_ changed,
-            // while the index positions for pages _after_ position 50 _have_ shuffled up.
-
             for (index, page) in pages.iter().enumerate() {
                 if index == 0 || index == 50 {
-                    // This page no longer exists.
-
                     assert!(page.is_none());
                 } else if index < 50 {
                     assert!(page.is_some());
@@ -892,17 +776,9 @@ mod tests {
 
     #[test]
     fn test_pathological_delete_all_pages() -> Result<(), PdfiumError> {
-        // Create a document with 100 pages, caching the index position of each page,
-        // then delete all one hundred pages, testing the cached maximum page index
-        // after each deletion.
-
         let pdfium = test_bind_to_pdfium();
 
         let mut document = pdfium.create_new_pdf()?;
-
-        // To cache the index position of each page, we have to hold a reference to each page.
-        // We use a Vec to do this. Create the Vec inside a sub-scope, to ensure its lifetime
-        // is shorter than document and pdfium.
 
         {
             let mut pages = Vec::new();
@@ -941,8 +817,6 @@ mod tests {
                 );
             }
 
-            // Our cache now holds 100 index positions. Delete all 100 pages.
-
             for index in (0..100).rev() {
                 assert!(
                     PdfPageIndexCache::lock()
@@ -976,8 +850,6 @@ mod tests {
                     );
                 }
             }
-
-            // All pages are now deleted.
 
             assert!(PdfPageIndexCache::lock().pages_by_index.is_empty());
             assert!(

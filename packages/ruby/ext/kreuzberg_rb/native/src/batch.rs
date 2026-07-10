@@ -9,7 +9,7 @@ use crate::result::extraction_result_to_ruby;
 use std::path::PathBuf;
 
 use magnus::value::ReprValue;
-use magnus::{Error, RArray, RHash, RString, Ruby, Value, scan_args::scan_args, TryConvert};
+use magnus::{Error, RArray, RHash, RString, Ruby, TryConvert, Value, scan_args::scan_args};
 
 /// Batch extract content from multiple files (synchronous)
 ///
@@ -51,8 +51,8 @@ pub fn batch_extract_files(args: &[Value]) -> Result<RArray, Error> {
 
     let items = build_file_items(&ruby, &paths, opts)?;
 
-    let runtime = tokio::runtime::Runtime::new()
-        .map_err(|e| runtime_error(format!("Failed to create Tokio runtime: {}", e)))?;
+    let runtime =
+        tokio::runtime::Runtime::new().map_err(|e| runtime_error(format!("Failed to create Tokio runtime: {}", e)))?;
 
     let results = runtime
         .block_on(async { kreuzberg::batch_extract_file(items, &config).await })
@@ -129,8 +129,8 @@ pub fn batch_extract_bytes(args: &[Value]) -> Result<RArray, Error> {
 
     let items = build_bytes_items(&ruby, &bytes_vec, &mime_types, opts)?;
 
-    let runtime = tokio::runtime::Runtime::new()
-        .map_err(|e| runtime_error(format!("Failed to create Tokio runtime: {}", e)))?;
+    let runtime =
+        tokio::runtime::Runtime::new().map_err(|e| runtime_error(format!("Failed to create Tokio runtime: {}", e)))?;
 
     let results = runtime
         .block_on(async { kreuzberg::batch_extract_bytes(items, &config).await })
@@ -153,15 +153,13 @@ fn build_file_items(
     paths: &[String],
     opts: Option<RHash>,
 ) -> Result<Vec<(PathBuf, Option<kreuzberg::FileExtractionConfig>)>, Error> {
-    let file_configs_array: Option<RArray> = opts
-        .and_then(|kw| kw.get(ruby.to_symbol("file_configs")))
-        .and_then(|v: Value| {
-            match v.equal(ruby.qnil()) {
+    let file_configs_array: Option<RArray> =
+        opts.and_then(|kw| kw.get(ruby.to_symbol("file_configs")))
+            .and_then(|v: Value| match v.equal(ruby.qnil()) {
                 Ok(true) => None,
                 Ok(false) => RArray::try_convert(v).ok(),
                 Err(_) => None,
-            }
-        });
+            });
 
     match file_configs_array {
         Some(fc_array) => {
@@ -180,10 +178,7 @@ fn build_file_items(
             }
             Ok(items)
         }
-        None => Ok(paths
-            .iter()
-            .map(|p| (PathBuf::from(p), None))
-            .collect()),
+        None => Ok(paths.iter().map(|p| (PathBuf::from(p), None)).collect()),
     }
 }
 
@@ -194,15 +189,13 @@ fn build_bytes_items(
     mime_types: &[String],
     opts: Option<RHash>,
 ) -> Result<Vec<(Vec<u8>, String, Option<kreuzberg::FileExtractionConfig>)>, Error> {
-    let file_configs_array: Option<RArray> = opts
-        .and_then(|kw| kw.get(ruby.to_symbol("file_configs")))
-        .and_then(|v: Value| {
-            match v.equal(ruby.qnil()) {
+    let file_configs_array: Option<RArray> =
+        opts.and_then(|kw| kw.get(ruby.to_symbol("file_configs")))
+            .and_then(|v: Value| match v.equal(ruby.qnil()) {
                 Ok(true) => None,
                 Ok(false) => RArray::try_convert(v).ok(),
                 Err(_) => None,
-            }
-        });
+            });
 
     match file_configs_array {
         Some(fc_array) => {
@@ -217,24 +210,14 @@ fn build_bytes_items(
             for (i, (bytes, mime)) in bytes_vec.iter().zip(mime_types.iter()).enumerate() {
                 let fc_val = fc_array.entry::<Value>(i as isize)?;
                 let file_config = parse_file_extraction_config(fc_val)?;
-                items.push((
-                    unsafe { bytes.as_slice() }.to_vec(),
-                    mime.clone(),
-                    file_config,
-                ));
+                items.push((unsafe { bytes.as_slice() }.to_vec(), mime.clone(), file_config));
             }
             Ok(items)
         }
         None => Ok(bytes_vec
             .iter()
             .zip(mime_types.iter())
-            .map(|(bytes, mime)| {
-                (
-                    unsafe { bytes.as_slice() }.to_vec(),
-                    mime.clone(),
-                    None,
-                )
-            })
+            .map(|(bytes, mime)| (unsafe { bytes.as_slice() }.to_vec(), mime.clone(), None))
             .collect()),
     }
 }

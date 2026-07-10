@@ -17,23 +17,20 @@ defmodule Kreuzberg do
 
   alias Kreuzberg.{EmbeddingConfig, Error, ExtractionConfig, ExtractionResult, Helpers, Native}
 
-  # Delegate batch operations to BatchAPI
   defdelegate batch_extract_files(paths, mime_type \\ nil, config \\ nil), to: Kreuzberg.BatchAPI
   defdelegate batch_extract_files!(paths, mime_type \\ nil, config \\ nil), to: Kreuzberg.BatchAPI
   defdelegate batch_extract_bytes(data_list, mime_types, config \\ nil), to: Kreuzberg.BatchAPI
   defdelegate batch_extract_bytes!(data_list, mime_types, config \\ nil), to: Kreuzberg.BatchAPI
 
-  # Delegate async operations to AsyncAPI
   defdelegate extract_async(input, mime_type, config \\ nil), to: Kreuzberg.AsyncAPI
   defdelegate extract_file_async(path, mime_type \\ nil, config \\ nil), to: Kreuzberg.AsyncAPI
 
   defdelegate batch_extract_files_async(paths, mime_type \\ nil, config \\ nil),
-    to: Kreuzberg.AsyncAPI
+  to: Kreuzberg.AsyncAPI
 
   defdelegate batch_extract_bytes_async(data_list, mime_types, config \\ nil),
-    to: Kreuzberg.AsyncAPI
+  to: Kreuzberg.AsyncAPI
 
-  # Delegate utility functions to UtilityAPI
   defdelegate detect_mime_type(data), to: Kreuzberg.UtilityAPI
   defdelegate detect_mime_type_from_path(path), to: Kreuzberg.UtilityAPI
   defdelegate validate_mime_type(mime_type), to: Kreuzberg.UtilityAPI
@@ -45,13 +42,11 @@ defmodule Kreuzberg do
   defdelegate embed(texts, config \\ nil), to: __MODULE__, as: :do_embed
   defdelegate embed!(texts, config \\ nil), to: __MODULE__, as: :do_embed!
 
-  # Delegate cache operations to CacheAPI
   defdelegate cache_stats(), to: Kreuzberg.CacheAPI
   defdelegate cache_stats!(), to: Kreuzberg.CacheAPI
   defdelegate clear_cache(), to: Kreuzberg.CacheAPI
   defdelegate clear_cache!(), to: Kreuzberg.CacheAPI
 
-  # Delegate validators to Validators module
   defdelegate validate_chunking_params(params), to: Kreuzberg.Validators
   defdelegate validate_language_code(code), to: Kreuzberg.Validators
   defdelegate validate_dpi(dpi), to: Kreuzberg.Validators
@@ -61,7 +56,6 @@ defmodule Kreuzberg do
   defdelegate validate_tesseract_psm(psm), to: Kreuzberg.Validators
   defdelegate validate_tesseract_oem(oem), to: Kreuzberg.Validators
 
-  # Delegate config discovery to ExtractionConfig module
   defdelegate discover_extraction_config(), to: Kreuzberg.ExtractionConfig, as: :discover
 
   @doc """
@@ -100,30 +94,30 @@ defmodule Kreuzberg do
       )
   """
   @spec extract(binary(), String.t(), ExtractionConfig.t() | map() | keyword() | nil) ::
-          {:ok, ExtractionResult.t()} | {:error, String.t()}
+  {:ok, ExtractionResult.t()} | {:error, String.t()}
   def extract(input, mime_type, config \\ nil) when is_binary(input) and is_binary(mime_type) do
     case call_native(input, mime_type, config) do
       {:ok, result_map} ->
-        case into_result(result_map) do
-          {:ok, result} -> {:ok, result}
-          {:error, reason} -> {:error, "Failed to convert extraction result: #{reason}"}
-        end
+      case into_result(result_map) do
+        {:ok, result} -> {:ok, result}
+        {:error, reason} -> {:error, "Failed to convert extraction result: #{reason}"}
+      end
 
       {:error, _reason} = err ->
-        err
+      err
     end
   end
 
   @doc "Extract content, raising on error"
   @spec extract!(binary(), String.t(), ExtractionConfig.t() | map() | keyword() | nil) ::
-          ExtractionResult.t()
+  ExtractionResult.t()
   def extract!(input, mime_type, config \\ nil) do
     case extract(input, mime_type, config) do
       {:ok, result} ->
-        result
+      result
 
       {:error, reason} ->
-        raise Error, message: reason, reason: Kreuzberg.UtilityAPI.classify_error(reason)
+      raise Error, message: reason, reason: Kreuzberg.UtilityAPI.classify_error(reason)
     end
   end
 
@@ -165,25 +159,25 @@ defmodule Kreuzberg do
       )
   """
   @spec extract_file(
-          String.t() | Path.t(),
-          String.t() | nil,
-          ExtractionConfig.t() | map() | keyword() | nil
-        ) ::
-          {:ok, ExtractionResult.t()} | {:error, String.t()}
+  String.t() | Path.t(),
+  String.t() | nil,
+  ExtractionConfig.t() | map() | keyword() | nil
+  ) ::
+  {:ok, ExtractionResult.t()} | {:error, String.t()}
   def extract_file(path, mime_type \\ nil, config \\ nil)
-      when (is_binary(path) or is_struct(path)) and
-             (is_nil(mime_type) or is_binary(mime_type)) do
+  when (is_binary(path) or is_struct(path)) and
+  (is_nil(mime_type) or is_binary(mime_type)) do
     path_string = to_string(path)
 
     case call_native_file(path_string, mime_type, config) do
       {:ok, result_map} ->
-        case into_result(result_map) do
-          {:ok, result} -> {:ok, result}
-          {:error, reason} -> {:error, "Failed to convert extraction result: #{reason}"}
-        end
+      case into_result(result_map) do
+        {:ok, result} -> {:ok, result}
+        {:error, reason} -> {:error, "Failed to convert extraction result: #{reason}"}
+      end
 
       {:error, _reason} = err ->
-        err
+      err
     end
   end
 
@@ -221,17 +215,17 @@ defmodule Kreuzberg do
       result = Kreuzberg.extract_file!("document.pdf", "application/pdf", config)
   """
   @spec extract_file!(
-          String.t() | Path.t(),
-          String.t() | nil,
-          ExtractionConfig.t() | map() | keyword() | nil
-        ) :: ExtractionResult.t()
+  String.t() | Path.t(),
+  String.t() | nil,
+  ExtractionConfig.t() | map() | keyword() | nil
+  ) :: ExtractionResult.t()
   def extract_file!(path, mime_type \\ nil, config \\ nil) do
     case extract_file(path, mime_type, config) do
       {:ok, result} ->
-        result
+      result
 
       {:error, reason} ->
-        raise Error, message: reason, reason: Kreuzberg.UtilityAPI.classify_error(reason)
+      raise Error, message: reason, reason: Kreuzberg.UtilityAPI.classify_error(reason)
     end
   end
 
@@ -311,26 +305,25 @@ defmodule Kreuzberg do
       {:ok, result} = Kreuzberg.extract_with_plugins(pdf_binary, "application/pdf")
   """
   @spec extract_with_plugins(
-          binary(),
-          String.t(),
-          ExtractionConfig.t() | map() | keyword() | nil,
-          keyword()
-        ) :: {:ok, ExtractionResult.t()} | {:error, String.t()}
+  binary(),
+  String.t(),
+  ExtractionConfig.t() | map() | keyword() | nil,
+  keyword()
+  ) :: {:ok, ExtractionResult.t()} | {:error, String.t()}
   def extract_with_plugins(input, mime_type, config \\ nil, plugin_opts \\ [])
-      when is_binary(input) and is_binary(mime_type) and is_list(plugin_opts) do
+  when is_binary(input) and is_binary(mime_type) and is_list(plugin_opts) do
     with :ok <- run_validators(Keyword.get(plugin_opts, :validators, [])),
-         {:ok, result} <- extract(input, mime_type, config),
-         {:ok, processed_result} <-
-           apply_post_processors(result, Keyword.get(plugin_opts, :post_processors, %{})),
-         :ok <-
-           run_final_validators(Keyword.get(plugin_opts, :final_validators, []), processed_result) do
+    {:ok, result} <- extract(input, mime_type, config),
+    {:ok, processed_result} <-
+    apply_post_processors(result, Keyword.get(plugin_opts, :post_processors, %{})),
+    :ok <-
+    run_final_validators(Keyword.get(plugin_opts, :final_validators, []), processed_result) do
       {:ok, processed_result}
     else
       {:error, reason} -> {:error, reason}
     end
   end
 
-  # Private
 
   defp run_validators(validators) do
     Enum.reduce_while(validators, :ok, fn validator_module, _acc ->
@@ -341,10 +334,10 @@ defmodule Kreuzberg do
         end
       rescue
         exception ->
-          error_msg =
-            "Plugin #{inspect(validator_module)} raised exception: #{inspect(exception)}"
+        error_msg =
+        "Plugin #{inspect(validator_module)} raised exception: #{inspect(exception)}"
 
-          {:halt, {:error, error_msg}}
+        {:halt, {:error, error_msg}}
       end
     end)
   end
@@ -369,20 +362,20 @@ defmodule Kreuzberg do
       try do
         case processor_module.process(current_data, nil) do
           {:ok, processed} ->
-            {:cont, {:ok, processed}}
+          {:cont, {:ok, processed}}
 
           processed when is_struct(processed, ExtractionResult) ->
-            {:cont, {:ok, processed}}
+          {:cont, {:ok, processed}}
 
           {:error, reason} ->
-            {:halt, {:error, "PostProcessor #{processor_module} failed: #{reason}"}}
+          {:halt, {:error, "PostProcessor #{processor_module} failed: #{reason}"}}
         end
       rescue
         exception ->
-          error_msg =
-            "Plugin #{inspect(processor_module)} raised exception: #{inspect(exception)}"
+        error_msg =
+        "Plugin #{inspect(processor_module)} raised exception: #{inspect(exception)}"
 
-          {:halt, {:error, error_msg}}
+        {:halt, {:error, error_msg}}
       end
     end)
   end
@@ -392,17 +385,17 @@ defmodule Kreuzberg do
       try do
         case validator_module.validate(result) do
           :ok ->
-            {:cont, :ok}
+          {:cont, :ok}
 
           {:error, reason} ->
-            {:halt, {:error, "Final validator #{validator_module} failed: #{reason}"}}
+          {:halt, {:error, "Final validator #{validator_module} failed: #{reason}"}}
         end
       rescue
         exception ->
-          error_msg =
-            "Plugin #{inspect(validator_module)} raised exception: #{inspect(exception)}"
+        error_msg =
+        "Plugin #{inspect(validator_module)} raised exception: #{inspect(exception)}"
 
-          {:halt, {:error, error_msg}}
+        {:halt, {:error, error_msg}}
       end
     end)
   end
@@ -413,7 +406,7 @@ defmodule Kreuzberg do
 
   defp call_native(input, mime_type, config) do
     with {:ok, validated_config} <- Helpers.validate_config(config),
-         config_map <- ExtractionConfig.to_map(validated_config) do
+    config_map <- ExtractionConfig.to_map(validated_config) do
       Native.extract_with_options(input, mime_type, config_map)
     else
       {:error, reason} -> {:error, "Invalid configuration: #{reason}"}
@@ -441,9 +434,9 @@ defmodule Kreuzberg do
       {:ok, png} = Kreuzberg.render_pdf_page("document.pdf", 2, dpi: 300)
   """
   @spec render_pdf_page(String.t(), non_neg_integer(), keyword()) ::
-          {:ok, binary()} | {:error, String.t()}
+  {:ok, binary()} | {:error, String.t()}
   def render_pdf_page(path, page_index, opts \\ [])
-      when is_binary(path) and is_integer(page_index) and page_index >= 0 do
+  when is_binary(path) and is_integer(page_index) and page_index >= 0 do
     dpi = Keyword.get(opts, :dpi, 150)
 
     case Native.render_pdf_page(path, page_index, dpi) do
@@ -480,22 +473,22 @@ defmodule Kreuzberg do
     dpi = Keyword.get(opts, :dpi, 150)
 
     Stream.resource(
-      fn -> Native.render_pdf_pages_iter_open(path, dpi) end,
-      fn
-        {:error, _reason} = err ->
-          {:halt, err}
+  fn -> Native.render_pdf_pages_iter_open(path, dpi) end,
+    fn
+      {:error, _reason} = err ->
+      {:halt, err}
 
-        handle ->
-          case Native.render_pdf_pages_iter_next(handle) do
-            {:ok, {page_index, png}} -> {[{page_index, png}], handle}
-            :done -> {:halt, handle}
-            {:error, _reason} -> {:halt, handle}
-          end
-      end,
-      fn
-        {:error, _} -> :ok
-        handle -> Native.render_pdf_pages_iter_free(handle)
+      handle ->
+      case Native.render_pdf_pages_iter_next(handle) do
+        {:ok, {page_index, png}} -> {[{page_index, png}], handle}
+        :done -> {:halt, handle}
+        {:error, _reason} -> {:halt, handle}
       end
+    end,
+    fn
+      {:error, _} -> :ok
+      handle -> Native.render_pdf_pages_iter_free(handle)
+    end
     )
   end
 
@@ -505,7 +498,7 @@ defmodule Kreuzberg do
 
   defp call_native_file(path, mime_type, config) do
     with {:ok, validated_config} <- Helpers.validate_config(config),
-         config_map <- ExtractionConfig.to_map(validated_config) do
+    config_map <- ExtractionConfig.to_map(validated_config) do
       Native.extract_file_with_options(path, mime_type, config_map)
     else
       {:error, reason} -> {:error, "Invalid configuration: #{reason}"}
@@ -578,10 +571,10 @@ defmodule Kreuzberg do
   def do_embed!(texts, config \\ nil) do
     case do_embed(texts, config) do
       {:ok, result} ->
-        result
+      result
 
       {:error, reason} ->
-        raise Error, message: reason, reason: Kreuzberg.UtilityAPI.classify_error(reason)
+      raise Error, message: reason, reason: Kreuzberg.UtilityAPI.classify_error(reason)
     end
   end
 end

@@ -13,36 +13,36 @@ defmodule Kreuzberg.HierarchicalBlock do
   """
 
   @type t :: %__MODULE__{
-          text: String.t(),
-          font_size: float(),
-          level: String.t(),
-          bbox: list(float()) | nil
-        }
+  text: String.t(),
+  font_size: float(),
+  level: String.t(),
+  bbox: list(float()) | nil
+  }
 
   defstruct [
-    :bbox,
-    text: "",
-    font_size: 0.0,
-    level: "body"
+  :bbox,
+  text: "",
+  font_size: 0.0,
+  level: "body"
   ]
 
   @spec from_map(map()) :: t()
   def from_map(data) when is_map(data) do
     %__MODULE__{
-      text: data["text"] || "",
-      font_size: (data["font_size"] || 0.0) * 1.0,
-      level: data["level"] || "body",
-      bbox: data["bbox"]
+    text: data["text"] || "",
+    font_size: (data["font_size"] || 0.0) * 1.0,
+    level: data["level"] || "body",
+    bbox: data["bbox"]
     }
   end
 
   @spec to_map(t()) :: map()
   def to_map(%__MODULE__{} = block) do
     %{
-      "text" => block.text,
-      "font_size" => block.font_size,
-      "level" => block.level,
-      "bbox" => block.bbox
+    "text" => block.text,
+    "font_size" => block.font_size,
+    "level" => block.level,
+    "bbox" => block.bbox
     }
   end
 end
@@ -60,37 +60,37 @@ defmodule Kreuzberg.PageHierarchy do
   """
 
   @type t :: %__MODULE__{
-          block_count: non_neg_integer(),
-          blocks: list(Kreuzberg.HierarchicalBlock.t())
-        }
+  block_count: non_neg_integer(),
+  blocks: list(Kreuzberg.HierarchicalBlock.t())
+  }
 
   defstruct block_count: 0, blocks: []
 
   @spec from_map(map()) :: t()
   def from_map(data) when is_map(data) do
     blocks =
-      case data["blocks"] do
-        nil ->
-          []
+    case data["blocks"] do
+      nil ->
+      []
 
-        list when is_list(list) ->
-          Enum.map(list, fn
-            %Kreuzberg.HierarchicalBlock{} = b -> b
-            map when is_map(map) -> Kreuzberg.HierarchicalBlock.from_map(map)
-          end)
-      end
+      list when is_list(list) ->
+      Enum.map(list, fn
+        %Kreuzberg.HierarchicalBlock{} = b -> b
+        map when is_map(map) -> Kreuzberg.HierarchicalBlock.from_map(map)
+      end)
+    end
 
     %__MODULE__{
-      block_count: data["block_count"] || 0,
-      blocks: blocks
+    block_count: data["block_count"] || 0,
+    blocks: blocks
     }
   end
 
   @spec to_map(t()) :: map()
   def to_map(%__MODULE__{} = h) do
     %{
-      "block_count" => h.block_count,
-      "blocks" => Enum.map(h.blocks, &Kreuzberg.HierarchicalBlock.to_map/1)
+    "block_count" => h.block_count,
+    "blocks" => Enum.map(h.blocks, &Kreuzberg.HierarchicalBlock.to_map/1)
     }
   end
 end

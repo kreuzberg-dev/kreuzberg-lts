@@ -98,8 +98,7 @@ readonly class TesseractConfig
          * @default null (no blacklist)
          */
         public ?string $tesseditCharBlacklist = null,
-    ) {
-    }
+    ) {}
 
     /**
      * Create configuration from array data.
@@ -188,13 +187,16 @@ readonly class TesseractConfig
      */
     public function toArray(): array
     {
-        return array_filter([
-            'psm' => $this->psm,
-            'oem' => $this->oem,
-            'enable_table_detection' => $this->enableTableDetection,
-            'tessedit_char_whitelist' => $this->tesseditCharWhitelist,
-            'tessedit_char_blacklist' => $this->tesseditCharBlacklist,
-        ], static fn ($value): bool => $value !== null);
+        return array_filter(
+            [
+                'psm' => $this->psm,
+                'oem' => $this->oem,
+                'enable_table_detection' => $this->enableTableDetection,
+                'tessedit_char_whitelist' => $this->tesseditCharWhitelist,
+                'tessedit_char_blacklist' => $this->tesseditCharBlacklist,
+            ],
+            static fn($value): bool => $value !== null,
+        );
     }
 
     /**

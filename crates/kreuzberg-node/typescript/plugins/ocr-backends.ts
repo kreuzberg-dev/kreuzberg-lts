@@ -12,30 +12,30 @@ type NestedOcrProcessTuple = [OcrProcessTuple];
  * Type guard for OCR process tuple
  */
 function isOcrProcessTuple(value: unknown): value is OcrProcessTuple {
-	return (
-		Array.isArray(value) &&
-		value.length === 2 &&
-		typeof value[1] === "string" &&
-		(typeof value[0] === "string" || Buffer.isBuffer(value[0]) || value[0] instanceof Uint8Array)
-	);
+  return (
+    Array.isArray(value) &&
+    value.length === 2 &&
+    typeof value[1] === "string" &&
+    (typeof value[0] === "string" || Buffer.isBuffer(value[0]) || value[0] instanceof Uint8Array)
+  );
 }
 
 /**
  * Type guard for nested OCR process tuple
  */
 function isNestedOcrProcessTuple(value: unknown): value is NestedOcrProcessTuple {
-	return Array.isArray(value) && value.length === 1 && isOcrProcessTuple(value[0]);
+  return Array.isArray(value) && value.length === 1 && isOcrProcessTuple(value[0]);
 }
 
 /**
  * Describes an OCR payload for debugging
  */
 function describePayload(value: OcrProcessPayload) {
-	if (typeof value === "string") {
-		return { ctor: "String", length: value.length };
-	}
+  if (typeof value === "string") {
+    return { ctor: "String", length: value.length };
+  }
 
-	return { ctor: value.constructor?.name ?? "Buffer", length: value.length };
+  return { ctor: value.constructor?.name ?? "Buffer", length: value.length };
 }
 
 /**
@@ -103,62 +103,62 @@ function describePayload(value: OcrProcessPayload) {
  * ```
  */
 export function registerOcrBackend(backend: OcrBackendProtocol): void {
-	const binding = getBinding();
+  const binding = getBinding();
 
-	const wrappedBackend = {
-		name: typeof backend.name === "function" ? backend.name() : backend.name,
-		supportedLanguages:
-			typeof backend.supportedLanguages === "function"
-				? backend.supportedLanguages()
-				: (backend.supportedLanguages ?? ["en"]),
-		async processImage(
-			...processArgs: [OcrProcessPayload | OcrProcessTuple | NestedOcrProcessTuple, string?]
-		): Promise<string> {
-			const [imagePayload, maybeLanguage] = processArgs;
-			if (process.env["KREUZBERG_DEBUG_OCR"] === "1") {
-				console.log("[registerOcrBackend] JS arguments", { length: processArgs.length });
-				console.log("[registerOcrBackend] Raw args", {
-					imagePayloadType: Array.isArray(imagePayload) ? "tuple" : typeof imagePayload,
-					maybeLanguageType: typeof maybeLanguage,
-					metadata: Array.isArray(imagePayload) ? { tupleLength: imagePayload.length } : describePayload(imagePayload),
-				});
-			}
+  const wrappedBackend = {
+    name: typeof backend.name === "function" ? backend.name() : backend.name,
+    supportedLanguages:
+      typeof backend.supportedLanguages === "function"
+        ? backend.supportedLanguages()
+        : (backend.supportedLanguages ?? ["en"]),
+    async processImage(
+      ...processArgs: [OcrProcessPayload | OcrProcessTuple | NestedOcrProcessTuple, string?]
+    ): Promise<string> {
+      const [imagePayload, maybeLanguage] = processArgs;
+      if (process.env["KREUZBERG_DEBUG_OCR"] === "1") {
+        console.log("[registerOcrBackend] JS arguments", { length: processArgs.length });
+        console.log("[registerOcrBackend] Raw args", {
+          imagePayloadType: Array.isArray(imagePayload) ? "tuple" : typeof imagePayload,
+          maybeLanguageType: typeof maybeLanguage,
+          metadata: Array.isArray(imagePayload) ? { tupleLength: imagePayload.length } : describePayload(imagePayload),
+        });
+      }
 
-			let rawBytes: OcrProcessPayload;
-			let language = maybeLanguage;
+      let rawBytes: OcrProcessPayload;
+      let language = maybeLanguage;
 
-			if (isNestedOcrProcessTuple(imagePayload)) {
-				[rawBytes, language] = imagePayload[0];
-			} else if (isOcrProcessTuple(imagePayload)) {
-				[rawBytes, language] = imagePayload;
-			} else {
-				rawBytes = imagePayload;
-			}
+      if (isNestedOcrProcessTuple(imagePayload)) {
+        [rawBytes, language] = imagePayload[0];
+      } else if (isOcrProcessTuple(imagePayload)) {
+        [rawBytes, language] = imagePayload;
+      } else {
+        rawBytes = imagePayload;
+      }
 
-			if (typeof language !== "string") {
-				throw new Error("OCR backend did not receive a language parameter");
-			}
+      if (typeof language !== "string") {
+        throw new Error("OCR backend did not receive a language parameter");
+      }
 
-			if (process.env["KREUZBERG_DEBUG_OCR"] === "1") {
-				const length = typeof rawBytes === "string" ? rawBytes.length : rawBytes.length;
-				console.log(
-					"[registerOcrBackend] Received payload",
-					Array.isArray(imagePayload) ? "tuple" : typeof rawBytes,
-					"ctor",
-					describePayload(rawBytes).ctor,
-					"length",
-					length,
-				);
-			}
+      if (process.env["KREUZBERG_DEBUG_OCR"] === "1") {
+        const length = typeof rawBytes === "string" ? rawBytes.length : rawBytes.length;
+        console.log(
+          "[registerOcrBackend] Received payload",
+          Array.isArray(imagePayload) ? "tuple" : typeof rawBytes,
+          "ctor",
+          describePayload(rawBytes).ctor,
+          "length",
+          length,
+        );
+      }
 
-			const buffer = typeof rawBytes === "string" ? Buffer.from(rawBytes, "base64") : Buffer.from(rawBytes);
-			const result = await backend.processImage(new Uint8Array(buffer), language);
+      const buffer = typeof rawBytes === "string" ? Buffer.from(rawBytes, "base64") : Buffer.from(rawBytes);
+      const result = await backend.processImage(new Uint8Array(buffer), language);
 
-			return JSON.stringify(result);
-		},
-	};
+      return JSON.stringify(result);
+    },
+  };
 
-	binding.registerOcrBackend(wrappedBackend);
+  binding.registerOcrBackend(wrappedBackend);
 }
 
 /**
@@ -178,8 +178,8 @@ export function registerOcrBackend(backend: OcrBackendProtocol): void {
  * ```
  */
 export function listOcrBackends(): string[] {
-	const binding = getBinding();
-	return binding.listOcrBackends();
+  const binding = getBinding();
+  return binding.listOcrBackends();
 }
 
 /**
@@ -199,8 +199,8 @@ export function listOcrBackends(): string[] {
  * ```
  */
 export function unregisterOcrBackend(name: string): void {
-	const binding = getBinding();
-	binding.unregisterOcrBackend(name);
+  const binding = getBinding();
+  binding.unregisterOcrBackend(name);
 }
 
 /**
@@ -218,8 +218,8 @@ export function unregisterOcrBackend(name: string): void {
  * ```
  */
 export function clearOcrBackends(): void {
-	const binding = getBinding();
-	binding.clearOcrBackends();
+  const binding = getBinding();
+  binding.clearOcrBackends();
 }
 
 /**
@@ -241,8 +241,6 @@ export function clearOcrBackends(): void {
  * ```
  */
 export function getOcrBackend(name: string): unknown {
-	// Note: This function is not directly exposed by the native binding
-	// It's a helper function that uses listOcrBackends to check if a backend exists
-	const backends = listOcrBackends();
-	return backends.includes(name) ? { name } : null;
+  const backends = listOcrBackends();
+  return backends.includes(name) ? { name } : null;
 }

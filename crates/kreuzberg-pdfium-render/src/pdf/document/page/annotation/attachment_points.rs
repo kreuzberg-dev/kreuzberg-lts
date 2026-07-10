@@ -37,8 +37,6 @@ impl<'a> PdfPageAnnotationAttachmentPoints<'a> {
             self.bindings.FPDFAnnot_CountAttachmentPoints(self.annotation_handle)
                 as PdfPageAnnotationAttachmentPointIndex
         } else {
-            // Attachment points are not supported for this annotation type.
-
             0
         }
     }

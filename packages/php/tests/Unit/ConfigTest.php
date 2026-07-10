@@ -106,10 +106,7 @@ final class ConfigTest extends TestCase
     #[Test]
     public function it_creates_ocr_config(): void
     {
-        $config = new OcrConfig(
-            backend: 'tesseract',
-            language: 'eng',
-        );
+        $config = new OcrConfig(backend: 'tesseract', language: 'eng');
 
         $array = $config->toArray();
 
@@ -121,11 +118,7 @@ final class ConfigTest extends TestCase
     #[Test]
     public function it_creates_pdf_config(): void
     {
-        $config = new PdfConfig(
-            extractImages: true,
-            extractMetadata: false,
-            passwords: ['test'],
-        );
+        $config = new PdfConfig(extractImages: true, extractMetadata: false, passwords: ['test']);
 
         $array = $config->toArray();
 
@@ -138,11 +131,7 @@ final class ConfigTest extends TestCase
     #[Test]
     public function it_creates_chunking_config(): void
     {
-        $config = new ChunkingConfig(
-            maxChars: 1000,
-            maxOverlap: 200,
-            respectSentences: true,
-        );
+        $config = new ChunkingConfig(maxChars: 1000, maxOverlap: 200, respectSentences: true);
 
         $array = $config->toArray();
 
@@ -155,11 +144,7 @@ final class ConfigTest extends TestCase
     #[Test]
     public function it_creates_tesseract_config(): void
     {
-        $config = new TesseractConfig(
-            psm: 3,
-            oem: 3,
-            enableTableDetection: true,
-        );
+        $config = new TesseractConfig(psm: 3, oem: 3, enableTableDetection: true);
 
         $array = $config->toArray();
 
@@ -201,7 +186,6 @@ final class ConfigTest extends TestCase
 
         $array = $config->toArray();
 
-        // Default values should be filtered out
         $this->assertArrayNotHasKey('use_cache', $array);
         $this->assertArrayNotHasKey('enable_quality_processing', $array);
         $this->assertArrayNotHasKey('force_ocr', $array);
@@ -233,10 +217,7 @@ final class ConfigTest extends TestCase
     #[Test]
     public function it_creates_language_detection_config(): void
     {
-        $config = new LanguageDetectionConfig(
-            enabled: true,
-            confidenceThreshold: 0.8,
-        );
+        $config = new LanguageDetectionConfig(enabled: true, confidenceThreshold: 0.8);
 
         $array = $config->toArray();
 
@@ -248,11 +229,7 @@ final class ConfigTest extends TestCase
     #[Test]
     public function it_creates_keyword_config(): void
     {
-        $config = new KeywordConfig(
-            maxKeywords: 10,
-            minScore: 0.5,
-            language: 'en',
-        );
+        $config = new KeywordConfig(maxKeywords: 10, minScore: 0.5, language: 'en');
 
         $array = $config->toArray();
 

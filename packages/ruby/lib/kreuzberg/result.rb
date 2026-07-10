@@ -1,21 +1,41 @@
 # frozen_string_literal: true
 
 begin
-  require 'json'
+  require "json"
+
 rescue LoadError
-  require 'json/pure'
+  require "json/pure"
+
 end
 
-require_relative 'document_structure'
+require_relative "document_structure"
 
 module Kreuzberg
   # @example
   # rubocop:disable Metrics/ClassLength
   class Result
-    attr_reader :content, :mime_type, :metadata, :metadata_json, :tables,
-                :detected_languages, :chunks, :images, :pages, :elements, :ocr_elements, :djot_content,
-                :document, :extracted_keywords, :quality_score, :processing_warnings, :annotations,
-                :uris, :children, :structured_output
+    attr_reader(
+      :content,
+      :mime_type,
+      :metadata,
+      :metadata_json,
+      :tables,
+      :detected_languages,
+      :chunks,
+      :images,
+      :pages,
+      :elements,
+      :ocr_elements,
+      :djot_content,
+      :document,
+      :extracted_keywords,
+      :quality_score,
+      :processing_warnings,
+      :annotations,
+      :uris,
+      :children,
+      :structured_output
+    )
 
     # @!attribute [r] cells
     #   @return [Array<Array<String>>] Table cells (2D array)
@@ -27,7 +47,7 @@ module Kreuzberg
     #   @return [BoundingBox, nil] Bounding box of the table on the page
     Table = Struct.new(:cells, :markdown, :page_number, :bounding_box) do
       def to_h
-        { cells: cells, markdown: markdown, page_number: page_number, bounding_box: bounding_box&.to_h }
+        {cells: cells, markdown: markdown, page_number: page_number, bounding_box: bounding_box&.to_h}
       end
     end
 
@@ -121,7 +141,7 @@ module Kreuzberg
     #   @return [Array<Float>, nil] Bounding box (left, top, right, bottom)
     HierarchicalBlock = Struct.new(:text, :font_size, :level, :bbox) do
       def to_h
-        { text: text, font_size: font_size, level: level, bbox: bbox }
+        {text: text, font_size: font_size, level: level, bbox: bbox}
       end
     end
 
@@ -131,7 +151,7 @@ module Kreuzberg
     #   @return [Array<HierarchicalBlock>] Hierarchical blocks
     PageHierarchy = Struct.new(:block_count, :blocks) do
       def to_h
-        { block_count: block_count, blocks: blocks.map(&:to_h) }
+        {block_count: block_count, blocks: blocks.map(&:to_h)}
       end
     end
 
@@ -188,7 +208,7 @@ module Kreuzberg
     #   @return [Float] Top y-coordinate
     ElementBoundingBox = Struct.new(:x0, :y0, :x1, :y1) do
       def to_h
-        { x0: x0, y0: y0, x1: x1, y1: y1 }
+        {x0: x0, y0: y0, x1: x1, y1: y1}
       end
     end
 
@@ -300,8 +320,16 @@ module Kreuzberg
 
     # OCR text element with geometry and metadata
     class OcrElement
-      attr_reader :text, :geometry, :confidence, :level, :rotation,
-                  :page_number, :parent_id, :backend_metadata
+      attr_reader(
+        :text,
+        :geometry,
+        :confidence,
+        :level,
+        :rotation,
+        :page_number,
+        :parent_id,
+        :backend_metadata
+      )
 
       def initialize(
         text:,
@@ -343,26 +371,26 @@ module Kreuzberg
     #
     # rubocop:disable Metrics/AbcSize, Metrics/MethodLength
     def initialize(hash)
-      @content = get_value(hash, 'content', '')
-      @mime_type = get_value(hash, 'mime_type', '')
-      @metadata_json = get_value(hash, 'metadata_json', '{}')
+      @content = get_value(hash, "content", "")
+      @mime_type = get_value(hash, "mime_type", "")
+      @metadata_json = get_value(hash, "metadata_json", "{}")
       @metadata = parse_metadata(@metadata_json)
-      @tables = parse_tables(get_value(hash, 'tables'))
-      @detected_languages = parse_detected_languages(get_value(hash, 'detected_languages'))
-      @chunks = parse_chunks(get_value(hash, 'chunks'))
-      @images = parse_images(get_value(hash, 'images'))
-      @pages = parse_pages(get_value(hash, 'pages'))
-      @elements = parse_elements(get_value(hash, 'elements'))
-      @ocr_elements = parse_ocr_elements(get_value(hash, 'ocr_elements'))
-      @djot_content = parse_djot_content(get_value(hash, 'djot_content'))
-      @document = parse_document_structure(get_value(hash, 'document'))
-      @extracted_keywords = parse_extracted_keywords(get_value(hash, 'extracted_keywords'))
-      @quality_score = get_value(hash, 'quality_score')
-      @processing_warnings = parse_processing_warnings(get_value(hash, 'processing_warnings'))
-      @annotations = parse_annotations(get_value(hash, 'annotations'))
-      @uris = parse_uris(get_value(hash, 'uris'))
-      @children = parse_children(get_value(hash, 'children'))
-      @structured_output = get_value(hash, 'structured_output')
+      @tables = parse_tables(get_value(hash, "tables"))
+      @detected_languages = parse_detected_languages(get_value(hash, "detected_languages"))
+      @chunks = parse_chunks(get_value(hash, "chunks"))
+      @images = parse_images(get_value(hash, "images"))
+      @pages = parse_pages(get_value(hash, "pages"))
+      @elements = parse_elements(get_value(hash, "elements"))
+      @ocr_elements = parse_ocr_elements(get_value(hash, "ocr_elements"))
+      @djot_content = parse_djot_content(get_value(hash, "djot_content"))
+      @document = parse_document_structure(get_value(hash, "document"))
+      @extracted_keywords = parse_extracted_keywords(get_value(hash, "extracted_keywords"))
+      @quality_score = get_value(hash, "quality_score")
+      @processing_warnings = parse_processing_warnings(get_value(hash, "processing_warnings"))
+      @annotations = parse_annotations(get_value(hash, "annotations"))
+      @uris = parse_uris(get_value(hash, "uris"))
+      @children = parse_children(get_value(hash, "children"))
+      @structured_output = get_value(hash, "structured_output")
     end
     # rubocop:enable Metrics/AbcSize, Metrics/MethodLength
 
@@ -413,8 +441,8 @@ module Kreuzberg
     #   puts "Document has #{result.page_count} pages"
     #
     def page_count
-      if @metadata.is_a?(Hash) && @metadata['pages'].is_a?(Hash)
-        @metadata['pages']['total_count'] || 0
+      if @metadata.is_a?(Hash) && @metadata["pages"].is_a?(Hash)
+        @metadata["pages"]["total_count"] || 0
       else
         0
       end
@@ -444,7 +472,7 @@ module Kreuzberg
     #   puts "Language: #{lang}" if lang
     #
     def detected_language
-      return @metadata['language'] if @metadata.is_a?(Hash) && @metadata['language']
+      return @metadata["language"] if @metadata.is_a?(Hash) && @metadata["language"]
       return @detected_languages&.first if @detected_languages&.any?
 
       nil
@@ -468,7 +496,7 @@ module Kreuzberg
     def metadata_field(name)
       return nil unless @metadata.is_a?(Hash)
 
-      parts = name.to_s.split('.')
+      parts = name.to_s.split(".")
       value = @metadata
 
       parts.each do |part|
@@ -520,11 +548,11 @@ module Kreuzberg
       return [] if tables_data.nil? || tables_data.empty?
 
       tables_data.map do |table_hash|
-        bounding_box = parse_bounding_box(table_hash['bounding_box'])
+        bounding_box = parse_bounding_box(table_hash["bounding_box"])
         Table.new(
-          cells: table_hash['cells'] || [],
-          markdown: table_hash['markdown'] || '',
-          page_number: table_hash['page_number'] || 0,
+          cells: table_hash["cells"] || [],
+          markdown: table_hash["markdown"] || "",
+          page_number: table_hash["page_number"] || 0,
           bounding_box: bounding_box
         )
       end
@@ -541,16 +569,16 @@ module Kreuzberg
 
       chunks_data.map do |chunk_hash|
         Chunk.new(
-          content: chunk_hash['content'],
-          byte_start: chunk_hash['byte_start'],
-          byte_end: chunk_hash['byte_end'],
-          token_count: chunk_hash['token_count'],
-          chunk_index: chunk_hash['chunk_index'],
-          total_chunks: chunk_hash['total_chunks'],
-          first_page: chunk_hash['first_page'],
-          last_page: chunk_hash['last_page'],
-          chunk_type: chunk_hash['chunk_type'],
-          embedding: chunk_hash['embedding']
+          content: chunk_hash["content"],
+          byte_start: chunk_hash["byte_start"],
+          byte_end: chunk_hash["byte_end"],
+          token_count: chunk_hash["token_count"],
+          chunk_index: chunk_hash["chunk_index"],
+          total_chunks: chunk_hash["total_chunks"],
+          first_page: chunk_hash["first_page"],
+          last_page: chunk_hash["last_page"],
+          chunk_type: chunk_hash["chunk_type"],
+          embedding: chunk_hash["embedding"]
         )
       end
     end
@@ -562,21 +590,21 @@ module Kreuzberg
     end
 
     def parse_single_image(image_hash)
-      data = image_hash['data']
+      data = image_hash["data"]
       data = data.dup.force_encoding(Encoding::BINARY) if data.respond_to?(:force_encoding)
       Image.new(
         data: data,
-        format: image_hash['format'],
-        image_index: image_hash['image_index'],
-        page_number: image_hash['page_number'],
-        width: image_hash['width'],
-        height: image_hash['height'],
-        colorspace: image_hash['colorspace'],
-        bits_per_component: image_hash['bits_per_component'],
-        is_mask: image_hash['is_mask'],
-        description: image_hash['description'],
-        bounding_box: parse_bounding_box(image_hash['bounding_box']),
-        ocr_result: image_hash['ocr_result'] ? Result.new(image_hash['ocr_result']) : nil
+        format: image_hash["format"],
+        image_index: image_hash["image_index"],
+        page_number: image_hash["page_number"],
+        width: image_hash["width"],
+        height: image_hash["height"],
+        colorspace: image_hash["colorspace"],
+        bits_per_component: image_hash["bits_per_component"],
+        is_mask: image_hash["is_mask"],
+        description: image_hash["description"],
+        bounding_box: parse_bounding_box(image_hash["bounding_box"]),
+        ocr_result: image_hash["ocr_result"] ? Result.new(image_hash["ocr_result"]) : nil
       )
     end
 
@@ -585,13 +613,13 @@ module Kreuzberg
 
       pages_data.map do |page_hash|
         PageContent.new(
-          page_number: page_hash['page_number'],
-          content: page_hash['content'],
-          tables: parse_tables(page_hash['tables']),
-          images: parse_images(page_hash['images']),
-          hierarchy: parse_page_hierarchy(page_hash['hierarchy']),
-          is_blank: page_hash['is_blank'],
-          layout_regions: parse_layout_regions(page_hash['layout_regions'])
+          page_number: page_hash["page_number"],
+          content: page_hash["content"],
+          tables: parse_tables(page_hash["tables"]),
+          images: parse_images(page_hash["images"]),
+          hierarchy: parse_page_hierarchy(page_hash["hierarchy"]),
+          is_blank: page_hash["is_blank"],
+          layout_regions: parse_layout_regions(page_hash["layout_regions"])
         )
       end
     end
@@ -601,10 +629,10 @@ module Kreuzberg
 
       regions_data.map do |region_hash|
         LayoutRegion.new(
-          class_name: region_hash['class'],
-          confidence: region_hash['confidence']&.to_f,
-          bounding_box: parse_element_bounding_box(region_hash['bounding_box']),
-          area_fraction: region_hash['area_fraction']&.to_f
+          class_name: region_hash["class"],
+          confidence: region_hash["confidence"]&.to_f,
+          bounding_box: parse_element_bounding_box(region_hash["bounding_box"]),
+          area_fraction: region_hash["area_fraction"]&.to_f
         )
       end
     end
@@ -613,27 +641,27 @@ module Kreuzberg
       return nil if bounding_box_data.nil?
 
       ElementBoundingBox.new(
-        x0: bounding_box_data['x0'].to_f,
-        y0: bounding_box_data['y0'].to_f,
-        x1: bounding_box_data['x1'].to_f,
-        y1: bounding_box_data['y1'].to_f
+        x0: bounding_box_data["x0"].to_f,
+        y0: bounding_box_data["y0"].to_f,
+        x1: bounding_box_data["x1"].to_f,
+        y1: bounding_box_data["y1"].to_f
       )
     end
 
     def parse_page_hierarchy(hierarchy_data)
       return nil if hierarchy_data.nil?
 
-      blocks = (hierarchy_data['blocks'] || []).map do |block_hash|
+      blocks = (hierarchy_data["blocks"] || []).map do |block_hash|
         HierarchicalBlock.new(
-          text: block_hash['text'],
-          font_size: block_hash['font_size']&.to_f,
-          level: block_hash['level'],
-          bbox: block_hash['bbox']
+          text: block_hash["text"],
+          font_size: block_hash["font_size"]&.to_f,
+          level: block_hash["level"],
+          bbox: block_hash["bbox"]
         )
       end
 
       PageHierarchy.new(
-        block_count: hierarchy_data['block_count'] || 0,
+        block_count: hierarchy_data["block_count"] || 0,
         blocks: blocks
       )
     end
@@ -645,21 +673,21 @@ module Kreuzberg
     end
 
     def parse_element(element_hash)
-      metadata_hash = element_hash['metadata'] || {}
-      coordinates = parse_element_coordinates(metadata_hash['coordinates'])
+      metadata_hash = element_hash["metadata"] || {}
+      coordinates = parse_element_coordinates(metadata_hash["coordinates"])
 
       metadata = ElementMetadataStruct.new(
-        page_number: metadata_hash['page_number'],
-        filename: metadata_hash['filename'],
+        page_number: metadata_hash["page_number"],
+        filename: metadata_hash["filename"],
         coordinates: coordinates,
-        element_index: metadata_hash['element_index'],
-        additional: metadata_hash['additional'] || {}
+        element_index: metadata_hash["element_index"],
+        additional: metadata_hash["additional"] || {}
       )
 
       ElementStruct.new(
-        element_id: element_hash['element_id'],
-        element_type: element_hash['element_type'],
-        text: element_hash['text'],
+        element_id: element_hash["element_id"],
+        element_type: element_hash["element_type"],
+        text: element_hash["text"],
         metadata: metadata
       )
     end
@@ -668,25 +696,23 @@ module Kreuzberg
       return nil if coordinates_data.nil?
 
       ElementBoundingBox.new(
-        x0: coordinates_data['x0'].to_f,
-        y0: coordinates_data['y0'].to_f,
-        x1: coordinates_data['x1'].to_f,
-        y1: coordinates_data['y1'].to_f
+        x0: coordinates_data["x0"].to_f,
+        y0: coordinates_data["y0"].to_f,
+        x1: coordinates_data["x1"].to_f,
+        y1: coordinates_data["y1"].to_f
       )
     end
 
     def parse_bounding_box(bounding_box_data)
       return nil if bounding_box_data.nil?
 
-      # If it's already a BoundingBox object, return it
       return bounding_box_data if bounding_box_data.is_a?(BoundingBox)
 
-      # Otherwise parse from hash
       BoundingBox.new(
-        x0: bounding_box_data['x0'].to_f,
-        y0: bounding_box_data['y0'].to_f,
-        x1: bounding_box_data['x1'].to_f,
-        y1: bounding_box_data['y1'].to_f
+        x0: bounding_box_data["x0"].to_f,
+        y0: bounding_box_data["y0"].to_f,
+        x1: bounding_box_data["x1"].to_f,
+        y1: bounding_box_data["y1"].to_f
       )
     end
 
@@ -695,14 +721,14 @@ module Kreuzberg
 
       ocr_elements_data.map do |element_hash|
         OcrElement.new(
-          text: element_hash['text'],
-          geometry: parse_ocr_geometry(element_hash['geometry']),
-          confidence: parse_ocr_confidence(element_hash['confidence']),
-          level: element_hash['level'],
-          rotation: parse_ocr_rotation(element_hash['rotation']),
-          page_number: element_hash['page_number'],
-          parent_id: element_hash['parent_id'],
-          backend_metadata: element_hash['backend_metadata']
+          text: element_hash["text"],
+          geometry: parse_ocr_geometry(element_hash["geometry"]),
+          confidence: parse_ocr_confidence(element_hash["confidence"]),
+          level: element_hash["level"],
+          rotation: parse_ocr_rotation(element_hash["rotation"]),
+          page_number: element_hash["page_number"],
+          parent_id: element_hash["parent_id"],
+          backend_metadata: element_hash["backend_metadata"]
         )
       end
     end
@@ -711,21 +737,25 @@ module Kreuzberg
       return nil unless data.is_a?(Hash)
 
       OcrBoundingGeometry.new(
-        type: data['type'], left: data['left'], top: data['top'],
-        width: data['width'], height: data['height'], points: data['points']
+        type: data["type"],
+        left: data["left"],
+        top: data["top"],
+        width: data["width"],
+        height: data["height"],
+        points: data["points"]
       )
     end
 
     def parse_ocr_confidence(data)
       return nil unless data.is_a?(Hash)
 
-      OcrConfidence.new(detection: data['detection'], recognition: data['recognition'])
+      OcrConfidence.new(detection: data["detection"], recognition: data["recognition"])
     end
 
     def parse_ocr_rotation(data)
       return nil unless data.is_a?(Hash)
 
-      OcrRotation.new(angle_degrees: data['angle_degrees'], confidence: data['confidence'])
+      OcrRotation.new(angle_degrees: data["angle_degrees"], confidence: data["confidence"])
     end
 
     def parse_djot_content(djot_data)
@@ -745,10 +775,10 @@ module Kreuzberg
 
       keywords_data.map do |kw_hash|
         Kreuzberg::ExtractedKeyword.new(
-          text: kw_hash['text'] || '',
-          score: (kw_hash['score'] || 0.0).to_f,
-          algorithm: kw_hash['algorithm'] || '',
-          positions: kw_hash['positions']
+          text: kw_hash["text"] || "",
+          score: (kw_hash["score"] || 0.0).to_f,
+          algorithm: kw_hash["algorithm"] || "",
+          positions: kw_hash["positions"]
         )
       end
     end
@@ -758,8 +788,8 @@ module Kreuzberg
 
       warnings_data.map do |w_hash|
         Kreuzberg::ProcessingWarning.new(
-          source: w_hash['source'] || '',
-          message: w_hash['message'] || ''
+          source: w_hash["source"] || "",
+          message: w_hash["message"] || ""
         )
       end
     end
@@ -772,10 +802,10 @@ module Kreuzberg
 
     def build_annotation(a_hash)
       PdfAnnotation.new(
-        annotation_type: a_hash['annotation_type'] || '',
-        content: a_hash['content'],
-        page_number: a_hash['page_number']&.to_i,
-        bounding_box: build_annotation_bbox(a_hash['bounding_box'])
+        annotation_type: a_hash["annotation_type"] || "",
+        content: a_hash["content"],
+        page_number: a_hash["page_number"]&.to_i,
+        bounding_box: build_annotation_bbox(a_hash["bounding_box"])
       )
     end
 
@@ -783,10 +813,10 @@ module Kreuzberg
       return nil if bbox_data.nil?
 
       PdfAnnotationBoundingBox.new(
-        left: bbox_field(bbox_data, 'left', 'x0'),
-        top: bbox_field(bbox_data, 'top', 'y0'),
-        right: bbox_field(bbox_data, 'right', 'x1'),
-        bottom: bbox_field(bbox_data, 'bottom', 'y1')
+        left: bbox_field(bbox_data, "left", "x0"),
+        top: bbox_field(bbox_data, "top", "y0"),
+        right: bbox_field(bbox_data, "right", "x1"),
+        bottom: bbox_field(bbox_data, "bottom", "y1")
       )
     end
 
@@ -802,10 +832,10 @@ module Kreuzberg
 
     def build_uri(u_hash)
       Struct.new(:url, :label, :page, :kind).new(
-        url: u_hash['url'] || '',
-        label: u_hash['label'],
-        page: u_hash['page']&.to_i,
-        kind: u_hash['kind'] || 'hyperlink'
+        url: u_hash["url"] || "",
+        label: u_hash["label"],
+        page: u_hash["page"]&.to_i,
+        kind: u_hash["kind"] || "hyperlink"
       )
     end
 
@@ -817,9 +847,9 @@ module Kreuzberg
 
     def build_archive_entry(c_hash)
       Struct.new(:path, :mime_type, :result).new(
-        path: c_hash['path'] || '',
-        mime_type: c_hash['mime_type'] || '',
-        result: c_hash['result'] ? self.class.new(c_hash['result']) : nil
+        path: c_hash["path"] || "",
+        mime_type: c_hash["mime_type"] || "",
+        result: c_hash["result"] ? self.class.new(c_hash["result"]) : nil
       )
     end
   end

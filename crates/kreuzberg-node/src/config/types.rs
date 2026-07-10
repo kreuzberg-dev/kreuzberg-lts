@@ -1317,7 +1317,6 @@ impl From<JsAccelerationConfig> for RustAccelerationConfig {
             Some("coreml") => RustExecutionProviderType::CoreMl,
             Some("cuda") => RustExecutionProviderType::Cuda,
             Some("tensorrt") | Some("tensor_rt") => RustExecutionProviderType::TensorRt,
-            // "auto" or anything unrecognized
             _ => RustExecutionProviderType::Auto,
         };
         RustAccelerationConfig {

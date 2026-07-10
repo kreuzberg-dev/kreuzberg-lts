@@ -1,13 +1,4 @@
 #!/usr/bin/env bash
-# scripts/ci/docs/check-build-log.sh
-#
-# Scan a Zensical build log for warnings and errors.
-# Usage: ./check-build-log.sh [build-log-file]
-#        Default log path: /tmp/build-log.txt
-#
-# Exit codes:
-#   0 — no issues found
-#   1 — warnings or errors detected
 
 set -euo pipefail
 
@@ -30,21 +21,18 @@ if grep -inE '(WARNING|WARN)\b' "$LOG_FILE" | grep -v 'Expected warnings: 0'; th
   ISSUES=1
 fi
 
-# Check for ERROR lines
 if grep -inE '\bERROR\b' "$LOG_FILE"; then
   echo ""
   echo "::error::Build log contains errors (see above)"
   ISSUES=1
 fi
 
-# Check for common Zensical issues
 if grep -i 'not found' "$LOG_FILE" | grep -iv 'expected'; then
   echo ""
   echo "::warning::Build log contains 'not found' references (see above)"
   ISSUES=1
 fi
 
-# Check for broken cross-references
 if grep -i 'unknown cross-reference' "$LOG_FILE"; then
   echo ""
   echo "::error::Build log contains broken cross-references (see above)"

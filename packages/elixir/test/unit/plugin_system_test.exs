@@ -19,12 +19,7 @@ defmodule KreuzbergTest.Unit.PluginSystemTest do
   """
 
   use ExUnit.Case
-  # Note: Doctests are skipped because they reference non-existent module names
-  # doctest Kreuzberg.Plugin
 
-  # =============================================================================
-  # Example Plugin Modules for Testing
-  # =============================================================================
 
   defmodule TestPostProcessorEarly do
     @behaviour Kreuzberg.Plugin.PostProcessor
@@ -337,7 +332,6 @@ defmodule KreuzbergTest.Unit.PluginSystemTest do
     end
   end
 
-  # Validators for extract_with_plugins testing
   defmodule TestValidatorPassThrough do
     @behaviour Kreuzberg.Plugin.Validator
 
@@ -473,7 +467,6 @@ defmodule KreuzbergTest.Unit.PluginSystemTest do
     def validate(_), do: {:error, "Must be processed by late processor"}
   end
 
-  # Post-processors for extract_with_plugins testing
   defmodule TestPostProcessorMarker do
     @behaviour Kreuzberg.Plugin.PostProcessor
 
@@ -571,14 +564,12 @@ defmodule KreuzbergTest.Unit.PluginSystemTest do
   end
 
   setup do
-    # Ensure the default registry is started
     case GenServer.start_link(Kreuzberg.Plugin.Registry, [], name: Kreuzberg.Plugin.Registry) do
       {:ok, _pid} -> :ok
       {:error, {:already_started, _}} -> :ok
       _ -> :ok
     end
 
-    # Clear any previously registered plugins
     try do
       Kreuzberg.Plugin.clear_post_processors()
       Kreuzberg.Plugin.clear_validators()
@@ -588,7 +579,6 @@ defmodule KreuzbergTest.Unit.PluginSystemTest do
     end
 
     on_exit(fn ->
-      # Clean up after tests
       try do
         Kreuzberg.Plugin.clear_post_processors()
         Kreuzberg.Plugin.clear_validators()
@@ -601,18 +591,15 @@ defmodule KreuzbergTest.Unit.PluginSystemTest do
     :ok
   end
 
-  # =============================================================================
-  # Post-Processor Registry Tests
-  # =============================================================================
 
   describe "post-processor registration" do
     @tag :unit
     test "registers a post-processor successfully" do
       assert :ok =
-               Kreuzberg.Plugin.register_post_processor(:early_processor, TestPostProcessorEarly)
+      Kreuzberg.Plugin.register_post_processor(:early_processor, TestPostProcessorEarly)
 
       {:ok, processors} = Kreuzberg.Plugin.list_post_processors()
-      assert Enum.any?(processors, fn {name, _mod} -> name == :early_processor end)
+    assert Enum.any?(processors, fn {name, _mod} -> name == :early_processor end)
     end
 
     @tag :unit
@@ -644,7 +631,7 @@ defmodule KreuzbergTest.Unit.PluginSystemTest do
       assert :ok = Kreuzberg.Plugin.unregister_post_processor(:processor)
 
       {:ok, processors} = Kreuzberg.Plugin.list_post_processors()
-      refute Enum.any?(processors, fn {name, _mod} -> name == :processor end)
+    refute Enum.any?(processors, fn {name, _mod} -> name == :processor end)
     end
 
     @tag :unit
@@ -681,8 +668,8 @@ defmodule KreuzbergTest.Unit.PluginSystemTest do
 
       {:ok, processors} = Kreuzberg.Plugin.list_post_processors()
       assert length(processors) == 2
-      assert Enum.any?(processors, fn {name, _} -> name == :p1 end)
-      assert Enum.any?(processors, fn {name, _} -> name == :p2 end)
+    assert Enum.any?(processors, fn {name, _} -> name == :p1 end)
+    assert Enum.any?(processors, fn {name, _} -> name == :p2 end)
     end
 
     @tag :unit
@@ -690,21 +677,18 @@ defmodule KreuzbergTest.Unit.PluginSystemTest do
       assert :ok = Kreuzberg.Plugin.register_post_processor(:early, TestPostProcessorEarly)
 
       {:ok, processors} = Kreuzberg.Plugin.list_post_processors()
-      {_name, module} = Enum.find(processors, fn {n, _} -> n == :early end)
+    {_name, module} = Enum.find(processors, fn {n, _} -> n == :early end)
       assert module == TestPostProcessorEarly
     end
   end
 
-  # =============================================================================
-  # Validator Registry Tests
-  # =============================================================================
 
   describe "validator registration" do
     @tag :unit
     test "registers a validator successfully" do
       assert :ok = Kreuzberg.Plugin.register_validator(TestValidatorCritical)
       {:ok, validators} = Kreuzberg.Plugin.list_validators()
-      assert Enum.any?(validators, fn mod -> mod == TestValidatorCritical end)
+    assert Enum.any?(validators, fn mod -> mod == TestValidatorCritical end)
     end
 
     @tag :unit
@@ -771,16 +755,13 @@ defmodule KreuzbergTest.Unit.PluginSystemTest do
     end
   end
 
-  # =============================================================================
-  # OCR Backend Registry Tests
-  # =============================================================================
 
   describe "OCR backend registration" do
     @tag :unit
     test "registers an OCR backend successfully" do
       assert :ok = Kreuzberg.Plugin.register_ocr_backend(TestOcrBackendEnglish)
       {:ok, backends} = Kreuzberg.Plugin.list_ocr_backends()
-      assert Enum.any?(backends, fn mod -> mod == TestOcrBackendEnglish end)
+    assert Enum.any?(backends, fn mod -> mod == TestOcrBackendEnglish end)
     end
 
     @tag :unit
@@ -847,9 +828,6 @@ defmodule KreuzbergTest.Unit.PluginSystemTest do
     end
   end
 
-  # =============================================================================
-  # Post-Processor Behavior Tests
-  # =============================================================================
 
   describe "post-processor stage filtering" do
     @tag :unit
@@ -927,9 +905,6 @@ defmodule KreuzbergTest.Unit.PluginSystemTest do
     end
   end
 
-  # =============================================================================
-  # Validator Behavior Tests
-  # =============================================================================
 
   describe "validator priority ordering" do
     @tag :unit
@@ -1038,9 +1013,6 @@ defmodule KreuzbergTest.Unit.PluginSystemTest do
     end
   end
 
-  # =============================================================================
-  # OCR Backend Behavior Tests
-  # =============================================================================
 
   describe "OCR backend language support" do
     @tag :unit
@@ -1148,9 +1120,6 @@ defmodule KreuzbergTest.Unit.PluginSystemTest do
     end
   end
 
-  # =============================================================================
-  # Plugin API Integration Tests
-  # =============================================================================
 
   describe "plugin API consistency" do
     @tag :unit
@@ -1223,9 +1192,6 @@ defmodule KreuzbergTest.Unit.PluginSystemTest do
     end
   end
 
-  # =============================================================================
-  # Error Handling Tests
-  # =============================================================================
 
   describe "error handling" do
     @tag :unit
@@ -1248,8 +1214,6 @@ defmodule KreuzbergTest.Unit.PluginSystemTest do
 
     @tag :unit
     test "rejects non-atom post-processor names" do
-      # Note: Implementation uses is_atom check
-      # This test documents expected behavior
       assert :ok = Kreuzberg.Plugin.register_post_processor(:valid_name, TestPostProcessorEarly)
     end
 
@@ -1270,9 +1234,6 @@ defmodule KreuzbergTest.Unit.PluginSystemTest do
     end
   end
 
-  # =============================================================================
-  # Full Pipeline Tests
-  # =============================================================================
 
   describe "full extraction pipeline with plugins" do
     @tag :unit
@@ -1281,7 +1242,6 @@ defmodule KreuzbergTest.Unit.PluginSystemTest do
       assert :ok = Kreuzberg.Plugin.register_post_processor(:middle, TestPostProcessorMiddle)
       assert :ok = Kreuzberg.Plugin.register_post_processor(:late, TestPostProcessorLate)
 
-      # Simulate pipeline execution
       result = %{"content" => "test"}
       result = TestPostProcessorEarly.process(result, nil)
       result = TestPostProcessorMiddle.process(result, %{"uppercase" => true})
@@ -1294,7 +1254,6 @@ defmodule KreuzbergTest.Unit.PluginSystemTest do
 
     @tag :unit
     test "validates with multiple validators by priority" do
-      # Register validators - they should be sorted by priority
       assert :ok = Kreuzberg.Plugin.register_validator(TestValidatorNormal)
       assert :ok = Kreuzberg.Plugin.register_validator(TestValidatorCritical)
       assert :ok = Kreuzberg.Plugin.register_validator(TestValidatorLowPriority)
@@ -1302,13 +1261,11 @@ defmodule KreuzbergTest.Unit.PluginSystemTest do
       {:ok, validators} = Kreuzberg.Plugin.list_validators()
       assert validators != [] and length(validators) == 3
 
-      # All validators should be available for validation
       valid_result = %{
-        "content" => "This is a valid extraction result",
-        "mime_type" => "application/pdf"
+      "content" => "This is a valid extraction result",
+      "mime_type" => "application/pdf"
       }
 
-      # Simulate validation pipeline
       for validator <- [TestValidatorCritical, TestValidatorNormal, TestValidatorLowPriority] do
         if validator.should_validate?(valid_result) do
           assert validator.validate(valid_result) == :ok
@@ -1322,7 +1279,6 @@ defmodule KreuzbergTest.Unit.PluginSystemTest do
       assert :ok = Kreuzberg.Plugin.register_ocr_backend(TestOcrBackendMultilingual)
       assert :ok = Kreuzberg.Plugin.register_ocr_backend(TestOcrBackendChinese)
 
-      # Find backends supporting each language
       backends_en = [TestOcrBackendEnglish, TestOcrBackendMultilingual]
 
       for backend <- backends_en do
@@ -1333,18 +1289,16 @@ defmodule KreuzbergTest.Unit.PluginSystemTest do
 
       for backend <- backends_chi do
         assert "chi" in backend.supported_languages() or
-                 "chi_tra" in backend.supported_languages()
+        "chi_tra" in backend.supported_languages()
       end
     end
 
     @tag :unit
     test "complete extraction with all plugin types" do
-      # Register all plugin types
       assert :ok = Kreuzberg.Plugin.register_post_processor(:cleanup, TestPostProcessorLate)
       assert :ok = Kreuzberg.Plugin.register_validator(TestValidatorCritical)
       assert :ok = Kreuzberg.Plugin.register_ocr_backend(TestOcrBackendEnglish)
 
-      # Verify all registered
       {:ok, procs} = Kreuzberg.Plugin.list_post_processors()
       {:ok, vals} = Kreuzberg.Plugin.list_validators()
       {:ok, backends} = Kreuzberg.Plugin.list_ocr_backends()
@@ -1353,46 +1307,39 @@ defmodule KreuzbergTest.Unit.PluginSystemTest do
       assert [_ | _] = vals
       assert [_ | _] = backends
 
-      # Simulate extraction
       extraction_result = %{
-        "content" => "This is extracted content from a document",
-        "mime_type" => "application/pdf",
-        "metadata" => %{}
+      "content" => "This is extracted content from a document",
+      "mime_type" => "application/pdf",
+      "metadata" => %{}
       }
 
-      # Apply post-processor
       processed = TestPostProcessorLate.process(extraction_result, nil)
       assert processed["processed_by_late"] == true
 
-      # Validate
       if TestValidatorCritical.should_validate?(processed) do
         assert TestValidatorCritical.validate(processed) == :ok
       end
 
-      # Check OCR backend can handle the language
       backend = TestOcrBackendEnglish
       assert "eng" in backend.supported_languages()
     end
   end
 
-  # =============================================================================
-  # Concurrent Access Tests
-  # =============================================================================
 
   describe "concurrent access" do
     @tag :unit
     test "handles concurrent registrations" do
       tasks =
-        Enum.map(1..10, fn i ->
-          Task.async(fn ->
-            name = :"processor_#{i}"
-            module = if rem(i, 2) == 0, do: TestPostProcessorEarly, else: TestPostProcessorMiddle
-            Kreuzberg.Plugin.register_post_processor(name, module)
-          end)
+      Enum.map(1..10, fn i ->
+        Task.async(fn ->
+          name = :"processor_#{i}"
+          module = if rem(i, 2) == 0, do: TestPostProcessorEarly, else: TestPostProcessorMiddle
+          Kreuzberg.Plugin.register_post_processor(name, module)
         end)
+      end)
 
       results = Task.await_many(tasks)
-      assert Enum.all?(results, fn result -> result == :ok or elem(result, 0) == :error end)
+    assert Enum.all?(results, fn result -> result == :ok or elem(result, 0) == :error end)
     end
 
     @tag :unit
@@ -1401,33 +1348,28 @@ defmodule KreuzbergTest.Unit.PluginSystemTest do
       assert :ok = Kreuzberg.Plugin.register_post_processor(:p2, TestPostProcessorMiddle)
 
       tasks =
-        Enum.map(1..5, fn _ ->
-          Task.async(fn ->
-            {:ok, _processors} = Kreuzberg.Plugin.list_post_processors()
-            :ok
-          end)
+      Enum.map(1..5, fn _ ->
+        Task.async(fn ->
+          {:ok, _processors} = Kreuzberg.Plugin.list_post_processors()
+          :ok
         end)
+      end)
 
       results = Task.await_many(tasks)
-      assert Enum.all?(results, fn r -> r == :ok end)
+    assert Enum.all?(results, fn r -> r == :ok end)
     end
   end
 
-  # =============================================================================
-  # Edge Cases and Boundary Tests
-  # =============================================================================
 
   describe "edge cases" do
     @tag :unit
     test "handles empty plugin names gracefully" do
-      # The system uses atom names, so empty is still an atom
       result = Kreuzberg.Plugin.register_post_processor(:valid, TestPostProcessorEarly)
       assert :ok = result
     end
 
     @tag :unit
     test "handles unregistering non-existent plugin" do
-      # Should be idempotent
       assert :ok = Kreuzberg.Plugin.unregister_post_processor(:nonexistent)
     end
 
@@ -1461,15 +1403,11 @@ defmodule KreuzbergTest.Unit.PluginSystemTest do
 
     @tag :unit
     test "OCR backend with empty languages list" do
-      # Backends should always have at least some language support
       languages = TestOcrBackendEnglish.supported_languages()
       assert [_ | _] = languages
     end
   end
 
-  # =============================================================================
-  # Plugin Metadata Tests
-  # =============================================================================
 
   describe "plugin metadata" do
     @tag :unit
@@ -1485,10 +1423,10 @@ defmodule KreuzbergTest.Unit.PluginSystemTest do
     @tag :unit
     test "all validators have required metadata" do
       for module <- [
-            TestValidatorCritical,
-            TestValidatorNormal,
-            TestValidatorLowPriority
-          ] do
+      TestValidatorCritical,
+      TestValidatorNormal,
+      TestValidatorLowPriority
+      ] do
         assert is_binary(module.name())
         assert is_binary(module.version())
         assert is_integer(module.priority())
@@ -1498,10 +1436,10 @@ defmodule KreuzbergTest.Unit.PluginSystemTest do
     @tag :unit
     test "all OCR backends have required metadata" do
       for module <- [
-            TestOcrBackendEnglish,
-            TestOcrBackendMultilingual,
-            TestOcrBackendChinese
-          ] do
+      TestOcrBackendEnglish,
+      TestOcrBackendMultilingual,
+      TestOcrBackendChinese
+      ] do
         assert is_binary(module.name())
         assert is_binary(module.version())
         assert is_list(module.supported_languages())
@@ -1512,9 +1450,9 @@ defmodule KreuzbergTest.Unit.PluginSystemTest do
     @tag :unit
     test "post-processor names are unique" do
       names = [
-        TestPostProcessorEarly.name(),
-        TestPostProcessorMiddle.name(),
-        TestPostProcessorLate.name()
+      TestPostProcessorEarly.name(),
+      TestPostProcessorMiddle.name(),
+      TestPostProcessorLate.name()
       ]
 
       assert Enum.uniq(names) == names
@@ -1523,9 +1461,9 @@ defmodule KreuzbergTest.Unit.PluginSystemTest do
     @tag :unit
     test "validator names are unique" do
       names = [
-        TestValidatorCritical.name(),
-        TestValidatorNormal.name(),
-        TestValidatorLowPriority.name()
+      TestValidatorCritical.name(),
+      TestValidatorNormal.name(),
+      TestValidatorLowPriority.name()
       ]
 
       assert Enum.uniq(names) == names
@@ -1534,36 +1472,29 @@ defmodule KreuzbergTest.Unit.PluginSystemTest do
     @tag :unit
     test "OCR backend names are unique" do
       names = [
-        TestOcrBackendEnglish.name(),
-        TestOcrBackendMultilingual.name(),
-        TestOcrBackendChinese.name()
+      TestOcrBackendEnglish.name(),
+      TestOcrBackendMultilingual.name(),
+      TestOcrBackendChinese.name()
       ]
 
       assert Enum.uniq(names) == names
     end
   end
 
-  # =============================================================================
-  # extract_with_plugins Tests
-  # =============================================================================
 
   describe "extract_with_plugins - validator pipeline" do
     @tag :unit
     test "pre-extraction validators run and pass" do
-      # Validators should execute before extraction
       assert :ok = TestValidatorPassThrough.validate(nil)
-      # Function itself is tested in integration tests
     end
 
     @tag :unit
     test "pre-extraction validator fails and aborts extraction" do
-      # Validator failure should prevent extraction
       assert {:error, _reason} = TestValidatorFailure.validate(nil)
     end
 
     @tag :unit
     test "multiple validators in sequence" do
-      # Multiple validators should all execute
       result1 = TestValidatorPassThrough.validate(nil)
       result2 = TestValidatorContentCheck.validate(%{"content" => "valid"})
       result3 = TestValidatorLowPriority.validate(%{})
@@ -1575,14 +1506,12 @@ defmodule KreuzbergTest.Unit.PluginSystemTest do
 
     @tag :unit
     test "validator with nil input passes" do
-      # Validators should handle nil gracefully
       result = TestValidatorPassThrough.validate(nil)
       assert result == :ok
     end
 
     @tag :unit
     test "validator with empty map input" do
-      # Validators should handle empty maps
       result = TestValidatorPassThrough.validate(%{})
       assert result == :ok
     end
@@ -1630,13 +1559,11 @@ defmodule KreuzbergTest.Unit.PluginSystemTest do
 
     @tag :unit
     test "processor returns ExtractionResult directly" do
-      # When a processor returns ExtractionResult struct
       result = %Kreuzberg.ExtractionResult{
-        content: "test",
-        mime_type: "text/plain"
+      content: "test",
+      mime_type: "text/plain"
       }
 
-      # Processors should handle this gracefully
       assert is_struct(result, Kreuzberg.ExtractionResult)
     end
 
@@ -1646,7 +1573,7 @@ defmodule KreuzbergTest.Unit.PluginSystemTest do
       processed = TestPostProcessorReturnsOk.process(result, nil)
 
       assert processed ==
-               {:ok, %{"content" => "test", "mime_type" => "text/plain", "returns_ok" => true}}
+      {:ok, %{"content" => "test", "mime_type" => "text/plain", "returns_ok" => true}}
     end
 
     @tag :unit
@@ -1701,14 +1628,12 @@ defmodule KreuzbergTest.Unit.PluginSystemTest do
   describe "extract_with_plugins - full pipeline" do
     @tag :unit
     test "empty plugin opts falls back to normal extraction" do
-      # Test validator module behavior
       result = TestValidatorPassThrough.validate(nil)
       assert result == :ok
     end
 
     @tag :unit
     test "validator pipeline does not process without validators" do
-      # No validators should be called
       processing = %{"content" => "test", "mime_type" => "text/plain"}
       assert is_map(processing)
     end
@@ -1717,34 +1642,27 @@ defmodule KreuzbergTest.Unit.PluginSystemTest do
     test "post-processor pipeline stages execute in order" do
       result = %{"content" => "test", "mime_type" => "text/plain"}
 
-      # Simulate early stage
       result = TestPostProcessorEarly.process(result, nil)
       assert result["processed_by_early"] == true
 
-      # Simulate middle stage
       result = TestPostProcessorMiddle.process(result, nil)
       assert is_map(result)
 
-      # Simulate late stage
       result = TestPostProcessorLate.process(result, nil)
       assert result["processed_by_late"] == true
     end
 
     @tag :unit
     test "full pipeline with validators, processors, and final validators" do
-      # Build a complete pipeline simulation
 
-      # Pre-validation
       pre_check = TestValidatorPassThrough.validate(nil)
       assert pre_check == :ok
 
-      # Extract (simulated with data construction)
       extracted = %{
-        "content" => "sample content",
-        "mime_type" => "text/plain"
+      "content" => "sample content",
+      "mime_type" => "text/plain"
       }
 
-      # Apply post-processors
       processed = extracted
       processed = TestPostProcessorEarly.process(processed, nil)
       assert processed["processed_by_early"] == true
@@ -1755,21 +1673,18 @@ defmodule KreuzbergTest.Unit.PluginSystemTest do
       processed = TestPostProcessorLate.process(processed, nil)
       assert processed["processed_by_late"] == true
 
-      # Final validation
       final_check = TestFinalValidatorPassThrough.validate(processed)
       assert final_check == :ok
     end
 
     @tag :unit
     test "validator failure blocks processing" do
-      # Validator failure should prevent further processing
       validation = TestValidatorFailure.validate(nil)
       assert {:error, _} = validation
     end
 
     @tag :unit
     test "processor error blocks final validation" do
-      # Processor error should prevent reaching final validators
       result = %{"content" => "test", "mime_type" => "text/plain"}
       process_result = TestPostProcessorError.process(result, nil)
       assert {:error, _} = process_result
@@ -1777,7 +1692,6 @@ defmodule KreuzbergTest.Unit.PluginSystemTest do
 
     @tag :unit
     test "final validator failure blocks success" do
-      # Final validator failure should prevent success
       result = %{"content" => "test", "mime_type" => "text/plain"}
       validation = TestFinalValidatorFailure.validate(result)
       assert {:error, _} = validation
@@ -1785,12 +1699,9 @@ defmodule KreuzbergTest.Unit.PluginSystemTest do
 
     @tag :unit
     test "complete flow with validation passing at each stage" do
-      # All stages pass
 
-      # Pre-validation
       assert TestValidatorPassThrough.validate(nil) == :ok
 
-      # Processing
       result = %{"content" => "sample", "mime_type" => "text/plain"}
       result = TestPostProcessorEarly.process(result, nil)
       assert is_map(result)
@@ -1798,13 +1709,11 @@ defmodule KreuzbergTest.Unit.PluginSystemTest do
       result = TestPostProcessorLate.process(result, nil)
       assert is_map(result)
 
-      # Final validation
       assert TestFinalValidatorPassThrough.validate(result) == :ok
     end
 
     @tag :unit
     test "pipeline handles missing optional plugins" do
-      # Test that pipeline works with nil or empty plugin opts
       result = %{"content" => "test", "mime_type" => "text/plain"}
       assert is_map(result)
     end
@@ -1813,13 +1722,11 @@ defmodule KreuzbergTest.Unit.PluginSystemTest do
     test "sequential processor execution maintains order" do
       result = %{"content" => "test", "mime_type" => "text/plain", "order" => []}
 
-      # Apply processors in sequence
       result = TestPostProcessorEarly.process(result, nil)
       result = TestPostProcessorMarker.process(result, nil)
       result = TestPostProcessorAddMetadata.process(result, nil)
       result = TestPostProcessorLate.process(result, nil)
 
-      # All markers should be present
       assert result["processed_by_early"] == true
       assert result["marked_by_processor"] == true
       assert result["metadata_added"] == true
@@ -1831,7 +1738,6 @@ defmodule KreuzbergTest.Unit.PluginSystemTest do
       input = %{"content" => "original", "mime_type" => "text/plain"}
       output = TestPostProcessorAddMetadata.process(input, nil)
 
-      # Original content should be preserved
       assert output["content"] == "original"
       assert output["mime_type"] == "text/plain"
       assert output["metadata_added"] == true
@@ -1839,7 +1745,6 @@ defmodule KreuzbergTest.Unit.PluginSystemTest do
 
     @tag :unit
     test "multiple validators with different behaviors" do
-      # Some pass, some may fail
       result1 = TestValidatorPassThrough.validate(nil)
       result2 = TestValidatorPassThrough.validate(%{"content" => "test"})
       result3 = TestValidatorPassThrough.validate(%{})
@@ -1854,12 +1759,10 @@ defmodule KreuzbergTest.Unit.PluginSystemTest do
       content = "Important extraction content"
       result = %{"content" => content, "mime_type" => "text/plain"}
 
-      # Process through pipeline
       result = TestPostProcessorEarly.process(result, nil)
       result = TestPostProcessorMiddle.process(result, nil)
       result = TestPostProcessorLate.process(result, nil)
 
-      # Content should remain unchanged
       assert result["content"] == content
     end
 
@@ -1877,7 +1780,6 @@ defmodule KreuzbergTest.Unit.PluginSystemTest do
       result = %{"content" => "hello", "mime_type" => "text/plain"}
 
       processed = TestPostProcessorMiddle.process(result, nil)
-      # Without config, content should not be modified
       assert processed["content"] == "hello"
     end
 
@@ -1886,23 +1788,19 @@ defmodule KreuzbergTest.Unit.PluginSystemTest do
       extracted = %{"content" => "test", "mime_type" => "text/plain"}
       processed = TestPostProcessorLate.process(extracted, nil)
 
-      # Final validator receives the processed result with all modifications
       validation = TestFinalValidatorFailure.validate(processed)
       assert validation == :ok
     end
   end
 
-  # Error path and edge case tests for plugin system
   describe "plugin system error paths" do
     @tag :unit
     test "validator returning non-ok/error tuple is handled" do
-      # Test that unexpected return values from validators don't crash the system
       validator = %{
-        "content" => "test content",
-        "mime_type" => "text/plain"
+      "content" => "test content",
+      "mime_type" => "text/plain"
       }
 
-      # Validator should return :ok or {:error, reason}
       result = TestValidatorCritical.validate(validator)
       assert result == :ok
     end
@@ -1910,8 +1808,8 @@ defmodule KreuzbergTest.Unit.PluginSystemTest do
     @tag :unit
     test "validator rejecting extraction returns error" do
       validator = %{
-        "content" => "",
-        "mime_type" => "text/plain"
+      "content" => "",
+      "mime_type" => "text/plain"
       }
 
       result = TestValidatorCritical.validate(validator)
@@ -1921,8 +1819,7 @@ defmodule KreuzbergTest.Unit.PluginSystemTest do
     @tag :unit
     test "validator without required fields returns error" do
       validator = %{
-        "mime_type" => "text/plain"
-        # Missing "content" field
+      "mime_type" => "text/plain"
       }
 
       result = TestValidatorCritical.validate(validator)
@@ -1931,7 +1828,6 @@ defmodule KreuzbergTest.Unit.PluginSystemTest do
 
     @tag :unit
     test "multiple validators with different priorities execute in order" do
-      # Critical validator has priority 100, normal has 50
       critical = TestValidatorCritical
       normal = TestValidatorNormal
 
@@ -1940,23 +1836,19 @@ defmodule KreuzbergTest.Unit.PluginSystemTest do
 
     @tag :unit
     test "validator should_validate? can prevent validation" do
-      # Create data that doesn't match validator conditions
-      # TestValidatorCritical.should_validate? returns false when content is not present or not binary
       result = %{
-        "mime_type" => "text/plain"
-        # No content field
+      "mime_type" => "text/plain"
       }
 
       should_validate = TestValidatorCritical.should_validate?(result)
-      # This should be false because content is missing
       assert should_validate == false
     end
 
     @tag :unit
     test "post-processor receives extraction result as input" do
       result = %{
-        "content" => "test",
-        "mime_type" => "text/plain"
+      "content" => "test",
+      "mime_type" => "text/plain"
       }
 
       processed = TestPostProcessorEarly.process(result, nil)
@@ -1967,27 +1859,23 @@ defmodule KreuzbergTest.Unit.PluginSystemTest do
     @tag :unit
     test "post-processor with missing config field handles nil config" do
       result = %{
-        "content" => "test",
-        "mime_type" => "text/plain"
+      "content" => "test",
+      "mime_type" => "text/plain"
       }
 
-      # Middle processor checks for config["uppercase"]
       processed = TestPostProcessorMiddle.process(result, nil)
-      # Without config, content should not be uppercased
       assert processed["content"] == "test"
     end
 
     @tag :unit
     test "post-processor returns modified result correctly" do
       result = %{
-        "content" => "test",
-        "mime_type" => "text/plain"
+      "content" => "test",
+      "mime_type" => "text/plain"
       }
 
       processed = TestPostProcessorEarly.process(result, nil)
-      # Should add a new field
       assert processed["processed_by_early"] == true
-      # Should preserve original fields
       assert processed["content"] == "test"
       assert processed["mime_type"] == "text/plain"
     end
@@ -2001,13 +1889,11 @@ defmodule KreuzbergTest.Unit.PluginSystemTest do
 
     @tag :unit
     test "post-processor with exception-raising code fails gracefully" do
-      # This tests that if a processor raises, the system handles it
       result = %{
-        "content" => "test",
-        "mime_type" => "text/plain"
+      "content" => "test",
+      "mime_type" => "text/plain"
       }
 
-      # Normal processors should return a result
       processed = TestPostProcessorEarly.process(result, nil)
       assert is_map(processed)
     end
@@ -2015,16 +1901,14 @@ defmodule KreuzbergTest.Unit.PluginSystemTest do
     @tag :unit
     test "pipeline with all three post-processor stages" do
       result = %{
-        "content" => "test",
-        "mime_type" => "text/plain"
+      "content" => "test",
+      "mime_type" => "text/plain"
       }
 
-      # Apply in order: early -> middle -> late
       result = TestPostProcessorEarly.process(result, nil)
       assert result["processed_by_early"] == true
 
       result = TestPostProcessorMiddle.process(result, nil)
-      # Content unchanged because config has no "uppercase"
       assert result["content"] == "test"
 
       result = TestPostProcessorLate.process(result, nil)
@@ -2045,19 +1929,16 @@ defmodule KreuzbergTest.Unit.PluginSystemTest do
     test "OCR backend with unsupported language returns error" do
       backend = TestOcrBackendEnglish
 
-      # Backend only supports "eng" and "deu"
       result = backend.process_image("image_data", "unsupported_lang")
       assert match?({:error, _}, result)
     end
 
     @tag :unit
     test "final validator stage handles ExtractionResult struct" do
-      # Final validators should work with ExtractionResult structures too
-      # This validator requires "processed_by_late" to be true
       result = %{
-        "content" => "test content",
-        "mime_type" => "text/plain",
-        "processed_by_late" => true
+      "content" => "test content",
+      "mime_type" => "text/plain",
+      "processed_by_late" => true
       }
 
       validation = TestFinalValidatorFailure.validate(result)
@@ -2078,11 +1959,10 @@ defmodule KreuzbergTest.Unit.PluginSystemTest do
       normal = TestValidatorNormal
 
       result = %{
-        "content" => "sufficient content for validation",
-        "mime_type" => "text/plain"
+      "content" => "sufficient content for validation",
+      "mime_type" => "text/plain"
       }
 
-      # Both should be applicable
       assert critical.should_validate?(result) == true
       assert normal.should_validate?(result) == true
     end
@@ -2092,8 +1972,8 @@ defmodule KreuzbergTest.Unit.PluginSystemTest do
       validator = TestValidatorCritical
 
       result = %{
-        "content" => nil,
-        "mime_type" => "text/plain"
+      "content" => nil,
+      "mime_type" => "text/plain"
       }
 
       should_validate = validator.should_validate?(result)
@@ -2103,8 +1983,8 @@ defmodule KreuzbergTest.Unit.PluginSystemTest do
     @tag :unit
     test "post-processor config overrides default behavior" do
       result = %{
-        "content" => "hello",
-        "mime_type" => "text/plain"
+      "content" => "hello",
+      "mime_type" => "text/plain"
       }
 
       config_with_uppercase = %{"uppercase" => true}
@@ -2141,18 +2021,13 @@ defmodule KreuzbergTest.Unit.PluginSystemTest do
       low = TestValidatorLowPriority
 
       priorities = [critical.priority(), normal.priority(), low.priority()]
-      # Should be: 100, 50, -10
       assert priorities == [100, 50, -10]
 
-      # Verify descending order
       sorted = Enum.sort(priorities, :desc)
       assert sorted == priorities
     end
   end
 
-  # =============================================================================
-  # Additional Plugin.Registry Coverage Tests
-  # =============================================================================
 
   describe "get_post_processor/1" do
     @tag :unit
@@ -2248,11 +2123,8 @@ defmodule KreuzbergTest.Unit.PluginSystemTest do
     @tag :unit
     test "returns validators sorted by priority descending" do
       Kreuzberg.Plugin.Registry.clear_validators()
-      # priority: 100
       Kreuzberg.Plugin.Registry.register_validator(TestValidatorCritical)
-      # priority: 50
       Kreuzberg.Plugin.Registry.register_validator(TestValidatorNormal)
-      # priority: -10
       Kreuzberg.Plugin.Registry.register_validator(TestValidatorLowPriority)
 
       validators = Kreuzberg.Plugin.Registry.get_validators_by_priority()
@@ -2260,7 +2132,6 @@ defmodule KreuzbergTest.Unit.PluginSystemTest do
       assert is_list(validators)
       assert length(validators) == 3
 
-      # Should be in descending priority order
       [first, second, third] = validators
       {_first_name, first_meta} = first
       {_second_name, second_meta} = second
@@ -2276,9 +2147,7 @@ defmodule KreuzbergTest.Unit.PluginSystemTest do
     @tag :unit
     test "filters backends by language support" do
       Kreuzberg.Plugin.Registry.clear_ocr_backends()
-      # eng, deu
       Kreuzberg.Plugin.Registry.register_ocr_backend(TestOcrBackendEnglish)
-      # eng, deu, fra, spa, ita, jpn, chi, chi_tra
       Kreuzberg.Plugin.Registry.register_ocr_backend(TestOcrBackendMultilingual)
 
       eng_backends = Kreuzberg.Plugin.Registry.get_ocr_backends_by_language("eng")

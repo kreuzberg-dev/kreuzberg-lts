@@ -56,8 +56,7 @@ readonly class LanguageDetectionConfig
          * @default null (no threshold)
          */
         public ?float $confidenceThreshold = null,
-    ) {
-    }
+    ) {}
 
     /**
      * Create configuration from array data.
@@ -87,11 +86,7 @@ readonly class LanguageDetectionConfig
             $confidenceThreshold = (float) $confidenceThreshold;
         }
 
-        return new self(
-            enabled: $enabled,
-            maxLanguages: $maxLanguages,
-            confidenceThreshold: $confidenceThreshold,
-        );
+        return new self(enabled: $enabled, maxLanguages: $maxLanguages, confidenceThreshold: $confidenceThreshold);
     }
 
     /**
@@ -130,11 +125,14 @@ readonly class LanguageDetectionConfig
      */
     public function toArray(): array
     {
-        return array_filter([
-            'enabled' => $this->enabled,
-            'max_languages' => $this->maxLanguages,
-            'confidence_threshold' => $this->confidenceThreshold,
-        ], static fn ($value): bool => $value !== null);
+        return array_filter(
+            [
+                'enabled' => $this->enabled,
+                'max_languages' => $this->maxLanguages,
+                'confidence_threshold' => $this->confidenceThreshold,
+            ],
+            static fn($value): bool => $value !== null,
+        );
     }
 
     /**

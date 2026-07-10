@@ -159,7 +159,6 @@ mod tests {
 
         let version_str = unsafe { CStr::from_ptr(version).to_str().unwrap() };
         assert!(!version_str.is_empty());
-        // Version should contain dots (e.g., "0.1.0")
         assert!(version_str.contains('.'));
     }
 
@@ -186,13 +185,12 @@ mod tests {
     fn test_last_error_code_success_by_default() {
         clear_last_error();
         let code = unsafe { kreuzberg_last_error_code() };
-        assert_eq!(code, 0); // Success
+        assert_eq!(code, 0);
     }
 
     #[test]
     fn test_last_panic_context_null_when_no_panic() {
         let context = unsafe { kreuzberg_last_panic_context() };
-        // Should be null if no panic has occurred
         if !context.is_null() {
             unsafe {
                 crate::kreuzberg_free_string(context);
@@ -202,9 +200,8 @@ mod tests {
 
     #[test]
     fn test_error_code_values() {
-        // Ensure error codes are in expected range
         let code = unsafe { kreuzberg_last_error_code() };
         assert!(code >= 0);
-        assert!(code < 10); // Should be within reasonable bounds
+        assert!(code < 10);
     }
 }

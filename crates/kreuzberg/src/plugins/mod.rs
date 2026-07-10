@@ -192,7 +192,6 @@ pub use renderer::{Renderer, clear_renderers, list_renderers, register_renderer,
 pub use traits::Plugin;
 pub use validator::{Validator, clear_validators, list_validators, register_validator, unregister_validator};
 
-// Re-export registry items for backward compatibility
 pub use registry::{
     DOCUMENT_EXTRACTOR_REGISTRY, DocumentExtractorRegistry, OCR_BACKEND_REGISTRY, OcrBackendRegistry,
     POST_PROCESSOR_REGISTRY, PostProcessorRegistry, RENDERER_REGISTRY, RendererRegistry, VALIDATOR_REGISTRY,

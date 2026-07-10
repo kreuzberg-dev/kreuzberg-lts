@@ -37,7 +37,6 @@ fn build_internal_document(
 
     let mut builder = InternalDocumentBuilder::new(source_format);
 
-    // Try to build structured document for JSON objects
     if source_format == "json"
         && let Ok(value) = serde_json::from_str::<serde_json::Value>(&result.content)
         && value.is_object()
@@ -46,7 +45,6 @@ fn build_internal_document(
         return builder.build();
     }
 
-    // Fallback: code block
     builder.push_code(&result.content, language, None, None);
     builder.build()
 }

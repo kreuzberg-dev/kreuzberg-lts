@@ -1,7 +1,4 @@
-# Hand-written binding-specific edge case tests for PDF rendering.
 # Happy-path render tests are auto-generated from fixtures in e2e/.
-# These tests cover error handling, validation, and lifecycle patterns
-# that vary per language and can't be generated uniformly.
 
 from __future__ import annotations
 
@@ -52,7 +49,6 @@ def test_iterator_cleanup() -> None:
         first = next(iter(it))
         assert isinstance(first, tuple)
         assert len(first) == 2
-    # Context manager exited — safe to use again or discard
 
 
 def test_iterator_early_termination() -> None:
@@ -62,7 +58,7 @@ def test_iterator_early_termination() -> None:
         for page_index, png in it:
             assert isinstance(page_index, int)
             assert isinstance(png, bytes)
-            break  # Stop after first page
+            break
 
 
 def test_render_pdf_page_empty_path() -> None:

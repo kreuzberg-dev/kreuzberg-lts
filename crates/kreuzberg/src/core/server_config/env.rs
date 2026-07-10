@@ -28,12 +28,10 @@ pub fn apply_env_overrides(
     max_request_body_bytes: &mut usize,
     max_multipart_field_bytes: &mut usize,
 ) -> Result<()> {
-    // Host override
     if let Ok(env_host) = std::env::var("KREUZBERG_HOST") {
         *host = env_host;
     }
 
-    // Port override
     if let Ok(port_str) = std::env::var("KREUZBERG_PORT") {
         *port = port_str.parse::<u16>().map_err(|e| {
             KreuzbergError::validation(format!(
@@ -43,7 +41,6 @@ pub fn apply_env_overrides(
         })?;
     }
 
-    // CORS origins override (comma-separated)
     if let Ok(origins_str) = std::env::var("KREUZBERG_CORS_ORIGINS") {
         *cors_origins = origins_str
             .split(',')
@@ -52,7 +49,6 @@ pub fn apply_env_overrides(
             .collect();
     }
 
-    // Max request body bytes override
     if let Ok(bytes_str) = std::env::var("KREUZBERG_MAX_REQUEST_BODY_BYTES") {
         *max_request_body_bytes = bytes_str.parse::<usize>().map_err(|e| {
             KreuzbergError::validation(format!(
@@ -62,7 +58,6 @@ pub fn apply_env_overrides(
         })?;
     }
 
-    // Max multipart field bytes override
     if let Ok(bytes_str) = std::env::var("KREUZBERG_MAX_MULTIPART_FIELD_BYTES") {
         *max_multipart_field_bytes = bytes_str.parse::<usize>().map_err(|e| {
             KreuzbergError::validation(format!(

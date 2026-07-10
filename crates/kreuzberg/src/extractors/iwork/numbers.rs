@@ -76,9 +76,6 @@ fn parse_numbers(content: &[u8]) -> Result<NumbersData> {
     let iwa_paths = super::collect_iwa_paths(content)?;
     let metadata = extract_metadata_from_zip(content);
 
-    // Separate table-related IWA files from other IWA files.
-    // Numbers stores table cell data under `Index/Tables/` or in paths containing `Table`
-    // and document structure in `Index/Document.iwa`.
     let mut table_paths: Vec<&String> = Vec::new();
     let mut other_paths: Vec<&String> = Vec::new();
 
@@ -90,14 +87,11 @@ fn parse_numbers(content: &[u8]) -> Result<NumbersData> {
         }
     }
 
-    // If there were no table-specific paths, treat all paths as table data
-    // (older Numbers formats may not use the Table/ prefix).
     if table_paths.is_empty() {
         table_paths = iwa_paths.iter().collect();
         other_paths.clear();
     }
 
-    // Extract table cell values
     let mut table_texts: Vec<String> = Vec::new();
     for path in &table_paths {
         match read_iwa_file(content, path) {
@@ -111,7 +105,6 @@ fn parse_numbers(content: &[u8]) -> Result<NumbersData> {
         }
     }
 
-    // Extract any additional text from non-table IWA files (labels, sheet names, etc.)
     let mut other_texts: Vec<String> = Vec::new();
     for path in &other_paths {
         match read_iwa_file(content, path) {
@@ -128,7 +121,6 @@ fn parse_numbers(content: &[u8]) -> Result<NumbersData> {
     let table_deduped = dedup_text(table_texts);
     let other_deduped = dedup_text(other_texts);
 
-    // Filter out noise tokens (common in spreadsheet binary data)
     let filter = |texts: Vec<String>| -> Vec<String> {
         texts
             .into_iter()
@@ -139,9 +131,6 @@ fn parse_numbers(content: &[u8]) -> Result<NumbersData> {
     let table_filtered = filter(table_deduped);
     let other_filtered = filter(other_deduped);
 
-    // Build per-sheet data. Without full protobuf schema we cannot reliably
-    // determine sheet boundaries, so we emit one sheet for table data and one
-    // for any remaining text labels.
     let mut sheets = Vec::new();
     if !table_filtered.is_empty() {
         sheets.push(("Sheet Data".to_string(), table_filtered));
@@ -210,7 +199,6 @@ impl DocumentExtractor for NumbersExtractor {
 fn build_numbers_internal_document(data: &NumbersData) -> InternalDocument {
     let mut builder = InternalDocumentBuilder::new("numbers");
 
-    // Apply any metadata we could extract from the ZIP archive.
     if data.metadata.title.is_some() || data.metadata.authors.is_some() {
         builder.set_metadata(data.metadata.clone());
     }
@@ -222,9 +210,6 @@ fn build_numbers_internal_document(data: &NumbersData) -> InternalDocument {
 
         builder.push_heading(1, sheet_name, None, None);
 
-        // Build a single-column table from the cell values. Without full
-        // protobuf schema knowledge we cannot reliably determine column
-        // boundaries, so each value gets its own row in a single-column table.
         let cells: Vec<Vec<String>> = cell_values.iter().map(|v| vec![v.clone()]).collect();
         builder.push_table_from_cells(&cells, None, None);
     }

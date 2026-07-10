@@ -75,8 +75,6 @@ pub struct SectionProperties {
     pub doc_grid_line_pitch: Option<i32>,
 }
 
-// --- Conversion helpers ---
-
 impl PageMargins {
     /// Convert all margins from twips to points.
     ///
@@ -106,11 +104,8 @@ impl SectionProperties {
     }
 }
 
-// --- XML Helpers ---
-
 /// Get a namespaced integer attribute.
 fn get_w_attr_i32(element: &BytesStart, local_name: &str) -> Option<i32> {
-    // First try "w:localname" format
     let w_prefixed = format!("w:{}", local_name);
     for attr in element.attributes().flatten() {
         let key = attr.key.as_ref();
@@ -151,8 +146,6 @@ fn roxmltree_get_i32_attr(node: &roxmltree::Node, local_name: &str) -> Option<i3
         .and_then(|v| v.parse::<i32>().ok())
 }
 
-// --- Parsing with roxmltree ---
-
 /// Parse a `w:sectPr` XML element (roxmltree node) into `SectionProperties`.
 pub fn parse_section_properties(node: &roxmltree::Node) -> SectionProperties {
     let mut props = SectionProperties::default();
@@ -167,7 +160,6 @@ pub fn parse_section_properties(node: &roxmltree::Node) -> SectionProperties {
                 props.page_width_twips = roxmltree_get_i32_attr(&child, "w");
                 props.page_height_twips = roxmltree_get_i32_attr(&child, "h");
 
-                // ECMA-376: default orientation is portrait when w:orient is absent
                 props.orientation = match roxmltree_get_attr(&child, "orient").as_deref() {
                     Some("landscape") => Some(Orientation::Landscape),
                     _ => Some(Orientation::Portrait),
@@ -200,8 +192,6 @@ pub fn parse_section_properties(node: &roxmltree::Node) -> SectionProperties {
     props
 }
 
-// --- Streaming parser for quick_xml ---
-
 /// Parse section properties from a quick_xml event stream.
 ///
 /// Reads events from the reader until `</w:sectPr>` is encountered,
@@ -228,7 +218,6 @@ pub fn parse_section_properties_streaming(reader: &mut Reader<&[u8]>) -> Section
         buf.clear();
     }
 
-    // Apply OOXML defaults: absent orientation means portrait
     if props.page_width_twips.is_some() && props.orientation.is_none() {
         props.orientation = Some(Orientation::Portrait);
     }
@@ -293,7 +282,6 @@ mod tests {
         assert_eq!(props.page_width_twips, Some(11906));
         assert_eq!(props.page_height_twips, Some(16838));
 
-        // Convert to points
         assert_eq!(props.page_width_points(), Some(595.3));
         assert_eq!(props.page_height_points(), Some(841.9));
     }
@@ -312,7 +300,6 @@ mod tests {
         assert_eq!(props.page_width_twips, Some(12240));
         assert_eq!(props.page_height_twips, Some(15840));
 
-        // 12240 / 20 = 612.0 points, 15840 / 20 = 792.0 points (US Letter)
         assert_eq!(props.page_width_points(), Some(612.0));
         assert_eq!(props.page_height_points(), Some(792.0));
     }
@@ -352,10 +339,9 @@ mod tests {
         assert_eq!(props.margins.footer, Some(720));
         assert_eq!(props.margins.gutter, Some(0));
 
-        // Convert to points
         let margins_points = props.margins.to_points();
-        assert_eq!(margins_points.top, Some(72.0)); // 1440 / 20
-        assert_eq!(margins_points.header, Some(36.0)); // 720 / 20
+        assert_eq!(margins_points.top, Some(72.0));
+        assert_eq!(margins_points.header, Some(36.0));
     }
 
     #[test]
@@ -394,7 +380,6 @@ mod tests {
 
     #[test]
     fn test_streaming_parse_a4_page_size() {
-        // Streaming parser must handle self-closing elements (Event::Empty)
         let xml = r#"<w:sectPr xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
             <w:pgSz w:w="11906" w:h="16838"/>
             <w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440" w:header="708" w:footer="708" w:gutter="0"/>
@@ -402,14 +387,10 @@ mod tests {
             <w:docGrid w:linePitch="360"/>
         </w:sectPr>"#;
 
-        // Simulate what happens in the parser: reader has already consumed <w:sectPr>,
-        // so parse_section_properties_streaming reads from after that opening tag.
-        // We need to read past the opening tag first.
         let mut reader = Reader::from_str(xml);
         reader.config_mut().trim_text(false);
         let mut buf = Vec::new();
 
-        // Consume the opening <w:sectPr> tag
         loop {
             match reader.read_event_into(&mut buf) {
                 Ok(Event::Start(ref e)) if e.name().as_ref() as &[u8] == b"w:sectPr" => break,
@@ -424,7 +405,7 @@ mod tests {
 
         assert_eq!(props.page_width_twips, Some(11906));
         assert_eq!(props.page_height_twips, Some(16838));
-        assert_eq!(props.orientation, Some(Orientation::Portrait)); // Default when absent
+        assert_eq!(props.orientation, Some(Orientation::Portrait));
         assert_eq!(props.margins.top, Some(1440));
         assert_eq!(props.margins.right, Some(1440));
         assert_eq!(props.margins.header, Some(708));

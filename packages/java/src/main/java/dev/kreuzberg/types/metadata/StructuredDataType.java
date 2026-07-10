@@ -12,32 +12,32 @@ import com.fasterxml.jackson.annotation.JsonValue;
  * @since 0.8.0
  */
 public enum StructuredDataType {
-	/** JSON-LD structured data */
-	JSON_LD("json-ld"),
+    /** JSON-LD structured data */
+    JSON_LD("json-ld"),
 
-	/** Microdata */
-	MICRODATA("microdata"),
+    /** Microdata */
+    MICRODATA("microdata"),
 
-	/** RDFa */
-	RDFA("rdfa");
+    /** RDFa */
+    RDFA("rdfa");
 
-	private final String wireValue;
+    private final String wireValue;
 
-	StructuredDataType(String wireValue) {
-		this.wireValue = wireValue;
-	}
+    StructuredDataType(String wireValue) {
+        this.wireValue = wireValue;
+    }
 
-	/**
+    /**
 	 * Get the wire format value for this structured data type.
 	 *
 	 * @return wire value used in serialization
 	 */
-	@JsonValue
-	public String wireValue() {
-		return wireValue;
-	}
+    @JsonValue
+    public String wireValue() {
+        return wireValue;
+    }
 
-	/**
+    /**
 	 * Parse a StructuredDataType from its wire value.
 	 *
 	 * @param wireValue
@@ -46,13 +46,13 @@ public enum StructuredDataType {
 	 * @throws IllegalArgumentException
 	 *             if the value is not recognized
 	 */
-	@JsonCreator
-	public static StructuredDataType fromWireValue(String wireValue) {
-		for (StructuredDataType type : values()) {
-			if (type.wireValue.equals(wireValue)) {
-				return type;
-			}
-		}
-		throw new IllegalArgumentException("Unknown StructuredDataType: " + wireValue);
-	}
+    @JsonCreator
+    public static StructuredDataType fromWireValue(String wireValue) {
+        for (StructuredDataType type : values()) {
+            if (type.wireValue.equals(wireValue)) {
+                return type;
+            }
+        }
+        throw new IllegalArgumentException("Unknown StructuredDataType: " + wireValue);
+    }
 }

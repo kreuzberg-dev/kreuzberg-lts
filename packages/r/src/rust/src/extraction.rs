@@ -5,7 +5,11 @@ use crate::error::{kreuzberg_error, to_r_error};
 use crate::result::extraction_result_to_list;
 use extendr_api::prelude::*;
 
-pub fn extract_file_sync_impl(path: &str, mime_type: Nullable<&str>, config_json: Nullable<&str>) -> extendr_api::Result<List> {
+pub fn extract_file_sync_impl(
+    path: &str,
+    mime_type: Nullable<&str>,
+    config_json: Nullable<&str>,
+) -> extendr_api::Result<List> {
     #[cfg(not(target_arch = "wasm32"))]
     {
         let config = parse_config(config_json)?;
@@ -23,7 +27,11 @@ pub fn extract_file_sync_impl(path: &str, mime_type: Nullable<&str>, config_json
     }
 }
 
-pub fn extract_file_impl(path: &str, mime_type: Nullable<&str>, config_json: Nullable<&str>) -> extendr_api::Result<List> {
+pub fn extract_file_impl(
+    path: &str,
+    mime_type: Nullable<&str>,
+    config_json: Nullable<&str>,
+) -> extendr_api::Result<List> {
     #[cfg(not(target_arch = "wasm32"))]
     {
         let config = parse_config(config_json)?;

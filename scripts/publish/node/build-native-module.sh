@@ -29,7 +29,6 @@ ls -lah "$artifacts_dir" 2>/dev/null || echo "Artifacts directory not found!"
 echo "=== Checking for .node files ==="
 find "$artifacts_dir" -name "*.node" -print 2>/dev/null || echo "No .node files found!"
 
-# Verify that at least one .node file was created
 node_files=$(find "$artifacts_dir" -name "*.node" 2>/dev/null | wc -l)
 if [ "$node_files" -eq 0 ]; then
   echo "ERROR: Native module build succeeded but no .node file was generated" >&2

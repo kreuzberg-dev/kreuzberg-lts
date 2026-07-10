@@ -15,28 +15,28 @@ defmodule Kreuzberg.PageBoundary do
   @derive Jason.Encoder
 
   @type t :: %__MODULE__{
-          byte_start: non_neg_integer(),
-          byte_end: non_neg_integer(),
-          page_number: non_neg_integer()
-        }
+  byte_start: non_neg_integer(),
+  byte_end: non_neg_integer(),
+  page_number: non_neg_integer()
+  }
 
   defstruct byte_start: 0, byte_end: 0, page_number: 0
 
   @spec from_map(map()) :: t()
   def from_map(data) when is_map(data) do
     %__MODULE__{
-      byte_start: data["byte_start"] || 0,
-      byte_end: data["byte_end"] || 0,
-      page_number: data["page_number"] || 0
+    byte_start: data["byte_start"] || 0,
+    byte_end: data["byte_end"] || 0,
+    page_number: data["page_number"] || 0
     }
   end
 
   @spec to_map(t()) :: map()
   def to_map(%__MODULE__{} = b) do
     %{
-      "byte_start" => b.byte_start,
-      "byte_end" => b.byte_end,
-      "page_number" => b.page_number
+    "byte_start" => b.byte_start,
+    "byte_end" => b.byte_end,
+    "page_number" => b.page_number
     }
   end
 end
@@ -61,52 +61,52 @@ defmodule Kreuzberg.PageInfo do
   @derive Jason.Encoder
 
   @type t :: %__MODULE__{
-          number: non_neg_integer(),
-          title: String.t() | nil,
-          dimensions: {float(), float()} | nil,
-          image_count: non_neg_integer() | nil,
-          table_count: non_neg_integer() | nil,
-          hidden: boolean() | nil,
-          is_blank: boolean() | nil
-        }
+  number: non_neg_integer(),
+  title: String.t() | nil,
+  dimensions: {float(), float()} | nil,
+  image_count: non_neg_integer() | nil,
+  table_count: non_neg_integer() | nil,
+  hidden: boolean() | nil,
+  is_blank: boolean() | nil
+  }
 
   defstruct [
-    :title,
-    :dimensions,
-    :image_count,
-    :table_count,
-    :hidden,
-    :is_blank,
-    number: 0
+  :title,
+  :dimensions,
+  :image_count,
+  :table_count,
+  :hidden,
+  :is_blank,
+  number: 0
   ]
 
   @spec from_map(map()) :: t()
   def from_map(data) when is_map(data) do
     %__MODULE__{
-      number: data["number"] || 0,
-      title: data["title"],
-      dimensions: normalize_dimensions(data["dimensions"]),
-      image_count: data["image_count"],
-      table_count: data["table_count"],
-      hidden: data["hidden"],
-      is_blank: data["is_blank"]
+    number: data["number"] || 0,
+    title: data["title"],
+    dimensions: normalize_dimensions(data["dimensions"]),
+    image_count: data["image_count"],
+    table_count: data["table_count"],
+    hidden: data["hidden"],
+    is_blank: data["is_blank"]
     }
   end
 
   @spec to_map(t()) :: map()
   def to_map(%__MODULE__{} = info) do
     %{
-      "number" => info.number,
-      "title" => info.title,
-      "dimensions" =>
-        case info.dimensions do
-          nil -> nil
-          {w, h} -> [w, h]
-        end,
-      "image_count" => info.image_count,
-      "table_count" => info.table_count,
-      "hidden" => info.hidden,
-      "is_blank" => info.is_blank
+    "number" => info.number,
+    "title" => info.title,
+    "dimensions" =>
+    case info.dimensions do
+      nil -> nil
+      {w, h} -> [w, h]
+    end,
+    "image_count" => info.image_count,
+    "table_count" => info.table_count,
+    "hidden" => info.hidden,
+    "is_blank" => info.is_blank
     }
   end
 
@@ -133,36 +133,36 @@ defmodule Kreuzberg.PageStructure do
   @derive Jason.Encoder
 
   @type t :: %__MODULE__{
-          total_count: non_neg_integer(),
-          unit_type: String.t(),
-          boundaries: list(Kreuzberg.PageBoundary.t()) | nil,
-          pages: list(Kreuzberg.PageInfo.t()) | nil
-        }
+  total_count: non_neg_integer(),
+  unit_type: String.t(),
+  boundaries: list(Kreuzberg.PageBoundary.t()) | nil,
+  pages: list(Kreuzberg.PageInfo.t()) | nil
+  }
 
   defstruct [
-    :boundaries,
-    :pages,
-    total_count: 0,
-    unit_type: "page"
+  :boundaries,
+  :pages,
+  total_count: 0,
+  unit_type: "page"
   ]
 
   @spec from_map(map()) :: t()
   def from_map(data) when is_map(data) do
     %__MODULE__{
-      total_count: data["total_count"] || 0,
-      unit_type: data["unit_type"] || "page",
-      boundaries: normalize_list(data["boundaries"], &Kreuzberg.PageBoundary.from_map/1),
-      pages: normalize_list(data["pages"], &Kreuzberg.PageInfo.from_map/1)
+    total_count: data["total_count"] || 0,
+    unit_type: data["unit_type"] || "page",
+    boundaries: normalize_list(data["boundaries"], &Kreuzberg.PageBoundary.from_map/1),
+    pages: normalize_list(data["pages"], &Kreuzberg.PageInfo.from_map/1)
     }
   end
 
   @spec to_map(t()) :: map()
   def to_map(%__MODULE__{} = ps) do
     %{
-      "total_count" => ps.total_count,
-      "unit_type" => ps.unit_type,
-      "boundaries" => maybe_map(ps.boundaries, &Kreuzberg.PageBoundary.to_map/1),
-      "pages" => maybe_map(ps.pages, &Kreuzberg.PageInfo.to_map/1)
+    "total_count" => ps.total_count,
+    "unit_type" => ps.unit_type,
+    "boundaries" => maybe_map(ps.boundaries, &Kreuzberg.PageBoundary.to_map/1),
+    "pages" => maybe_map(ps.pages, &Kreuzberg.PageInfo.to_map/1)
     }
   end
 

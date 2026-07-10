@@ -8,86 +8,81 @@
 import type { CodeProcessResult, ExtractedKeyword } from "./config.js";
 import type { Metadata } from "./metadata.js";
 
-// ============================================================================
-
 export interface ProcessingWarning {
-	/** Pipeline stage name that generated this warning */
-	source: string;
-	/** Warning description */
-	message: string;
+  /** Pipeline stage name that generated this warning */
+  source: string;
+  /** Warning description */
+  message: string;
 }
 
 export interface Table {
-	cells: string[][];
-	markdown: string;
-	pageNumber: number;
-	/** Bounding box of the table on the page (PDF coordinates). */
-	boundingBox?: BoundingBox | null;
+  cells: string[][];
+  markdown: string;
+  pageNumber: number;
+  /** Bounding box of the table on the page (PDF coordinates). */
+  boundingBox?: BoundingBox | null;
 }
 
 export interface HeadingLevel {
-	/** Heading depth (1 = h1, 2 = h2, etc.) */
-	level: number;
-	/** Text content of the heading */
-	text: string;
+  /** Heading depth (1 = h1, 2 = h2, etc.) */
+  level: number;
+  /** Text content of the heading */
+  text: string;
 }
 
 export interface HeadingContext {
-	/** Heading hierarchy from document root to this chunk's section */
-	headings: HeadingLevel[];
+  /** Heading hierarchy from document root to this chunk's section */
+  headings: HeadingLevel[];
 }
 
 export interface ChunkMetadata {
-	byteStart: number;
-	byteEnd: number;
-	tokenCount?: number | null;
-	chunkIndex: number;
-	totalChunks: number;
-	firstPage?: number | null;
-	lastPage?: number | null;
-	headingContext?: HeadingContext | null;
+  byteStart: number;
+  byteEnd: number;
+  tokenCount?: number | null;
+  chunkIndex: number;
+  totalChunks: number;
+  firstPage?: number | null;
+  lastPage?: number | null;
+  headingContext?: HeadingContext | null;
 }
 
 export type ChunkType =
-	| "heading"
-	| "party_list"
-	| "definitions"
-	| "operative_clause"
-	| "signature_block"
-	| "schedule"
-	| "table_like"
-	| "formula"
-	| "code_block"
-	| "image"
-	| "org_chart"
-	| "diagram"
-	| "unknown";
+  | "heading"
+  | "party_list"
+  | "definitions"
+  | "operative_clause"
+  | "signature_block"
+  | "schedule"
+  | "table_like"
+  | "formula"
+  | "code_block"
+  | "image"
+  | "org_chart"
+  | "diagram"
+  | "unknown";
 
 export interface Chunk {
-	content: string;
-	embedding?: number[] | null;
-	metadata: ChunkMetadata;
-	chunkType: ChunkType;
+  content: string;
+  embedding?: number[] | null;
+  metadata: ChunkMetadata;
+  chunkType: ChunkType;
 }
 
 export interface ExtractedImage {
-	data: Uint8Array;
-	format: string;
-	imageIndex: number;
-	pageNumber?: number | null;
-	width?: number | null;
-	height?: number | null;
-	colorspace?: string | null;
-	bitsPerComponent?: number | null;
-	isMask: boolean;
-	description?: string | null;
-	ocrResult?: ExtractionResult;
-	/** Bounding box of the image on the page (PDF coordinates). */
-	boundingBox?: BoundingBox | null;
+  data: Uint8Array;
+  format: string;
+  imageIndex: number;
+  pageNumber?: number | null;
+  width?: number | null;
+  height?: number | null;
+  colorspace?: string | null;
+  bitsPerComponent?: number | null;
+  isMask: boolean;
+  description?: string | null;
+  ocrResult?: ExtractionResult;
+  /** Bounding box of the image on the page (PDF coordinates). */
+  boundingBox?: BoundingBox | null;
 }
-
-// ============================================================================
-// Element-based output types (compatible with Unstructured.io format)
 
 /**
  * Semantic element type classification.
@@ -96,17 +91,17 @@ export interface ExtractedImage {
  * Supports element types commonly found in document analysis.
  */
 export type ElementType =
-	| "title"
-	| "narrative_text"
-	| "heading"
-	| "list_item"
-	| "table"
-	| "image"
-	| "page_break"
-	| "code_block"
-	| "block_quote"
-	| "footer"
-	| "header";
+  | "title"
+  | "narrative_text"
+  | "heading"
+  | "list_item"
+  | "table"
+  | "image"
+  | "page_break"
+  | "code_block"
+  | "block_quote"
+  | "footer"
+  | "header";
 
 /**
  * Bounding box coordinates for element positioning.
@@ -114,14 +109,14 @@ export type ElementType =
  * Represents a rectangular region in a document with normalized coordinates.
  */
 export interface BoundingBox {
-	/** Left x-coordinate (0.0 to 1.0 or page-width normalized) */
-	x0: number;
-	/** Bottom y-coordinate (0.0 to 1.0 or page-height normalized) */
-	y0: number;
-	/** Right x-coordinate (0.0 to 1.0 or page-width normalized) */
-	x1: number;
-	/** Top y-coordinate (0.0 to 1.0 or page-height normalized) */
-	y1: number;
+  /** Left x-coordinate (0.0 to 1.0 or page-width normalized) */
+  x0: number;
+  /** Bottom y-coordinate (0.0 to 1.0 or page-height normalized) */
+  y0: number;
+  /** Right x-coordinate (0.0 to 1.0 or page-width normalized) */
+  x1: number;
+  /** Top y-coordinate (0.0 to 1.0 or page-height normalized) */
+  y1: number;
 }
 
 /**
@@ -131,16 +126,16 @@ export interface BoundingBox {
  * page location, document filename, spatial coordinates, and custom metadata.
  */
 export interface ElementMetadata {
-	/** Page number (1-indexed), or null if not available */
-	pageNumber?: number | null;
-	/** Source filename or document name, or null if not available */
-	filename?: string | null;
-	/** Bounding box coordinates if available, or null */
-	coordinates?: BoundingBox | null;
-	/** Position index in the element sequence, or null if not available */
-	elementIndex?: number | null;
-	/** Additional custom metadata fields */
-	additional?: Record<string, string>;
+  /** Page number (1-indexed), or null if not available */
+  pageNumber?: number | null;
+  /** Source filename or document name, or null if not available */
+  filename?: string | null;
+  /** Bounding box coordinates if available, or null */
+  coordinates?: BoundingBox | null;
+  /** Position index in the element sequence, or null if not available */
+  elementIndex?: number | null;
+  /** Additional custom metadata fields */
+  additional?: Record<string, string>;
 }
 
 /**
@@ -151,18 +146,15 @@ export interface ElementMetadata {
  * Compatible with Unstructured.io element format.
  */
 export interface Element {
-	/** Unique element identifier (deterministic hash-based ID) */
-	elementId: string;
-	/** Semantic type of this element */
-	elementType: ElementType;
-	/** Text content of the element */
-	text: string;
-	/** Metadata about the element including page number, coordinates, etc. */
-	metadata: ElementMetadata;
+  /** Unique element identifier (deterministic hash-based ID) */
+  elementId: string;
+  /** Semantic type of this element */
+  elementType: ElementType;
+  /** Text content of the element */
+  text: string;
+  /** Metadata about the element including page number, coordinates, etc. */
+  metadata: ElementMetadata;
 }
-
-// ============================================================================
-// Djot structured content types
 
 /**
  * Structured Djot document representation.
@@ -172,22 +164,22 @@ export interface Element {
  * Available when Djot output format is enabled.
  */
 export interface DjotContent {
-	/** Plain text representation for backward compatibility */
-	plainText: string;
-	/** Structured block-level content (headings, paragraphs, lists, etc.) */
-	blocks: FormattedBlock[];
-	/** Metadata from YAML frontmatter */
-	metadata: Metadata;
-	/** Extracted tables as structured data */
-	tables: Table[];
-	/** Extracted images with metadata */
-	images: DjotImage[];
-	/** Extracted links with URLs and titles */
-	links: DjotLink[];
-	/** Footnote definitions */
-	footnotes: Footnote[];
-	/** Attributes mapped by element identifier */
-	attributes?: Record<string, Attributes>;
+  /** Plain text representation for backward compatibility */
+  plainText: string;
+  /** Structured block-level content (headings, paragraphs, lists, etc.) */
+  blocks: FormattedBlock[];
+  /** Metadata from YAML frontmatter */
+  metadata: Metadata;
+  /** Extracted tables as structured data */
+  tables: Table[];
+  /** Extracted images with metadata */
+  images: DjotImage[];
+  /** Extracted links with URLs and titles */
+  links: DjotLink[];
+  /** Footnote definitions */
+  footnotes: Footnote[];
+  /** Attributes mapped by element identifier */
+  attributes?: Record<string, Attributes>;
 }
 
 /**
@@ -196,114 +188,111 @@ export interface DjotContent {
  * Represents structural elements like headings, paragraphs, lists, code blocks, etc.
  */
 export interface FormattedBlock {
-	/** Type of block element */
-	blockType: BlockType;
-	/** Heading level (1-6) for headings, or nesting level for lists */
-	level?: number | null;
-	/** Text content for inline elements */
-	content?: string | null;
-	/** Child blocks for list items and containers */
-	children?: FormattedBlock[] | null;
-	/** Attributes (id, class, etc.) */
-	attributes?: Attributes | null;
+  /** Type of block element */
+  blockType: BlockType;
+  /** Heading level (1-6) for headings, or nesting level for lists */
+  level?: number | null;
+  /** Text content for inline elements */
+  content?: string | null;
+  /** Child blocks for list items and containers */
+  children?: FormattedBlock[] | null;
+  /** Attributes (id, class, etc.) */
+  attributes?: Attributes | null;
 }
 
 /**
  * Block element type classification.
  */
 export type BlockType =
-	| "paragraph"
-	| "heading"
-	| "list_item"
-	| "code_block"
-	| "block_quote"
-	| "thematic_break"
-	| "table"
-	| "image"
-	| "footnote_definition"
-	| "raw_block";
+  | "paragraph"
+  | "heading"
+  | "list_item"
+  | "code_block"
+  | "block_quote"
+  | "thematic_break"
+  | "table"
+  | "image"
+  | "footnote_definition"
+  | "raw_block";
 
 /**
  * HTML/CSS attributes for an element.
  */
 export interface Attributes {
-	[key: string]: string | number | boolean | string[] | null;
+  [key: string]: string | number | boolean | string[] | null;
 }
 
 /**
  * Image with metadata in Djot document.
  */
 export interface DjotImage {
-	/** Image URL or reference */
-	url: string;
-	/** Alternative text */
-	alt?: string | null;
-	/** Image title/caption */
-	title?: string | null;
-	/** Image attributes */
-	attributes?: Attributes | null;
+  /** Image URL or reference */
+  url: string;
+  /** Alternative text */
+  alt?: string | null;
+  /** Image title/caption */
+  title?: string | null;
+  /** Image attributes */
+  attributes?: Attributes | null;
 }
 
 /**
  * Link in Djot document.
  */
 export interface DjotLink {
-	/** Link URL */
-	url: string;
-	/** Link text */
-	text: string;
-	/** Link title */
-	title?: string | null;
-	/** Link type */
-	linkType?: "internal" | "external" | "email" | "phone" | "footnote";
+  /** Link URL */
+  url: string;
+  /** Link text */
+  text: string;
+  /** Link title */
+  title?: string | null;
+  /** Link type */
+  linkType?: "internal" | "external" | "email" | "phone" | "footnote";
 }
 
 /**
  * Footnote definition.
  */
 export interface Footnote {
-	/** Footnote identifier */
-	label: string;
-	/** Footnote content */
-	content: string;
+  /** Footnote identifier */
+  label: string;
+  /** Footnote content */
+  content: string;
 }
 
 export interface HierarchicalBlock {
-	text: string;
-	fontSize: number;
-	level: string;
-	bbox?: [number, number, number, number] | null;
+  text: string;
+  fontSize: number;
+  level: string;
+  bbox?: [number, number, number, number] | null;
 }
 
 export interface PageHierarchy {
-	blockCount: number;
-	blocks: HierarchicalBlock[];
+  blockCount: number;
+  blocks: HierarchicalBlock[];
 }
 
 export interface LayoutRegion {
-	/** Layout class name (e.g. "picture", "table", "text", "section_header") */
-	class: string;
-	/** Confidence score from the layout detection model (0.0 to 1.0) */
-	confidence: number;
-	/** Bounding box in document coordinate space */
-	boundingBox: BoundingBox;
-	/** Fraction of the page area covered by this region (0.0 to 1.0) */
-	areaFraction: number;
+  /** Layout class name (e.g. "picture", "table", "text", "section_header") */
+  class: string;
+  /** Confidence score from the layout detection model (0.0 to 1.0) */
+  confidence: number;
+  /** Bounding box in document coordinate space */
+  boundingBox: BoundingBox;
+  /** Fraction of the page area covered by this region (0.0 to 1.0) */
+  areaFraction: number;
 }
 
 export interface PageContent {
-	pageNumber: number;
-	content: string;
-	tables: Table[];
-	images: ExtractedImage[];
-	hierarchy?: PageHierarchy;
-	isBlank?: boolean;
-	/** Layout detection regions for this page (when layout detection is enabled) */
-	layoutRegions?: LayoutRegion[];
+  pageNumber: number;
+  content: string;
+  tables: Table[];
+  images: ExtractedImage[];
+  hierarchy?: PageHierarchy;
+  isBlank?: boolean;
+  /** Layout detection regions for this page (when layout detection is enabled) */
+  layoutRegions?: LayoutRegion[];
 }
-
-// ============================================================================
-// OCR element types
 
 /**
  * Bounding geometry for OCR elements using rectangle coordinates.
@@ -311,11 +300,11 @@ export interface PageContent {
  * Represents rectangular coordinates with position and dimensions.
  */
 export interface OcrBoundingGeometryRectangle {
-	type: "rectangle";
-	left: number;
-	top: number;
-	width: number;
-	height: number;
+  type: "rectangle";
+  left: number;
+  top: number;
+  width: number;
+  height: number;
 }
 
 /**
@@ -324,8 +313,8 @@ export interface OcrBoundingGeometryRectangle {
  * Represents irregular quadrilateral shapes with four corner points.
  */
 export interface OcrBoundingGeometryQuadrilateral {
-	type: "quadrilateral";
-	points: number[][];
+  type: "quadrilateral";
+  points: number[][];
 }
 
 /**
@@ -341,11 +330,11 @@ export type OcrBoundingGeometry = OcrBoundingGeometryRectangle | OcrBoundingGeom
  * Tracks confidence levels for different aspects of OCR processing.
  */
 export interface OcrConfidence {
-	/** Confidence score (0.0-1.0) for text detection. */
-	detection?: number;
+  /** Confidence score (0.0-1.0) for text detection. */
+  detection?: number;
 
-	/** Confidence score (0.0-1.0) for text recognition. */
-	recognition?: number;
+  /** Confidence score (0.0-1.0) for text recognition. */
+  recognition?: number;
 }
 
 /**
@@ -354,11 +343,11 @@ export interface OcrConfidence {
  * Tracks detected text rotation and associated confidence.
  */
 export interface OcrRotation {
-	/** Angle of rotation in degrees. */
-	angle_degrees?: number;
+  /** Angle of rotation in degrees. */
+  angle_degrees?: number;
 
-	/** Confidence score (0.0-1.0) for rotation detection. */
-	confidence?: number;
+  /** Confidence score (0.0-1.0) for rotation detection. */
+  confidence?: number;
 }
 
 /**
@@ -374,51 +363,48 @@ export type OcrElementLevel = "word" | "line" | "block" | "page";
  * Represents a granular unit of text extracted by OCR with geometric and confidence information.
  */
 export interface OcrElement {
-	/** Extracted text content */
-	text: string;
+  /** Extracted text content */
+  text: string;
 
-	/** Bounding geometry of the element in the image */
-	geometry?: OcrBoundingGeometry;
+  /** Bounding geometry of the element in the image */
+  geometry?: OcrBoundingGeometry;
 
-	/** Confidence scores for detection and recognition */
-	confidence?: OcrConfidence;
+  /** Confidence scores for detection and recognition */
+  confidence?: OcrConfidence;
 
-	/** Hierarchy level of this element */
-	level?: OcrElementLevel;
+  /** Hierarchy level of this element */
+  level?: OcrElementLevel;
 
-	/** Rotation information if text is rotated */
-	rotation?: OcrRotation;
+  /** Rotation information if text is rotated */
+  rotation?: OcrRotation;
 
-	/** Page number where this element was found (1-indexed) */
-	page_number?: number;
+  /** Page number where this element was found (1-indexed) */
+  page_number?: number;
 
-	/** Parent element ID for hierarchical relationships */
-	parent_id?: string;
+  /** Parent element ID for hierarchical relationships */
+  parent_id?: string;
 
-	/** Backend-specific metadata that doesn't fit standard fields */
-	backend_metadata?: Record<string, unknown>;
+  /** Backend-specific metadata that doesn't fit standard fields */
+  backend_metadata?: Record<string, unknown>;
 }
-
-// ============================================================================
-// Document Structure types
 
 /**
  * Semantic node type in document structure.
  */
 export type NodeContentType =
-	| "title"
-	| "heading"
-	| "paragraph"
-	| "list"
-	| "list_item"
-	| "table"
-	| "image"
-	| "code"
-	| "quote"
-	| "formula"
-	| "footnote"
-	| "group"
-	| "page_break";
+  | "title"
+  | "heading"
+  | "paragraph"
+  | "list"
+  | "list_item"
+  | "table"
+  | "image"
+  | "code"
+  | "quote"
+  | "formula"
+  | "footnote"
+  | "group"
+  | "page_break";
 
 /**
  * Content layer classification for document nodes.
@@ -429,72 +415,72 @@ export type ContentLayer = "body" | "header" | "footer" | "footnote";
  * Structured table grid with cell-level metadata.
  */
 export interface TableGrid {
-	rows: number;
-	cols: number;
-	cells: GridCell[];
+  rows: number;
+  cols: number;
+  cells: GridCell[];
 }
 
 /**
  * Individual grid cell with position and span metadata.
  */
 export interface GridCell {
-	content: string;
-	row: number;
-	col: number;
-	row_span: number;
-	col_span: number;
-	is_header: boolean;
-	bbox?: BoundingBox | null;
+  content: string;
+  row: number;
+  col: number;
+  row_span: number;
+  col_span: number;
+  is_header: boolean;
+  bbox?: BoundingBox | null;
 }
 
 /**
  * Inline text annotation (formatting, links).
  */
 export interface TextAnnotation {
-	start: number;
-	end: number;
-	kind: AnnotationKind;
+  start: number;
+  end: number;
+  kind: AnnotationKind;
 }
 
 /**
  * Types of inline text annotations.
  */
 export type AnnotationKind =
-	| { annotation_type: "bold" }
-	| { annotation_type: "italic" }
-	| { annotation_type: "underline" }
-	| { annotation_type: "strikethrough" }
-	| { annotation_type: "code" }
-	| { annotation_type: "subscript" }
-	| { annotation_type: "superscript" }
-	| { annotation_type: "link"; url: string; title?: string | null };
+  | { annotation_type: "bold" }
+  | { annotation_type: "italic" }
+  | { annotation_type: "underline" }
+  | { annotation_type: "strikethrough" }
+  | { annotation_type: "code" }
+  | { annotation_type: "subscript" }
+  | { annotation_type: "superscript" }
+  | { annotation_type: "link"; url: string; title?: string | null };
 
 /**
  * Tagged union for node content. Each variant carries only type-specific data.
  */
 export type NodeContent =
-	| { node_type: "title"; text: string }
-	| { node_type: "heading"; level: number; text: string }
-	| { node_type: "paragraph"; text: string }
-	| { node_type: "list"; ordered: boolean }
-	| { node_type: "list_item"; text: string }
-	| { node_type: "table"; grid: TableGrid }
-	| {
-			node_type: "image";
-			description?: string | null;
-			image_index?: number | null;
-	  }
-	| { node_type: "code"; text: string; language?: string | null }
-	| { node_type: "quote" }
-	| { node_type: "formula"; text: string }
-	| { node_type: "footnote"; text: string }
-	| {
-			node_type: "group";
-			label?: string | null;
-			heading_level?: number | null;
-			heading_text?: string | null;
-	  }
-	| { node_type: "page_break" };
+  | { node_type: "title"; text: string }
+  | { node_type: "heading"; level: number; text: string }
+  | { node_type: "paragraph"; text: string }
+  | { node_type: "list"; ordered: boolean }
+  | { node_type: "list_item"; text: string }
+  | { node_type: "table"; grid: TableGrid }
+  | {
+      node_type: "image";
+      description?: string | null;
+      image_index?: number | null;
+    }
+  | { node_type: "code"; text: string; language?: string | null }
+  | { node_type: "quote" }
+  | { node_type: "formula"; text: string }
+  | { node_type: "footnote"; text: string }
+  | {
+      node_type: "group";
+      label?: string | null;
+      heading_level?: number | null;
+      heading_text?: string | null;
+    }
+  | { node_type: "page_break" };
 
 /**
  * A single node in the document tree.
@@ -503,24 +489,24 @@ export type NodeContent =
  * for tree structure, and metadata like page number, bounding box, and content layer.
  */
 export interface DocumentNode {
-	/** Deterministic identifier (hash of content + position) */
-	id: string;
-	/** Node content — tagged enum, type-specific data only */
-	content: NodeContent;
-	/** Parent node index (undefined = root-level node) */
-	parent?: number | null;
-	/** Child node indices in reading order */
-	children?: number[] | null;
-	/** Content layer classification */
-	content_layer?: ContentLayer | null;
-	/** Page number where this node starts (1-indexed) */
-	page?: number | null;
-	/** Page number where this node ends (for multi-page tables/sections) */
-	page_end?: number | null;
-	/** Bounding box in document coordinates */
-	bbox?: BoundingBox | null;
-	/** Inline annotations (formatting, links) on this node's text content */
-	annotations?: TextAnnotation[] | null;
+  /** Deterministic identifier (hash of content + position) */
+  id: string;
+  /** Node content — tagged enum, type-specific data only */
+  content: NodeContent;
+  /** Parent node index (undefined = root-level node) */
+  parent?: number | null;
+  /** Child node indices in reading order */
+  children?: number[] | null;
+  /** Content layer classification */
+  content_layer?: ContentLayer | null;
+  /** Page number where this node starts (1-indexed) */
+  page?: number | null;
+  /** Page number where this node ends (for multi-page tables/sections) */
+  page_end?: number | null;
+  /** Bounding box in document coordinates */
+  bbox?: BoundingBox | null;
+  /** Inline annotations (formatting, links) on this node's text content */
+  annotations?: TextAnnotation[] | null;
 }
 
 /**
@@ -530,8 +516,8 @@ export interface DocumentNode {
  * Root-level nodes have parent undefined. Nodes are in document/reading order.
  */
 export interface DocumentStructure {
-	/** All nodes in document/reading order */
-	nodes: DocumentNode[];
+  /** All nodes in document/reading order */
+  nodes: DocumentNode[];
 }
 
 /**
@@ -543,24 +529,21 @@ export type PdfAnnotationType = "text" | "highlight" | "link" | "stamp" | "under
  * Bounding box for a PDF annotation.
  */
 export interface PdfAnnotationBoundingBox {
-	x0: number;
-	y0: number;
-	x1: number;
-	y1: number;
+  x0: number;
+  y0: number;
+  x1: number;
+  y1: number;
 }
 
 /**
  * A PDF annotation extracted from a document.
  */
 export interface PdfAnnotation {
-	annotationType: PdfAnnotationType;
-	content?: string | null;
-	pageNumber: number;
-	boundingBox?: PdfAnnotationBoundingBox | null;
+  annotationType: PdfAnnotationType;
+  content?: string | null;
+  pageNumber: number;
+  boundingBox?: PdfAnnotationBoundingBox | null;
 }
-
-// ============================================================================
-// URI types
 
 /**
  * Semantic classification of an extracted URI.
@@ -575,18 +558,15 @@ export type UriKind = "hyperlink" | "image" | "anchor" | "citation" | "reference
  * optional human-readable display text.
  */
 export interface Uri {
-	/** The URL or path string */
-	url: string;
-	/** Optional display text / label for the link */
-	label?: string | null;
-	/** Optional page number where the URI was found (1-indexed) */
-	page?: number | null;
-	/** Semantic classification of the URI */
-	kind: UriKind;
+  /** The URL or path string */
+  url: string;
+  /** Optional display text / label for the link */
+  label?: string | null;
+  /** Optional page number where the URI was found (1-indexed) */
+  page?: number | null;
+  /** Semantic classification of the URI */
+  kind: UriKind;
 }
-
-// ============================================================================
-// Archive types
 
 /**
  * A single file extracted from an archive.
@@ -595,39 +575,30 @@ export interface Uri {
  * enabled, each processable file produces its own full ExtractionResult.
  */
 export interface ArchiveEntry {
-	/** Archive-relative file path (e.g. "folder/document.pdf") */
-	path: string;
-	/** Detected MIME type of the file */
-	mimeType: string;
-	/** Full extraction result for this file */
-	result: ExtractionResult;
+  /** Archive-relative file path (e.g. "folder/document.pdf") */
+  path: string;
+  /** Detected MIME type of the file */
+  mimeType: string;
+  /** Full extraction result for this file */
+  result: ExtractionResult;
 }
-
-// ============================================================================
-// Document structure relationship types
 
 /**
  * Semantic kind of a relationship between document elements.
  */
 export type RelationshipKind =
-	| "footnote_reference"
-	| "citation_reference"
-	| "internal_link"
-	| "caption"
-	| "label"
-	| "toc_entry"
-	| "cross_reference";
-
-// ============================================================================
-// Page unit types
+  | "footnote_reference"
+  | "citation_reference"
+  | "internal_link"
+  | "caption"
+  | "label"
+  | "toc_entry"
+  | "cross_reference";
 
 /**
  * Type of paginated unit in a document.
  */
 export type PageUnitType = "page" | "slide" | "sheet";
-
-// ============================================================================
-// Format types
 
 /**
  * Content text output format.
@@ -643,28 +614,26 @@ export type OutputFormat = "plain" | "markdown" | "djot" | "html" | "structured"
  */
 export type ResultFormat = "unified" | "element_based";
 
-// ============================================================================
-
 export interface ExtractionResult {
-	content: string;
-	mimeType: string;
-	metadata: Metadata;
-	tables: Table[];
-	detectedLanguages?: string[];
-	chunks?: Chunk[];
-	images?: ExtractedImage[];
-	pages?: PageContent[];
-	elements?: Element[];
-	ocrElements?: OcrElement[];
-	document?: DocumentStructure | null;
-	extractedKeywords?: ExtractedKeyword[];
-	qualityScore?: number;
-	processingWarnings: ProcessingWarning[];
-	annotations?: PdfAnnotation[];
-	/** Nested extraction results from archive contents */
-	children?: ArchiveEntry[];
-	/** URIs/links discovered during document extraction */
-	uris?: Uri[];
-	/** Code intelligence results from tree-sitter processing */
-	codeIntelligence?: CodeProcessResult | null;
+  content: string;
+  mimeType: string;
+  metadata: Metadata;
+  tables: Table[];
+  detectedLanguages?: string[];
+  chunks?: Chunk[];
+  images?: ExtractedImage[];
+  pages?: PageContent[];
+  elements?: Element[];
+  ocrElements?: OcrElement[];
+  document?: DocumentStructure | null;
+  extractedKeywords?: ExtractedKeyword[];
+  qualityScore?: number;
+  processingWarnings: ProcessingWarning[];
+  annotations?: PdfAnnotation[];
+  /** Nested extraction results from archive contents */
+  children?: ArchiveEntry[];
+  /** URIs/links discovered during document extraction */
+  uris?: Uri[];
+  /** Code intelligence results from tree-sitter processing */
+  codeIntelligence?: CodeProcessResult | null;
 }

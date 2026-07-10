@@ -15,7 +15,6 @@ fi
 existing_assets="$(mktemp)"
 trap 'rm -f "$existing_assets"' EXIT
 
-# Function to validate SHA256 format (64 hex characters)
 validate_sha256() {
   local sha256="$1"
   if [[ ! $sha256 =~ ^[a-f0-9]{64}$ ]]; then
@@ -25,7 +24,6 @@ validate_sha256() {
   return 0
 }
 
-# Function to compute and validate SHA256
 compute_sha256() {
   local file="$1"
   local sha256
@@ -39,13 +37,11 @@ compute_sha256() {
   echo "$sha256"
 }
 
-# Fetch existing assets with error handling
 echo "Fetching existing release assets..."
 if ! gh release view "$tag" --json assets | jq -r '.assets[].name' >"$existing_assets" 2>/dev/null; then
   echo "Warning: Could not fetch existing assets (release may be new)" >&2
 fi
 
-# Function to upload with retry logic
 upload_with_retry() {
   local file="$1"
   local tag="$2"
@@ -86,7 +82,6 @@ for file in "$artifacts_dir"/kreuzberg-cli-*; do
 
     echo "Processing: $base"
 
-    # Verify SHA256 is valid
     if ! sha256=$(compute_sha256 "$file"); then
       echo "Error: Failed to compute valid SHA256 for $file" >&2
       exit 1

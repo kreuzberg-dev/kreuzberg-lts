@@ -33,8 +33,7 @@ readonly class CodeStructureItem
         public ?string $docComment = null,
         public ?string $signature = null,
         public ?CodeSpan $bodySpan = null,
-    ) {
-    }
+    ) {}
 
     /**
      * @param array<string, mixed> $data
@@ -75,7 +74,7 @@ readonly class CodeStructureItem
             span: CodeSpan::fromArray($spanData),
             children: array_map(
                 /** @param array<string, mixed> $child */
-                static fn (array $child): CodeStructureItem => CodeStructureItem::fromArray($child),
+                static fn(array $child): CodeStructureItem => CodeStructureItem::fromArray($child),
                 $childrenData,
             ),
             decorators: $decorators,

@@ -27,49 +27,49 @@ defmodule Kreuzberg.ExtractionResult do
   """
 
   @type t :: %__MODULE__{
-          content: String.t(),
-          mime_type: String.t(),
-          metadata: Kreuzberg.Metadata.t(),
-          tables: list(Kreuzberg.Table.t()),
-          detected_languages: list(String.t()) | nil,
-          chunks: list(Kreuzberg.Chunk.t()) | nil,
-          images: list(Kreuzberg.Image.t()) | nil,
-          pages: list(Kreuzberg.Page.t()) | nil,
-          elements: list(Kreuzberg.Element.t()) | nil,
-          ocr_elements: list(Kreuzberg.OcrElement.t()) | nil,
-          djot_content: Kreuzberg.DjotContent.t() | nil,
-          document: Kreuzberg.DocumentStructure.t() | nil,
-          extracted_keywords: list(Kreuzberg.Keyword.t()) | nil,
-          quality_score: float() | nil,
-          processing_warnings: list(Kreuzberg.ProcessingWarning.t()),
-          annotations: list(Kreuzberg.PdfAnnotation.t()) | nil,
-          uris: list(Kreuzberg.Uri.t()) | nil,
-          children: list(t()) | nil,
-          code_intelligence: Kreuzberg.CodeProcessResult.t() | nil,
-          llm_usage: list(map()) | nil
-        }
+  content: String.t(),
+  mime_type: String.t(),
+  metadata: Kreuzberg.Metadata.t(),
+  tables: list(Kreuzberg.Table.t()),
+  detected_languages: list(String.t()) | nil,
+  chunks: list(Kreuzberg.Chunk.t()) | nil,
+  images: list(Kreuzberg.Image.t()) | nil,
+  pages: list(Kreuzberg.Page.t()) | nil,
+  elements: list(Kreuzberg.Element.t()) | nil,
+  ocr_elements: list(Kreuzberg.OcrElement.t()) | nil,
+  djot_content: Kreuzberg.DjotContent.t() | nil,
+  document: Kreuzberg.DocumentStructure.t() | nil,
+  extracted_keywords: list(Kreuzberg.Keyword.t()) | nil,
+  quality_score: float() | nil,
+  processing_warnings: list(Kreuzberg.ProcessingWarning.t()),
+  annotations: list(Kreuzberg.PdfAnnotation.t()) | nil,
+  uris: list(Kreuzberg.Uri.t()) | nil,
+  children: list(t()) | nil,
+  code_intelligence: Kreuzberg.CodeProcessResult.t() | nil,
+  llm_usage: list(map()) | nil
+  }
 
   defstruct [
-    :detected_languages,
-    :chunks,
-    :images,
-    :pages,
-    :elements,
-    :ocr_elements,
-    :djot_content,
-    :document,
-    :extracted_keywords,
-    :quality_score,
-    :annotations,
-    :uris,
-    :children,
-    :code_intelligence,
-    :llm_usage,
-    content: "",
-    processing_warnings: [],
-    mime_type: "",
-    metadata: %Kreuzberg.Metadata{},
-    tables: []
+  :detected_languages,
+  :chunks,
+  :images,
+  :pages,
+  :elements,
+  :ocr_elements,
+  :djot_content,
+  :document,
+  :extracted_keywords,
+  :quality_score,
+  :annotations,
+  :uris,
+  :children,
+  :code_intelligence,
+  :llm_usage,
+  content: "",
+  processing_warnings: [],
+  mime_type: "",
+  metadata: %Kreuzberg.Metadata{},
+  tables: []
   ]
 
   @doc """
@@ -84,34 +84,34 @@ defmodule Kreuzberg.ExtractionResult do
     * `opts` - Optional keyword list with additional fields
   """
   @spec new(
-          String.t(),
-          String.t(),
-          Kreuzberg.Metadata.t() | map(),
-          list(Kreuzberg.Table.t() | map()),
-          keyword()
-        ) :: t()
+  String.t(),
+  String.t(),
+  Kreuzberg.Metadata.t() | map(),
+  list(Kreuzberg.Table.t() | map()),
+  keyword()
+  ) :: t()
   def new(content, mime_type, metadata \\ %Kreuzberg.Metadata{}, tables \\ [], opts \\ []) do
     %__MODULE__{
-      content: content,
-      mime_type: mime_type,
-      metadata: normalize_metadata(metadata),
-      tables: normalize_tables(tables),
-      detected_languages: Keyword.get(opts, :detected_languages),
-      chunks: normalize_chunks(Keyword.get(opts, :chunks)),
-      images: normalize_images(Keyword.get(opts, :images)),
-      pages: normalize_pages(Keyword.get(opts, :pages)),
-      elements: normalize_elements(Keyword.get(opts, :elements)),
-      ocr_elements: normalize_ocr_elements(Keyword.get(opts, :ocr_elements)),
-      djot_content: normalize_djot_content(Keyword.get(opts, :djot_content)),
-      document: normalize_document(Keyword.get(opts, :document)),
-      extracted_keywords: normalize_keywords(Keyword.get(opts, :extracted_keywords)),
-      quality_score: normalize_quality_score(Keyword.get(opts, :quality_score)),
-      processing_warnings: normalize_processing_warnings(Keyword.get(opts, :processing_warnings)),
-      annotations: normalize_annotations(Keyword.get(opts, :annotations)),
-      uris: normalize_uris(Keyword.get(opts, :uris)),
-      children: Keyword.get(opts, :children),
-      code_intelligence: normalize_code_intelligence(Keyword.get(opts, :code_intelligence)),
-      llm_usage: Keyword.get(opts, :llm_usage)
+    content: content,
+    mime_type: mime_type,
+    metadata: normalize_metadata(metadata),
+    tables: normalize_tables(tables),
+    detected_languages: Keyword.get(opts, :detected_languages),
+    chunks: normalize_chunks(Keyword.get(opts, :chunks)),
+    images: normalize_images(Keyword.get(opts, :images)),
+    pages: normalize_pages(Keyword.get(opts, :pages)),
+    elements: normalize_elements(Keyword.get(opts, :elements)),
+    ocr_elements: normalize_ocr_elements(Keyword.get(opts, :ocr_elements)),
+    djot_content: normalize_djot_content(Keyword.get(opts, :djot_content)),
+    document: normalize_document(Keyword.get(opts, :document)),
+    extracted_keywords: normalize_keywords(Keyword.get(opts, :extracted_keywords)),
+    quality_score: normalize_quality_score(Keyword.get(opts, :quality_score)),
+    processing_warnings: normalize_processing_warnings(Keyword.get(opts, :processing_warnings)),
+    annotations: normalize_annotations(Keyword.get(opts, :annotations)),
+    uris: normalize_uris(Keyword.get(opts, :uris)),
+    children: Keyword.get(opts, :children),
+    code_intelligence: normalize_code_intelligence(Keyword.get(opts, :code_intelligence)),
+    llm_usage: Keyword.get(opts, :llm_usage)
     }
   end
 
@@ -121,43 +121,43 @@ defmodule Kreuzberg.ExtractionResult do
   @spec to_map(t()) :: map()
   def to_map(%__MODULE__{} = result) do
     %{
-      "content" => result.content,
-      "mime_type" => result.mime_type,
-      "metadata" => Kreuzberg.Metadata.to_map(result.metadata),
-      "tables" => Enum.map(result.tables, &Kreuzberg.Table.to_map/1),
-      "detected_languages" => result.detected_languages,
-      "chunks" => maybe_map_list(result.chunks, &Kreuzberg.Chunk.to_map/1),
-      "images" => maybe_map_list(result.images, &Kreuzberg.Image.to_map/1),
-      "pages" => maybe_map_list(result.pages, &Kreuzberg.Page.to_map/1),
-      "elements" => maybe_map_list(result.elements, &Kreuzberg.Element.to_map/1),
-      "ocr_elements" => maybe_map_list(result.ocr_elements, &Kreuzberg.OcrElement.to_map/1),
-      "djot_content" =>
-        case result.djot_content do
-          nil -> nil
-          %Kreuzberg.DjotContent{} = d -> Kreuzberg.DjotContent.to_map(d)
-          other -> other
-        end,
-      "document" =>
-        case result.document do
-          nil -> nil
-          %Kreuzberg.DocumentStructure{} = doc -> Kreuzberg.DocumentStructure.to_map(doc)
-          other -> other
-        end,
-      "extracted_keywords" =>
-        maybe_map_list(result.extracted_keywords, &Kreuzberg.Keyword.to_map/1),
-      "quality_score" => result.quality_score,
-      "processing_warnings" =>
-        maybe_map_list(result.processing_warnings, &Kreuzberg.ProcessingWarning.to_map/1),
-      "annotations" => maybe_map_list(result.annotations, &Kreuzberg.PdfAnnotation.to_map/1),
-      "uris" => maybe_map_list(result.uris, &Kreuzberg.Uri.to_map/1),
-      "children" => maybe_map_list(result.children, &__MODULE__.to_map/1),
-      "code_intelligence" =>
-        case result.code_intelligence do
-          nil -> nil
-          %Kreuzberg.CodeProcessResult{} = c -> Kreuzberg.CodeProcessResult.to_map(c)
-          other -> other
-        end,
-      "llm_usage" => result.llm_usage
+    "content" => result.content,
+    "mime_type" => result.mime_type,
+    "metadata" => Kreuzberg.Metadata.to_map(result.metadata),
+    "tables" => Enum.map(result.tables, &Kreuzberg.Table.to_map/1),
+    "detected_languages" => result.detected_languages,
+    "chunks" => maybe_map_list(result.chunks, &Kreuzberg.Chunk.to_map/1),
+    "images" => maybe_map_list(result.images, &Kreuzberg.Image.to_map/1),
+    "pages" => maybe_map_list(result.pages, &Kreuzberg.Page.to_map/1),
+    "elements" => maybe_map_list(result.elements, &Kreuzberg.Element.to_map/1),
+    "ocr_elements" => maybe_map_list(result.ocr_elements, &Kreuzberg.OcrElement.to_map/1),
+    "djot_content" =>
+    case result.djot_content do
+      nil -> nil
+      %Kreuzberg.DjotContent{} = d -> Kreuzberg.DjotContent.to_map(d)
+      other -> other
+    end,
+    "document" =>
+    case result.document do
+      nil -> nil
+      %Kreuzberg.DocumentStructure{} = doc -> Kreuzberg.DocumentStructure.to_map(doc)
+      other -> other
+    end,
+    "extracted_keywords" =>
+    maybe_map_list(result.extracted_keywords, &Kreuzberg.Keyword.to_map/1),
+    "quality_score" => result.quality_score,
+    "processing_warnings" =>
+    maybe_map_list(result.processing_warnings, &Kreuzberg.ProcessingWarning.to_map/1),
+    "annotations" => maybe_map_list(result.annotations, &Kreuzberg.PdfAnnotation.to_map/1),
+    "uris" => maybe_map_list(result.uris, &Kreuzberg.Uri.to_map/1),
+    "children" => maybe_map_list(result.children, &__MODULE__.to_map/1),
+    "code_intelligence" =>
+    case result.code_intelligence do
+      nil -> nil
+      %Kreuzberg.CodeProcessResult{} = c -> Kreuzberg.CodeProcessResult.to_map(c)
+      other -> other
+    end,
+    "llm_usage" => result.llm_usage
     }
   end
 

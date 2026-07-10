@@ -181,7 +181,7 @@ defmodule Kreuzberg.Plugin.OcrBackend do
       {:error, "Invalid image data"}
   """
   @callback process_image(image_data :: binary(), language :: String.t()) ::
-              {:ok, String.t()} | {:error, String.t()}
+  {:ok, String.t()} | {:error, String.t()}
 
   @doc """
   Processes an image file and extracts text.
@@ -209,7 +209,7 @@ defmodule Kreuzberg.Plugin.OcrBackend do
       {:error, "Cannot read file: ..."}
   """
   @callback process_file(path :: String.t(), language :: String.t()) ::
-              {:ok, String.t()} | {:error, String.t()}
+  {:ok, String.t()} | {:error, String.t()}
 
   @doc """
   Initializes the OCR backend.

@@ -17,7 +17,6 @@ use crate::types::{CExtractionResult, CStringGuard};
 /// Type alias for FFI results that can fail with a String error message
 pub type FfiResult<T> = std::result::Result<T, String>;
 
-// Thread-local storage for the last error message (for backward compatibility)
 thread_local! {
     pub(crate) static LAST_ERROR_C_STRING: RefCell<Option<CString>> = const { RefCell::new(None) };
 }
@@ -84,7 +83,6 @@ pub unsafe fn parse_file_config_from_json(
 /// Parse extraction configuration from JSON string
 pub fn parse_extraction_config_from_json(config_str: &str) -> FfiResult<ExtractionConfig> {
     // html-to-markdown-rs v2.22.5+ has #[serde(default)] on ConversionOptions,
-    // so serde can now handle partial deserialization with defaults for missing fields
     let config: ExtractionConfig =
         serde_json::from_str(config_str).map_err(|e| format!("Failed to parse config JSON: {}", e))?;
 
@@ -381,8 +379,6 @@ pub fn to_c_extraction_result(result: ExtractionResult) -> std::result::Result<*
         subject: subject_guard.map_or(ptr::null_mut(), |g| g.into_raw()),
         tables_json: tables_json_guard.map_or(ptr::null_mut(), |g| g.into_raw()),
         uris_json: uris_json_guard.map_or(ptr::null_mut(), |g| g.into_raw()),
-        // code_intelligence will be populated once the core ExtractionResult
-        // adds the field; for now, always null.
         code_intelligence_json: ptr::null_mut(),
         structured_output_json: structured_output_json_guard.map_or(ptr::null_mut(), |g| g.into_raw()),
         success: true,
@@ -399,7 +395,6 @@ mod tests {
 
     #[test]
     fn test_set_and_clear_error() {
-        // Test that error functions don't panic
         set_last_error("test error".to_string());
         clear_last_error();
     }
@@ -409,7 +404,6 @@ mod tests {
         let result = string_to_c_string("hello world".to_string());
         assert!(result.is_ok());
 
-        // Clean up the allocated string
         if let Ok(ptr) = result {
             unsafe {
                 let _ = CString::from_raw(ptr);
@@ -429,7 +423,6 @@ mod tests {
         let result = parse_extraction_config_from_json("{}");
         assert!(result.is_ok());
         let config = result.unwrap();
-        // Default config should be created
         assert!(config.html_options.is_none());
     }
 
@@ -486,7 +479,6 @@ mod tests {
         let result = parse_extraction_config_from_json(json);
         assert!(result.is_ok(), "Parsing should succeed with default values");
 
-        // Invalid enum values should be ignored and default value used
         let config = result.unwrap();
         assert!(config.html_options.is_some());
     }
@@ -541,14 +533,11 @@ mod tests {
         let c_result = to_c_extraction_result(result);
         assert!(c_result.is_ok());
 
-        // Clean up the allocated result
         if let Ok(ptr) = c_result {
             unsafe {
                 let boxed = Box::from_raw(ptr);
-                // Verify success flag
                 assert!(boxed.success);
 
-                // Clean up strings
                 if !boxed.content.is_null() {
                     let _ = CString::from_raw(boxed.content);
                 }
@@ -573,17 +562,14 @@ mod tests {
         let c_result = to_c_extraction_result(result);
         assert!(c_result.is_ok());
 
-        // Clean up
         if let Ok(ptr) = c_result {
             unsafe {
                 let boxed = Box::from_raw(ptr);
 
-                // Verify null bytes were replaced with replacement character
                 let content_str = CStr::from_ptr(boxed.content).to_str().unwrap();
                 assert!(!content_str.contains('\0'));
                 assert!(content_str.contains('\u{FFFD}'));
 
-                // Clean up strings
                 if !boxed.content.is_null() {
                     let _ = CString::from_raw(boxed.content);
                 }
@@ -617,18 +603,15 @@ mod tests {
         let c_result = to_c_extraction_result(result);
         assert!(c_result.is_ok());
 
-        // Clean up
         if let Ok(ptr) = c_result {
             unsafe {
                 let boxed = Box::from_raw(ptr);
 
-                // Verify metadata fields are not null
                 assert!(!boxed.language.is_null());
                 assert!(!boxed.date.is_null());
                 assert!(!boxed.subject.is_null());
                 assert!(!boxed.detected_languages_json.is_null());
 
-                // Clean up all allocated strings
                 if !boxed.content.is_null() {
                     let _ = CString::from_raw(boxed.content);
                 }
@@ -697,16 +680,13 @@ mod tests {
         let c_result = to_c_extraction_result(result);
         assert!(c_result.is_ok());
 
-        // Clean up
         if let Ok(ptr) = c_result {
             unsafe {
                 let boxed = Box::from_raw(ptr);
 
-                // Verify JSON fields are not null
                 assert!(!boxed.tables_json.is_null());
                 assert!(!boxed.chunks_json.is_null());
 
-                // Clean up all allocated strings
                 if !boxed.content.is_null() {
                     let _ = CString::from_raw(boxed.content);
                 }

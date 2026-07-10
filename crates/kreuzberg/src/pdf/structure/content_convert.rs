@@ -28,7 +28,6 @@ const LINE_Y_TOLERANCE_FRACTION: f32 = 0.5;
 /// spatially proximate words are grouped into lines and then into paragraphs.
 /// For block/line-level content, each element becomes its own paragraph.
 pub(crate) fn content_to_paragraphs(page: &PageContent) -> Vec<PdfParagraph> {
-    // Check if the majority of elements are word-level.
     let word_count = page.elements.iter().filter(|e| e.level == ElementLevel::Word).count();
     let total = page.elements.len();
 
@@ -58,7 +57,6 @@ fn group_words_to_paragraphs(elements: &[ContentElement]) -> Vec<PdfParagraph> {
         return Vec::new();
     }
 
-    // --- Step 1: compute median element height for Y tolerance ---
     let mut heights: Vec<f32> = elements
         .iter()
         .filter_map(|e| e.bbox.map(|r| r.height()))
@@ -73,23 +71,16 @@ fn group_words_to_paragraphs(elements: &[ContentElement]) -> Vec<PdfParagraph> {
     };
     let tolerance = median_height * LINE_Y_TOLERANCE_FRACTION;
 
-    // --- Step 2: sort elements top-to-bottom (largest y_min first in PDF coords),
-    //             then left-to-right within the same row.
-    //             Elements without a bbox cannot be spatially placed, so we skip
-    //             them entirely; they would corrupt the running y-average used in
-    //             line grouping (they'd all land at y=0.0). ---
     let mut sorted_indices: Vec<usize> = (0..elements.len()).filter(|&i| elements[i].bbox.is_some()).collect();
     sorted_indices.sort_by(|&a, &b| {
         let y_a = elements[a].bbox.map_or(0.0, |r| r.y_min);
         let y_b = elements[b].bbox.map_or(0.0, |r| r.y_min);
         let x_a = elements[a].bbox.map_or(0.0, |r| r.left);
         let x_b = elements[b].bbox.map_or(0.0, |r| r.left);
-        // Descending y (top of page = highest y_min in PDF space)
         y_b.total_cmp(&y_a).then_with(|| x_a.total_cmp(&x_b))
     });
 
-    // --- Step 3: group sorted elements into lines by y_min proximity ---
-    let mut lines: Vec<Vec<usize>> = Vec::new(); // each entry = list of element indices
+    let mut lines: Vec<Vec<usize>> = Vec::new();
     let mut current_line: Vec<usize> = Vec::new();
     let mut line_y_sum: f32 = 0.0;
 
@@ -105,7 +96,6 @@ fn group_words_to_paragraphs(elements: &[ContentElement]) -> Vec<PdfParagraph> {
                 current_line.push(idx);
                 line_y_sum += y;
             } else {
-                // Finalize this line, sorted left-to-right
                 current_line.sort_by(|&a, &b| {
                     let xa = elements[a].bbox.map_or(0.0, |r| r.left);
                     let xb = elements[b].bbox.map_or(0.0, |r| r.left);
@@ -130,7 +120,6 @@ fn group_words_to_paragraphs(elements: &[ContentElement]) -> Vec<PdfParagraph> {
         return Vec::new();
     }
 
-    // --- Step 4: compute median line height for paragraph break detection ---
     let line_heights: Vec<f32> = lines
         .iter()
         .map(|line| {
@@ -150,21 +139,7 @@ fn group_words_to_paragraphs(elements: &[ContentElement]) -> Vec<PdfParagraph> {
         })
         .collect();
 
-    // --- Step 4b: compute median inter-line gap for paragraph break detection.
-    //
-    // The gap is the white space between the *bottom* of one line and the *top*
-    // of the next.  For normally-spaced text this is a small positive number
-    // (sometimes even slightly negative due to descenders).  A paragraph break
-    // shows as a noticeably larger gap.
-    //
-    // We use `median_gap * 2.0` as the threshold.  Using the median (not the
-    // mean) makes the threshold robust against large outlier gaps that would
-    // themselves be paragraph breaks.
-    //
-    // When there is only one line there are no gaps, so no paragraph break is
-    // possible anyway and the threshold value does not matter.
     let paragraph_gap_threshold: f32 = if lines.len() >= 2 {
-        // Compute the bottom edge (y_min in PDF space) for each line.
         let line_bottoms: Vec<f32> = lines
             .iter()
             .enumerate()
@@ -174,7 +149,6 @@ fn group_words_to_paragraphs(elements: &[ContentElement]) -> Vec<PdfParagraph> {
                     .filter_map(|&idx| elements[idx].bbox.map(|r| r.y_min))
                     .fold(f32::MAX, f32::min);
                 if bottom == f32::MAX {
-                    // Fall back using the line's computed height.
                     let top = line
                         .iter()
                         .filter_map(|&idx| elements[idx].bbox.map(|r| r.y_max))
@@ -195,7 +169,6 @@ fn group_words_to_paragraphs(elements: &[ContentElement]) -> Vec<PdfParagraph> {
             })
             .collect();
 
-        // Gaps between consecutive lines: prev_bottom - next_top (positive = white space).
         let mut gaps: Vec<f32> = line_bottoms
             .iter()
             .zip(line_tops.iter().skip(1))
@@ -203,60 +176,38 @@ fn group_words_to_paragraphs(elements: &[ContentElement]) -> Vec<PdfParagraph> {
             .collect();
 
         if gaps.is_empty() {
-            // Fallback: use the median line height as a rough proxy.
-            // `line_heights` is already sorted at this point only if gaps were built;
-            // when empty it has not been sorted yet, so sort a fresh copy.
             let mut sorted = line_heights.to_vec();
             sorted.sort_by(|a, b| a.total_cmp(b));
             sorted[sorted.len() / 2] * 1.5
         } else if gaps.len() == 1 {
-            // With only one inter-line gap we cannot compute a meaningful
-            // median to distinguish normal line spacing from paragraph breaks.
-            // Fall back to a line-height-based heuristic: a gap larger than
-            // 1.5× the median element height signals a paragraph break.
             median_height * 1.5
         } else {
             gaps.sort_by(|a, b| a.total_cmp(b));
             let median_gap = gaps[gaps.len() / 2];
-            // Use twice the median gap as the paragraph break threshold.
-            // When OCR word bboxes are tightly packed, median_gap can be
-            // near zero, which would make 1.0 px the threshold and flag every
-            // line break as a paragraph break. To avoid this we fall back to a
-            // fraction of the median element height when gaps are near zero.
             if median_gap > 0.1 {
                 (median_gap * 2.0).max(median_height * 0.3)
             } else {
-                // Gaps are near-zero: use element height as paragraph-break proxy.
                 median_height * 0.5
             }
         }
     } else {
-        f32::MAX // Single line: no paragraph break possible.
+        f32::MAX
     };
 
-    // --- Step 5: group lines into paragraphs ---
     let mut paragraphs: Vec<PdfParagraph> = Vec::new();
     let mut current_para_lines: Vec<&Vec<usize>> = Vec::new();
-    // Track the y_min (bottom edge) of the previous line to measure inter-line gap.
     let mut prev_line_bottom: Option<f32> = None;
 
     for (line_idx, line) in lines.iter().enumerate() {
-        // y_max is the top edge of the line in PDF coords
         let line_top = line
             .iter()
             .filter_map(|&i| elements[i].bbox.map(|r| r.y_max))
             .fold(f32::MIN, f32::max);
-        // y_min is the bottom edge
         let line_bottom = line
             .iter()
             .filter_map(|&i| elements[i].bbox.map(|r| r.y_min))
             .fold(f32::MAX, f32::min);
 
-        // Detect paragraph break: gap between the bottom of the previous line
-        // and the top of this line. In PDF space both are positive Y values with
-        // y increasing upward, so the previous line sits higher (larger y) than
-        // the current line.  gap = prev_line_bottom - line_top (positive when
-        // there is vertical white space between them).
         if let Some(prev_bottom) = prev_line_bottom {
             let gap = prev_bottom - line_top;
             if gap > paragraph_gap_threshold && !current_para_lines.is_empty() {
@@ -268,7 +219,6 @@ fn group_words_to_paragraphs(elements: &[ContentElement]) -> Vec<PdfParagraph> {
         }
 
         current_para_lines.push(line);
-        // Record the bottom of this line (y_min) for next iteration.
         prev_line_bottom = Some(if line_bottom == f32::MAX {
             line_top - line_heights[line_idx]
         } else {
@@ -287,10 +237,8 @@ fn group_words_to_paragraphs(elements: &[ContentElement]) -> Vec<PdfParagraph> {
 
 /// Build a single `PdfParagraph` from a group of lines (each line is a slice of element indices).
 fn build_paragraph_from_lines(line_groups: &[&Vec<usize>], elements: &[ContentElement]) -> Option<PdfParagraph> {
-    // Use the first line's first element for semantic properties.
     let first_elem = line_groups.first().and_then(|l| l.first()).map(|&i| &elements[i]);
 
-    // Compute dominant (most common) font size across all words.
     let dominant_font_size = {
         let mut sizes: Vec<f32> = line_groups
             .iter()
@@ -301,12 +249,10 @@ fn build_paragraph_from_lines(line_groups: &[&Vec<usize>], elements: &[ContentEl
             first_elem.and_then(|e| e.font_size).unwrap_or(12.0)
         } else {
             sizes.sort_by(|a, b| a.total_cmp(b));
-            // Median as a simple approximation of dominant size.
             sizes[sizes.len() / 2]
         }
     };
 
-    // Build the PdfLine entries.
     let mut pdf_lines: Vec<PdfLine> = Vec::new();
     let mut total_word_count = 0usize;
 
@@ -365,7 +311,6 @@ fn build_paragraph_from_lines(line_groups: &[&Vec<usize>], elements: &[ContentEl
             0.0
         };
 
-        // Compute per-line dominant font size from this line's segments (median).
         let line_font_size = if !segments.is_empty() {
             let mut sizes: Vec<f32> = segments.iter().map(|s| s.font_size).collect();
             sizes.sort_by(|a, b| a.total_cmp(b));
@@ -387,7 +332,6 @@ fn build_paragraph_from_lines(line_groups: &[&Vec<usize>], elements: &[ContentEl
         return None;
     }
 
-    // Derive paragraph properties from the first element.
     let (heading_level, is_list_item, is_code_block, is_formula, is_bold, is_page_furniture, layout_class) =
         if let Some(elem) = first_elem {
             let is_code = matches!(elem.semantic_role, Some(SemanticRole::Code));
@@ -396,9 +340,6 @@ fn build_paragraph_from_lines(line_groups: &[&Vec<usize>], elements: &[ContentEl
             let is_page_furniture = false;
             let mut is_list = matches!(elem.semantic_role, Some(SemanticRole::ListItem));
 
-            // Detect list items from text content when not tagged.
-            // Check the first few tokens (up to 3) to catch multi-token list prefixes
-            // like "(1)" or "[iv]" that may be split across segments.
             if !is_list {
                 let leading_text: String = pdf_lines
                     .first()
@@ -432,7 +373,6 @@ fn build_paragraph_from_lines(line_groups: &[&Vec<usize>], elements: &[ContentEl
             (None, false, false, false, false, false, None)
         };
 
-    // Compute block_bbox spanning all words in the paragraph.
     let block_bbox = {
         let mut left = f32::MAX;
         let mut bottom = f32::MAX;
@@ -475,7 +415,6 @@ fn build_paragraph_from_lines(line_groups: &[&Vec<usize>], elements: &[ContentEl
 ///
 /// Returns `None` for empty elements.
 fn element_to_paragraph(elem: &ContentElement) -> Option<PdfParagraph> {
-    // Build the full text, prepending list label if present.
     let full_text = if let Some(ref label) = elem.list_label {
         format!("{} {}", label, elem.text)
     } else {
@@ -489,7 +428,6 @@ fn element_to_paragraph(elem: &ContentElement) -> Option<PdfParagraph> {
 
     let font_size = elem.font_size.unwrap_or(12.0);
 
-    // Determine structural properties from semantic role.
     let mut is_list_item = matches!(elem.semantic_role, Some(SemanticRole::ListItem));
     let is_code_block = matches!(elem.semantic_role, Some(SemanticRole::Code));
     let is_formula = matches!(elem.semantic_role, Some(SemanticRole::Formula))
@@ -497,29 +435,18 @@ fn element_to_paragraph(elem: &ContentElement) -> Option<PdfParagraph> {
     let is_monospace = elem.is_monospace || is_code_block;
     let is_page_furniture = false;
 
-    // Map heading level from semantic role, with word-count guard.
     let heading_level = match elem.semantic_role {
         Some(SemanticRole::Heading { level }) if word_count <= MAX_HEADING_WORD_COUNT => Some(level),
         _ => None,
     };
 
-    // Detect list items from text content when not tagged.
-    // Use multi-token check to catch patterns like "(1)" or "[iv]" split across words.
-    // Gate on `heading_level.is_none()`: a numbered section heading like
-    // "3. Conclusions" is a Heading, not a list item. Without this gate the
-    // element carries BOTH `heading_level=Some(3)` and `is_list_item=true`,
-    // which makes the assembly layer wrap the heading in a `ListStart`/`ListEnd`
-    // pair and produces an ill-formed AST (`List` → `Heading`).
     if !is_list_item && heading_level.is_none() {
         is_list_item = super::paragraphs::is_list_prefix_multi_token(&full_text);
     }
 
-    // Extract block_bbox as (left, bottom, right, top) tuple for PdfParagraph.
     let block_bbox = elem.bbox.map(|r| (r.left, r.y_min, r.right, r.y_max));
 
-    // Create word-level segments (zero positions — spatial matching uses block_bbox).
     let segments: Vec<SegmentData> = if elem.level == ElementLevel::Line || elem.level == ElementLevel::Block {
-        // Block/line-level elements: split into word segments.
         full_text
             .split_whitespace()
             .map(|w| SegmentData {
@@ -537,7 +464,6 @@ fn element_to_paragraph(elem: &ContentElement) -> Option<PdfParagraph> {
             })
             .collect()
     } else {
-        // Word-level elements: single segment.
         vec![SegmentData {
             text: full_text.clone(),
             x: elem.bbox.map_or(0.0, |r| r.left),
@@ -593,13 +519,12 @@ fn element_to_paragraph(elem: &ContentElement) -> Option<PdfParagraph> {
 /// 7. If valid: partition elements into left/right groups, sort each top-to-bottom,
 ///    concatenate left then right.
 /// 8. If no valid split: leave elements in their current order.
-#[allow(dead_code)] // Called from extractors/pdf/ocr.rs when ocr feature is enabled
+#[allow(dead_code)]
 pub(crate) fn reorder_elements_reading_order(elements: &mut Vec<ContentElement>) {
     if elements.len() < MIN_ELEMENTS_PER_COLUMN * 2 {
         return;
     }
 
-    // Collect content elements that have bounding boxes.
     let content_indices: Vec<usize> = elements
         .iter()
         .enumerate()
@@ -611,7 +536,6 @@ pub(crate) fn reorder_elements_reading_order(elements: &mut Vec<ContentElement>)
         return;
     }
 
-    // Estimate page width from the maximum right edge of all elements with bboxes.
     let page_width_estimate = elements
         .iter()
         .filter_map(|e| e.bbox.map(|r| r.right))
@@ -623,7 +547,6 @@ pub(crate) fn reorder_elements_reading_order(elements: &mut Vec<ContentElement>)
 
     let min_gap = page_width_estimate * MIN_COLUMN_GAP_FRACTION;
 
-    // Collect (x_center, original_index) for content elements.
     let mut x_centers: Vec<(f32, usize)> = content_indices
         .iter()
         .map(|&i| {
@@ -633,10 +556,8 @@ pub(crate) fn reorder_elements_reading_order(elements: &mut Vec<ContentElement>)
         })
         .collect();
 
-    // Sort by x_center to find the largest gap.
     x_centers.sort_by(|a, b| a.0.total_cmp(&b.0));
 
-    // Find the largest gap between adjacent x-centers.
     let mut best_gap = 0.0_f32;
     let mut best_split_x: Option<f32> = None;
 
@@ -653,7 +574,6 @@ pub(crate) fn reorder_elements_reading_order(elements: &mut Vec<ContentElement>)
         None => return,
     };
 
-    // Validate element counts on each side.
     let left_count = content_indices
         .iter()
         .filter(|&&i| {
@@ -667,7 +587,6 @@ pub(crate) fn reorder_elements_reading_order(elements: &mut Vec<ContentElement>)
         return;
     }
 
-    // Compute total Y range across all content elements.
     let mut y_min_all = f32::MAX;
     let mut y_max_all = f32::MIN;
     for &i in &content_indices {
@@ -681,7 +600,6 @@ pub(crate) fn reorder_elements_reading_order(elements: &mut Vec<ContentElement>)
         return;
     }
 
-    // Compute Y span for each side.
     let left_y_span = {
         let mut y_min = f32::MAX;
         let mut y_max = f32::MIN;
@@ -713,13 +631,6 @@ pub(crate) fn reorder_elements_reading_order(elements: &mut Vec<ContentElement>)
         return;
     }
 
-    // Valid two-column layout: partition all elements into left column and right column.
-    // Header/footer elements are NOT moved to the front; they stay in their spatial
-    // position (sorted by their own y_max like all other elements). The `is_page_furniture`
-    // flag already causes them to be filtered out during rendering, so forcing them to
-    // output-start would only corrupt the reading order of the body content.
-    //
-    // Elements without bboxes are assigned to the left column by default.
     let mut left_col: Vec<ContentElement> = Vec::new();
     let mut right_col: Vec<ContentElement> = Vec::new();
 
@@ -732,12 +643,10 @@ pub(crate) fn reorder_elements_reading_order(elements: &mut Vec<ContentElement>)
                 right_col.push(elem);
             }
         } else {
-            // No bbox — treat as left column content.
             left_col.push(elem);
         }
     }
 
-    // Sort each column top-to-bottom (descending y_max in PDF space).
     left_col.sort_by(|a, b| {
         let ya = a.bbox.map_or(0.0, |r| r.y_max);
         let yb = b.bbox.map_or(0.0, |r| r.y_max);
@@ -749,7 +658,6 @@ pub(crate) fn reorder_elements_reading_order(elements: &mut Vec<ContentElement>)
         yb.total_cmp(&ya)
     });
 
-    // Reassemble: left column then right column (no special header/footer hoisting).
     elements.extend(left_col);
     elements.extend(right_col);
 }
@@ -883,12 +791,8 @@ mod tests {
         assert!((bbox.1 - 100.0).abs() < f32::EPSILON);
     }
 
-    // --- Word grouping tests ---
-
     #[test]
     fn test_six_words_two_lines_one_paragraph() {
-        // Line 1: y_min=700, y_max=712 — three words side by side (median height = 12)
-        // Line 2: y_min=684, y_max=696 — three words (gap = 700 - 696 = 4 < 1.5×12 = 18)
         let elements = vec![
             make_word("Hello", 50.0, 700.0, 712.0),
             make_word("world", 85.0, 700.0, 712.0),
@@ -906,7 +810,6 @@ mod tests {
             "expected 2 lines, got {}",
             paras[0].lines.len()
         );
-        // First line should have 3 segments in left-to-right order.
         assert_eq!(paras[0].lines[0].segments.len(), 3);
         assert_eq!(paras[0].lines[0].segments[0].text, "Hello");
         assert_eq!(paras[0].lines[0].segments[1].text, "world");
@@ -915,8 +818,6 @@ mod tests {
 
     #[test]
     fn test_large_gap_produces_two_paragraphs() {
-        // Line 1: y_min=700, y_max=712 (median height = 12)
-        // Line 2: y_min=600, y_max=612 — gap = 700 - 612 = 88 > 1.5×12 = 18 → new paragraph
         let elements = vec![
             make_word("First", 50.0, 700.0, 712.0),
             make_word("para", 85.0, 700.0, 712.0),
@@ -953,9 +854,6 @@ mod tests {
 
     #[test]
     fn test_block_bbox_spans_all_words_in_paragraph() {
-        // A = (50, 700, 80, 712), B = (200, 700, 230, 712), C = (100, 685, 130, 697)
-        // All within tolerance of each other so they form one paragraph.
-        // Expected bbox: left=50, bottom=685, right=230, top=712
         let elements = vec![
             make_word("A", 50.0, 700.0, 712.0),
             make_word("B", 200.0, 700.0, 712.0),
@@ -970,8 +868,6 @@ mod tests {
         assert!((bbox.2 - 230.0).abs() < f32::EPSILON, "right={}", bbox.2);
         assert!((bbox.3 - 712.0).abs() < f32::EPSILON, "top={}", bbox.3);
     }
-
-    // --- reorder_elements_reading_order tests ---
 
     /// Create a block-level element with a bounding box for column tests.
     fn make_block(text: &str, x: f32, y_min: f32, y_max: f32, role: SemanticRole) -> ContentElement {
@@ -991,8 +887,6 @@ mod tests {
 
     #[test]
     fn test_reorder_no_columns_unchanged() {
-        // All elements in a single column — no reordering.
-        // Elements already in reading order: top=700 then top=650.
         let mut elements = vec![
             make_block("P1", 50.0, 680.0, 700.0, SemanticRole::Paragraph),
             make_block("P2", 50.0, 630.0, 650.0, SemanticRole::Paragraph),
@@ -1006,11 +900,6 @@ mod tests {
 
     #[test]
     fn test_reorder_two_columns_detected() {
-        // Left column x=0..80 (right edge = 80), right column x=400..480.
-        // Page width estimate = 480. Min gap = 480 * 0.10 = 48. Actual gap = 400 - 80 = 320.
-        // Left column: L1 (y=700..712), L2 (y=650..662), L3 (y=600..612).
-        // Right column: R1 (y=700..712), R2 (y=650..662).
-        // Expected order: L1, L2, L3, R1, R2.
         let mut elements = vec![
             make_block("R1", 400.0, 700.0, 712.0, SemanticRole::Paragraph),
             make_block("L1", 0.0, 700.0, 712.0, SemanticRole::Paragraph),
@@ -1030,10 +919,6 @@ mod tests {
 
     #[test]
     fn test_reorder_header_footer_stays_in_spatial_position() {
-        // Header/footer elements must NOT be hoisted to the front of the output.
-        // They stay in their spatial (y_max-sorted) position within their column.
-        // The `is_page_furniture` flag filters them during rendering — forcing them
-        // to output-start would corrupt the body content reading order.
         let mut elements = vec![
             make_block("L1", 0.0, 650.0, 662.0, SemanticRole::Paragraph),
             make_block("R1", 400.0, 650.0, 662.0, SemanticRole::Paragraph),
@@ -1043,16 +928,8 @@ mod tests {
         ];
         reorder_elements_reading_order(&mut elements);
         let texts: Vec<_> = elements.iter().map(|e| e.text.clone()).collect();
-        // All elements must be preserved regardless of order.
         assert_eq!(texts.len(), 5, "all elements must be present; got: {:?}", texts);
-        // Header should NOT be forced to position 0 — it is placed by spatial sort.
-        // (It has y_max=762 so it sorts first in the left column, but the key invariant
-        //  is that we no longer artificially hoist it ahead of all columns.)
         let header_pos = texts.iter().position(|t| t == "Header").unwrap();
-        // Header lands first in left column (highest y_max in left col), so index 0
-        // in left col, which maps to index 0 overall — that is fine because it is
-        // its true spatial position, not forced hoisting.
-        // The body elements from the left column must follow Header in the left column.
         let l1_pos = texts.iter().position(|t| t == "L1").unwrap();
         let l2_pos = texts.iter().position(|t| t == "L2").unwrap();
         assert!(
@@ -1064,7 +941,6 @@ mod tests {
 
     #[test]
     fn test_reorder_too_few_elements_unchanged() {
-        // Only 3 elements total — below the minimum (MIN_ELEMENTS_PER_COLUMN * 2 = 4).
         let mut elements = vec![
             make_block("A", 0.0, 700.0, 712.0, SemanticRole::Paragraph),
             make_block("B", 400.0, 700.0, 712.0, SemanticRole::Paragraph),
@@ -1078,16 +954,12 @@ mod tests {
 
     #[test]
     fn test_reorder_no_y_span_unchanged() {
-        // All elements at the same Y height — y span of each column would be zero,
-        // failing the MIN_COLUMN_Y_SPAN_FRACTION check.
         let mut elements = vec![
             make_block("A", 0.0, 700.0, 712.0, SemanticRole::Paragraph),
             make_block("B", 400.0, 700.0, 712.0, SemanticRole::Paragraph),
             make_block("C", 0.0, 700.0, 712.0, SemanticRole::Paragraph),
             make_block("D", 400.0, 700.0, 712.0, SemanticRole::Paragraph),
         ];
-        // All at same y — total Y range is ~12, each side spans ~12, fraction = 1.0 ≥ 0.30.
-        // This test verifies the function doesn't panic; result may or may not reorder.
         reorder_elements_reading_order(&mut elements);
         let total: usize = elements.len();
         assert_eq!(total, 4, "all elements must be preserved");

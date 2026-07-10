@@ -364,8 +364,6 @@ fn download_and_extract_pdfium(url: &str, dest_dir: &Path) {
         thread::sleep(Duration::from_secs(delay_secs));
     }
 
-    // Validate gzip magic bytes (0x1f 0x8b) instead of using external 'file' command
-    // This is more portable and works correctly on Windows
     let is_valid_gzip = fs::read(&archive_path)
         .map(|bytes| bytes.len() >= 2 && bytes[0] == 0x1f && bytes[1] == 0x8b)
         .unwrap_or(false);
@@ -773,10 +771,7 @@ fn link_system_frameworks(target: &str) {
         println!("cargo:rustc-link-lib=framework=AppKit");
         println!("cargo:rustc-link-lib=dylib=c++");
     } else if target.contains("linux") {
-        // PDFium and tesseract/leptonica are built with g++/libstdc++.
         if target.contains("musl") {
-            // musl builds: statically link libstdc++ for fully portable binaries.
-            // Add GCC library path so the linker can find libstdc++.a
             if let Ok(output) = Command::new("gcc").arg("--print-file-name=libstdc++.a").output() {
                 let path = String::from_utf8_lossy(&output.stdout);
                 if let Some(parent) = Path::new(path.trim()).parent() {
@@ -784,7 +779,6 @@ fn link_system_frameworks(target: &str) {
                 }
             }
             println!("cargo:rustc-link-lib=static=stdc++");
-            // libm is part of musl libc, linked statically by default
         } else {
             println!("cargo:rustc-link-lib=dylib=stdc++");
             println!("cargo:rustc-link-lib=dylib=m");

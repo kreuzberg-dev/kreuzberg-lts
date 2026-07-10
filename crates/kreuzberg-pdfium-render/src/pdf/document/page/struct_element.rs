@@ -376,8 +376,6 @@ impl<'a> Iterator for PdfStructElementChildrenIterator<'a> {
         while self.index < self.count {
             let current = self.index;
             self.index += 1;
-            // Some children may not be elements (e.g. marked-content references),
-            // so child_at_index returns None for those. Skip them.
             if let Some(child) = self.element.child_at_index(current) {
                 return Some(child);
             }
@@ -582,7 +580,6 @@ mod tests {
         assert_eq!(PdfStructElementType::H5.heading_level(), Some(5));
         assert_eq!(PdfStructElementType::H6.heading_level(), Some(6));
 
-        // H (generic) has no specific level
         assert_eq!(PdfStructElementType::H.heading_level(), None);
         assert_eq!(PdfStructElementType::P.heading_level(), None);
     }
@@ -614,7 +611,6 @@ mod tests {
 
     #[test]
     fn test_is_block_level() {
-        // Block-level elements
         assert!(PdfStructElementType::Document.is_block_level());
         assert!(PdfStructElementType::Part.is_block_level());
         assert!(PdfStructElementType::P.is_block_level());
@@ -625,7 +621,6 @@ mod tests {
         assert!(PdfStructElementType::BlockQuote.is_block_level());
         assert!(PdfStructElementType::Code.is_block_level());
 
-        // Inline elements
         assert!(!PdfStructElementType::Span.is_block_level());
         assert!(!PdfStructElementType::Link.is_block_level());
         assert!(!PdfStructElementType::TD.is_block_level());
@@ -667,7 +662,7 @@ mod tests {
         let mut set = HashSet::new();
         set.insert(PdfStructElementType::P);
         set.insert(PdfStructElementType::H1);
-        set.insert(PdfStructElementType::P); // duplicate
+        set.insert(PdfStructElementType::P);
         assert_eq!(set.len(), 2);
     }
 }

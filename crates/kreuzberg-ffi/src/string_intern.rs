@@ -467,19 +467,15 @@ mod tests {
             let ptr2 = kreuzberg_intern_string(s.as_ptr());
             let ptr3 = kreuzberg_intern_string(s.as_ptr());
 
-            // All references to the same string should return the same pointer
             assert_eq!(ptr1, ptr2);
             assert_eq!(ptr2, ptr3);
 
-            // Free two of three references - string should still be interned
             kreuzberg_free_interned_string(ptr1);
             kreuzberg_free_interned_string(ptr2);
 
-            // Re-interning should be a cache hit (string still has one reference)
             let ptr4 = kreuzberg_intern_string(s.as_ptr());
             assert_eq!(ptr3, ptr4, "String should still be interned with remaining reference");
 
-            // Free both remaining references
             kreuzberg_free_interned_string(ptr3);
             kreuzberg_free_interned_string(ptr4);
         }
@@ -521,9 +517,6 @@ mod tests {
 
             let stats = kreuzberg_string_intern_stats();
             let savings_delta = stats.estimated_memory_saved - stats_before.estimated_memory_saved;
-            // Parallel tests share the global intern pool, so the exact delta can vary
-            // due to concurrent intern/free operations in other tests. Just verify that
-            // interning the same string 3 times produces meaningful savings.
             assert!(
                 savings_delta > 0,
                 "Should have positive memory savings from interning duplicate strings"

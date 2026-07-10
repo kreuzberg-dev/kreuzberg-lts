@@ -15,15 +15,9 @@ pub fn kreuzberg_error(err: KreuzbergError) -> extendr_api::Error {
         KreuzbergError::Validation { message, .. } => {
             extendr_api::Error::Other(format!("[ValidationError] {}", message))
         }
-        KreuzbergError::Parsing { message, .. } => {
-            extendr_api::Error::Other(format!("[ParsingError] {}", message))
-        }
-        KreuzbergError::Ocr { message, .. } => {
-            extendr_api::Error::Other(format!("[OCRError] {}", message))
-        }
-        KreuzbergError::Io(e) => {
-            extendr_api::Error::Other(format!("[IOError] {}", e))
-        }
+        KreuzbergError::Parsing { message, .. } => extendr_api::Error::Other(format!("[ParsingError] {}", message)),
+        KreuzbergError::Ocr { message, .. } => extendr_api::Error::Other(format!("[OCRError] {}", message)),
+        KreuzbergError::Io(e) => extendr_api::Error::Other(format!("[IOError] {}", e)),
         KreuzbergError::MissingDependency(msg) => {
             extendr_api::Error::Other(format!("[MissingDependencyError] {}", msg))
         }
@@ -39,9 +33,7 @@ pub fn kreuzberg_error(err: KreuzbergError) -> extendr_api::Error {
         KreuzbergError::Serialization { message, .. } => {
             extendr_api::Error::Other(format!("[SerializationError] {}", message))
         }
-        KreuzbergError::Embedding { message, .. } => {
-            extendr_api::Error::Other(format!("[EmbeddingError] {}", message))
-        }
+        KreuzbergError::Embedding { message, .. } => extendr_api::Error::Other(format!("[EmbeddingError] {}", message)),
         other => extendr_api::Error::Other(other.to_string()),
     }
 }

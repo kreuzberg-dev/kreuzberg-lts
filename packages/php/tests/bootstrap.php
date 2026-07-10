@@ -11,42 +11,26 @@ declare(strict_types=1);
 $autoloader = dirname(__DIR__) . '/vendor/autoload.php';
 
 if (!file_exists($autoloader)) {
-    fwrite(
-        STDERR,
-        'Composer autoloader not found. Please run: composer install' . PHP_EOL,
-    );
+    fwrite(STDERR, 'Composer autoloader not found. Please run: composer install' . PHP_EOL);
     exit(1);
 }
 
 require_once $autoloader;
 
-// Always load extension mock to provide fallback functions
 require_once dirname(__DIR__) . '/src/KreuzbergExtensionMock.php';
 
 if (PHP_VERSION_ID < 80200) {
-    fwrite(
-        STDERR,
-        sprintf(
-            'Kreuzberg requires PHP 8.2 or higher. Current version: %s' . PHP_EOL,
-            PHP_VERSION,
-        ),
-    );
+    fwrite(STDERR, sprintf('Kreuzberg requires PHP 8.2 or higher. Current version: %s' . PHP_EOL, PHP_VERSION));
     exit(1);
 }
 
 if (extension_loaded('kreuzberg-php')) {
-    fwrite(
-        STDOUT,
-        sprintf(
-            '✓ Kreuzberg extension loaded (version %s)' . PHP_EOL,
-            phpversion('kreuzberg-php') ?: 'unknown',
-        ),
-    );
+    fwrite(STDOUT, sprintf(
+        '✓ Kreuzberg extension loaded (version %s)' . PHP_EOL,
+        phpversion('kreuzberg-php') ?: 'unknown',
+    ));
 } else {
-    fwrite(
-        STDOUT,
-        '⚠ Kreuzberg extension not loaded - some tests will be skipped' . PHP_EOL,
-    );
+    fwrite(STDOUT, '⚠ Kreuzberg extension not loaded - some tests will be skipped' . PHP_EOL);
 }
 
 error_reporting(E_ALL);

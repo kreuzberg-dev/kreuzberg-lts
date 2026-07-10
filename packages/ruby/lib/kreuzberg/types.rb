@@ -1,29 +1,21 @@
 # frozen_string_literal: true
 
-require 'sorbet-runtime'
+require "sorbet-runtime"
 
 module Kreuzberg
-  # Semantic element type classification.
-  #
-  # Categorizes text content into semantic units for downstream processing.
-  # Supports the element types commonly found in Unstructured documents.
-  #
   # @example
-  #   type = Kreuzberg::ElementType::TITLE
-  #   Kreuzberg::ElementType.values # => ["title", "narrative_text", ...]
-  #
   module ElementType
-    TITLE = 'title'
-    NARRATIVE_TEXT = 'narrative_text'
-    HEADING = 'heading'
-    LIST_ITEM = 'list_item'
-    TABLE = 'table'
-    IMAGE = 'image'
-    PAGE_BREAK = 'page_break'
-    CODE_BLOCK = 'code_block'
-    BLOCK_QUOTE = 'block_quote'
-    FOOTER = 'footer'
-    HEADER = 'header'
+    TITLE = "title"
+    NARRATIVE_TEXT = "narrative_text"
+    HEADING = "heading"
+    LIST_ITEM = "list_item"
+    TABLE = "table"
+    IMAGE = "image"
+    PAGE_BREAK = "page_break"
+    CODE_BLOCK = "code_block"
+    BLOCK_QUOTE = "block_quote"
+    FOOTER = "footer"
+    HEADER = "header"
 
     def self.values
       [TITLE, NARRATIVE_TEXT, HEADING, LIST_ITEM, TABLE, IMAGE, PAGE_BREAK, CODE_BLOCK, BLOCK_QUOTE, FOOTER, HEADER]
@@ -511,10 +503,10 @@ module Kreuzberg
 
   # Content layer classification for document nodes.
   module ContentLayer
-    BODY = 'body'
-    HEADER = 'header'
-    FOOTER = 'footer'
-    FOOTNOTE = 'footnote'
+    BODY = "body"
+    HEADER = "header"
+    FOOTER = "footer"
+    FOOTNOTE = "footnote"
 
     def self.values
       [BODY, HEADER, FOOTER, FOOTNOTE]
@@ -523,8 +515,8 @@ module Kreuzberg
 
   # Algorithm used for keyword extraction.
   module KeywordAlgorithm
-    YAKE = 'yake'
-    RAKE = 'rake'
+    YAKE = "yake"
+    RAKE = "rake"
 
     def self.values
       [YAKE, RAKE]
@@ -533,10 +525,10 @@ module Kreuzberg
 
   # OCR element granularity level.
   module OcrElementLevel
-    WORD = 'word'
-    LINE = 'line'
-    BLOCK = 'block'
-    PAGE = 'page'
+    WORD = "word"
+    LINE = "line"
+    BLOCK = "block"
+    PAGE = "page"
 
     def self.values
       [WORD, LINE, BLOCK, PAGE]
@@ -545,12 +537,12 @@ module Kreuzberg
 
   # Output format for extraction results.
   module OutputFormat
-    PLAIN = 'plain'
-    MARKDOWN = 'markdown'
-    DJOT = 'djot'
-    HTML = 'html'
-    JSON = 'json'
-    STRUCTURED = 'structured'
+    PLAIN = "plain"
+    MARKDOWN = "markdown"
+    DJOT = "djot"
+    HTML = "html"
+    JSON = "json"
+    STRUCTURED = "structured"
 
     def self.values
       [PLAIN, MARKDOWN, DJOT, HTML, JSON, STRUCTURED]
@@ -559,9 +551,9 @@ module Kreuzberg
 
   # Page unit type classification.
   module PageUnitType
-    PAGE = 'page'
-    SLIDE = 'slide'
-    SHEET = 'sheet'
+    PAGE = "page"
+    SLIDE = "slide"
+    SHEET = "sheet"
 
     def self.values
       [PAGE, SLIDE, SHEET]
@@ -570,13 +562,13 @@ module Kreuzberg
 
   # PDF annotation type classification.
   module PdfAnnotationType
-    TEXT = 'text'
-    HIGHLIGHT = 'highlight'
-    LINK = 'link'
-    STAMP = 'stamp'
-    UNDERLINE = 'underline'
-    STRIKE_OUT = 'strike_out'
-    OTHER = 'other'
+    TEXT = "text"
+    HIGHLIGHT = "highlight"
+    LINK = "link"
+    STAMP = "stamp"
+    UNDERLINE = "underline"
+    STRIKE_OUT = "strike_out"
+    OTHER = "other"
 
     def self.values
       [TEXT, HIGHLIGHT, LINK, STAMP, UNDERLINE, STRIKE_OUT, OTHER]
@@ -585,13 +577,13 @@ module Kreuzberg
 
   # Relationship kind between document elements.
   module RelationshipKind
-    FOOTNOTE_REFERENCE = 'footnote_reference'
-    CITATION_REFERENCE = 'citation_reference'
-    INTERNAL_LINK = 'internal_link'
-    CAPTION = 'caption'
-    LABEL = 'label'
-    TOC_ENTRY = 'toc_entry'
-    CROSS_REFERENCE = 'cross_reference'
+    FOOTNOTE_REFERENCE = "footnote_reference"
+    CITATION_REFERENCE = "citation_reference"
+    INTERNAL_LINK = "internal_link"
+    CAPTION = "caption"
+    LABEL = "label"
+    TOC_ENTRY = "toc_entry"
+    CROSS_REFERENCE = "cross_reference"
 
     def self.values
       [FOOTNOTE_REFERENCE, CITATION_REFERENCE, INTERNAL_LINK, CAPTION, LABEL, TOC_ENTRY, CROSS_REFERENCE]
@@ -600,8 +592,8 @@ module Kreuzberg
 
   # Result format classification.
   module ResultFormat
-    UNIFIED = 'unified'
-    ELEMENT_BASED = 'element_based'
+    UNIFIED = "unified"
+    ELEMENT_BASED = "element_based"
 
     def self.values
       [UNIFIED, ELEMENT_BASED]
@@ -610,12 +602,12 @@ module Kreuzberg
 
   # URI kind classification.
   module UriKind
-    HYPERLINK = 'hyperlink'
-    IMAGE = 'image'
-    ANCHOR = 'anchor'
-    CITATION = 'citation'
-    REFERENCE = 'reference'
-    EMAIL = 'email'
+    HYPERLINK = "hyperlink"
+    IMAGE = "image"
+    ANCHOR = "anchor"
+    CITATION = "citation"
+    REFERENCE = "reference"
+    EMAIL = "email"
 
     def self.values
       [HYPERLINK, IMAGE, ANCHOR, CITATION, REFERENCE, EMAIL]

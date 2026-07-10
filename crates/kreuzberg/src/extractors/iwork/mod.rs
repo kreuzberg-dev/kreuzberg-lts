@@ -25,7 +25,7 @@ use std::io::Cursor;
 use std::io::Read;
 
 /// Maximum size for an individual IWA file to guard against decompression bombs.
-const MAX_IWA_DECOMPRESSED_SIZE: usize = 64 * 1024 * 1024; // 64 MiB
+const MAX_IWA_DECOMPRESSED_SIZE: usize = 64 * 1024 * 1024;
 
 /// Collects all .iwa file paths from a ZIP archive.
 ///
@@ -88,7 +88,6 @@ pub fn decode_iwa_stream(data: &[u8]) -> std::result::Result<Vec<u8>, String> {
 
     while i + 4 <= data.len() {
         let chunk_type = data[i];
-        // 24-bit little-endian length in bytes 1..4
         let chunk_len = (data[i + 1] as usize) | ((data[i + 2] as usize) << 8) | ((data[i + 3] as usize) << 16);
         i += 4;
 
@@ -105,7 +104,6 @@ pub fn decode_iwa_stream(data: &[u8]) -> std::result::Result<Vec<u8>, String> {
 
         match chunk_type {
             0x00 => {
-                // Snappy-compressed block
                 let decompressed = decoder
                     .decompress_vec(payload)
                     .map_err(|e| format!("Snappy decompression failed: {e}"))?;
@@ -118,7 +116,6 @@ pub fn decode_iwa_stream(data: &[u8]) -> std::result::Result<Vec<u8>, String> {
                 output.extend_from_slice(&decompressed);
             }
             0x01 => {
-                // Uncompressed block — use payload directly
                 if output.len() + payload.len() > MAX_IWA_DECOMPRESSED_SIZE {
                     return Err(format!(
                         "Uncompressed IWA exceeds size limit ({MAX_IWA_DECOMPRESSED_SIZE} bytes)"
@@ -127,7 +124,6 @@ pub fn decode_iwa_stream(data: &[u8]) -> std::result::Result<Vec<u8>, String> {
                 output.extend_from_slice(payload);
             }
             _ => {
-                // Unknown chunk type — skip to avoid corruption
                 tracing::debug!("Unknown IWA chunk type: 0x{:02x}, len={chunk_len}", chunk_type);
             }
         }
@@ -150,7 +146,6 @@ pub fn extract_text_from_proto(data: &[u8]) -> Vec<String> {
     let mut i = 0usize;
 
     while i < data.len() {
-        // Read varint tag
         let (tag_varint, tag_len) = match read_varint(data, i) {
             Some(v) => v,
             None => break,
@@ -160,19 +155,14 @@ pub fn extract_text_from_proto(data: &[u8]) -> Vec<String> {
         let wire_type = tag_varint & 0x7;
 
         match wire_type {
-            0 => {
-                // Varint — skip
-                match read_varint(data, i) {
-                    Some((_, len)) => i += len,
-                    None => break,
-                }
-            }
+            0 => match read_varint(data, i) {
+                Some((_, len)) => i += len,
+                None => break,
+            },
             1 => {
-                // 64-bit — skip
                 i += 8;
             }
             2 => {
-                // Length-delimited — inspect for text
                 let (length, len_bytes) = match read_varint(data, i) {
                     Some(v) => v,
                     None => break,
@@ -185,7 +175,6 @@ pub fn extract_text_from_proto(data: &[u8]) -> Vec<String> {
                 let payload = &data[i..end];
                 i = end;
 
-                // Attempt UTF-8 decode — only keep strings ≥ 3 chars of printable content
                 if let Ok(s) = utf8_validation::from_utf8(payload) {
                     let trimmed = s.trim();
                     if trimmed.len() >= 3 && trimmed.chars().any(|c| c.is_alphabetic() || c.is_numeric()) {
@@ -193,16 +182,13 @@ pub fn extract_text_from_proto(data: &[u8]) -> Vec<String> {
                     }
                 }
 
-                // Also recurse into nested messages (they're also length-delimited)
                 let nested = extract_text_from_proto(payload);
                 texts.extend(nested);
             }
             5 => {
-                // 32-bit — skip
                 i += 4;
             }
             _ => {
-                // Unknown wire type, stop parsing this message to avoid corruption
                 break;
             }
         }
@@ -248,7 +234,6 @@ pub fn extract_text_from_iwa_files(content: &[u8], iwa_paths: &[&str]) -> Result
     let mut all_text: Vec<String> = Vec::new();
 
     for path in iwa_paths {
-        // Some IWA files might not exist in all documents — skip missing ones gracefully
         match archive.by_name(path) {
             Ok(mut file) => {
                 let compressed_size = file.size() as usize;
@@ -258,7 +243,6 @@ pub fn extract_text_from_iwa_files(content: &[u8], iwa_paths: &[&str]) -> Result
                     continue;
                 }
 
-                // Apple uses raw Snappy without framing headers
                 let mut decoder = snap::raw::Decoder::new();
                 let Ok(decompressed) = decoder.decompress_vec(&compressed) else {
                     continue;
@@ -272,7 +256,6 @@ pub fn extract_text_from_iwa_files(content: &[u8], iwa_paths: &[&str]) -> Result
                 all_text.extend(texts);
             }
             Err(_) => {
-                // File not in archive — skip gracefully
                 continue;
             }
         }
@@ -295,7 +278,6 @@ pub fn extract_metadata_from_zip(content: &[u8]) -> crate::types::metadata::Meta
 
     let mut metadata = crate::types::metadata::Metadata::default();
 
-    // Try to read Metadata/Properties.plist (XML plist with doc metadata)
     if let Ok(mut file) = archive.by_name("Metadata/Properties.plist") {
         let mut buf = Vec::new();
         if file.read_to_end(&mut buf).is_ok()
@@ -305,8 +287,6 @@ pub fn extract_metadata_from_zip(content: &[u8]) -> crate::types::metadata::Meta
         }
     }
 
-    // Try to read Metadata/DocumentIdentifier from the ZIP
-    // (some iWork files store the doc title here)
     if let Ok(mut file) = archive.by_name("Metadata/DocumentIdentifier") {
         let mut buf = Vec::new();
         if file.read_to_end(&mut buf).is_ok()
@@ -327,13 +307,10 @@ pub fn extract_metadata_from_zip(content: &[u8]) -> crate::types::metadata::Meta
 /// iWork plist metadata uses `<key>...</key><string>...</string>` pairs.
 /// We extract known keys: title, author, keywords, language.
 fn parse_plist_metadata(plist: &str, metadata: &mut crate::types::metadata::Metadata) {
-    // Simple key/value extraction from XML plist without a full XML parser.
-    // The format is: <key>NAME</key>\n<string>VALUE</string>
     let lines: Vec<&str> = plist.lines().map(|l| l.trim()).collect();
     let mut i = 0;
     while i < lines.len() {
         if let Some(key) = extract_plist_tag(lines[i], "key") {
-            // Look at the next non-empty line for the value
             let mut j = i + 1;
             while j < lines.len() && lines[j].is_empty() {
                 j += 1;

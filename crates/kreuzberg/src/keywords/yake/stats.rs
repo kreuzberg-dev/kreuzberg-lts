@@ -1,6 +1,3 @@
-// Inlined from streaming-stats 0.2.3 — Welford's online algorithm for mean/stddev,
-// plus a simple median function. Replaces the streaming-stats + num_traits dependencies.
-
 /// Online statistics accumulator using Welford's algorithm.
 #[derive(Debug, Clone)]
 pub(crate) struct OnlineStats {
@@ -63,7 +60,6 @@ pub(crate) fn median(iter: impl Iterator<Item = f64>) -> Option<f64> {
     }
     let len = values.len();
     let mid = len / 2;
-    // Use partial sort via select_nth_unstable for O(n) average
     values.select_nth_unstable_by(mid, |a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
     if len % 2 == 1 {
         Some(values[mid])

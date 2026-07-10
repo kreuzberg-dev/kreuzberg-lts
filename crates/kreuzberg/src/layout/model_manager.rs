@@ -312,7 +312,6 @@ mod tests {
         let temp_dir = TempDir::new().unwrap();
         let manager = LayoutModelManager::new(Some(temp_dir.path().to_path_buf()));
 
-        // Pre-populate both models
         let rtdetr_dir = temp_dir.path().join("rtdetr");
         fs::create_dir_all(&rtdetr_dir).unwrap();
         fs::write(rtdetr_dir.join("model.onnx"), "fake").unwrap();

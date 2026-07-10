@@ -22,8 +22,7 @@ readonly class ExtractedKeyword
         public float $score,
         public string $algorithm,
         public ?array $positions = null,
-    ) {
-    }
+    ) {}
 
     /**
      * @param array<string, mixed> $data
@@ -47,11 +46,6 @@ readonly class ExtractedKeyword
         /** @var array<int>|null $positions */
         $positions = $data['positions'] ?? null;
 
-        return new self(
-            text: $text,
-            score: $score,
-            algorithm: $algorithm,
-            positions: $positions,
-        );
+        return new self(text: $text, score: $score, algorithm: $algorithm, positions: $positions);
     }
 }

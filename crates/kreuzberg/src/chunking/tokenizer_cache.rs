@@ -31,7 +31,6 @@ static TOKENIZER_CACHE: LazyLock<RwLock<AHashMap<String, Arc<tokenizers::Tokeniz
 ///
 /// Returns an error if the tokenizer cannot be downloaded or parsed.
 pub(crate) fn get_or_init_tokenizer(model: &str) -> crate::Result<Arc<tokenizers::Tokenizer>> {
-    // Phase 1: try read lock (fast path for cache hits)
     {
         let cache = TOKENIZER_CACHE
             .read()
@@ -41,12 +40,10 @@ pub(crate) fn get_or_init_tokenizer(model: &str) -> crate::Result<Arc<tokenizers
         }
     }
 
-    // Phase 2: write lock, double-check, then initialize
     let mut cache = TOKENIZER_CACHE
         .write()
         .map_err(|e| KreuzbergError::Other(format!("Tokenizer cache write lock poisoned: {}", e)))?;
 
-    // Double-check after acquiring write lock (another thread may have initialized)
     if let Some(tok) = cache.get(model) {
         return Ok(Arc::clone(tok));
     }
@@ -65,8 +62,6 @@ mod tests {
 
     #[test]
     fn test_cache_returns_same_instance() {
-        // This test requires network access to download a tokenizer.
-        // Skip in CI by checking for a specific env var.
         if std::env::var("CI").is_ok() {
             return;
         }
@@ -75,7 +70,6 @@ mod tests {
         let tok1 = get_or_init_tokenizer(model).unwrap();
         let tok2 = get_or_init_tokenizer(model).unwrap();
 
-        // Same Arc instance (pointer equality)
         assert!(Arc::ptr_eq(&tok1, &tok2));
     }
 }

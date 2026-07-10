@@ -149,84 +149,84 @@ defmodule Kreuzberg.ExtractionConfig do
   @type nested_config :: config_map | nil
 
   @type layout_config ::
-          %{
-            confidence_threshold: float() | nil,
-            apply_heuristics: boolean(),
-            table_model: String.t() | nil
-          }
-          | nil
+  %{
+  confidence_threshold: float() | nil,
+  apply_heuristics: boolean(),
+  table_model: String.t() | nil
+  }
+  | nil
 
   @type output_format :: String.t()
 
   @type result_format :: String.t()
 
   @type t :: %__MODULE__{
-          chunking: nested_config,
-          ocr: nested_config,
-          language_detection: nested_config,
-          postprocessor: nested_config,
-          images: nested_config,
-          pages: nested_config,
-          token_reduction: nested_config,
-          keywords: nested_config,
-          pdf_options: nested_config,
-          max_concurrent_extractions: non_neg_integer() | nil,
-          html_options: config_map | nil,
-          html_output: nested_config,
-          layout: layout_config,
-          acceleration: nested_config,
-          security_limits: nested_config,
-          email: nested_config,
-          content_filter: nested_config,
-          concurrency: nested_config,
-          tree_sitter: Kreuzberg.TreeSitterConfig.t() | nested_config,
-          use_cache: boolean(),
-          enable_quality_processing: boolean(),
-          force_ocr: boolean(),
-          disable_ocr: boolean(),
-          force_ocr_pages: [non_neg_integer()] | nil,
-          output_format: output_format,
-          result_format: result_format,
-          include_document_structure: boolean(),
-          cache_namespace: String.t() | nil,
-          cache_ttl_secs: non_neg_integer() | nil,
-          extraction_timeout_secs: non_neg_integer() | nil,
-          max_archive_depth: non_neg_integer()
-        }
+  chunking: nested_config,
+  ocr: nested_config,
+  language_detection: nested_config,
+  postprocessor: nested_config,
+  images: nested_config,
+  pages: nested_config,
+  token_reduction: nested_config,
+  keywords: nested_config,
+  pdf_options: nested_config,
+  max_concurrent_extractions: non_neg_integer() | nil,
+  html_options: config_map | nil,
+  html_output: nested_config,
+  layout: layout_config,
+  acceleration: nested_config,
+  security_limits: nested_config,
+  email: nested_config,
+  content_filter: nested_config,
+  concurrency: nested_config,
+  tree_sitter: Kreuzberg.TreeSitterConfig.t() | nested_config,
+  use_cache: boolean(),
+  enable_quality_processing: boolean(),
+  force_ocr: boolean(),
+  disable_ocr: boolean(),
+  force_ocr_pages: [non_neg_integer()] | nil,
+  output_format: output_format,
+  result_format: result_format,
+  include_document_structure: boolean(),
+  cache_namespace: String.t() | nil,
+  cache_ttl_secs: non_neg_integer() | nil,
+  extraction_timeout_secs: non_neg_integer() | nil,
+  max_archive_depth: non_neg_integer()
+  }
 
   @derive Jason.Encoder
   defstruct [
-    :chunking,
-    :ocr,
-    :language_detection,
-    :postprocessor,
-    :images,
-    :pages,
-    :token_reduction,
-    :keywords,
-    :pdf_options,
-    :max_concurrent_extractions,
-    :html_options,
-    :html_output,
-    :layout,
-    :acceleration,
-    :security_limits,
-    :email,
-    :content_filter,
-    :concurrency,
-    :tree_sitter,
-    :cache_namespace,
-    :cache_ttl_secs,
-    :extraction_timeout_secs,
-    use_cache: true,
-    enable_quality_processing: true,
-    force_ocr: false,
-    disable_ocr: false,
-    force_ocr_pages: nil,
-    output_format: "plain",
-    result_format: "unified",
-    include_document_structure: false,
-    max_archive_depth: 3
+  :chunking,
+  :ocr,
+  :language_detection,
+  :postprocessor,
+  :images,
+  :pages,
+  :token_reduction,
+  :keywords,
+  :pdf_options,
+  :max_concurrent_extractions,
+  :html_options,
+  :html_output,
+  :layout,
+  :acceleration,
+  :security_limits,
+  :email,
+  :content_filter,
+  :concurrency,
+  :tree_sitter,
+  :cache_namespace,
+  :cache_ttl_secs,
+  :extraction_timeout_secs,
+  use_cache: true,
+  enable_quality_processing: true,
+  force_ocr: false,
+  disable_ocr: false,
+  force_ocr_pages: nil,
+  output_format: "plain",
+  result_format: "unified",
+  include_document_structure: false,
+  max_archive_depth: 3
   ]
 
   @doc """
@@ -267,21 +267,21 @@ defmodule Kreuzberg.ExtractionConfig do
 
   def new(opts) when is_map(opts) and not is_struct(opts) do
     normalized =
-      opts
-      |> Enum.reduce(%{}, fn
-        {key, value}, acc when is_binary(key) ->
-          atom_key =
-            try do
-              String.to_existing_atom(key)
-            rescue
-              ArgumentError -> key
-            end
+    opts
+    |> Enum.reduce(%{}, fn
+      {key, value}, acc when is_binary(key) ->
+      atom_key =
+      try do
+        String.to_existing_atom(key)
+      rescue
+        ArgumentError -> key
+      end
 
-          Map.put(acc, atom_key, value)
+      Map.put(acc, atom_key, value)
 
-        {key, value}, acc ->
-          Map.put(acc, key, value)
-      end)
+      {key, value}, acc ->
+      Map.put(acc, key, value)
+    end)
 
     struct(__MODULE__, normalized)
   end
@@ -414,36 +414,36 @@ defmodule Kreuzberg.ExtractionConfig do
 
   def to_map(%__MODULE__{} = config) do
     %{
-      "chunking" => normalize_nested_config(config.chunking),
-      "ocr" => normalize_ocr_config(config.ocr),
-      "language_detection" => normalize_nested_config(config.language_detection),
-      "postprocessor" => normalize_nested_config(config.postprocessor),
-      "images" => normalize_nested_config(config.images),
-      "pages" => normalize_nested_config(config.pages),
-      "token_reduction" => normalize_nested_config(config.token_reduction),
-      "keywords" => normalize_keywords_config(config.keywords),
-      "pdf_options" => normalize_nested_config(config.pdf_options),
-      "max_concurrent_extractions" => config.max_concurrent_extractions,
-      "html_options" => normalize_nested_config(config.html_options),
-      "layout" => normalize_layout_config(config.layout),
-      "acceleration" => normalize_acceleration_config(config.acceleration),
-      "security_limits" => normalize_nested_config(config.security_limits),
-      "email" => normalize_email_config(config.email),
-      "content_filter" => normalize_nested_config(config.content_filter),
-      "concurrency" => normalize_concurrency_config(config.concurrency),
-      "tree_sitter" => normalize_nested_config(config.tree_sitter),
-      "use_cache" => config.use_cache,
-      "enable_quality_processing" => config.enable_quality_processing,
-      "force_ocr" => config.force_ocr,
-      "disable_ocr" => config.disable_ocr,
-      "force_ocr_pages" => config.force_ocr_pages,
-      "output_format" => normalize_format_value(config.output_format),
-      "result_format" => normalize_format_value(config.result_format),
-      "include_document_structure" => config.include_document_structure,
-      "cache_namespace" => config.cache_namespace,
-      "cache_ttl_secs" => config.cache_ttl_secs,
-      "extraction_timeout_secs" => config.extraction_timeout_secs,
-      "max_archive_depth" => config.max_archive_depth
+    "chunking" => normalize_nested_config(config.chunking),
+    "ocr" => normalize_ocr_config(config.ocr),
+    "language_detection" => normalize_nested_config(config.language_detection),
+    "postprocessor" => normalize_nested_config(config.postprocessor),
+    "images" => normalize_nested_config(config.images),
+    "pages" => normalize_nested_config(config.pages),
+    "token_reduction" => normalize_nested_config(config.token_reduction),
+    "keywords" => normalize_keywords_config(config.keywords),
+    "pdf_options" => normalize_nested_config(config.pdf_options),
+    "max_concurrent_extractions" => config.max_concurrent_extractions,
+    "html_options" => normalize_nested_config(config.html_options),
+    "layout" => normalize_layout_config(config.layout),
+    "acceleration" => normalize_acceleration_config(config.acceleration),
+    "security_limits" => normalize_nested_config(config.security_limits),
+    "email" => normalize_email_config(config.email),
+    "content_filter" => normalize_nested_config(config.content_filter),
+    "concurrency" => normalize_concurrency_config(config.concurrency),
+    "tree_sitter" => normalize_nested_config(config.tree_sitter),
+    "use_cache" => config.use_cache,
+    "enable_quality_processing" => config.enable_quality_processing,
+    "force_ocr" => config.force_ocr,
+    "disable_ocr" => config.disable_ocr,
+    "force_ocr_pages" => config.force_ocr_pages,
+    "output_format" => normalize_format_value(config.output_format),
+    "result_format" => normalize_format_value(config.result_format),
+    "include_document_structure" => config.include_document_structure,
+    "cache_namespace" => config.cache_namespace,
+    "cache_ttl_secs" => config.cache_ttl_secs,
+    "extraction_timeout_secs" => config.extraction_timeout_secs,
+    "max_archive_depth" => config.max_archive_depth
     }
   end
 
@@ -458,13 +458,13 @@ defmodule Kreuzberg.ExtractionConfig do
     map
     |> Enum.reduce(%{}, fn
       {key, value}, acc when is_binary(key) ->
-        normalized_value = normalize_map_keys_recursive(value)
-        Map.put(acc, key, normalized_value)
+      normalized_value = normalize_map_keys_recursive(value)
+      Map.put(acc, key, normalized_value)
 
       {key, value}, acc ->
-        string_key = if is_atom(key), do: Atom.to_string(key), else: to_string(key)
-        normalized_value = normalize_map_keys_recursive(value)
-        Map.put(acc, string_key, normalized_value)
+      string_key = if is_atom(key), do: Atom.to_string(key), else: to_string(key)
+      normalized_value = normalize_map_keys_recursive(value)
+      Map.put(acc, string_key, normalized_value)
     end)
   end
 
@@ -504,41 +504,35 @@ defmodule Kreuzberg.ExtractionConfig do
 
   @doc false
   defp normalize_keywords_config(keywords_config) when is_map(keywords_config) do
-    # Normalize the keys and add defaults if not present
-    # The Rust backend requires algorithm, max_keywords, min_score, and ngram_range
     normalized = normalize_map_keys(keywords_config)
 
-    # Add default algorithm if not present (yake is the default)
     normalized =
-      if Map.has_key?(normalized, "algorithm") do
-        normalized
-      else
-        Map.put(normalized, "algorithm", "yake")
-      end
+    if Map.has_key?(normalized, "algorithm") do
+      normalized
+    else
+      Map.put(normalized, "algorithm", "yake")
+    end
 
-    # Add default max_keywords if not present
     normalized =
-      if Map.has_key?(normalized, "max_keywords") do
-        normalized
-      else
-        Map.put(normalized, "max_keywords", 10)
-      end
+    if Map.has_key?(normalized, "max_keywords") do
+      normalized
+    else
+      Map.put(normalized, "max_keywords", 10)
+    end
 
-    # Add default min_score if not present
     normalized =
-      if Map.has_key?(normalized, "min_score") do
-        normalized
-      else
-        Map.put(normalized, "min_score", 0.0)
-      end
+    if Map.has_key?(normalized, "min_score") do
+      normalized
+    else
+      Map.put(normalized, "min_score", 0.0)
+    end
 
-    # Add default ngram_range [1, 3] if not present
     normalized =
-      if Map.has_key?(normalized, "ngram_range") do
-        normalized
-      else
-        Map.put(normalized, "ngram_range", [1, 3])
-      end
+    if Map.has_key?(normalized, "ngram_range") do
+      normalized
+    else
+      Map.put(normalized, "ngram_range", [1, 3])
+    end
 
     normalized
   end
@@ -553,16 +547,14 @@ defmodule Kreuzberg.ExtractionConfig do
   defp normalize_layout_config(layout_config) when is_map(layout_config) do
     normalized = normalize_map_keys(layout_config)
 
-    # Remove preset if present (no longer used)
     normalized = Map.delete(normalized, "preset")
 
-    # Add default apply_heuristics if not present
     normalized =
-      if Map.has_key?(normalized, "apply_heuristics") do
-        normalized
-      else
-        Map.put(normalized, "apply_heuristics", true)
-      end
+    if Map.has_key?(normalized, "apply_heuristics") do
+      normalized
+    else
+      Map.put(normalized, "apply_heuristics", true)
+    end
 
     normalized
   end
@@ -577,21 +569,19 @@ defmodule Kreuzberg.ExtractionConfig do
   defp normalize_acceleration_config(accel_config) when is_map(accel_config) do
     normalized = normalize_map_keys(accel_config)
 
-    # Add default provider if not present ("auto" is the default)
     normalized =
-      if Map.has_key?(normalized, "provider") do
-        normalized
-      else
-        Map.put(normalized, "provider", "auto")
-      end
+    if Map.has_key?(normalized, "provider") do
+      normalized
+    else
+      Map.put(normalized, "provider", "auto")
+    end
 
-    # Add default device_id if not present (0 is the default)
     normalized =
-      if Map.has_key?(normalized, "device_id") do
-        normalized
-      else
-        Map.put(normalized, "device_id", 0)
-      end
+    if Map.has_key?(normalized, "device_id") do
+      normalized
+    else
+      Map.put(normalized, "device_id", 0)
+    end
 
     normalized
   end
@@ -683,36 +673,36 @@ defmodule Kreuzberg.ExtractionConfig do
   @spec validate(t()) :: {:ok, t()} | {:error, String.t()}
   def validate(%__MODULE__{} = config) do
     with :ok <- validate_boolean_field(config.use_cache, "use_cache"),
-         :ok <-
-           validate_boolean_field(config.enable_quality_processing, "enable_quality_processing"),
-         :ok <- validate_boolean_field(config.force_ocr, "force_ocr"),
-         :ok <- validate_boolean_field(config.disable_ocr, "disable_ocr"),
-         :ok <- validate_output_format(config.output_format),
-         :ok <- validate_result_format(config.result_format),
-         :ok <- validate_nested_field(config.chunking, "chunking"),
-         :ok <- validate_chunking_config(config.chunking),
-         :ok <- validate_nested_field(config.ocr, "ocr"),
-         :ok <- validate_ocr_config(config.ocr),
-         :ok <- validate_nested_field(config.language_detection, "language_detection"),
-         :ok <- validate_nested_field(config.postprocessor, "postprocessor"),
-         :ok <- validate_nested_field(config.images, "images"),
-         :ok <- validate_nested_field(config.pages, "pages"),
-         :ok <- validate_nested_field(config.token_reduction, "token_reduction"),
-         :ok <- validate_nested_field(config.keywords, "keywords"),
-         :ok <- validate_nested_field(config.pdf_options, "pdf_options"),
-         :ok <- validate_max_concurrent_extractions(config.max_concurrent_extractions),
-         :ok <- validate_nested_field(config.html_options, "html_options"),
-         :ok <- validate_nested_field(config.layout, "layout"),
-         :ok <- validate_layout_config(config.layout),
-         :ok <- validate_nested_field(config.acceleration, "acceleration"),
-         :ok <- validate_acceleration_config(config.acceleration),
-         :ok <- validate_nested_field(config.security_limits, "security_limits"),
-         :ok <- validate_nested_field(config.email, "email"),
-         :ok <- validate_email_config(config.email),
-         :ok <- validate_nested_field(config.content_filter, "content_filter"),
-         :ok <- validate_nested_field(config.concurrency, "concurrency"),
-         :ok <- validate_concurrency_config(config.concurrency),
-         :ok <- validate_nested_field(config.tree_sitter, "tree_sitter") do
+    :ok <-
+    validate_boolean_field(config.enable_quality_processing, "enable_quality_processing"),
+    :ok <- validate_boolean_field(config.force_ocr, "force_ocr"),
+    :ok <- validate_boolean_field(config.disable_ocr, "disable_ocr"),
+    :ok <- validate_output_format(config.output_format),
+    :ok <- validate_result_format(config.result_format),
+    :ok <- validate_nested_field(config.chunking, "chunking"),
+    :ok <- validate_chunking_config(config.chunking),
+    :ok <- validate_nested_field(config.ocr, "ocr"),
+    :ok <- validate_ocr_config(config.ocr),
+    :ok <- validate_nested_field(config.language_detection, "language_detection"),
+    :ok <- validate_nested_field(config.postprocessor, "postprocessor"),
+    :ok <- validate_nested_field(config.images, "images"),
+    :ok <- validate_nested_field(config.pages, "pages"),
+    :ok <- validate_nested_field(config.token_reduction, "token_reduction"),
+    :ok <- validate_nested_field(config.keywords, "keywords"),
+    :ok <- validate_nested_field(config.pdf_options, "pdf_options"),
+    :ok <- validate_max_concurrent_extractions(config.max_concurrent_extractions),
+    :ok <- validate_nested_field(config.html_options, "html_options"),
+    :ok <- validate_nested_field(config.layout, "layout"),
+    :ok <- validate_layout_config(config.layout),
+    :ok <- validate_nested_field(config.acceleration, "acceleration"),
+    :ok <- validate_acceleration_config(config.acceleration),
+    :ok <- validate_nested_field(config.security_limits, "security_limits"),
+    :ok <- validate_nested_field(config.email, "email"),
+    :ok <- validate_email_config(config.email),
+    :ok <- validate_nested_field(config.content_filter, "content_filter"),
+    :ok <- validate_nested_field(config.concurrency, "concurrency"),
+    :ok <- validate_concurrency_config(config.concurrency),
+    :ok <- validate_nested_field(config.tree_sitter, "tree_sitter") do
       {:ok, config}
     end
   end
@@ -762,10 +752,10 @@ defmodule Kreuzberg.ExtractionConfig do
 
     case Native.config_from_file(file_path_str) do
       {:ok, json_str} ->
-        parse_config_json(json_str)
+      parse_config_json(json_str)
 
       {:error, reason} ->
-        {:error, reason}
+      {:error, reason}
     end
   end
 
@@ -797,62 +787,60 @@ defmodule Kreuzberg.ExtractionConfig do
   def discover do
     case Native.config_discover() do
       {:ok, json_str} ->
-        parse_config_json(json_str)
+      parse_config_json(json_str)
 
       {:error, :not_found} ->
-        {:error, :not_found}
+      {:error, :not_found}
 
       {:error, reason} ->
-        {:error, reason}
+      {:error, reason}
     end
   end
 
-  # Private helper to parse JSON config returned from Rust NIFs
   @doc false
   defp parse_config_json(json_str) do
     case Jason.decode(json_str) do
       {:ok, config_map} ->
-        case from_map(config_map) do
-          {:ok, config} -> {:ok, config}
-          {:error, reason} -> {:error, "Invalid configuration structure: #{reason}"}
-        end
+      case from_map(config_map) do
+        {:ok, config} -> {:ok, config}
+        {:error, reason} -> {:error, "Invalid configuration structure: #{reason}"}
+      end
 
       {:error, _reason} ->
-        {:error, "Failed to parse configuration JSON"}
+      {:error, "Failed to parse configuration JSON"}
     end
   end
 
-  # Private helper to convert a map to an ExtractionConfig struct
   @doc false
   defp from_map(map) when is_map(map) do
     config = %__MODULE__{
-      chunking: Map.get(map, "chunking"),
-      ocr: Map.get(map, "ocr"),
-      language_detection: Map.get(map, "language_detection"),
-      postprocessor: Map.get(map, "postprocessor"),
-      images: Map.get(map, "images"),
-      pages: Map.get(map, "pages"),
-      token_reduction: Map.get(map, "token_reduction"),
-      keywords: Map.get(map, "keywords"),
-      pdf_options: Map.get(map, "pdf_options"),
-      max_concurrent_extractions: Map.get(map, "max_concurrent_extractions"),
-      html_options: Map.get(map, "html_options"),
-      layout: Map.get(map, "layout"),
-      acceleration: Map.get(map, "acceleration"),
-      security_limits: Map.get(map, "security_limits"),
-      email: Map.get(map, "email"),
-      concurrency: Map.get(map, "concurrency"),
-      tree_sitter: Map.get(map, "tree_sitter"),
-      use_cache: Map.get(map, "use_cache", true),
-      enable_quality_processing: Map.get(map, "enable_quality_processing", true),
-      force_ocr: Map.get(map, "force_ocr", false),
-      disable_ocr: Map.get(map, "disable_ocr", false),
-      force_ocr_pages: Map.get(map, "force_ocr_pages"),
-      output_format: Map.get(map, "output_format", "plain"),
-      result_format: Map.get(map, "result_format", "unified"),
-      cache_namespace: Map.get(map, "cache_namespace"),
-      cache_ttl_secs: Map.get(map, "cache_ttl_secs"),
-      extraction_timeout_secs: Map.get(map, "extraction_timeout_secs")
+    chunking: Map.get(map, "chunking"),
+    ocr: Map.get(map, "ocr"),
+    language_detection: Map.get(map, "language_detection"),
+    postprocessor: Map.get(map, "postprocessor"),
+    images: Map.get(map, "images"),
+    pages: Map.get(map, "pages"),
+    token_reduction: Map.get(map, "token_reduction"),
+    keywords: Map.get(map, "keywords"),
+    pdf_options: Map.get(map, "pdf_options"),
+    max_concurrent_extractions: Map.get(map, "max_concurrent_extractions"),
+    html_options: Map.get(map, "html_options"),
+    layout: Map.get(map, "layout"),
+    acceleration: Map.get(map, "acceleration"),
+    security_limits: Map.get(map, "security_limits"),
+    email: Map.get(map, "email"),
+    concurrency: Map.get(map, "concurrency"),
+    tree_sitter: Map.get(map, "tree_sitter"),
+    use_cache: Map.get(map, "use_cache", true),
+    enable_quality_processing: Map.get(map, "enable_quality_processing", true),
+    force_ocr: Map.get(map, "force_ocr", false),
+    disable_ocr: Map.get(map, "disable_ocr", false),
+    force_ocr_pages: Map.get(map, "force_ocr_pages"),
+    output_format: Map.get(map, "output_format", "plain"),
+    result_format: Map.get(map, "result_format", "unified"),
+    cache_namespace: Map.get(map, "cache_namespace"),
+    cache_ttl_secs: Map.get(map, "cache_ttl_secs"),
+    extraction_timeout_secs: Map.get(map, "extraction_timeout_secs")
     }
 
     {:ok, config}
@@ -876,7 +864,7 @@ defmodule Kreuzberg.ExtractionConfig do
   @doc false
   defp validate_max_concurrent_extractions(value) do
     {:error,
-     "Field 'max_concurrent_extractions' must be a positive integer or nil, got: #{type_name(value)}"}
+    "Field 'max_concurrent_extractions' must be a positive integer or nil, got: #{type_name(value)}"}
   end
 
   @doc false
@@ -904,32 +892,32 @@ defmodule Kreuzberg.ExtractionConfig do
   defp validate_output_format(value) when is_binary(value) do
     case String.downcase(value) do
       "plain" ->
-        :ok
+      :ok
 
       "text" ->
-        :ok
+      :ok
 
       "markdown" ->
-        :ok
+      :ok
 
       "md" ->
-        :ok
+      :ok
 
       "djot" ->
-        :ok
+      :ok
 
       "html" ->
-        :ok
+      :ok
 
       "json" ->
-        :ok
+      :ok
 
       "structured" ->
-        :ok
+      :ok
 
       _invalid ->
-        {:error,
-         "Field 'output_format' must be one of: plain, text, markdown, md, djot, html, json, structured, got: #{value}"}
+      {:error,
+      "Field 'output_format' must be one of: plain, text, markdown, md, djot, html, json, structured, got: #{value}"}
     end
   end
 
@@ -942,16 +930,16 @@ defmodule Kreuzberg.ExtractionConfig do
   defp validate_result_format(value) when is_binary(value) do
     case String.downcase(value) do
       "unified" ->
-        :ok
+      :ok
 
       "element_based" ->
-        :ok
+      :ok
 
       "elementbased" ->
-        :ok
+      :ok
 
       _invalid ->
-        {:error, "Field 'result_format' must be one of: unified, element_based, got: #{value}"}
+      {:error, "Field 'result_format' must be one of: unified, element_based, got: #{value}"}
     end
   end
 
@@ -980,10 +968,10 @@ defmodule Kreuzberg.ExtractionConfig do
   @doc false
   defp validate_chunking_config(config) when is_map(config) do
     with :ok <- validate_positive_integer(config, "max_chars"),
-         :ok <- validate_positive_integer(config, "max_overlap"),
-         :ok <- validate_optional_boolean(config, "prepend_heading_context"),
-         :ok <- validate_chunker_type(config),
-         :ok <- validate_topic_threshold(config) do
+    :ok <- validate_positive_integer(config, "max_overlap"),
+    :ok <- validate_optional_boolean(config, "prepend_heading_context"),
+    :ok <- validate_chunker_type(config),
+    :ok <- validate_topic_threshold(config) do
       validate_overlap_not_exceeding_max_chars(config)
     end
   end
@@ -994,29 +982,29 @@ defmodule Kreuzberg.ExtractionConfig do
 
     case value do
       nil ->
-        :ok
+      :ok
 
       v when is_binary(v) ->
-        case String.downcase(v) do
-          "text" ->
-            :ok
+      case String.downcase(v) do
+        "text" ->
+        :ok
 
-          "markdown" ->
-            :ok
+        "markdown" ->
+        :ok
 
-          "yaml" ->
-            :ok
+        "yaml" ->
+        :ok
 
-          "semantic" ->
-            :ok
+        "semantic" ->
+        :ok
 
-          _invalid ->
-            {:error,
-             "Field 'chunker_type' must be one of: text, markdown, yaml, semantic, got: #{v}"}
-        end
+        _invalid ->
+        {:error,
+        "Field 'chunker_type' must be one of: text, markdown, yaml, semantic, got: #{v}"}
+      end
 
       v ->
-        {:error, "Field 'chunker_type' must be a string, got: #{type_name(v)}"}
+      {:error, "Field 'chunker_type' must be a string, got: #{type_name(v)}"}
     end
   end
 
@@ -1026,17 +1014,17 @@ defmodule Kreuzberg.ExtractionConfig do
 
     case value do
       nil ->
-        :ok
+      :ok
 
       v when is_number(v) and v >= 0.0 and v <= 1.0 ->
-        :ok
+      :ok
 
       v when is_number(v) ->
-        {:error, "Field 'topic_threshold' must be between 0.0 and 1.0, got: #{v}"}
+      {:error, "Field 'topic_threshold' must be between 0.0 and 1.0, got: #{v}"}
 
       v ->
-        {:error,
-         "Field 'topic_threshold' must be a number between 0.0 and 1.0, got: #{type_name(v)}"}
+      {:error,
+      "Field 'topic_threshold' must be a number between 0.0 and 1.0, got: #{type_name(v)}"}
     end
   end
 
@@ -1054,16 +1042,16 @@ defmodule Kreuzberg.ExtractionConfig do
   defp validate_positive_integer(config, key) do
     case Map.get(config, key) || Map.get(config, String.to_atom(key)) do
       nil ->
-        :ok
+      :ok
 
       value when is_integer(value) and value > 0 ->
-        :ok
+      :ok
 
       value when is_integer(value) and value <= 0 ->
-        {:error, "Field '#{key}' must be a positive integer, got: #{value}"}
+      {:error, "Field '#{key}' must be a positive integer, got: #{value}"}
 
       value ->
-        {:error, "Field '#{key}' must be a positive integer, got: #{type_name(value)}"}
+      {:error, "Field '#{key}' must be a positive integer, got: #{type_name(value)}"}
     end
   end
 
@@ -1074,13 +1062,13 @@ defmodule Kreuzberg.ExtractionConfig do
 
     cond do
       is_nil(max_chars) or is_nil(max_overlap) ->
-        :ok
+      :ok
 
       is_integer(max_overlap) and is_integer(max_chars) and max_overlap > max_chars ->
-        {:error, "Field 'max_overlap' (#{max_overlap}) cannot exceed 'max_chars' (#{max_chars})"}
+      {:error, "Field 'max_overlap' (#{max_overlap}) cannot exceed 'max_chars' (#{max_chars})"}
 
       true ->
-        :ok
+      :ok
     end
   end
 
@@ -1101,17 +1089,17 @@ defmodule Kreuzberg.ExtractionConfig do
 
     case confidence do
       nil ->
-        :ok
+      :ok
 
       value when is_number(value) and value >= 0.0 and value <= 1.0 ->
-        :ok
+      :ok
 
       value when is_number(value) ->
-        {:error, "Field 'confidence' must be between 0.0 and 1.0, got: #{value}"}
+      {:error, "Field 'confidence' must be between 0.0 and 1.0, got: #{value}"}
 
       value ->
-        {:error,
-         "Field 'confidence' must be a number between 0.0 and 1.0, got: #{type_name(value)}"}
+      {:error,
+      "Field 'confidence' must be a number between 0.0 and 1.0, got: #{type_name(value)}"}
     end
   end
 
@@ -1121,19 +1109,19 @@ defmodule Kreuzberg.ExtractionConfig do
 
     case dpi do
       nil ->
-        :ok
+      :ok
 
       value when is_integer(value) and value > 0 and value <= 2400 ->
-        :ok
+      :ok
 
       value when is_integer(value) and value <= 0 ->
-        {:error, "Field 'dpi' must be a positive integer, got: #{value}"}
+      {:error, "Field 'dpi' must be a positive integer, got: #{value}"}
 
       value when is_integer(value) and value > 2400 ->
-        {:error, "Field 'dpi' must be at most 2400, got: #{value}"}
+      {:error, "Field 'dpi' must be at most 2400, got: #{value}"}
 
       value ->
-        {:error, "Field 'dpi' must be a positive integer, got: #{type_name(value)}"}
+      {:error, "Field 'dpi' must be a positive integer, got: #{type_name(value)}"}
     end
   end
 
@@ -1143,7 +1131,7 @@ defmodule Kreuzberg.ExtractionConfig do
   @doc false
   defp validate_layout_config(config) when is_map(config) do
     with :ok <- validate_layout_confidence_threshold(config),
-         :ok <- validate_layout_apply_heuristics(config) do
+    :ok <- validate_layout_apply_heuristics(config) do
       validate_layout_table_model(config)
     end
   end
@@ -1151,83 +1139,83 @@ defmodule Kreuzberg.ExtractionConfig do
   @doc false
   defp validate_layout_confidence_threshold(config) do
     threshold =
-      case Map.fetch(config, "confidence_threshold") do
-        {:ok, value} -> value
-        :error -> Map.get(config, :confidence_threshold)
-      end
+    case Map.fetch(config, "confidence_threshold") do
+      {:ok, value} -> value
+      :error -> Map.get(config, :confidence_threshold)
+    end
 
     case threshold do
       nil ->
-        :ok
+      :ok
 
       value when is_number(value) and value >= 0.0 and value <= 1.0 ->
-        :ok
+      :ok
 
       value when is_number(value) ->
-        {:error, "Field 'layout.confidence_threshold' must be between 0.0 and 1.0, got: #{value}"}
+      {:error, "Field 'layout.confidence_threshold' must be between 0.0 and 1.0, got: #{value}"}
 
       value ->
-        {:error,
-         "Field 'layout.confidence_threshold' must be a number between 0.0 and 1.0, got: #{type_name(value)}"}
+      {:error,
+      "Field 'layout.confidence_threshold' must be a number between 0.0 and 1.0, got: #{type_name(value)}"}
     end
   end
 
   @doc false
   defp validate_layout_apply_heuristics(config) do
     apply_heuristics =
-      case Map.fetch(config, "apply_heuristics") do
-        {:ok, value} -> value
-        :error -> Map.get(config, :apply_heuristics)
-      end
+    case Map.fetch(config, "apply_heuristics") do
+      {:ok, value} -> value
+      :error -> Map.get(config, :apply_heuristics)
+    end
 
     case apply_heuristics do
       nil ->
-        :ok
+      :ok
 
       value when is_boolean(value) ->
-        :ok
+      :ok
 
       value ->
-        {:error, "Field 'layout.apply_heuristics' must be a boolean, got: #{type_name(value)}"}
+      {:error, "Field 'layout.apply_heuristics' must be a boolean, got: #{type_name(value)}"}
     end
   end
 
   @doc false
   defp validate_layout_table_model(config) do
     table_model =
-      case Map.fetch(config, "table_model") do
-        {:ok, value} -> value
-        :error -> Map.get(config, :table_model)
-      end
+    case Map.fetch(config, "table_model") do
+      {:ok, value} -> value
+      :error -> Map.get(config, :table_model)
+    end
 
     case table_model do
       nil ->
-        :ok
+      :ok
 
       value when is_binary(value) ->
-        case String.downcase(value) do
-          "tatr" ->
-            :ok
+      case String.downcase(value) do
+        "tatr" ->
+        :ok
 
-          "slanet_wired" ->
-            :ok
+        "slanet_wired" ->
+        :ok
 
-          "slanet_wireless" ->
-            :ok
+        "slanet_wireless" ->
+        :ok
 
-          "slanet_plus" ->
-            :ok
+        "slanet_plus" ->
+        :ok
 
-          "slanet_auto" ->
-            :ok
+        "slanet_auto" ->
+        :ok
 
-          _invalid ->
-            {:error,
-             "Field 'layout.table_model' must be one of: tatr, slanet_wired, slanet_wireless, slanet_plus, slanet_auto, got: #{value}"}
-        end
+        _invalid ->
+        {:error,
+        "Field 'layout.table_model' must be one of: tatr, slanet_wired, slanet_wireless, slanet_plus, slanet_auto, got: #{value}"}
+      end
 
       value ->
-        {:error, "Field 'layout.table_model' must be a string, got: #{type_name(value)}"}
+      {:error, "Field 'layout.table_model' must be a string, got: #{type_name(value)}"}
     end
   end
 
@@ -1247,32 +1235,32 @@ defmodule Kreuzberg.ExtractionConfig do
 
     case provider do
       nil ->
-        :ok
+      :ok
 
       value when is_binary(value) ->
-        case String.downcase(value) do
-          "auto" ->
-            :ok
+      case String.downcase(value) do
+        "auto" ->
+        :ok
 
-          "cpu" ->
-            :ok
+        "cpu" ->
+        :ok
 
-          "coreml" ->
-            :ok
+        "coreml" ->
+        :ok
 
-          "cuda" ->
-            :ok
+        "cuda" ->
+        :ok
 
-          "tensorrt" ->
-            :ok
+        "tensorrt" ->
+        :ok
 
-          _invalid ->
-            {:error,
-             "Field 'acceleration.provider' must be one of: auto, cpu, coreml, cuda, tensorrt, got: #{value}"}
-        end
+        _invalid ->
+        {:error,
+        "Field 'acceleration.provider' must be one of: auto, cpu, coreml, cuda, tensorrt, got: #{value}"}
+      end
 
       value ->
-        {:error, "Field 'acceleration.provider' must be a string, got: #{type_name(value)}"}
+      {:error, "Field 'acceleration.provider' must be a string, got: #{type_name(value)}"}
     end
   end
 
@@ -1282,17 +1270,17 @@ defmodule Kreuzberg.ExtractionConfig do
 
     case device_id do
       nil ->
-        :ok
+      :ok
 
       value when is_integer(value) and value >= 0 ->
-        :ok
+      :ok
 
       value when is_integer(value) and value < 0 ->
-        {:error, "Field 'acceleration.device_id' must be a non-negative integer, got: #{value}"}
+      {:error, "Field 'acceleration.device_id' must be a non-negative integer, got: #{value}"}
 
       value ->
-        {:error,
-         "Field 'acceleration.device_id' must be a non-negative integer, got: #{type_name(value)}"}
+      {:error,
+      "Field 'acceleration.device_id' must be a non-negative integer, got: #{type_name(value)}"}
     end
   end
 
@@ -1305,17 +1293,17 @@ defmodule Kreuzberg.ExtractionConfig do
 
     case max_threads do
       nil ->
-        :ok
+      :ok
 
       value when is_integer(value) and value > 0 ->
-        :ok
+      :ok
 
       value when is_integer(value) ->
-        {:error, "Field 'concurrency.max_threads' must be a positive integer, got: #{value}"}
+      {:error, "Field 'concurrency.max_threads' must be a positive integer, got: #{value}"}
 
       value ->
-        {:error,
-         "Field 'concurrency.max_threads' must be a positive integer, got: #{type_name(value)}"}
+      {:error,
+      "Field 'concurrency.max_threads' must be a positive integer, got: #{type_name(value)}"}
     end
   end
 
@@ -1325,22 +1313,22 @@ defmodule Kreuzberg.ExtractionConfig do
   @doc false
   defp validate_email_config(config) when is_map(config) do
     msg_fallback_codepage =
-      Map.get(config, "msg_fallback_codepage") || Map.get(config, :msg_fallback_codepage)
+    Map.get(config, "msg_fallback_codepage") || Map.get(config, :msg_fallback_codepage)
 
     case msg_fallback_codepage do
       nil ->
-        :ok
+      :ok
 
       value when is_integer(value) and value >= 0 ->
-        :ok
+      :ok
 
       value when is_integer(value) ->
-        {:error,
-         "Field 'email.msg_fallback_codepage' must be a non-negative integer, got: #{value}"}
+      {:error,
+      "Field 'email.msg_fallback_codepage' must be a non-negative integer, got: #{value}"}
 
       value ->
-        {:error,
-         "Field 'email.msg_fallback_codepage' must be a non-negative integer, got: #{type_name(value)}"}
+      {:error,
+      "Field 'email.msg_fallback_codepage' must be a non-negative integer, got: #{type_name(value)}"}
     end
   end
 end

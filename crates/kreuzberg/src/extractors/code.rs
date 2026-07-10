@@ -61,14 +61,10 @@ impl CodeExtractor {
         let mut builder = InternalDocumentBuilder::new("code");
 
         if result.chunks.is_empty() {
-            // No TSLP chunks (chunk_max_size not configured): emit entire source as a single code block.
             builder.push_code(source, Some(language), None, None);
         } else {
-            // Use TSLP chunks as primary content.
             for chunk in &result.chunks {
-                // Emit context heading from the chunk's context_path if available.
                 if let Some(last_context) = chunk.metadata.context_path.last() {
-                    // Determine heading level from node types in the context.
                     let level = if chunk.metadata.node_types.iter().any(|t| {
                         matches!(
                             t.as_str(),
@@ -82,14 +78,13 @@ impl CodeExtractor {
                     builder.push_heading(level, last_context, None, None);
                 }
 
-                // Emit code block with language annotation.
                 builder.push_code(&chunk.content, Some(language), None, None);
             }
         }
 
         let mut doc = builder.build();
         doc.metadata = Metadata {
-            format: Some(FormatMetadata::Code(result)),
+            format: Some(FormatMetadata::Code(Box::new(result))),
             ..Default::default()
         };
         doc.mime_type = Cow::Borrowed(SOURCE_CODE_MIME_TYPE);
@@ -103,13 +98,11 @@ impl CodeExtractor {
     fn read_and_detect(path: &Path) -> Result<(String, String)> {
         let path_str = path.to_string_lossy();
 
-        // Fast path: extension-based detection (no I/O)
         if let Some(lang) = tslp::detect_language_from_path(&path_str) {
             let source = std::fs::read_to_string(path)?;
             return Ok((lang.to_string(), source));
         }
 
-        // Slow path: read file once, try shebang detection
         let source = std::fs::read_to_string(path)?;
         if let Some(lang) = tslp::detect_language_from_content(&source) {
             return Ok((lang.to_string(), source));

@@ -135,21 +135,11 @@ impl<'a> PdfMetadata<'a> {
 
     #[inline]
     fn get_raw_metadata_tag(&self, tag: &str) -> Option<String> {
-        // Retrieving the tag text from Pdfium is a two-step operation. First, we call
-        // FPDF_GetMetaText() with a null buffer; this will retrieve the length of
-        // the metadata text in bytes. If the length is zero, then there is no such tag.
-
-        // If the length is non-zero, then we reserve a byte buffer of the given
-        // length and call FPDF_GetMetaText() again with a pointer to the buffer;
-        // this will write the metadata text to the buffer in UTF16-LE format.
-
         let buffer_length = self
             .bindings
             .FPDF_GetMetaText(self.document_handle, tag, std::ptr::null_mut(), 0);
 
         if buffer_length == 0 {
-            // The tag is not present.
-
             return None;
         }
 

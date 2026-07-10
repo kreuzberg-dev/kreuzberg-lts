@@ -23,10 +23,10 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  *            null if not available
  */
 public record PdfAnnotation(@JsonProperty("annotation_type") String annotationType,
-		@JsonProperty("content") String content, @JsonProperty("page_number") int pageNumber,
-		@JsonProperty("bounding_box") PdfAnnotationBoundingBox boundingBox) {
+    @JsonProperty("content") String content, @JsonProperty("page_number") int pageNumber,
+    @JsonProperty("bounding_box") PdfAnnotationBoundingBox boundingBox) {
 
-	/**
+    /**
 	 * Creates a new PdfAnnotation.
 	 *
 	 * @param annotationType
@@ -42,23 +42,23 @@ public record PdfAnnotation(@JsonProperty("annotation_type") String annotationTy
 	 * @throws IllegalArgumentException
 	 *             if pageNumber is less than 1
 	 */
-	@JsonCreator
-	public PdfAnnotation(@JsonProperty("annotation_type") String annotationType,
-			@JsonProperty("content") String content, @JsonProperty("page_number") int pageNumber,
-			@JsonProperty("bounding_box") PdfAnnotationBoundingBox boundingBox) {
-		if (annotationType == null) {
-			throw new NullPointerException("annotationType must not be null");
-		}
-		if (pageNumber < 1) {
-			throw new IllegalArgumentException("pageNumber must be >= 1, got " + pageNumber);
-		}
-		this.annotationType = annotationType;
-		this.content = content;
-		this.pageNumber = pageNumber;
-		this.boundingBox = boundingBox;
-	}
+    @JsonCreator
+    public PdfAnnotation(@JsonProperty("annotation_type") String annotationType,
+        @JsonProperty("content") String content, @JsonProperty("page_number") int pageNumber,
+        @JsonProperty("bounding_box") PdfAnnotationBoundingBox boundingBox) {
+        if (annotationType == null) {
+            throw new NullPointerException("annotationType must not be null");
+        }
+        if (pageNumber < 1) {
+            throw new IllegalArgumentException("pageNumber must be >= 1, got " + pageNumber);
+        }
+        this.annotationType = annotationType;
+        this.content = content;
+        this.pageNumber = pageNumber;
+        this.boundingBox = boundingBox;
+    }
 
-	/**
+    /**
 	 * Bounding box for a PDF annotation (PDF coordinates).
 	 *
 	 * @param x0
@@ -70,58 +70,58 @@ public record PdfAnnotation(@JsonProperty("annotation_type") String annotationTy
 	 * @param y1
 	 *            the top y-coordinate
 	 */
-	public record PdfAnnotationBoundingBox(@JsonProperty("x0") double x0, @JsonProperty("y0") double y0,
-			@JsonProperty("x1") double x1, @JsonProperty("y1") double y1) {
+    public record PdfAnnotationBoundingBox(@JsonProperty("x0") double x0, @JsonProperty("y0") double y0,
+        @JsonProperty("x1") double x1, @JsonProperty("y1") double y1) {
 
-		@JsonCreator
-		public PdfAnnotationBoundingBox(@JsonProperty("x0") double x0, @JsonProperty("y0") double y0,
-				@JsonProperty("x1") double x1, @JsonProperty("y1") double y1) {
-			this.x0 = x0;
-			this.y0 = y0;
-			this.x1 = x1;
-			this.y1 = y1;
-		}
-	}
+        @JsonCreator
+        public PdfAnnotationBoundingBox(@JsonProperty("x0") double x0, @JsonProperty("y0") double y0,
+            @JsonProperty("x1") double x1, @JsonProperty("y1") double y1) {
+            this.x0 = x0;
+            this.y0 = y0;
+            this.x1 = x1;
+            this.y1 = y1;
+        }
+    }
 
-	/**
+    /**
 	 * Returns the annotation type.
 	 *
 	 * @return the annotation type string
 	 */
-	public String getAnnotationType() {
-		return annotationType;
-	}
+    public String getAnnotationType() {
+        return annotationType;
+    }
 
-	/**
+    /**
 	 * Returns the text content of the annotation.
 	 *
 	 * @return the content string, or null if not available
 	 */
-	public String getContent() {
-		return content;
-	}
+    public String getContent() {
+        return content;
+    }
 
-	/**
+    /**
 	 * Returns the page number where the annotation appears.
 	 *
 	 * @return the page number (1-indexed)
 	 */
-	public int getPageNumber() {
-		return pageNumber;
-	}
+    public int getPageNumber() {
+        return pageNumber;
+    }
 
-	/**
+    /**
 	 * Returns the bounding box of the annotation.
 	 *
 	 * @return the bounding box, or null if not available
 	 */
-	public PdfAnnotationBoundingBox getBoundingBox() {
-		return boundingBox;
-	}
+    public PdfAnnotationBoundingBox getBoundingBox() {
+        return boundingBox;
+    }
 
-	@Override
-	public String toString() {
-		return "PdfAnnotation{" + "annotationType='" + annotationType + '\'' + ", content='" + content + '\''
-				+ ", pageNumber=" + pageNumber + ", boundingBox=" + boundingBox + '}';
-	}
+    @Override
+    public String toString() {
+        return "PdfAnnotation{" + "annotationType='" + annotationType + '\'' + ", content='" + content + '\''
+        + ", pageNumber=" + pageNumber + ", boundingBox=" + boundingBox + '}';
+    }
 }

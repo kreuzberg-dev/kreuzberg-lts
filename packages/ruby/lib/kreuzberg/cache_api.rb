@@ -31,12 +31,12 @@ module Kreuzberg
     #   end
     def cache_stats
       stats = native_cache_stats
-      total_entries = (stats['total_entries'] || stats[:total_entries] || 0) + @__cache_tracker[:entries]
-      total_size = (stats['total_size_bytes'] || stats[:total_size_bytes] || 0) + @__cache_tracker[:bytes]
+      total_entries = (stats["total_entries"] || stats[:total_entries] || 0) + @__cache_tracker[:entries]
+      total_size = (stats["total_size_bytes"] || stats[:total_size_bytes] || 0) + @__cache_tracker[:bytes]
 
-      stats['total_entries'] = total_entries
+      stats["total_entries"] = total_entries
       stats[:total_entries] = total_entries
-      stats['total_size_bytes'] = total_size
+      stats["total_size_bytes"] = total_size
       stats[:total_size_bytes] = total_size
 
       stats

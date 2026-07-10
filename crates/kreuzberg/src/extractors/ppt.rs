@@ -63,7 +63,6 @@ impl PptExtractor {
                     builder.push_paragraph(trimmed, vec![], None, None);
                 }
 
-                // Add speaker notes as footnote definitions
                 if let Some(notes) = speaker_notes.get(i)
                     && !notes.is_empty()
                 {
@@ -112,9 +111,6 @@ impl DocumentExtractor for PptExtractor {
         mime_type: &str,
         config: &ExtractionConfig,
     ) -> Result<InternalDocument> {
-        // When content_filter is set and include_headers is true, include master
-        // slide content instead of skipping it. When content_filter is None,
-        // preserve the default behavior (skip master slides).
         let include_master_slides = config.content_filter.as_ref().is_some_and(|f| f.include_headers);
 
         let result = {
@@ -166,7 +162,6 @@ impl DocumentExtractor for PptExtractor {
             serde_json::Value::String("native_ole".to_string()),
         );
 
-        // Store speaker notes if available
         if !result.speaker_notes.is_empty() {
             metadata_map.insert(
                 Cow::Borrowed("speaker_notes"),
@@ -224,7 +219,7 @@ impl DocumentExtractor for PptExtractor {
     }
 
     fn priority(&self) -> i32 {
-        60 // Higher than default (50) to take precedence
+        60
     }
 }
 
@@ -287,7 +282,6 @@ mod tests {
             crate::extraction::derive::derive_extraction_result(result, true, crate::core::config::OutputFormat::Plain);
         assert!(result.document.is_some(), "Should produce document structure for PPT");
         let doc = result.document.unwrap();
-        // Should contain Slide nodes
         let has_slide = doc
             .nodes
             .iter()

@@ -1,11 +1,4 @@
 // Vendored from yake-rust 1.0.3 (MIT) — https://github.com/quesurifn/yake-rust
-// See ATTRIBUTIONS.md for full details.
-//
-// Modifications:
-// - Integrated with kreuzberg's stopwords module (64 languages, 22K+ words)
-// - Replaced segtok with custom memchr-based preprocessor (fixes #676)
-// - Replaced hashbrown with ahash, inlined streaming-stats and levenshtein
-// - Optimized with Cow<str>, byte-table punctuation lookups
 
 use std::collections::VecDeque;
 
@@ -34,7 +27,6 @@ mod tag;
 /// Default punctuation character set (matching original YAKE).
 const DEFAULT_PUNCTUATION: &str = r##"!"#$%&'()*+,-./:,<=>?@[\]^_`{|}~"##;
 
-// Type aliases for clarity
 type Sentences = Vec<Sentence>;
 type Candidates<'s> = IndexMap<&'s [String], Candidate<'s>>;
 type Features<'s> = AHashMap<&'s str, TermScore>;
@@ -265,13 +257,11 @@ impl<'a> Yake<'a> {
                 ..Default::default()
             };
 
-            // Casing feature
             stats.tf_a = occurrences.iter().filter(|occ| occ.tag == Tag::Acronym).count() as f64;
             stats.tf_n = occurrences.iter().filter(|occ| occ.tag == Tag::Uppercase).count() as f64;
             stats.casing = stats.tf_a.max(stats.tf_n);
             stats.casing /= 1.0 + stats.tf.ln();
 
-            // Position feature
             {
                 let mut sentence_ids: Vec<f64> = occurrences.iter().map(|o| o.sentence_idx as f64).collect();
                 sentence_ids.dedup();
@@ -279,17 +269,14 @@ impl<'a> Yake<'a> {
                 stats.position = stats.position.ln().ln();
             }
 
-            // Frequency feature
             stats.frequency = stats.tf;
             stats.frequency /= nsw_tf_mean + nsw_tf_std;
 
-            // Relatedness feature
             {
                 let (dl, dr) = ctx.dispersion_of(u_term);
                 stats.relatedness = 1.0 + (dr + dl) * (stats.tf / max_tf);
             }
 
-            // Sentences feature
             {
                 let mut ids: Vec<usize> = occurrences.iter().map(|o| o.sentence_idx).collect();
                 ids.dedup();
@@ -403,20 +390,16 @@ impl<'a> Yake<'a> {
     }
 }
 
-// ─── Public API ──────────────────────────────────────────────────────────────
-
 /// Extract keywords using YAKE algorithm, integrated with kreuzberg's stopwords.
 pub fn extract_keywords_yake(text: &str, config: &KeywordConfig) -> Result<Vec<Keyword>> {
     let params = config.yake_params.as_ref().cloned().unwrap_or_default();
 
-    // Use kreuzberg's unified stopwords (64 languages, 22K+ words)
     let lang = config.language.as_deref().unwrap_or("en");
     let stopwords = crate::stopwords::get_stopwords_with_fallback(lang, "en").unwrap_or_else(|| {
         tracing::debug!(
             "Stopwords not available for language '{}', using default English stopwords",
             lang
         );
-        // This should never happen since English is always available, but be safe
         static EMPTY: std::sync::LazyLock<AHashSet<String>> = std::sync::LazyLock::new(AHashSet::new);
         &EMPTY
     });
@@ -540,9 +523,8 @@ mod tests {
 
     #[test]
     fn test_large_input_no_panic() {
-        // Regression test for #676: large inputs must not panic
         let paragraph = "Artificial intelligence and machine learning are transforming industries worldwide. Companies are investing heavily in AI research and development. Natural language processing enables new applications. ";
-        let large_text = paragraph.repeat(50_000); // ~10 MB
+        let large_text = paragraph.repeat(50_000);
         let config = KeywordConfig::yake().with_max_keywords(10);
         let keywords = extract_keywords_yake(&large_text, &config).unwrap();
         assert!(!keywords.is_empty(), "Large input should produce keywords");

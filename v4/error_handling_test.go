@@ -16,7 +16,7 @@ import (
 func TestInvalidConfigNegativeChunkSize(t *testing.T) {
 	config := &kreuzberg.ExtractionConfig{
 		Chunking: &kreuzberg.ChunkingConfig{
-			ChunkSize: kreuzberg.IntPtr(-100), // Invalid: negative chunk size
+			ChunkSize: kreuzberg.IntPtr(-100),
 		},
 	}
 
@@ -40,7 +40,7 @@ func TestInvalidConfigNegativeOverlap(t *testing.T) {
 	config := &kreuzberg.ExtractionConfig{
 		Chunking: &kreuzberg.ChunkingConfig{
 			ChunkSize:    kreuzberg.IntPtr(512),
-			ChunkOverlap: kreuzberg.IntPtr(-50), // Invalid: negative overlap
+			ChunkOverlap: kreuzberg.IntPtr(-50),
 		},
 	}
 
@@ -81,7 +81,6 @@ func TestCorruptedPDFFile(t *testing.T) {
 	dir := t.TempDir()
 	corruptPath := filepath.Join(dir, "corrupted.pdf")
 
-	// Write clearly invalid PDF content
 	corruptData := []byte("This is not a valid PDF file at all")
 	err := os.WriteFile(corruptPath, corruptData, 0o600)
 	if err != nil {
@@ -116,7 +115,7 @@ func TestInvalidMIMEType(t *testing.T) {
 func TestEmptyMIMEType(t *testing.T) {
 	_, err := kreuzberg.ExtractBytesSync(
 		[]byte("test content"),
-		"", // Empty MIME type
+		"",
 		nil,
 	)
 
@@ -166,10 +165,9 @@ func TestEmptyPathValidation(t *testing.T) {
 
 // TestOutOfMemoryPatternLargeChunk simulates memory-intensive operations.
 func TestOutOfMemoryPatternLargeChunk(t *testing.T) {
-	// Create a very large chunk size that may exceed reasonable memory
 	config := &kreuzberg.ExtractionConfig{
 		Chunking: &kreuzberg.ChunkingConfig{
-			ChunkSize: kreuzberg.IntPtr(2147483647), // Max int32 - unreasonable size
+			ChunkSize: kreuzberg.IntPtr(2147483647),
 		},
 	}
 
@@ -179,7 +177,6 @@ func TestOutOfMemoryPatternLargeChunk(t *testing.T) {
 		config,
 	)
 
-	// Should handle gracefully with an error
 	if err == nil {
 		t.Fatalf("expected error for excessive chunk size, got nil")
 	}
@@ -187,7 +184,6 @@ func TestOutOfMemoryPatternLargeChunk(t *testing.T) {
 
 // TestNonexistentDirectory validates error handling for paths in missing directories.
 func TestNonexistentDirectory(t *testing.T) {
-	// Reference a file in a directory that doesn't exist
 	_, err := kreuzberg.ExtractFileSync(
 		"/nonexistent/deeply/nested/dir/file.pdf",
 		nil,
@@ -201,7 +197,6 @@ func TestNonexistentDirectory(t *testing.T) {
 // TestDirectoryPathInsteadOfFile validates error handling when given directory instead of file.
 func TestDirectoryPathInsteadOfFile(t *testing.T) {
 	dir := t.TempDir()
-	// Try to extract from a directory, not a file
 	_, err := kreuzberg.ExtractFileSync(dir, nil)
 
 	if err == nil {
@@ -215,7 +210,6 @@ func TestConcurrentErrorStatesRaceCondition(t *testing.T) {
 	errChan := make(chan error, numGoroutines)
 	done := make(chan bool, numGoroutines)
 
-	// Launch concurrent operations with mixed valid/invalid configs
 	for i := 0; i < numGoroutines; i++ {
 		go func(index int) {
 			defer func() {
@@ -224,7 +218,6 @@ func TestConcurrentErrorStatesRaceCondition(t *testing.T) {
 
 			var config *kreuzberg.ExtractionConfig
 			if index%2 == 0 {
-				// Invalid config on even indices
 				config = &kreuzberg.ExtractionConfig{
 					Chunking: &kreuzberg.ChunkingConfig{
 						ChunkSize: kreuzberg.IntPtr(-10),
@@ -244,12 +237,10 @@ func TestConcurrentErrorStatesRaceCondition(t *testing.T) {
 		}(i)
 	}
 
-	// Wait for all goroutines
 	for i := 0; i < numGoroutines; i++ {
 		<-done
 	}
 
-	// Verify errors were captured without race conditions
 	close(errChan)
 	errorCount := 0
 	for err := range errChan {
@@ -259,7 +250,6 @@ func TestConcurrentErrorStatesRaceCondition(t *testing.T) {
 		errorCount++
 	}
 
-	// We expect errors from invalid configs (even indices = 10 operations)
 	if errorCount == 0 {
 		t.Errorf("expected errors from invalid configs, got %d", errorCount)
 	}
@@ -267,7 +257,6 @@ func TestConcurrentErrorStatesRaceCondition(t *testing.T) {
 
 // TestErrorWrappingPreservesContext validates that error wrapping maintains error information.
 func TestErrorWrappingPreservesContext(t *testing.T) {
-	// Test with invalid config to generate an error
 	config := &kreuzberg.ExtractionConfig{
 		Chunking: &kreuzberg.ChunkingConfig{
 			ChunkSize: kreuzberg.IntPtr(-1),
@@ -284,7 +273,6 @@ func TestErrorWrappingPreservesContext(t *testing.T) {
 		t.Fatalf("expected error, got nil")
 	}
 
-	// Verify error message is informative
 	errMsg := err.Error()
 	if errMsg == "" {
 		t.Errorf("error message should not be empty")
@@ -297,17 +285,14 @@ func TestErrorWrappingPreservesContext(t *testing.T) {
 
 // TestInvalidConfigJSONSerialization validates error handling for config serialization.
 func TestInvalidConfigJSONSerialization(t *testing.T) {
-	// Test with a config that might fail JSON serialization
 	config := &kreuzberg.ExtractionConfig{
 		Chunking: &kreuzberg.ChunkingConfig{
 			ChunkSize: kreuzberg.IntPtr(512),
 		},
 	}
 
-	// Verify config serializes properly or returns error
 	result, err := kreuzberg.ConfigToJSON(config)
 
-	// Should either succeed with valid JSON or return a clear error
 	if err == nil {
 		if result == "" {
 			t.Errorf("result should not be empty when no error")
@@ -381,7 +366,6 @@ func TestErrorUnwrapping(t *testing.T) {
 	// Test errors.As for type assertion
 	var valErr *kreuzberg.ValidationError
 	if errors.As(err, &valErr) {
-		// This is fine - it's a validation error
 		if valErr == nil {
 			t.Errorf("ValidationError should not be nil")
 		}
@@ -393,20 +377,14 @@ func TestReadOnlyFilePermissionError(t *testing.T) {
 	dir := t.TempDir()
 	testFile := filepath.Join(dir, "test.txt")
 
-	// Write a file with restricted permissions (use umask-safe approach)
 	err := os.WriteFile(testFile, []byte("content"), 0o600)
 	if err != nil {
 		t.Fatalf("failed to write test file: %v", err)
 	}
 
-	// Attempt to remove read permissions
 	err = os.Chmod(testFile, 0o000)
 	if err != nil {
-		// If we can't change permissions, test that extraction still returns appropriate error
-		// when trying to read an unreadable file (on systems that don't support permission checks)
 		_, err := kreuzberg.ExtractFileSync(testFile, nil)
-		// On systems where permissions aren't enforced, this may or may not error
-		// Just verify that extraction is attempted without panic
 		if err != nil {
 			t.Logf("extraction failed as expected: %v", err)
 		} else {
@@ -414,7 +392,7 @@ func TestReadOnlyFilePermissionError(t *testing.T) {
 		}
 		return
 	}
-	defer os.Chmod(testFile, 0o600) // Restore permissions for cleanup
+	defer os.Chmod(testFile, 0o600)
 
 	_, err = kreuzberg.ExtractFileSync(testFile, nil)
 	if err == nil && os.Geteuid() != 0 {
@@ -424,21 +402,17 @@ func TestReadOnlyFilePermissionError(t *testing.T) {
 
 // TestNilConfigHandling validates that nil config is handled gracefully.
 func TestNilConfigHandling(_ *testing.T) {
-	// nil config should use defaults, not panic
 	_, err := kreuzberg.ExtractBytesSync(
 		[]byte("test content"),
 		"text/plain",
-		nil, // Explicitly nil config
+		nil,
 	)
 
-	// Should complete without panic (error is acceptable)
-	// We're primarily checking that it doesn't panic
 	_ = err
 }
 
 // TestErrorPropagationAcrossFFIBoundary validates error handling across C FFI.
 func TestErrorPropagationAcrossFFIBoundary(t *testing.T) {
-	// Invalid config should propagate error from FFI layer
 	config := &kreuzberg.ExtractionConfig{
 		Chunking: &kreuzberg.ChunkingConfig{
 			ChunkSize: kreuzberg.IntPtr(-500),
@@ -455,7 +429,6 @@ func TestErrorPropagationAcrossFFIBoundary(t *testing.T) {
 		t.Fatalf("expected error, got nil")
 	}
 
-	// Error should contain meaningful information from C layer
 	errorMsg := err.Error()
 	if errorMsg == "" {
 		t.Errorf("error message should not be empty")
@@ -467,17 +440,16 @@ func TestErrorPropagationAcrossFFIBoundary(t *testing.T) {
 
 // TestMultipleInvalidConditions validates compound error scenarios.
 func TestMultipleInvalidConditions(t *testing.T) {
-	// Combine multiple invalid conditions
 	config := &kreuzberg.ExtractionConfig{
 		Chunking: &kreuzberg.ChunkingConfig{
-			ChunkSize:    kreuzberg.IntPtr(-100), // Invalid
-			ChunkOverlap: kreuzberg.IntPtr(-50),  // Invalid
+			ChunkSize:    kreuzberg.IntPtr(-100),
+			ChunkOverlap: kreuzberg.IntPtr(-50),
 		},
 	}
 
 	_, err := kreuzberg.ExtractBytesSync(
-		[]byte{}, // Empty data
-		"",       // Empty MIME type
+		[]byte{},
+		"",
 		config,
 	)
 
@@ -532,7 +504,6 @@ func TestConcurrentErrorHandlingRaceDetection(t *testing.T) {
 			}
 
 			mu.Lock()
-			// Verify we can access error safely
 			_ = err
 			mu.Unlock()
 		}(i)
@@ -547,7 +518,6 @@ func TestConcurrentErrorHandlingRaceDetection(t *testing.T) {
 
 // TestConfigValidationChaining validates error handling in chained operations.
 func TestConfigValidationChaining(t *testing.T) {
-	// Test that errors are properly returned in sequence
 	testCases := []struct {
 		name      string
 		data      []byte
@@ -602,7 +572,6 @@ func TestErrorMessageContent(t *testing.T) {
 		t.Errorf("error message should not be empty")
 	}
 
-	// Error should be a string representation
 	if len(errMsg) < 3 {
 		t.Errorf("error message too short: %q", errMsg)
 	}

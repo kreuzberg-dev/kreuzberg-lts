@@ -26,8 +26,6 @@ async fn test_extract_bytes_zero_timeout_returns_timeout_error() {
         Err(KreuzbergError::Timeout { limit_ms, .. }) => {
             assert_eq!(limit_ms, 0, "limit_ms should reflect the configured 0-second timeout");
         }
-        // text/plain is synchronous — if it completes before the timeout fires that's also
-        // acceptable, but we still confirm no other error type is raised.
         Ok(_) => {}
         Err(e) => panic!("Expected Ok or Timeout, got: {e:?}"),
     }
@@ -37,7 +35,6 @@ async fn test_extract_bytes_zero_timeout_returns_timeout_error() {
 #[cfg(feature = "tokio-runtime")]
 #[tokio::test]
 async fn test_extract_file_zero_timeout_returns_timeout_error() {
-    // Write a small temp file
     let dir = tempfile::tempdir().expect("tempdir");
     let path = dir.path().join("hello.txt");
     std::fs::write(&path, b"Hello world").expect("write");
@@ -53,7 +50,7 @@ async fn test_extract_file_zero_timeout_returns_timeout_error() {
         Err(KreuzbergError::Timeout { limit_ms, .. }) => {
             assert_eq!(limit_ms, 0);
         }
-        Ok(_) => {} // synchronous text extraction may beat a 0s timeout
+        Ok(_) => {}
         Err(e) => panic!("Expected Ok or Timeout, got: {e:?}"),
     }
 }
@@ -93,7 +90,6 @@ async fn test_extract_bytes_timeout_elapsed_is_plausible() {
     let start = Instant::now();
     let _ = extract_bytes(content, "text/plain", &config).await;
     let wall_ms = start.elapsed().as_millis() as u64;
-    // We can't assert the timeout fired, but if it did, wall time should be <1 second.
     assert!(
         wall_ms < 1000,
         "single-file extraction with 0s timeout took too long: {wall_ms}ms"

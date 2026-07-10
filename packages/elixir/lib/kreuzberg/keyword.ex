@@ -11,17 +11,17 @@ defmodule Kreuzberg.Keyword do
   """
 
   @type t :: %__MODULE__{
-          text: String.t(),
-          score: float(),
-          algorithm: String.t(),
-          positions: list(non_neg_integer()) | nil
-        }
+  text: String.t(),
+  score: float(),
+  algorithm: String.t(),
+  positions: list(non_neg_integer()) | nil
+  }
 
   defstruct [
-    :positions,
-    text: "",
-    score: 0.0,
-    algorithm: "yake"
+  :positions,
+  text: "",
+  score: 0.0,
+  algorithm: "yake"
   ]
 
   @doc """
@@ -44,10 +44,10 @@ defmodule Kreuzberg.Keyword do
   @spec from_map(map()) :: t()
   def from_map(data) when is_map(data) do
     %__MODULE__{
-      text: data["text"] || "",
-      score: (data["score"] || 0.0) * 1.0,
-      algorithm: data["algorithm"] || "yake",
-      positions: data["positions"]
+    text: data["text"] || "",
+    score: (data["score"] || 0.0) * 1.0,
+    algorithm: data["algorithm"] || "yake",
+    positions: data["positions"]
     }
   end
 
@@ -68,10 +68,10 @@ defmodule Kreuzberg.Keyword do
   @spec to_map(t()) :: map()
   def to_map(%__MODULE__{} = kw) do
     %{
-      "text" => kw.text,
-      "score" => kw.score,
-      "algorithm" => kw.algorithm,
-      "positions" => kw.positions
+    "text" => kw.text,
+    "score" => kw.score,
+    "algorithm" => kw.algorithm,
+    "positions" => kw.positions
     }
   end
 end

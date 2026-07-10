@@ -52,7 +52,6 @@ fn test_inject_placeholders_false_removes_image_refs() {
     let default_out = extract_md(path, default_config);
     let no_ph_out = extract_md(path, no_placeholder_config);
 
-    // Skip if this PPTX has no images (test would be vacuously true)
     if !default_out.contains("![") {
         eprintln!("Skipping: fixture contains no image references");
         return;
@@ -97,7 +96,6 @@ fn test_inject_placeholders_false_preserves_text_content() {
     let default_out = extract_md(path, default_config);
     let no_ph_out = extract_md(path, no_placeholder_config);
 
-    // Strip image markdown refs from both outputs and compare word counts.
     let strip_img = |s: &str| {
         s.lines()
             .filter(|l| !l.trim_start().starts_with("!["))

@@ -31,7 +31,7 @@ package dev.kreuzberg;
  */
 @FunctionalInterface
 public interface Validator {
-	/**
+    /**
 	 * Validate an extraction result.
 	 *
 	 * <p>
@@ -43,9 +43,9 @@ public interface Validator {
 	 * @throws ValidationException
 	 *             if validation fails
 	 */
-	void validate(ExtractionResult result) throws ValidationException;
+    void validate(ExtractionResult result) throws ValidationException;
 
-	/**
+    /**
 	 * Returns a composed validator that first runs this validator, then runs the
 	 * {@code after} validator.
 	 *
@@ -55,22 +55,22 @@ public interface Validator {
 	 * @throws NullPointerException
 	 *             if after is null
 	 */
-	default Validator andThen(Validator after) {
-		if (after == null) {
-			throw new NullPointerException("after validator must not be null");
-		}
-		return result -> {
-			this.validate(result);
-			after.validate(result);
-		};
-	}
+    default Validator andThen(Validator after) {
+        if (after == null) {
+            throw new NullPointerException("after validator must not be null");
+        }
+        return result -> {
+            this.validate(result);
+            after.validate(result);
+        };
+    }
 
-	/**
+    /**
 	 * Priority for validator execution. Higher values run earlier.
 	 *
 	 * @return priority value (default 0)
 	 */
-	default int priority() {
-		return 0;
-	}
+    default int priority() {
+        return 0;
+    }
 }

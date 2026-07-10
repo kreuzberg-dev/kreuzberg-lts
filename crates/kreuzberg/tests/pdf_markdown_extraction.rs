@@ -35,8 +35,6 @@ fn test_pdf_markdown_extraction_produces_structured_output() {
         "Mime type should preserve original document type; output format is tracked in metadata"
     );
 
-    // Verify paragraph structure: should have paragraph breaks (blank lines).
-    // PDFs may use \r\n or \n line endings; normalize before counting.
     let normalized = result.content.replace("\r\n", "\n");
     let para_breaks = normalized.matches("\n\n").count();
 
@@ -63,7 +61,6 @@ fn test_pdf_plain_extraction_unchanged() {
 
     let path = get_test_file_path("pdf/fake_memo.pdf");
 
-    // Default config = Plain output format
     let config = ExtractionConfig::default();
     let result = extract_file_sync(&path, None, &config).expect("Should extract PDF as plain text");
 
@@ -82,11 +79,9 @@ fn test_pdf_markdown_vs_plain_has_more_structure() {
 
     let path = get_test_file_path("pdf/google_doc_document.pdf");
 
-    // Extract as plain
     let plain_config = ExtractionConfig::default();
     let plain_result = extract_file_sync(&path, None, &plain_config).expect("Plain extraction failed");
 
-    // Extract as markdown
     let md_config = ExtractionConfig {
         output_format: OutputFormat::Markdown,
         ..Default::default()
@@ -98,12 +93,9 @@ fn test_pdf_markdown_vs_plain_has_more_structure() {
     println!("\n=== Markdown (first 500 chars) ===");
     println!("{}", &md_result.content[..md_result.content.len().min(500)]);
 
-    // Both should have content
     assert!(!plain_result.content.trim().is_empty());
     assert!(!md_result.content.trim().is_empty());
 
-    // Markdown should be different from plain (has structure added)
-    // This is a weak check but validates the pipeline ran
     assert_ne!(
         plain_result.content, md_result.content,
         "Markdown output should differ from plain text output"
@@ -136,8 +128,6 @@ fn test_pdf_markdown_produces_headings_via_font_size_clustering() {
         println!("  {}", h);
     }
 
-    // The markdown pipeline should detect headings either from the structure
-    // tree or via font-size clustering fallback.
     assert!(
         !heading_lines.is_empty(),
         "Markdown extraction should produce at least one heading via structure tree or font-size clustering"

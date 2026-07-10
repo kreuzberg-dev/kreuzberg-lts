@@ -16,17 +16,17 @@ package dev.kreuzberg;
  * @since 4.0.0
  */
 public final class MissingDependencyException extends KreuzbergException {
-	/**
+    /**
 	 * Constructs a new missing dependency exception with the specified message.
 	 *
 	 * @param message
 	 *            the detail message explaining which dependency is missing
 	 */
-	public MissingDependencyException(String message) {
-		super(message);
-	}
+    public MissingDependencyException(String message) {
+        super(message);
+    }
 
-	/**
+    /**
 	 * Constructs a new missing dependency exception with the specified message and
 	 * cause.
 	 *
@@ -35,7 +35,7 @@ public final class MissingDependencyException extends KreuzbergException {
 	 * @param cause
 	 *            the cause of the missing dependency error
 	 */
-	public MissingDependencyException(String message, Throwable cause) {
-		super(message, cause);
-	}
+    public MissingDependencyException(String message, Throwable cause) {
+        super(message, cause);
+    }
 }

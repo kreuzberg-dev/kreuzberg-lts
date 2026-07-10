@@ -8,17 +8,7 @@
 #define NUM_THREADS 8
 #define ITERATIONS 50
 
-/*
- * Concurrent access tests for kreuzberg-ffi.
- *
- * Verifies thread safety of:
- * - Extraction from bytes
- * - Thread-local error isolation
- * - MIME detection
- * - Version query
- */
 
-/* ---- Thread: concurrent text extraction ---- */
 static void *thread_extract_text(void *arg) {
     int thread_id = *(int *)arg;
     (void)thread_id;
@@ -26,7 +16,7 @@ static void *thread_extract_text(void *arg) {
     for (int i = 0; i < ITERATIONS; i++) {
         const char *text = "Hello from concurrent thread test.";
         struct CExtractionResult *res =
-            kreuzberg_extract_bytes_sync((const uint8_t *)text, strlen(text), "text/plain");
+        kreuzberg_extract_bytes_sync((const uint8_t *)text, strlen(text), "text/plain");
 
         if (res != NULL) {
             assert(res->success);
@@ -34,23 +24,19 @@ static void *thread_extract_text(void *arg) {
             assert(strlen(res->content) > 0);
             kreuzberg_free_result(res);
         }
-        /* If res is NULL, the handler may not be available -- that's OK */
     }
 
     return NULL;
 }
 
-/* ---- Thread: thread-local error isolation ---- */
 static void *thread_error_isolation(void *arg) {
     int thread_id = *(int *)arg;
     (void)thread_id;
 
     for (int i = 0; i < ITERATIONS; i++) {
-        /* Trigger an error with NULL path */
         const struct CExtractionResult *result = kreuzberg_extract_file_sync(NULL);
         assert(result == NULL);
 
-        /* Error should be set in this thread's TLS */
         const char *err = kreuzberg_last_error();
         assert(err != NULL);
         assert(strlen(err) > 0);
@@ -62,13 +48,11 @@ static void *thread_error_isolation(void *arg) {
     return NULL;
 }
 
-/* ---- Thread: concurrent MIME detection ---- */
 static void *thread_mime_detection(void *arg) {
     int thread_id = *(int *)arg;
     (void)thread_id;
 
     for (int i = 0; i < ITERATIONS; i++) {
-        /* MIME validation (doesn't need files on disk) */
         char *valid = kreuzberg_validate_mime_type("application/pdf");
         assert(valid != NULL);
         kreuzberg_free_string(valid);
@@ -85,7 +69,6 @@ static void *thread_mime_detection(void *arg) {
     return NULL;
 }
 
-/* ---- Thread: concurrent version queries ---- */
 static void *thread_version_query(void *arg) {
     int thread_id = *(int *)arg;
     (void)thread_id;

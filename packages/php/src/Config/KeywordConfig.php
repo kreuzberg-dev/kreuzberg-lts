@@ -99,8 +99,7 @@ readonly class KeywordConfig
          * @default null
          */
         public ?RakeParamsConfig $rakeParams = null,
-    ) {
-    }
+    ) {}
 
     /**
      * Create configuration from array data.
@@ -204,15 +203,18 @@ readonly class KeywordConfig
      */
     public function toArray(): array
     {
-        return array_filter([
-            'algorithm' => $this->algorithm,
-            'max_keywords' => $this->maxKeywords,
-            'min_score' => $this->minScore,
-            'language' => $this->language,
-            'ngram_range' => $this->ngramRange,
-            'yake_params' => $this->yakeParams?->toArray(),
-            'rake_params' => $this->rakeParams?->toArray(),
-        ], static fn ($value): bool => $value !== null);
+        return array_filter(
+            [
+                'algorithm' => $this->algorithm,
+                'max_keywords' => $this->maxKeywords,
+                'min_score' => $this->minScore,
+                'language' => $this->language,
+                'ngram_range' => $this->ngramRange,
+                'yake_params' => $this->yakeParams?->toArray(),
+                'rake_params' => $this->rakeParams?->toArray(),
+            ],
+            static fn($value): bool => $value !== null,
+        );
     }
 
     /**

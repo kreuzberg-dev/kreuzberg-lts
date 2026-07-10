@@ -6,7 +6,6 @@
 use super::extraction::TextBlock;
 use crate::pdf::error::{PdfError, Result};
 
-// K-means algorithm constants
 const KMEANS_MAX_ITERATIONS: usize = 100;
 const KMEANS_CONVERGENCE_THRESHOLD: f32 = 0.01;
 
@@ -74,32 +73,21 @@ pub fn cluster_font_sizes(blocks: &[TextBlock], k: usize) -> Result<Vec<FontSize
 
     let actual_k = k.min(blocks.len());
 
-    // Extract unique font sizes for initialization
-    let mut font_sizes: Vec<f32> = blocks
-        .iter()
-        .map(|b| b.font_size)
-        .filter(|fs| fs.is_finite()) // Filter out NaN/Inf from corrupt PDFs
-        .collect();
-    font_sizes.sort_by(|a, b| b.total_cmp(a)); // Sort descending
-    // Tolerance-based dedup: merge font sizes within 0.05pt (float imprecision)
+    let mut font_sizes: Vec<f32> = blocks.iter().map(|b| b.font_size).filter(|fs| fs.is_finite()).collect();
+    font_sizes.sort_by(|a, b| b.total_cmp(a));
     font_sizes.dedup_by(|a, b| (*a - *b).abs() < 0.05);
 
-    // Initialize centroids using actual font sizes from the data
-    // This is more robust than dividing the range uniformly
     let mut centroids: Vec<f32> = Vec::new();
 
     if font_sizes.len() >= actual_k {
-        // If we have at least k unique font sizes, pick them evenly spaced
         let step = font_sizes.len() / actual_k;
         for i in 0..actual_k {
             let idx = i * step;
             centroids.push(font_sizes[idx.min(font_sizes.len() - 1)]);
         }
     } else {
-        // If we have fewer unique sizes than k, use all of them and fill with interpolated values
         centroids = font_sizes.clone();
 
-        // Add interpolated centroids between existing ones to reach desired k
         let min_font = font_sizes[font_sizes.len() - 1];
         let max_font = font_sizes[0];
         let range = max_font - min_font;
@@ -111,26 +99,19 @@ pub fn cluster_font_sizes(blocks: &[TextBlock], k: usize) -> Result<Vec<FontSize
         }
 
         centroids.sort_by(|a, b| b.total_cmp(a));
-        // Keep sorted descending
     }
 
-    // Extract font sizes once for iteration loop
     let font_sizes: Vec<f32> = blocks.iter().map(|b| b.font_size).collect();
 
-    // Pre-compute initial assignments to detect changes across iterations
     let mut prev_assignments: Vec<usize> = vec![0; font_sizes.len()];
-    // Initialise so the first iteration always runs (sentinel: usize::MAX is never a valid cluster)
     let mut first_iter = true;
 
-    // Run k-means clustering for a fixed number of iterations
     for _ in 0..KMEANS_MAX_ITERATIONS {
-        // Assign font sizes to nearest centroid, tracking per-element assignments
         let (size_clusters, assignments) = assign_sizes_to_centroids_tracked(&font_sizes, &centroids);
 
-        // Early exit: if no assignment changed since the last iteration, the solution is stable
         let assignments_changed = if first_iter {
             first_iter = false;
-            1 // Force at least one centroid update
+            1
         } else {
             assignments
                 .iter()
@@ -144,7 +125,6 @@ pub fn cluster_font_sizes(blocks: &[TextBlock], k: usize) -> Result<Vec<FontSize
             break;
         }
 
-        // Update centroids
         let mut new_centroids = Vec::with_capacity(actual_k);
         for (i, cluster) in size_clusters.iter().enumerate() {
             if !cluster.is_empty() {
@@ -154,7 +134,6 @@ pub fn cluster_font_sizes(blocks: &[TextBlock], k: usize) -> Result<Vec<FontSize
             }
         }
 
-        // Check for convergence based on centroid movement
         let converged = centroids
             .iter()
             .zip(new_centroids.iter())
@@ -167,10 +146,8 @@ pub fn cluster_font_sizes(blocks: &[TextBlock], k: usize) -> Result<Vec<FontSize
         }
     }
 
-    // Final assignment to create result
     let clusters = assign_blocks_to_centroids(blocks, &centroids);
 
-    // Create FontSizeCluster objects with centroids
     let mut result: Vec<FontSizeCluster> = Vec::new();
 
     for i in 0..actual_k {
@@ -183,7 +160,6 @@ pub fn cluster_font_sizes(blocks: &[TextBlock], k: usize) -> Result<Vec<FontSize
         }
     }
 
-    // Sort by centroid size in descending order (largest font = H1)
     result.sort_by(|a, b| b.centroid.total_cmp(&a.centroid));
 
     Ok(result)
@@ -214,15 +190,10 @@ pub fn assign_heading_levels_smart(
         return Vec::new();
     }
 
-    // Single cluster means everything is body
     if clusters.len() == 1 {
         return vec![(clusters[0].centroid, None)];
     }
 
-    // Find the cluster with the most total text content (this is body text).
-    // Using total character count rather than member count avoids misidentifying
-    // a small repeated header/footer font as the body cluster in documents
-    // where headers appear on every page (many members, but little text each).
     let body_idx = clusters
         .iter()
         .enumerate()
@@ -232,10 +203,6 @@ pub fn assign_heading_levels_smart(
 
     let body_centroid = clusters[body_idx].centroid;
 
-    // Collect heading candidates: clusters with sufficiently larger font size than body.
-    // Must pass EITHER the ratio gate OR the absolute gap gate (whichever is less
-    // restrictive). This captures LaTeX subsection headings (12pt vs 10pt body)
-    // that pass the ratio gate (1.2 > 1.15) but not the gap gate (2.0 < 1.5+10=11.5).
     let min_heading_size = body_centroid * min_heading_ratio;
     let min_heading_abs = body_centroid + min_heading_gap;
     let heading_threshold = min_heading_size.min(min_heading_abs);
@@ -247,10 +214,8 @@ pub fn assign_heading_levels_smart(
         .map(|(i, c)| (i, c.centroid))
         .collect();
 
-    // Sort heading candidates by centroid descending (largest = H1)
     heading_candidates.sort_by(|a, b| b.1.total_cmp(&a.1));
 
-    // Assign heading levels H1-H6 (max 6 heading levels)
     let max_headings = 6usize;
     let mut result: Vec<(f32, Option<u8>)> = Vec::with_capacity(clusters.len());
 
@@ -261,11 +226,9 @@ pub fn assign_heading_levels_smart(
             if pos < max_headings {
                 result.push((cluster.centroid, Some((pos + 1) as u8)));
             } else {
-                // More than 6 heading levels, treat as body
                 result.push((cluster.centroid, None));
             }
         } else {
-            // Smaller font size than body, treat as body
             result.push((cluster.centroid, None));
         }
     }
@@ -367,33 +330,25 @@ mod tests {
 
     #[test]
     fn test_body_cluster_by_text_content_not_member_count() {
-        // Scenario: 10 short header blocks (8pt) vs 3 long body blocks (12pt).
-        // By member count, the 8pt cluster would win. By text content, the 12pt
-        // cluster should win because body text contains more characters.
         let mut blocks = Vec::new();
         for i in 0..10 {
-            blocks.push(make_block(&format!("Hdr{i}"), 8.0)); // 4 chars each = 40 total
+            blocks.push(make_block(&format!("Hdr{i}"), 8.0));
         }
         for _ in 0..3 {
-            // Each body block has ~50 chars = 150 total
             blocks.push(make_block("This is a longer body text paragraph with content.", 12.0));
         }
 
         let clusters = cluster_font_sizes(&blocks, 2).unwrap();
         let levels = assign_heading_levels_smart(&clusters, 1.15, 1.5);
 
-        // The 12pt cluster (body text) should be identified as body (None),
-        // and the 8pt cluster should NOT be body.
         let body_centroid = levels.iter().find(|(_, l)| l.is_none()).map(|(c, _)| *c);
         assert!(body_centroid.is_some(), "should have a body cluster");
-        // Body centroid should be near 12pt, not 8pt
         let bc = body_centroid.unwrap();
         assert!((bc - 12.0).abs() < 1.0, "body centroid should be near 12pt, got {bc}");
     }
 
     #[test]
     fn test_body_cluster_equal_members_picks_more_content() {
-        // Same number of members but different text lengths
         let blocks = vec![
             make_block("AB", 18.0),
             make_block("CD", 18.0),

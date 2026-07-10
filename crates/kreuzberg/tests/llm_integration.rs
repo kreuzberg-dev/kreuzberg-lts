@@ -66,10 +66,6 @@ async fn extract_memo_text() -> String {
     .content
 }
 
-// ---------------------------------------------------------------------------
-// VLM OCR tests
-// ---------------------------------------------------------------------------
-
 #[tokio::test]
 async fn test_vlm_ocr_openai() {
     init();
@@ -118,10 +114,6 @@ async fn test_vlm_ocr_gemini() {
     );
 }
 
-// ---------------------------------------------------------------------------
-// LLM Embedding tests
-// ---------------------------------------------------------------------------
-
 #[cfg(feature = "embeddings")]
 #[tokio::test]
 async fn test_llm_embed_openai() {
@@ -168,10 +160,6 @@ async fn test_llm_embed_mistral() {
     assert_eq!(result.len(), 1, "Expected 1 embedding");
     assert!(!result[0].is_empty(), "Embedding vector is empty");
 }
-
-// ---------------------------------------------------------------------------
-// Structured Extraction tests
-// ---------------------------------------------------------------------------
 
 #[tokio::test]
 async fn test_structured_extraction_openai() {
@@ -220,7 +208,6 @@ async fn test_structured_extraction_gemini() {
     init();
     let api_key = require_env!("GEMINI_API_KEY");
     let text = extract_memo_text().await;
-    // Schema sanitization now strips additionalProperties automatically for Gemini.
     let config = StructuredExtractionConfig {
         schema: memo_schema(),
         schema_name: "memo_data".to_string(),
@@ -265,10 +252,6 @@ async fn test_structured_extraction_custom_prompt() {
     assert!(result.get("word_count").is_some(), "Missing word_count");
     assert!(result.get("language").is_some(), "Missing language");
 }
-
-// ---------------------------------------------------------------------------
-// Full pipeline integration tests
-// ---------------------------------------------------------------------------
 
 #[tokio::test]
 async fn test_structured_extraction_pipeline() {

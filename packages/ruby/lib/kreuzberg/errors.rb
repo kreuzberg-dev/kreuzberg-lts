@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require 'json'
+require "json"
 
 module Kreuzberg
   ERROR_CODE_SUCCESS = 0
@@ -51,13 +51,14 @@ module Kreuzberg
 
       def self.with_defaults(sliced)
         {
-          file: sliced[:file] || '',
+          file: sliced[:file] || "",
           line: sliced[:line] || 0,
-          function: sliced[:function] || '',
-          message: sliced[:message] || '',
+          function: sliced[:function] || "",
+          message: sliced[:message] || "",
           timestamp_secs: sliced[:timestamp_secs] || 0
         }
       end
+
       private_class_method :with_defaults
     end
 
@@ -73,7 +74,8 @@ module Kreuzberg
     end
 
     # Raised when validation fails
-    class ValidationError < Error; end
+    class ValidationError < Error
+    end
 
     # Raised when document parsing fails
     class ParsingError < Error
@@ -106,18 +108,23 @@ module Kreuzberg
     end
 
     # Raised when an I/O operation fails
-    class IOError < Error; end
+    class IOError < Error
+    end
 
     # Raised when plugin operations fail
-    class PluginError < Error; end
+    class PluginError < Error
+    end
 
     # Raised when an unsupported file format or MIME type is encountered
-    class UnsupportedFormatError < Error; end
+    class UnsupportedFormatError < Error
+    end
 
     # Raised when embedding fails
-    class EmbeddingError < Error; end
+    class EmbeddingError < Error
+    end
 
     # Raised when an extraction is cancelled via a cancellation token
-    class CancelledError < Error; end
+    class CancelledError < Error
+    end
   end
 end

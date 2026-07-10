@@ -47,7 +47,6 @@ pub(crate) fn assign_tables_and_images_to_pages(
         }
     }
 
-    // Refine is_blank: pages that gained tables or images are not blank
     for page in &mut updated_pages {
         if !page.tables.is_empty() || !page.images.is_empty() {
             page.is_blank = Some(false);
@@ -74,7 +73,7 @@ pub(crate) fn assign_layout_regions_to_pages(
     };
 
     for result in layout_results {
-        let page_number = result.page_index + 1; // page_index is 0-based, page_number is 1-based
+        let page_number = result.page_index + 1;
         if let Some(page) = pages.iter_mut().find(|p| p.page_number == page_number) {
             let page_area = f64::from(result.page_width_pts) * f64::from(result.page_height_pts);
             let regions: Vec<crate::types::LayoutRegion> = result

@@ -59,9 +59,7 @@ final class ValidatorRegistry
     /**
      * Private constructor to enforce singleton pattern.
      */
-    private function __construct()
-    {
-    }
+    private function __construct() {}
 
     /**
      * Get the singleton instance.
@@ -115,9 +113,7 @@ final class ValidatorRegistry
         } elseif (is_callable($validator)) {
             $callback = $validator;
         } else {
-            throw new KreuzbergException(
-                'Validator must be an instance of ValidatorInterface or a callable',
-            );
+            throw new KreuzbergException('Validator must be an instance of ValidatorInterface or a callable');
         }
 
         \kreuzberg_register_validator($name, $callback);

@@ -2,7 +2,7 @@
 //! page objects contained within a single [PdfPage].
 
 pub mod common;
-pub(crate) mod private; // Keep private so that the PdfPageObjectsPrivate trait is not exposed.
+pub(crate) mod private;
 
 use crate::bindgen::{FPDF_DOCUMENT, FPDF_PAGE};
 use crate::bindings::PdfiumLibraryBindings;

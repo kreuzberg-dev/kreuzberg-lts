@@ -1,12 +1,15 @@
 # frozen_string_literal: true
 
-require 'open3'
+require "open3"
 
 module Kreuzberg
   # @example
   module CLIProxy
-    class Error < Kreuzberg::Errors::Error; end
-    class MissingBinaryError < Error; end
+    class Error < Kreuzberg::Errors::Error
+    end
+
+    class MissingBinaryError < Error
+    end
 
     # CLI execution error with stderr and exit status
     class CLIExecutionError < Error
@@ -40,10 +43,12 @@ module Kreuzberg
       stdout, stderr, status = Open3.capture3(binary.to_s, *args)
       return stdout if status.success?
 
-      raise CLIExecutionError.new(
-        "kreuzberg CLI exited with status #{status.exitstatus}",
-        stderr: stderr,
-        status: status.exitstatus
+      raise(
+        CLIExecutionError.new(
+          "kreuzberg CLI exited with status #{status.exitstatus}",
+          stderr: stderr,
+          status: status.exitstatus
+        )
       )
     end
 
@@ -58,7 +63,7 @@ module Kreuzberg
     # @raise [MissingBinaryError] If binary not found
     #
     def find_cli_binary
-      binary_name = Gem.win_platform? ? 'kreuzberg.exe' : 'kreuzberg'
+      binary_name = Gem.win_platform? ? "kreuzberg.exe" : "kreuzberg"
       found = search_paths(binary_name).find(&:file?)
       return found if found
 
@@ -70,7 +75,7 @@ module Kreuzberg
     # @return [Pathname] Root path
     #
     def root_path
-      @root_path ||= Pathname(__dir__ || '.').join('../..').expand_path
+      @root_path ||= Pathname(__dir__ || ".").join("../..").expand_path
     end
 
     # Get the lib path
@@ -78,7 +83,7 @@ module Kreuzberg
     # @return [Pathname] Lib path
     #
     def lib_path
-      @lib_path ||= Pathname(__dir__ || '.').join('..').expand_path
+      @lib_path ||= Pathname(__dir__ || ".").join("..").expand_path
     end
 
     # Search paths for the CLI binary
@@ -88,16 +93,16 @@ module Kreuzberg
     #
     def search_paths(binary_name)
       paths = [
-        lib_path.join('bin', binary_name),
+        lib_path.join("bin", binary_name),
         lib_path.join(binary_name),
-        root_path.join('../../crates/kreuzberg-cli/target/release', binary_name),
-        root_path.join('../../target/release', binary_name),
-        root_path.join('../../target/debug', binary_name)
+        root_path.join("../../crates/kreuzberg-cli/target/release", binary_name),
+        root_path.join("../../target/release", binary_name),
+        root_path.join("../../target/debug", binary_name)
       ]
 
       workspace_root = root_path.parent&.parent
-      paths << workspace_root.join('target', 'release', binary_name) if workspace_root
-      paths << workspace_root.join('target', 'debug', binary_name) if workspace_root
+      paths << workspace_root.join("target", "release", binary_name) if workspace_root
+      paths << workspace_root.join("target", "debug", binary_name) if workspace_root
 
       paths
     end
@@ -107,12 +112,13 @@ module Kreuzberg
     # @return [String] Error message
     #
     def missing_binary_message
-      <<~MSG.strip
+      <<~MSG
         kreuzberg CLI binary not found. Build it with:
         `cargo build --release --package kreuzberg-cli`
 
         Or install the gem with pre-built binaries.
       MSG
+        .strip
     end
   end
 end

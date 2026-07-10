@@ -40,7 +40,6 @@ pub async fn embed_via_llm<T: AsRef<str>>(
 
     let client = super::client::create_client(config)?;
 
-    // Build the embedding request with all texts.
     let input_strings: Vec<String> = texts.iter().map(|t| t.as_ref().to_string()).collect();
     let input = if input_strings.len() == 1 {
         EmbeddingInput::Single(input_strings.into_iter().next().expect("checked non-empty"))
@@ -62,11 +61,9 @@ pub async fn embed_via_llm<T: AsRef<str>>(
 
     let usage = super::usage::extract_usage_from_embedding(&response, "embeddings");
 
-    // Sort by index to guarantee order matches input order.
     let mut data = response.data;
     data.sort_by_key(|obj| obj.index);
 
-    // Convert f64 embeddings from liter-llm to f32 for kreuzberg's embedding type.
     let mut embeddings: Vec<Vec<f32>> = data
         .into_iter()
         .map(|obj| obj.embedding.into_iter().map(|v| v as f32).collect())
@@ -114,7 +111,6 @@ mod tests {
     fn test_normalize_l2_zero_vector() {
         let mut v = vec![0.0f32, 0.0, 0.0];
         normalize_l2(&mut v);
-        // Zero vector should remain zero (no division by zero).
         assert!(v.iter().all(|&x| x == 0.0));
     }
 }

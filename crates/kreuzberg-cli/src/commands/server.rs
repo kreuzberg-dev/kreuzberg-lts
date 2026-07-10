@@ -16,7 +16,6 @@ pub fn serve_command(
     use anyhow::Context;
     use kreuzberg::ServerConfig;
 
-    // Load server config from same file or defaults
     let mut server_config = if let Some(path) = &config_path {
         ServerConfig::from_file(path).with_context(|| {
             format!(
@@ -29,10 +28,8 @@ pub fn serve_command(
         ServerConfig::default()
     };
 
-    // Apply environment variable overrides (precedence: env vars > config file)
     server_config.apply_env_overrides()?;
 
-    // CLI args override everything (highest precedence)
     if let Some(host) = cli_host {
         server_config.host = host;
     }
@@ -40,7 +37,6 @@ pub fn serve_command(
         server_config.port = port;
     }
 
-    // Log the final configuration for debugging
     tracing::info!(
         "Starting Kreuzberg API server on http://{}",
         server_config.listen_addr()

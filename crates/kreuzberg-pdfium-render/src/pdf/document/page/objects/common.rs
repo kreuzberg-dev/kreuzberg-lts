@@ -345,8 +345,6 @@ pub trait PdfPageObjectsCommon<'a> {
     fn remove_object_at_index(&mut self, index: PdfPageObjectIndex) -> Result<PdfPageObject<'a>, PdfiumError>;
 }
 
-// Blanket implementation for all PdfPageObjects collection types.
-
 impl<'a, T> PdfPageObjectsCommon<'a> for T
 where
     T: PdfPageObjectsPrivate<'a>,
@@ -570,8 +568,6 @@ where
             let mut object = PdfPageImageObject::new_from_handle(document_handle, self.bindings())?;
 
             object.set_image(image)?;
-
-            // Apply specified dimensions, if provided.
 
             match (width, height) {
                 (Some(width), Some(height)) => {

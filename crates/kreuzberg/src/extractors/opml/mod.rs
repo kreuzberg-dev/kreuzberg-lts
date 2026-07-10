@@ -27,5 +27,4 @@
 mod core;
 mod parser;
 
-// Re-export public API
 pub use core::OpmlExtractor;

@@ -35,7 +35,6 @@ fn test_multipage_marketing_no_empty_image_refs() {
     let result = extract_markdown("pdf/multipage_marketing.pdf");
     let content = &result.content;
 
-    // Must not contain empty image references
     assert!(
         !content.contains("![]()"),
         "Markdown output must not contain empty image references ![](), got:\n{}",
@@ -48,7 +47,6 @@ fn test_multipage_marketing_has_image_refs() {
     let result = extract_markdown("pdf/multipage_marketing.pdf");
     let content = &result.content;
 
-    // Must contain at least one proper image reference
     assert!(
         content.contains("![](image_"),
         "Markdown output must contain image references like ![](image_N.png), got:\n{}",
@@ -60,11 +58,9 @@ fn test_multipage_marketing_has_image_refs() {
 fn test_multipage_marketing_images_populated() {
     let result = extract_markdown("pdf/multipage_marketing.pdf");
 
-    // Extraction result must have images with actual data
     let images = result.images.as_ref().expect("images field must be Some");
     assert!(!images.is_empty(), "Extraction result must contain extracted images");
 
-    // At least some images should have non-empty data
     let images_with_data = images.iter().filter(|img| !img.data.is_empty()).count();
     assert!(
         images_with_data > 0,
@@ -90,7 +86,6 @@ fn test_docling_has_image_refs() {
     let result = extract_markdown("pdf/docling.pdf");
     let content = &result.content;
 
-    // Docling has at least 1 figure
     assert!(
         content.contains("![](image_"),
         "Docling markdown must contain image references, got:\n{}",
@@ -103,7 +98,6 @@ fn test_docling_content_quality() {
     let result = extract_markdown("pdf/docling.pdf");
     let content = &result.content;
 
-    // Verify key content from the Docling technical report is present
     assert!(content.contains("Docling"), "Must contain 'Docling'");
     assert!(content.contains("PDF"), "Must contain 'PDF'");
     assert!(
@@ -143,25 +137,13 @@ fn test_ghostscript_inline_images_completes_in_reasonable_time() {
         .expect("extraction must succeed for Ghostscript inline-image PDF");
     let elapsed = start.elapsed();
 
-    // Before the fix, a single-page PDF with ~1,924 inline images took ~56 seconds.
-    // After the fix it should complete in well under 10 seconds even on slow CI.
     assert!(
         elapsed.as_secs() < 10,
         "Ghostscript inline-image PDF must extract in under 10 seconds, took {elapsed:?}"
     );
 
-    // The file has no text — content may be empty or minimal; that is expected.
     let _ = result;
 }
-
-// ─── Regression tests for issue #796 ────────────────────────────────────────
-//
-// Before the fix, setting `images.extract_images = false` (or
-// `pdf_options.extract_images = false`) still caused full base64 image data to
-// appear in `ExtractionResult.images` when `output_format` was `Markdown` or
-// `Djot`. The root cause was that `inject_placeholders` in `extraction.rs`
-// defaulted to `true` without checking `extract_images`, allowing the structure
-// pipeline to call `populate_images_from_pdfium` unconditionally.
 
 /// Helper: extract with a specific output format and images explicitly disabled
 /// via `ImageExtractionConfig.extract_images = false`.
@@ -212,7 +194,6 @@ fn test_regression_796_markdown_no_images_when_disabled_via_images_config() {
          output_format=Markdown. Got {} image(s).",
         result.images.as_ref().map(|v| v.len()).unwrap_or(0)
     );
-    // Confirm the text content was still extracted (no regression on content).
     assert!(
         !result.content.is_empty(),
         "Content must still be extracted when images are disabled"

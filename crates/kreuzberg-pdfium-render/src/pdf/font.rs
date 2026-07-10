@@ -34,10 +34,6 @@ use js_sys::{ArrayBuffer, Uint8Array};
 #[cfg(target_arch = "wasm32")]
 use web_sys::{Blob, Response, window};
 
-// The following dummy declaration is used only when running cargo doc.
-// It allows documentation of WASM-specific functionality to be included
-// in documentation generated on non-WASM targets.
-
 #[cfg(doc)]
 struct Blob;
 
@@ -739,22 +735,11 @@ impl<'a> PdfFont<'a> {
 
     /// Returns the name of this [PdfFont].
     pub fn name(&self) -> String {
-        // Retrieving the font name from Pdfium is a two-step operation. First, we call
-        // FPDFFont_GetBaseFontName() with a null buffer; this will retrieve the length of
-        // the font name in bytes. If the length is zero, then there is no font name.
-
-        // If the length is non-zero, then we reserve a byte buffer of the given
-        // length and call FPDFFont_GetBaseFontName() again with a pointer to the buffer;
-        // this will write the font name into the buffer. Unlike most text handling in
-        // Pdfium, font names are returned in UTF-8 format.
-
         let buffer_length = self
             .bindings
             .FPDFFont_GetBaseFontName(self.handle, std::ptr::null_mut(), 0);
 
         if buffer_length == 0 {
-            // The font name is not present.
-
             return String::new();
         }
 
@@ -767,30 +752,17 @@ impl<'a> PdfFont<'a> {
         assert_eq!(result, buffer_length);
 
         String::from_utf8(buffer)
-            // Trim any trailing nulls. All strings returned from Pdfium are generally terminated
-            // by one null byte.
             .map(|str| str.trim_end_matches(char::from(0)).to_owned())
             .unwrap_or_else(|_| String::new())
     }
 
     /// Returns the family of this [PdfFont].
     pub fn family(&self) -> String {
-        // Retrieving the family name from Pdfium is a two-step operation. First, we call
-        // FPDFFont_GetFamilyName() with a null buffer; this will retrieve the length of
-        // the font name in bytes. If the length is zero, then there is no font name.
-
-        // If the length is non-zero, then we reserve a byte buffer of the given
-        // length and call FPDFFont_GetFamilyName() again with a pointer to the buffer;
-        // this will write the font name into the buffer. Unlike most text handling in
-        // Pdfium, font names are returned in UTF-8 format.
-
         let buffer_length = self
             .bindings
             .FPDFFont_GetFamilyName(self.handle, std::ptr::null_mut(), 0);
 
         if buffer_length == 0 {
-            // The font name is not present.
-
             return String::new();
         }
 
@@ -803,8 +775,6 @@ impl<'a> PdfFont<'a> {
         assert_eq!(result, buffer_length);
 
         String::from_utf8(buffer)
-            // Trim any trailing nulls. All strings returned from Pdfium are generally terminated
-            // by one null byte.
             .map(|str| str.trim_end_matches(char::from(0)).to_owned())
             .unwrap_or_else(|_| String::new())
     }
@@ -918,8 +888,6 @@ impl<'a> PdfFont<'a> {
     ///
     /// Pdfium may not reliably return the correct value of this flag for built-in fonts.
     pub fn is_symbolic(&self) -> bool {
-        // This flag bit and the non-symbolic flag bit cannot both be set or both be clear.
-
         self.get_flags_bits().contains(FpdfFontDescriptorFlags::SYMBOLIC_BIT_3)
     }
 
@@ -932,8 +900,6 @@ impl<'a> PdfFont<'a> {
     ///
     /// Pdfium may not reliably return the correct value of this flag for built-in fonts.
     pub fn is_non_symbolic(&self) -> bool {
-        // This flag bit and the symbolic flag bit cannot both be set or both be clear.
-
         self.get_flags_bits()
             .contains(FpdfFontDescriptorFlags::NON_SYMBOLIC_BIT_6)
     }
@@ -1017,15 +983,6 @@ impl<'a> PdfFont<'a> {
     /// If this [PdfFont] is not embedded in the containing [PdfDocument], then the data
     /// returned will be for the substitution font instead.
     pub fn data(&self) -> Result<Vec<u8>, PdfiumError> {
-        // Retrieving the font data from Pdfium is a two-step operation. First, we call
-        // FPDFFont_GetFontData() with a null buffer; this will retrieve the length of
-        // the data in bytes. If the length is zero, then there is no data associated
-        // with this font.
-
-        // If the length is non-zero, then we reserve a byte buffer of the given
-        // length and call FPDFFont_GetFontData() again with a pointer to the buffer;
-        // this will write the font data to the buffer.
-
         let mut out_buflen: usize = 0;
 
         if self.bindings().is_true(self.bindings().FPDFFont_GetFontData(
@@ -1034,8 +991,6 @@ impl<'a> PdfFont<'a> {
             0,
             &mut out_buflen,
         )) {
-            // out_buflen now contains the length of the font data.
-
             let buffer_length = out_buflen;
 
             let mut buffer = create_byte_buffer(buffer_length);
@@ -1070,17 +1025,6 @@ impl<'a> Drop for PdfFont<'a> {
     /// Closes this [PdfFont], releasing held memory.
     #[inline]
     fn drop(&mut self) {
-        // The documentation for FPDFText_LoadFont() and FPDFText_LoadStandardFont() both state
-        // that the font loaded by the function can be closed by calling FPDFFont_Close().
-        // I had taken this to mean that _any_ FPDF_Font handle returned from a Pdfium function
-        // should be closed via FPDFFont_Close(), but testing suggests this is not the case;
-        // rather, it is only fonts specifically loaded by calling FPDFText_LoadFont() or
-        // FPDFText_LoadStandardFont() that need to be actively closed.
-
-        // In other words, retrieving a handle to a font that already exists in a document evidently
-        // does not allocate any additional resources, so we don't need to free anything.
-        // (Indeed, if we try to, Pdfium segfaults.)
-
         if self.is_font_memory_loaded {
             self.bindings.FPDFFont_Close(self.handle);
         }

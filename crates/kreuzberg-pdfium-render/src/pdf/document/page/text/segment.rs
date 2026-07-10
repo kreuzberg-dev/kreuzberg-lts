@@ -77,7 +77,6 @@ impl<'a> PdfPageTextSegment<'a> {
     ///
     /// Typical `space_ratio` values: 0.25 (MinerU's threshold), 0.3 (conservative).
     pub fn text_respaced(&self, space_ratio: f32) -> String {
-        // Delegate to inside_rect_respaced which uses direct FFI for performance
         self.text.inside_rect_respaced(self.bounds, space_ratio)
     }
 

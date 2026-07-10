@@ -44,7 +44,7 @@ pub struct FontDescriptor {
 /// Font key for HashMap lookups with case-insensitive family name matching.
 #[derive(Hash, Eq, PartialEq, Clone, Debug)]
 struct FontKey {
-    family: String, // Lowercase for case-insensitive matching
+    family: String,
     weight: i32,
     is_italic: bool,
     charset: i32,
@@ -67,7 +67,6 @@ pub(crate) struct MemoryFontProvider {
 impl MemoryFontProvider {
     /// Create a new memory font provider from a list of font descriptors.
     pub(crate) fn new(descriptors: Vec<FontDescriptor>) -> Self {
-        // Build HashMap from descriptors with lowercase family names for case-insensitive matching
         let mut fonts = HashMap::new();
         for descriptor in descriptors {
             let key = FontKey {
@@ -79,12 +78,10 @@ impl MemoryFontProvider {
             fonts.insert(key, descriptor.data);
         }
 
-        // Initialize FPDF_SYSFONTINFO with version 2 (per-request behavior)
-        // and set callbacks
         let sys_font_info = FPDF_SYSFONTINFO {
             version: 2,
             Release: Some(release_callback),
-            EnumFonts: None, // Version 2 doesn't use EnumFonts
+            EnumFonts: None,
             MapFont: Some(map_font_callback),
             GetFont: Some(get_font_callback),
             GetFontData: Some(get_font_data_callback),
@@ -117,10 +114,7 @@ impl MemoryFontProvider {
 /// Called when Pdfium no longer needs the font info interface.
 /// We don't actually free the memory here because we've leaked it via Box::leak
 /// to ensure it lives for the duration of the Pdfium library.
-unsafe extern "C" fn release_callback(_pthis: *mut FPDF_SYSFONTINFO) {
-    // No-op: we leak the provider via Box::leak to ensure it persists
-    // for the lifetime of the Pdfium library
-}
+unsafe extern "C" fn release_callback(_pthis: *mut FPDF_SYSFONTINFO) {}
 
 /// MapFont callback - match font with 3-tier fallback strategy.
 ///
@@ -139,12 +133,10 @@ unsafe extern "C" fn map_font_callback(
     bexact: *mut FPDF_BOOL,
 ) -> *mut c_void {
     unsafe {
-        // Safely handle null pointers
         if pthis.is_null() || face.is_null() {
             return ptr::null_mut();
         }
 
-        // Convert C string to Rust string
         let face_name = match CStr::from_ptr(face).to_str() {
             Ok(s) => s,
             Err(_) => return ptr::null_mut(),
@@ -154,7 +146,6 @@ unsafe extern "C" fn map_font_callback(
         let face_lower = face_name.to_lowercase();
         let is_italic = bitalic != 0;
 
-        // Tier 1: Try exact match (family, weight, italic, charset)
         let exact_key = FontKey {
             family: face_lower.clone(),
             weight,
@@ -170,7 +161,6 @@ unsafe extern "C" fn map_font_callback(
             return Box::into_raw(handle) as *mut c_void;
         }
 
-        // Tier 2: Fallback to weight=400 (normal weight) if exact match fails
         let normal_weight_key = FontKey {
             family: face_lower.clone(),
             weight: 400,
@@ -186,7 +176,6 @@ unsafe extern "C" fn map_font_callback(
             return Box::into_raw(handle) as *mut c_void;
         }
 
-        // Tier 3: Fallback to any font in the family (ignoring weight and charset)
         for key in provider.fonts.keys() {
             if key.family == face_lower && key.is_italic == is_italic {
                 if !bexact.is_null() {
@@ -197,7 +186,6 @@ unsafe extern "C" fn map_font_callback(
             }
         }
 
-        // No match found
         ptr::null_mut()
     }
 }
@@ -207,12 +195,10 @@ unsafe extern "C" fn map_font_callback(
 /// Called by Pdfium to retrieve a font handle by family name.
 unsafe extern "C" fn get_font_callback(pthis: *mut FPDF_SYSFONTINFO, face: *const c_char) -> *mut c_void {
     unsafe {
-        // Safely handle null pointers
         if pthis.is_null() || face.is_null() {
             return ptr::null_mut();
         }
 
-        // Convert C string to Rust string
         let face_name = match CStr::from_ptr(face).to_str() {
             Ok(s) => s,
             Err(_) => return ptr::null_mut(),
@@ -221,7 +207,6 @@ unsafe extern "C" fn get_font_callback(pthis: *mut FPDF_SYSFONTINFO, face: *cons
         let provider = MemoryFontProvider::from_pthis(pthis);
         let face_lower = face_name.to_lowercase();
 
-        // Find the first font matching the family name
         for key in provider.fonts.keys() {
             if key.family == face_lower {
                 let handle = Box::new(FontHandle { key: key.clone() });
@@ -229,7 +214,6 @@ unsafe extern "C" fn get_font_callback(pthis: *mut FPDF_SYSFONTINFO, face: *cons
             }
         }
 
-        // No font found
         ptr::null_mut()
     }
 }
@@ -246,12 +230,10 @@ unsafe extern "C" fn get_font_data_callback(
     buf_size: c_ulong,
 ) -> c_ulong {
     unsafe {
-        // Safely handle null pointers
         if pthis.is_null() || hfont.is_null() {
             return 0;
         }
 
-        // Only support table=0 (full font file), return 0 for specific tables
         if table != 0 {
             return 0;
         }
@@ -259,7 +241,6 @@ unsafe extern "C" fn get_font_data_callback(
         let provider = MemoryFontProvider::from_pthis(pthis);
         let handle = &*(hfont as *const FontHandle);
 
-        // Get font data from provider
         let font_data = match provider.fonts.get(&handle.key) {
             Some(data) => data,
             None => return 0,
@@ -267,12 +248,10 @@ unsafe extern "C" fn get_font_data_callback(
 
         let font_size = font_data.len() as c_ulong;
 
-        // If buffer is null, return the size of the font data
         if buffer.is_null() {
             return font_size;
         }
 
-        // If buffer provided, copy the font data (up to buf_size bytes)
         let copy_size = std::cmp::min(buf_size, font_size) as usize;
         if copy_size > 0 {
             ptr::copy_nonoverlapping(font_data.as_ptr(), buffer, copy_size);
@@ -287,14 +266,11 @@ unsafe extern "C" fn get_font_data_callback(
 /// Called by Pdfium when it no longer needs a font handle.
 unsafe extern "C" fn delete_font_callback(_pthis: *mut FPDF_SYSFONTINFO, hfont: *mut c_void) {
     unsafe {
-        // Safely handle null pointers
         if hfont.is_null() {
             return;
         }
 
-        // Reconstruct and drop the FontHandle, freeing its memory
         let _handle = Box::from_raw(hfont as *mut FontHandle);
-        // FontHandle is dropped here
     }
 }
 

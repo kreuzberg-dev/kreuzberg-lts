@@ -21,9 +21,9 @@ defmodule Kreuzberg.OcrConfidence do
   """
 
   @type t :: %__MODULE__{
-          detection: float() | nil,
-          recognition: float() | nil
-        }
+  detection: float() | nil,
+  recognition: float() | nil
+  }
 
   defstruct [:detection, :recognition]
 
@@ -48,8 +48,8 @@ defmodule Kreuzberg.OcrConfidence do
   @spec from_map(map()) :: t()
   def from_map(data) when is_map(data) do
     %__MODULE__{
-      detection: to_float(data["detection"]),
-      recognition: to_float(data["recognition"])
+    detection: to_float(data["detection"]),
+    recognition: to_float(data["recognition"])
     }
   end
 
@@ -76,8 +76,8 @@ defmodule Kreuzberg.OcrConfidence do
   @spec to_map(t()) :: map()
   def to_map(%__MODULE__{} = confidence) do
     %{
-      "detection" => confidence.detection,
-      "recognition" => confidence.recognition
+    "detection" => confidence.detection,
+    "recognition" => confidence.recognition
     }
   end
 

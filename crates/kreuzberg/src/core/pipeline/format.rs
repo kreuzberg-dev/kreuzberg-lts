@@ -38,7 +38,6 @@ pub fn apply_output_format(result: &mut ExtractionResult, output_format: OutputF
     };
     result.metadata.output_format = Some(format_name.to_string());
 
-    // Swap in pre-rendered content if available (populated by derive_extraction_result).
     if let Some(formatted) = result.formatted_content.take() {
         result.content = formatted;
     }
@@ -73,7 +72,6 @@ mod tests {
 
         apply_output_format(&mut result, OutputFormat::Markdown);
 
-        // Without pre-rendered content, content stays as-is
         assert_eq!(result.content, "Hello World");
         assert_eq!(result.metadata.output_format, Some("markdown".to_string()));
     }

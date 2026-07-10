@@ -24,10 +24,8 @@ fn class_threshold(class: LayoutClass) -> f32 {
 /// 3. Overlap resolution (IoU > 0.8 or containment > 0.8)
 /// 4. Cross-type overlap handling (KVR vs Table)
 pub fn apply_heuristics(detections: &mut Vec<LayoutDetection>, page_width: f32, page_height: f32) {
-    // 1. Apply per-class confidence thresholds.
     detections.retain(|d| d.confidence >= class_threshold(d.class));
 
-    // 2. Remove full-page pictures (>90% of page area).
     detections.retain(|d| {
         if d.class == LayoutClass::Picture {
             d.bbox.page_coverage(page_width, page_height) < 0.9
@@ -36,9 +34,6 @@ pub fn apply_heuristics(detections: &mut Vec<LayoutDetection>, page_width: f32, 
         }
     });
 
-    // 2b. Demote tiny Table/Picture false positives to Text.
-    //     If a Table or Picture covers <3% of page area AND has confidence <0.7,
-    //     it is likely a false positive that would suppress body text.
     for d in detections.iter_mut() {
         if matches!(d.class, LayoutClass::Table | LayoutClass::Picture)
             && d.bbox.page_coverage(page_width, page_height) < 0.03
@@ -48,7 +43,6 @@ pub fn apply_heuristics(detections: &mut Vec<LayoutDetection>, page_width: f32, 
         }
     }
 
-    // 3. Overlap resolution — iterative (up to 3 passes).
     for _ in 0..3 {
         let prev_len = detections.len();
         resolve_overlaps(detections);
@@ -57,7 +51,6 @@ pub fn apply_heuristics(detections: &mut Vec<LayoutDetection>, page_width: f32, 
         }
     }
 
-    // 4. Cross-type overlap: remove KVR if 90%+ overlapping with Table and conf_diff < 0.1.
     resolve_kvr_table_overlap(detections);
 }
 
@@ -82,12 +75,10 @@ fn resolve_overlaps(detections: &mut Vec<LayoutDetection>) {
             let containment_i_of_j = detections[i].bbox.containment_of(&detections[j].bbox);
             let containment_j_of_i = detections[j].bbox.containment_of(&detections[i].bbox);
 
-            // Skip if no significant overlap.
             if iou < 0.8 && containment_i_of_j < 0.8 && containment_j_of_i < 0.8 {
                 continue;
             }
 
-            // Determine which to remove using label-specific preference rules.
             let remove_idx = pick_removal(&detections[i], &detections[j], containment_i_of_j);
             if remove_idx == 0 {
                 remove[i] = true;
@@ -108,47 +99,42 @@ fn resolve_overlaps(detections: &mut Vec<LayoutDetection>) {
 /// Determine which of two overlapping detections to remove.
 /// Returns 0 to remove `a`, 1 to remove `b`.
 fn pick_removal(a: &LayoutDetection, b: &LayoutDetection, containment_a_of_b: f32) -> usize {
-    // ListItem preferred over Text when similar area (±20%).
     if a.class == LayoutClass::ListItem && b.class == LayoutClass::Text {
         let area_ratio = a.bbox.area() / b.bbox.area().max(1e-6);
         if (0.8..=1.2).contains(&area_ratio) {
-            return 1; // remove Text
+            return 1;
         }
     }
     if b.class == LayoutClass::ListItem && a.class == LayoutClass::Text {
         let area_ratio = b.bbox.area() / a.bbox.area().max(1e-6);
         if (0.8..=1.2).contains(&area_ratio) {
-            return 0; // remove Text
+            return 0;
         }
     }
 
-    // Code preferred when other is 80%+ contained.
     if a.class == LayoutClass::Code && containment_a_of_b > 0.8 {
-        return 1; // remove b
+        return 1;
     }
     if b.class == LayoutClass::Code {
         let containment_b_of_a = b.bbox.containment_of(&a.bbox);
         if containment_b_of_a > 0.8 {
-            return 0; // remove a
+            return 0;
         }
     }
 
-    // Text preferred over Table/Picture when Text has equal or higher confidence.
-    // This prevents low-confidence Table/Picture detections from suppressing body text.
     if a.class == LayoutClass::Text
         && matches!(b.class, LayoutClass::Table | LayoutClass::Picture)
         && a.confidence >= b.confidence
     {
-        return 1; // remove Table/Picture, keep Text
+        return 1;
     }
     if b.class == LayoutClass::Text
         && matches!(a.class, LayoutClass::Table | LayoutClass::Picture)
         && b.confidence >= a.confidence
     {
-        return 0; // remove Table/Picture, keep Text
+        return 0;
     }
 
-    // Default: keep higher confidence.
     if a.confidence >= b.confidence { 1 } else { 0 }
 }
 

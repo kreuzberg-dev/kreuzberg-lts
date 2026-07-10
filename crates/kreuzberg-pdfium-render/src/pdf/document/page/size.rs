@@ -369,18 +369,10 @@ impl PdfPagePaperSize {
 
         match PdfPagePaperStandardSize::from_mm_dimensions(width_mm, height_mm) {
             Some(size) => PdfPagePaperSize::Portrait(size),
-            None => {
-                // Try swapping the width and height. This will detect a rotated paper size.
-
-                match PdfPagePaperStandardSize::from_mm_dimensions(height_mm, width_mm) {
-                    Some(size) => PdfPagePaperSize::Landscape(size),
-                    None => {
-                        // Still no match. Return the original result.
-
-                        PdfPagePaperSize::Custom(width, height)
-                    }
-                }
-            }
+            None => match PdfPagePaperStandardSize::from_mm_dimensions(height_mm, width_mm) {
+                Some(size) => PdfPagePaperSize::Landscape(size),
+                None => PdfPagePaperSize::Custom(width, height),
+            },
         }
     }
 

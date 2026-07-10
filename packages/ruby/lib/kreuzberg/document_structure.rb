@@ -2,23 +2,12 @@
 
 module Kreuzberg
   class Result
-    # Structured document representation.
-    #
-    # Provides a hierarchical, tree-based representation of document content
-    # using a flat array of nodes with index-based parent/child references.
-    #
     # @example
-    #   if result.document
-    #     result.document.nodes.each do |node|
-    #       puts "#{node.id}: #{node.content[0..50]}"
-    #     end
-    #   end
-    #
     class DocumentStructure
       attr_reader :nodes
 
       def initialize(hash)
-        @nodes = parse_nodes(hash['nodes'] || hash[:nodes] || [])
+        @nodes = parse_nodes(hash["nodes"] || hash[:nodes] || [])
       end
 
       # Convert to hash
@@ -26,7 +15,7 @@ module Kreuzberg
       # @return [Hash] Hash representation
       #
       def to_h
-        { nodes: @nodes.map(&:to_h) }
+        {nodes: @nodes.map(&:to_h)}
       end
 
       private
@@ -55,21 +44,21 @@ module Kreuzberg
       private
 
       def assign_core_fields(hash)
-        @id = hash['id'] || hash[:id] || ''
-        @content = hash['content'] || hash[:content] || {}
-        @content_layer = hash['content_layer'] || hash[:content_layer] || 'body'
+        @id = hash["id"] || hash[:id] || ""
+        @content = hash["content"] || hash[:content] || {}
+        @content_layer = hash["content_layer"] || hash[:content_layer] || "body"
       end
 
       def assign_tree_fields(hash)
-        @parent = hash['parent'] || hash[:parent]
-        @children = parse_children(hash['children'] || hash[:children] || [])
+        @parent = hash["parent"] || hash[:parent]
+        @children = parse_children(hash["children"] || hash[:children] || [])
       end
 
       def assign_metadata_fields(hash)
-        @page = hash['page'] || hash[:page]
-        @page_end = hash['page_end'] || hash[:page_end]
-        @bbox = parse_bbox(hash['bbox'] || hash[:bbox])
-        @annotations = parse_annotations(hash['annotations'] || hash[:annotations] || [])
+        @page = hash["page"] || hash[:page]
+        @page_end = hash["page_end"] || hash[:page_end]
+        @bbox = parse_bbox(hash["bbox"] || hash[:bbox])
+        @annotations = parse_annotations(hash["annotations"] || hash[:annotations] || [])
       end
 
       # Convert to hash
@@ -104,7 +93,7 @@ module Kreuzberg
         if child.is_a?(Integer)
           child
         else
-          child['index'] || child[:index]
+          child["index"] || child[:index]
         end
       end
 
@@ -129,10 +118,10 @@ module Kreuzberg
       attr_reader :x0, :y0, :x1, :y1
 
       def initialize(hash)
-        @x0 = extract_float(hash, 'x0')
-        @y0 = extract_float(hash, 'y0')
-        @x1 = extract_float(hash, 'x1')
-        @y1 = extract_float(hash, 'y1')
+        @x0 = extract_float(hash, "x0")
+        @y0 = extract_float(hash, "y0")
+        @x1 = extract_float(hash, "x1")
+        @y1 = extract_float(hash, "y1")
       end
 
       # Convert to hash
@@ -164,9 +153,9 @@ module Kreuzberg
       attr_reader :start, :end_offset, :annotation_type, :url, :title
 
       def initialize(hash)
-        @start = (hash['start'] || hash[:start] || 0).to_i
-        @end_offset = (hash['end'] || hash[:end] || 0).to_i
-        parse_kind(hash['kind'] || hash[:kind] || {})
+        @start = (hash["start"] || hash[:start] || 0).to_i
+        @end_offset = (hash["end"] || hash[:end] || 0).to_i
+        parse_kind(hash["kind"] || hash[:kind] || {})
       end
 
       # Convert to hash
@@ -174,7 +163,7 @@ module Kreuzberg
       # @return [Hash] Hash representation
       #
       def to_h
-        kind_hash = { annotation_type: @annotation_type }
+        kind_hash = {annotation_type: @annotation_type}
         url = @url
         kind_hash[:url] = url if url
         title = @title
@@ -192,12 +181,11 @@ module Kreuzberg
       def parse_kind(kind_hash)
         return if kind_hash.nil? || kind_hash.empty?
 
-        @annotation_type =
-          kind_hash['annotation_type'] ||
+        @annotation_type = kind_hash["annotation_type"] ||
           kind_hash[:annotation_type] ||
-          'bold'
-        @url = kind_hash['url'] || kind_hash[:url]
-        @title = kind_hash['title'] || kind_hash[:title]
+          "bold"
+        @url = kind_hash["url"] || kind_hash[:url]
+        @title = kind_hash["title"] || kind_hash[:title]
       end
     end
   end

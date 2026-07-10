@@ -16,9 +16,9 @@ import java.util.List;
  */
 public final class Keyword extends ExtractedKeyword {
 
-	@JsonCreator
-	public Keyword(@JsonProperty("text") String text, @JsonProperty("score") float score,
-			@JsonProperty("algorithm") String algorithm, @JsonProperty("positions") List<Integer> positions) {
-		super(text, score, algorithm, positions);
-	}
+    @JsonCreator
+    public Keyword(@JsonProperty("text") String text, @JsonProperty("score") float score,
+        @JsonProperty("algorithm") String algorithm, @JsonProperty("positions") List<Integer> positions) {
+        super(text, score, algorithm, positions);
+    }
 }

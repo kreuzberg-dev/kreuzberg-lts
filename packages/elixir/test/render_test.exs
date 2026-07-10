@@ -1,7 +1,4 @@
-# Hand-written binding-specific edge case tests for PDF rendering.
 # Happy-path render tests are auto-generated from fixtures in e2e/.
-# These tests cover error handling, validation, and lifecycle patterns
-# that vary per language and can't be generated uniformly.
 
 defmodule KreuzbergTest.RenderTest do
   use ExUnit.Case, async: true
@@ -10,8 +7,8 @@ defmodule KreuzbergTest.RenderTest do
     repo_root = get_repo_root()
 
     possible_paths = [
-      Path.join([repo_root, "test_documents", "pdf", "tiny.pdf"]),
-      Path.join([repo_root, "test_documents", "tiny.pdf"])
+    Path.join([repo_root, "test_documents", "pdf", "tiny.pdf"]),
+    Path.join([repo_root, "test_documents", "tiny.pdf"])
     ]
 
     Enum.find_value(possible_paths, :error, fn path ->
@@ -64,8 +61,8 @@ defmodule KreuzbergTest.RenderTest do
       path = skip_unless_test_pdf!()
 
       first_page =
-        Kreuzberg.render_pdf_pages_stream(path)
-        |> Enum.take(1)
+      Kreuzberg.render_pdf_pages_stream(path)
+      |> Enum.take(1)
 
       assert length(first_page) == 1
       {page_index, png_bytes} = hd(first_page)

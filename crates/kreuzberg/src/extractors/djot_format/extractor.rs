@@ -52,7 +52,7 @@ impl DjotExtractor {
         let mut in_code_block = false;
         let mut in_math = false;
         let mut math_text = String::new();
-        let mut list_stack: Vec<bool> = Vec::new(); // ordered flag
+        let mut list_stack: Vec<bool> = Vec::new();
         let mut list_item_text = String::new();
         let mut list_item_annotations: Vec<TextAnnotation> = Vec::new();
         let mut in_list_item = false;
@@ -67,7 +67,6 @@ impl DjotExtractor {
         let mut footnote_label = String::new();
         let mut footnote_text = String::new();
 
-        // Annotation tracking: stack of (kind_tag, byte_start, optional link url).
         let mut annotation_starts: Vec<(u8, u32, Option<String>)> = Vec::new();
 
         for event in events {
@@ -113,10 +112,8 @@ impl DjotExtractor {
                         paragraph_text.clear();
                         paragraph_annotations.clear();
                     } else if in_list_item {
-                        // paragraph inside list item — text already accumulated
                     }
                 }
-                // Inline formatting — annotation tracking
                 Event::Start(Container::Strong, _) => {
                     if in_paragraph {
                         annotation_starts.push((0, paragraph_text.len() as u32, None));
@@ -278,7 +275,6 @@ impl DjotExtractor {
                             } else {
                                 None
                             };
-                            // Collect URI (compute kind before moving url)
                             if !url.is_empty() {
                                 let kind = classify_uri(&url);
                                 b.push_uri(Uri {
@@ -397,7 +393,6 @@ impl DjotExtractor {
                         ocr_confidence: None,
                         ocr_rotation: None,
                     });
-                    // Collect image URI with alt text as label
                     let src_str: &str = src.as_ref();
                     if !src_str.is_empty() {
                         let trimmed = image_alt.trim();
@@ -540,18 +535,15 @@ impl DocumentExtractor for DjotExtractor {
             metadata.title = Some(title);
         }
 
-        // Parse with jotdown and collect events once for extraction
         let parser = Parser::new(&remaining_content);
         let events: Vec<Event> = parser.collect();
 
         let tables = extract_tables_from_events(&events);
 
-        // Build InternalDocument from events
         let mut doc = Self::build_internal_document(&events);
         doc.mime_type = Cow::Owned(mime_type.to_string());
         doc.metadata = metadata;
 
-        // Add tables to InternalDocument
         for table in tables {
             doc.push_table(table);
         }
@@ -659,8 +651,6 @@ mod tests {
 
     #[tokio::test]
     async fn test_image_uri_extraction_djot() {
-        // Regression test for #622: src.as_ref() on Cow<str> from jotdown's Container::Image
-        // must compile without type-inference ambiguity introduced by typed-path.
         let djot = b"![A diagram](https://example.com/diagram.png)\n\nSome text.";
         let extractor = DjotExtractor::new();
         let config = ExtractionConfig::default();

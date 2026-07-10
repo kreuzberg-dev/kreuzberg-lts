@@ -8,32 +8,32 @@ import com.fasterxml.jackson.annotation.JsonValue;
  * @since 4.0.0
  */
 public enum PageUnitType {
-	/** Standard document pages (PDF, DOCX, images). */
-	PAGE("page"),
+    /** Standard document pages (PDF, DOCX, images). */
+    PAGE("page"),
 
-	/** Presentation slides (PPTX, ODP). */
-	SLIDE("slide"),
+    /** Presentation slides (PPTX, ODP). */
+    SLIDE("slide"),
 
-	/** Spreadsheet sheets (XLSX, ODS). */
-	SHEET("sheet");
+    /** Spreadsheet sheets (XLSX, ODS). */
+    SHEET("sheet");
 
-	private final String wireValue;
+    private final String wireValue;
 
-	PageUnitType(String wireValue) {
-		this.wireValue = wireValue;
-	}
+    PageUnitType(String wireValue) {
+        this.wireValue = wireValue;
+    }
 
-	/**
+    /**
 	 * Get the wire format value for this unit type.
 	 *
 	 * @return wire value used in serialization
 	 */
-	@JsonValue
-	public String wireValue() {
-		return wireValue;
-	}
+    @JsonValue
+    public String wireValue() {
+        return wireValue;
+    }
 
-	/**
+    /**
 	 * Parse a PageUnitType from its wire value.
 	 *
 	 * @param wireValue
@@ -42,12 +42,12 @@ public enum PageUnitType {
 	 * @throws IllegalArgumentException
 	 *             if the value is not recognized
 	 */
-	public static PageUnitType fromWireValue(String wireValue) {
-		for (PageUnitType type : values()) {
-			if (type.wireValue.equals(wireValue)) {
-				return type;
-			}
-		}
-		throw new IllegalArgumentException("Unknown PageUnitType: " + wireValue);
-	}
+    public static PageUnitType fromWireValue(String wireValue) {
+        for (PageUnitType type : values()) {
+            if (type.wireValue.equals(wireValue)) {
+                return type;
+            }
+        }
+        throw new IllegalArgumentException("Unknown PageUnitType: " + wireValue);
+    }
 }

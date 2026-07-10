@@ -8,7 +8,7 @@ mod simd_text;
 pub use config::{ReductionLevel, TokenReductionConfig};
 pub use core::TokenReducer;
 
-// TODO: reorganize token_reduction - move out of text, and reorganize text properly into utils etc.
+// ~keep TODO: reorganize token_reduction out of text once text utilities are split by responsibility.
 
 /// Reduces token count in text while preserving meaning and structure.
 ///

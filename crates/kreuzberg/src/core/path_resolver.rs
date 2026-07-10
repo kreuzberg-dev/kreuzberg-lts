@@ -27,7 +27,6 @@ const MAX_IMAGE_SIZE: u64 = 50 * 1024 * 1024;
 pub(crate) fn resolve_image_path(base_dir: &Path, image_ref: &str) -> Option<PathBuf> {
     let trimmed = image_ref.trim();
 
-    // Reject URLs
     if trimmed.starts_with("http://")
         || trimmed.starts_with("https://")
         || trimmed.starts_with("data:")
@@ -37,7 +36,6 @@ pub(crate) fn resolve_image_path(base_dir: &Path, image_ref: &str) -> Option<Pat
         return None;
     }
 
-    // Strip file:// or file: prefix (org-mode uses file: without //)
     let path_str = if let Some(stripped) = trimmed.strip_prefix("file://") {
         stripped
     } else if let Some(stripped) = trimmed.strip_prefix("file:") {
@@ -46,7 +44,6 @@ pub(crate) fn resolve_image_path(base_dir: &Path, image_ref: &str) -> Option<Pat
         trimmed
     };
 
-    // Reject absolute paths (Unix or Windows drive letter)
     if path_str.starts_with('/')
         || (path_str.len() >= 2 && path_str.as_bytes()[0].is_ascii_alphabetic() && path_str.as_bytes()[1] == b':')
     {
@@ -56,7 +53,6 @@ pub(crate) fn resolve_image_path(base_dir: &Path, image_ref: &str) -> Option<Pat
     let joined = base_dir.join(path_str);
     let normalized = normalize_path(&joined);
 
-    // Path traversal prevention: resolved path must start with base_dir
     let norm_base = normalize_path(base_dir);
     if !normalized.starts_with(&norm_base) {
         return None;
@@ -129,7 +125,6 @@ pub(crate) fn resolve_image_uris(doc: &mut InternalDocument, base_dir: &Path, co
 
     let mut image_index = doc.images.len();
 
-    // Collect URI indices first to avoid borrow conflict (doc.uris vs doc.images).
     let image_uri_indices: Vec<usize> = doc
         .uris
         .iter()
@@ -229,7 +224,6 @@ mod tests {
 
     #[test]
     fn test_nonexistent_file_still_resolves() {
-        // resolve_image_path only checks structure, not filesystem
         let base = Path::new("/nonexistent/base");
         let result = resolve_image_path(base, "sub/image.jpg");
         assert_eq!(result, Some(PathBuf::from("/nonexistent/base/sub/image.jpg")));
@@ -244,9 +238,6 @@ mod tests {
 
     #[test]
     fn test_windows_backslash() {
-        // On all platforms, std::path::Path::join handles separators correctly.
-        // On Unix, backslash is a valid filename char so it stays as-is in the component.
-        // The key point: the function does not panic and produces a usable path.
         let base = Path::new("/home/user/docs");
         let result = resolve_image_path(base, "images/photo.png");
         assert!(result.is_some());

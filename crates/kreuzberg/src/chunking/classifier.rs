@@ -42,51 +42,38 @@ use crate::types::{ChunkType, HeadingContext};
 pub fn classify_chunk(content: &str, heading_context: Option<&HeadingContext>) -> ChunkType {
     let trimmed = content.trim();
 
-    // ── 1. Heading ──────────────────────────────────────────────────────────
-    // A chunk that IS a heading (starts with `#`) or that sits at the top
-    // of the heading hierarchy (h1 only, very short content).
     if is_heading(trimmed, heading_context) {
         return ChunkType::Heading;
     }
 
-    // ── 2. Code block ───────────────────────────────────────────────────────
-    // Use original content (not trimmed) so leading-indented blocks retain
-    // their 4-space prefix on every line.
     if is_code_block(content) {
         return ChunkType::CodeBlock;
     }
 
-    // ── 3. Table-like ───────────────────────────────────────────────────────
     if is_table_like(trimmed) {
         return ChunkType::TableLike;
     }
 
-    // ── 4. Formula ──────────────────────────────────────────────────────────
     if is_formula(trimmed) {
         return ChunkType::Formula;
     }
 
-    // ── 5. Schedule / annex (heading context or keyword) ────────────────────
     if is_schedule(trimmed, heading_context) {
         return ChunkType::Schedule;
     }
 
-    // ── 6. Definitions ──────────────────────────────────────────────────────
     if is_definitions(trimmed) {
         return ChunkType::Definitions;
     }
 
-    // ── 7. Signature block ──────────────────────────────────────────────────
     if is_signature_block(trimmed) {
         return ChunkType::SignatureBlock;
     }
 
-    // ── 8. Operative clause ─────────────────────────────────────────────────
     if is_operative_clause(trimmed) {
         return ChunkType::OperativeClause;
     }
 
-    // ── 9. Party list ───────────────────────────────────────────────────────
     if is_party_list(trimmed) {
         return ChunkType::PartyList;
     }
@@ -94,14 +81,10 @@ pub fn classify_chunk(content: &str, heading_context: Option<&HeadingContext>) -
     ChunkType::Unknown
 }
 
-// ─── Rule implementations ───────────────────────────────────────────────────
-
 fn is_heading(content: &str, _ctx: Option<&HeadingContext>) -> bool {
-    // Markdown ATX heading
     if content.starts_with('#') {
         return true;
     }
-    // Setext-style heading: next line is `===` or `---`
     let mut lines = content.lines();
     if let (Some(_title), Some(underline)) = (lines.next(), lines.next()) {
         let u = underline.trim();
@@ -113,12 +96,9 @@ fn is_heading(content: &str, _ctx: Option<&HeadingContext>) -> bool {
 }
 
 fn is_code_block(content: &str) -> bool {
-    // Fenced code block
     if content.starts_with("```") || content.starts_with("~~~") {
         return true;
     }
-    // All non-empty lines indented ≥ 4 spaces (classic Markdown code block),
-    // but only when the block has ≥ 2 lines to avoid false positives.
     let lines: Vec<&str> = content.lines().collect();
     if lines.len() >= 2 {
         let all_indented = lines
@@ -137,12 +117,10 @@ fn is_table_like(content: &str) -> bool {
     if lines.len() < 2 {
         return false;
     }
-    // Count lines that look like Markdown table rows: contain `|`
     let pipe_lines = lines.iter().filter(|l| l.contains('|')).count();
     if pipe_lines >= 2 {
         return true;
     }
-    // Count separator lines (`---`, `===`, repeated dashes ≥ 4)
     let sep_lines = lines
         .iter()
         .filter(|l| {
@@ -154,12 +132,10 @@ fn is_table_like(content: &str) -> bool {
 }
 
 fn is_formula(content: &str) -> bool {
-    // Unicode math symbols
     const MATH_SYMBOLS: &[char] = &['∑', '∫', '√', '∂', '∏', '≤', '≥', '≠', '→', '←', '⊂', '⊃'];
     if content.chars().any(|c| MATH_SYMBOLS.contains(&c)) {
         return true;
     }
-    // LaTeX-style patterns
     let lower = content.to_lowercase();
     let latex_patterns = [
         r"\frac", r"\sum", r"\int", r"\sqrt", r"\alpha", r"\beta", r"\delta", r"$$", r"\[",
@@ -174,7 +150,6 @@ fn is_schedule(content: &str, ctx: Option<&HeadingContext>) -> bool {
     const KEYWORDS: &[&str] = &["schedule", "annex", "appendix", "exhibit"];
     let lower = content.to_lowercase();
 
-    // Check heading context for schedule keywords
     if let Some(ctx) = ctx {
         for h in &ctx.headings {
             let hl = h.text.to_lowercase();
@@ -183,16 +158,13 @@ fn is_schedule(content: &str, ctx: Option<&HeadingContext>) -> bool {
             }
         }
     }
-    // First line starts with a schedule keyword
     let first_line = content.lines().next().unwrap_or("").to_lowercase();
     if KEYWORDS.iter().any(|k| first_line.starts_with(k)) {
         return true;
     }
-    // Content-level: strong keyword presence (e.g. "Schedule 1 –" or "Annex A:")
 
     KEYWORDS.iter().any(|k| {
         if let Some(idx) = lower.find(k) {
-            // Must be followed by a space + alphanumeric (e.g. "Schedule 1", "Annex A")
             let rest = &lower[idx + k.len()..];
             rest.starts_with(' ')
                 && rest
@@ -209,7 +181,6 @@ fn is_schedule(content: &str, ctx: Option<&HeadingContext>) -> bool {
 
 fn is_definitions(content: &str) -> bool {
     let lower = content.to_lowercase();
-    // Classic legal definition patterns
     let patterns = [
         "\" means ",
         "\" shall mean ",
@@ -241,7 +212,6 @@ fn is_signature_block(content: &str) -> bool {
 
 fn is_operative_clause(content: &str) -> bool {
     let lower = content.to_lowercase();
-    // Action verbs commonly found in operative legal clauses
     let verbs = [
         "shall ",
         "agree ",
@@ -271,8 +241,6 @@ fn is_operative_clause(content: &str) -> bool {
 }
 
 fn is_party_list(content: &str) -> bool {
-    // Party lists tend to have multiple short lines with Title Case names,
-    // often mixed with addresses (contain digits) or role labels.
     let lines: Vec<&str> = content.lines().map(|l| l.trim()).filter(|l| !l.is_empty()).collect();
 
     if lines.len() < 3 {
@@ -280,7 +248,6 @@ fn is_party_list(content: &str) -> bool {
     }
 
     let party_like = lines.iter().filter(|l| is_party_line(l)).count();
-    // Majority of lines should look party-like
     party_like >= (lines.len() * 2 / 3).max(2)
 }
 
@@ -317,8 +284,6 @@ fn is_party_line(line: &str) -> bool {
     has_digit || has_comma || has_role
 }
 
-// ─── Tests ──────────────────────────────────────────────────────────────────
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -326,8 +291,6 @@ mod tests {
     fn classify(content: &str) -> ChunkType {
         classify_chunk(content, None)
     }
-
-    // ── Heading ──────────────────────────────────────────────────────────────
 
     #[test]
     fn test_heading_atx() {
@@ -347,8 +310,6 @@ mod tests {
         assert_ne!(classify("This is plain paragraph text."), ChunkType::Heading);
     }
 
-    // ── Code block ───────────────────────────────────────────────────────────
-
     #[test]
     fn test_code_block_fenced() {
         assert_eq!(classify("```rust\nfn main() {}\n```"), ChunkType::CodeBlock);
@@ -361,8 +322,6 @@ mod tests {
         assert_eq!(classify(indented), ChunkType::CodeBlock);
     }
 
-    // ── Table-like ───────────────────────────────────────────────────────────
-
     #[test]
     fn test_table_markdown() {
         let table = "| Name | Age |\n|------|-----|\n| Alice | 30 |";
@@ -371,11 +330,8 @@ mod tests {
 
     #[test]
     fn test_table_single_pipe_line_not_table() {
-        // Only one pipe line → not enough evidence
         assert_ne!(classify("Just one | separator here"), ChunkType::TableLike);
     }
-
-    // ── Formula ──────────────────────────────────────────────────────────────
 
     #[test]
     fn test_formula_unicode_symbols() {
@@ -389,8 +345,6 @@ mod tests {
         assert_eq!(classify(r"$$\sum_{i=0}^{n} x_i$$"), ChunkType::Formula);
     }
 
-    // ── Schedule ─────────────────────────────────────────────────────────────
-
     #[test]
     fn test_schedule_first_line() {
         assert_eq!(
@@ -399,8 +353,6 @@ mod tests {
         );
         assert_eq!(classify("annex A: Technical Specifications"), ChunkType::Schedule);
     }
-
-    // ── Definitions ──────────────────────────────────────────────────────────
 
     #[test]
     fn test_definitions_means() {
@@ -422,8 +374,6 @@ mod tests {
         );
     }
 
-    // ── Signature block ───────────────────────────────────────────────────────
-
     #[test]
     fn test_signature_block() {
         let sig = "Signed by: John Smith\nDate: 2026-03-30\nWitnessed by: Jane Doe";
@@ -435,8 +385,6 @@ mod tests {
         let sig = "In witness whereof the parties have duly authorized this agreement.\n____________________\nDate: ___________";
         assert_eq!(classify(sig), ChunkType::SignatureBlock);
     }
-
-    // ── Operative clause ─────────────────────────────────────────────────────
 
     #[test]
     fn test_operative_clause_basic() {
@@ -450,15 +398,11 @@ mod tests {
         assert_eq!(classify(clause), ChunkType::OperativeClause);
     }
 
-    // ── Party list ────────────────────────────────────────────────────────────
-
     #[test]
     fn test_party_list_basic() {
         let parties = "Gregor Guggisberg, Winkelstrasse 12, Zurich\nInvestor\nAlpha Capital AG, Bahnhofstrasse 1, Zurich\nSubscriber\nBeta Holdings Ltd, 10 City Road, London\nBorrower";
         assert_eq!(classify(parties), ChunkType::PartyList);
     }
-
-    // ── Unknown ───────────────────────────────────────────────────────────────
 
     #[test]
     fn test_unknown_plain_text() {
@@ -473,8 +417,6 @@ mod tests {
         assert_eq!(classify(""), ChunkType::Unknown);
     }
 
-    // ── Heading context ───────────────────────────────────────────────────────
-
     #[test]
     fn test_heading_context_schedule() {
         use crate::types::{HeadingContext, HeadingLevel};
@@ -484,7 +426,6 @@ mod tests {
                 text: "Schedule 1 – Definitions".to_string(),
             }],
         };
-        // Content under a Schedule heading should be classified as Schedule
         let result = classify_chunk("This schedule sets out the defined terms.", Some(&ctx));
         assert_eq!(result, ChunkType::Schedule);
     }

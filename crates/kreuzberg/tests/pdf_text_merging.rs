@@ -12,10 +12,6 @@ use helpers::get_test_file_path;
 use kreuzberg::pdf::hierarchy::{BoundingBox, extract_chars_with_fonts};
 use pdfium_render::prelude::*;
 
-// ============================================================================
-// Character Extraction Tests (Following TDD)
-// ============================================================================
-
 /// Test basic character extraction with positions and font sizes.
 ///
 /// Verifies that:
@@ -31,22 +27,17 @@ fn test_extract_chars_basic() {
 
     let pdf_path = get_test_file_path("pdf/tiny.pdf");
 
-    // Load PDF
     let pdfium = Pdfium;
     let document = pdfium
         .load_pdf_from_file(pdf_path.to_str().expect("Operation failed"), None)
         .expect("Failed to load test PDF");
 
-    // Get first page
     let page = document.pages().get(0).expect("Failed to get first page");
 
-    // Extract characters with fonts
     let chars = extract_chars_with_fonts(&page).expect("Failed to extract characters with fonts");
 
-    // Verify we got some characters
     assert!(!chars.is_empty(), "Should extract at least one character from test PDF");
 
-    // Verify each character has required fields
     for char_data in chars.iter() {
         assert!(!char_data.text.is_empty(), "Character text should not be empty");
         assert!(char_data.font_size > 0.0, "Font size should be positive");
@@ -69,52 +60,42 @@ fn test_extract_chars_preserves_order() {
 
     let pdf_path = get_test_file_path("pdf/tiny.pdf");
 
-    // Load PDF
     let pdfium = Pdfium;
     let document = pdfium
         .load_pdf_from_file(pdf_path.to_str().expect("Operation failed"), None)
         .expect("Failed to load test PDF");
 
-    // Get first page
     let page = document.pages().get(0).expect("Failed to get first page");
 
-    // Extract characters with fonts
     let chars = extract_chars_with_fonts(&page).expect("Failed to extract characters with fonts");
 
     assert!(!chars.is_empty(), "Should extract at least one character");
 
-    // Within each line (similar y-coordinate), characters should be left-to-right
     let mut last_y = f32::NEG_INFINITY;
     let mut last_x = f32::NEG_INFINITY;
-    let y_line_threshold = 5.0; // Consider within 5 units as same line
+    let y_line_threshold = 5.0;
 
     for char_data in chars.iter() {
-        // If we're on a new line
         if (char_data.y - last_y).abs() > y_line_threshold {
             last_x = f32::NEG_INFINITY;
             last_y = char_data.y;
         }
 
-        // On same line, x should generally increase (allowing for small variations)
-        // We use a threshold to allow for measurement precision issues
-        if (char_data.y - last_y).abs() <= y_line_threshold && char_data.x < last_x - 1.0 {
-            // This is acceptable if it's a new line or small variation
-            if last_x != f32::NEG_INFINITY && (char_data.y - last_y).abs() <= y_line_threshold {
-                panic!(
-                    "Characters should be left-to-right on same line: {} < {} at y={}",
-                    char_data.x, last_x, char_data.y
-                );
-            }
+        if (char_data.y - last_y).abs() <= y_line_threshold
+            && char_data.x < last_x - 1.0
+            && last_x != f32::NEG_INFINITY
+            && (char_data.y - last_y).abs() <= y_line_threshold
+        {
+            panic!(
+                "Characters should be left-to-right on same line: {} < {} at y={}",
+                char_data.x, last_x, char_data.y
+            );
         }
 
         last_x = char_data.x;
         last_y = char_data.y;
     }
 }
-
-// ============================================================================
-// Bounding Box Tests
-// ============================================================================
 
 /// Helper function to create a BoundingBox from x, y, width, height
 fn create_bbox(x: f32, y: f32, width: f32, height: f32) -> BoundingBox {
@@ -128,32 +109,24 @@ fn create_bbox(x: f32, y: f32, width: f32, height: f32) -> BoundingBox {
 
 #[test]
 fn test_iou_calculation() {
-    // Two overlapping boxes
     let bbox1 = create_bbox(0.0, 0.0, 10.0, 10.0);
     let bbox2 = create_bbox(5.0, 5.0, 10.0, 10.0);
 
-    // Expected intersection: 5x5 = 25
-    // Expected union: 100 + 100 - 25 = 175
-    // Expected IOU: 25/175 ≈ 0.1429
     let iou = bbox1.iou(&bbox2);
     assert!((iou - 0.1429).abs() < 0.001, "IOU calculation failed");
 }
 
 #[test]
 fn test_weighted_distance_calculation() {
-    // Two boxes with different X and Y distances
     let bbox1 = create_bbox(0.0, 0.0, 10.0, 10.0);
     let bbox2 = create_bbox(20.0, 5.0, 10.0, 10.0);
 
-    // Distance: X=20, Y=5
-    // Weighted: X*5.0 + Y*1.0 = 20*5.0 + 5*1.0 = 100 + 5 = 105
     let weighted_dist = bbox1.weighted_distance(&bbox2);
     assert!(
         (weighted_dist - 105.0).abs() < 0.001,
         "Weighted distance calculation failed"
     );
 
-    // Verify X weight (5.0) > Y weight (1.0) by checking ratio
     let bbox3 = create_bbox(0.0, 0.0, 10.0, 10.0);
     let bbox4 = create_bbox(10.0, 0.0, 10.0, 10.0);
     let only_x_dist = bbox3.weighted_distance(&bbox4);
@@ -162,9 +135,6 @@ fn test_weighted_distance_calculation() {
     let bbox6 = create_bbox(0.0, 10.0, 10.0, 10.0);
     let only_y_dist = bbox5.weighted_distance(&bbox6);
 
-    // X distance of 10 with weight 5.0 = 50
-    // Y distance of 10 with weight 1.0 = 10
-    // X weight should be 5x larger than Y weight
     assert!(only_x_dist > only_y_dist, "X weight should be greater than Y weight");
     assert!((only_x_dist - 50.0).abs() < 0.001, "X-only weighted distance failed");
     assert!((only_y_dist - 10.0).abs() < 0.001, "Y-only weighted distance failed");
@@ -172,28 +142,21 @@ fn test_weighted_distance_calculation() {
 
 #[test]
 fn test_intersection_ratio() {
-    // Two overlapping boxes
     let bbox1 = create_bbox(0.0, 0.0, 10.0, 10.0);
     let bbox2 = create_bbox(5.0, 5.0, 10.0, 10.0);
 
-    // Expected intersection: 5x5 = 25
-    // bbox1 area: 100
-    // Expected ratio: 25/100 = 0.25
     let ratio = bbox1.intersection_ratio(&bbox2);
     assert!((ratio - 0.25).abs() < 0.001, "Intersection ratio calculation failed");
 }
 
 #[test]
 fn test_edge_case_no_overlap() {
-    // Two non-overlapping boxes
     let bbox1 = create_bbox(0.0, 0.0, 10.0, 10.0);
     let bbox2 = create_bbox(20.0, 20.0, 10.0, 10.0);
 
-    // IOU should be 0
     let iou = bbox1.iou(&bbox2);
     assert!((iou - 0.0).abs() < 0.001, "Non-overlapping boxes should have IOU of 0");
 
-    // Intersection ratio should be 0
     let ratio = bbox1.intersection_ratio(&bbox2);
     assert!(
         (ratio - 0.0).abs() < 0.001,
@@ -203,27 +166,18 @@ fn test_edge_case_no_overlap() {
 
 #[test]
 fn test_edge_case_fully_contained() {
-    // Smaller box fully contained in larger box
     let bbox_large = create_bbox(0.0, 0.0, 20.0, 20.0);
     let bbox_small = create_bbox(5.0, 5.0, 10.0, 10.0);
 
-    // Intersection: 10x10 = 100
-    // Union: 400 + 100 - 100 = 400
-    // IOU: 100/400 = 0.25
     let iou = bbox_large.iou(&bbox_small);
     assert!((iou - 0.25).abs() < 0.001, "Fully contained box IOU calculation failed");
 
-    // Intersection ratio: 100/400 = 0.25
     let ratio = bbox_large.intersection_ratio(&bbox_small);
     assert!(
         (ratio - 0.25).abs() < 0.001,
         "Fully contained box intersection ratio failed"
     );
 }
-
-// ============================================================================
-// Character Merging Tests (Following TDD)
-// ============================================================================
 
 use kreuzberg::pdf::hierarchy::{CharData, merge_chars_into_blocks};
 
@@ -315,14 +269,12 @@ fn test_merge_edge_case_overlapping_blocks() {
 fn test_merge_max_merge_distance_threshold() {
     let chars = vec![
         create_char("T", 0.0, 10.0, 12.0),
-        create_char("e", 50.0, 10.0, 12.0),  // Large gap, should be separate
-        create_char("s", 100.0, 10.0, 12.0), // Even larger gap
+        create_char("e", 50.0, 10.0, 12.0),
+        create_char("s", 100.0, 10.0, 12.0),
     ];
 
     let blocks = merge_chars_into_blocks(chars);
 
-    // With reasonable merge distance (should be ~2.5x font size for distance),
-    // characters at 50 and 100 units apart should create separate blocks
     assert!(blocks.len() > 1, "Expected multiple blocks due to large gaps");
     assert_eq!(
         blocks.iter().map(|b| b.text.len()).sum::<usize>(),
@@ -337,7 +289,6 @@ fn test_merge_max_merge_distance_threshold() {
 /// without panicking or causing division by zero.
 #[test]
 fn test_merge_zero_font_size() {
-    // Create characters with zero font size (edge case)
     let chars = vec![
         CharData {
             text: "A".to_string(),
@@ -363,10 +314,8 @@ fn test_merge_zero_font_size() {
         },
     ];
 
-    // Should not panic
     let blocks = merge_chars_into_blocks(chars);
 
-    // Should still produce some output
     assert!(!blocks.is_empty(), "Should produce blocks even with zero font size");
 }
 
@@ -376,18 +325,15 @@ fn test_merge_zero_font_size() {
 /// with zero area without panicking.
 #[test]
 fn test_iou_zero_area_boxes() {
-    // Two boxes with zero area (point-like)
     let bbox1 = create_bbox(0.0, 0.0, 0.0, 0.0);
     let bbox2 = create_bbox(5.0, 5.0, 0.0, 0.0);
 
-    // Should not panic and should return 0 or similar
     let iou = bbox1.iou(&bbox2);
     assert!(
         (0.0..=1.0).contains(&iou),
         "IOU should be in valid range for zero-area boxes"
     );
 
-    // Intersection ratio should also be safe
     let ratio = bbox1.intersection_ratio(&bbox2);
     assert!(
         (0.0..=1.0).contains(&ratio),
@@ -400,11 +346,9 @@ fn test_iou_zero_area_boxes() {
 /// This test validates that identical boxes have IOU of 1.0 (perfect overlap).
 #[test]
 fn test_iou_identical_boxes() {
-    // Two identical boxes
     let bbox1 = create_bbox(10.0, 20.0, 30.0, 40.0);
     let bbox2 = create_bbox(10.0, 20.0, 30.0, 40.0);
 
-    // IOU should be 1.0 for identical boxes
     let iou = bbox1.iou(&bbox2);
     assert!(
         (iou - 1.0).abs() < 0.001,
@@ -412,7 +356,6 @@ fn test_iou_identical_boxes() {
         iou
     );
 
-    // Intersection ratio should also be 1.0
     let ratio = bbox1.intersection_ratio(&bbox2);
     assert!(
         (ratio - 1.0).abs() < 0.001,
@@ -428,16 +371,13 @@ fn test_contains_method() {
     let small_box = create_bbox(10.0, 10.0, 50.0, 50.0);
     let outside_box = create_bbox(110.0, 110.0, 150.0, 150.0);
 
-    // Small box should be contained in large box
     assert!(large_box.contains(&small_box), "Large box should contain small box");
 
-    // Large box should not be contained in small box
     assert!(
         !small_box.contains(&large_box),
         "Small box should not contain large box"
     );
 
-    // Outside box should not be contained
     assert!(
         !large_box.contains(&outside_box),
         "Large box should not contain outside box"
@@ -453,7 +393,6 @@ fn test_center_method() {
     assert_eq!(center.0, 50.0, "Center X should be 50.0");
     assert_eq!(center.1, 50.0, "Center Y should be 50.0");
 
-    // Test with offset box
     let offset_bbox = create_bbox(20.0, 30.0, 80.0, 70.0);
     let offset_center = offset_bbox.center();
 
@@ -481,11 +420,9 @@ fn test_relaxed_iou_method() {
     let bbox1 = create_bbox(0.0, 0.0, 10.0, 10.0);
     let bbox2 = create_bbox(15.0, 15.0, 25.0, 25.0);
 
-    // Without relaxation, IOU should be 0
     let normal_iou = bbox1.iou(&bbox2);
     assert!(normal_iou < 0.01, "Non-overlapping boxes should have near-zero IOU");
 
-    // With relaxation, IOU should increase
     let relaxed_iou = bbox1.relaxed_iou(&bbox2, 0.5);
     assert!(
         relaxed_iou > normal_iou,

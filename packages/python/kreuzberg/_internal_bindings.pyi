@@ -2071,7 +2071,6 @@ class PageStructure(TypedDict, total=False):
     pages: list[PageInfo] | None
 
 class Metadata(TypedDict, total=False):
-    # Common fields (set directly on all extractions)
     title: str
     subject: str
     authors: list[str]
@@ -2083,10 +2082,8 @@ class Metadata(TypedDict, total=False):
     modified_by: str
     pages: PageStructure
 
-    # Format discriminator (from serde tag)
     format_type: Literal["pdf", "excel", "email", "pptx", "archive", "image", "xml", "text", "html", "ocr"]
 
-    # PDF-specific (flattened from PdfMetadata)
     pdf_version: str | None
     producer: str | None
     is_encrypted: bool | None
@@ -2094,11 +2091,9 @@ class Metadata(TypedDict, total=False):
     height: int | None
     page_count: int | None
 
-    # Excel-specific (flattened from ExcelMetadata)
     sheet_count: int
     sheet_names: list[str]
 
-    # Email-specific (flattened from EmailMetadata)
     from_email: str | None
     from_name: str | None
     to_emails: list[str]
@@ -2107,37 +2102,27 @@ class Metadata(TypedDict, total=False):
     message_id: str | None
     attachments: list[str]
 
-    # PPTX-specific (flattened from PptxMetadata)
     slide_count: int
     slide_names: list[str]
 
-    # Archive-specific (flattened from ArchiveMetadata)
     format: str
     file_count: int
     file_list: list[str]
     total_size: int
     compressed_size: int | None
 
-    # Image-specific (flattened from ImageMetadata)
-    # Note: 'width', 'height', 'format' overlap with other fields
     exif: dict[str, str]
 
-    # XML-specific (flattened from XmlMetadata)
     element_count: int
     unique_elements: list[str]
 
-    # Text-specific (flattened from TextMetadata)
     line_count: int
     word_count: int
     character_count: int
-    # Note: 'headers' is list[str] for text, list[HeaderMetadata] for html
     headers: list[str] | list[HeaderMetadata] | None
-    # Note: 'links' is list[tuple[str, str]] for text, list[LinkMetadata] for html
     links: list[tuple[str, str]] | list[LinkMetadata] | None
     code_blocks: list[tuple[str, str]] | None
 
-    # HTML-specific (flattened from HtmlMetadata)
-    # Note: 'title', 'description', 'keywords', 'language' overlap with common fields
     author: str | None
     description: str | None
     canonical_url: str | None
@@ -2149,21 +2134,17 @@ class Metadata(TypedDict, total=False):
     images: list[HtmlImageMetadata]
     structured_data: list[StructuredData]
 
-    # OCR-specific (flattened from OcrMetadata)
-    # Note: 'language' overlaps with common field above
     psm: int
     output_format: str | None
     table_count: int
     table_rows: int | None
     table_cols: int | None
 
-    # Additional metadata fields
     category: str | None
     tags: list[str] | None
     document_version: str | None
     abstract_text: str | None
 
-    # Processing metadata
     extraction_duration_ms: int | None
     image_preprocessing: ImagePreprocessingMetadata
     json_schema: Any

@@ -40,8 +40,7 @@ readonly class TokenReductionConfig
          * @default true
          */
         public bool $preserveImportantWords = true,
-    ) {
-    }
+    ) {}
 
     /**
      * Create configuration from array data.
@@ -64,10 +63,7 @@ readonly class TokenReductionConfig
             $preserveImportantWords = (bool) $preserveImportantWords;
         }
 
-        return new self(
-            mode: $mode,
-            preserveImportantWords: $preserveImportantWords,
-        );
+        return new self(mode: $mode, preserveImportantWords: $preserveImportantWords);
     }
 
     /**

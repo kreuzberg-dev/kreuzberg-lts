@@ -107,7 +107,7 @@ impl PaddleOcrConfig {
             rec_batch_num: 6,
             padding: 10,
             drop_score: 0.5,
-            model_tier: "mobile".to_string(), // mobile is the default: fast, ~13MB total download
+            model_tier: "mobile".to_string(),
         }
     }
 
@@ -259,7 +259,6 @@ impl PaddleOcrConfig {
     /// println!("Cache directory: {:?}", cache_dir);
     /// ```
     pub fn resolve_cache_dir(&self) -> PathBuf {
-        // First check if cache_dir is explicitly set
         if let Some(path) = &self.cache_dir {
             return path.clone();
         }
@@ -476,19 +475,15 @@ mod tests {
     #[test]
     #[allow(unsafe_code)]
     fn test_resolve_cache_dir_default() {
-        // Temporarily remove env override so we test the true default path
         let saved = std::env::var("KREUZBERG_CACHE_DIR").ok();
         // SAFETY: This test is not run in parallel with other tests that depend on this env var.
-        // The env var manipulation is only used to test the default cache dir resolution.
         unsafe { std::env::remove_var("KREUZBERG_CACHE_DIR") };
 
         let config = PaddleOcrConfig::new("en");
         let cache_dir = config.resolve_cache_dir();
-        // Should contain "kreuzberg" and "paddle-ocr" in the path
         assert!(cache_dir.to_string_lossy().contains("kreuzberg"));
         assert!(cache_dir.to_string_lossy().contains("paddle-ocr"));
 
-        // Restore env var if it was set
         if let Some(val) = saved {
             // SAFETY: Restoring the env var to its original state after the test.
             unsafe { std::env::set_var("KREUZBERG_CACHE_DIR", val) };
@@ -578,7 +573,6 @@ mod tests {
 
     #[test]
     fn test_model_tier_backward_compat() {
-        // JSON without model_tier should deserialize to default "mobile"
         let json = r#"{"language":"en","det_db_thresh":0.3}"#;
         let config: PaddleOcrConfig = serde_json::from_str(json).unwrap();
         assert_eq!(config.model_tier, "mobile");

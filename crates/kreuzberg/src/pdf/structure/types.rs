@@ -51,7 +51,7 @@ impl PdfParagraph {
 /// Decoupled from `crate::layout::LayoutClass` so the markdown module
 /// compiles without the `layout-detection` feature.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-#[allow(dead_code)] // Variants constructed via layout-detection feature
+#[allow(dead_code)]
 pub(crate) enum LayoutHintClass {
     Title,
     SectionHeader,

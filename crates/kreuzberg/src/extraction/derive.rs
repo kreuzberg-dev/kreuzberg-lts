@@ -22,10 +22,6 @@ use crate::types::ocr_elements::{OcrConfidence, OcrElement};
 use crate::types::page::PageContent;
 use crate::types::tables::Table;
 
-// ============================================================================
-// 1. Relationship Resolution
-// ============================================================================
-
 /// Resolve `RelationshipTarget::Key` entries to `RelationshipTarget::Index`.
 ///
 /// Builds an anchor index from elements with non-`None` anchors, then resolves
@@ -33,8 +29,6 @@ use crate::types::tables::Table;
 /// (the relationship is left as `Key` — it will be excluded from the final
 /// `DocumentStructure` relationships).
 pub fn resolve_relationships(doc: &mut InternalDocument) {
-    // Build anchor → element index map (first element with a given anchor wins).
-    // Skip FootnoteRef elements so that refs resolve to definitions, not to themselves.
     let mut anchor_map: AHashMap<&str, u32> = AHashMap::new();
     for (idx, elem) in doc.elements.iter().enumerate() {
         if matches!(elem.kind, ElementKind::FootnoteRef) {
@@ -58,10 +52,6 @@ pub fn resolve_relationships(doc: &mut InternalDocument) {
         }
     }
 }
-
-// ============================================================================
-// 2. Document Structure Derivation
-// ============================================================================
 
 /// Derive a hierarchical `DocumentStructure` from the flat internal document.
 ///
@@ -91,19 +81,13 @@ fn derive_document_structure_inner(doc: &mut InternalDocument) -> DocumentStruct
     let mut ds = DocumentStructure::with_capacity(doc.elements.len());
     ds.source_format = Some(doc.source_format.to_string());
 
-    // Stack: (depth, NodeIndex) — depth is the element depth that "owns" this level
     let mut stack: Vec<(u16, NodeIndex)> = Vec::new();
 
-    // Map element index → node index (for relationship mapping).
-    // Not every element produces a node (end markers, FootnoteRef are skipped).
     let mut elem_to_node: Vec<Option<NodeIndex>> = vec![None; doc.elements.len()];
 
-    // Track which elements have been consumed by pairing (e.g. DefinitionDescription paired with preceding Term)
     let mut consumed: Vec<bool> = vec![false; doc.elements.len()];
 
-    // Pre-compute definition term/description pairings:
-    // When a DefinitionTerm is immediately followed by a DefinitionDescription, mark the description as consumed.
-    let mut def_pairs: AHashMap<usize, usize> = AHashMap::new(); // term_idx -> desc_idx
+    let mut def_pairs: AHashMap<usize, usize> = AHashMap::new();
     for i in 0..doc.elements.len().saturating_sub(1) {
         if matches!(doc.elements[i].kind, ElementKind::DefinitionTerm)
             && matches!(doc.elements[i + 1].kind, ElementKind::DefinitionDescription)
@@ -114,14 +98,11 @@ fn derive_document_structure_inner(doc: &mut InternalDocument) -> DocumentStruct
     }
 
     for elem_idx in 0..doc.elements.len() {
-        // Skip elements consumed by pairing
         if consumed[elem_idx] {
             continue;
         }
-        // Skip container end markers — they just pop the stack
         match doc.elements[elem_idx].kind {
             ElementKind::ListEnd | ElementKind::QuoteEnd | ElementKind::GroupEnd => {
-                // Pop matching container from stack, but only if the top matches
                 if let Some((_, top_idx)) = stack.last() {
                     let top_content = &ds.nodes[top_idx.0 as usize].content;
                     if matches!(
@@ -132,12 +113,10 @@ fn derive_document_structure_inner(doc: &mut InternalDocument) -> DocumentStruct
                     ) {
                         stack.pop();
                     }
-                    // If it doesn't match, skip the end marker
                 }
                 continue;
             }
             ElementKind::FootnoteRef => {
-                // Footnote refs are represented as annotations, not separate nodes
                 continue;
             }
             _ => {}
@@ -145,7 +124,6 @@ fn derive_document_structure_inner(doc: &mut InternalDocument) -> DocumentStruct
 
         let elem = &doc.elements[elem_idx];
 
-        // Container start markers
         if elem.kind.is_container_start() {
             pop_stack_to_depth(&mut stack, elem.depth);
             let content = match elem.kind {
@@ -164,12 +142,9 @@ fn derive_document_structure_inner(doc: &mut InternalDocument) -> DocumentStruct
             continue;
         }
 
-        // Headings create a Group + Heading child and push the group
         if let ElementKind::Heading { level } = elem.kind {
-            // Pop stack until we find a shallower depth
             pop_stack_to_depth(&mut stack, elem.depth);
 
-            // Take text and annotations — pages/OCR have already consumed what they need
             let text = std::mem::take(&mut doc.elements[elem_idx].text);
             let annotations = std::mem::take(&mut doc.elements[elem_idx].annotations);
             let elem = &doc.elements[elem_idx];
@@ -182,7 +157,6 @@ fn derive_document_structure_inner(doc: &mut InternalDocument) -> DocumentStruct
 
             let group_idx = push_node(&mut ds, &stack, group_content, elem, elem_idx as u32);
 
-            // Create Heading child node inside the group
             let heading_node_index = ds.len() as u32;
             let heading_node = DocumentNode {
                 id: NodeId::generate("heading", &text, elem.page, heading_node_index),
@@ -202,18 +176,14 @@ fn derive_document_structure_inner(doc: &mut InternalDocument) -> DocumentStruct
             let heading_idx = ds.push_node(heading_node);
             ds.nodes[group_idx.0 as usize].children.push(heading_idx);
 
-            // The element maps to the group node (heading is a child detail)
             elem_to_node[elem_idx] = Some(group_idx);
             stack.push((elem.depth, group_idx));
             continue;
         }
 
-        // DefinitionTerm with a paired DefinitionDescription: create a combined DefinitionItem
-        // wrapped in a DefinitionList container.
         if let Some(&desc_idx) = def_pairs.get(&elem_idx) {
             pop_stack_to_depth(&mut stack, elem.depth);
 
-            // Ensure a DefinitionList container is on the stack
             let is_in_def_list = stack
                 .last()
                 .is_some_and(|(_, idx)| matches!(ds.nodes[idx.0 as usize].content, NodeContent::DefinitionList));
@@ -232,7 +202,6 @@ fn derive_document_structure_inner(doc: &mut InternalDocument) -> DocumentStruct
             continue;
         }
 
-        // Unpaired DefinitionTerm or DefinitionDescription: wrap in DefinitionList too
         if matches!(
             elem.kind,
             ElementKind::DefinitionTerm | ElementKind::DefinitionDescription
@@ -261,7 +230,6 @@ fn derive_document_structure_inner(doc: &mut InternalDocument) -> DocumentStruct
             continue;
         }
 
-        // Close any open DefinitionList when a non-definition element is encountered
         if stack
             .last()
             .is_some_and(|(_, idx)| matches!(ds.nodes[idx.0 as usize].content, NodeContent::DefinitionList))
@@ -269,7 +237,6 @@ fn derive_document_structure_inner(doc: &mut InternalDocument) -> DocumentStruct
             stack.pop();
         }
 
-        // All other elements
         pop_stack_to_depth(&mut stack, elem.depth);
         let content = element_to_node_content(&mut doc.elements[elem_idx], &doc.tables, &doc.images);
         let annotations = std::mem::take(&mut doc.elements[elem_idx].annotations);
@@ -284,11 +251,8 @@ fn derive_document_structure_inner(doc: &mut InternalDocument) -> DocumentStruct
         elem_to_node[elem_idx] = Some(node_idx);
     }
 
-    // Convert resolved relationships to DocumentRelationship
     for rel in &doc.relationships {
         if let RelationshipTarget::Index(target_elem_idx) = rel.target {
-            // When source elem_to_node is None (e.g. FootnoteRef was skipped),
-            // walk backwards to find the nearest mapped element as the source.
             let source_node = elem_to_node
                 .get(rel.source as usize)
                 .and_then(|n| *n)
@@ -357,8 +321,6 @@ fn push_node_with_annotations(
         page_end: None,
         bbox: elem.bbox,
         annotations,
-        // Intentional AHashMap → HashMap conversion: DocumentNode.attributes uses
-        // std::collections::HashMap for utoipa/OpenAPI schema compatibility.
         attributes: elem
             .attributes
             .as_ref()
@@ -474,8 +436,6 @@ fn element_to_node_content(
         ElementKind::OcrText { .. } => NodeContent::Paragraph {
             text: std::mem::take(&mut elem.text),
         },
-        // Container starts are handled separately above; these shouldn't be reached
-        // but we handle them defensively.
         ElementKind::ListStart { ordered } => NodeContent::List { ordered },
         ElementKind::QuoteStart => NodeContent::Quote,
         ElementKind::GroupStart => NodeContent::Group {
@@ -483,7 +443,6 @@ fn element_to_node_content(
             heading_level: None,
             heading_text: None,
         },
-        // These should have been filtered out before calling this function
         ElementKind::Heading { level } => NodeContent::Heading {
             level,
             text: std::mem::take(&mut elem.text),
@@ -539,10 +498,6 @@ fn parse_metadata_entries(text: &str) -> Vec<(String, String)> {
         .collect()
 }
 
-// ============================================================================
-// 4. ExtractionResult Assembly
-// ============================================================================
-
 /// Derive a complete `ExtractionResult` from an `InternalDocument`.
 ///
 /// This is the main entry point for the derivation pipeline. It:
@@ -564,26 +519,16 @@ pub fn derive_extraction_result(
         include_document_structure,
         "derivation pipeline starting"
     );
-    // 1. Resolve relationships first — renderers need resolved targets for footnotes.
     resolve_relationships(&mut doc);
 
-    // 2. Always derive plain-text content (post-processors operate on this).
     let content = crate::rendering::render_plain(&doc);
 
-    // Use the explicit mime_type from the doc if it was set, otherwise derive from source_format
     let mime_type = if doc.mime_type != "application/octet-stream" {
         std::mem::take(&mut doc.mime_type)
     } else {
         Cow::Borrowed(source_format_to_mime_type(&doc.source_format))
     };
 
-    // 3. Pre-render formatted content if a non-plain output format is requested.
-    //    This runs while the InternalDocument still owns its element data.
-    //
-    //    If the extractor already produced high-quality formatted output (stored in
-    //    `pre_rendered_content`) and the requested format matches what the extractor
-    //    produced (`metadata.output_format`), use it directly to avoid the lossy
-    //    InternalDocument → renderer round-trip.
     let formatted_content = match output_format {
         crate::core::config::OutputFormat::Plain => None,
         crate::core::config::OutputFormat::Markdown => {
@@ -616,29 +561,17 @@ pub fn derive_extraction_result(
         }
     };
 
-    // 4. Build pages and OCR elements BEFORE document structure derivation,
-    //    so that derive_document_structure_inner can move (take) elem.text
-    //    and elem.annotations instead of cloning them.
-    //
-    //    Prefer pre-built pages from the extractor (e.g. PDF native page tracking)
-    //    over reconstructing from element-level page numbers.
     let pages = doc.prebuilt_pages.take().or_else(|| build_pages(&doc));
-    // Prefer pre-built OCR elements stored directly by the extractor (e.g. image OCR
-    // via inject_ocr_elements_from_vec was replaced by prebuilt_ocr_elements to avoid
-    // injecting raw word tokens into the rendering pipeline — issue #706).
     let ocr_elements = doc.prebuilt_ocr_elements.take().or_else(|| build_ocr_elements(&doc));
 
-    // 5. Optionally derive DocumentStructure (relationships already resolved above).
     let document = if include_document_structure {
         Some(derive_document_structure_inner(&mut doc))
     } else {
         None
     };
 
-    // Convert images
     let images = if doc.images.is_empty() { None } else { Some(doc.images) };
 
-    // Transfer URIs, deduplicating by (url, kind) pair
     let uris = if doc.uris.is_empty() {
         None
     } else {
@@ -647,10 +580,9 @@ pub fn derive_extraction_result(
         Some(doc.uris)
     };
 
-    // Extract code intelligence from FormatMetadata::Code if present.
     #[cfg(feature = "tree-sitter")]
     let code_intelligence = match &doc.metadata.format {
-        Some(crate::types::metadata::FormatMetadata::Code(process_result)) => Some(process_result.clone()),
+        Some(crate::types::metadata::FormatMetadata::Code(process_result)) => Some(process_result.as_ref().clone()),
         _ => None,
     };
 
@@ -708,7 +640,6 @@ fn source_format_to_mime_type(format: &str) -> &'static str {
 
 /// Build per-page `PageContent` from page-grouped elements.
 fn build_pages(doc: &InternalDocument) -> Option<Vec<PageContent>> {
-    // Group elements by page number
     let mut page_map: std::collections::BTreeMap<u32, Vec<&InternalElement>> = std::collections::BTreeMap::new();
 
     for elem in &doc.elements {
@@ -721,7 +652,6 @@ fn build_pages(doc: &InternalDocument) -> Option<Vec<PageContent>> {
         return None;
     }
 
-    // Pre-wrap tables and images in Arc once; clone the Arc (cheap) per page reference.
     let arc_tables: Vec<Arc<Table>> = doc.tables.iter().map(|t| Arc::new(t.clone())).collect();
     let arc_images: Vec<Arc<crate::types::ExtractedImage>> = doc.images.iter().map(|i| Arc::new(i.clone())).collect();
 
@@ -779,7 +709,6 @@ fn build_ocr_elements(doc: &InternalDocument) -> Option<Vec<OcrElement>> {
         .filter_map(|elem| {
             if let ElementKind::OcrText { level } = elem.kind {
                 let geometry = elem.ocr_geometry.clone()?;
-                // Default confidence: 0.0 means "unknown, not measured" (not zero confidence).
                 let confidence = elem.ocr_confidence.clone().unwrap_or(OcrConfidence {
                     detection: None,
                     recognition: 0.0,
@@ -790,7 +719,6 @@ fn build_ocr_elements(doc: &InternalDocument) -> Option<Vec<OcrElement>> {
                     confidence,
                     level,
                     rotation: elem.ocr_rotation.clone(),
-                    // Default to page 1 when page info is absent (OCR always has at least one page).
                     page_number: elem.page.unwrap_or(1) as usize,
                     parent_id: None,
                     backend_metadata: std::collections::HashMap::new(),
@@ -803,10 +731,6 @@ fn build_ocr_elements(doc: &InternalDocument) -> Option<Vec<OcrElement>> {
 
     if ocr_elems.is_empty() { None } else { Some(ocr_elems) }
 }
-
-// ============================================================================
-// Tests
-// ============================================================================
 
 #[cfg(test)]
 mod tests {
@@ -821,10 +745,6 @@ mod tests {
         InternalDocument::new(source_format)
     }
 
-    // -----------------------------------------------------------------------
-    // Test 1: Simple flat document → correct tree
-    // -----------------------------------------------------------------------
-
     #[test]
     fn test_flat_document_produces_flat_tree() {
         let mut doc = make_doc("markdown");
@@ -836,20 +756,14 @@ mod tests {
         assert!(ds.validate().is_ok(), "validation: {:?}", ds.validate());
         assert_eq!(ds.len(), 3);
 
-        // All should be root-level
         let roots: Vec<_> = ds.body_roots().collect();
         assert_eq!(roots.len(), 3);
 
-        // First node is Title
         match &roots[0].1.content {
             NodeContent::Title { text } => assert_eq!(text, "My Title"),
             other => panic!("Expected Title, got {:?}", other),
         }
     }
-
-    // -----------------------------------------------------------------------
-    // Test 2: Heading-based nesting → correct Group/Heading parent-child
-    // -----------------------------------------------------------------------
 
     #[test]
     fn test_heading_nesting() {
@@ -866,7 +780,6 @@ mod tests {
         let ds = derive_document_structure(&mut doc);
         assert!(ds.validate().is_ok(), "validation: {:?}", ds.validate());
 
-        // Root should have exactly 1 Group for H1
         let roots: Vec<_> = ds.body_roots().collect();
         assert_eq!(roots.len(), 1);
 
@@ -883,18 +796,14 @@ mod tests {
             other => panic!("Expected Group, got {:?}", other),
         }
 
-        // H1 group should have children: Heading, Paragraph, H2 Group
         assert_eq!(h1_group.children.len(), 3);
 
-        // First child is the Heading node
         let heading_node = &ds.nodes[h1_group.children[0].0 as usize];
         assert!(matches!(&heading_node.content, NodeContent::Heading { level: 1, .. }));
 
-        // Second child is the paragraph
         let para_node = &ds.nodes[h1_group.children[1].0 as usize];
         assert!(matches!(&para_node.content, NodeContent::Paragraph { .. }));
 
-        // Third child is the H2 Group
         let h2_group = &ds.nodes[h1_group.children[2].0 as usize];
         match &h2_group.content {
             NodeContent::Group {
@@ -908,30 +817,21 @@ mod tests {
             other => panic!("Expected H2 Group, got {:?}", other),
         }
 
-        // H2 Group should have: Heading + Paragraph
         assert_eq!(h2_group.children.len(), 2);
     }
-
-    // -----------------------------------------------------------------------
-    // Test 3: Relationship resolution (footnote key matching)
-    // -----------------------------------------------------------------------
 
     #[test]
     fn test_relationship_resolution() {
         let mut doc = make_doc("markdown");
 
-        // Element 0: paragraph with footnote ref
         doc.push_element(InternalElement::text(ElementKind::Paragraph, "See note [^fn1].", 0));
 
-        // Element 1: footnote ref marker
         doc.push_element(InternalElement::text(ElementKind::FootnoteRef, "fn1", 0).with_anchor("fn1"));
 
-        // Element 2: footnote definition
         doc.push_element(
             InternalElement::text(ElementKind::FootnoteDefinition, "This is the footnote.", 0).with_anchor("fn1"),
         );
 
-        // Relationship: element 1 → key "fn1"
         doc.push_relationship(Relationship {
             source: 1,
             target: RelationshipTarget::Key("fn1".to_string()),
@@ -940,8 +840,6 @@ mod tests {
 
         resolve_relationships(&mut doc);
 
-        // Should be resolved to Index(2) — the FootnoteDefinition, not the FootnoteRef itself
-        // (FootnoteRef elements are excluded from the anchor map)
         match &doc.relationships[0].target {
             RelationshipTarget::Index(idx) => assert_eq!(*idx, 2),
             RelationshipTarget::Key(k) => panic!("Expected resolved Index, got Key({:?})", k),
@@ -961,7 +859,6 @@ mod tests {
 
         resolve_relationships(&mut doc);
 
-        // Should remain as Key (unresolvable)
         assert!(matches!(
             &doc.relationships[0].target,
             RelationshipTarget::Key(k) if k == "nonexistent"
@@ -987,10 +884,6 @@ mod tests {
         assert_eq!(ds.relationships[0].kind, RelationshipKind::FootnoteReference);
     }
 
-    // -----------------------------------------------------------------------
-    // Container markers
-    // -----------------------------------------------------------------------
-
     #[test]
     fn test_list_container() {
         let mut doc = make_doc("markdown");
@@ -1010,18 +903,12 @@ mod tests {
         let ds = derive_document_structure(&mut doc);
         assert!(ds.validate().is_ok(), "validation: {:?}", ds.validate());
 
-        // Root: List container
         let roots: Vec<_> = ds.body_roots().collect();
         assert_eq!(roots.len(), 1);
         assert!(matches!(&roots[0].1.content, NodeContent::List { ordered: false }));
 
-        // List has 2 children
         assert_eq!(ds.nodes[roots[0].0.0 as usize].children.len(), 2);
     }
-
-    // -----------------------------------------------------------------------
-    // derive_extraction_result
-    // -----------------------------------------------------------------------
 
     #[test]
     fn test_derive_extraction_result_basic() {
@@ -1049,8 +936,6 @@ mod tests {
 
     #[test]
     fn test_source_format_cow_owned_propagates() {
-        // Regression test for #622: Cow::Owned variant must not fail type inference
-        // when deriving document structure. Previously used unstable Cow::as_str().
         let owned: std::borrow::Cow<'static, str> = std::borrow::Cow::Owned("epub".to_string());
         let mut doc = InternalDocument::new(owned);
         doc.push_element(InternalElement::text(ElementKind::Heading { level: 1 }, "Ch1", 0).with_page(1));

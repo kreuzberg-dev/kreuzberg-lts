@@ -94,8 +94,6 @@ pub async fn extract_file(
 
         let detected_mime = mime::detect_or_validate(Some(path), mime_type)?;
 
-        // Native DOC/PPT extractors are registered in the plugin registry.
-        // When the office feature is disabled, these MIME types are unsupported.
         #[cfg(not(feature = "office"))]
         match detected_mime.as_str() {
             LEGACY_WORD_MIME_TYPE => {
@@ -111,7 +109,6 @@ pub async fn extract_file(
             _ => {}
         }
 
-        // Suppress unused import warnings when office feature is enabled
         #[cfg(feature = "office")]
         {
             let _ = LEGACY_WORD_MIME_TYPE;
@@ -164,24 +161,19 @@ pub(in crate::core::extractor) async fn extract_file_with_extractor(
     mime_type: &str,
     config: &ExtractionConfig,
 ) -> Result<ExtractionResult> {
-    // Normalize config so cache keys are consistent for ElementBased requests
-    // regardless of whether the caller explicitly set extract_pages.
     let config = config.normalized();
     let config = config.as_ref();
 
-    // Skip cache if disabled or TTL=0
     if !config.use_cache || config.cache_ttl_secs == Some(0) {
         return extract_file_uncached(path, mime_type, config).await;
     }
 
-    // Generate cache key from file content hash + config fingerprint
     let content_hash = crate::cache::blake3_hash_file(path)?;
     let config_hash = hash_extraction_config(config, mime_type);
     let cache_key = format!("{content_hash}_{config_hash}");
 
     let namespace = config.cache_namespace.as_deref();
 
-    // Try cache read
     if let Some(cache) = get_extraction_cache()
         && let Ok(Some(data)) = cache.get(&cache_key, path.to_str(), namespace, config.cache_ttl_secs)
         && let Ok(result) = rmp_serde::from_slice::<ExtractionResult>(&data)
@@ -190,10 +182,8 @@ pub(in crate::core::extractor) async fn extract_file_with_extractor(
         return Ok(result);
     }
 
-    // Cache miss — extract
     let result = extract_file_uncached(path, mime_type, config).await?;
 
-    // Cache write (best-effort)
     if let Some(cache) = get_extraction_cache()
         && let Ok(data) = rmp_serde::to_vec(&result)
     {
@@ -227,15 +217,12 @@ async fn extract_file_uncached(path: &Path, mime_type: &str, config: &Extraction
 /// is serialized to canonical JSON via serde_json's sorted-keys representation.
 fn hash_extraction_config(config: &ExtractionConfig, mime_type: &str) -> String {
     let mut normalized = config.clone();
-    // Zero out cache-control fields so they don't affect the hash
     normalized.use_cache = true;
     normalized.cache_namespace = None;
     normalized.cache_ttl_secs = None;
 
     let mut hasher = blake3::Hasher::new();
     hasher.update(mime_type.as_bytes());
-    // Use MessagePack for deterministic serialization (no float formatting issues,
-    // no HashMap key ordering issues — serde serializes struct fields in declaration order).
     if let Ok(bytes) = rmp_serde::to_vec(&normalized) {
         hasher.update(&bytes);
     }
@@ -249,16 +236,7 @@ fn get_extraction_cache() -> Option<&'static crate::cache::GenericCache> {
     static CACHE: OnceLock<Option<crate::cache::GenericCache>> = OnceLock::new();
 
     CACHE
-        .get_or_init(|| {
-            crate::cache::GenericCache::new(
-                "extraction".to_string(),
-                None,
-                30.0,   // 30-day default TTL
-                2000.0, // 2 GB max cache size
-                500.0,  // 500 MB min free space
-            )
-            .ok()
-        })
+        .get_or_init(|| crate::cache::GenericCache::new("extraction".to_string(), None, 30.0, 2000.0, 500.0).ok())
         .as_ref()
 }
 

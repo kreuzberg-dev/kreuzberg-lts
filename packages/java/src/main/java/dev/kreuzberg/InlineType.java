@@ -13,71 +13,71 @@ import com.fasterxml.jackson.annotation.JsonValue;
  * @since 0.8.0
  */
 public enum InlineType {
-	/** Plain text content */
-	TEXT("text"),
+    /** Plain text content */
+    TEXT("text"),
 
-	/** Strong/bold text */
-	STRONG("strong"),
+    /** Strong/bold text */
+    STRONG("strong"),
 
-	/** Emphasized/italic text */
-	EMPHASIS("emphasis"),
+    /** Emphasized/italic text */
+    EMPHASIS("emphasis"),
 
-	/** Highlighted text */
-	HIGHLIGHT("highlight"),
+    /** Highlighted text */
+    HIGHLIGHT("highlight"),
 
-	/** Subscript text */
-	SUBSCRIPT("subscript"),
+    /** Subscript text */
+    SUBSCRIPT("subscript"),
 
-	/** Superscript text */
-	SUPERSCRIPT("superscript"),
+    /** Superscript text */
+    SUPERSCRIPT("superscript"),
 
-	/** Inserted text */
-	INSERT("insert"),
+    /** Inserted text */
+    INSERT("insert"),
 
-	/** Deleted/strikethrough text */
-	DELETE("delete"),
+    /** Deleted/strikethrough text */
+    DELETE("delete"),
 
-	/** Inline code */
-	CODE("code"),
+    /** Inline code */
+    CODE("code"),
 
-	/** Hyperlink */
-	LINK("link"),
+    /** Hyperlink */
+    LINK("link"),
 
-	/** Image reference */
-	IMAGE("image"),
+    /** Image reference */
+    IMAGE("image"),
 
-	/** Generic span container */
-	SPAN("span"),
+    /** Generic span container */
+    SPAN("span"),
 
-	/** Inline math expression */
-	MATH("math"),
+    /** Inline math expression */
+    MATH("math"),
 
-	/** Raw inline content (HTML, LaTeX, etc.) */
-	RAW_INLINE("raw_inline"),
+    /** Raw inline content (HTML, LaTeX, etc.) */
+    RAW_INLINE("raw_inline"),
 
-	/** Footnote reference */
-	FOOTNOTE_REF("footnote_ref"),
+    /** Footnote reference */
+    FOOTNOTE_REF("footnote_ref"),
 
-	/** Symbol or special character */
-	SYMBOL("symbol");
+    /** Symbol or special character */
+    SYMBOL("symbol");
 
-	private final String wireValue;
+    private final String wireValue;
 
-	InlineType(String wireValue) {
-		this.wireValue = wireValue;
-	}
+    InlineType(String wireValue) {
+        this.wireValue = wireValue;
+    }
 
-	/**
+    /**
 	 * Get the wire format value for this inline type.
 	 *
 	 * @return wire value used in serialization (snake_case)
 	 */
-	@JsonValue
-	public String wireValue() {
-		return wireValue;
-	}
+    @JsonValue
+    public String wireValue() {
+        return wireValue;
+    }
 
-	/**
+    /**
 	 * Parse an InlineType from its wire value.
 	 *
 	 * @param wireValue
@@ -86,13 +86,13 @@ public enum InlineType {
 	 * @throws IllegalArgumentException
 	 *             if the value is not recognized
 	 */
-	@JsonCreator
-	public static InlineType fromWireValue(String wireValue) {
-		for (InlineType type : values()) {
-			if (type.wireValue.equals(wireValue)) {
-				return type;
-			}
-		}
-		throw new IllegalArgumentException("Unknown InlineType: " + wireValue);
-	}
+    @JsonCreator
+    public static InlineType fromWireValue(String wireValue) {
+        for (InlineType type : values()) {
+            if (type.wireValue.equals(wireValue)) {
+                return type;
+            }
+        }
+        throw new IllegalArgumentException("Unknown InlineType: " + wireValue);
+    }
 }

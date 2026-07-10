@@ -11,29 +11,17 @@ rustflags = ["-C", "link-arg=-undefined", "-C", "link-arg=dynamic_lookup"]
 rustflags = ["-C", "link-arg=-undefined", "-C", "link-arg=dynamic_lookup"]
 
 # NOTE: For cross-compilation to aarch64-unknown-linux-gnu from x86_64,
-# set CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc
-# as an environment variable instead. The config below is commented out
-# because CI uses native ARM64 runners where the regular gcc is needed.
-# [target.aarch64-unknown-linux-gnu]
-# linker = "aarch64-linux-gnu-gcc"
-# ar = "aarch64-linux-gnu-ar"
 
 [target.x86_64-pc-windows-msvc]
 
 [target.x86_64-pc-windows-gnu]
 # NOTE: Windows GNU target has a known issue with linker arg CRLF handling
-# The -Wl,--dynamicbase flag gets corrupted to --dynamicbase\r-Wl
-# This causes linking to fail for proc-macro and dylib crates
-# Workaround: Use MSVC target or wait for Rust fix
 linker = "gcc"
 ar = "ar"
 
 [target.wasm32-unknown-unknown]
 rustflags = ["-C", "target-feature=+bulk-memory", "--cfg", "getrandom_backend=\"wasm_js\""]
 
-# Temporarily disabled build-std due to linker arg issues
-# [unstable]
-# build-std = ["panic_abort", "std"]
 
 [net]
 git-fetch-with-cli = true

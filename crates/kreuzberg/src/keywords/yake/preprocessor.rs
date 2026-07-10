@@ -1,7 +1,3 @@
-// Custom sentence splitter and word tokenizer replacing segtok.
-// Fixes #676: segtok's regex-based splitter panics with BacktrackLimitExceeded on large files.
-// Uses memchr for O(n) scanning with no backtracking.
-
 use std::borrow::Cow;
 
 use memchr::memchr3;
@@ -26,7 +22,6 @@ pub(crate) fn split_into_sentences(text: &str) -> Vec<Cow<'_, str>> {
     let mut start = 0;
 
     while start < bytes.len() {
-        // Skip leading whitespace
         while start < bytes.len() && bytes[start].is_ascii_whitespace() {
             start += 1;
         }
@@ -43,7 +38,6 @@ pub(crate) fn split_into_sentences(text: &str) -> Vec<Cow<'_, str>> {
                 start = end;
             }
             None => {
-                // Rest of text is one sentence
                 let s = text[start..].trim();
                 if !s.is_empty() {
                     sentences.push(Cow::Borrowed(s));
@@ -63,11 +57,9 @@ fn find_sentence_end(text: &str, from: usize) -> Option<usize> {
     let mut pos = from;
 
     while pos < bytes.len() {
-        // Check for paragraph boundary (\n\n)
         if bytes[pos] == b'\n' {
             let nl_start = pos;
             pos += 1;
-            // Consume whitespace-only chars looking for another newline
             let mut found_second_nl = false;
             let mut scan = pos;
             while scan < bytes.len() {
@@ -82,29 +74,24 @@ fn find_sentence_end(text: &str, from: usize) -> Option<usize> {
                 }
             }
             if found_second_nl {
-                // Split at paragraph boundary
                 return Some(scan);
             }
             pos = nl_start + 1;
             continue;
         }
 
-        // Look for sentence terminals: . ! ?
         {
             let offset = memchr3(b'.', b'!', b'?', &bytes[pos..])?;
             let terminal_pos = pos + offset;
-            // Consume consecutive terminals (e.g., "..." or "?!")
             let mut end = terminal_pos + 1;
             while end < bytes.len() && (bytes[end] == b'.' || bytes[end] == b'!' || bytes[end] == b'?') {
                 end += 1;
             }
 
-            // Consume closing quotes/brackets after terminal
             while end < bytes.len() && matches!(bytes[end], b'"' | b'\'' | b')' | b']' | b'}') {
                 end += 1;
             }
 
-            // Check if this is a real sentence boundary
             if is_sentence_boundary(text, terminal_pos, end) {
                 return Some(end);
             }
@@ -120,18 +107,14 @@ fn find_sentence_end(text: &str, from: usize) -> Option<usize> {
 fn is_sentence_boundary(text: &str, terminal_pos: usize, after_terminal: usize) -> bool {
     let bytes = text.as_bytes();
 
-    // Only '.' needs abbreviation checks; '!' and '?' are always sentence-ending
     if bytes[terminal_pos] != b'.' {
-        // For ! and ?, check that next non-space char exists and starts new content
         return has_content_after(bytes, after_terminal);
     }
 
-    // Check if it's an abbreviation
     if is_abbreviation(text, terminal_pos) {
         return false;
     }
 
-    // Single letter followed by dot (initial like "A." or "J.")
     if terminal_pos >= 1
         && bytes[terminal_pos - 1].is_ascii_alphabetic()
         && (terminal_pos < 2 || !bytes[terminal_pos - 2].is_ascii_alphabetic())
@@ -139,17 +122,15 @@ fn is_sentence_boundary(text: &str, terminal_pos: usize, after_terminal: usize) 
         return false;
     }
 
-    // Check what follows: if next non-whitespace char is lowercase, probably not a new sentence
     let mut next = after_terminal;
     while next < bytes.len() && bytes[next].is_ascii_whitespace() {
         next += 1;
     }
 
     if next >= bytes.len() {
-        return false; // End of text, no need to split
+        return false;
     }
 
-    // If next char is lowercase, likely not a sentence boundary (e.g., "3.14 meters", "e.g. something")
     if bytes[next].is_ascii_lowercase() {
         return false;
     }
@@ -168,7 +149,6 @@ fn has_content_after(bytes: &[u8], pos: usize) -> bool {
 
 /// Check if the word before the dot at `dot_pos` is a known abbreviation.
 fn is_abbreviation(text: &str, dot_pos: usize) -> bool {
-    // Walk backwards to find the start of the word
     let bytes = text.as_bytes();
     let mut word_start = dot_pos;
     while word_start > 0 && bytes[word_start - 1].is_ascii_alphabetic() {
@@ -176,11 +156,10 @@ fn is_abbreviation(text: &str, dot_pos: usize) -> bool {
     }
 
     if word_start == dot_pos {
-        return false; // No word before the dot
+        return false;
     }
 
     let word = &text[word_start..dot_pos];
-    // Check case-insensitively
     let lower: Cow<'_, str> = if word.bytes().any(|b| b.is_ascii_uppercase()) {
         Cow::Owned(word.to_ascii_lowercase())
     } else {
@@ -200,56 +179,36 @@ pub(crate) fn split_into_words(text: &str) -> Vec<String> {
     while i < len {
         let b = bytes[i];
 
-        // Skip whitespace
         if b.is_ascii_whitespace() {
             i += 1;
             continue;
         }
 
-        // Punctuation as single token (but not apostrophe in middle of word, not hyphen in middle of word)
         if is_punctuation_byte(b) && b != b'\'' && b != b'-' {
-            // Emit single punctuation token
             words.push(String::from(b as char));
             i += 1;
             continue;
         }
 
-        // Start of a word: collect word characters (letters, digits, hyphens, apostrophes within words)
         let word_start = i;
         while i < len {
             let c = bytes[i];
             if c.is_ascii_alphanumeric() || c > 127 {
-                // Letter, digit, or non-ASCII (multibyte UTF-8 start)
                 i += 1;
-                // Skip continuation bytes for multi-byte UTF-8
                 while i < len && bytes[i] > 127 && bytes[i] < 192 {
                     i += 1;
                 }
             } else if c == b'-' && i + 1 < len && (bytes[i + 1].is_ascii_alphanumeric() || bytes[i + 1] > 127) {
-                // Hyphen within word (e.g., "high-tech")
                 i += 1;
             } else if c == b'\'' && i > word_start && i + 1 < len && bytes[i + 1].is_ascii_alphabetic() {
-                // Apostrophe within word (e.g., "don't")
-                // Split contraction: emit the part before apostrophe, then the part with apostrophe
                 let before = &text[word_start..i];
                 if !before.is_empty() {
                     words.push(before.to_string());
                 }
-                // Now collect the contraction part (e.g., "'t", "'s", "'ll")
-                let cont_start = i;
-                i += 1; // skip apostrophe
+                i += 1;
                 while i < len && bytes[i].is_ascii_alphabetic() {
                     i += 1;
                 }
-                let contraction = &text[cont_start..i];
-                // Skip contractions that are just a lone apostrophe
-                if contraction.len() > 1 && !contraction.starts_with("'") || contraction.len() > 1 {
-                    // Filter out tokens starting with ' that are longer than 1 char (matching original behavior)
-                    // Original: filter(|word| !(word.len() > 1 && word.starts_with("'")))
-                    // Actually we should NOT add these per original yake-rust behavior
-                }
-                // Original yake-rust filters out tokens that start with ' and len > 1
-                // So we skip the contraction suffix
                 continue;
             } else {
                 break;
@@ -262,7 +221,6 @@ pub(crate) fn split_into_words(text: &str) -> Vec<String> {
                 words.push(word.to_string());
             }
         } else {
-            // Single non-word character (punctuation we didn't catch above)
             if i < len {
                 let ch_len = text[i..].chars().next().map_or(1, |c| c.len_utf8());
                 words.push(text[i..i + ch_len].to_string());
@@ -365,9 +323,8 @@ mod tests {
 
     #[test]
     fn large_input_no_panic() {
-        // Regression test for #676: large inputs must not panic
         let paragraph = "This is a test sentence with some words. ";
-        let large_text = paragraph.repeat(250_000); // ~10 MB
+        let large_text = paragraph.repeat(250_000);
         let sentences = split_into_sentences(&large_text);
         assert!(!sentences.is_empty());
     }

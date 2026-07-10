@@ -25,17 +25,17 @@ defmodule Kreuzberg.LayoutRegion do
   """
 
   @type t :: %__MODULE__{
-          class: String.t(),
-          confidence: float(),
-          bounding_box: map() | nil,
-          area_fraction: float()
-        }
+  class: String.t(),
+  confidence: float(),
+  bounding_box: map() | nil,
+  area_fraction: float()
+  }
 
   defstruct [
-    :bounding_box,
-    class: "",
-    confidence: 0.0,
-    area_fraction: 0.0
+  :bounding_box,
+  class: "",
+  confidence: 0.0,
+  area_fraction: 0.0
   ]
 
   @doc """
@@ -57,10 +57,10 @@ defmodule Kreuzberg.LayoutRegion do
   @spec from_map(map()) :: t()
   def from_map(data) when is_map(data) do
     %__MODULE__{
-      class: data["class"] || "",
-      confidence: to_float(data["confidence"] || 0.0),
-      bounding_box: data["bounding_box"],
-      area_fraction: to_float(data["area_fraction"] || 0.0)
+    class: data["class"] || "",
+    confidence: to_float(data["confidence"] || 0.0),
+    bounding_box: data["bounding_box"],
+    area_fraction: to_float(data["area_fraction"] || 0.0)
     }
   end
 
@@ -84,10 +84,10 @@ defmodule Kreuzberg.LayoutRegion do
   @spec to_map(t()) :: map()
   def to_map(%__MODULE__{} = region) do
     %{
-      "class" => region.class,
-      "confidence" => region.confidence,
-      "bounding_box" => region.bounding_box,
-      "area_fraction" => region.area_fraction
+    "class" => region.class,
+    "confidence" => region.confidence,
+    "bounding_box" => region.bounding_box,
+    "area_fraction" => region.area_fraction
     }
   end
 

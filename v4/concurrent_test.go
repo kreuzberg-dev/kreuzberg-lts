@@ -253,7 +253,6 @@ func TestConcurrentFileExtractionLoad(t *testing.T) {
 	testPDF := createTestPDF(t)
 	defer cleanup(testPDF)
 
-	// 50 goroutines provides meaningful concurrency testing
 	numGoroutines := 50
 	var wg sync.WaitGroup
 	var successCount int64
@@ -286,7 +285,6 @@ func TestChannelSynchronizationPattern(t *testing.T) {
 	testPDF := createTestPDF(t)
 	defer cleanup(testPDF)
 
-	// Use 20 goroutines to exercise channel contention
 	numGoroutines := 20
 	resultChan := make(chan *kreuzberg.ExtractionResult, numGoroutines)
 	errChan := make(chan error, numGoroutines)
@@ -309,14 +307,12 @@ func TestChannelSynchronizationPattern(t *testing.T) {
 		}(i)
 	}
 
-	// Close channels after all goroutines complete
 	go func() {
 		wg.Wait()
 		close(resultChan)
 		close(errChan)
 	}()
 
-	// Consume results and errors
 	resultCount := 0
 	for result := range resultChan {
 		if result != nil {
@@ -324,13 +320,11 @@ func TestChannelSynchronizationPattern(t *testing.T) {
 		}
 	}
 
-	// Check for errors
 	errorCount := 0
 	for range errChan {
 		errorCount++
 	}
 
-	// Should receive results from successful extractions
 	if resultCount == 0 && errorCount == 0 {
 		t.Error("expected at least some operations to complete or report errors")
 	}
@@ -347,7 +341,6 @@ func TestCacheAccessPattern(t *testing.T) {
 	testPDF := createTestPDF(t)
 	defer cleanup(testPDF)
 
-	// Simulate a cache with RWMutex
 	cache := &struct {
 		sync.RWMutex
 		items map[string]*kreuzberg.ExtractionResult
@@ -355,14 +348,12 @@ func TestCacheAccessPattern(t *testing.T) {
 		items: make(map[string]*kreuzberg.ExtractionResult),
 	}
 
-	// 5 writers and 15 readers creates interesting contention patterns
 	numReaders := 15
 	numWriters := 5
 	var wg sync.WaitGroup
 	var writeCount int32
 	var readCount int32
 
-	// Writers - extract and cache results
 	wg.Add(numWriters)
 	for i := 0; i < numWriters; i++ {
 		go func(_ int) {
@@ -378,14 +369,13 @@ func TestCacheAccessPattern(t *testing.T) {
 		}(i)
 	}
 
-	// Readers - read cache concurrently
 	wg.Add(numReaders)
 	for i := 0; i < numReaders; i++ {
 		go func(_ int) {
 			defer wg.Done()
 
 			cache.RLock()
-			_ = len(cache.items) // Verify we can read the cache size
+			_ = len(cache.items)
 			cache.RUnlock()
 
 			atomic.AddInt32(&readCount, 1)
@@ -394,20 +384,18 @@ func TestCacheAccessPattern(t *testing.T) {
 
 	wg.Wait()
 
-	// Verify final state
 	cache.RLock()
 	cacheSize := len(cache.items)
 	cache.RUnlock()
 
 	writes := atomic.LoadInt32(&writeCount)
 	reads := atomic.LoadInt32(&readCount)
-	_ = cacheSize // Ensure final state is available for verification
+	_ = cacheSize
 
 	if reads != int32(numReaders) {
 		t.Errorf("expected %d reads, got %d", numReaders, reads)
 	}
 
-	// At least one writer should have succeeded
 	if writes == 0 {
 		t.Error("expected at least one write to succeed")
 	}
@@ -420,14 +408,12 @@ func TestGoroutineLeakDetection(t *testing.T) {
 	testPDF := createTestPDF(t)
 	defer cleanup(testPDF)
 
-	// Establish stable baseline
 	for i := 0; i < 10; i++ {
 		runtime.GC()
 		time.Sleep(5 * time.Millisecond)
 	}
 	initialGoroutines := runtime.NumGoroutine()
 
-	// 100 concurrent goroutines stress-test goroutine management
 	numGoroutines := 100
 	var wg sync.WaitGroup
 	var completedCount int32
@@ -446,7 +432,6 @@ func TestGoroutineLeakDetection(t *testing.T) {
 
 	wg.Wait()
 
-	// Wait for goroutines to fully exit
 	for i := 0; i < 30; i++ {
 		runtime.GC()
 		time.Sleep(5 * time.Millisecond)
@@ -459,7 +444,6 @@ func TestGoroutineLeakDetection(t *testing.T) {
 		t.Errorf("expected %d completions, got %d", numGoroutines, completedCount)
 	}
 
-	// Should not leak goroutines (allow 1 for variance)
 	if leakedGoroutines > 1 {
 		t.Errorf("goroutine leak detected: initial=%d, final=%d, leaked=%d",
 			initialGoroutines, finalGoroutines, leakedGoroutines)
@@ -472,7 +456,6 @@ func TestContextCancellationHandling(t *testing.T) {
 	testPDF := createTestPDF(t)
 	defer cleanup(testPDF)
 
-	// Test cancellation during concurrent operations (20 goroutines)
 	numGoroutines := 20
 	var wg sync.WaitGroup
 	var cancelledCount int64
@@ -487,7 +470,6 @@ func TestContextCancellationHandling(t *testing.T) {
 		go func(index int) {
 			defer wg.Done()
 
-			// Cancel after some goroutines have started
 			if index == numGoroutines/2 {
 				time.Sleep(1 * time.Millisecond)
 				cancel()
@@ -512,7 +494,6 @@ func TestContextCancellationHandling(t *testing.T) {
 		t.Errorf("expected %d operations, got %d", numGoroutines, total)
 	}
 
-	// Verify cancellation was detected by at least one goroutine
 	if atomic.LoadInt64(&cancelledCount) == 0 {
 		t.Error("expected at least one context cancellation to be detected")
 	}
@@ -530,7 +511,6 @@ func TestAtomicOperationValidation(t *testing.T) {
 		operationsLeft int64 = 100
 	)
 
-	// 10 goroutines competing to consume 100 operations
 	numGoroutines := 10
 	var wg sync.WaitGroup
 
@@ -539,16 +519,14 @@ func TestAtomicOperationValidation(t *testing.T) {
 		go func(_ int) {
 			defer wg.Done()
 
-			// Each goroutine processes operations atomically
 			for {
 				remaining := atomic.LoadInt64(&operationsLeft)
 				if remaining <= 0 {
 					break
 				}
 
-				// Attempt to decrement atomically
 				if !atomic.CompareAndSwapInt64(&operationsLeft, remaining, remaining-1) {
-					continue // Retry on conflict
+					continue
 				}
 
 				result, err := kreuzberg.ExtractFileSync(testPDF, nil)
@@ -626,7 +604,6 @@ func TestMixedConcurrentOperations(t *testing.T) {
 	const bytesOps = 10
 	const batchOps = 5
 
-	// File extractions
 	wg.Add(fileOps)
 	for i := 0; i < fileOps; i++ {
 		go func() {
@@ -640,7 +617,6 @@ func TestMixedConcurrentOperations(t *testing.T) {
 		}()
 	}
 
-	// Bytes extractions
 	wg.Add(bytesOps)
 	for i := 0; i < bytesOps; i++ {
 		go func() {
@@ -654,7 +630,6 @@ func TestMixedConcurrentOperations(t *testing.T) {
 		}()
 	}
 
-	// Batch operations
 	wg.Add(batchOps)
 	for i := 0; i < batchOps; i++ {
 		go func() {
@@ -694,7 +669,6 @@ func TestContextTimeoutDetection(t *testing.T) {
 	testPDF := createTestPDF(t)
 	defer cleanup(testPDF)
 
-	// Use 15 goroutines with immediate cancellation to reliably trigger timeouts
 	numGoroutines := 15
 	var wg sync.WaitGroup
 	var timeoutCount int64
@@ -706,7 +680,6 @@ func TestContextTimeoutDetection(t *testing.T) {
 		go func(_ int) {
 			defer wg.Done()
 
-			// Create context with immediate cancellation to guarantee timeout detection
 			ctx, cancel := context.WithTimeout(context.Background(), 1*time.Nanosecond)
 			defer cancel()
 
@@ -729,7 +702,6 @@ func TestContextTimeoutDetection(t *testing.T) {
 		t.Errorf("expected %d operations, got %d", numGoroutines, total)
 	}
 
-	// With 1ns timeout, we expect timeouts to be detected
 	if atomic.LoadInt64(&timeoutCount) == 0 {
 		t.Error("expected at least some context timeouts to be detected")
 	}
@@ -741,7 +713,6 @@ func TestConcurrentConfigUsage(t *testing.T) {
 	testPDF := createTestPDF(t)
 	defer cleanup(testPDF)
 
-	// Create a shared config (immutable after creation)
 	config := &kreuzberg.ExtractionConfig{
 		UseCache: boolPtr(false),
 	}

@@ -23,8 +23,7 @@ readonly class CodeSpan
         public int $startColumn,
         public int $endLine,
         public int $endColumn,
-    ) {
-    }
+    ) {}
 
     /**
      * @param array<string, mixed> $data

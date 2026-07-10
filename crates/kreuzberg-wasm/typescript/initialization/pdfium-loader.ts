@@ -22,43 +22,39 @@ import type { WasmModule } from "./state.js";
  * @internal
  */
 async function loadPdfiumForNode(): Promise<Record<string, unknown> | null> {
-	try {
-		const fs = await import(/* @vite-ignore */ "node:fs/promises");
-		const path = await import(/* @vite-ignore */ "node:path");
-		const url = await import(/* @vite-ignore */ "node:url");
+  try {
+    const fs = await import("node:fs/promises");
+    const path = await import("node:path");
+    const url = await import("node:url");
 
-		const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
+    const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 
-		// Check environment variable first
-		const envPath = process.env.KREUZBERG_PDFIUM_PATH;
-		const candidates: string[] = [];
+    const envPath = process.env.KREUZBERG_PDFIUM_PATH;
+    const candidates: string[] = [];
 
-		if (envPath) {
-			candidates.push(path.join(envPath, "pdfium.js"));
-			candidates.push(envPath); // allow direct path to pdfium.js
-		}
+    if (envPath) {
+      candidates.push(path.join(envPath, "pdfium.js"));
+      candidates.push(envPath);
+    }
 
-		// Standard locations relative to package dist
-		candidates.push(
-			path.join(__dirname, "..", "pdfium.js"), // dist/pdfium.js
-			path.join(__dirname, "pdfium.js"), // dist/initialization/pdfium.js
-			path.join(__dirname, "..", "..", "pdfium.js"), // package root pdfium.js
-		);
+    candidates.push(
+      path.join(__dirname, "..", "pdfium.js"),
+      path.join(__dirname, "pdfium.js"),
+      path.join(__dirname, "..", "..", "pdfium.js"),
+    );
 
-		for (const candidate of candidates) {
-			try {
-				await fs.access(candidate);
-				const moduleUrl = url.pathToFileURL(candidate).href;
-				return (await import(/* @vite-ignore */ moduleUrl)) as Record<string, unknown>;
-			} catch {
-				// Try next candidate path
-			}
-		}
+    for (const candidate of candidates) {
+      try {
+        await fs.access(candidate);
+        const moduleUrl = url.pathToFileURL(candidate).href;
+        return (await import(moduleUrl)) as Record<string, unknown>;
+      } catch {}
+    }
 
-		return null;
-	} catch {
-		return null;
-	}
+    return null;
+  } catch {
+    return null;
+  }
 }
 
 /**
@@ -68,17 +64,16 @@ async function loadPdfiumForNode(): Promise<Record<string, unknown> | null> {
  * @internal
  */
 async function loadPdfiumModule(): Promise<Record<string, unknown> | null> {
-	if (isNode()) {
-		return loadPdfiumForNode();
-	}
+  if (isNode()) {
+    return loadPdfiumForNode();
+  }
 
-	// Browser/Deno/Bun: try dynamic import
-	try {
-		// @ts-expect-error - Dynamic module loading
-		return await import("../pdfium.js");
-	} catch {
-		return null;
-	}
+  try {
+    // @ts-expect-error - Dynamic module loading
+    return await import("../pdfium.js");
+  } catch {
+    return null;
+  }
 }
 
 /**
@@ -116,28 +111,28 @@ async function loadPdfiumModule(): Promise<Record<string, unknown> | null> {
  * ```
  */
 export async function initializePdfiumAsync(wasmModule: WasmModule): Promise<void> {
-	if (!wasmModule || typeof wasmModule.initialize_pdfium_render !== "function") {
-		return;
-	}
+  if (!wasmModule || typeof wasmModule.initialize_pdfium_render !== "function") {
+    return;
+  }
 
-	try {
-		const pdfiumModule = await loadPdfiumModule();
-		if (!pdfiumModule) {
-			console.debug("PDFium module not found, PDF extraction will not be available");
-			console.debug("To enable PDF support, provide pdfium.js via KREUZBERG_PDFIUM_PATH or manual initialization");
-			return;
-		}
+  try {
+    const pdfiumModule = await loadPdfiumModule();
+    if (!pdfiumModule) {
+      console.debug("PDFium module not found, PDF extraction will not be available");
+      console.debug("To enable PDF support, provide pdfium.js via KREUZBERG_PDFIUM_PATH or manual initialization");
+      return;
+    }
 
-		const pdfium =
-			typeof pdfiumModule.default === "function"
-				? await (pdfiumModule.default as () => Promise<unknown>)()
-				: pdfiumModule;
+    const pdfium =
+      typeof pdfiumModule.default === "function"
+        ? await (pdfiumModule.default as () => Promise<unknown>)()
+        : pdfiumModule;
 
-		const success = wasmModule.initialize_pdfium_render(pdfium, wasmModule, false);
-		if (!success) {
-			console.warn("PDFium initialization returned false");
-		}
-	} catch (error) {
-		console.debug("PDFium initialization error:", error);
-	}
+    const success = wasmModule.initialize_pdfium_render(pdfium, wasmModule, false);
+    if (!success) {
+      console.warn("PDFium initialization returned false");
+    }
+  } catch (error) {
+    console.debug("PDFium initialization error:", error);
+  }
 }

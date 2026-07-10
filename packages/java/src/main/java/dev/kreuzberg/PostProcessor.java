@@ -31,7 +31,7 @@ package dev.kreuzberg;
  */
 @FunctionalInterface
 public interface PostProcessor {
-	/**
+    /**
 	 * Process and enrich an extraction result.
 	 *
 	 * <p>
@@ -45,9 +45,9 @@ public interface PostProcessor {
 	 * @throws KreuzbergException
 	 *             if processing fails
 	 */
-	ExtractionResult process(ExtractionResult result) throws KreuzbergException;
+    ExtractionResult process(ExtractionResult result) throws KreuzbergException;
 
-	/**
+    /**
 	 * Returns a composed post-processor that first applies this processor, then
 	 * applies the {@code
 	 * after} processor.
@@ -58,28 +58,28 @@ public interface PostProcessor {
 	 * @throws NullPointerException
 	 *             if after is null
 	 */
-	default PostProcessor andThen(PostProcessor after) {
-		if (after == null) {
-			throw new NullPointerException("after processor must not be null");
-		}
-		return result -> after.process(this.process(result));
-	}
+    default PostProcessor andThen(PostProcessor after) {
+        if (after == null) {
+            throw new NullPointerException("after processor must not be null");
+        }
+        return result -> after.process(this.process(result));
+    }
 
-	/**
+    /**
 	 * Defines when the processor runs in the pipeline.
 	 *
 	 * @return processing stage, defaults to {@link ProcessingStage#MIDDLE}
 	 */
-	default ProcessingStage processingStage() {
-		return ProcessingStage.MIDDLE;
-	}
+    default ProcessingStage processingStage() {
+        return ProcessingStage.MIDDLE;
+    }
 
-	/**
+    /**
 	 * Priority within the processing stage. Higher values run first.
 	 *
 	 * @return priority value (default 0)
 	 */
-	default int priority() {
-		return 0;
-	}
+    default int priority() {
+        return 0;
+    }
 }

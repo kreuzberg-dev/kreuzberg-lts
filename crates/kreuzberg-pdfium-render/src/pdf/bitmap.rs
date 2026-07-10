@@ -22,10 +22,6 @@ use {
     web_sys::ImageData,
 };
 
-// The following dummy declarations are used only when running cargo doc.
-// They allow documentation of WASM-specific functionality to be included
-// in documentation generated on non-WASM targets.
-
 #[cfg(doc)]
 struct Uint8Array;
 
@@ -45,15 +41,13 @@ pub type Pixels = i32;
 
 /// The pixel format of the rendered image data in the backing buffer of a [PdfBitmap].
 #[derive(Copy, Clone, Debug, PartialEq)]
-#[allow(clippy::manual_non_exhaustive)] // triggered by deprecation below, can be removed in 0.9.0
+#[allow(clippy::manual_non_exhaustive)]
 pub enum PdfBitmapFormat {
     Gray = FPDFBitmap_Gray as isize,
     BGR = FPDFBitmap_BGR as isize,
     BGRx = FPDFBitmap_BGRx as isize,
     BGRA = FPDFBitmap_BGRA as isize,
 
-    // TODO: AJRC - 22/7/23 - remove deprecated variant in 0.9.0
-    // as part of tracking issue https://github.com/ajrcarey/pdfium-render/issues/36
     #[deprecated(
         since = "0.8.7",
         note = "This variant has been renamed to correct a misspelling. Use the BGRx variant instead."
@@ -88,8 +82,6 @@ impl PdfBitmapFormat {
     }
 }
 
-// Deriving Default for enums is experimental. We implement the trait ourselves
-// to provide better compatibility with older Rust versions.
 #[allow(clippy::derivable_impls)]
 impl Default for PdfBitmapFormat {
     #[inline]
@@ -128,7 +120,7 @@ impl<'a> PdfBitmap<'a> {
             height as c_int,
             format.as_pdfium() as c_int,
             std::ptr::null_mut(),
-            0, // Not relevant because Pdfium will create the buffer itself.
+            0,
         );
 
         if handle.is_null() {
@@ -161,7 +153,7 @@ impl<'a> PdfBitmap<'a> {
             height as c_int,
             format.as_pdfium() as c_int,
             buffer.as_mut_ptr() as *mut c_void,
-            0, // Not relevant because Pdfium will compute the stride value itself.
+            0,
         );
 
         if handle.is_null() {
@@ -210,8 +202,6 @@ impl<'a> PdfBitmap<'a> {
         PdfBitmapFormat::from_pdfium(self.bindings().FPDFBitmap_GetFormat(self.handle()) as u32)
     }
 
-    // TODO: AJRC - 25/11/22 - remove deprecated PdfBitmap::as_bytes() function in 0.9.0
-    // as part of tracking issue https://github.com/ajrcarey/pdfium-render/issues/36
     /// Returns an immutable reference to the bitmap buffer backing this [PdfBitmap].
     #[deprecated(
         since = "0.8.16",
@@ -245,16 +235,9 @@ impl<'a> PdfBitmap<'a> {
         let stride = bytes.len() / self.height() as usize;
 
         if self.was_byte_order_reversed_during_rendering {
-            // The R and B channels were swapped by Pdfium during rendering, as configured by
-            // a call to PdfRenderConfig::set_reverse_byte_order(true).
-
             match format {
                 #[allow(deprecated)]
-                PdfBitmapFormat::BGRA | PdfBitmapFormat::BGRx | PdfBitmapFormat::BRGx => {
-                    // No color conversion necessary; data was already swapped from BGRx
-                    // to four-channel RGB during rendering.
-                    bytes
-                }
+                PdfBitmapFormat::BGRA | PdfBitmapFormat::BGRx | PdfBitmapFormat::BRGx => bytes,
                 PdfBitmapFormat::BGR => aligned_rgb_to_rgba(bytes.as_slice(), width, stride),
                 PdfBitmapFormat::Gray => bytes,
             }
@@ -292,8 +275,6 @@ impl<'a> PdfBitmap<'a> {
         }
     }
 
-    // TODO: AJRC - 29/7/22 - remove deprecated PdfBitmap::render() function in 0.9.0
-    // as part of tracking issue https://github.com/ajrcarey/pdfium-render/issues/36
     /// Prior to 0.7.12, this function rendered the referenced page into a bitmap buffer.
     ///
     /// This is no longer necessary since all page rendering operations are now processed eagerly
@@ -401,15 +382,7 @@ mod tests {
             pdfium.bindings().FPDFBitmap_GetBuffer(bitmap.handle) as usize,
             buffer_ptr as usize
         );
-        assert_eq!(
-            pdfium.bindings().FPDFBitmap_GetStride(bitmap.handle),
-            // The stride length is always a multiple of four bytes; for image formats
-            // that require less than four bytes per pixel, the extra bytes serve as
-            // alignment padding. For this test, we use the PdfBitmapFormat::BGRx which
-            // consumes four bytes per pixel, so test_width * 4 should indeed match
-            // the returned stride length.
-            test_width * 4
-        );
+        assert_eq!(pdfium.bindings().FPDFBitmap_GetStride(bitmap.handle), test_width * 4);
 
         Ok(())
     }

@@ -8,7 +8,6 @@ pub(super) mod layout_validation;
 pub(super) mod table_recognition;
 mod tables;
 
-// Re-exports for use by pipeline.rs and other siblings
 pub(super) use heading::looks_like_figure_label;
 #[cfg(feature = "layout-detection")]
 pub(super) use table_recognition::recognize_tables_for_native_page;

@@ -20,8 +20,7 @@ readonly class Chunk
         public string $content,
         public ?array $embedding,
         public ChunkMetadata $metadata,
-    ) {
-    }
+    ) {}
 
     /**
      * @param array<string, mixed> $data
@@ -37,10 +36,6 @@ readonly class Chunk
         /** @var array<string, mixed> $metadata */
         $metadata = $data['metadata'] ?? [];
 
-        return new self(
-            content: $content,
-            embedding: $embedding,
-            metadata: ChunkMetadata::fromArray($metadata),
-        );
+        return new self(content: $content, embedding: $embedding, metadata: ChunkMetadata::fromArray($metadata));
     }
 }

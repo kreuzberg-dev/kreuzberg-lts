@@ -270,8 +270,6 @@ pub fn kreuzberg_clear_post_processors() {
 /// ```
 #[php_function]
 pub fn kreuzberg_run_post_processors(result: &mut ExtractionResult) -> PhpResult<()> {
-    // Clone callbacks while holding borrow, then release borrow before invoking
-    // This prevents RefCell re-entrance panic if callbacks re-enter Rust code
     let callbacks: Vec<(String, Zval)> = POST_PROCESSOR_REGISTRY.with(|registry| {
         let registry = registry.borrow();
         registry
@@ -461,8 +459,6 @@ pub fn kreuzberg_clear_validators() {
 /// This function is called automatically during extraction. Users should not call it directly.
 #[php_function]
 pub fn kreuzberg_run_validators(result: &mut Zval) -> PhpResult<()> {
-    // Clone callbacks while holding borrow, then release borrow before invoking
-    // This prevents RefCell re-entrance panic if callbacks re-enter Rust code
     let callbacks: Vec<(String, Zval)> = VALIDATOR_REGISTRY.with(|registry| {
         let registry = registry.borrow();
         registry
@@ -711,8 +707,6 @@ pub fn kreuzberg_test_plugin(plugin_type: String, plugin_name: String, test_data
         )));
     }
 
-    // Clone callback while holding borrow, then release borrow before invoking
-    // This prevents RefCell re-entrance panic if callback re-enters Rust code
     let callback = EXTRACTOR_REGISTRY.with(|registry| {
         let registry = registry.borrow();
         registry
@@ -777,8 +771,6 @@ pub(crate) fn has_custom_extractor(mime_type: &str) -> bool {
 /// This is an internal function used by the extraction pipeline to invoke
 /// a registered custom extractor.
 pub(crate) fn call_custom_extractor(mime_type: &str, bytes: &[u8]) -> PhpResult<Zval> {
-    // Clone callback while holding borrow, then release borrow before invoking
-    // This prevents RefCell re-entrance panic if callback re-enters Rust code
     let callback = EXTRACTOR_REGISTRY.with(|registry| {
         let registry = registry.borrow();
         registry

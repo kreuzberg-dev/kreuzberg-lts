@@ -22,8 +22,7 @@ readonly class HierarchicalBlock
         public float $fontSize,
         public string $level,
         public ?array $bbox = null,
-    ) {
-    }
+    ) {}
 
     /**
      * @param array<string, mixed> $data
@@ -31,18 +30,17 @@ readonly class HierarchicalBlock
     public static function fromArray(array $data): self
     {
         $text = isset($data['text']) && is_string($data['text']) ? $data['text'] : '';
-        $fontSize = isset($data['font_size']) ? (is_float($data['font_size']) || is_int($data['font_size']) ? (float) $data['font_size'] : 0.0) : 0.0;
+        $fontSize = isset($data['font_size'])
+            ? (is_float($data['font_size']) || is_int($data['font_size']) ? (float) $data['font_size'] : 0.0)
+            : 0.0;
         $level = isset($data['level']) && is_string($data['level']) ? $data['level'] : 'body';
         $bboxRaw = $data['bbox'] ?? null;
 
         /** @var ?array<float> $bbox */
-        $bbox = is_array($bboxRaw) ? array_map(static fn (mixed $v): float => is_float($v) || is_int($v) ? (float) $v : 0.0, $bboxRaw) : null;
+        $bbox = is_array($bboxRaw)
+            ? array_map(static fn(mixed $v): float => is_float($v) || is_int($v) ? (float) $v : 0.0, $bboxRaw)
+            : null;
 
-        return new self(
-            text: $text,
-            fontSize: $fontSize,
-            level: $level,
-            bbox: $bbox,
-        );
+        return new self(text: $text, fontSize: $fontSize, level: $level, bbox: $bbox);
     }
 }

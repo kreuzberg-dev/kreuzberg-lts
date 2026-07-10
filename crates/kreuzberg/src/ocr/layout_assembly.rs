@@ -60,9 +60,6 @@ pub fn assemble_ocr_markdown(
         _ => return plain_text_join(elements),
     };
 
-    // Page-level text quality gate: if the overall OCR text is mostly non-alphanumeric
-    // (e.g., music notation, symbol-heavy content), the layout model's regions are
-    // likely to produce garbled output. Fall back to plain text join.
     let all_text: String = elements.iter().map(|e| e.text.as_str()).collect::<Vec<_>>().join("");
     let total_chars = all_text.chars().count();
     let alnum_chars = all_text
@@ -106,7 +103,6 @@ pub fn assemble_ocr_markdown(
         }
     }
 
-    // Unassigned elements → plain paragraphs
     if !unassigned.is_empty() {
         let unassigned_elements: Vec<&OcrElement> = unassigned.iter().map(|&i| &elements[i]).collect();
         let unassigned_text = elements_to_paragraphs(&unassigned_elements);
@@ -160,7 +156,6 @@ fn recognize_single_table(
     elements: &[OcrElement],
     tatr_model: &mut TatrModel,
 ) -> Option<(Vec<Vec<String>>, String)> {
-    // Crop the table region from the page image
     let crop_x = table_bbox.x1.max(0.0) as u32;
     let crop_y = table_bbox.y1.max(0.0) as u32;
     let crop_w = (table_bbox.width() as u32).min(page_image.width().saturating_sub(crop_x));
@@ -172,7 +167,6 @@ fn recognize_single_table(
 
     let cropped = image::imageops::crop_imm(page_image, crop_x, crop_y, crop_w, crop_h).to_image();
 
-    // Run TATR inference
     let tatr_result = match tatr_model.recognize(&cropped) {
         Ok(r) => r,
         Err(e) => {
@@ -181,18 +175,15 @@ fn recognize_single_table(
         }
     };
 
-    // Check if TATR detected any rows and columns
     if tatr_result.rows.is_empty() || tatr_result.columns.is_empty() {
         return None;
     }
 
-    // Build cell grid from row × column intersections
     let cell_grid = tatr::build_cell_grid(&tatr_result, None);
     if cell_grid.is_empty() || cell_grid[0].is_empty() {
         return None;
     }
 
-    // Collect OCR elements that overlap the table region (≥20% of element area)
     let table_elements: Vec<&OcrElement> = elements
         .iter()
         .filter(|e| {
@@ -203,7 +194,6 @@ fn recognize_single_table(
         })
         .collect();
 
-    // Build markdown table by matching OCR elements to cells
     let (cells, markdown) = build_markdown_table(&cell_grid, &table_elements, crop_x as f32, crop_y as f32);
     Some((cells, markdown))
 }
@@ -228,14 +218,12 @@ fn build_markdown_table(
         return (Vec::new(), String::new());
     }
 
-    // Fill grid with cell text
     let mut grid: Vec<Vec<String>> = Vec::with_capacity(cell_grid.len());
 
     for row in cell_grid {
         let mut grid_row = vec![String::new(); num_cols];
 
         for (col_idx, cell) in row.iter().enumerate() {
-            // Translate cell bbox from crop coords to page coords
             let page_bbox = BBox::new(
                 cell.x1 + offset_x,
                 cell.y1 + offset_y,
@@ -248,13 +236,11 @@ fn build_markdown_table(
         grid.push(grid_row);
     }
 
-    // Render as markdown table
     let mut md = String::new();
 
     for (row_idx, row) in grid.iter().enumerate() {
         md.push('|');
         for cell in row {
-            // Escape pipe characters in cell text
             let escaped = cell.replace('|', "\\|");
             md.push(' ');
             md.push_str(escaped.trim());
@@ -262,7 +248,6 @@ fn build_markdown_table(
         }
         md.push('\n');
 
-        // Add separator after first row (header)
         if row_idx == 0 {
             md.push('|');
             for _ in 0..num_cols {
@@ -272,7 +257,6 @@ fn build_markdown_table(
         }
     }
 
-    // Remove trailing newline
     if md.ends_with('\n') {
         md.pop();
     }
@@ -301,7 +285,6 @@ fn match_elements_to_cell(elements: &[&OcrElement], cell_bbox: &BBox) -> String 
         return String::new();
     }
 
-    // Sort by y then x for reading order
     matched.sort_by(|a, b| a.2.total_cmp(&b.2).then_with(|| a.1.total_cmp(&b.1)));
 
     matched
@@ -319,14 +302,12 @@ fn render_table_region(
     elements: &[&OcrElement],
     recognized_tables: &[RecognizedTable],
 ) -> String {
-    // Look for pre-computed TATR table markdown matching this detection
     for rt in recognized_tables {
         if bboxes_match(&rt.detection_bbox, &detection.bbox) {
             return rt.markdown.clone();
         }
     }
 
-    // Fallback: heuristic grid reconstruction from OCR elements
     if elements.is_empty() {
         return String::new();
     }
@@ -346,7 +327,6 @@ fn heuristic_table_from_elements(elements: &[&OcrElement]) -> String {
         return String::new();
     }
 
-    // If only one line, not really a table
     if lines.len() == 1 {
         let text = lines[0]
             .iter()
@@ -357,12 +337,8 @@ fn heuristic_table_from_elements(elements: &[&OcrElement]) -> String {
         return text;
     }
 
-    // Determine column count from max elements per line
     let max_cols = lines.iter().map(|l| l.len()).max().unwrap_or(1);
 
-    // Reject degenerate heuristic tables: too many empty-ish cells or single-row.
-    // False-positive Table hints (e.g., in RTL documents) produce tables where
-    // content doesn't truly form a grid, hurting TF1 with markdown table syntax.
     let total_cells = lines.iter().map(|_| max_cols).sum::<usize>();
     let filled_cells: usize = lines
         .iter()
@@ -370,7 +346,6 @@ fn heuristic_table_from_elements(elements: &[&OcrElement]) -> String {
         .sum();
     let empty_cells = total_cells.saturating_sub(filled_cells);
     if total_cells > 0 && empty_cells as f64 / total_cells as f64 > 0.4 {
-        // Too many empty cells — not a real table, return as plain text
         let text = elements
             .iter()
             .map(|e| e.text.trim())
@@ -389,7 +364,6 @@ fn heuristic_table_from_elements(elements: &[&OcrElement]) -> String {
             md.push_str(&text);
             md.push_str(" |");
         }
-        // Fill empty cells if this row has fewer elements
         for _ in line.len()..max_cols {
             md.push_str("  |");
         }
@@ -425,9 +399,6 @@ fn assign_elements_to_regions<'a>(
 ) -> (Vec<OcrRegion<'a>>, Vec<usize>) {
     let confident: Vec<&LayoutDetection> = detections.iter().filter(|d| d.confidence >= MIN_CONFIDENCE).collect();
 
-    // All confident regions (including Picture and Table) collect elements.
-    // Picture regions no longer suppress text — their elements are assigned
-    // normally but rendered as plain paragraphs, preventing silent text loss.
     let active_dets: Vec<&LayoutDetection> = confident;
 
     let mut regions: Vec<OcrRegion> = active_dets
@@ -449,12 +420,10 @@ fn assign_elements_to_regions<'a>(
 
         let (cx, cy) = element_center_f32(elem);
 
-        // Check if outside page bounds (unlikely but defensive)
         if cx < 0.0 || cy < 0.0 || cx > img_width as f32 || cy > img_height as f32 {
             continue;
         }
 
-        // Find smallest containing region
         let mut best_idx: Option<usize> = None;
         let mut best_area = f32::MAX;
 
@@ -488,14 +457,11 @@ fn order_regions_reading_order(regions: &mut [OcrRegion], img_height: u32) {
                 return a_col.cmp(&b_col);
             }
 
-            // Same column: lower y1 = higher on page = comes first (pixel coords)
             a.detection.bbox.y1.total_cmp(&b.detection.bbox.y1)
         });
     } else {
         let y_tolerance = (img_height as f32 * 0.02).max(1.0);
 
-        // Quantize y-centers into discrete rows to ensure transitive ordering.
-        // A tolerance-based comparator (|a-b| < tol → Equal) is non-transitive.
         regions.sort_by(|a, b| {
             let (_, a_cy) = a.detection.bbox.center();
             let (_, b_cy) = b.detection.bbox.center();
@@ -511,7 +477,6 @@ fn order_regions_reading_order(regions: &mut [OcrRegion], img_height: u32) {
 
 /// Detect if regions form two distinct columns. Returns split x-position.
 fn detect_column_split(regions: &[OcrRegion]) -> Option<f32> {
-    // Filter out page furniture for column detection
     let content_regions: Vec<&OcrRegion> = regions
         .iter()
         .filter(|r| !matches!(r.detection.class, LayoutClass::PageHeader | LayoutClass::PageFooter))
@@ -548,7 +513,6 @@ fn detect_column_split(regions: &[OcrRegion]) -> Option<f32> {
 
     let split_x = best_split?;
 
-    // Validate both sides have >=2 regions
     let left_count = content_regions
         .iter()
         .filter(|r| r.detection.bbox.center().0 < split_x)
@@ -562,7 +526,6 @@ fn detect_column_split(regions: &[OcrRegion]) -> Option<f32> {
         return None;
     }
 
-    // Validate both columns span significant vertical extent
     let y_min = content_regions
         .iter()
         .map(|r| r.detection.bbox.y1)
@@ -638,7 +601,6 @@ fn render_region(elements: &[&OcrElement], class: LayoutClass) -> String {
             format!("$${text}$$")
         }
         LayoutClass::ListItem => {
-            // Each element line becomes a list item
             let lines = group_elements_into_lines(elements);
             let mut result = String::new();
             for line in &lines {
@@ -653,15 +615,8 @@ fn render_region(elements: &[&OcrElement], class: LayoutClass) -> String {
             }
             result
         }
-        LayoutClass::PageHeader | LayoutClass::PageFooter => {
-            // Skip page furniture
-            String::new()
-        }
-        LayoutClass::Picture => {
-            // Picture regions: render any text as plain paragraphs
-            // (diagrams/figures may contain embedded text worth preserving)
-            elements_to_paragraphs(elements)
-        }
+        LayoutClass::PageHeader | LayoutClass::PageFooter => String::new(),
+        LayoutClass::Picture => elements_to_paragraphs(elements),
         LayoutClass::Caption => {
             let text = join_element_texts(elements);
             if text.is_empty() {
@@ -670,7 +625,6 @@ fn render_region(elements: &[&OcrElement], class: LayoutClass) -> String {
             format!("*{text}*")
         }
         LayoutClass::Footnote => join_element_texts(elements),
-        // Text, DocumentIndex, Form, KeyValueRegion, CheckboxSelected/Unselected, and any other
         _ => elements_to_paragraphs(elements),
     }
 }
@@ -710,12 +664,10 @@ fn elements_to_paragraphs(elements: &[&OcrElement]) -> String {
         return String::new();
     }
 
-    // Group lines into paragraphs by vertical gap
     let mut paragraphs: Vec<String> = Vec::new();
     let mut current_para_lines: Vec<String> = Vec::new();
     let mut prev_line_bottom: Option<f32> = None;
 
-    // Compute median line height for gap detection
     let line_heights: Vec<f32> = lines
         .iter()
         .map(|line| {
@@ -773,7 +725,6 @@ fn elements_to_paragraphs(elements: &[&OcrElement]) -> String {
             })
             .fold(f32::MIN, f32::max);
 
-        // Detect paragraph break: gap > 1.5x median line height
         if let Some(prev_bottom) = prev_line_bottom {
             let gap = line_top - prev_bottom;
             if gap > median_height * 1.5 && !current_para_lines.is_empty() {
@@ -803,7 +754,6 @@ fn group_elements_into_lines<'a>(elements: &[&'a OcrElement]) -> Vec<Vec<&'a Ocr
         return Vec::new();
     }
 
-    // Compute median element height for tolerance
     let mut heights: Vec<f32> = elements
         .iter()
         .map(|e| {
@@ -822,7 +772,6 @@ fn group_elements_into_lines<'a>(elements: &[&'a OcrElement]) -> Vec<Vec<&'a Ocr
 
     let tolerance = median_height * LINE_Y_TOLERANCE_FRACTION;
 
-    // Sort elements by y-center, then x-left
     let mut sorted: Vec<(usize, f32, f32)> = elements
         .iter()
         .enumerate()
@@ -835,7 +784,7 @@ fn group_elements_into_lines<'a>(elements: &[&'a OcrElement]) -> Vec<Vec<&'a Ocr
     sorted.sort_by(|a, b| a.1.total_cmp(&b.1).then_with(|| a.2.total_cmp(&b.2)));
 
     let mut lines: Vec<Vec<&OcrElement>> = Vec::new();
-    let mut current_line: Vec<(usize, f32)> = Vec::new(); // (elem_idx, x_left)
+    let mut current_line: Vec<(usize, f32)> = Vec::new();
     let mut line_y_sum: f32 = 0.0;
 
     for (elem_idx, cy, x_left) in sorted {
@@ -848,7 +797,6 @@ fn group_elements_into_lines<'a>(elements: &[&'a OcrElement]) -> Vec<Vec<&'a Ocr
                 current_line.push((elem_idx, x_left));
                 line_y_sum += cy;
             } else {
-                // Finalize current line
                 current_line.sort_by(|a, b| a.1.total_cmp(&b.1));
                 lines.push(current_line.iter().map(|(i, _)| elements[*i]).collect());
                 current_line = vec![(elem_idx, x_left)];
@@ -884,7 +832,6 @@ fn element_bbox_iow(elem: &OcrElement, bbox: &BBox) -> f32 {
     let elem_area = width as f32 * height as f32;
 
     if elem_area <= 0.0 {
-        // Zero-area element: fall back to center-point containment
         let cx = e_left + width as f32 / 2.0;
         let cy = e_top + height as f32 / 2.0;
         return if point_in_bbox(cx, cy, bbox) { 1.0 } else { 0.0 };
@@ -1005,10 +952,9 @@ mod tests {
         );
         let result = assemble_ocr_markdown(&elements, Some(&detection), 800, 600, &[]);
         assert!(result.contains("Body text"));
-        // Table region produces heuristic markdown table from OCR elements
         assert!(result.contains("Header1"));
         assert!(result.contains("cell1"));
-        assert!(result.contains("|")); // markdown table format
+        assert!(result.contains("|"));
     }
 
     #[test]

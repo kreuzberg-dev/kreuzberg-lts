@@ -109,7 +109,6 @@ impl ExtractionServiceBuilder {
     pub fn build(self) -> BoxCloneService<ExtractionRequest, ExtractionResult, KreuzbergError> {
         let svc = ExtractionService::new();
 
-        // Apply concurrency limit (innermost optional layer).
         let svc = match self.concurrency_limit {
             Some(limit) => ServiceBuilder::new()
                 .concurrency_limit(limit)
@@ -118,9 +117,6 @@ impl ExtractionServiceBuilder {
             None => svc.boxed_clone(),
         };
 
-        // Apply timeout. We wrap inline rather than using Tower's Timeout layer
-        // because Timeout changes the error type to BoxError — we need to keep
-        // KreuzbergError throughout the stack.
         let svc: BoxCloneService<ExtractionRequest, ExtractionResult, KreuzbergError> = match self.timeout {
             Some(duration) => {
                 let timeout_svc = TimeoutService { inner: svc, duration };
@@ -129,7 +125,6 @@ impl ExtractionServiceBuilder {
             None => svc,
         };
 
-        // Apply metrics layer (otel only).
         #[cfg(feature = "otel")]
         let svc = if self.metrics {
             ServiceBuilder::new()
@@ -140,7 +135,6 @@ impl ExtractionServiceBuilder {
             svc
         };
 
-        // Apply tracing layer (outermost).
         if self.tracing {
             ServiceBuilder::new()
                 .layer(layers::tracing::TracingLayer::new())
@@ -151,10 +145,6 @@ impl ExtractionServiceBuilder {
         }
     }
 }
-
-// ---------------------------------------------------------------------------
-// Timeout wrapper that preserves KreuzbergError
-// ---------------------------------------------------------------------------
 
 /// A simple timeout wrapper that converts elapsed timeouts to
 /// [`KreuzbergError::Timeout`] instead of a `BoxError`.
@@ -197,7 +187,6 @@ mod tests {
 
     #[test]
     fn builder_new_builds_service() {
-        // Should not panic.
         let _svc = ExtractionServiceBuilder::new().build();
     }
 
@@ -242,12 +231,9 @@ mod tests {
             .build();
         let req = ExtractionRequest::bytes(b"hello".as_slice(), "text/plain", ExtractionConfig::default());
         let result = svc.call(req).await;
-        // With a 1ns timeout, the result is either a success (if extraction
-        // completes before the timeout is checked) or a Timeout error.
-        // Both are acceptable — the key assertion is that it does not panic.
         match result {
             Ok(r) => assert!(r.content.contains("hello")),
-            Err(KreuzbergError::Timeout { .. }) => { /* expected timeout */ }
+            Err(KreuzbergError::Timeout { .. }) => {}
             Err(other) => panic!("expected Ok or Timeout, got: {:?}", other),
         }
     }

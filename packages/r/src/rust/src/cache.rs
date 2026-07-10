@@ -9,7 +9,8 @@ pub fn clear_cache_impl() -> extendr_api::Result<()> {
         return Ok(());
     }
     for dir in cache_directories(&cache_root)? {
-        let dir_str = dir.to_str()
+        let dir_str = dir
+            .to_str()
             .ok_or_else(|| extendr_api::Error::Other("Cache path not valid UTF-8".to_string()))?;
         kreuzberg::cache::clear_cache_directory(dir_str).map_err(to_r_error)?;
     }
@@ -23,7 +24,8 @@ pub fn cache_stats_impl() -> extendr_api::Result<List> {
 
     if cache_root.exists() {
         for dir in cache_directories(&cache_root)? {
-            let dir_str = dir.to_str()
+            let dir_str = dir
+                .to_str()
                 .ok_or_else(|| extendr_api::Error::Other("Cache path not valid UTF-8".to_string()))?;
             let stats = kreuzberg::cache::get_cache_metadata(dir_str).map_err(to_r_error)?;
             total_entries += stats.total_files;
@@ -40,7 +42,6 @@ pub fn cache_stats_impl() -> extendr_api::Result<List> {
 }
 
 fn cache_root_dir() -> std::path::PathBuf {
-    // Use platform-appropriate cache directory
     #[cfg(target_os = "macos")]
     {
         if let Ok(home) = std::env::var("HOME") {

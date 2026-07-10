@@ -17,8 +17,7 @@ readonly class CodeDocSection
         public string $kind,
         public ?string $name,
         public string $content,
-    ) {
-    }
+    ) {}
 
     /**
      * @param array<string, mixed> $data
@@ -34,10 +33,6 @@ readonly class CodeDocSection
         /** @var string $content */
         $content = $data['content'] ?? '';
 
-        return new self(
-            kind: $kind,
-            name: $name,
-            content: $content,
-        );
+        return new self(kind: $kind, name: $name, content: $content);
     }
 }

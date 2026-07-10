@@ -652,7 +652,6 @@ async fn test_rtf_word_sample_matches_docx_metadata_and_content() {
         "RTF content should include the same body text as DOCX"
     );
 
-    // Compare typed metadata fields (DOCX uses typed fields, RTF uses additional map)
     assert_eq!(
         rtf_result
             .metadata

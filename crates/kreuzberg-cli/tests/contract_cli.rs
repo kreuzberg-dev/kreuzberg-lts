@@ -12,14 +12,11 @@ use serde_json::json;
 fn test_cli_config_json_flag_basic_parsing() {
     let config_str = r#"{"use_cache": true, "output_format": "plain"}"#;
 
-    // Parse as Rust core would
     let rust_config: ExtractionConfig = serde_json::from_str(config_str).expect("Failed to deserialize config string");
 
-    // Simulate CLI --config-json parsing (same as Rust core)
     let cli_json: serde_json::Value = serde_json::from_str(config_str).expect("Failed to parse JSON string");
     let cli_config: ExtractionConfig = serde_json::from_value(cli_json).expect("Failed to deserialize from JSON value");
 
-    // Verify identical behavior
     assert_eq!(
         rust_config.use_cache, cli_config.use_cache,
         "use_cache should be identical"
@@ -62,7 +59,6 @@ fn test_cli_force_ocr_flag_parsing() {
     let config: ExtractionConfig = serde_json::from_str(config_str).expect("Failed to deserialize force_ocr config");
 
     assert!(config.force_ocr, "force_ocr should be true");
-    // Verify other fields retain defaults
     assert!(config.use_cache, "use_cache should still be true by default");
 }
 
@@ -102,13 +98,11 @@ fn test_cli_complex_config_deserialization() {
 
     let config: ExtractionConfig = serde_json::from_str(config_str).expect("Failed to deserialize complex config");
 
-    // Verify all top-level fields
     assert!(!config.use_cache);
     assert!(config.enable_quality_processing);
     assert!(config.force_ocr);
     assert_eq!(config.max_concurrent_extractions, Some(16));
 
-    // Verify nested configs
     assert!(config.ocr.is_some());
     assert!(config.chunking.is_some());
 
@@ -127,7 +121,6 @@ fn test_cli_empty_config_uses_defaults() {
 
     let config: ExtractionConfig = serde_json::from_str(config_str).expect("Failed to deserialize empty config");
 
-    // All defaults should apply
     assert!(config.use_cache, "Default use_cache should be true");
     assert!(
         config.enable_quality_processing,
@@ -148,17 +141,13 @@ fn test_cli_roundtrip_preserves_all_fields() {
         "max_concurrent_extractions": 12
     }"#;
 
-    // Parse
     let config: ExtractionConfig = serde_json::from_str(original_str).expect("Failed to deserialize");
 
-    // Serialize back
     let serialized = serde_json::to_value(&config).expect("Failed to serialize");
 
-    // Re-parse the serialized version
     let reparsed: ExtractionConfig =
         serde_json::from_value(serialized).expect("Failed to deserialize roundtripped config");
 
-    // Verify fields preserved
     assert!(!reparsed.use_cache);
     assert!(reparsed.force_ocr);
     assert_eq!(reparsed.max_concurrent_extractions, Some(12));
@@ -198,7 +187,6 @@ fn test_cli_result_format_enum_parsing() {
 
 #[test]
 fn test_cli_base64_encoded_config_simulation() {
-    // Simulate --config-json-base64 flag handling
     let original_json = json!({
         "force_ocr": true,
         "output_format": "markdown"
@@ -206,10 +194,8 @@ fn test_cli_base64_encoded_config_simulation() {
 
     let json_string = original_json.to_string();
 
-    // Simulate base64 encoding
     let encoded = base64::engine::general_purpose::STANDARD.encode(&json_string);
 
-    // Simulate base64 decoding (as CLI would do)
     use base64::Engine;
     let decoded = String::from_utf8(
         base64::engine::general_purpose::STANDARD
@@ -218,7 +204,6 @@ fn test_cli_base64_encoded_config_simulation() {
     )
     .expect("Failed to convert bytes to string");
 
-    // Parse the decoded JSON
     let config: ExtractionConfig = serde_json::from_str(&decoded).expect("Failed to deserialize base64-decoded config");
 
     assert!(config.force_ocr);
@@ -227,11 +212,9 @@ fn test_cli_base64_encoded_config_simulation() {
 
 #[test]
 fn test_cli_partial_override_merging() {
-    // Test that partial configs can override defaults
     let base_config = ExtractionConfig::default();
     let override_json = json!({"force_ocr": true, "use_cache": false});
 
-    // Simulate CLI merge: convert base to JSON, merge overrides, deserialize
     let mut base_json = serde_json::to_value(&base_config).expect("Failed to serialize base config");
 
     if let (serde_json::Value::Object(base_obj), serde_json::Value::Object(override_obj)) =
@@ -256,11 +239,8 @@ fn test_cli_partial_override_merging() {
 fn test_cli_invalid_json_error_handling() {
     let invalid_json_str = r#"{"force_ocr": true, "invalid_field": "value"}"#;
 
-    // Note: serde with deny_unknown_fields would reject this
-    // Without that, it should deserialize successfully and ignore unknown fields
     let result = serde_json::from_str::<ExtractionConfig>(invalid_json_str);
 
-    // Document the current behavior - unknown fields are typically ignored
     if let Ok(config) = result {
         assert!(config.force_ocr);
     }
@@ -269,11 +249,11 @@ fn test_cli_invalid_json_error_handling() {
 #[test]
 fn test_cli_whitespace_handling_in_json() {
     let config_strs = vec![
-        r#"{"force_ocr":true}"#,     // No spaces
-        r#"{ "force_ocr" : true }"#, // Extra spaces
+        r#"{"force_ocr":true}"#,
+        r#"{ "force_ocr" : true }"#,
         r#"{
             "force_ocr": true
-        }"#, // Newlines and indentation
+        }"#,
     ];
 
     for config_str in config_strs {
@@ -286,11 +266,10 @@ fn test_cli_whitespace_handling_in_json() {
 
 #[test]
 fn test_cli_numeric_boundary_values() {
-    // Test minimum and maximum reasonable values for numeric fields
     let test_cases = vec![
         (r#"{"max_concurrent_extractions": 1}"#, Some(1)),
         (r#"{"max_concurrent_extractions": 256}"#, Some(256)),
-        (r#"{"max_concurrent_extractions": 0}"#, Some(0)), // Edge case: 0 extractions
+        (r#"{"max_concurrent_extractions": 0}"#, Some(0)),
     ];
 
     for (config_str, expected_value) in test_cases {
@@ -306,7 +285,6 @@ fn test_cli_numeric_boundary_values() {
 
 #[test]
 fn test_cli_boolean_values_strict_parsing() {
-    // Test that boolean values are strictly true/false, not truthy/falsy
     let test_cases = vec![(r#"{"use_cache": true}"#, true), (r#"{"use_cache": false}"#, false)];
 
     for (config_str, expected_value) in test_cases {
@@ -319,7 +297,6 @@ fn test_cli_boolean_values_strict_parsing() {
 
 #[test]
 fn test_cli_config_consistency_across_formats() {
-    // Create a config programmatically
     let programmatic_config = ExtractionConfig {
         use_cache: false,
         enable_quality_processing: true,
@@ -329,14 +306,11 @@ fn test_cli_config_consistency_across_formats() {
         ..Default::default()
     };
 
-    // Serialize it
     let serialized_json = serde_json::to_value(&programmatic_config).expect("Failed to serialize");
 
-    // Deserialize back from JSON string (simulating CLI parsing)
     let json_string = serialized_json.to_string();
     let deserialized: ExtractionConfig = serde_json::from_str(&json_string).expect("Failed to deserialize from string");
 
-    // Verify complete roundtrip
     assert_eq!(deserialized.use_cache, programmatic_config.use_cache);
     assert_eq!(
         deserialized.enable_quality_processing,
@@ -349,7 +323,3 @@ fn test_cli_config_consistency_across_formats() {
         programmatic_config.max_concurrent_extractions
     );
 }
-
-// Re-export needed for base64 test (moved to end of file)
-
-// Re-export needed for base64 test (imported at top of file)

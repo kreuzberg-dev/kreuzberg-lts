@@ -62,12 +62,10 @@ fn build_archive_doc_inner(
         ..Default::default()
     };
 
-    // Build InternalDocument with archive content as elements
     let mut doc = InternalDocument::new(format_name.to_lowercase());
     doc.mime_type = Cow::Owned(mime_type.to_string());
     doc.metadata = metadata;
 
-    // Add archive summary as a paragraph element
     let mut idx = 0u32;
     let summary = format!(
         "{} Archive ({} files, {} bytes)",
@@ -76,7 +74,6 @@ fn build_archive_doc_inner(
     doc.push_element(InternalElement::text(ElementKind::Paragraph, &summary, 0).with_index(idx));
     idx += 1;
 
-    // Add file listing
     let mut file_list = String::from("Files:\n");
     for entry in &extraction_metadata.file_list {
         file_list.push_str(&format!("- {} ({} bytes)\n", entry.path, entry.size));
@@ -84,14 +81,12 @@ fn build_archive_doc_inner(
     doc.push_element(InternalElement::text(ElementKind::Paragraph, &file_list, 0).with_index(idx));
     idx += 1;
 
-    // Add text file contents
     for (path, content) in &text_contents {
         let text = format!("=== {} ===\n{}", path, content);
         doc.push_element(InternalElement::text(ElementKind::Paragraph, &text, 0).with_index(idx));
         idx += 1;
     }
 
-    // Store children (recursively extracted archive entries)
     doc.children = if children.is_empty() { None } else { Some(children) };
     doc.processing_warnings = processing_warnings;
 
@@ -232,7 +227,6 @@ impl DocumentExtractor for ZipExtractor {
     ) -> Result<InternalDocument> {
         let limits = config.security_limits.clone().unwrap_or_default();
 
-        // Validate ZIP archive for bomb attacks before extraction
         let cursor = Cursor::new(content);
         let mut archive = zip::ZipArchive::new(cursor)
             .map_err(|e| crate::error::KreuzbergError::parsing(format!("Failed to read ZIP archive: {}", e)))?;

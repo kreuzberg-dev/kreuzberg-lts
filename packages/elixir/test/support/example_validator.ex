@@ -53,13 +53,11 @@ defmodule Kreuzberg.Test.ExampleValidator do
 
   @impl true
   def initialize do
-    # No special initialization needed
     :ok
   end
 
   @impl true
   def shutdown do
-    # No cleanup needed
     :ok
   end
 
@@ -67,29 +65,27 @@ defmodule Kreuzberg.Test.ExampleValidator do
   def validate(result) do
     case result do
       %{"content" => content} when is_binary(content) ->
-        if String.trim(content) == "" do
-          {:error, "Extraction result contains empty content"}
-        else
-          :ok
-        end
+      if String.trim(content) == "" do
+        {:error, "Extraction result contains empty content"}
+      else
+        :ok
+      end
 
       %{:content => content} when is_binary(content) ->
-        # Handle atom keys as well
-        if String.trim(content) == "" do
-          {:error, "Extraction result contains empty content"}
-        else
-          :ok
-        end
+      if String.trim(content) == "" do
+        {:error, "Extraction result contains empty content"}
+      else
+        :ok
+      end
 
       _ ->
-        {:error, "Result must contain a content field with string value"}
+      {:error, "Result must contain a content field with string value"}
     end
   end
 
   @impl true
   def should_validate?(result) do
-    # Only validate if result is a map with a content field
     is_map(result) and
-      (Map.has_key?(result, "content") or Map.has_key?(result, :content))
+    (Map.has_key?(result, "content") or Map.has_key?(result, :content))
   end
 end

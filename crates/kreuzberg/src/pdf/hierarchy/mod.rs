@@ -9,7 +9,6 @@ mod bounding_box;
 mod clustering;
 mod extraction;
 
-// Re-export all public types and functions for backward compatibility
 pub use bounding_box::BoundingBox;
 pub use clustering::{FontSizeCluster, assign_heading_levels_smart, cluster_font_sizes};
 pub use extraction::{

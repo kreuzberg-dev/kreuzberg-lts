@@ -312,7 +312,6 @@ impl OcrConfig {
     /// Also validates pipeline stage backends when a pipeline is configured.
     pub fn validate(&self) -> Result<(), KreuzbergError> {
         validate_ocr_backend(&self.backend)?;
-        // When backend is "vlm", vlm_config must be present.
         crate::core::config_validation::validate_vlm_backend_config(&self.backend, self.vlm_config.as_ref())?;
         if let Some(ref pipeline) = self.pipeline {
             for stage in &pipeline.stages {
@@ -472,8 +471,6 @@ mod tests {
         assert!(config.validate().is_ok());
     }
 
-    // ── effective_pipeline tests ──
-
     #[test]
     fn test_effective_pipeline_explicit_pipeline_returned_unchanged() {
         let explicit_pipeline = OcrPipelineConfig {
@@ -537,7 +534,6 @@ mod tests {
 
     #[test]
     fn test_effective_thresholds_custom_vs_default() {
-        // With custom thresholds
         let custom = OcrQualityThresholds {
             min_total_non_whitespace: 128,
             min_meaningful_words: 10,
@@ -551,14 +547,11 @@ mod tests {
         assert_eq!(eff.min_total_non_whitespace, 128);
         assert_eq!(eff.min_meaningful_words, 10);
 
-        // Without custom thresholds (should return defaults)
         let config_default = OcrConfig::default();
         let eff_default = config_default.effective_thresholds();
         assert_eq!(eff_default.min_total_non_whitespace, 64);
         assert_eq!(eff_default.min_meaningful_words, 3);
     }
-
-    // ── Serde tests ──
 
     #[test]
     fn test_pipeline_config_serde_roundtrip() {
@@ -595,11 +588,10 @@ mod tests {
 
     #[test]
     fn test_pipeline_stage_deserialization_missing_optional_fields() {
-        // Only backend is required; everything else should use defaults
         let json = r#"{"backend": "tesseract"}"#;
         let stage: OcrPipelineStage = serde_json::from_str(json).unwrap();
         assert_eq!(stage.backend, "tesseract");
-        assert_eq!(stage.priority, 100); // default_priority
+        assert_eq!(stage.priority, 100);
         assert!(stage.language.is_none());
         assert!(stage.tesseract_config.is_none());
         assert!(stage.paddle_ocr_config.is_none());
@@ -628,13 +620,10 @@ mod tests {
         let json = r#"{"min_total_non_whitespace": 256}"#;
         let thresholds: OcrQualityThresholds = serde_json::from_str(json).unwrap();
         assert_eq!(thresholds.min_total_non_whitespace, 256);
-        // All other fields should be defaults
         assert_eq!(thresholds.min_meaningful_words, 3);
         assert_eq!(thresholds.min_garbage_chars, 5);
         assert!((thresholds.pipeline_min_quality - 0.5).abs() < f64::EPSILON);
     }
-
-    // ── Validation tests ──
 
     #[test]
     fn test_validate_catches_invalid_pipeline_stage_backend() {

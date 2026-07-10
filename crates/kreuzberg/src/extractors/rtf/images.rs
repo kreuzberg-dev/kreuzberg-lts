@@ -22,7 +22,7 @@ pub struct RtfImage {
 pub fn extract_pict_image(chars: &mut std::iter::Peekable<std::str::Chars>) -> (String, Option<RtfImage>) {
     let mut metadata = String::new();
     let mut image_type: Option<&str> = None;
-    let mut format: &str = "jpeg"; // default
+    let mut format: &str = "jpeg";
     let mut width_goal: Option<i32> = None;
     let mut height_goal: Option<i32> = None;
     let mut depth = 0;
@@ -66,7 +66,6 @@ pub fn extract_pict_image(chars: &mut std::iter::Peekable<std::str::Chars>) -> (
                     "picwgoal" => width_goal = value,
                     "pichgoal" => height_goal = value,
                     "bin" => {
-                        // \binN means N raw binary bytes follow. Skip them.
                         if let Some(count) = value {
                             let count = count.max(0) as usize;
                             for _ in 0..count {
@@ -74,9 +73,6 @@ pub fn extract_pict_image(chars: &mut std::iter::Peekable<std::str::Chars>) -> (
                             }
                             _has_bin = true;
                         }
-                        // Without a count parameter, \bin is non-standard.
-                        // Continue parsing — hex data that follows will be
-                        // collected normally.
                     }
                     _ => {}
                 }
@@ -85,7 +81,6 @@ pub fn extract_pict_image(chars: &mut std::iter::Peekable<std::str::Chars>) -> (
                 chars.next();
             }
             _ => {
-                // Hex data characters
                 if ch.is_ascii_hexdigit() {
                     hex_chars.push(ch);
                 }
@@ -94,7 +89,6 @@ pub fn extract_pict_image(chars: &mut std::iter::Peekable<std::str::Chars>) -> (
         }
     }
 
-    // Build metadata string for text representation
     if let Some(itype) = image_type {
         metadata.push_str("image.");
         metadata.push_str(itype);
@@ -114,9 +108,6 @@ pub fn extract_pict_image(chars: &mut std::iter::Peekable<std::str::Chars>) -> (
         metadata.push_str("image.jpg");
     }
 
-    // Decode hex data to binary. When \bin was used with a count,
-    // the binary data was already skipped; hex_chars may still contain
-    // hex-encoded image data collected from the group.
     let image = if !hex_chars.is_empty() {
         match hex::decode(&hex_chars) {
             Ok(data) if !data.is_empty() => Some(RtfImage {

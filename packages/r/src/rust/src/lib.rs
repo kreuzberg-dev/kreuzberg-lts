@@ -16,7 +16,6 @@ mod validation;
 
 use extendr_api::prelude::*;
 
-// Re-export for use by other modules
 pub use error::to_r_error;
 
 /// Clear the extraction cache
@@ -33,14 +32,21 @@ fn cache_stats() -> extendr_api::Result<List> {
     cache::cache_stats_impl()
 }
 
-// Extraction functions
 #[extendr]
-fn extract_file_sync_native(path: &str, mime_type: Nullable<&str>, config_json: Nullable<&str>) -> extendr_api::Result<List> {
+fn extract_file_sync_native(
+    path: &str,
+    mime_type: Nullable<&str>,
+    config_json: Nullable<&str>,
+) -> extendr_api::Result<List> {
     extraction::extract_file_sync_impl(path, mime_type, config_json)
 }
 
 #[extendr]
-fn extract_file_native(path: &str, mime_type: Nullable<&str>, config_json: Nullable<&str>) -> extendr_api::Result<List> {
+fn extract_file_native(
+    path: &str,
+    mime_type: Nullable<&str>,
+    config_json: Nullable<&str>,
+) -> extendr_api::Result<List> {
     extraction::extract_file_impl(path, mime_type, config_json)
 }
 
@@ -54,7 +60,6 @@ fn extract_bytes_native(data: Raw, mime_type: &str, config_json: Nullable<&str>)
     extraction::extract_bytes_impl(data, mime_type, config_json)
 }
 
-// Batch extraction functions
 #[extendr]
 fn batch_extract_files_sync_native(paths: Strings, config_json: Nullable<&str>) -> extendr_api::Result<List> {
     batch::batch_extract_files_sync_impl(paths, Nullable::Null, config_json)
@@ -66,28 +71,33 @@ fn batch_extract_files_native(paths: Strings, config_json: Nullable<&str>) -> ex
 }
 
 #[extendr]
-fn batch_extract_bytes_sync_native(data_list: List, mime_types: Strings, config_json: Nullable<&str>) -> extendr_api::Result<List> {
+fn batch_extract_bytes_sync_native(
+    data_list: List,
+    mime_types: Strings,
+    config_json: Nullable<&str>,
+) -> extendr_api::Result<List> {
     batch::batch_extract_bytes_sync_impl(data_list, mime_types, Nullable::Null, config_json)
 }
 
 #[extendr]
-fn batch_extract_bytes_native(data_list: List, mime_types: Strings, config_json: Nullable<&str>) -> extendr_api::Result<List> {
+fn batch_extract_bytes_native(
+    data_list: List,
+    mime_types: Strings,
+    config_json: Nullable<&str>,
+) -> extendr_api::Result<List> {
     batch::batch_extract_bytes_impl(data_list, mime_types, Nullable::Null, config_json)
 }
 
-// Embedding functions
 #[extendr]
 fn embed_native(texts: Strings, config_json: Nullable<&str>) -> extendr_api::Result<List> {
     embeddings::embed_impl(texts, config_json)
 }
 
-// PDF rendering
 #[extendr]
 fn render_pdf_page_native(path: &str, page_index: i32, dpi: i32) -> extendr_api::Result<Raw> {
     extraction::render_pdf_page_impl(path, page_index, dpi)
 }
 
-// Metadata functions
 #[extendr]
 fn detect_mime_type_native(data: Raw) -> extendr_api::Result<String> {
     metadata::detect_mime_type_impl(data)
@@ -108,7 +118,6 @@ fn validate_mime_type_native(mime_type: &str) -> extendr_api::Result<bool> {
     metadata::validate_mime_type_impl(mime_type)
 }
 
-// Plugin functions
 #[extendr]
 fn register_post_processor_native(name: &str, callback: Robj) -> extendr_api::Result<()> {
     plugins::register_post_processor_impl(name, callback)
@@ -184,7 +193,6 @@ fn clear_document_extractors_native() -> extendr_api::Result<()> {
     plugins::clear_document_extractors_impl()
 }
 
-// Config loading functions
 #[extendr]
 fn config_from_file_native(path: &str) -> extendr_api::Result<Nullable<String>> {
     config::from_file_impl(path)
@@ -195,7 +203,6 @@ fn config_discover_native() -> extendr_api::Result<Nullable<String>> {
     config::discover_impl()
 }
 
-// Validation functions
 #[extendr]
 fn validate_ocr_backend_name_native(backend: &str) -> extendr_api::Result<bool> {
     validation::validate_ocr_backend_impl(backend)

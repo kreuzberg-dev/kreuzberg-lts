@@ -48,8 +48,8 @@ pub fn extract_file(args: &[Value]) -> Result<RHash, Error> {
 
     let config = parse_extraction_config(&ruby, opts)?;
 
-    let runtime =
-        tokio::runtime::Runtime::new().map_err(|e| crate::error_handling::runtime_error(format!("Failed to create Tokio runtime: {}", e)))?;
+    let runtime = tokio::runtime::Runtime::new()
+        .map_err(|e| crate::error_handling::runtime_error(format!("Failed to create Tokio runtime: {}", e)))?;
 
     let result = runtime
         .block_on(async { kreuzberg::extract_file(&path, mime_type.as_deref(), &config).await })
@@ -63,8 +63,8 @@ pub fn render_pdf_pages_iter(path: String, dpi: i32) -> Result<(), Error> {
     let ruby = Ruby::get().expect("Ruby not initialized");
     let dpi_opt = if dpi <= 0 { None } else { Some(dpi) };
 
-    let iter = kreuzberg::pdf::PdfPageIterator::from_file(&path, dpi_opt, None)
-        .map_err(|e| kreuzberg_error(e.into()))?;
+    let iter =
+        kreuzberg::pdf::PdfPageIterator::from_file(&path, dpi_opt, None).map_err(|e| kreuzberg_error(e.into()))?;
 
     for result in iter {
         let (page_index, png_bytes) = result.map_err(|e| kreuzberg_error(e.into()))?;
@@ -97,8 +97,8 @@ pub fn extract_bytes(args: &[Value]) -> Result<RHash, Error> {
 
     let config = parse_extraction_config(&ruby, opts)?;
 
-    let runtime =
-        tokio::runtime::Runtime::new().map_err(|e| crate::error_handling::runtime_error(format!("Failed to create Tokio runtime: {}", e)))?;
+    let runtime = tokio::runtime::Runtime::new()
+        .map_err(|e| crate::error_handling::runtime_error(format!("Failed to create Tokio runtime: {}", e)))?;
 
     let bytes = unsafe { data.as_slice() };
     let result = runtime

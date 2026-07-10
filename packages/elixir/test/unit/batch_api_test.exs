@@ -14,7 +14,6 @@ defmodule KreuzbergTest.Unit.BatchAPITest do
   alias Kreuzberg.BatchAPI
   alias Kreuzberg.ExtractionConfig
 
-  # Helper function to create temporary directories
   defp create_temp_dir do
     base = System.tmp_dir!()
     dir = Path.join(base, "kreuzberg_test_#{:erlang.unique_integer([:positive])}")
@@ -40,7 +39,6 @@ defmodule KreuzbergTest.Unit.BatchAPITest do
     @tag :unit
     @tag :integration
     test "extracts from multiple text files" do
-      # Create temporary test files
       {:ok, dir} = create_temp_dir()
 
       file1 = Path.join(dir, "test1.txt")
@@ -67,7 +65,6 @@ defmodule KreuzbergTest.Unit.BatchAPITest do
     @tag :unit
     @tag :integration
     test "returns error if any file fails" do
-      # Mix valid and invalid files
       {:ok, dir} = create_temp_dir()
       valid_file = Path.join(dir, "valid.txt")
       File.write!(valid_file, "Valid content")
@@ -102,9 +99,9 @@ defmodule KreuzbergTest.Unit.BatchAPITest do
       File.write!(file, "Test content")
 
       {:ok, results} =
-        BatchAPI.batch_extract_files([file], "text/plain", %{
-          "use_cache" => false
-        })
+      BatchAPI.batch_extract_files([file], "text/plain", %{
+      "use_cache" => false
+      })
 
       assert length(results) == 1
       assert hd(results).content == "Test content"
@@ -227,9 +224,9 @@ defmodule KreuzbergTest.Unit.BatchAPITest do
       data_list = ["Content"]
 
       {:ok, results} =
-        BatchAPI.batch_extract_bytes(data_list, "text/plain", %{
-          "use_cache" => false
-        })
+      BatchAPI.batch_extract_bytes(data_list, "text/plain", %{
+      "use_cache" => false
+      })
 
       assert length(results) == 1
       assert hd(results).content == "Content"
@@ -283,7 +280,6 @@ defmodule KreuzbergTest.Unit.BatchAPITest do
     @tag :unit
     test "batch_extract_bytes handles mismatched list lengths" do
       data_list = ["Content 1", "Content 2", "Content 3"]
-      # Only 2 MIME types for 3 inputs
       mime_types = ["text/plain", "text/plain"]
 
       {:error, reason} = BatchAPI.batch_extract_bytes(data_list, mime_types)
@@ -299,11 +295,9 @@ defmodule KreuzbergTest.Unit.BatchAPITest do
       file1 = Path.join(dir, "valid.txt")
       File.write!(file1, "Valid content")
 
-      # Create a list with valid and invalid files
       paths = [file1, "/definitely/nonexistent/path.txt", file1]
       {:error, reason} = BatchAPI.batch_extract_files(paths, "text/plain")
 
-      # Should report the failing file in the error message
       assert reason =~ "/definitely/nonexistent/path.txt"
       assert reason =~ "does not exist"
     end
@@ -311,11 +305,9 @@ defmodule KreuzbergTest.Unit.BatchAPITest do
     @tag :unit
     test "batch_extract_bytes tracks error index correctly" do
       data_list = ["Valid 1", "Valid 2", "Valid 3"]
-      # Use an invalid MIME type for the second item
       mime_types = ["text/plain", "completely/invalid", "text/plain"]
 
       {:error, reason} = BatchAPI.batch_extract_bytes(data_list, mime_types)
-      # Should report the invalid MIME type in error message
       assert reason =~ "completely/invalid"
     end
 
@@ -381,7 +373,6 @@ defmodule KreuzbergTest.Unit.BatchAPITest do
 
       assert is_list(results)
       assert length(results) == 2
-      # Should return list directly, not tuple
       refute match?({:ok, _}, results)
     end
 
@@ -407,15 +398,15 @@ defmodule KreuzbergTest.Unit.BatchAPITest do
       result = hd(results)
 
       assert %Kreuzberg.ExtractionResult{
-               content: _,
-               mime_type: _,
-               metadata: _,
-               tables: _,
-               detected_languages: _,
-               chunks: _,
-               images: _,
-               pages: _
-             } = result
+      content: _,
+      mime_type: _,
+      metadata: _,
+      tables: _,
+      detected_languages: _,
+      chunks: _,
+      images: _,
+      pages: _
+      } = result
     end
 
     @tag :unit

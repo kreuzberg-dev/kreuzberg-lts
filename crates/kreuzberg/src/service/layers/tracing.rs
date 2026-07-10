@@ -13,10 +13,6 @@ use tracing::Instrument;
 
 use crate::service::request::{ExtractionRequest, ExtractionSource};
 
-// ---------------------------------------------------------------------------
-// Layer
-// ---------------------------------------------------------------------------
-
 /// A [`tower::Layer`] that wraps each extraction in a semantic tracing span.
 #[derive(Debug, Clone, Default)]
 pub struct TracingLayer;
@@ -34,10 +30,6 @@ impl<S> Layer<S> for TracingLayer {
         TracingService { inner }
     }
 }
-
-// ---------------------------------------------------------------------------
-// Service
-// ---------------------------------------------------------------------------
 
 /// Middleware service that creates a span per extraction request.
 #[derive(Debug, Clone)]

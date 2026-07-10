@@ -125,8 +125,6 @@ impl PdfPageRenderRotation {
     }
 }
 
-// TODO: AJRC - 19/6/23 - remove deprecated PdfBitmapRotation type in 0.9.0
-// as part of tracking issue https://github.com/ajrcarey/pdfium-render/issues/36
 #[deprecated(
     since = "0.8.6",
     note = "This enum has been renamed to better reflect its purpose. Use the PdfPageRenderRotation enum instead."
@@ -217,8 +215,6 @@ impl<'a> PdfPage<'a> {
             objects: PdfPageObjects::from_pdfium(document_handle, page_handle, bindings),
             bindings,
         };
-
-        // Make sure the default content regeneration strategy is applied to child containers.
 
         result.set_content_regeneration_strategy(Self::DEFAULT_CONTENT_REGENERATION_STRATEGY);
 
@@ -331,9 +327,6 @@ impl<'a> PdfPage<'a> {
     /// ```
     #[inline]
     pub fn has_embedded_thumbnail(&self) -> bool {
-        // To determine whether the page includes a thumbnail, we ask Pdfium to return the
-        // size of the thumbnail data. A non-zero value indicates a thumbnail exists.
-
         self.bindings
             .FPDFPage_GetRawThumbnailData(self.page_handle, std::ptr::null_mut(), 0)
             > 0
@@ -357,8 +350,6 @@ impl<'a> PdfPage<'a> {
         let thumbnail_handle = self.bindings().FPDFPage_GetThumbnailAsBitmap(self.page_handle);
 
         if thumbnail_handle.is_null() {
-            // No thumbnail is available for this page.
-
             Err(PdfiumError::PageMissingEmbeddedThumbnail)
         } else {
             Ok(PdfBitmap::from_pdfium(thumbnail_handle, self.bindings))
@@ -625,8 +616,6 @@ impl<'a> PdfPage<'a> {
         let bitmap_handle = bitmap.handle();
 
         if settings.do_clear_bitmap_before_rendering {
-            // Clear the bitmap buffer by setting every pixel to a known color.
-
             self.bindings().FPDFBitmap_FillRect(
                 bitmap_handle,
                 0,
@@ -638,9 +627,6 @@ impl<'a> PdfPage<'a> {
         }
 
         if settings.do_render_form_data {
-            // Render the PDF page into the bitmap buffer, ignoring any custom transformation matrix.
-            // (Custom transforms cannot be applied to the rendering of form fields.)
-
             self.bindings.FPDF_RenderPageBitmap(
                 bitmap_handle,
                 self.page_handle,
@@ -653,8 +639,6 @@ impl<'a> PdfPage<'a> {
             );
 
             if let Some(form_handle) = self.form_handle {
-                // Render user-supplied form data, if any, as an overlay on top of the page.
-
                 if let Some(form_field_highlight) = settings.form_field_highlight.as_ref() {
                     for (form_field_type, (color, alpha)) in form_field_highlight.iter() {
                         self.bindings
@@ -677,8 +661,6 @@ impl<'a> PdfPage<'a> {
                 );
             }
         } else {
-            // Render the PDF page into the bitmap buffer, applying any custom transformation matrix.
-
             self.bindings.FPDF_RenderPageBitmapWithMatrix(
                 bitmap_handle,
                 self.page_handle,
@@ -693,8 +675,6 @@ impl<'a> PdfPage<'a> {
         Ok(())
     }
 
-    // TODO: AJRC - 29/7/22 - remove deprecated PdfPage::get_bitmap_*() functions in 0.9.0
-    // as part of tracking issue https://github.com/ajrcarey/pdfium-render/issues/36
     /// Renders this [PdfPage] into a new [PdfBitmap] using pixel dimensions, rotation settings,
     /// and rendering options configured in the given [PdfRenderConfig].
     #[deprecated(
@@ -770,8 +750,6 @@ impl<'a> PdfPage<'a> {
         self.apply_matrix_with_clip(PdfMatrix::new(a, b, c, d, e, f), clip)
     }
 
-    // TODO: AJRC - 3/11/23 - remove deprecated PdfPage::set_matrix_with_clip() function in 0.9.0
-    // as part of tracking issue https://github.com/ajrcarey/pdfium-render/issues/36
     #[deprecated(
         since = "0.8.15",
         note = "This function has been renamed to better reflect its behaviour. Use the apply_matrix_with_clip() function instead."
@@ -790,10 +768,6 @@ impl<'a> PdfPage<'a> {
             &matrix.as_pdfium(),
             &clip.as_pdfium(),
         )) {
-            // A probable bug in Pdfium means we must reload the page in order for the
-            // transformation to take effect. For more information, see:
-            // https://github.com/ajrcarey/pdfium-render/issues/93
-
             self.reload_in_place();
             Ok(())
         } else {
@@ -809,9 +783,7 @@ impl<'a> PdfPage<'a> {
         "each object on this [PdfPage],",
         "",
         pub(self)
-    ); // pub(self) visibility for the generated reset_matrix() function will effectively make it
-    // private. This is what we want, since Pdfium does not expose a function to directly set
-    // the transformation matrix of a page.
+    );
 
     #[inline]
     fn transform_impl(
@@ -826,8 +798,6 @@ impl<'a> PdfPage<'a> {
         self.transform_with_clip(a, b, c, d, e, f, PdfRect::MAX)
     }
 
-    // The reset_matrix() function created by the create_transform_setters!() macro
-    // is not publicly visible, so this function should never be called.
     #[allow(dead_code)]
     fn reset_matrix_impl(&mut self, _: PdfMatrix) -> Result<(), PdfiumError> {
         unreachable!();
@@ -835,18 +805,12 @@ impl<'a> PdfPage<'a> {
 
     /// Flattens all annotations and form fields on this [PdfPage] into the page contents.
     pub fn flatten(&mut self) -> Result<(), PdfiumError> {
-        // TODO: AJRC - 28/5/22 - consider allowing the caller to set the FLAT_NORMALDISPLAY or FLAT_PRINT flag.
+        // ~keep TODO: expose FLAT_NORMALDISPLAY versus FLAT_PRINT selection to callers.
         let flag = FLAT_PRINT;
 
         match self.bindings().FPDFPage_Flatten(self.page_handle, flag as c_int) as u32 {
             FLATTEN_SUCCESS => {
                 self.regenerate_content()?;
-
-                // As noted at https://bugs.chromium.org/p/pdfium/issues/detail?id=2055,
-                // FPDFPage_Flatten() updates the underlying dictionaries and content streams for
-                // the page, but does not update the FPDF_Page structure. We must reload the
-                // page for the effects of the flatten operation to be visible. For more information, see:
-                // https://github.com/ajrcarey/pdfium-render/issues/140
 
                 self.reload_in_place();
                 Ok(())
@@ -927,9 +891,6 @@ impl<'a> PdfPage<'a> {
     /// or reloading the page.
     #[inline]
     pub fn regenerate_content(&mut self) -> Result<(), PdfiumError> {
-        // This is a publicly-visible wrapper for the private regenerate_content_immut() function.
-        // It is only available to callers who hold a mutable reference to the page.
-
         self.regenerate_content_immut()
     }
 
@@ -978,8 +939,6 @@ impl<'a> PdfPage<'a> {
         if self.regeneration_strategy != PdfPageContentRegenerationStrategy::Manual
             && self.is_content_regeneration_required
         {
-            // Regenerate page content now if necessary, before the PdfPage moves out of scope.
-
             let result = self.regenerate_content();
 
             debug_assert!(result.is_ok());
@@ -1007,9 +966,6 @@ mod tests {
 
     #[test]
     fn test_page_rendering_reusing_bitmap() -> Result<(), PdfiumError> {
-        // Renders each page in the given test PDF file to a separate JPEG file
-        // by re-using the same bitmap buffer for each render.
-
         let pdfium = test_bind_to_pdfium();
 
         let document = pdfium.load_pdf_from_file(&test_fixture_path("export-test.pdf"), None)?;
@@ -1022,7 +978,7 @@ mod tests {
         let mut bitmap = PdfBitmap::empty(2500, 2500, PdfBitmapFormat::default(), pdfium.bindings())?;
 
         for (index, page) in document.pages().iter().enumerate() {
-            page.render_into_bitmap_with_config(&mut bitmap, &render_config)?; // Re-uses the same bitmap for rendering each page.
+            page.render_into_bitmap_with_config(&mut bitmap, &render_config)?;
 
             bitmap
                 .as_image()?
@@ -1036,9 +992,6 @@ mod tests {
 
     #[test]
     fn test_rendered_image_dimension() -> Result<(), PdfiumError> {
-        // Checks that downscaled dimensions are rounded correctly during page rendering.
-        // See: https://github.com/ajrcarey/pdfium-render/pull/87
-
         let pdfium = test_bind_to_pdfium();
 
         let document = pdfium.load_pdf_from_file(&test_fixture_path("dimensions-test.pdf"), None)?;

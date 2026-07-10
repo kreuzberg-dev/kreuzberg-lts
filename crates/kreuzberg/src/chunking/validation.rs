@@ -449,8 +449,6 @@ mod tests {
     fn test_validate_utf8_boundaries_zero_start_and_end() {
         let text = "Text";
 
-        // Zero-length ranges are allowed as they represent valid UTF-8 boundaries
-        // (e.g., cursor positions, empty pages, etc.)
         let boundaries = vec![PageBoundary {
             byte_start: 0,
             byte_end: 0,

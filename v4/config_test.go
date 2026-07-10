@@ -78,7 +78,6 @@ func TestExtractionConfig_JSON_Marshaling(t *testing.T) {
 
 func TestExtractionConfig_NilPointerHandling(_ *testing.T) {
 	var config *kreuzberg.ExtractionConfig
-	// Test that nil pointer doesn't panic
 	_ = config
 }
 
@@ -482,9 +481,6 @@ func TestChunkingConfig_WithPreset(t *testing.T) {
 }
 
 func TestChunkingConfig_WithEmbedding(t *testing.T) {
-	// Embedding configuration is now a top-level ExtractionConfig option
-	// and no longer nested within ChunkingConfig.
-	// This test verifies that ChunkingConfig can be configured independently.
 	config := kreuzberg.NewChunkingConfig(
 		kreuzberg.WithChunkSize(256),
 		kreuzberg.WithChunkingEnabled(true),
@@ -723,8 +719,6 @@ func TestPdfConfig_WithFontConfig(t *testing.T) {
 }
 
 func TestPdfConfig_WithHierarchy(t *testing.T) {
-	// Hierarchy configuration is now managed separately from PdfConfig
-	// and is not nested within it. This test verifies PdfConfig options work correctly.
 	config := kreuzberg.NewPdfConfig(
 		kreuzberg.WithPdfExtractMetadata(true),
 	)
@@ -1412,7 +1406,6 @@ func TestComplexNestedConfig_JSON_Roundtrip(t *testing.T) {
 		},
 	}
 
-	// Marshal to JSON
 	data, err := json.Marshal(original)
 	if err != nil {
 		t.Fatalf("failed to marshal: %v", err)
@@ -1425,7 +1418,6 @@ func TestComplexNestedConfig_JSON_Roundtrip(t *testing.T) {
 		t.Fatalf("failed to unmarshal: %v", err)
 	}
 
-	// Verify structure
 	if restored.UseCache == nil || *restored.UseCache != *original.UseCache {
 		t.Error("UseCache not preserved")
 	}
@@ -1614,7 +1606,6 @@ func TestOutputFormat_JSON_Marshaling(t *testing.T) {
 		t.Fatalf("failed to marshal: %v", err)
 	}
 
-	// Check that the JSON contains the expected fields
 	if !bytes.Contains(data, []byte(`"output_format":"markdown"`)) {
 		t.Error("expected output_format field in JSON")
 	}
@@ -1656,7 +1647,6 @@ func TestOutputFormat_JSON_EmptyValues(t *testing.T) {
 		t.Fatalf("failed to marshal: %v", err)
 	}
 
-	// Empty strings should be omitted due to omitempty tag
 	if bytes.Contains(data, []byte(`"output_format"`)) {
 		t.Error("expected output_format field to be omitted for empty value")
 	}
@@ -1692,7 +1682,6 @@ func TestOutputResultFormat_Combined(t *testing.T) {
 		t.Errorf("expected ResultFormat 'element_based', got %q", config.ResultFormat)
 	}
 
-	// Verify they don't interfere with each other
 	data, err := json.Marshal(config)
 	if err != nil {
 		t.Fatalf("failed to marshal: %v", err)

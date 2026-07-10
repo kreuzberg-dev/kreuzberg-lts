@@ -17,17 +17,17 @@ package dev.kreuzberg;
  * @since 4.0.0
  */
 public final class ImageProcessingException extends KreuzbergException {
-	/**
+    /**
 	 * Constructs a new image processing exception with the specified message.
 	 *
 	 * @param message
 	 *            the detail message explaining why image processing failed
 	 */
-	public ImageProcessingException(String message) {
-		super(message);
-	}
+    public ImageProcessingException(String message) {
+        super(message);
+    }
 
-	/**
+    /**
 	 * Constructs a new image processing exception with the specified message and
 	 * cause.
 	 *
@@ -36,7 +36,7 @@ public final class ImageProcessingException extends KreuzbergException {
 	 * @param cause
 	 *            the cause of the image processing failure
 	 */
-	public ImageProcessingException(String message, Throwable cause) {
-		super(message, cause);
-	}
+    public ImageProcessingException(String message, Throwable cause) {
+        super(message, cause);
+    }
 }

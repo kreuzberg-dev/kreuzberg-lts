@@ -235,8 +235,8 @@ public static class KreuzbergClient
         try
         {
             var resultPtr = configPtr != IntPtr.Zero
-                ? NativeMethods.ExtractFileSyncWithConfig(pathPtr, configPtr)
-                : NativeMethods.ExtractFileSync(pathPtr);
+            ? NativeMethods.ExtractFileSyncWithConfig(pathPtr, configPtr)
+            : NativeMethods.ExtractFileSync(pathPtr);
 
             if (resultPtr == IntPtr.Zero)
             {
@@ -291,8 +291,8 @@ public static class KreuzbergClient
                 try
                 {
                     var resultPtr = configPtr != IntPtr.Zero
-                        ? NativeMethods.ExtractBytesSyncWithConfig((IntPtr)dataPtr, (UIntPtr)data.Length, mimePtr, configPtr)
-                        : NativeMethods.ExtractBytesSync((IntPtr)dataPtr, (UIntPtr)data.Length, mimePtr);
+                    ? NativeMethods.ExtractBytesSyncWithConfig((IntPtr)dataPtr, (UIntPtr)data.Length, mimePtr, configPtr)
+                    : NativeMethods.ExtractBytesSync((IntPtr)dataPtr, (UIntPtr)data.Length, mimePtr);
 
                     if (resultPtr == IntPtr.Zero)
                     {
@@ -366,7 +366,6 @@ public static class KreuzbergClient
                         var json = JsonSerializer.Serialize(fileConfigs[i], Serialization.ConfigOptions);
                         fileConfigPtrs![i] = InteropUtilities.AllocUtf8(json);
                     }
-                    // else fileConfigPtrs[i] remains IntPtr.Zero (NULL)
                 }
             }
 
@@ -1027,8 +1026,8 @@ public static class KreuzbergClient
                 var resultSpan = ConvertOcrInput(bytesPtr, length);
                 var configJson = InteropUtilities.ReadUtf8(configPtr);
                 var ocrConfig = string.IsNullOrWhiteSpace(configJson)
-                    ? null
-                    : JsonSerializer.Deserialize<OcrConfig>(configJson!, Serialization.Options);
+                ? null
+                : JsonSerializer.Deserialize<OcrConfig>(configJson!, Serialization.Options);
                 var output = backend.Process(resultSpan, ocrConfig);
                 return AllocateReturnString(output);
             }
@@ -1216,7 +1215,7 @@ public static class KreuzbergClient
     {
         var resultPtr = NativeMethods.ListEmbeddingPresets();
         if (resultPtr == IntPtr.Zero)
-            ThrowLastError();
+        ThrowLastError();
 
         try
         {
@@ -1250,14 +1249,14 @@ public static class KreuzbergClient
     public static EmbeddingPreset? GetEmbeddingPreset(string name)
     {
         if (string.IsNullOrWhiteSpace(name))
-            throw new KreuzbergValidationException("preset name cannot be empty");
+        throw new KreuzbergValidationException("preset name cannot be empty");
 
         var namePtr = InteropUtilities.AllocUtf8(name);
         try
         {
             var resultPtr = NativeMethods.GetEmbeddingPreset(namePtr);
             if (resultPtr == IntPtr.Zero)
-                return null;
+            return null;
 
             var json = InteropUtilities.ReadUtf8(resultPtr) ?? "null";
             NativeMethods.FreeString(resultPtr);
@@ -1299,7 +1298,7 @@ public static class KreuzbergClient
         {
             var resultPtr = NativeMethods.Embed(textsPtr, configPtr);
             if (resultPtr == IntPtr.Zero)
-                ThrowLastError();
+            ThrowLastError();
 
             var json = InteropUtilities.ReadUtf8(resultPtr) ?? "[]";
             NativeMethods.FreeString(resultPtr);
@@ -1309,7 +1308,7 @@ public static class KreuzbergClient
         {
             InteropUtilities.FreeUtf8(textsPtr);
             if (configPtr != IntPtr.Zero)
-                InteropUtilities.FreeUtf8(configPtr);
+            InteropUtilities.FreeUtf8(configPtr);
         }
     }
 
@@ -1638,8 +1637,8 @@ public class PdfPageIterator : IEnumerable<PageResult>, IDisposable
             {
                 var errorPtr = NativeMethods.LastError();
                 var errorMsg = errorPtr != IntPtr.Zero
-                    ? InteropUtilities.ReadUtf8(errorPtr)
-                    : "Failed to create PDF page iterator";
+                ? InteropUtilities.ReadUtf8(errorPtr)
+                : "Failed to create PDF page iterator";
                 throw new KreuzbergException(KreuzbergErrorKind.Unknown, errorMsg ?? "Failed to create PDF page iterator");
             }
             return new PdfPageIterator(handle);
@@ -1673,7 +1672,6 @@ public class PdfPageIterator : IEnumerable<PageResult>, IDisposable
             var resultPtr = NativeMethods.PdfPageIteratorNext(_handle);
             if (resultPtr == IntPtr.Zero)
             {
-                // NULL means exhausted or error. Check kreuzberg_last_error() to distinguish.
                 yield break;
             }
 

@@ -17,8 +17,7 @@ readonly class CodeExportInfo
         public string $name,
         public string $kind,
         public CodeSpan $span,
-    ) {
-    }
+    ) {}
 
     /**
      * @param array<string, mixed> $data
@@ -34,10 +33,6 @@ readonly class CodeExportInfo
         /** @var array<string, mixed> $spanData */
         $spanData = $data['span'] ?? [];
 
-        return new self(
-            name: $name,
-            kind: $kind,
-            span: CodeSpan::fromArray($spanData),
-        );
+        return new self(name: $name, kind: $kind, span: CodeSpan::fromArray($spanData));
     }
 }

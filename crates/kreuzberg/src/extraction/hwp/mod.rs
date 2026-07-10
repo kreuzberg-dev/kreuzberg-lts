@@ -29,7 +29,6 @@ use reader::CfbReader;
 pub fn extract_hwp_text(bytes: &[u8]) -> Result<String> {
     let mut cfb = CfbReader::from_bytes(bytes)?;
 
-    // Parse the 256-byte file header
     let header_data = cfb.read_stream("FileHeader")?;
     let header = FileHeader::parse(header_data)?;
 
@@ -39,7 +38,6 @@ pub fn extract_hwp_text(bytes: &[u8]) -> Result<String> {
         ));
     }
 
-    // Distribution documents store body text under ViewText/SectionN
     let stream_prefix = if header.is_distribute() {
         "ViewText/Section"
     } else {

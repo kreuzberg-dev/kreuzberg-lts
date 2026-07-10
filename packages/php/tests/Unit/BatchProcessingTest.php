@@ -56,14 +56,8 @@ final class BatchProcessingTest extends TestCase
         $this->assertCount(2, $results, 'Should return one result per input file');
 
         foreach ($results as $index => $result) {
-            $this->assertNotEmpty(
-                $result->content,
-                "Result {$index} should have content",
-            );
-            $this->assertNotEmpty(
-                $result->mimeType,
-                "Result {$index} should have MIME type",
-            );
+            $this->assertNotEmpty($result->content, "Result {$index} should have content");
+            $this->assertNotEmpty($result->mimeType, "Result {$index} should have MIME type");
         }
     }
 
@@ -81,7 +75,7 @@ final class BatchProcessingTest extends TestCase
             }
         }
 
-        $dataList = array_map(fn ($file) => file_get_contents($file), $files);
+        $dataList = array_map(fn($file) => file_get_contents($file), $files);
         $mimeTypes = ['application/pdf', 'text/markdown'];
 
         $kreuzberg = new Kreuzberg();
@@ -91,10 +85,7 @@ final class BatchProcessingTest extends TestCase
         $this->assertCount(2, $results, 'Should return one result per input byte array');
 
         foreach ($results as $index => $result) {
-            $this->assertNotEmpty(
-                $result->content,
-                "Result {$index} should have extracted content",
-            );
+            $this->assertNotEmpty($result->content, "Result {$index} should have extracted content");
         }
     }
 
@@ -147,10 +138,7 @@ final class BatchProcessingTest extends TestCase
         $results = $kreuzberg->batchExtractFiles($files);
 
         foreach ($results as $index => $result) {
-            $this->assertNotNull(
-                $result->content,
-                "Result {$index} should have content when config is applied",
-            );
+            $this->assertNotNull($result->content, "Result {$index} should have content when config is applied");
         }
     }
 
@@ -250,11 +238,7 @@ final class BatchProcessingTest extends TestCase
         $this->assertCount(count($files), $results);
 
         foreach ($results as $result) {
-            $this->assertStringContainsString(
-                'pdf',
-                strtolower($result->mimeType),
-                'All results should be PDFs',
-            );
+            $this->assertStringContainsString('pdf', strtolower($result->mimeType), 'All results should be PDFs');
             $this->assertNotEmpty($result->content);
         }
     }
@@ -280,17 +264,10 @@ final class BatchProcessingTest extends TestCase
         $kreuzberg = new Kreuzberg();
         $results = $kreuzberg->batchExtractFiles($files);
 
-        $this->assertCount(
-            count($files),
-            $results,
-            'Should extract all different document types',
-        );
+        $this->assertCount(count($files), $results, 'Should extract all different document types');
 
         foreach ($results as $result) {
-            $this->assertNotEmpty(
-                $result->content,
-                'Each document type should have extracted content',
-            );
+            $this->assertNotEmpty($result->content, 'Each document type should have extracted content');
         }
     }
 
@@ -315,10 +292,7 @@ final class BatchProcessingTest extends TestCase
         $results = $kreuzberg->batchExtractFiles($files, $overrideConfig);
 
         foreach ($results as $result) {
-            $this->assertNotNull(
-                $result->content,
-                'Override config should be applied to all batch items',
-            );
+            $this->assertNotNull($result->content, 'Override config should be applied to all batch items');
         }
     }
 }

@@ -25,7 +25,6 @@ pub fn process_line(line: &str) -> String {
 
             process_command(&cmd, &mut chars, &mut result);
         } else if ch == '$' {
-            // Handle inline math
             result.push(ch);
             while let Some(&c) = chars.peek() {
                 result.push(chars.next().unwrap());
@@ -70,7 +69,6 @@ fn process_command(cmd: &str, chars: &mut std::iter::Peekable<std::str::Chars>, 
             }
         }
         "font" => {
-            // Skip font commands
             while let Some(&c) = chars.peek() {
                 if c == '\\' {
                     break;
@@ -82,10 +80,8 @@ fn process_command(cmd: &str, chars: &mut std::iter::Peekable<std::str::Chars>, 
         | "input" | "include" | "bibliography" | "bibliographystyle" | "graphicspath" | "geometry" | "hypersetup"
         | "rule" | "hspace" | "vspace" | "addtolength" | "setcounter" | "addtocounter" | "value"
         | "VerbatimFootnotes" | "numberwithin" => {
-            // Skip preamble/setup commands - consume all braced arguments
             while chars.peek() == Some(&'{') || chars.peek() == Some(&'[') {
                 if chars.peek() == Some(&'[') {
-                    // Skip optional arguments
                     chars.next();
                     while let Some(&c) = chars.peek() {
                         chars.next();
@@ -99,7 +95,6 @@ fn process_command(cmd: &str, chars: &mut std::iter::Peekable<std::str::Chars>, 
             }
         }
         "cite" | "citep" | "citet" | "citealp" | "citeauthor" | "citeyear" => {
-            // Skip optional argument [...]
             if chars.peek() == Some(&'[') {
                 chars.next();
                 while let Some(&c) = chars.peek() {
@@ -123,7 +118,6 @@ fn process_command(cmd: &str, chars: &mut std::iter::Peekable<std::str::Chars>, 
             }
         }
         "label" => {
-            // Skip labels - they don't produce visible text
             read_braced_from_chars(chars);
         }
         "url" => {
@@ -189,7 +183,6 @@ fn process_command(cmd: &str, chars: &mut std::iter::Peekable<std::str::Chars>, 
             }
         }
         "textgreater" => {
-            // Consume optional {}
             if chars.peek() == Some(&'{') {
                 read_braced_from_chars(chars);
             }
@@ -230,18 +223,14 @@ fn process_command(cmd: &str, chars: &mut std::iter::Peekable<std::str::Chars>, 
         | "maketitle" | "tableofcontents" | "listoffigures" | "listoftables" | "appendix" | "indent" | "relax"
         | "protect" | "nobreak" | "allowbreak" | "sloppy" | "fussy" | "normalsize" | "small" | "footnotesize"
         | "large" | "Large" | "LARGE" | "huge" | "Huge" | "tiny" | "scriptsize" | "doublespacing" | "singlespacing"
-        | "onehalfspacing" => {
-            // Zero-argument commands - skip silently
-        }
+        | "onehalfspacing" => {}
         _ => {
-            // Unknown command: try to extract braced argument as plain text
             if chars.peek() == Some(&'{')
                 && let Some(content) = read_braced_from_chars(chars)
             {
                 let processed = process_line(&content);
                 result.push_str(&processed);
             }
-            // Otherwise skip the command name
         }
     }
 }

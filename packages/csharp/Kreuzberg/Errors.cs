@@ -61,7 +61,7 @@ public class KreuzbergException : Exception, IKreuzbergError
     /// <param name="message">The error message. If null or whitespace, defaults to "kreuzberg: unknown error".</param>
     /// <param name="inner">The inner exception that caused this error, if any.</param>
     public KreuzbergException(KreuzbergErrorKind kind, string message, Exception? inner = null)
-        : base(string.IsNullOrWhiteSpace(message) ? "kreuzberg: unknown error" : message, inner)
+    : base(string.IsNullOrWhiteSpace(message) ? "kreuzberg: unknown error" : message, inner)
     {
         Kind = kind;
     }
@@ -78,7 +78,7 @@ public class KreuzbergValidationException : KreuzbergException
     /// <param name="message">The validation error message.</param>
     /// <param name="inner">The inner exception that caused this validation error, if any.</param>
     public KreuzbergValidationException(string message, Exception? inner = null)
-        : base(KreuzbergErrorKind.Validation, ErrorMapper.PrefixMessage(message, "Validation error"), inner)
+    : base(KreuzbergErrorKind.Validation, ErrorMapper.PrefixMessage(message, "Validation error"), inner)
     {
     }
 }
@@ -94,7 +94,7 @@ public class KreuzbergParsingException : KreuzbergException
     /// <param name="message">The parsing error message.</param>
     /// <param name="inner">The inner exception that caused this parsing error, if any.</param>
     public KreuzbergParsingException(string message, Exception? inner = null)
-        : base(KreuzbergErrorKind.Parsing, ErrorMapper.PrefixMessage(message, "Parsing error"), inner)
+    : base(KreuzbergErrorKind.Parsing, ErrorMapper.PrefixMessage(message, "Parsing error"), inner)
     {
     }
 }
@@ -110,7 +110,7 @@ public class KreuzbergOcrException : KreuzbergException
     /// <param name="message">The OCR error message.</param>
     /// <param name="inner">The inner exception that caused this OCR error, if any.</param>
     public KreuzbergOcrException(string message, Exception? inner = null)
-        : base(KreuzbergErrorKind.Ocr, ErrorMapper.PrefixMessage(message, "OCR error"), inner)
+    : base(KreuzbergErrorKind.Ocr, ErrorMapper.PrefixMessage(message, "OCR error"), inner)
     {
     }
 }
@@ -126,7 +126,7 @@ public class KreuzbergCacheException : KreuzbergException
     /// <param name="message">The cache error message.</param>
     /// <param name="inner">The inner exception that caused this cache error, if any.</param>
     public KreuzbergCacheException(string message, Exception? inner = null)
-        : base(KreuzbergErrorKind.Cache, ErrorMapper.PrefixMessage(message, "Cache error"), inner)
+    : base(KreuzbergErrorKind.Cache, ErrorMapper.PrefixMessage(message, "Cache error"), inner)
     {
     }
 }
@@ -142,7 +142,7 @@ public class KreuzbergImageProcessingException : KreuzbergException
     /// <param name="message">The image processing error message.</param>
     /// <param name="inner">The inner exception that caused this image processing error, if any.</param>
     public KreuzbergImageProcessingException(string message, Exception? inner = null)
-        : base(KreuzbergErrorKind.ImageProcessing, ErrorMapper.PrefixMessage(message, "Image processing error"), inner)
+    : base(KreuzbergErrorKind.ImageProcessing, ErrorMapper.PrefixMessage(message, "Image processing error"), inner)
     {
     }
 }
@@ -158,7 +158,7 @@ public class KreuzbergSerializationException : KreuzbergException
     /// <param name="message">The serialization error message.</param>
     /// <param name="inner">The inner exception that caused this serialization error, if any.</param>
     public KreuzbergSerializationException(string message, Exception? inner = null)
-        : base(KreuzbergErrorKind.Serialization, ErrorMapper.PrefixMessage(message, "Serialization error"), inner)
+    : base(KreuzbergErrorKind.Serialization, ErrorMapper.PrefixMessage(message, "Serialization error"), inner)
     {
     }
 }
@@ -180,7 +180,7 @@ public class KreuzbergMissingDependencyException : KreuzbergException
     /// <param name="message">The error message describing the missing dependency.</param>
     /// <param name="inner">The inner exception that caused this error, if any.</param>
     public KreuzbergMissingDependencyException(string dependency, string message, Exception? inner = null)
-        : base(KreuzbergErrorKind.MissingDependency, ErrorMapper.PrefixMessage(message, $"Missing dependency: {dependency}"), inner)
+    : base(KreuzbergErrorKind.MissingDependency, ErrorMapper.PrefixMessage(message, $"Missing dependency: {dependency}"), inner)
     {
         Dependency = dependency;
     }
@@ -203,7 +203,7 @@ public class KreuzbergPluginException : KreuzbergException
     /// <param name="message">The error message describing the plugin failure.</param>
     /// <param name="inner">The inner exception that caused this plugin error, if any.</param>
     public KreuzbergPluginException(string pluginName, string message, Exception? inner = null)
-        : base(KreuzbergErrorKind.Plugin, ErrorMapper.PrefixMessage(message, "Plugin error"), inner)
+    : base(KreuzbergErrorKind.Plugin, ErrorMapper.PrefixMessage(message, "Plugin error"), inner)
     {
         PluginName = pluginName;
     }
@@ -226,7 +226,7 @@ public class KreuzbergUnsupportedFormatException : KreuzbergException
     /// <param name="message">The error message describing why the format is unsupported.</param>
     /// <param name="inner">The inner exception that caused this error, if any.</param>
     public KreuzbergUnsupportedFormatException(string format, string message, Exception? inner = null)
-        : base(KreuzbergErrorKind.UnsupportedFormat, ErrorMapper.PrefixMessage(message, $"Unsupported format: {format}"), inner)
+    : base(KreuzbergErrorKind.UnsupportedFormat, ErrorMapper.PrefixMessage(message, $"Unsupported format: {format}"), inner)
     {
         Format = format;
     }
@@ -247,7 +247,7 @@ public class KreuzbergIOException : IOException, IKreuzbergError
     /// <param name="message">The I/O error message.</param>
     /// <param name="inner">The inner exception that caused this I/O error, if any.</param>
     public KreuzbergIOException(string message, Exception? inner = null)
-        : base(ErrorMapper.PrefixMessage(message, "IO error"), inner)
+    : base(ErrorMapper.PrefixMessage(message, "IO error"), inner)
     {
     }
 }
@@ -266,7 +266,7 @@ public class KreuzbergRuntimeException : Exception, IKreuzbergError
     /// <param name="message">The runtime error message.</param>
     /// <param name="inner">The inner exception that caused this runtime error, if any.</param>
     public KreuzbergRuntimeException(string message, Exception? inner = null)
-        : base(ErrorMapper.PrefixMessage(message, "Runtime error"), inner)
+    : base(ErrorMapper.PrefixMessage(message, "Runtime error"), inner)
     {
     }
 }
@@ -282,7 +282,7 @@ public class KreuzbergEmbeddingException : KreuzbergException
     /// <param name="message">The embedding error message.</param>
     /// <param name="inner">The inner exception that caused this error, if any.</param>
     public KreuzbergEmbeddingException(string message, Exception? inner = null)
-        : base(KreuzbergErrorKind.Embedding, ErrorMapper.PrefixMessage(message, "Embedding error"), inner)
+    : base(KreuzbergErrorKind.Embedding, ErrorMapper.PrefixMessage(message, "Embedding error"), inner)
     {
     }
 }
@@ -298,7 +298,7 @@ public class KreuzbergCancelledException : KreuzbergException
     /// <param name="message">The cancellation message.</param>
     /// <param name="inner">The inner exception that caused this error, if any.</param>
     public KreuzbergCancelledException(string message, Exception? inner = null)
-        : base(KreuzbergErrorKind.Cancelled, ErrorMapper.PrefixMessage(message, "Extraction cancelled"), inner)
+    : base(KreuzbergErrorKind.Cancelled, ErrorMapper.PrefixMessage(message, "Extraction cancelled"), inner)
     {
     }
 }

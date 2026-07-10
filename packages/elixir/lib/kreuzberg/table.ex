@@ -23,11 +23,11 @@ defmodule Kreuzberg.Table do
   """
 
   @type t :: %__MODULE__{
-          cells: list(list(String.t())),
-          markdown: String.t(),
-          page_number: non_neg_integer(),
-          bounding_box: map() | nil
-        }
+  cells: list(list(String.t())),
+  markdown: String.t(),
+  page_number: non_neg_integer(),
+  bounding_box: map() | nil
+  }
 
   defstruct cells: [], markdown: "", page_number: 0, bounding_box: nil
 
@@ -42,10 +42,10 @@ defmodule Kreuzberg.Table do
   @spec from_map(map()) :: t()
   def from_map(data) when is_map(data) do
     %__MODULE__{
-      cells: data["cells"] || [],
-      markdown: data["markdown"] || "",
-      page_number: data["page_number"] || 0,
-      bounding_box: data["bounding_box"]
+    cells: data["cells"] || [],
+    markdown: data["markdown"] || "",
+    page_number: data["page_number"] || 0,
+    bounding_box: data["bounding_box"]
     }
   end
 
@@ -55,10 +55,10 @@ defmodule Kreuzberg.Table do
   @spec to_map(t()) :: map()
   def to_map(%__MODULE__{} = table) do
     %{
-      "cells" => table.cells,
-      "markdown" => table.markdown,
-      "page_number" => table.page_number,
-      "bounding_box" => table.bounding_box
+    "cells" => table.cells,
+    "markdown" => table.markdown,
+    "page_number" => table.page_number,
+    "bounding_box" => table.bounding_box
     }
   end
 

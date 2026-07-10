@@ -57,8 +57,6 @@ impl<'a> PdfStructTree<'a> {
     /// Each item is a tuple of `(element, depth)` where depth starts at 0 for
     /// top-level (root) elements and increases by 1 for each level of nesting.
     pub fn iter(&self) -> PdfStructTreeIterator<'_> {
-        // Initialize stack with root children in reverse order so that the
-        // first child is popped first (depth-first, left-to-right traversal).
         let mut stack = Vec::new();
         let count = self.children_count();
         for i in (0..count).rev() {
@@ -112,7 +110,6 @@ impl<'a> Iterator for PdfStructTreeIterator<'a> {
     fn next(&mut self) -> Option<Self::Item> {
         let (element, depth) = self.stack.pop()?;
 
-        // Push children in reverse order so the first child is processed next.
         let child_count = element.children_count();
         for i in (0..child_count).rev() {
             if let Some(child) = element.child_at_index(i) {

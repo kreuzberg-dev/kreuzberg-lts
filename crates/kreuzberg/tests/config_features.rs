@@ -517,11 +517,9 @@ More detailed content here in the subsection.
     let chunks = result.chunks.expect("Should have chunks");
     assert!(chunks.len() >= 2, "Should have at least 2 chunks");
 
-    // At least one chunk should have heading_context populated
     let has_heading = chunks.iter().any(|c| c.metadata.heading_context.is_some());
     assert!(has_heading, "At least one chunk should have heading_context");
 
-    // Verify heading context structure
     for chunk in &chunks {
         if let Some(ref ctx) = chunk.metadata.heading_context {
             for heading in &ctx.headings {
@@ -571,14 +569,11 @@ A brief summary of the document.
     let chunks = result.chunks.expect("Should have chunks");
     assert!(!chunks.is_empty(), "Should have at least one chunk");
 
-    // Verify chunk metadata is populated
     for chunk in &chunks {
         assert!(!chunk.content.is_empty(), "Chunk should not be empty");
-        // chunk_type must always be set (never uninitialized)
         let _ = &chunk.chunk_type;
     }
 
-    // At least one chunk should have heading context (from markdown structure)
     let has_heading_context = chunks.iter().any(|c| c.metadata.heading_context.is_some());
     assert!(
         has_heading_context,

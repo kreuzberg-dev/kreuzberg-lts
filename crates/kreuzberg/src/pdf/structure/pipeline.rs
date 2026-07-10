@@ -54,7 +54,6 @@ fn extract_structure_tree_pages(
                     block_count = extraction.blocks.len(),
                     "PDF structure pipeline: page extracted via structure tree"
                 );
-                // Log the roles of the first few blocks for debugging
                 for (bi, block) in extraction.blocks.iter().take(10).enumerate() {
                     tracing::trace!(
                         page = i,
@@ -70,42 +69,26 @@ fn extract_structure_tree_pages(
                 let page_width = page.width().value;
                 let filtered_blocks = filter_sidebar_blocks(&extraction.blocks, page_width);
                 let mut paragraphs = extracted_blocks_to_paragraphs(&filtered_blocks);
-                // Apply ligature repair to structure tree text (the structure tree
-                // path bypasses chars_to_segments where repair normally happens).
-                // First try error-flag-based repair, then fall back to contextual
-                // heuristic for fonts where pdfium doesn't flag the encoding errors.
-                // Try error-flag-based repair first (most accurate).
                 if let Some(repair_map) = build_ligature_repair_map(&page) {
                     has_font_encoding_issues = true;
                     apply_to_all_segments(&mut paragraphs, |t| apply_ligature_repairs(t, &repair_map));
                 }
-                // Then apply contextual ligature repair for fonts where
-                // pdfium doesn't flag encoding errors. Check the actual
-                // paragraph text (not page.text()) since structure tree
-                // text may differ from the page text layer.
                 {
                     let all_text = build_page_text(&paragraphs);
                     if text_has_ligature_corruption(&all_text) {
                         apply_to_all_segments(&mut paragraphs, repair_contextual_ligatures);
                     }
-                    // Repair broken word spacing (single-letter fragments like "M ust")
                     if text_has_broken_word_spacing(&all_text) {
                         apply_to_all_segments(&mut paragraphs, repair_broken_word_spacing);
                     }
                 }
-                // Fused text normalization pass: apply all 5 text repairs in a single
-                // traversal instead of 5 separate passes over all segments.
                 apply_to_all_segments(&mut paragraphs, fused_text_repairs);
-                // Dehyphenate: rejoin trailing hyphens. Use positional
-                // data for full-line checks when bounds are available.
                 let has_positions = paragraphs.iter().any(|p| {
                     p.lines
                         .iter()
                         .any(|l| l.segments.iter().any(|s| s.width > 0.0 || s.x > 0.0))
                 });
                 dehyphenate_paragraphs(&mut paragraphs, has_positions);
-                // Split paragraphs with embedded bullet characters (•) into
-                // separate list item paragraphs (common in structure tree PDFs).
                 split_embedded_list_items(&mut paragraphs);
                 let heading_count = paragraphs.iter().filter(|p| p.heading_level.is_some()).count();
                 let bold_count = paragraphs.iter().filter(|p| p.is_bold).count();
@@ -122,10 +105,6 @@ fn extract_structure_tree_pages(
                     struct_tree_results.push(None);
                     heuristic_pages.push(i as usize);
                 } else if heading_count == 0 && has_font_variation {
-                    // Structure tree has text with font size variation but no
-                    // heading tags. Add to heuristic extraction for font-size
-                    // clustering data; heading classification will be applied
-                    // to these paragraphs in Stage 3.
                     tracing::debug!(
                         page = i,
                         "PDF structure pipeline: structure tree has font variation but no headings, will classify via font-size clustering"
@@ -205,8 +184,6 @@ fn extract_heuristic_segments(
             );
         }
 
-        // Filter tiny text in-place (avoids cloning all segments).
-        // Only filter if at least some segments would survive.
         if segments
             .iter()
             .any(|s| s.font_size >= MIN_FONT_SIZE && !s.text.trim().is_empty())
@@ -214,9 +191,6 @@ fn extract_heuristic_segments(
             segments.retain(|s| s.font_size >= MIN_FONT_SIZE);
         }
 
-        // When layout hints are available, skip geometric margin filtering and
-        // standalone page number removal. The layout model handles PageHeader/
-        // PageFooter classification more accurately than hard margin cutoffs.
         if !has_layout_hints {
             let page_height = page.height().value;
             let top_frac = top_margin.unwrap_or(PAGE_TOP_MARGIN_FRACTION).clamp(0.0, 0.5);
@@ -224,13 +198,10 @@ fn extract_heuristic_segments(
             let top_cutoff = page_height * (1.0 - top_frac);
             let bottom_cutoff = page_height * bottom_frac;
 
-            // When include_headers or include_footers is set, relax margin
-            // filtering so those regions are preserved.
             let skip_top = include_headers;
             let skip_bottom = include_footers;
 
             if !skip_top || !skip_bottom {
-                // Check if margin filtering would leave content before applying
                 let would_survive = segments.iter().any(|s| {
                     !s.text.trim().is_empty()
                         && (s.baseline_y == 0.0
@@ -274,10 +245,6 @@ fn build_heading_map(
     heuristic_pages: &[usize],
     k_clusters: usize,
 ) -> Result<(Vec<(f32, Option<u8>)>, ahash::AHashSet<usize>)> {
-    // Identify structure tree pages that have font size variation but no
-    // heading signals — these need font-size-based heading classification.
-    // Pages with no font variation are left as plain paragraphs (classify
-    // would incorrectly assign headings based on unrelated pages' font data).
     let struct_tree_needs_classify: ahash::AHashSet<usize> = struct_tree_results
         .iter()
         .enumerate()
@@ -293,7 +260,6 @@ fn build_heading_map(
         })
         .collect();
 
-    // Build TextBlocks from heuristic pages + struct tree pages needing classification.
     let mut all_blocks: Vec<TextBlock> = Vec::new();
     let empty_bbox = BoundingBox {
         left: 0.0,
@@ -313,7 +279,6 @@ fn build_heading_map(
             });
         }
     }
-    // Include font sizes from struct tree pages that need classification.
     for &i in &struct_tree_needs_classify {
         if let Some(paragraphs) = &struct_tree_results[i] {
             for para in paragraphs {
@@ -391,14 +356,6 @@ fn process_single_page(
     } = input;
 
     if let Some(mut paragraphs) = struct_paragraphs {
-        // Structure tree pages: use the PDF's own paragraph structure.
-        // The structure tree preserves the author's intended paragraph boundaries
-        // and heading hierarchy. Layout overrides (apply_layout_overrides) handle
-        // classification corrections from the layout model without destroying
-        // paragraph structure.
-        //
-        // Apply heading classification to struct tree pages that have
-        // font size variation but no structure-tree-level headings.
         if needs_classify {
             tracing::debug!(
                 page = i,
@@ -406,15 +363,9 @@ fn process_single_page(
             );
             classify_paragraphs(&mut paragraphs, heading_map);
         }
-        // Merge consecutive body-text paragraphs from structure tree.
-        // Many PDFs tag each visual line as a separate <P>, causing over-splitting.
         merge_continuation_paragraphs(&mut paragraphs);
-        // Apply layout detection overrides when available.
         if let Some(ref hints) = page_hints {
             super::layout_classify::apply_layout_overrides(&mut paragraphs, hints, 0.5, 0.2, doc_body_font_size);
-            // Honour include_headers / include_footers: clear any furniture flag that the
-            // layout model set on PageHeader / PageFooter paragraphs so they survive
-            // retain_page_furniture_safely (which physically removes furniture paragraphs).
             un_mark_layout_furniture_per_config(&mut paragraphs, include_headers, include_footers);
             tracing::debug!(
                 page = i,
@@ -428,9 +379,6 @@ fn process_single_page(
         paragraphs
     } else {
         let page_segments = heuristic_segments;
-        // Full-text extraction: blocks from page.text().all() with char-indexed
-        // font metadata. Both layout and no-layout paths use the same extraction.
-        // Layout hints refine classifications when available.
         tracing::debug!(
             page = i,
             segments = page_segments.len(),
@@ -446,9 +394,6 @@ fn process_single_page(
         );
         if let Some(ref hints) = page_hints {
             super::layout_classify::apply_layout_overrides(&mut paragraphs, hints, 0.5, 0.2, doc_body_font_size);
-            // Honour include_headers / include_footers: clear any furniture flag that the
-            // layout model set on PageHeader / PageFooter paragraphs so they survive
-            // retain_page_furniture_safely (which physically removes furniture paragraphs).
             un_mark_layout_furniture_per_config(&mut paragraphs, include_headers, include_footers);
             tracing::debug!(
                 page = i,
@@ -509,18 +454,10 @@ pub fn extract_document_structure(
 
     let mut has_font_encoding_issues = false;
 
-    // Previously this forced heuristic extraction when layout hints were present,
-    // but apply_layout_overrides() now supports proportional matching for structure
-    // tree pages without positional data. Forcing heuristic extraction degrades text
-    // quality (chars_to_segments garbles words), so we let structure tree extraction
-    // proceed normally and apply layout hints in Stage 3.
-
-    // Stage 0: Try structure tree extraction for each page.
     let (mut struct_tree_results, heuristic_pages, struct_tree_font_issues) =
         extract_structure_tree_pages(pages, page_count)?;
     has_font_encoding_issues |= struct_tree_font_issues;
 
-    // Stage 1: Extract segments from pages that need heuristic extraction.
     let has_hints = layout_hints.is_some();
     let (mut all_page_segments, all_image_positions, mut all_page_gap_ys, page_heights) = extract_heuristic_segments(
         pages,
@@ -534,7 +471,6 @@ pub fn extract_document_structure(
         max_images_per_page,
     );
 
-    // Detect font encoding issues on heuristic pages.
     for &i in &heuristic_pages {
         let page = pages.get(i as PdfPageIndex).map_err(|e| {
             crate::pdf::error::PdfError::TextExtractionFailed(format!("Failed to get page {}: {:?}", i, e))
@@ -545,28 +481,16 @@ pub fn extract_document_structure(
         }
     }
 
-    // Stage 2: Global font-size clustering (heuristic pages + struct tree pages needing classification).
     let (heading_map, struct_tree_needs_classify) =
         build_heading_map(&all_page_segments, &struct_tree_results, &heuristic_pages, k_clusters)?;
 
-    // Compute the document-level body text font size from the heading map.
-    // This is the centroid of the cluster NOT classified as a heading.
-    // Used by layout detection to distinguish section headers (larger font)
-    // from bold sub-headings at body text size.
     let doc_body_font_size: Option<f32> = heading_map
         .iter()
         .find(|(_, level)| level.is_none())
         .map(|(size, _)| *size);
 
-    // Extract tables from layout-detected Table regions.
-    // Uses the same segments as region assembly (from Stage 1) converted to
-    // word-level HocrWords, ensuring consistency between table extraction
-    // and text flow. Falls back to character-level extraction for pages
-    // without heuristic segments (structure-tree-only pages).
     let mut layout_tables: Vec<crate::types::Table> = Vec::new();
     if let Some(hints_pages) = layout_hints {
-        // Phase 1 (sequential): Prepare words per page. This may require pdfium
-        // calls for structure-tree-only pages, so it must be sequential.
         struct TablePageData {
             page_idx: usize,
             words: Vec<crate::pdf::table_reconstruct::HocrWord>,
@@ -583,11 +507,6 @@ pub fn extract_document_structure(
                 continue;
             }
 
-            // Always use pdfium's character API for per-word positions.
-            // Our SegmentData has line-level granularity (not per-word), so
-            // segments_to_words() would give imprecise bboxes that break
-            // word-to-cell matching. extract_words_from_page() uses
-            // page.text().chars() for accurate per-word bounding boxes.
             let page = pages.get(page_idx as PdfPageIndex).map_err(|e| {
                 crate::pdf::error::PdfError::TextExtractionFailed(format!(
                     "Failed to get page {} for table extraction: {:?}",
@@ -620,14 +539,11 @@ pub fn extract_document_structure(
             });
         }
 
-        // Phase 2 (parallel): Run table structure inference + heuristic fallback.
-        // Supports TATR (default) and SLANeXT table models via `table_model` config.
         #[cfg(feature = "layout-detection")]
         {
             use crate::core::config::layout::TableModel;
             use std::cell::RefCell;
 
-            // When Disabled, skip model inference entirely and go straight to heuristic path.
             let use_model_inference = table_model != TableModel::Disabled;
 
             thread_local! {
@@ -637,12 +553,11 @@ pub fn extract_document_structure(
                 static TL_CLASSIFIER: RefCell<Option<crate::layout::models::table_classifier::TableClassifier>> = const { RefCell::new(None) };
             }
 
-            // Determine which table model to use and seed thread-locals
             let slanet_variant = match table_model {
                 TableModel::SlanetWired => Some("slanet_wired"),
                 TableModel::SlanetWireless => Some("slanet_wireless"),
                 TableModel::SlanetPlus => Some("slanet_plus"),
-                TableModel::SlanetAuto => Some("slanet_wired"), // primary=wired, alt=wireless
+                TableModel::SlanetAuto => Some("slanet_wired"),
                 TableModel::Tatr | TableModel::Disabled => None,
             };
             let is_auto = table_model == TableModel::SlanetAuto;
@@ -650,7 +565,6 @@ pub fn extract_document_structure(
             let has_table_model = if !use_model_inference {
                 false
             } else if let Some(variant) = slanet_variant {
-                // SLANeXT path
                 let seed = if layout_images.is_some() {
                     crate::layout::take_or_create_slanet(variant, acceleration)
                 } else {
@@ -662,7 +576,6 @@ pub fn extract_document_structure(
                         *cell.borrow_mut() = Some(model);
                     });
                 }
-                // For auto mode, also seed wireless model + classifier
                 if is_auto && has {
                     if let Some(alt) = crate::layout::take_or_create_slanet("slanet_wireless", acceleration) {
                         TL_SLANET_ALT.with(|cell| {
@@ -677,7 +590,6 @@ pub fn extract_document_structure(
                 }
                 has
             } else {
-                // TATR path (default)
                 let seed = if layout_images.is_some() {
                     crate::layout::take_or_create_tatr(acceleration)
                 } else {
@@ -713,7 +625,6 @@ pub fn extract_document_structure(
                         .par_iter()
                         .map(|tp| {
                             if let Some(variant) = slanet_variant {
-                                // SLANeXT path — ensure models are loaded in thread-local
                                 TL_SLANET.with(|cell| {
                                     let mut slanet_ref = cell.borrow_mut();
                                     if slanet_ref.is_none() {
@@ -736,7 +647,6 @@ pub fn extract_document_structure(
                                     });
                                 }
 
-                                // Now borrow all needed models and run recognition
                                 TL_SLANET.with(|slanet_cell| {
                                     let mut slanet_ref = slanet_cell.borrow_mut();
                                     let Some(slanet) = slanet_ref.as_mut() else {
@@ -749,16 +659,12 @@ pub fn extract_document_structure(
                                     {
                                         let hints = &hints_pages[tp.page_idx];
 
-                                        // In auto mode, build the classifier tuple
-                                        // Since we can't borrow multiple RefCells simultaneously,
-                                        // take the alt model and classifier temporarily.
                                         let mut classifier_pair = if is_auto {
                                             let alt = TL_SLANET_ALT.with(|c| c.borrow_mut().take());
                                             let cls = TL_CLASSIFIER.with(|c| c.borrow_mut().take());
                                             match (cls, alt) {
                                                 (Some(c), Some(a)) => Some((c, a)),
                                                 (c, a) => {
-                                                    // Put back anything we took
                                                     if let Some(cls) = c {
                                                         TL_CLASSIFIER.with(|cell| {
                                                             *cell.borrow_mut() = Some(cls);
@@ -793,7 +699,6 @@ pub fn extract_document_structure(
                                             classifier_arg,
                                         );
 
-                                        // Return borrowed models
                                         if let Some((cls, alt)) = classifier_pair {
                                             TL_CLASSIFIER.with(|cell| {
                                                 *cell.borrow_mut() = Some(cls);
@@ -808,7 +713,6 @@ pub fn extract_document_structure(
                                         }
                                     }
 
-                                    // Fallback: heuristic
                                     let hints = &hints_pages[tp.page_idx];
                                     super::regions::extract_tables_from_layout_hints(
                                         &tp.words,
@@ -820,7 +724,6 @@ pub fn extract_document_structure(
                                     )
                                 })
                             } else {
-                                // TATR path (default)
                                 TL_TATR.with(|cell| {
                                     let mut tatr_ref = cell.borrow_mut();
                                     if tatr_ref.is_none() {
@@ -854,7 +757,6 @@ pub fn extract_document_structure(
                                         }
                                     }
 
-                                    // Fallback: heuristic
                                     let hints = &hints_pages[tp.page_idx];
                                     super::regions::extract_tables_from_layout_hints(
                                         &tp.words,
@@ -873,7 +775,6 @@ pub fn extract_document_structure(
                         .iter()
                         .map(|tp| {
                             if let Some(variant) = slanet_variant {
-                                // SLANeXT path — ensure models are loaded in thread-local
                                 TL_SLANET.with(|cell| {
                                     let mut slanet_ref = cell.borrow_mut();
                                     if slanet_ref.is_none() {
@@ -896,7 +797,6 @@ pub fn extract_document_structure(
                                     });
                                 }
 
-                                // Now borrow all needed models and run recognition
                                 TL_SLANET.with(|slanet_cell| {
                                     let mut slanet_ref = slanet_cell.borrow_mut();
                                     let Some(slanet) = slanet_ref.as_mut() else {
@@ -974,7 +874,6 @@ pub fn extract_document_structure(
                                     )
                                 })
                             } else {
-                                // TATR path (default)
                                 TL_TATR.with(|cell| {
                                     let mut tatr_ref = cell.borrow_mut();
                                     if tatr_ref.is_none() {
@@ -1021,7 +920,6 @@ pub fn extract_document_structure(
                         layout_tables.extend(tables);
                     }
 
-                    // Return thread-local models to global cache
                     if let Some(variant) = slanet_variant {
                         TL_SLANET.with(|cell| {
                             if let Some(model) = cell.borrow_mut().take() {
@@ -1049,7 +947,6 @@ pub fn extract_document_structure(
                     }
                 }
             } else {
-                // No TATR — run heuristic fallback sequentially
                 tracing::debug!(
                     table_page_count = table_pages.len(),
                     "Running heuristic table extraction (no TATR)"
@@ -1070,7 +967,6 @@ pub fn extract_document_structure(
 
         #[cfg(not(feature = "layout-detection"))]
         {
-            // No layout detection — run heuristic fallback sequentially
             for tp in &table_pages {
                 let hints = &hints_pages[tp.page_idx];
                 layout_tables.extend(super::regions::extract_tables_from_layout_hints(
@@ -1087,22 +983,13 @@ pub fn extract_document_structure(
 
     tracing::debug!(tables_found = layout_tables.len(), "Table extraction complete");
 
-    // Build per-page index of successfully extracted table bounding boxes.
-    // This tells assign_segments_to_regions which Table bboxes actually produced
-    // output, so it only suppresses segments for those — not for failed extractions.
-    // Include BOTH layout-detected tables and heuristic tables (from extraction.rs)
-    // to prevent text duplication when a table is extracted by the heuristic path.
     let extracted_table_bboxes_by_page: ahash::AHashMap<usize, Vec<crate::types::BoundingBox>> = {
         let mut map: ahash::AHashMap<usize, Vec<crate::types::BoundingBox>> = ahash::AHashMap::new();
         for table in &layout_tables {
             if let Some(ref bb) = table.bounding_box {
-                // Table.page_number is 1-indexed, convert to 0-indexed
                 map.entry(table.page_number.saturating_sub(1)).or_default().push(*bb);
             }
         }
-        // Also include heuristic tables from extraction.rs — these have bboxes
-        // but weren't previously used for segment suppression, causing text
-        // duplication on pages where heuristic extraction finds a table.
         for table in tables {
             if let Some(ref bb) = table.bounding_box {
                 map.entry(table.page_number.saturating_sub(1)).or_default().push(*bb);
@@ -1118,8 +1005,6 @@ pub fn extract_document_structure(
         map
     };
 
-    // Validate layout regions via connected component analysis.
-    // Regions flagged as Empty should not suppress segments.
     #[cfg(feature = "layout-detection")]
     let validations_by_page: ahash::AHashMap<usize, Vec<super::regions::layout_validation::RegionValidation>> = {
         let mut map = ahash::AHashMap::new();
@@ -1149,12 +1034,6 @@ pub fn extract_document_structure(
     let validations_by_page: ahash::AHashMap<usize, Vec<super::regions::layout_validation::RegionValidation>> =
         ahash::AHashMap::new();
 
-    // Stage 3: Per-page structured extraction (parallelised with rayon).
-    //
-    // Pre-split all per-page owned data into a Vec<PageInput> so that rayon can
-    // hand each worker an independent chunk with no shared mutable state.
-    // Shared read-only data (heading_map, layout_hints, etc.) is accessed via
-    // immutable references, which are Sync and safe to share across threads.
     let page_inputs: Vec<PageInput> = (0..page_count as usize)
         .map(|i| PageInput {
             page_index: i,
@@ -1181,29 +1060,19 @@ pub fn extract_document_structure(
         .map(|input| process_single_page(input, &heading_map, doc_body_font_size))
         .collect();
 
-    // Refine heading hierarchy across the document: merge split titles and
-    // demote numbered section headings when a title H1 is detected.
     refine_heading_hierarchy(&mut all_page_paragraphs);
     demote_unnumbered_subsections(&mut all_page_paragraphs);
     demote_heading_runs(&mut all_page_paragraphs);
 
-    // Mark short text that repeats across many pages as furniture (headers/footers/watermarks).
-    // When strip_repeating_text is disabled, skip cross-page repeating text detection entirely.
     if strip_repeating_text {
         mark_cross_page_repeating_text(&mut all_page_paragraphs, &page_heights);
-        // Tier 2: catch short repeating text outside margin zones (e.g. conference headers).
         mark_cross_page_repeating_short_text(&mut all_page_paragraphs);
     }
-    // Mark arXiv watermark identifiers on first pages.
     mark_arxiv_noise(&mut all_page_paragraphs);
     for page in &mut all_page_paragraphs {
         retain_page_furniture_safely(page);
     }
 
-    // Deduplicate paragraphs with identical text within each page.
-    // Catches bold/shadow rendering artifacts (consecutive duplicates)
-    // and table content rendered as both table and body text.
-    // When strip_repeating_text is disabled, skip dedup to preserve all content.
     if strip_repeating_text {
         deduplicate_paragraphs(&mut all_page_paragraphs);
     }
@@ -1216,14 +1085,9 @@ pub fn extract_document_structure(
         "PDF structure pipeline: stage 3 complete, assembling document"
     );
 
-    // Stage 4: Assemble InternalDocument with tables interleaved
-    // Combine heuristic tables (from extraction.rs) with layout-detected tables,
-    // then deduplicate overlapping tables on the same page.
     let mut combined_tables: Vec<crate::types::Table> = tables.iter().cloned().chain(layout_tables).collect();
     deduplicate_overlapping_tables(&mut combined_tables);
 
-    // Convert image positions to (page_idx, image_index) pairs for the assembler.
-    // Skip when inject_placeholders=false: the caller does not want image links in output.
     let image_pos_pairs: Vec<(usize, usize)> = if inject_placeholders {
         all_image_positions
             .iter()
@@ -1242,10 +1106,6 @@ pub fn extract_document_structure(
 
     let mut doc = assemble_internal_document(all_page_paragraphs, &combined_tables, &image_pos_pairs);
 
-    // Stage 4b: Populate doc.images with actual image data from pdfium.
-    // Image elements reference indices into doc.images, which must be populated
-    // for markdown/HTML rendering to produce `![desc](image_N.png)` instead of `![]()`.
-    // Skip when inject_placeholders=false to avoid unnecessary rendering work.
     if inject_placeholders {
         populate_images_from_pdfium(document, &all_image_positions, &mut doc, cancel_token);
     }
@@ -1253,9 +1113,6 @@ pub fn extract_document_structure(
     let element_count = doc.elements.len();
     tracing::debug!(element_count, "PDF structure pipeline: assembly complete");
 
-    // Stage 5: Element-level text normalization.
-    // Apply ligature repair and Unicode normalization to each element's text
-    // so that any text that bypassed per-segment processing is also cleaned up.
     for elem in &mut doc.elements {
         if elem.text.is_empty() {
             continue;
@@ -1363,7 +1220,6 @@ fn deduplicate_overlapping_tables(tables: &mut Vec<crate::types::Table>) {
             if tables[i].page_number != tables[j].page_number {
                 continue;
             }
-            // Check bbox overlap
             if let (Some(a), Some(b)) = (&tables[i].bounding_box, &tables[j].bounding_box) {
                 let inter_x = (a.x1.min(b.x1) - a.x0.max(b.x0)).max(0.0);
                 let inter_y = (a.y1.min(b.y1) - a.y0.max(b.y0)).max(0.0);
@@ -1373,7 +1229,6 @@ fn deduplicate_overlapping_tables(tables: &mut Vec<crate::types::Table>) {
                 let min_area = area_a.min(area_b);
 
                 if min_area > 0.0 && intersection / min_area > 0.5 {
-                    // Keep the one with more content
                     let content_a = tables[i].cells.len() + tables[i].markdown.len();
                     let content_b = tables[j].cells.len() + tables[j].markdown.len();
                     if content_a >= content_b {
@@ -1434,22 +1289,16 @@ fn retain_page_furniture_safely(paragraphs: &mut Vec<PdfParagraph>) {
     let furniture_count = paragraphs.iter().filter(|p| p.is_page_furniture).count();
 
     if furniture_count == 0 {
-        return; // Nothing to filter
+        return;
     }
 
     if furniture_count >= total {
-        // All paragraphs marked as furniture — model likely wrong.
-        // Clear furniture markings to preserve content.
         for para in paragraphs.iter_mut() {
             para.is_page_furniture = false;
         }
         return;
     }
 
-    // Safety valve: if stripping furniture would remove >30% of total text
-    // content, the layout model likely misclassified substantive content.
-    // In that case, clear furniture markings entirely rather than risk
-    // dropping document titles, section headers, or other real content.
     let total_alphanum: usize = paragraphs.iter().map(paragraph_alphanum_len).sum();
 
     if total_alphanum > 0 {
@@ -1460,7 +1309,6 @@ fn retain_page_furniture_safely(paragraphs: &mut Vec<PdfParagraph>) {
             .sum();
 
         if furniture_alphanum * 100 > total_alphanum * 30 {
-            // Removing furniture would drop >30% of text — likely misclassified.
             for para in paragraphs.iter_mut() {
                 para.is_page_furniture = false;
             }
@@ -1468,10 +1316,6 @@ fn retain_page_furniture_safely(paragraphs: &mut Vec<PdfParagraph>) {
         }
     }
 
-    // Per-paragraph guard: don't strip furniture paragraphs that contain
-    // substantive content (>80 alphanumeric chars). Short page numbers,
-    // dates, and running titles are typically well under this threshold,
-    // while misclassified body text or document titles exceed it.
     const MIN_SUBSTANTIVE_CHARS: usize = 80;
 
     paragraphs.retain(|p| {
@@ -1500,8 +1344,7 @@ fn filter_standalone_page_numbers(segments: &mut Vec<SegmentData>) {
         return;
     }
 
-    // Identify candidate page number indices
-    let tolerance = 3.0_f32; // baseline proximity tolerance in points
+    let tolerance = 3.0_f32;
     let candidates: Vec<usize> = segments
         .iter()
         .enumerate()
@@ -1510,7 +1353,6 @@ fn filter_standalone_page_numbers(segments: &mut Vec<SegmentData>) {
             !trimmed.is_empty() && trimmed.len() <= 4 && trimmed.chars().all(|c| c.is_ascii_digit())
         })
         .filter(|(idx, s)| {
-            // Check that no other segment shares this baseline
             !segments
                 .iter()
                 .enumerate()
@@ -1519,7 +1361,6 @@ fn filter_standalone_page_numbers(segments: &mut Vec<SegmentData>) {
         .map(|(idx, _)| idx)
         .collect();
 
-    // Remove in reverse order to preserve indices
     for &idx in candidates.iter().rev() {
         segments.remove(idx);
     }
@@ -1550,7 +1391,6 @@ fn dehyphenate_paragraphs(paragraphs: &mut [PdfParagraph], has_positions: bool) 
 /// margin. If so, attempts to rejoin the trailing word of one line with the
 /// leading word of the next.
 fn dehyphenate_paragraph_lines(para: &mut PdfParagraph) {
-    // Compute max right edge across all lines.
     let max_right_edge = para
         .lines
         .iter()
@@ -1558,15 +1398,12 @@ fn dehyphenate_paragraph_lines(para: &mut PdfParagraph) {
         .fold(0.0_f32, f32::max);
 
     if max_right_edge <= 0.0 {
-        // No positional data — fall back to hyphen-only.
         dehyphenate_hyphen_only(para);
         return;
     }
 
     let threshold = max_right_edge * FULL_LINE_FRACTION;
 
-    // Process line boundaries from last to first so index shifts don't
-    // invalidate earlier indices.
     let line_count = para.lines.len();
     for i in (0..line_count - 1).rev() {
         let line_right = para.lines[i]
@@ -1580,7 +1417,6 @@ fn dehyphenate_paragraph_lines(para: &mut PdfParagraph) {
             continue;
         }
 
-        // Get trailing word from last segment of current line.
         let trailing_seg_text: &str = match para.lines[i].segments.last() {
             Some(seg) if !seg.text.is_empty() => &seg.text,
             _ => continue,
@@ -1590,7 +1426,6 @@ fn dehyphenate_paragraph_lines(para: &mut PdfParagraph) {
             None => continue,
         };
 
-        // Get leading word from first segment of next line.
         let leading_seg_text: &str = match para.lines[i + 1].segments.first() {
             Some(seg) if !seg.text.is_empty() => &seg.text,
             _ => continue,
@@ -1600,29 +1435,20 @@ fn dehyphenate_paragraph_lines(para: &mut PdfParagraph) {
             None => continue,
         };
 
-        // Skip if either word contains CJK characters.
         if trailing_word.chars().any(is_cjk_char) || leading_word.chars().any(is_cjk_char) {
             continue;
         }
 
-        // Case 1: trailing hyphen
         if let Some(stem) = trailing_word.strip_suffix('-')
             && !stem.is_empty()
             && leading_word.starts_with(|c: char| c.is_lowercase())
         {
             let joined = format!("{}{}", stem, leading_word);
-            // Clone to break the immutable borrow on `para` before mutating it.
             let tw = trailing_word.to_string();
             let lw = leading_word.to_string();
             apply_dehyphenation_join(para, i, &tw, &lw, &joined);
             continue;
         }
-
-        // Case 2 (removed): no-hyphen full-line word joining was too aggressive.
-        // It incorrectly joined separate words like "through" + "several" →
-        // "throughseveral" at every line boundary where text wraps to the margin.
-        // Unhyphenated word splits are extremely rare in PDFs — explicit hyphens
-        // (Case 1) cover the vast majority of real word breaks.
     }
 }
 
@@ -1679,19 +1505,16 @@ fn apply_dehyphenation_join(
     leading_word: &str,
     joined: &str,
 ) {
-    // Replace trailing word in last segment of current line.
     if let Some(seg) = para.lines[line_idx].segments.last_mut()
         && let Some(pos) = seg.text.rfind(trailing_word)
     {
         seg.text.replace_range(pos..pos + trailing_word.len(), joined);
     }
 
-    // Remove leading word from first segment of next line.
     if let Some(seg) = para.lines[line_idx + 1].segments.first_mut()
         && let Some(pos) = seg.text.find(leading_word)
     {
         let end = pos + leading_word.len();
-        // Also remove any trailing whitespace after the removed word.
         let trim_end = seg.text[end..]
             .find(|c: char| !c.is_whitespace())
             .map_or(seg.text.len(), |off| end + off);
@@ -1736,7 +1559,6 @@ fn deduplicate_paragraphs(all_pages: &mut [Vec<PdfParagraph>]) {
             continue;
         }
 
-        // Pass 1: Remove consecutive duplicates.
         let mut i = 0;
         while i + 1 < page.len() {
             let a_text = paragraph_text_normalized(&page[i]);
@@ -1748,7 +1570,6 @@ fn deduplicate_paragraphs(all_pages: &mut [Vec<PdfParagraph>]) {
             }
         }
 
-        // Pass 2: Remove non-consecutive body-text duplicates.
         let mut seen = ahash::AHashSet::new();
         let mut to_remove = Vec::new();
         for (idx, para) in page.iter().enumerate() {
@@ -1820,7 +1641,6 @@ fn populate_images_from_pdfium(
         return;
     }
 
-    // Group image positions by page number (1-indexed) for efficient traversal.
     let mut by_page: std::collections::BTreeMap<usize, Vec<usize>> = std::collections::BTreeMap::new();
     for pos in image_positions {
         by_page.entry(pos.page_number).or_default().push(pos.image_index);
@@ -1830,10 +1650,6 @@ fn populate_images_from_pdfium(
     let mut extracted_count = 0u32;
 
     for (&page_num, indices) in &by_page {
-        // Check cancellation between pages so a timeout can interrupt a long
-        // pdfium image-extraction run without having to wait for the current
-        // page to finish.  Individual pdfium FFI calls cannot be interrupted,
-        // but we can at least skip remaining pages once cancelled.
         if cancel_token.is_some_and(|t| t.is_cancelled()) {
             tracing::debug!(
                 page_num,
@@ -1853,19 +1669,8 @@ fn populate_images_from_pdfium(
             continue;
         };
 
-        // Build an O(1) lookup set so the inner loop over page objects is O(N)
-        // rather than O(N²). Pages from Ghostscript-produced PDFs can contain
-        // thousands of inline images; a Vec::contains scan inside the object
-        // loop was catastrophically slow in those cases.
         let indices_set: ahash::AHashSet<usize> = indices.iter().copied().collect();
 
-        // INVARIANT: Image indices assigned to a single page form a contiguous range
-        // starting from the minimum index in `indices`. This holds because
-        // `objects_to_page_data` in bridge.rs increments `image_offset` for every
-        // image object it encounters — including those skipped by `max_images_per_page`
-        // (skipped images are not pushed to `indices` but still advance the counter).
-        // Kept images therefore form the dense prefix [min, min + len) of that range,
-        // which is why `max - min + 1 == len` always holds even when the cap fires.
         debug_assert!(
             {
                 let max = indices.iter().copied().max().unwrap_or(0);
@@ -1875,7 +1680,6 @@ fn populate_images_from_pdfium(
             "image indices must form a contiguous set within a page"
         );
 
-        // Walk page objects, extracting image data for each matching index.
         let first_idx_on_page = indices.iter().copied().min().unwrap_or(0);
         let mut current_image = 0usize;
         let mut extracted_on_page: ahash::AHashMap<usize, crate::types::ExtractedImage> = ahash::AHashMap::new();
@@ -1888,9 +1692,6 @@ fn populate_images_from_pdfium(
                 {
                     let w = dynamic_image.width();
                     let h = dynamic_image.height();
-                    // Skip images where BOTH dimensions are tiny (< 32px). This targets
-                    // Ghostscript vector decomposition artifacts (16×16 CCITT masks) while
-                    // preserving thin rules and decorative elements that may be intentional.
                     if w < 32 && h < 32 {
                         current_image += 1;
                         continue;
@@ -2033,9 +1834,6 @@ mod tests {
 
     #[test]
     fn test_case2_no_hyphen_full_line_no_join() {
-        // Case 2 (no-hyphen joining) was removed — too many false positives
-        // (e.g., "through" + "several" → "throughseveral"). Words without
-        // hyphens are now left as-is.
         let mut p = para(vec![
             line(vec![full_line_seg("the soft")]),
             line(vec![seg("ware is great", 10.0, 200.0)]),
@@ -2054,7 +1852,6 @@ mod tests {
         let original_trailing = p.lines[0].segments[0].text.clone();
         let original_leading = p.lines[1].segments[0].text.clone();
         dehyphenate_paragraph_lines(&mut p);
-        // Short line → no joining.
         assert_eq!(p.lines[0].segments[0].text, original_trailing);
         assert_eq!(p.lines[1].segments[0].text, original_leading);
     }
@@ -2078,7 +1875,6 @@ mod tests {
             line(vec![seg("Next sentence here", 10.0, 200.0)]),
         ]);
         dehyphenate_paragraph_lines(&mut p);
-        // Uppercase leading word → no joining.
         assert_eq!(p.lines[0].segments[0].text, "some text");
         assert_eq!(p.lines[1].segments[0].text, "Next sentence here");
     }
@@ -2090,13 +1886,11 @@ mod tests {
             line(vec![seg("text here", 10.0, 200.0)]),
         ]);
         dehyphenate_paragraph_lines(&mut p);
-        // CJK trailing word → no joining.
         assert_eq!(p.lines[0].segments[0].text, "some \u{4E00}-");
     }
 
     #[test]
     fn test_real_world_software_no_join_without_hyphen() {
-        // Without hyphen, words are not joined (Case 2 removed).
         let mut p = para(vec![
             line(vec![full_line_seg("advanced soft")]),
             line(vec![seg("ware development", 10.0, 200.0)]),
@@ -2108,7 +1902,6 @@ mod tests {
 
     #[test]
     fn test_real_world_hardware_no_join_without_hyphen() {
-        // Without hyphen, words are not joined (Case 2 removed).
         let mut p = para(vec![
             line(vec![full_line_seg("modern hard")]),
             line(vec![seg("ware components", 10.0, 200.0)]),
@@ -2120,7 +1913,6 @@ mod tests {
 
     #[test]
     fn test_leading_word_with_trailing_punctuation_no_join() {
-        // Without hyphen, words are not joined (Case 2 removed).
         let mut p = para(vec![
             line(vec![full_line_seg("the soft")]),
             line(vec![seg("ware, which is great", 10.0, 200.0)]),
@@ -2148,7 +1940,6 @@ mod tests {
             line(vec![seg("Known thing", 0.0, 0.0)]),
         ]);
         dehyphenate_hyphen_only(&mut p);
-        // Uppercase leading → not joined.
         assert_eq!(p.lines[0].segments[0].text, "some well-");
     }
 
@@ -2161,20 +1952,14 @@ mod tests {
 
     #[test]
     fn test_multi_segment_line_no_join_without_hyphen() {
-        // Without hyphen, words are not joined even across segments (Case 2 removed).
         let mut p = para(vec![
-            line(vec![
-                seg("first part", 10.0, 200.0),
-                seg("soft", 220.0, 280.0), // right edge = 500
-            ]),
+            line(vec![seg("first part", 10.0, 200.0), seg("soft", 220.0, 280.0)]),
             line(vec![seg("ware next words", 10.0, 200.0)]),
         ]);
         dehyphenate_paragraph_lines(&mut p);
         assert_eq!(p.lines[0].segments[1].text, "soft");
         assert_eq!(p.lines[1].segments[0].text, "ware next words");
     }
-
-    // ── has_font_size_variation tests ──
 
     fn para_with_font_size(font_size: f32) -> PdfParagraph {
         PdfParagraph {
@@ -2212,7 +1997,6 @@ mod tests {
 
     #[test]
     fn test_has_font_size_variation_small_difference_ignored() {
-        // 0.3pt difference is within 0.5pt tolerance
         let paragraphs = vec![para_with_font_size(12.0), para_with_font_size(12.3)];
         assert!(!has_font_size_variation(&paragraphs));
     }
@@ -2222,8 +2006,6 @@ mod tests {
         let paragraphs = vec![para_with_font_size(0.0), para_with_font_size(0.0)];
         assert!(!has_font_size_variation(&paragraphs));
     }
-
-    // ── un_mark_layout_furniture_per_config tests (issue #670) ──
 
     use crate::pdf::structure::types::LayoutHintClass;
 
@@ -2276,7 +2058,6 @@ mod tests {
 
     #[test]
     fn test_include_headers_does_not_clear_page_footer_furniture() {
-        // include_headers=true must not affect PageFooter paragraphs
         let mut paras = vec![furniture_para_with_class(LayoutHintClass::PageFooter)];
         un_mark_layout_furniture_per_config(&mut paras, true, false);
         assert!(
@@ -2287,8 +2068,6 @@ mod tests {
 
     #[test]
     fn test_include_headers_does_not_clear_non_layout_furniture() {
-        // Furniture without a layout_class (set by heuristic cross-page detector)
-        // must not be cleared even when include_headers=true.
         let mut para = para(vec![line(vec![seg("repeating", 0.0, 80.0)])]);
         para.is_page_furniture = true;
         para.layout_class = None;
@@ -2333,7 +2112,6 @@ mod tests {
 
     #[test]
     fn test_deduplicate_paragraphs_preserves_non_consecutive_headings() {
-        // Pass 2 (non-consecutive dedup) skips headings via is_dedup_candidate.
         let mut h = para(vec![line(vec![full_line_seg("Brand loses market share in volume")])]);
         h.heading_level = Some(2);
         let filler = para(vec![line(vec![full_line_seg("Some other content between them")])]);
@@ -2359,13 +2137,10 @@ mod tests {
     /// and uses `first_idx_on_page + current_image` to compute the global index.
     #[test]
     fn test_image_index_offset_mapping() {
-        // Simulate page 2 whose images start at global index 50 (non-zero offset).
-        // Page objects 0..4 are images; we only want indices 50, 52, 54 (every other).
         let indices: Vec<usize> = vec![50, 52, 54];
         let indices_set: ahash::AHashSet<usize> = indices.iter().copied().collect();
         let first_idx_on_page = indices.iter().copied().min().unwrap_or(0);
 
-        // Simulate walking five image objects on the page (current_image = 0..4).
         let mut matched: Vec<usize> = Vec::new();
         for current_image in 0..5usize {
             let global_idx = first_idx_on_page + current_image;
@@ -2380,13 +2155,11 @@ mod tests {
             "offset formula must yield exactly the requested global indices"
         );
 
-        // Indices before the page start must not match.
         assert!(
             !indices_set.contains(&49usize),
             "index 49 is before the page range and must not match"
         );
 
-        // An index beyond the requested range on this page must not match.
         assert!(
             !indices_set.contains(&55usize),
             "index 55 was not requested and must not match"
@@ -2398,7 +2171,6 @@ mod tests {
     /// `current_image` to 0 and derives `first_idx_on_page` from its own slice.
     #[test]
     fn test_image_index_offset_non_contiguous_pages() {
-        // Page 1 has global indices [0, 1], page 2 has [100, 101] (large gap).
         let page1_indices: Vec<usize> = vec![0, 1];
         let page2_indices: Vec<usize> = vec![100, 101];
 
@@ -2410,7 +2182,6 @@ mod tests {
             );
 
             let set: ahash::AHashSet<usize> = indices.iter().copied().collect();
-            // Both objects (current_image 0 and 1) on each page must resolve.
             for current_image in 0..2usize {
                 let global_idx = first_idx + current_image;
                 assert!(

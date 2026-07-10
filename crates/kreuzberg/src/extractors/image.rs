@@ -49,15 +49,10 @@ impl ImageExtractor {
             registry.get(&ocr_config.backend)?
         };
 
-        // Thread output_format and acceleration from ExtractionConfig to OcrConfig
         let mut ocr_config_with_format = ocr_config.clone();
         ocr_config_with_format.output_format = Some(config.output_format.clone());
         ocr_config_with_format.acceleration = config.acceleration.clone();
 
-        // Always request OCR elements so that build_pages can populate pages[].
-        // Backends that gate element output behind include_elements (e.g. paddle-ocr)
-        // would otherwise return None, leaving pages[] empty while content is correct.
-        // This mirrors the ensure_elements_enabled pattern used by the PDF extractor.
         match ocr_config_with_format.element_config.as_mut() {
             Some(ec) => ec.include_elements = true,
             None => {
@@ -70,12 +65,10 @@ impl ImageExtractor {
 
         let ocr_result = backend.process_image(content, &ocr_config_with_format).await?;
 
-        // Destructure to avoid partial-move issues when propagating OCR elements.
         let ocr_content = ocr_result.content;
         let ocr_metadata = ocr_result.metadata;
         let ocr_elements = ocr_result.ocr_elements;
 
-        // Full OCR with TIFF multi-frame support (requires tiff crate)
         #[cfg(feature = "ocr")]
         {
             let ocr_extraction_result = crate::extraction::image::extract_text_from_image_with_ocr(
@@ -85,16 +78,11 @@ impl ImageExtractor {
                 config.pages.as_ref(),
             )?;
 
-            // Build InternalDocument from OCR text
             let mut doc = build_image_internal_document(Some(&ocr_extraction_result.content), None);
             doc.metadata = ocr_metadata;
 
-            // Store OCR elements directly to avoid injecting raw word tokens into the
-            // rendering pipeline, which would double the top-level content (#706).
             doc.prebuilt_ocr_elements = ocr_elements;
 
-            // Use the coherent HOCR string for pages[*].content. Multi-frame TIFFs
-            // already have per-frame page_contents; single images get a page-1 wrapper.
             if let Some(pages) = ocr_extraction_result.page_contents {
                 doc.prebuilt_pages = Some(pages);
             } else {
@@ -115,7 +103,6 @@ impl ImageExtractor {
             Ok(doc)
         }
 
-        // Simplified OCR path for WASM (no TIFF multi-frame support)
         #[cfg(not(feature = "ocr"))]
         {
             let _ = mime_type;
@@ -161,7 +148,6 @@ impl ImageExtractor {
             source: None,
         })?;
 
-        // 1. Decode image (pixel-capped to prevent OOM on crafted inputs)
         let img =
             crate::utils::image_decode::decode_with_pixel_cap(content).map_err(|e| crate::KreuzbergError::Parsing {
                 message: format!("Failed to decode image for layout detection: {e}"),
@@ -169,7 +155,6 @@ impl ImageExtractor {
             })?;
         let rgb = img.to_rgb8();
 
-        // 2. Run layout detection (reuse cached engine when available)
         let mut engine = crate::layout::take_or_create_engine(layout_config)
             .map_err(|e| crate::KreuzbergError::Other(format!("Layout engine init failed: {e}")))?;
 
@@ -177,7 +162,6 @@ impl ImageExtractor {
             .detect(&rgb)
             .map_err(|e| crate::KreuzbergError::Other(format!("Layout detection failed: {e}")))?;
 
-        // Return engine to cache immediately — we're done with inference
         crate::layout::return_engine(engine);
 
         tracing::info!(
@@ -192,9 +176,7 @@ impl ImageExtractor {
             return self.extract_with_ocr(content, "image/png", config).await;
         }
 
-        // 3. Sort detections by reading order (top-to-bottom, left-to-right)
         let mut detections = detection.detections;
-        // Quantize y-centers into discrete rows to ensure transitive ordering.
         let row_threshold = (rgb.height() as f32 * 0.05).max(1.0);
         detections.sort_by(|a, b| {
             let ay = (a.bbox.y1 + a.bbox.y2) / 2.0;
@@ -208,32 +190,27 @@ impl ImageExtractor {
             })
         });
 
-        // 4. Get OCR backend
         let backend = {
             let registry = get_ocr_backend_registry();
             let registry = registry.read();
             registry.get(&ocr_config.backend)?
         };
 
-        // Use plain text for per-region OCR (we build markdown structure ourselves)
         let mut region_ocr_config = ocr_config.clone();
         region_ocr_config.output_format = Some(crate::core::config::OutputFormat::Plain);
         if region_ocr_config.acceleration.is_none() {
             region_ocr_config.acceleration = config.acceleration.clone();
         }
 
-        // 5. Per-region OCR + formatting into InternalDocument
         let mut builder = InternalDocumentBuilder::new("image");
         let img_width = rgb.width();
         let img_height = rgb.height();
 
         for det in &detections {
-            // Skip picture regions (OCR on an embedded image is not useful)
             if det.class == LayoutClass::Picture {
                 continue;
             }
 
-            // Crop region (clamp to image bounds)
             let x1 = (det.bbox.x1.max(0.0) as u32).min(img_width.saturating_sub(1));
             let y1 = (det.bbox.y1.max(0.0) as u32).min(img_height.saturating_sub(1));
             let x2 = (det.bbox.x2.max(0.0).ceil() as u32).min(img_width);
@@ -242,12 +219,11 @@ impl ImageExtractor {
             let crop_w = x2.saturating_sub(x1);
             let crop_h = y2.saturating_sub(y1);
             if crop_w < 4 || crop_h < 4 {
-                continue; // Too small to OCR meaningfully
+                continue;
             }
 
             let crop = image::imageops::crop_imm(&rgb, x1, y1, crop_w, crop_h).to_image();
 
-            // Encode crop as PNG for OCR backend
             let mut png_buf = Cursor::new(Vec::new());
             image::codecs::png::PngEncoder::new(&mut png_buf)
                 .write_image(
@@ -259,7 +235,6 @@ impl ImageExtractor {
                 .map_err(|e| crate::KreuzbergError::Other(format!("Failed to encode crop as PNG: {e}")))?;
             let crop_bytes = png_buf.into_inner();
 
-            // OCR the cropped region
             let ocr_result = backend.process_image(&crop_bytes, &region_ocr_config).await?;
             let text = ocr_result.content.trim().to_string();
             if text.is_empty() {
@@ -273,7 +248,6 @@ impl ImageExtractor {
                 "OCR result for layout region"
             );
 
-            // Map layout class to InternalElement
             match det.class {
                 LayoutClass::Title => {
                     builder.push_heading(1, &text, None, None);
@@ -330,8 +304,6 @@ fn build_image_internal_document(
     {
         builder.push_paragraph(text.trim(), vec![], None, None);
     }
-    // Push image element — if we have actual image data, use push_image so
-    // it is stored in InternalDocument::images and referenced by index.
     if let Some(img) = image_data {
         builder.push_image(None, img, None, None);
     } else {
@@ -411,7 +383,6 @@ impl DocumentExtractor for ImageExtractor {
             exif: extraction_metadata.exif_data,
         };
 
-        // Build an ExtractedImage from the raw content so it is stored in doc.images
         let extracted_image = crate::types::ExtractedImage {
             data: bytes::Bytes::copy_from_slice(content),
             format: std::borrow::Cow::Owned(format_str),
@@ -428,7 +399,6 @@ impl DocumentExtractor for ImageExtractor {
             source_path: None,
         };
 
-        // When disable_ocr is set (or ocr.enabled = false), skip OCR and return metadata only
         if config.effective_disable_ocr() {
             let mut doc = build_image_internal_document(None, Some(extracted_image));
             doc.metadata = Metadata {
@@ -443,12 +413,7 @@ impl DocumentExtractor for ImageExtractor {
             return Ok(doc);
         }
 
-        // Images are OCR'd by default when an OCR backend is available.
-        // OCR is skipped only when the feature is not compiled in.
         {
-            // Layout-enhanced OCR: when both OCR and layout detection are configured,
-            // run layout detection first, then OCR each detected region individually
-            // and assemble into structured markdown.
             #[cfg(all(feature = "layout-detection", any(feature = "ocr", feature = "ocr-wasm")))]
             if config.layout.is_some() {
                 match self.extract_with_layout_ocr(content, config).await {
@@ -459,7 +424,6 @@ impl DocumentExtractor for ImageExtractor {
                     }
                     Err(e) => {
                         tracing::warn!("Layout-enhanced OCR failed, falling back to regular OCR: {e}");
-                        // Fall through to regular OCR below
                     }
                 }
             }
@@ -538,7 +502,6 @@ mod tests {
         use crate::plugins::{OcrBackend, OcrBackendType, Plugin, register_ocr_backend, unregister_ocr_backend};
         use crate::types::{ExtractionResult, OcrBoundingGeometry, OcrConfidence, OcrElement, OcrElementLevel};
 
-        // 1×1 white PNG generated via the `image` crate so CRCs are valid.
         let mut png_buf = std::io::Cursor::new(Vec::new());
         image::ImageBuffer::<image::Rgb<u8>, _>::from_pixel(1, 1, image::Rgb([255u8, 255, 255]))
             .write_to(&mut png_buf, image::ImageFormat::Png)
@@ -611,8 +574,6 @@ mod tests {
         let extractor = ImageExtractor::new();
         let internal_doc = extractor.extract_bytes(&png_1x1, "image/png", &config).await.unwrap();
 
-        // Run the full derivation pipeline. pages[] is now populated via prebuilt_pages
-        // (set from the HOCR content string), not from element page numbers.
         let result = crate::extraction::derive::derive_extraction_result(
             internal_doc,
             false,

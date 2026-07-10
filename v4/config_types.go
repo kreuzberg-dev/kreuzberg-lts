@@ -262,16 +262,12 @@ type PdfConfig struct {
 
 // HierarchyConfig controls PDF hierarchy extraction based on font sizes.
 type HierarchyConfig struct {
-	// Enable hierarchy extraction. Default: true.
 	Enabled *bool `json:"enabled,omitempty"`
 
-	// Number of font size clusters (2-10). Default: 6.
 	KClusters *int `json:"k_clusters,omitempty"`
 
-	// Include bounding box information. Default: true.
 	IncludeBbox *bool `json:"include_bbox,omitempty"`
 
-	// OCR coverage threshold (0.0-1.0). Default: null.
 	OcrCoverageThreshold *float64 `json:"ocr_coverage_threshold,omitempty"`
 }
 
@@ -420,9 +416,7 @@ type HTMLOutputConfig struct {
 
 // AccelerationConfig controls ONNX Runtime execution provider selection.
 type AccelerationConfig struct {
-	// Provider selects the execution provider: "auto", "cpu", "coreml", "cuda", "tensorrt".
 	Provider string `json:"provider,omitempty"`
-	// DeviceID is the GPU device ID (for CUDA/TensorRT).
 	DeviceID uint32 `json:"device_id,omitempty"`
 }
 
@@ -438,7 +432,6 @@ type ContentFilterConfig struct {
 
 // EmailConfig controls email extraction settings.
 type EmailConfig struct {
-	// MsgFallbackCodepage is the fallback code page for MSG email body decoding.
 	MsgFallbackCodepage *uint32 `json:"msg_fallback_codepage,omitempty"`
 }
 
@@ -466,7 +459,6 @@ type TreeSitterConfig struct {
 
 // ConcurrencyConfig controls thread and concurrency limits for constrained environments.
 type ConcurrencyConfig struct {
-	// MaxThreads sets the maximum number of threads for all internal thread pools.
 	MaxThreads *int `json:"max_threads,omitempty"`
 }
 
@@ -484,9 +476,9 @@ type OutputFormat string
 
 const (
 	OutputFormatPlain      OutputFormat = "plain"
-	OutputFormatText       OutputFormat = "text" // Alias for plain
+	OutputFormatText       OutputFormat = "text"
 	OutputFormatMarkdown   OutputFormat = "markdown"
-	OutputFormatMd         OutputFormat = "md" // Alias for markdown
+	OutputFormatMd         OutputFormat = "md"
 	OutputFormatDjot       OutputFormat = "djot"
 	OutputFormatHTML       OutputFormat = "html"
 	OutputFormatJSON       OutputFormat = "json"

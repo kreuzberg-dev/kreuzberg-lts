@@ -7,18 +7,18 @@ import type { EmbeddingConfig } from "../types.js";
  * Contains all settings for a specific embedding model preset.
  */
 export interface EmbeddingPreset {
-	/** Name of the preset (e.g., "fast", "balanced", "quality", "multilingual") */
-	name: string;
-	/** Recommended chunk size in characters */
-	chunkSize: number;
-	/** Recommended overlap in characters */
-	overlap: number;
-	/** Model identifier (e.g., "AllMiniLML6V2Q", "BGEBaseENV15") */
-	modelName: string;
-	/** Embedding vector dimensions */
-	dimensions: number;
-	/** Human-readable description of the preset */
-	description: string;
+  /** Name of the preset (e.g., "fast", "balanced", "quality", "multilingual") */
+  name: string;
+  /** Recommended chunk size in characters */
+  chunkSize: number;
+  /** Recommended overlap in characters */
+  overlap: number;
+  /** Model identifier (e.g., "AllMiniLML6V2Q", "BGEBaseENV15") */
+  modelName: string;
+  /** Embedding vector dimensions */
+  dimensions: number;
+  /** Human-readable description of the preset */
+  description: string;
 }
 
 /**
@@ -37,8 +37,8 @@ export interface EmbeddingPreset {
  * ```
  */
 export function listEmbeddingPresets(): string[] {
-	const binding = getBinding();
-	return binding.listEmbeddingPresets();
+  const binding = getBinding();
+  return binding.listEmbeddingPresets();
 }
 
 /**
@@ -62,9 +62,9 @@ export function listEmbeddingPresets(): string[] {
  * ```
  */
 export function getEmbeddingPreset(name: string): EmbeddingPreset | null {
-	const binding = getBinding();
-	const result = binding.getEmbeddingPreset(name);
-	return result as unknown as EmbeddingPreset | null;
+  const binding = getBinding();
+  const result = binding.getEmbeddingPreset(name);
+  return result as unknown as EmbeddingPreset | null;
 }
 
 /**
@@ -85,7 +85,7 @@ export function getEmbeddingPreset(name: string): EmbeddingPreset | null {
  * ```
  */
 export function setEmbeddingPreset(_name: string, _preset: EmbeddingPreset): void {
-	throw new Error("setEmbeddingPreset is not available. Embedding presets must be configured at the Rust level.");
+  throw new Error("setEmbeddingPreset is not available. Embedding presets must be configured at the Rust level.");
 }
 
 /**
@@ -110,8 +110,8 @@ export function setEmbeddingPreset(_name: string, _preset: EmbeddingPreset): voi
  * ```
  */
 export function embedSync(texts: string[], config?: EmbeddingConfig): number[][] {
-	const binding = getBinding();
-	return binding.embedSync(texts, (config ?? null) as Record<string, unknown> | null);
+  const binding = getBinding();
+  return binding.embedSync(texts, (config ?? null) as Record<string, unknown> | null);
 }
 
 /**
@@ -136,6 +136,6 @@ export function embedSync(texts: string[], config?: EmbeddingConfig): number[][]
  * ```
  */
 export async function embed(texts: string[], config?: EmbeddingConfig): Promise<number[][]> {
-	const binding = getBinding();
-	return binding.embed(texts, (config ?? null) as Record<string, unknown> | null);
+  const binding = getBinding();
+  return binding.embed(texts, (config ?? null) as Record<string, unknown> | null);
 }

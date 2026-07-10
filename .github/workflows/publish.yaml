@@ -160,7 +160,6 @@ jobs:
           EXPECTED_VERSION: ${{ needs.prepare.outputs.version }}
         run: scripts/publish/validate-version-consistency.sh
 
-
   check-pypi:
     name: Check if Python package exists on PyPI
     needs: prepare
@@ -534,12 +533,12 @@ jobs:
           root-reserve-mb: 2048
           temp-reserve-mb: 512
           swap-size-mb: 4096
-          overprovision-lvm: 'true'
-          remove-dotnet: 'true'
-          remove-android: 'true'
-          remove-haskell: 'true'
-          remove-codeql: 'true'
-          remove-docker-images: 'true'
+          overprovision-lvm: "true"
+          remove-dotnet: "true"
+          remove-android: "true"
+          remove-haskell: "true"
+          remove-codeql: "true"
+          remove-docker-images: "true"
 
       - name: Checkout
         uses: actions/checkout@v6
@@ -592,7 +591,7 @@ jobs:
         with:
           cache-key-prefix: python-wheels-${{ matrix.label }}
           target: ${{ matrix.rust_target }}
-          use-sccache: 'false'
+          use-sccache: "false"
 
       - name: Clean previous wheel artifacts
         shell: bash
@@ -677,7 +676,7 @@ jobs:
         if: matrix.label == 'macos-arm64'
         uses: actions/setup-python@v6
         with:
-          python-version: '3.10'
+          python-version: "3.10"
 
       - name: Install wheel CLI (macOS)
         if: matrix.label == 'macos-arm64'
@@ -737,7 +736,7 @@ jobs:
       - name: Setup Python for smoke test
         uses: actions/setup-python@v6
         with:
-          python-version: '3.10'
+          python-version: "3.10"
 
       - name: Smoke test wheel
         shell: bash
@@ -867,7 +866,7 @@ jobs:
         uses: kreuzberg-dev/actions/setup-rust@v1
         with:
           cache-key-prefix: publish-node-${{ matrix.settings.target }}
-          use-sccache: 'false'
+          use-sccache: "false"
 
       - name: Add Rust target
         if: ${{ matrix.settings.rust_target != '' }}
@@ -1812,9 +1811,9 @@ jobs:
         uses: actions/setup-java@v5
         id: setup-java
         with:
-          distribution: 'temurin'
-          java-version: '25'
-          cache: 'maven'
+          distribution: "temurin"
+          java-version: "25"
+          cache: "maven"
 
       - name: Setup Maven 3.9.11
         uses: kreuzberg-dev/actions/setup-maven@v1
@@ -1900,10 +1899,6 @@ jobs:
           - os: macos-latest
             label: macos-arm64
             platform: macos-arm64
-          # Windows-GNU disabled: ort-sys 2.0.0-rc.12 build-dep lzma-rust2 0.15.x has crc version collision on windows-gnu target
-          # - os: windows-latest
-          #   label: windows-x86_64
-          #   platform: windows-x86_64
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -1980,7 +1975,7 @@ jobs:
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.5'
+          php-version: "8.5"
           extensions: mbstring, xml
           coverage: none
 
@@ -2160,7 +2155,6 @@ jobs:
           pdfium-version: ${{ env.PDFIUM_VERSION }}
           platform-id: ${{ matrix.pdfium_platform }}
           arch-id: ${{ matrix.pdfium_arch }}
-
 
       - name: Stage PDFium runtime
         uses: ./.github/actions/stage-pdfium-runtime
@@ -2963,9 +2957,6 @@ jobs:
           ref: ${{ needs.prepare.outputs.tag }}
           fetch-depth: 0
 
-      # Generate checksums BEFORE installing Elixir deps or compiling.
-      # This is critical because RustlerPrecompiled validates checksums during
-      # module compilation. The checksum file must be populated before mix compile.
       - name: Generate checksums from GitHub release
         run: |
           ./scripts/publish/generate_elixir_checksums.sh "${{ needs.prepare.outputs.version }}"
@@ -3110,7 +3101,7 @@ jobs:
       - name: Set up Ruby
         uses: ruby/setup-ruby@v1
         with:
-          ruby-version: '3.3'
+          ruby-version: "3.3"
           bundler: none
           bundler-cache: false
 
@@ -3459,7 +3450,7 @@ jobs:
         uses: actions/setup-java@v5
         with:
           distribution: temurin
-          java-version: '25'
+          java-version: "25"
           cache: maven
           server-id: ossrh
           server-username: MAVEN_USERNAME

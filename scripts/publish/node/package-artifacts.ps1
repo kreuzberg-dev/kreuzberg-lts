@@ -41,7 +41,6 @@ if ($null -eq $src) {
 New-Item -ItemType Directory -Force -Path $destDir | Out-Null
 Copy-Item -Force $src $dest
 
-# Always include PDFium runtime since we build with bundled-pdfium feature
 $pdfiumFile = $null
 switch ($target) {
 	"aarch64-apple-darwin" { $pdfiumFile = "libpdfium.dylib"; break }

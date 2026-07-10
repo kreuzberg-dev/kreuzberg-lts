@@ -18,8 +18,7 @@ readonly class EpubMetadata
         public ?string $source = null,
         public ?string $dcType = null,
         public ?string $coverImage = null,
-    ) {
-    }
+    ) {}
 
     /**
      * @param array<string, mixed> $data

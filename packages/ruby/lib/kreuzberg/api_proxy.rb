@@ -1,14 +1,19 @@
 # frozen_string_literal: true
 
-require 'open3'
+require "open3"
 
 module Kreuzberg
   # @example Start the server
   # @example With block
   module APIProxy
-    class Error < Kreuzberg::Errors::Error; end
-    class MissingBinaryError < Error; end
-    class ServerError < Error; end
+    class Error < Kreuzberg::Errors::Error
+    end
+
+    class MissingBinaryError < Error
+    end
+
+    class ServerError < Error
+    end
 
     # API server instance
     class Server
@@ -19,7 +24,7 @@ module Kreuzberg
       # @param port [Integer] Port to run on (default: 8000)
       # @param host [String] Host to bind to (default: "0.0.0.0")
       #
-      def initialize(port: 8000, host: '0.0.0.0')
+      def initialize(port: 8000, host: "0.0.0.0")
         @port = port
         @host = host
         @pid = nil
@@ -35,14 +40,16 @@ module Kreuzberg
         binary = APIProxy.find_api_binary
         @pid = spawn(
           binary.to_s,
-          'api',
-          '--host', @host,
-          '--port', @port.to_s,
+          "api",
+          "--host",
+          @host,
+          "--port",
+          @port.to_s,
           out: $stdout,
           err: $stderr
         )
         Process.detach(@pid)
-        sleep 1
+        sleep(1)
         @pid
       end
 
@@ -53,9 +60,10 @@ module Kreuzberg
       def stop
         return unless @pid
 
-        Process.kill('TERM', @pid)
+        Process.kill("TERM", @pid)
         Process.wait(@pid)
-      rescue Errno::ESRCH, Errno::ECHILD # rubocop:disable Lint/SuppressedException
+        # rubocop:disable Lint/SuppressedException
+      rescue Errno::ESRCH, Errno::ECHILD
       ensure
         @pid = nil
       end
@@ -88,7 +96,7 @@ module Kreuzberg
     #     # Make API requests
     #   end
     #
-    def run(port: 8000, host: '0.0.0.0')
+    def run(port: 8000, host: "0.0.0.0")
       server = Server.new(port: port, host: host)
       server.start
       yield server
@@ -102,7 +110,7 @@ module Kreuzberg
     # @raise [MissingBinaryError] If not found
     #
     def find_api_binary
-      binary_name = Gem.win_platform? ? 'kreuzberg.exe' : 'kreuzberg'
+      binary_name = Gem.win_platform? ? "kreuzberg.exe" : "kreuzberg"
       found = CLIProxy.search_paths(binary_name).find(&:file?)
       return found if found
 
@@ -114,12 +122,13 @@ module Kreuzberg
     # @return [String]
     #
     def missing_binary_message
-      <<~MSG.strip
+      <<~MSG
         kreuzberg binary not found for API server. Build it with:
         `cargo build --release --package kreuzberg-cli`
 
         Or ensure kreuzberg is installed with API support.
       MSG
+        .strip
     end
   end
 end

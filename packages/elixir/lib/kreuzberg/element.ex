@@ -25,11 +25,11 @@ defmodule Kreuzberg.BoundingBox do
   """
 
   @type t :: %__MODULE__{
-          x0: float(),
-          y0: float(),
-          x1: float(),
-          y1: float()
-        }
+  x0: float(),
+  y0: float(),
+  x1: float(),
+  y1: float()
+  }
 
   defstruct [:x0, :y0, :x1, :y1]
 
@@ -55,10 +55,10 @@ defmodule Kreuzberg.BoundingBox do
   @spec from_map(map()) :: t()
   def from_map(data) when is_map(data) do
     %__MODULE__{
-      x0: to_float(data["x0"]),
-      y0: to_float(data["y0"]),
-      x1: to_float(data["x1"]),
-      y1: to_float(data["y1"])
+    x0: to_float(data["x0"]),
+    y0: to_float(data["y0"]),
+    x1: to_float(data["x1"]),
+    y1: to_float(data["y1"])
     }
   end
 
@@ -84,10 +84,10 @@ defmodule Kreuzberg.BoundingBox do
   @spec to_map(t()) :: map()
   def to_map(%__MODULE__{} = bbox) do
     %{
-      "x0" => bbox.x0,
-      "y0" => bbox.y0,
-      "x1" => bbox.x1,
-      "y1" => bbox.y1
+    "x0" => bbox.x0,
+    "y0" => bbox.y0,
+    "x1" => bbox.x1,
+    "y1" => bbox.y1
     }
   end
 
@@ -176,19 +176,19 @@ defmodule Kreuzberg.ElementMetadata do
   """
 
   @type t :: %__MODULE__{
-          page_number: integer() | nil,
-          filename: String.t() | nil,
-          coordinates: Kreuzberg.BoundingBox.t() | nil,
-          element_index: integer() | nil,
-          additional: map()
-        }
+  page_number: integer() | nil,
+  filename: String.t() | nil,
+  coordinates: Kreuzberg.BoundingBox.t() | nil,
+  element_index: integer() | nil,
+  additional: map()
+  }
 
   defstruct [
-    :page_number,
-    :filename,
-    :coordinates,
-    :element_index,
-    additional: %{}
+  :page_number,
+  :filename,
+  :coordinates,
+  :element_index,
+  additional: %{}
   ]
 
   @doc """
@@ -221,19 +221,19 @@ defmodule Kreuzberg.ElementMetadata do
   @spec from_map(map()) :: t()
   def from_map(data) when is_map(data) do
     coordinates =
-      case data["coordinates"] do
-        nil -> nil
-        %Kreuzberg.BoundingBox{} = bbox -> bbox
-        map when is_map(map) -> Kreuzberg.BoundingBox.from_map(map)
-        _ -> nil
-      end
+    case data["coordinates"] do
+      nil -> nil
+      %Kreuzberg.BoundingBox{} = bbox -> bbox
+      map when is_map(map) -> Kreuzberg.BoundingBox.from_map(map)
+      _ -> nil
+    end
 
     %__MODULE__{
-      page_number: data["page_number"],
-      filename: data["filename"],
-      coordinates: coordinates,
-      element_index: data["element_index"],
-      additional: data["additional"] || %{}
+    page_number: data["page_number"],
+    filename: data["filename"],
+    coordinates: coordinates,
+    element_index: data["element_index"],
+    additional: data["additional"] || %{}
     }
   end
 
@@ -268,15 +268,15 @@ defmodule Kreuzberg.ElementMetadata do
   @spec to_map(t()) :: map()
   def to_map(%__MODULE__{} = metadata) do
     %{
-      "page_number" => metadata.page_number,
-      "filename" => metadata.filename,
-      "coordinates" =>
-        case metadata.coordinates do
-          nil -> nil
-          bbox -> Kreuzberg.BoundingBox.to_map(bbox)
-        end,
-      "element_index" => metadata.element_index,
-      "additional" => metadata.additional
+    "page_number" => metadata.page_number,
+    "filename" => metadata.filename,
+    "coordinates" =>
+    case metadata.coordinates do
+      nil -> nil
+      bbox -> Kreuzberg.BoundingBox.to_map(bbox)
+    end,
+    "element_index" => metadata.element_index,
+    "additional" => metadata.additional
     }
   end
 end
@@ -331,24 +331,24 @@ defmodule Kreuzberg.Element do
 
   @typedoc "Semantic element type classification"
   @type element_type ::
-          :title
-          | :narrative_text
-          | :heading
-          | :list_item
-          | :table
-          | :image
-          | :page_break
-          | :code_block
-          | :block_quote
-          | :footer
-          | :header
+  :title
+  | :narrative_text
+  | :heading
+  | :list_item
+  | :table
+  | :image
+  | :page_break
+  | :code_block
+  | :block_quote
+  | :footer
+  | :header
 
   @type t :: %__MODULE__{
-          element_id: String.t(),
-          element_type: element_type(),
-          text: String.t(),
-          metadata: Kreuzberg.ElementMetadata.t()
-        }
+  element_id: String.t(),
+  element_type: element_type(),
+  text: String.t(),
+  metadata: Kreuzberg.ElementMetadata.t()
+  }
 
   defstruct [:element_id, :element_type, :text, metadata: %Kreuzberg.ElementMetadata{}]
 
@@ -381,26 +381,26 @@ defmodule Kreuzberg.Element do
   @spec from_map(map()) :: t()
   def from_map(data) when is_map(data) do
     element_type =
-      case data["element_type"] do
-        type when is_atom(type) -> type
-        type when is_binary(type) -> string_to_atom(type)
-        nil -> :narrative_text
-        _ -> :narrative_text
-      end
+    case data["element_type"] do
+      type when is_atom(type) -> type
+      type when is_binary(type) -> string_to_atom(type)
+      nil -> :narrative_text
+      _ -> :narrative_text
+    end
 
     metadata =
-      case data["metadata"] do
-        nil -> %Kreuzberg.ElementMetadata{}
-        %Kreuzberg.ElementMetadata{} = m -> m
-        map when is_map(map) -> Kreuzberg.ElementMetadata.from_map(map)
-        _ -> %Kreuzberg.ElementMetadata{}
-      end
+    case data["metadata"] do
+      nil -> %Kreuzberg.ElementMetadata{}
+      %Kreuzberg.ElementMetadata{} = m -> m
+      map when is_map(map) -> Kreuzberg.ElementMetadata.from_map(map)
+      _ -> %Kreuzberg.ElementMetadata{}
+    end
 
     %__MODULE__{
-      element_id: data["element_id"] || "",
-      element_type: element_type,
-      text: data["text"] || "",
-      metadata: metadata
+    element_id: data["element_id"] || "",
+    element_type: element_type,
+    text: data["text"] || "",
+    metadata: metadata
     }
   end
 
@@ -432,10 +432,10 @@ defmodule Kreuzberg.Element do
   @spec to_map(t()) :: map()
   def to_map(%__MODULE__{} = element) do
     %{
-      "element_id" => element.element_id,
-      "element_type" => atom_to_string(element.element_type),
-      "text" => element.text,
-      "metadata" => Kreuzberg.ElementMetadata.to_map(element.metadata)
+    "element_id" => element.element_id,
+    "element_type" => atom_to_string(element.element_type),
+    "text" => element.text,
+    "metadata" => Kreuzberg.ElementMetadata.to_map(element.metadata)
     }
   end
 

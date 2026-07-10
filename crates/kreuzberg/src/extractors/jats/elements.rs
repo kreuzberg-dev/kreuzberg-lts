@@ -73,7 +73,6 @@ pub(super) fn extract_jats_all_in_one(content: &str) -> Result<(JatsMetadataExtr
                         in_contrib = true;
                         current_author.clear();
                         current_contrib_type.clear();
-                        // Extract contrib-type attribute
                         for attr in e.attributes() {
                             if let Ok(attr) = attr
                                 && String::from_utf8_lossy(attr.key.as_ref()) == "contrib-type"
@@ -160,7 +159,6 @@ pub(super) fn extract_jats_all_in_one(content: &str) -> Result<(JatsMetadataExtr
                         in_history = true;
                     }
                     "date" if in_history => {
-                        // Extract date-type attribute
                         let mut date_type = String::new();
                         for attr in e.attributes() {
                             if let Ok(attr) = attr
@@ -291,7 +289,6 @@ pub(super) fn extract_jats_all_in_one(content: &str) -> Result<(JatsMetadataExtr
                     "contrib" if in_contrib => {
                         if !current_author.is_empty() {
                             metadata.authors.push(current_author.clone());
-                            // Track contributor role
                             if !current_contrib_type.is_empty() {
                                 metadata
                                     .contributor_roles

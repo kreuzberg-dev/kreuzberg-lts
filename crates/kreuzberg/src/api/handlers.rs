@@ -29,7 +29,6 @@ use super::{
 )]
 #[cfg_attr(feature = "otel", tracing::instrument(name = "api.health"))]
 pub async fn health_handler() -> Json<HealthResponse> {
-    // Get plugin status
     let plugin_status = crate::plugins::startup_validation::PluginHealthStatus::check();
 
     Json(HealthResponse {
@@ -156,7 +155,6 @@ pub async fn extract_handler(
 
                 let mut mime_type = content_type.unwrap_or_else(|| "application/octet-stream".to_string());
 
-                // When the client sends a generic content type, try to detect from the filename
                 if mime_type == "application/octet-stream"
                     && let Some(ref name) = file_name
                     && let Ok(detected) = crate::core::mime::detect_mime_type(name, false)
@@ -185,7 +183,6 @@ pub async fn extract_handler(
                     .await
                     .map_err(|e| ApiError::validation(crate::error::KreuzbergError::validation(e.to_string())))?;
 
-                // Ensure config exists before modifying output_format
                 let cfg = config.get_or_insert_with(|| (*state.default_config).clone());
                 cfg.output_format = match format_str.to_lowercase().as_str() {
                     "plain" => crate::core::config::OutputFormat::Plain,
@@ -231,7 +228,6 @@ pub async fn extract_handler(
     #[cfg(feature = "otel")]
     tracing::Span::current().record("files_count", files.len());
 
-    // Use provided config or fall back to default from state
     let final_config = config.as_ref().unwrap_or(&state.default_config);
 
     let results = if files.len() == 1 {
@@ -424,17 +420,14 @@ pub async fn embed_handler(JsonApi(request): JsonApi<EmbedRequest>) -> Result<Js
         )));
     }
 
-    // Validate that no texts are empty
     if request.texts.iter().any(|t| t.is_empty()) {
         return Err(ApiError::validation(crate::error::KreuzbergError::validation(
             "All text entries must be non-empty strings",
         )));
     }
 
-    // Use default config if none provided
     let config = request.config.unwrap_or_default();
 
-    // Validate preset name if model type is Preset
     if let crate::core::config::EmbeddingModelType::Preset { ref name } = config.model
         && crate::get_preset(name).is_none()
     {
@@ -446,7 +439,6 @@ pub async fn embed_handler(JsonApi(request): JsonApi<EmbedRequest>) -> Result<Js
         ))));
     }
 
-    // Generate embeddings directly
     let text_count = request.texts.len();
     let embeddings = crate::embed_texts_async(request.texts, &config)
         .await
@@ -454,7 +446,6 @@ pub async fn embed_handler(JsonApi(request): JsonApi<EmbedRequest>) -> Result<Js
 
     let dimensions = embeddings.first().map(|e| e.len()).unwrap_or(0);
 
-    // Get model name from config
     let model_name = match &config.model {
         crate::core::config::EmbeddingModelType::Preset { name } => name.clone(),
         crate::core::config::EmbeddingModelType::Custom { model_id, .. } => model_id.clone(),
@@ -651,7 +642,6 @@ pub async fn extract_structured_handler(
         ))
     })?;
 
-    // Extract document content
     let final_config = config.as_ref().unwrap_or(&state.default_config);
     let request = ExtractionRequest::bytes(data, &mime_type, final_config.clone());
     let mut svc = state
@@ -661,7 +651,6 @@ pub async fn extract_structured_handler(
         .clone();
     let result = svc.call(request).await?;
 
-    // Build structured extraction config
     let structured_config = crate::core::config::llm::StructuredExtractionConfig {
         schema: schema_val,
         schema_name,
@@ -679,7 +668,6 @@ pub async fn extract_structured_handler(
         },
     };
 
-    // Run structured extraction on the extracted content
     let (structured_output, _usage) = crate::llm::structured::extract_structured(&result.content, &structured_config)
         .await
         .map_err(ApiError::internal)?;
@@ -748,14 +736,12 @@ pub async fn chunk_handler(JsonApi(request): JsonApi<ChunkRequest>) -> Result<Js
     use super::types::{ChunkItem, ChunkingConfigResponse};
     use crate::chunking::{ChunkerType, ChunkingConfig, chunk_text};
 
-    // Validate input
     if request.text.is_empty() {
         return Err(ApiError::validation(crate::error::KreuzbergError::validation(
             "Text cannot be empty",
         )));
     }
 
-    // Parse chunker_type (empty string is invalid, use default by omitting the field)
     let chunker_type = match request.chunker_type.to_lowercase().as_str() {
         "text" => ChunkerType::Text,
         "markdown" => ChunkerType::Markdown,
@@ -769,12 +755,10 @@ pub async fn chunk_handler(JsonApi(request): JsonApi<ChunkRequest>) -> Result<Js
         }
     };
 
-    // Build config with defaults
     let cfg = request.config.unwrap_or_default();
     let max_characters = cfg.max_characters.unwrap_or(2000);
     let overlap = cfg.overlap.unwrap_or(100);
 
-    // Validate max_characters bounds
     if max_characters == 0 || max_characters > 1_000_000 {
         return Err(ApiError::validation(crate::error::KreuzbergError::validation(format!(
             "max_characters must be between 1 and 1,000,000, got {}",
@@ -782,7 +766,6 @@ pub async fn chunk_handler(JsonApi(request): JsonApi<ChunkRequest>) -> Result<Js
         ))));
     }
 
-    // Validate chunking configuration
     if overlap >= max_characters {
         return Err(ApiError::validation(crate::error::KreuzbergError::validation(format!(
             "Invalid chunking configuration: overlap ({}) must be less than max_characters ({})",
@@ -799,9 +782,7 @@ pub async fn chunk_handler(JsonApi(request): JsonApi<ChunkRequest>) -> Result<Js
         ..Default::default()
     };
 
-    // Perform chunking - convert any remaining errors to validation errors since they're likely config issues
     let result = chunk_text(&request.text, &config, None).map_err(|e| {
-        // Check if error message indicates a configuration issue
         let msg = e.to_string();
         if msg.contains("configuration") || msg.contains("overlap") || msg.contains("capacity") {
             ApiError::validation(crate::error::KreuzbergError::validation(format!(
@@ -813,7 +794,6 @@ pub async fn chunk_handler(JsonApi(request): JsonApi<ChunkRequest>) -> Result<Js
         }
     })?;
 
-    // Transform to response
     let chunks = result
         .chunks
         .into_iter()
@@ -912,7 +892,6 @@ pub async fn detect_handler(MultipartApi(mut multipart): MultipartApi) -> Result
         ))
     })?;
 
-    // Try detection from bytes first, fall back to extension-based detection
     let mime_type = crate::core::mime::detect_mime_type_from_bytes(&data).or_else(|_| {
         if let Some(ref name) = file_name {
             crate::core::mime::detect_mime_type(name, false)
@@ -1012,7 +991,6 @@ pub async fn cache_manifest_handler() -> Json<ManifestResponse> {
 )]
 #[cfg_attr(feature = "otel", tracing::instrument(name = "api.cache_warm", skip(request)))]
 pub async fn cache_warm_handler(JsonApi(request): JsonApi<WarmRequest>) -> Result<Json<WarmResponse>, ApiError> {
-    // Validate embedding_model is not an empty string
     if let Some(ref name) = request.embedding_model
         && name.trim().is_empty()
     {
@@ -1182,7 +1160,6 @@ mod tests {
     async fn test_detect_handler_no_file_returns_400() {
         let app = test_router();
 
-        // Send a request without multipart content type - should get an error
         let response = app
             .oneshot(
                 Request::builder()
@@ -1195,7 +1172,6 @@ mod tests {
             .await
             .unwrap();
 
-        // Should fail because no file field is provided
         assert_eq!(response.status(), StatusCode::BAD_REQUEST);
     }
 
@@ -1214,7 +1190,6 @@ mod tests {
             .await
             .unwrap();
 
-        // With no features requesting downloads, should succeed
         assert_eq!(response.status(), StatusCode::OK);
 
         let body = axum::body::to_bytes(response.into_body(), usize::MAX).await.unwrap();

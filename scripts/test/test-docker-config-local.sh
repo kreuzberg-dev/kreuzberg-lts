@@ -1,21 +1,6 @@
 #!/bin/bash
 
 ################################################################################
-# Docker Configuration Volume Mount Testing Script
-#
-# This script validates all Docker configuration scenarios locally:
-# - Volume mounts to /etc/kreuzberg/kreuzberg.toml (recommended)
-# - Volume mounts to /app/.config/kreuzberg/config.toml (user path)
-# - Custom paths with --config flag
-# - Environment variable overrides with config files
-# - All config formats (TOML, YAML, JSON)
-# - Read-only mounts
-#
-# Usage: ./test-docker-config-local.sh [OPTIONS]
-# Options:
-#   --variant core|full|all   Test specific variant (default: all)
-#   --verbose                 Enable verbose output
-#   --keep-containers         Don't cleanup containers after tests
 ################################################################################
 
 set -o pipefail
@@ -23,7 +8,6 @@ set -o pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 DOCKER_DIR="$(cd "$SCRIPT_DIR/../../docker" && pwd)"
 
-# Color codes
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
@@ -31,16 +15,14 @@ BLUE='\033[0;34m'
 CYAN='\033[0;36m'
 NC='\033[0m'
 
-# Test configuration
 TEST_VARIANT="${TEST_VARIANT:-all}"
-IMAGE_NAME="${IMAGE_NAME:-}" # Empty means build from Dockerfile
+IMAGE_NAME="${IMAGE_NAME:-}"
 VERBOSE="${VERBOSE:-false}"
 KEEP_CONTAINERS="${KEEP_CONTAINERS:-false}"
 TIMEOUT_SECONDS=30
 PORT_BASE=18100
 TEST_TEMP_DIR="/tmp/kreuzberg-config-test-$$"
 
-# Test tracking
 TOTAL_TESTS=0
 PASSED_TESTS=0
 FAILED_TESTS=0
@@ -48,7 +30,6 @@ declare -a FAILED_TEST_NAMES=()
 declare -a TESTED_VARIANTS=()
 
 ################################################################################
-# Helper Functions
 ################################################################################
 
 log_header() {
@@ -106,7 +87,6 @@ cleanup() {
   log_info "Cleaning up test environment..."
 
   if [ "$KEEP_CONTAINERS" != "true" ]; then
-    # Stop and remove test containers
     docker ps -a --filter "name=kreuzberg-config-test-" --format "{{.Names}}" | while read -r container; do
       log_debug "Stopping container: $container"
       docker stop "$container" 2>/dev/null || true
@@ -116,7 +96,6 @@ cleanup() {
     log_warning "Keeping containers for inspection (use 'docker ps -a' to view)"
   fi
 
-  # Remove temporary test files
   if [ -d "$TEST_TEMP_DIR" ]; then
     log_debug "Removing temporary directory: $TEST_TEMP_DIR"
     rm -rf "$TEST_TEMP_DIR"
@@ -126,7 +105,6 @@ cleanup() {
 trap cleanup EXIT
 
 ################################################################################
-# Setup Functions
 ################################################################################
 
 setup_test_environment() {
@@ -170,24 +148,19 @@ get_image_name() {
   local variant="$1"
 
   if [ -n "$IMAGE_NAME" ]; then
-    # Use provided image name (CI mode)
     echo "$IMAGE_NAME"
   else
-    # Use default naming convention (local mode)
     echo "kreuzberg:$variant"
   fi
 }
 
 ################################################################################
-# Config File Creation Functions
 ################################################################################
 
 create_toml_config() {
   local file_path="$1"
   local port="${2:-8000}"
 
-  # Config must be valid ExtractionConfig (deny_unknown_fields).
-  # Server settings use defaults; ports are mapped via docker -p flag.
   cat >"$file_path" <<EOF
 use_cache = true
 enable_quality_processing = true
@@ -204,8 +177,6 @@ create_yaml_config() {
   local file_path="$1"
   local port="${2:-8000}"
 
-  # Config must be valid ExtractionConfig (deny_unknown_fields).
-  # Server settings use defaults; ports are mapped via docker -p flag.
   cat >"$file_path" <<EOF
 use_cache: true
 enable_quality_processing: true
@@ -222,8 +193,6 @@ create_json_config() {
   local file_path="$1"
   local port="${2:-8000}"
 
-  # Config must be valid ExtractionConfig (deny_unknown_fields).
-  # Server settings use defaults; ports are mapped via docker -p flag.
   cat >"$file_path" <<EOF
 {
   "use_cache": true,
@@ -239,7 +208,6 @@ EOF
 }
 
 ################################################################################
-# Container Testing Functions
 ################################################################################
 
 run_container() {
@@ -248,7 +216,6 @@ run_container() {
   local port="$3"
   shift 3
 
-  # Separate docker options from command arguments
   local docker_opts=()
   local cmd_args=()
   local after_separator=false
@@ -322,7 +289,6 @@ get_container_logs() {
 }
 
 ################################################################################
-# Test Cases
 ################################################################################
 
 test_etc_kreuzberg_mount() {
@@ -335,10 +301,8 @@ test_etc_kreuzberg_mount() {
   local container_name="kreuzberg-config-test-etc-${variant}-$$"
   local config_file="$TEST_TEMP_DIR/kreuzberg.toml"
 
-  # Create config file
   create_toml_config "$config_file" "$port"
 
-  # Run container with mount
   if ! run_container "$container_name" "$image" "$port" \
     --volume "$config_file:/etc/kreuzberg/kreuzberg.toml:ro"; then
     fail_test "Failed to start container with /etc/kreuzberg mount"
@@ -348,14 +312,12 @@ test_etc_kreuzberg_mount() {
 
   sleep 2
 
-  # Check if container is still running
   if ! check_container_running "$container_name"; then
     fail_test "Container exited unexpectedly"
     log_error "  Container logs:\n$(get_container_logs "$container_name")"
     return 1
   fi
 
-  # Wait for service to be healthy
   if ! wait_for_health "$port"; then
     fail_test "Service failed to start (health check timeout)"
     log_error "  Container logs:\n$(get_container_logs "$container_name")"
@@ -363,7 +325,6 @@ test_etc_kreuzberg_mount() {
     return 1
   fi
 
-  # Test the health endpoint
   if ! curl -sf "http://localhost:$port/health" >/dev/null; then
     fail_test "Health endpoint returned non-success status"
     docker stop "$container_name" 2>/dev/null || true
@@ -385,10 +346,8 @@ test_app_config_mount() {
   local container_name="kreuzberg-config-test-app-config-${variant}-$$"
   local config_file="$TEST_TEMP_DIR/config.toml"
 
-  # Create config file
   create_toml_config "$config_file" "$port"
 
-  # Run container with mount
   if ! run_container "$container_name" "$image" "$port" \
     --volume "$config_file:/app/.config/kreuzberg/config.toml:ro"; then
     fail_test "Failed to start container with /app/.config mount"
@@ -433,10 +392,8 @@ test_custom_path_with_flag() {
   local config_file="$TEST_TEMP_DIR/custom-config.toml"
   local container_path="/app/custom-config.toml"
 
-  # Create config file
   create_toml_config "$config_file" "$port"
 
-  # Run container with custom config path
   if ! run_container "$container_name" "$image" "$port" \
     --volume "$config_file:$container_path:ro" \
     --entrypoint "/usr/local/bin/kreuzberg" \
@@ -482,10 +439,8 @@ test_env_var_overrides() {
   local container_name="kreuzberg-config-test-env-${variant}-$$"
   local config_file="$TEST_TEMP_DIR/env-config.toml"
 
-  # Create config file with port 8000
   create_toml_config "$config_file" "8000"
 
-  # Run container with config mount and environment variable override
   if ! run_container "$container_name" "$image" "$port" \
     --volume "$config_file:/etc/kreuzberg/kreuzberg.toml:ro" \
     --env "KREUZBERG_SERVER_PORT=$port"; then
@@ -625,7 +580,6 @@ test_readonly_mount() {
 
   create_toml_config "$config_file" "$port"
 
-  # Run with read-only mount (explicitly :ro)
   if ! run_container "$container_name" "$image" "$port" \
     --volume "$config_file:/etc/kreuzberg/kreuzberg.toml:ro"; then
     fail_test "Failed to start container with read-only mount"
@@ -651,7 +605,6 @@ test_readonly_mount() {
 }
 
 ################################################################################
-# Test Execution
 ################################################################################
 
 run_test_suite() {
@@ -659,7 +612,6 @@ run_test_suite() {
 
   log_header "Testing variant: $(get_image_name "$variant")"
 
-  # Check if image exists
   if ! check_image_exists "$(get_image_name "$variant")"; then
     log_warning "Skipping tests for variant: $variant (image not found)"
     return
@@ -667,7 +619,6 @@ run_test_suite() {
 
   TESTED_VARIANTS+=("$variant")
 
-  # Run all test cases
   test_etc_kreuzberg_mount "$variant"
   test_app_config_mount "$variant"
   test_custom_path_with_flag "$variant"
@@ -710,11 +661,9 @@ print_summary() {
 }
 
 ################################################################################
-# Main Entry Point
 ################################################################################
 
 main() {
-  # Parse command line arguments
   while [[ $# -gt 0 ]]; do
     case $1 in
     --variant)
@@ -760,13 +709,10 @@ main() {
   log_info "  Port Range:      $PORT_BASE-$((PORT_BASE + 99))"
   log_info ""
 
-  # Verify Docker is available
   verify_docker_available
 
-  # Setup test environment
   setup_test_environment
 
-  # Run tests based on variant selection
   case "$TEST_VARIANT" in
   core)
     run_test_suite "core"
@@ -784,10 +730,8 @@ main() {
     ;;
   esac
 
-  # Print summary
   print_summary
 
-  # Exit with appropriate code
   if [ $FAILED_TESTS -eq 0 ]; then
     log_success "All tests passed!"
     exit 0

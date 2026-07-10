@@ -20,34 +20,34 @@ import java.util.Optional;
  * @since 0.8.0
  */
 public final class FormattedBlock {
-	private final BlockType blockType;
-	private final Optional<Integer> level;
-	@JsonDeserialize(contentAs = InlineElement.class)
-	private final List<InlineElement> inlineContent;
-	private final Optional<Attributes> attributes;
-	private final Optional<String> language;
-	private final Optional<String> code;
-	@JsonDeserialize(contentAs = FormattedBlock.class)
-	private final List<FormattedBlock> children;
+    private final BlockType blockType;
+    private final Optional<Integer> level;
+    @JsonDeserialize(contentAs = InlineElement.class)
+    private final List<InlineElement> inlineContent;
+    private final Optional<Attributes> attributes;
+    private final Optional<String> language;
+    private final Optional<String> code;
+    @JsonDeserialize(contentAs = FormattedBlock.class)
+    private final List<FormattedBlock> children;
 
-	@JsonCreator
-	public FormattedBlock(@JsonProperty("block_type") BlockType blockType,
-			@JsonProperty("level") Optional<Integer> level,
-			@JsonProperty("inline_content") List<InlineElement> inlineContent,
-			@JsonProperty("attributes") Optional<Attributes> attributes,
-			@JsonProperty("language") Optional<String> language, @JsonProperty("code") Optional<String> code,
-			@JsonProperty("children") List<FormattedBlock> children) {
-		this.blockType = Objects.requireNonNull(blockType, "blockType must not be null");
-		this.level = level != null ? level : Optional.empty();
-		this.inlineContent = Collections
-				.unmodifiableList(inlineContent != null ? new ArrayList<>(inlineContent) : new ArrayList<>());
-		this.attributes = attributes != null ? attributes : Optional.empty();
-		this.language = language != null ? language : Optional.empty();
-		this.code = code != null ? code : Optional.empty();
-		this.children = Collections.unmodifiableList(children != null ? new ArrayList<>(children) : new ArrayList<>());
-	}
+    @JsonCreator
+    public FormattedBlock(@JsonProperty("block_type") BlockType blockType,
+        @JsonProperty("level") Optional<Integer> level,
+        @JsonProperty("inline_content") List<InlineElement> inlineContent,
+        @JsonProperty("attributes") Optional<Attributes> attributes,
+        @JsonProperty("language") Optional<String> language, @JsonProperty("code") Optional<String> code,
+        @JsonProperty("children") List<FormattedBlock> children) {
+        this.blockType = Objects.requireNonNull(blockType, "blockType must not be null");
+        this.level = level != null ? level : Optional.empty();
+        this.inlineContent = Collections
+        .unmodifiableList(inlineContent != null ? new ArrayList<>(inlineContent) : new ArrayList<>());
+        this.attributes = attributes != null ? attributes : Optional.empty();
+        this.language = language != null ? language : Optional.empty();
+        this.code = code != null ? code : Optional.empty();
+        this.children = Collections.unmodifiableList(children != null ? new ArrayList<>(children) : new ArrayList<>());
+    }
 
-	/**
+    /**
 	 * Creates a new FormattedBlock with required fields only.
 	 *
 	 * @param blockType
@@ -56,12 +56,12 @@ public final class FormattedBlock {
 	 *            inline content within the block
 	 * @return a new FormattedBlock instance
 	 */
-	public static FormattedBlock of(BlockType blockType, List<InlineElement> inlineContent) {
-		return new FormattedBlock(blockType, Optional.empty(), inlineContent, Optional.empty(), Optional.empty(),
-				Optional.empty(), Collections.emptyList());
-	}
+    public static FormattedBlock of(BlockType blockType, List<InlineElement> inlineContent) {
+        return new FormattedBlock(blockType, Optional.empty(), inlineContent, Optional.empty(), Optional.empty(),
+            Optional.empty(), Collections.emptyList());
+    }
 
-	/**
+    /**
 	 * Creates a new FormattedBlock with all fields.
 	 *
 	 * @param blockType
@@ -80,85 +80,85 @@ public final class FormattedBlock {
 	 *            nested blocks for containers
 	 * @return a new FormattedBlock instance
 	 */
-	public static FormattedBlock of(BlockType blockType, Optional<Integer> level, List<InlineElement> inlineContent,
-			Optional<Attributes> attributes, Optional<String> language, Optional<String> code,
-			List<FormattedBlock> children) {
-		return new FormattedBlock(blockType, level, inlineContent, attributes, language, code, children);
-	}
+    public static FormattedBlock of(BlockType blockType, Optional<Integer> level, List<InlineElement> inlineContent,
+        Optional<Attributes> attributes, Optional<String> language, Optional<String> code,
+        List<FormattedBlock> children) {
+        return new FormattedBlock(blockType, level, inlineContent, attributes, language, code, children);
+    }
 
-	/**
+    /**
 	 * Get the type of block element.
 	 *
 	 * @return block type
 	 */
-	public BlockType getBlockType() {
-		return blockType;
-	}
+    public BlockType getBlockType() {
+        return blockType;
+    }
 
-	/**
+    /**
 	 * Get the heading level (1-6) for headings, or nesting level for lists.
 	 *
 	 * @return optional heading/nesting level
 	 */
-	public Optional<Integer> getLevel() {
-		return level;
-	}
+    public Optional<Integer> getLevel() {
+        return level;
+    }
 
-	/**
+    /**
 	 * Get the inline content within this block.
 	 *
 	 * @return unmodifiable list of inline elements (never null)
 	 */
-	public List<InlineElement> getInlineContent() {
-		return inlineContent;
-	}
+    public List<InlineElement> getInlineContent() {
+        return inlineContent;
+    }
 
-	/**
+    /**
 	 * Get the optional element attributes.
 	 *
 	 * @return optional attributes
 	 */
-	public Optional<Attributes> getAttributes() {
-		return attributes;
-	}
+    public Optional<Attributes> getAttributes() {
+        return attributes;
+    }
 
-	/**
+    /**
 	 * Get the optional language identifier for code blocks.
 	 *
 	 * @return optional language identifier (e.g., "python", "rust", "javascript")
 	 */
-	public Optional<String> getLanguage() {
-		return language;
-	}
+    public Optional<String> getLanguage() {
+        return language;
+    }
 
-	/**
+    /**
 	 * Get the optional raw code content for code blocks.
 	 *
 	 * @return optional code content
 	 */
-	public Optional<String> getCode() {
-		return code;
-	}
+    public Optional<String> getCode() {
+        return code;
+    }
 
-	/**
+    /**
 	 * Get the nested blocks for containers (blockquotes, list items, divs).
 	 *
 	 * @return unmodifiable list of child blocks (never null, may be empty)
 	 */
-	public List<FormattedBlock> getChildren() {
-		return children;
-	}
+    public List<FormattedBlock> getChildren() {
+        return children;
+    }
 
-	/**
+    /**
 	 * Check if this block has child blocks.
 	 *
 	 * @return true if this block has children
 	 */
-	public boolean hasChildren() {
-		return !children.isEmpty();
-	}
+    public boolean hasChildren() {
+        return !children.isEmpty();
+    }
 
-	/**
+    /**
 	 * Get the plain text content of this block and its children.
 	 *
 	 * <p>
@@ -166,47 +166,47 @@ public final class FormattedBlock {
 	 *
 	 * @return plain text representation
 	 */
-	public String getPlainText() {
-		StringBuilder sb = new StringBuilder();
+    public String getPlainText() {
+        StringBuilder sb = new StringBuilder();
 
-		for (InlineElement inline : inlineContent) {
-			sb.append(inline.getContent());
-		}
+        for (InlineElement inline : inlineContent) {
+            sb.append(inline.getContent());
+        }
 
-		for (FormattedBlock child : children) {
-			if (sb.length() > 0) {
-				sb.append("\n");
-			}
-			sb.append(child.getPlainText());
-		}
+        for (FormattedBlock child : children) {
+            if (sb.length() > 0) {
+                sb.append("\n");
+            }
+            sb.append(child.getPlainText());
+        }
 
-		return sb.toString();
-	}
+        return sb.toString();
+    }
 
-	@Override
-	public boolean equals(Object obj) {
-		if (this == obj) {
-			return true;
-		}
-		if (!(obj instanceof FormattedBlock)) {
-			return false;
-		}
-		FormattedBlock other = (FormattedBlock) obj;
-		return Objects.equals(blockType, other.blockType) && Objects.equals(level, other.level)
-				&& Objects.equals(inlineContent, other.inlineContent) && Objects.equals(attributes, other.attributes)
-				&& Objects.equals(language, other.language) && Objects.equals(code, other.code)
-				&& Objects.equals(children, other.children);
-	}
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (!(obj instanceof FormattedBlock)) {
+            return false;
+        }
+        FormattedBlock other = (FormattedBlock) obj;
+        return Objects.equals(blockType, other.blockType) && Objects.equals(level, other.level)
+        && Objects.equals(inlineContent, other.inlineContent) && Objects.equals(attributes, other.attributes)
+        && Objects.equals(language, other.language) && Objects.equals(code, other.code)
+        && Objects.equals(children, other.children);
+    }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(blockType, level, inlineContent, attributes, language, code, children);
-	}
+    @Override
+    public int hashCode() {
+        return Objects.hash(blockType, level, inlineContent, attributes, language, code, children);
+    }
 
-	@Override
-	public String toString() {
-		return "FormattedBlock{" + "blockType=" + blockType + ", level=" + level + ", inlineContent="
-				+ inlineContent.size() + ", attributes=" + attributes + ", language=" + language + ", code="
-				+ (code.isPresent() ? code.get().length() : "none") + ", children=" + children.size() + '}';
-	}
+    @Override
+    public String toString() {
+        return "FormattedBlock{" + "blockType=" + blockType + ", level=" + level + ", inlineContent="
+        + inlineContent.size() + ", attributes=" + attributes + ", language=" + language + ", code="
+        + (code.isPresent() ? code.get().length() : "none") + ", children=" + children.size() + '}';
+    }
 }

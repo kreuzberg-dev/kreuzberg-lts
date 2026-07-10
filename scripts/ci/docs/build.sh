@@ -1,11 +1,4 @@
 #!/usr/bin/env bash
-# Build the documentation site (Zensical, doc dependency group).
-#
-# Usage:
-#   scripts/ci/docs/build.sh
-#   scripts/ci/docs/build.sh --strict --log-file /tmp/build-log.txt
-#
-# Caching: use astral-sh/setup-uv with enable-cache in CI; this script only runs uv.
 
 set -euo pipefail
 

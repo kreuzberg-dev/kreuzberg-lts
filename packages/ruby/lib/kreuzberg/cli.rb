@@ -14,13 +14,12 @@ module Kreuzberg
     # @param ocr [Boolean] Enable OCR
     # @return [String] Extracted content
     #
-    def extract(path_or_nil = nil, path: nil, output: 'text', ocr: false)
-      # Support both positional and keyword argument for path (backward compatibility)
+    def extract(path_or_nil = nil, path: nil, output: "text", ocr: false)
       actual_path = path_or_nil || path
-      raise ArgumentError, 'path is required' if actual_path.nil?
+      raise ArgumentError, "path is required" if actual_path.nil?
 
-      args = ['extract', actual_path, '--format', output]
-      args.push('--ocr', ocr ? 'true' : 'false')
+      args = ["extract", actual_path, "--format", output]
+      args.push("--ocr", ocr ? "true" : "false")
       CLIProxy.call(args)
     end
 
@@ -31,11 +30,10 @@ module Kreuzberg
     # @return [String] MIME type
     #
     def detect(path_or_nil = nil, path: nil)
-      # Support both positional and keyword argument for path (backward compatibility)
       actual_path = path_or_nil || path
-      raise ArgumentError, 'path is required' if actual_path.nil?
+      raise ArgumentError, "path is required" if actual_path.nil?
 
-      CLIProxy.call(['detect', actual_path]).strip
+      CLIProxy.call(["detect", actual_path]).strip
     end
 
     # Get CLI version
@@ -43,7 +41,7 @@ module Kreuzberg
     # @return [String] Version string
     #
     def version
-      CLIProxy.call(['--version']).strip
+      CLIProxy.call(["--version"]).strip
     end
 
     # Get CLI help text
@@ -51,7 +49,7 @@ module Kreuzberg
     # @return [String] Help text
     #
     def help
-      CLIProxy.call(['--help'])
+      CLIProxy.call(["--help"])
     end
   end
 end

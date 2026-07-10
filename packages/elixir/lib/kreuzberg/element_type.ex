@@ -20,17 +20,17 @@ defmodule Kreuzberg.ElementType do
   """
 
   @type t ::
-          :title
-          | :narrative_text
-          | :heading
-          | :list_item
-          | :table
-          | :image
-          | :page_break
-          | :code_block
-          | :block_quote
-          | :footer
-          | :header
+  :title
+  | :narrative_text
+  | :heading
+  | :list_item
+  | :table
+  | :image
+  | :page_break
+  | :code_block
+  | :block_quote
+  | :footer
+  | :header
 
   @doc """
   Returns all valid ElementType values.
@@ -42,17 +42,17 @@ defmodule Kreuzberg.ElementType do
   """
   @spec values() :: list(t())
   def values,
-    do: [
-      :title,
-      :narrative_text,
-      :heading,
-      :list_item,
-      :table,
-      :image,
-      :page_break,
-      :code_block,
-      :block_quote,
-      :footer,
-      :header
-    ]
+  do: [
+  :title,
+  :narrative_text,
+  :heading,
+  :list_item,
+  :table,
+  :image,
+  :page_break,
+  :code_block,
+  :block_quote,
+  :footer,
+  :header
+  ]
 end

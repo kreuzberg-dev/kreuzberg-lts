@@ -34,7 +34,6 @@ async fn test_pst_empty_file_extraction() {
 
     assert_eq!(result.mime_type.as_ref(), "application/vnd.ms-outlook-pst");
 
-    // Empty PST has no messages
     let message_count = result
         .metadata
         .additional

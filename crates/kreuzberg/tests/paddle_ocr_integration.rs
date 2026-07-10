@@ -39,26 +39,21 @@ fn test_cache_dir() -> PathBuf {
 async fn test_model_download_from_huggingface() {
     let cache_dir = test_cache_dir();
 
-    // Clean up any existing cache
     let _ = std::fs::remove_dir_all(&cache_dir);
 
     let manager = ModelManager::new(cache_dir.clone());
 
-    // Verify cache is empty
     assert!(!manager.are_models_cached());
 
-    // Download models (synchronous now)
     let result = manager.ensure_models_exist();
     assert!(result.is_ok(), "Model download failed: {:?}", result.err());
 
     let paths: kreuzberg::paddle_ocr::ModelPaths = result.unwrap();
 
-    // Verify all model directories exist
     assert!(paths.det_model.exists(), "Detection model dir not found");
     assert!(paths.cls_model.exists(), "Classification model dir not found");
     assert!(paths.rec_model.exists(), "Recognition model dir not found");
 
-    // Verify ONNX model files exist within directories
     assert!(
         paths.det_model.join("model.onnx").exists(),
         "Detection ONNX file not found"
@@ -72,21 +67,16 @@ async fn test_model_download_from_huggingface() {
         "Recognition ONNX file not found"
     );
 
-    // Verify dictionary file exists
     assert!(paths.dict_file.exists(), "Dictionary file not found");
 
-    // Verify cache reports correctly
     assert!(manager.are_models_cached());
 
-    // Check cache stats
     let stats = manager.cache_stats().unwrap();
-    // 3 model dirs, each containing model.onnx (rec/ also has dict.txt)
     assert!(
         stats.model_count >= 3,
         "Expected at least 3 cached items, got {}",
         stats.model_count
     );
-    // Models should be > 1MB each
     assert!(stats.total_size_bytes > 1_000_000);
 
     println!("Cache stats: {:?}", stats);
@@ -125,7 +115,6 @@ async fn test_ocr_hello_world_english() {
 
     println!("OCR result: {}", extraction.content);
 
-    // Should contain "hello" and "world"
     assert!(
         text.contains("hello") || text.contains("helo"),
         "Expected 'hello' in OCR result: {}",
@@ -168,7 +157,6 @@ async fn test_ocr_newspaper_english() {
         &extraction.content[..extraction.content.len().min(500)]
     );
 
-    // Should contain "NASDAQ" and "AMEX" from the header
     assert!(
         text.contains("NASDAQ") || text.contains("NASOAQ"),
         "Expected 'NASDAQ' in OCR result"
@@ -192,7 +180,6 @@ async fn test_ocr_chinese_text() {
 
     let image_bytes = std::fs::read(&image_path).expect("Failed to read image");
 
-    // Use Chinese language setting
     let config = PaddleOcrConfig::new("ch").with_cache_dir(test_cache_dir());
 
     let backend = PaddleOcrBackend::with_config(config).expect("Failed to create backend");
@@ -210,9 +197,6 @@ async fn test_ocr_chinese_text() {
 
     println!("OCR result: {}", extraction.content);
 
-    // The pipeline should produce some output without crashing.
-    // With the English-only model, Chinese characters are not recognized,
-    // but the detection and recognition pipeline should still function.
     assert!(
         !extraction.content.is_empty(),
         "Expected non-empty OCR result for Chinese image"
@@ -224,20 +208,17 @@ async fn test_ocr_chinese_text() {
 fn test_supported_languages() {
     let backend = PaddleOcrBackend::new().expect("Failed to create backend");
 
-    // Direct PaddleOCR codes
     assert!(backend.supports_language("ch"));
     assert!(backend.supports_language("en"));
     assert!(backend.supports_language("japan"));
     assert!(backend.supports_language("korean"));
 
-    // Mapped Tesseract/ISO codes
     assert!(backend.supports_language("chi_sim"));
     assert!(backend.supports_language("eng"));
     assert!(backend.supports_language("jpn"));
     assert!(backend.supports_language("fra"));
     assert!(backend.supports_language("deu"));
 
-    // Unsupported
     assert!(!backend.supports_language("xyz"));
     assert!(!backend.supports_language("klingon"));
 }
@@ -270,7 +251,6 @@ async fn test_invalid_image_error() {
         ..Default::default()
     };
 
-    // Random bytes that aren't a valid image
     let invalid_bytes = vec![0u8, 1, 2, 3, 4, 5, 6, 7, 8, 9];
 
     let result: kreuzberg::Result<ExtractionResult> = backend.process_image(&invalid_bytes, &ocr_config).await;
@@ -308,11 +288,9 @@ async fn test_process_image_file() {
 /// Test that explicit cache_dir in config overrides default.
 #[test]
 fn test_cache_dir_explicit_config() {
-    // Set explicit config - this should always work regardless of env vars
     let config = PaddleOcrConfig::new("en").with_cache_dir(PathBuf::from("/explicit/path"));
     let resolved = config.resolve_cache_dir();
 
-    // Explicit config should always win
     assert_eq!(resolved, PathBuf::from("/explicit/path"));
 }
 
@@ -341,7 +319,6 @@ async fn test_paddle_ocr_elements_geometry() {
 
     let extraction: ExtractionResult = result.unwrap();
 
-    // Check that OCR elements are present
     assert!(
         extraction.ocr_elements.is_some(),
         "Expected ocr_elements to be populated"
@@ -350,12 +327,9 @@ async fn test_paddle_ocr_elements_geometry() {
     let elements = extraction.ocr_elements.as_ref().unwrap();
     assert!(!elements.is_empty(), "Expected at least one OCR element");
 
-    // Verify each element has geometry
     for element in elements {
-        // Check geometry based on variant
         match &element.geometry {
             OcrBoundingGeometry::Quadrilateral { points } => {
-                // Quadrilateral should have 4 points
                 assert_eq!(points.len(), 4, "Quadrilateral should have 4 points");
                 println!("Quadrilateral with 4 points");
             }
@@ -406,16 +380,13 @@ async fn test_paddle_ocr_elements_confidence() {
     let elements = extraction.ocr_elements.as_ref().unwrap();
     assert!(!elements.is_empty(), "Expected at least one OCR element");
 
-    // Verify each element has confidence score
     for element in elements {
-        // Recognition confidence should be between 0 and 1
         assert!(
             element.confidence.recognition >= 0.0 && element.confidence.recognition <= 1.0,
             "Recognition confidence should be between 0 and 1, got {}",
             element.confidence.recognition
         );
 
-        // PaddleOCR also provides detection confidence
         if let Some(det_conf) = element.confidence.detection {
             assert!(
                 (0.0..=1.0).contains(&det_conf),
@@ -436,13 +407,11 @@ async fn test_paddle_ocr_elements_confidence() {
 #[tokio::test]
 #[ignore = "requires ONNX Runtime and downloaded models"]
 async fn test_paddle_ocr_rotation_detection() {
-    // Use an image that might have rotated text
     let image_path = test_documents_dir().join("images/ocr_image.jpg");
     assert!(image_path.exists(), "Test image not found: {:?}", image_path);
 
     let image_bytes = std::fs::read(&image_path).expect("Failed to read image");
 
-    // Enable angle classification
     let config = PaddleOcrConfig::new("en").with_cache_dir(test_cache_dir());
 
     let backend = PaddleOcrBackend::with_config(config).expect("Failed to create backend");
@@ -465,7 +434,6 @@ async fn test_paddle_ocr_rotation_detection() {
 
     let elements = extraction.ocr_elements.as_ref().unwrap();
 
-    // Check that rotation info is populated when available
     let elements_with_rotation = elements.iter().filter(|e| e.rotation.is_some()).count();
 
     println!(
@@ -474,10 +442,8 @@ async fn test_paddle_ocr_rotation_detection() {
         elements_with_rotation
     );
 
-    // For elements with rotation, verify the angle is valid
     for element in elements.iter().filter(|e| e.rotation.is_some()) {
         let rotation = element.rotation.as_ref().unwrap();
-        // Rotation should be in degrees (typically 0, 90, 180, 270)
         assert!(
             rotation.angle_degrees >= 0.0 && rotation.angle_degrees < 360.0,
             "Rotation angle should be between 0 and 360, got {}",
@@ -495,7 +461,6 @@ async fn test_paddle_ocr_table_reconstruction() {
 
     let image_bytes = std::fs::read(&image_path).expect("Failed to read image");
 
-    // Enable table detection
     let config = PaddleOcrConfig::new("en")
         .with_cache_dir(test_cache_dir())
         .with_table_detection(true);
@@ -518,7 +483,6 @@ async fn test_paddle_ocr_table_reconstruction() {
         &extraction.content[..extraction.content.len().min(500)]
     );
 
-    // Check if tables were detected
     if !extraction.tables.is_empty() {
         println!("Found {} tables", extraction.tables.len());
         for (i, table) in extraction.tables.iter().enumerate() {
@@ -531,19 +495,13 @@ async fn test_paddle_ocr_table_reconstruction() {
         }
     }
 
-    // OCR elements should also be populated
     if let Some(elements) = &extraction.ocr_elements {
         println!("Found {} OCR elements", elements.len());
 
-        // Elements should have text content
         let non_empty_elements = elements.iter().filter(|e| !e.text.is_empty()).count();
         assert!(non_empty_elements > 0, "Expected at least one element with text");
     }
 }
-
-// ============================================================================
-// Mobile tier integration tests with quality measurement (TF1)
-// ============================================================================
 
 /// Compute Text F1 score: token-level precision/recall between predicted and reference text.
 fn compute_tf1(predicted: &str, reference: &str) -> f64 {
@@ -582,7 +540,6 @@ async fn test_mobile_tier_ocr_quality() {
 
     let image_bytes = std::fs::read(&image_path).expect("Failed to read image");
 
-    // Mobile tier config
     let config = PaddleOcrConfig::new("en")
         .with_cache_dir(test_cache_dir())
         .with_model_tier("mobile");
@@ -611,7 +568,6 @@ async fn test_mobile_tier_ocr_quality() {
         &extraction.content[..extraction.content.len().min(200)]
     );
 
-    // Mobile tier should achieve at least 50% TF1 on this document
     assert!(
         tf1 > 0.5,
         "Mobile tier TF1 too low: {:.1}% (expected >50%)",
@@ -628,7 +584,6 @@ async fn test_server_tier_ocr_quality() {
 
     let image_bytes = std::fs::read(&image_path).expect("Failed to read image");
 
-    // Server tier config (default)
     let config = PaddleOcrConfig::new("en")
         .with_cache_dir(test_cache_dir())
         .with_model_tier("server");
@@ -652,7 +607,6 @@ async fn test_server_tier_ocr_quality() {
 
     println!("Server tier TF1: {:.1}% ({} ms)", tf1 * 100.0, elapsed_ms);
 
-    // Server tier should achieve at least 60% TF1
     assert!(
         tf1 > 0.6,
         "Server tier TF1 too low: {:.1}% (expected >60%)",
@@ -709,7 +663,6 @@ async fn test_mobile_tier_auto_rotate() {
         println!("{}: TF1={:.1}% ({} ms)", label, tf1 * 100.0, elapsed_ms);
     }
 
-    // All orientations should produce consistent quality (within 20% of each other)
     let min_tf1 = tf1_scores.iter().cloned().fold(f64::INFINITY, f64::min);
     let max_tf1 = tf1_scores.iter().cloned().fold(f64::NEG_INFINITY, f64::max);
 
@@ -720,14 +673,12 @@ async fn test_mobile_tier_auto_rotate() {
         (max_tf1 - min_tf1) * 100.0
     );
 
-    // Auto-rotate should make all orientations achieve at least 40% TF1
     assert!(
         min_tf1 > 0.4,
         "Worst orientation TF1 too low: {:.1}% (expected >40% with auto_rotate)",
         min_tf1 * 100.0
     );
 
-    // Spread should be <30% — auto_rotate should normalize quality across orientations
     assert!(
         max_tf1 - min_tf1 < 0.3,
         "TF1 spread too large: {:.1}% (expected <30% with auto_rotate)",
@@ -742,14 +693,12 @@ async fn test_mobile_tier_model_cache() {
     let cache_dir = test_cache_dir();
     let manager = ModelManager::new(cache_dir.clone());
 
-    // Download mobile det model
     let det_result = manager.ensure_v2_det_model("mobile");
     assert!(det_result.is_ok(), "Mobile det download failed: {:?}", det_result.err());
 
     let det_dir = det_result.unwrap();
     assert!(det_dir.join("model.onnx").exists(), "Mobile det model not cached");
 
-    // Mobile det should be ~4.7MB (much smaller than server ~88MB)
     let det_size = std::fs::metadata(det_dir.join("model.onnx")).unwrap().len();
     assert!(
         det_size < 10_000_000,
@@ -762,7 +711,6 @@ async fn test_mobile_tier_model_cache() {
         det_size as f64 / 1_048_576.0
     );
 
-    // Download en_mobile rec model
     let rec_result = manager.resolve_rec_model("english", "mobile");
     assert!(rec_result.is_ok(), "Mobile rec download failed: {:?}", rec_result.err());
 
@@ -811,11 +759,9 @@ async fn test_tier_model_differentiation() {
 /// Test default cache directory when no explicit config is set.
 #[test]
 fn test_cache_dir_default() {
-    // Save and clear env var to test default behavior
     let original = std::env::var("KREUZBERG_CACHE_DIR").ok();
 
     // SAFETY: This is a test that manipulates environment variables.
-    // Tests should be run with --test-threads=1 if this causes issues.
     unsafe {
         std::env::remove_var("KREUZBERG_CACHE_DIR");
     }
@@ -823,11 +769,9 @@ fn test_cache_dir_default() {
     let config = PaddleOcrConfig::new("en");
     let resolved = config.resolve_cache_dir();
 
-    // Default should use .kreuzberg/paddle-ocr/
     assert!(resolved.to_string_lossy().contains(".kreuzberg"));
     assert!(resolved.to_string_lossy().contains("paddle-ocr"));
 
-    // Restore
     unsafe {
         if let Some(val) = original {
             std::env::set_var("KREUZBERG_CACHE_DIR", val);

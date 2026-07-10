@@ -9,6 +9,4 @@ namespace Kreuzberg\Exceptions;
  *
  * @since 4.6.0
  */
-class EmbeddingException extends KreuzbergException
-{
-}
+class EmbeddingException extends KreuzbergException {}

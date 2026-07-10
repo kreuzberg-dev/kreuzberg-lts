@@ -7,12 +7,10 @@
 pub(in crate::pdf::structure) fn looks_like_figure_label(text: &str) -> bool {
     let words: Vec<&str> = text.split_whitespace().collect();
 
-    // All single-character words (3+): "A B C", "D E F"
     if words.len() >= 3 && words.iter().all(|w| w.len() <= 1) {
         return true;
     }
 
-    // Concatenated labels: same word appears 3+ times (e.g., "nut" in figure parts)
     if words.len() >= 5 {
         for w in &words {
             let lw = w.to_lowercase();

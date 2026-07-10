@@ -1,11 +1,4 @@
 # =============================================================================
-# Alpine-based builder for musl-linked FFI shared library.
-#
-# Usage:
-#   docker build -f docker/Dockerfile.musl-ffi \
-#     --output type=local,dest=./dist .
-#
-# Produces libkreuzberg_ffi.so at dist/libkreuzberg_ffi.so
 # =============================================================================
 FROM alpine:3.21 AS builder
 
@@ -14,8 +7,6 @@ ARG PDFIUM_VERSION=7678
 
 WORKDIR /build
 
-# Install build dependencies — Alpine's g++ and libstdc++ are musl-native,
-# so tesseract C++ compilation works without glibc conflicts.
 RUN apk add --no-cache \
     curl gcc g++ musl-dev cmake make pkgconf \
     openssl-dev openssl-libs-static \
@@ -24,14 +15,12 @@ RUN apk add --no-cache \
     --repository=https://dl-cdn.alpinelinux.org/alpine/edge/community \
     --repository=https://dl-cdn.alpinelinux.org/alpine/edge/main
 
-# Install Rust via rustup (Alpine's packaged Rust may be too old / not nightly)
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs \
     | sh -s -- -y --default-toolchain "${RUST_TOOLCHAIN}" --component rust-src && \
     echo "Rust host: $(~/.cargo/bin/rustc -vV | grep host)" && \
     echo "Default target: $(~/.cargo/bin/rustc --print cfg | grep target)"
 ENV PATH="/root/.cargo/bin:${PATH}"
 
-# Download pdfium (musl build)
 RUN mkdir -p /build/pdfium && \
     ARCH=$(uname -m) && \
     if [ "$ARCH" = "aarch64" ]; then PDFIUM_ARCH="arm64"; else PDFIUM_ARCH="x64"; fi && \
@@ -42,15 +31,12 @@ RUN mkdir -p /build/pdfium && \
 
 ENV KREUZBERG_PDFIUM_PREBUILT=/build/pdfium
 
-# Point ort-sys to Alpine's system ORT library instead of downloading prebuilt binaries.
 ENV ORT_LIB_LOCATION=/usr/lib
 ENV ORT_PREFER_DYNAMIC_LINK=1
 ENV ORT_SKIP_DOWNLOAD=1
 ENV ORT_STRATEGY=system
-# Allow cdylib output on musl targets (default is +crt-static which blocks shared libs)
 ENV RUSTFLAGS="-C target-feature=-crt-static"
 
-# Copy workspace manifests and crates
 COPY Cargo.toml Cargo.lock ./
 COPY crates/kreuzberg/ crates/kreuzberg/
 COPY crates/kreuzberg-ffi/ crates/kreuzberg-ffi/
@@ -58,21 +44,15 @@ COPY crates/kreuzberg-tesseract/ crates/kreuzberg-tesseract/
 COPY crates/kreuzberg-paddle-ocr/ crates/kreuzberg-paddle-ocr/
 COPY crates/kreuzberg-pdfium-render/ crates/kreuzberg-pdfium-render/
 
-# Remove workspace members that aren't included
 RUN sed -i '/kreuzberg-py/d; /kreuzberg_rb/d; /kreuzberg-node/d; /kreuzberg-cli/d; /kreuzberg-php/d; /kreuzberg_rustler/d; /"crates\/kreuzberg-wasm"/d; /^\[profile\.release\.package\.kreuzberg-wasm\]$/,$d; /benchmark-harness/d; /e2e-generator/d; /snippet-runner/d; /e2e\/rust/d' Cargo.toml
 
-# Build the FFI shared library
 RUN cargo build --release --package kreuzberg-ffi && \
     cp target/release/libkreuzberg_ffi.so /build/libkreuzberg_ffi.so && \
     strip /build/libkreuzberg_ffi.so
 
-# Verify the library
 RUN file /build/libkreuzberg_ffi.so && \
     echo "=== Dynamic dependencies ===" && \
     readelf -d /build/libkreuzberg_ffi.so 2>/dev/null | grep NEEDED || echo "No dynamic dependencies (fully static)"
 
-# =============================================================================
-# Output stage — just the shared library
-# =============================================================================
 FROM scratch
 COPY --from=builder /build/libkreuzberg_ffi.so /libkreuzberg_ffi.so

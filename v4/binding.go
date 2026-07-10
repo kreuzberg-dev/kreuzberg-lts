@@ -93,12 +93,10 @@ type BytesWithMime struct {
 
 // ExtractFileSync extracts content and metadata from the file at the provided path.
 func ExtractFileSync(path string, config *ExtractionConfig) (*ExtractionResult, error) {
-	// Validate path is not empty
 	if path == "" {
 		return nil, newValidationErrorWithContext("path is required", nil, ErrorCodeValidation, nil)
 	}
 
-	// Validate chunking parameters if provided in config
 	if config != nil && config.Chunking != nil {
 		if err := validateChunkingConfig(config.Chunking); err != nil {
 			return nil, err
@@ -116,7 +114,6 @@ func ExtractFileSync(path string, config *ExtractionConfig) (*ExtractionResult, 
 		defer cfgCleanup()
 	}
 
-	// Serialize FFI calls to prevent concurrent PDFium access
 	ffiMutex.Lock()
 	defer ffiMutex.Unlock()
 
@@ -141,7 +138,6 @@ func ExtractBytesSync(data []byte, mimeType string, config *ExtractionConfig) (*
 		return nil, newValidationErrorWithContext("mimeType is required", nil, ErrorCodeValidation, nil)
 	}
 
-	// Validate chunking parameters if provided in config
 	if config != nil && config.Chunking != nil {
 		if err := validateChunkingConfig(config.Chunking); err != nil {
 			return nil, err
@@ -162,7 +158,6 @@ func ExtractBytesSync(data []byte, mimeType string, config *ExtractionConfig) (*
 		defer cfgCleanup()
 	}
 
-	// Serialize FFI calls to prevent concurrent PDFium access
 	ffiMutex.Lock()
 	defer ffiMutex.Unlock()
 
@@ -187,7 +182,6 @@ func BatchExtractFilesSync(paths []string, config *ExtractionConfig) ([]*Extract
 		return []*ExtractionResult{}, nil
 	}
 
-	// Validate chunking parameters if provided in config
 	if config != nil && config.Chunking != nil {
 		if err := validateChunkingConfig(config.Chunking); err != nil {
 			return nil, err
@@ -215,7 +209,6 @@ func BatchExtractFilesSync(paths []string, config *ExtractionConfig) ([]*Extract
 		defer cfgCleanup()
 	}
 
-	// Serialize FFI calls to prevent concurrent PDFium access
 	ffiMutex.Lock()
 	defer ffiMutex.Unlock()
 
@@ -234,7 +227,6 @@ func BatchExtractBytesSync(items []BytesWithMime, config *ExtractionConfig) ([]*
 		return []*ExtractionResult{}, nil
 	}
 
-	// Validate chunking parameters if provided in config
 	if config != nil && config.Chunking != nil {
 		if err := validateChunkingConfig(config.Chunking); err != nil {
 			return nil, err
@@ -280,7 +272,6 @@ func BatchExtractBytesSync(items []BytesWithMime, config *ExtractionConfig) ([]*
 		defer cfgCleanup()
 	}
 
-	// Serialize FFI calls to prevent concurrent PDFium access
 	ffiMutex.Lock()
 	defer ffiMutex.Unlock()
 
@@ -363,8 +354,6 @@ func (it *PdfPageIterator) Next() (pageIndex int, png []byte, ok bool, err error
 
 	cResult := C.kreuzberg_pdf_page_iterator_next((*C.CPdfPageIterator)(it.handle))
 	if cResult == nil {
-		// NULL means exhausted or error. The FFI clears the error before
-		// each call, so a non-NULL kreuzberg_last_error() indicates failure.
 		errPtr := C.kreuzberg_last_error()
 		if errPtr != nil {
 			return 0, nil, false, lastError()
@@ -412,7 +401,6 @@ func BatchExtractFilesWithConfigs(items []FileItem, config *ExtractionConfig) ([
 		return []*ExtractionResult{}, nil
 	}
 
-	// Validate chunking parameters if provided in config
 	if config != nil && config.Chunking != nil {
 		if err := validateChunkingConfig(config.Chunking); err != nil {
 			return nil, err
@@ -440,7 +428,6 @@ func BatchExtractFilesWithConfigs(items []FileItem, config *ExtractionConfig) ([
 				C.free(unsafe.Pointer(cStr))
 			})
 		}
-		// nil Config leaves cFileConfigs[i] as nil (NULL)
 	}
 	defer func() {
 		for _, ptr := range cPaths {
@@ -459,7 +446,6 @@ func BatchExtractFilesWithConfigs(items []FileItem, config *ExtractionConfig) ([
 		defer cfgCleanup()
 	}
 
-	// Serialize FFI calls to prevent concurrent PDFium access
 	ffiMutex.Lock()
 	defer ffiMutex.Unlock()
 
@@ -484,7 +470,6 @@ func BatchExtractBytesWithConfigs(items []BytesItem, config *ExtractionConfig) (
 		return []*ExtractionResult{}, nil
 	}
 
-	// Validate chunking parameters if provided in config
 	if config != nil && config.Chunking != nil {
 		if err := validateChunkingConfig(config.Chunking); err != nil {
 			return nil, err
@@ -547,7 +532,6 @@ func BatchExtractBytesWithConfigs(items []BytesItem, config *ExtractionConfig) (
 		defer cfgCleanup()
 	}
 
-	// Serialize FFI calls to prevent concurrent PDFium access
 	ffiMutex.Lock()
 	defer ffiMutex.Unlock()
 
@@ -1080,10 +1064,8 @@ func EmbedTextsAsync(ctx context.Context, texts []string, config *EmbeddingConfi
 // It checks that ChunkSize and ChunkOverlap are positive when set, and that overlap < chunk size.
 // These validations are performed before FFI calls.
 func validateChunkingConfig(cfg *ChunkingConfig) error {
-	// Maximum reasonable chunk size (100MB)
 	const maxReasonableChunkSize = 104857600
 
-	// Validate ChunkSize if provided
 	if cfg.ChunkSize != nil {
 		if *cfg.ChunkSize < 0 {
 			return newValidationErrorWithContext(
@@ -1097,14 +1079,12 @@ func validateChunkingConfig(cfg *ChunkingConfig) error {
 		}
 	}
 
-	// Validate ChunkOverlap if provided
 	if cfg.ChunkOverlap != nil && *cfg.ChunkOverlap < 0 {
 		return newValidationErrorWithContext(
 			fmt.Sprintf("invalid chunk overlap: %d (must be >= 0)", *cfg.ChunkOverlap),
 			nil, ErrorCodeValidation, nil)
 	}
 
-	// If both are set, validate that overlap < chunk size
 	if cfg.ChunkSize != nil && cfg.ChunkOverlap != nil {
 		if *cfg.ChunkOverlap >= *cfg.ChunkSize {
 			return newValidationErrorWithContext(
@@ -1113,7 +1093,6 @@ func validateChunkingConfig(cfg *ChunkingConfig) error {
 		}
 	}
 
-	// Also validate MaxChars and MaxOverlap if provided (for backward compatibility)
 	if cfg.MaxChars != nil {
 		if *cfg.MaxChars <= 0 {
 			return newValidationErrorWithContext(
@@ -1133,7 +1112,6 @@ func validateChunkingConfig(cfg *ChunkingConfig) error {
 			nil, ErrorCodeValidation, nil)
 	}
 
-	// If both MaxChars and MaxOverlap are set, validate that overlap < max_chars
 	if cfg.MaxChars != nil && cfg.MaxOverlap != nil {
 		if *cfg.MaxOverlap >= *cfg.MaxChars {
 			return newValidationErrorWithContext(

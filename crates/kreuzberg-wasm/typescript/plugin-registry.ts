@@ -21,29 +21,29 @@ import type { ExtractionResult } from "./types.js";
  * A post-processor modifies extraction results after extraction completes.
  */
 export interface PostProcessor {
-	/**
-	 * Get the processor name (must be non-empty string)
-	 */
-	name(): string;
+  /**
+   * Get the processor name (must be non-empty string)
+   */
+  name(): string;
 
-	/**
-	 * Get the processing stage (optional, defaults to "middle")
-	 * - "early": Process early in the pipeline
-	 * - "middle": Process in the middle of the pipeline
-	 * - "late": Process late in the pipeline
-	 */
-	stage?(): "early" | "middle" | "late";
+  /**
+   * Get the processing stage (optional, defaults to "middle")
+   * - "early": Process early in the pipeline
+   * - "middle": Process in the middle of the pipeline
+   * - "late": Process late in the pipeline
+   */
+  stage?(): "early" | "middle" | "late";
 
-	/**
-	 * Process an extraction result
-	 * Can be sync or async
-	 */
-	process(result: ExtractionResult): ExtractionResult | Promise<ExtractionResult>;
+  /**
+   * Process an extraction result
+   * Can be sync or async
+   */
+  process(result: ExtractionResult): ExtractionResult | Promise<ExtractionResult>;
 
-	/**
-	 * Shutdown the processor (optional)
-	 */
-	shutdown?(): void | Promise<void>;
+  /**
+   * Shutdown the processor (optional)
+   */
+  shutdown?(): void | Promise<void>;
 }
 
 /**
@@ -52,29 +52,29 @@ export interface PostProcessor {
  * A validator checks extraction results for correctness
  */
 export interface Validator {
-	/**
-	 * Get the validator name (must be non-empty string)
-	 */
-	name(): string;
+  /**
+   * Get the validator name (must be non-empty string)
+   */
+  name(): string;
 
-	/**
-	 * Get the validation priority (optional, defaults to 50)
-	 * Higher numbers = higher priority (execute first)
-	 */
-	priority?(): number;
+  /**
+   * Get the validation priority (optional, defaults to 50)
+   * Higher numbers = higher priority (execute first)
+   */
+  priority?(): number;
 
-	/**
-	 * Validate an extraction result
-	 * Can be sync or async
-	 */
-	validate(
-		result: ExtractionResult,
-	): { valid: boolean; errors: string[] } | Promise<{ valid: boolean; errors: string[] }>;
+  /**
+   * Validate an extraction result
+   * Can be sync or async
+   */
+  validate(
+    result: ExtractionResult,
+  ): { valid: boolean; errors: string[] } | Promise<{ valid: boolean; errors: string[] }>;
 
-	/**
-	 * Shutdown the validator (optional)
-	 */
-	shutdown?(): void | Promise<void>;
+  /**
+   * Shutdown the validator (optional)
+   */
+  shutdown?(): void | Promise<void>;
 }
 
 /** Map of post-processor name -> processor instance */
@@ -83,36 +83,32 @@ const postProcessors = new Map<string, PostProcessor>();
 /** Map of validator name -> validator instance */
 const validators = new Map<string, Validator>();
 
-// ============================================================================
-// Post-Processor Registry Functions
-// ============================================================================
-
 /**
  * Validate a post-processor object
  *
  * @throws {Error} If the processor doesn't implement required methods
  */
 function validatePostProcessor(processor: unknown): processor is PostProcessor {
-	if (processor === null || processor === undefined) {
-		throw new Error("Post-processor cannot be null or undefined");
-	}
+  if (processor === null || processor === undefined) {
+    throw new Error("Post-processor cannot be null or undefined");
+  }
 
-	const obj = processor as Record<string, unknown>;
+  const obj = processor as Record<string, unknown>;
 
-	if (typeof obj.name !== "function") {
-		throw new Error("Post-processor must implement name() method");
-	}
+  if (typeof obj.name !== "function") {
+    throw new Error("Post-processor must implement name() method");
+  }
 
-	if (typeof obj.process !== "function") {
-		throw new Error("Post-processor must implement process() method");
-	}
+  if (typeof obj.process !== "function") {
+    throw new Error("Post-processor must implement process() method");
+  }
 
-	const name = obj.name();
-	if (typeof name !== "string" || name.trim() === "") {
-		throw new Error("Post-processor name must be a non-empty string");
-	}
+  const name = obj.name();
+  if (typeof name !== "string" || name.trim() === "") {
+    throw new Error("Post-processor name must be a non-empty string");
+  }
 
-	return true;
+  return true;
 }
 
 /**
@@ -135,15 +131,15 @@ function validatePostProcessor(processor: unknown): processor is PostProcessor {
  * ```
  */
 export function registerPostProcessor(processor: PostProcessor): void {
-	validatePostProcessor(processor);
+  validatePostProcessor(processor);
 
-	const name = processor.name();
+  const name = processor.name();
 
-	if (postProcessors.has(name)) {
-		console.warn(`Post-processor "${name}" already registered, overwriting with new implementation`);
-	}
+  if (postProcessors.has(name)) {
+    console.warn(`Post-processor "${name}" already registered, overwriting with new implementation`);
+  }
 
-	postProcessors.set(name, processor);
+  postProcessors.set(name, processor);
 }
 
 /**
@@ -161,7 +157,7 @@ export function registerPostProcessor(processor: PostProcessor): void {
  * ```
  */
 export function getPostProcessor(name: string): PostProcessor | undefined {
-	return postProcessors.get(name);
+  return postProcessors.get(name);
 }
 
 /**
@@ -176,7 +172,7 @@ export function getPostProcessor(name: string): PostProcessor | undefined {
  * ```
  */
 export function listPostProcessors(): string[] {
-	return Array.from(postProcessors.keys());
+  return Array.from(postProcessors.keys());
 }
 
 /**
@@ -191,23 +187,23 @@ export function listPostProcessors(): string[] {
  * ```
  */
 export async function unregisterPostProcessor(name: string): Promise<void> {
-	const processor = postProcessors.get(name);
+  const processor = postProcessors.get(name);
 
-	if (!processor) {
-		const available = Array.from(postProcessors.keys());
-		const availableStr = available.length > 0 ? ` Available: ${available.join(", ")}` : "";
-		throw new Error(`Post-processor "${name}" is not registered.${availableStr}`);
-	}
+  if (!processor) {
+    const available = Array.from(postProcessors.keys());
+    const availableStr = available.length > 0 ? ` Available: ${available.join(", ")}` : "";
+    throw new Error(`Post-processor "${name}" is not registered.${availableStr}`);
+  }
 
-	try {
-		if (processor.shutdown) {
-			await processor.shutdown();
-		}
-	} catch (error) {
-		console.warn(`Error during shutdown of post-processor "${name}":`, error);
-	}
+  try {
+    if (processor.shutdown) {
+      await processor.shutdown();
+    }
+  } catch (error) {
+    console.warn(`Error during shutdown of post-processor "${name}":`, error);
+  }
 
-	postProcessors.delete(name);
+  postProcessors.delete(name);
 }
 
 /**
@@ -221,24 +217,20 @@ export async function unregisterPostProcessor(name: string): Promise<void> {
  * ```
  */
 export async function clearPostProcessors(): Promise<void> {
-	const entries = Array.from(postProcessors.entries());
+  const entries = Array.from(postProcessors.entries());
 
-	for (const [_name, processor] of entries) {
-		try {
-			if (processor.shutdown) {
-				await processor.shutdown();
-			}
-		} catch (error) {
-			console.warn(`Error during shutdown of post-processor "${_name}":`, error);
-		}
-	}
+  for (const [_name, processor] of entries) {
+    try {
+      if (processor.shutdown) {
+        await processor.shutdown();
+      }
+    } catch (error) {
+      console.warn(`Error during shutdown of post-processor "${_name}":`, error);
+    }
+  }
 
-	postProcessors.clear();
+  postProcessors.clear();
 }
-
-// ============================================================================
-// Validator Registry Functions
-// ============================================================================
 
 /**
  * Validate a validator object
@@ -246,26 +238,26 @@ export async function clearPostProcessors(): Promise<void> {
  * @throws {Error} If the validator doesn't implement required methods
  */
 function validateValidator(validator: unknown): validator is Validator {
-	if (validator === null || validator === undefined) {
-		throw new Error("Validator cannot be null or undefined");
-	}
+  if (validator === null || validator === undefined) {
+    throw new Error("Validator cannot be null or undefined");
+  }
 
-	const obj = validator as Record<string, unknown>;
+  const obj = validator as Record<string, unknown>;
 
-	if (typeof obj.name !== "function") {
-		throw new Error("Validator must implement name() method");
-	}
+  if (typeof obj.name !== "function") {
+    throw new Error("Validator must implement name() method");
+  }
 
-	if (typeof obj.validate !== "function") {
-		throw new Error("Validator must implement validate() method");
-	}
+  if (typeof obj.validate !== "function") {
+    throw new Error("Validator must implement validate() method");
+  }
 
-	const name = obj.name();
-	if (typeof name !== "string" || name.trim() === "") {
-		throw new Error("Validator name must be a non-empty string");
-	}
+  const name = obj.name();
+  if (typeof name !== "string" || name.trim() === "") {
+    throw new Error("Validator name must be a non-empty string");
+  }
 
-	return true;
+  return true;
 }
 
 /**
@@ -290,15 +282,15 @@ function validateValidator(validator: unknown): validator is Validator {
  * ```
  */
 export function registerValidator(validator: Validator): void {
-	validateValidator(validator);
+  validateValidator(validator);
 
-	const name = validator.name();
+  const name = validator.name();
 
-	if (validators.has(name)) {
-		console.warn(`Validator "${name}" already registered, overwriting with new implementation`);
-	}
+  if (validators.has(name)) {
+    console.warn(`Validator "${name}" already registered, overwriting with new implementation`);
+  }
 
-	validators.set(name, validator);
+  validators.set(name, validator);
 }
 
 /**
@@ -316,7 +308,7 @@ export function registerValidator(validator: Validator): void {
  * ```
  */
 export function getValidator(name: string): Validator | undefined {
-	return validators.get(name);
+  return validators.get(name);
 }
 
 /**
@@ -331,7 +323,7 @@ export function getValidator(name: string): Validator | undefined {
  * ```
  */
 export function listValidators(): string[] {
-	return Array.from(validators.keys());
+  return Array.from(validators.keys());
 }
 
 /**
@@ -346,23 +338,23 @@ export function listValidators(): string[] {
  * ```
  */
 export async function unregisterValidator(name: string): Promise<void> {
-	const validator = validators.get(name);
+  const validator = validators.get(name);
 
-	if (!validator) {
-		const available = Array.from(validators.keys());
-		const availableStr = available.length > 0 ? ` Available: ${available.join(", ")}` : "";
-		throw new Error(`Validator "${name}" is not registered.${availableStr}`);
-	}
+  if (!validator) {
+    const available = Array.from(validators.keys());
+    const availableStr = available.length > 0 ? ` Available: ${available.join(", ")}` : "";
+    throw new Error(`Validator "${name}" is not registered.${availableStr}`);
+  }
 
-	try {
-		if (validator.shutdown) {
-			await validator.shutdown();
-		}
-	} catch (error) {
-		console.warn(`Error during shutdown of validator "${name}":`, error);
-	}
+  try {
+    if (validator.shutdown) {
+      await validator.shutdown();
+    }
+  } catch (error) {
+    console.warn(`Error during shutdown of validator "${name}":`, error);
+  }
 
-	validators.delete(name);
+  validators.delete(name);
 }
 
 /**
@@ -376,24 +368,20 @@ export async function unregisterValidator(name: string): Promise<void> {
  * ```
  */
 export async function clearValidators(): Promise<void> {
-	const entries = Array.from(validators.entries());
+  const entries = Array.from(validators.entries());
 
-	for (const [_name, validator] of entries) {
-		try {
-			if (validator.shutdown) {
-				await validator.shutdown();
-			}
-		} catch (error) {
-			console.warn(`Error during shutdown of validator "${_name}":`, error);
-		}
-	}
+  for (const [_name, validator] of entries) {
+    try {
+      if (validator.shutdown) {
+        await validator.shutdown();
+      }
+    } catch (error) {
+      console.warn(`Error during shutdown of validator "${_name}":`, error);
+    }
+  }
 
-	validators.clear();
+  validators.clear();
 }
-
-// ============================================================================
-// Global Callback Functions (for WASM module callbacks)
-// ============================================================================
 
 /**
  * Global callback for executing a post-processor from WASM
@@ -404,23 +392,23 @@ export async function clearValidators(): Promise<void> {
  * @internal
  */
 export function executePostProcessor(name: string, result: ExtractionResult): Promise<ExtractionResult> {
-	const processor = postProcessors.get(name);
+  const processor = postProcessors.get(name);
 
-	if (!processor) {
-		return Promise.reject(new Error(`Post-processor "${name}" is not registered`));
-	}
+  if (!processor) {
+    return Promise.reject(new Error(`Post-processor "${name}" is not registered`));
+  }
 
-	try {
-		const output = processor.process(result);
+  try {
+    const output = processor.process(result);
 
-		if (output instanceof Promise) {
-			return output;
-		}
+    if (output instanceof Promise) {
+      return output;
+    }
 
-		return Promise.resolve(output);
-	} catch (error) {
-		return Promise.reject(new Error(`Error executing post-processor "${name}": ${String(error)}`));
-	}
+    return Promise.resolve(output);
+  } catch (error) {
+    return Promise.reject(new Error(`Error executing post-processor "${name}": ${String(error)}`));
+  }
 }
 
 /**
@@ -432,26 +420,26 @@ export function executePostProcessor(name: string, result: ExtractionResult): Pr
  * @internal
  */
 export function executeValidator(
-	name: string,
-	result: ExtractionResult,
+  name: string,
+  result: ExtractionResult,
 ): Promise<{ valid: boolean; errors: string[] }> {
-	const validator = validators.get(name);
+  const validator = validators.get(name);
 
-	if (!validator) {
-		return Promise.reject(new Error(`Validator "${name}" is not registered`));
-	}
+  if (!validator) {
+    return Promise.reject(new Error(`Validator "${name}" is not registered`));
+  }
 
-	try {
-		const output = validator.validate(result);
+  try {
+    const output = validator.validate(result);
 
-		if (output instanceof Promise) {
-			return output;
-		}
+    if (output instanceof Promise) {
+      return output;
+    }
 
-		return Promise.resolve(output);
-	} catch (error) {
-		return Promise.reject(new Error(`Error executing validator "${name}": ${String(error)}`));
-	}
+    return Promise.resolve(output);
+  } catch (error) {
+    return Promise.reject(new Error(`Error executing validator "${name}": ${String(error)}`));
+  }
 }
 
 /**
@@ -463,13 +451,11 @@ export function executeValidator(
  * @internal
  */
 export function setupGlobalCallbacks(): void {
-	// Make callbacks available to WASM module
-	if (typeof globalThis !== "undefined") {
-		const callbacksObj = globalThis as Record<string, unknown>;
-		callbacksObj.__kreuzberg_execute_post_processor = executePostProcessor;
-		callbacksObj.__kreuzberg_execute_validator = executeValidator;
-	}
+  if (typeof globalThis !== "undefined") {
+    const callbacksObj = globalThis as Record<string, unknown>;
+    callbacksObj.__kreuzberg_execute_post_processor = executePostProcessor;
+    callbacksObj.__kreuzberg_execute_validator = executeValidator;
+  }
 }
 
-// Setup callbacks when module is imported
 setupGlobalCallbacks();

@@ -480,7 +480,6 @@ mod tests {
         let test_token = tokens.iter().find(|t| t.token == "test").unwrap();
         let other_token = tokens.iter().find(|t| t.token == "other").unwrap();
 
-        // "test" appears 3 times so its total importance score should be higher
         assert!(test_token.importance_score > other_token.importance_score);
     }
 

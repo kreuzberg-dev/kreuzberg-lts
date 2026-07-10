@@ -26,12 +26,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  * @since 4.0.0
  */
 public record PanicContext(@JsonProperty("file") String file, @JsonProperty("line") int line,
-		@JsonProperty("function") String function, @JsonProperty("message") String message,
-		@JsonProperty("timestamp_secs") long timestampSecs) {
+    @JsonProperty("function") String function, @JsonProperty("message") String message,
+    @JsonProperty("timestamp_secs") long timestampSecs) {
 
-	private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
-	/**
+    /**
 	 * Parses a PanicContext from a JSON string.
 	 *
 	 * @param jsonString
@@ -40,18 +40,18 @@ public record PanicContext(@JsonProperty("file") String file, @JsonProperty("lin
 	 * @throws IllegalArgumentException
 	 *             if the JSON cannot be parsed
 	 */
-	public static PanicContext fromJson(String jsonString) {
-		if (jsonString == null || jsonString.isEmpty()) {
-			throw new IllegalArgumentException("JSON string cannot be null or empty");
-		}
-		try {
-			return OBJECT_MAPPER.readValue(jsonString, PanicContext.class);
-		} catch (Exception e) {
-			throw new IllegalArgumentException("Failed to parse panic context from JSON: " + e.getMessage(), e);
-		}
-	}
+    public static PanicContext fromJson(String jsonString) {
+        if (jsonString == null || jsonString.isEmpty()) {
+            throw new IllegalArgumentException("JSON string cannot be null or empty");
+        }
+        try {
+            return OBJECT_MAPPER.readValue(jsonString, PanicContext.class);
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Failed to parse panic context from JSON: " + e.getMessage(), e);
+        }
+    }
 
-	/**
+    /**
 	 * Returns a formatted string representation of the panic context.
 	 *
 	 * <p>
@@ -59,8 +59,8 @@ public record PanicContext(@JsonProperty("file") String file, @JsonProperty("lin
 	 *
 	 * @return a formatted string
 	 */
-	@Override
-	public String toString() {
-		return String.format("Panic at %s:%d in %s(): %s", file, line, function, message);
-	}
+    @Override
+    public String toString() {
+        return String.format("Panic at %s:%d in %s(): %s", file, line, function, message);
+    }
 }

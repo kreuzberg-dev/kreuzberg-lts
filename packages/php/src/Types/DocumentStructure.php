@@ -19,8 +19,7 @@ readonly class DocumentStructure
      */
     public function __construct(
         public array $nodes = [],
-    ) {
-    }
+    ) {}
 
     /**
      * Create DocumentStructure from array returned by extension.
@@ -34,13 +33,11 @@ readonly class DocumentStructure
 
         $nodes = array_map(
             /** @param array<string, mixed> $node */
-            static fn (array $node): DocumentNode => DocumentNode::fromArray($node),
+            static fn(array $node): DocumentNode => DocumentNode::fromArray($node),
             $nodesData,
         );
 
-        return new self(
-            nodes: $nodes,
-        );
+        return new self(nodes: $nodes);
     }
 
     /**
@@ -102,8 +99,7 @@ readonly class DocumentNode
         public ?int $pageNumberEnd = null,
         public ?BoundingBox $bbox = null,
         public array $annotations = [],
-    ) {
-    }
+    ) {}
 
     /**
      * Create DocumentNode from array returned by extension.
@@ -126,9 +122,7 @@ readonly class DocumentNode
         $contentLayer = $data['content_layer'] ?? null;
 
         /** @var int|null $parent */
-        $parent = isset($data['parent']) && is_numeric($data['parent'])
-            ? (int) $data['parent']
-            : null;
+        $parent = isset($data['parent']) && is_numeric($data['parent']) ? (int) $data['parent'] : null;
 
         /** @var array<int> $children */
         $children = [];
@@ -141,14 +135,10 @@ readonly class DocumentNode
         }
 
         /** @var int|null $pageNumber */
-        $pageNumber = isset($data['page']) && is_numeric($data['page'])
-            ? (int) $data['page']
-            : null;
+        $pageNumber = isset($data['page']) && is_numeric($data['page']) ? (int) $data['page'] : null;
 
         /** @var int|null $pageNumberEnd */
-        $pageNumberEnd = isset($data['page_end']) && is_numeric($data['page_end'])
-            ? (int) $data['page_end']
-            : null;
+        $pageNumberEnd = isset($data['page_end']) && is_numeric($data['page_end']) ? (int) $data['page_end'] : null;
 
         $bbox = null;
         if (isset($data['bbox'])) {
@@ -240,8 +230,7 @@ readonly class DocumentTextAnnotation
         public int $end,
         public string $kind,
         public ?string $url = null,
-    ) {
-    }
+    ) {}
 
     /**
      * Create DocumentTextAnnotation from array returned by extension.
@@ -251,29 +240,18 @@ readonly class DocumentTextAnnotation
     public static function fromArray(array $data): self
     {
         /** @var int $start */
-        $start = isset($data['start']) && is_numeric($data['start'])
-            ? (int) $data['start']
-            : 0;
+        $start = isset($data['start']) && is_numeric($data['start']) ? (int) $data['start'] : 0;
 
         /** @var int $end */
-        $end = isset($data['end']) && is_numeric($data['end'])
-            ? (int) $data['end']
-            : 0;
+        $end = isset($data['end']) && is_numeric($data['end']) ? (int) $data['end'] : 0;
 
         /** @var string $kind */
         $kind = $data['kind'] ?? $data['annotation_type'] ?? '';
 
         /** @var string|null $url */
-        $url = isset($data['url']) && is_string($data['url'])
-            ? $data['url']
-            : null;
+        $url = isset($data['url']) && is_string($data['url']) ? $data['url'] : null;
 
-        return new self(
-            start: $start,
-            end: $end,
-            kind: $kind,
-            url: $url,
-        );
+        return new self(start: $start, end: $end, kind: $kind, url: $url);
     }
 
     /**
@@ -314,8 +292,7 @@ readonly class DocumentTableGrid
         public int $rows,
         public int $columns,
         public array $cells = [],
-    ) {
-    }
+    ) {}
 
     /**
      * Create DocumentTableGrid from array returned by extension.
@@ -325,14 +302,10 @@ readonly class DocumentTableGrid
     public static function fromArray(array $data): self
     {
         /** @var int $rows */
-        $rows = isset($data['rows']) && is_numeric($data['rows'])
-            ? (int) $data['rows']
-            : 0;
+        $rows = isset($data['rows']) && is_numeric($data['rows']) ? (int) $data['rows'] : 0;
 
         /** @var int $columns */
-        $columns = isset($data['cols']) && is_numeric($data['cols'])
-            ? (int) $data['cols']
-            : 0;
+        $columns = isset($data['cols']) && is_numeric($data['cols']) ? (int) $data['cols'] : 0;
 
         $cells = [];
         if (isset($data['cells']) && is_array($data['cells'])) {
@@ -344,11 +317,7 @@ readonly class DocumentTableGrid
             }
         }
 
-        return new self(
-            rows: $rows,
-            columns: $columns,
-            cells: $cells,
-        );
+        return new self(rows: $rows, columns: $columns, cells: $cells);
     }
 
     /**
@@ -395,8 +364,7 @@ readonly class DocumentTableCell
         public int $colSpan = 1,
         public bool $isHeader = false,
         public ?BoundingBox $bbox = null,
-    ) {
-    }
+    ) {}
 
     /**
      * Create DocumentTableCell from array returned by extension.
@@ -409,24 +377,16 @@ readonly class DocumentTableCell
         $content = $data['content'] ?? '';
 
         /** @var int $row */
-        $row = isset($data['row']) && is_numeric($data['row'])
-            ? (int) $data['row']
-            : 0;
+        $row = isset($data['row']) && is_numeric($data['row']) ? (int) $data['row'] : 0;
 
         /** @var int $col */
-        $col = isset($data['col']) && is_numeric($data['col'])
-            ? (int) $data['col']
-            : 0;
+        $col = isset($data['col']) && is_numeric($data['col']) ? (int) $data['col'] : 0;
 
         /** @var int $rowSpan */
-        $rowSpan = isset($data['row_span']) && is_numeric($data['row_span'])
-            ? (int) $data['row_span']
-            : 1;
+        $rowSpan = isset($data['row_span']) && is_numeric($data['row_span']) ? (int) $data['row_span'] : 1;
 
         /** @var int $colSpan */
-        $colSpan = isset($data['col_span']) && is_numeric($data['col_span'])
-            ? (int) $data['col_span']
-            : 1;
+        $colSpan = isset($data['col_span']) && is_numeric($data['col_span']) ? (int) $data['col_span'] : 1;
 
         /** @var bool $isHeader */
         $isHeader = isset($data['is_header']) && $data['is_header'] === true;

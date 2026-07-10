@@ -11,7 +11,7 @@ defmodule Kreuzberg.Application do
   @impl true
   def start(_type, _args) do
     children = [
-      Kreuzberg.Plugin.Supervisor
+    Kreuzberg.Plugin.Supervisor
     ]
 
     opts = [strategy: :one_for_one, name: Kreuzberg.Supervisor]

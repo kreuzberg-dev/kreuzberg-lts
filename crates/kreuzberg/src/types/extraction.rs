@@ -471,10 +471,6 @@ pub struct ExtractedImage {
     pub source_path: Option<String>,
 }
 
-// ============================================================================
-// Element-based Output Format Types (Unstructured-compatible)
-// ============================================================================
-
 /// Output format selection for extraction results.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[cfg_attr(feature = "api", derive(utoipa::ToSchema))]

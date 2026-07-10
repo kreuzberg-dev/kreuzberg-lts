@@ -79,7 +79,6 @@ impl PdfPathFillMode {
 
     #[inline]
     #[allow(dead_code)]
-    // The as_pdfium() function is not currently used, but we expect it to be in future
     pub(crate) fn as_pdfium(&self) -> c_uint {
         match self {
             PdfPathFillMode::None => FPDF_FILLMODE_NONE,
@@ -681,9 +680,6 @@ impl<'a> PdfPagePathObject<'a> {
     /// Draws an ellipse at the current point using the given horizontal and vertical radii.
     /// The ellipse will be constructed using four Bézier curves, one for each quadrant.
     fn ellipse(&mut self, x_radius: PdfPoints, y_radius: PdfPoints) -> Result<(), PdfiumError> {
-        // Ellipse approximation method: https://spencermortensen.com/articles/bezier-circle/
-        // Implementation based on: https://stackoverflow.com/a/2007782
-
         const C: f32 = 0.551915;
 
         let x_c = x_radius * C;
@@ -813,17 +809,11 @@ impl<'a> PdfPagePathObject<'a> {
         "this [PdfPagePathObject],"
     );
 
-    // The transform_impl() function required by the create_transform_setters!() macro
-    // is provided by the PdfPageObjectPrivate trait.
-
     create_transform_getters!(
         "this [PdfPagePathObject]",
         "this [PdfPagePathObject].",
         "this [PdfPagePathObject],"
     );
-
-    // The get_matrix_impl() function required by the create_transform_getters!() macro
-    // is provided by the PdfPageObjectPrivate trait.
 }
 
 impl<'a> PdfPageObjectPrivate<'a> for PdfPagePathObject<'a> {
@@ -849,10 +839,6 @@ impl<'a> PdfPageObjectPrivate<'a> for PdfPagePathObject<'a> {
 
     #[inline]
     fn is_copyable_impl(&self) -> bool {
-        // The path object can only be copied if it contains no Bézier path segments.
-        // Pdfium does not currently provide any way to retrieve the Bézier control points
-        // of an existing Bézier path segment.
-
         !self
             .segments()
             .iter()

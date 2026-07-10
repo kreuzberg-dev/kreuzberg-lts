@@ -12,13 +12,11 @@ public class TestCleanupFixture : IDisposable
 {
     public TestCleanupFixture()
     {
-        // Ensure native library is loaded before any tests run
         NativeTestHelper.EnsureNativeLibraryLoaded();
     }
 
     public void Dispose()
     {
-        // Clean up after each test method to prevent GCHandle accumulation
         CleanupAllRegistrations();
     }
 
@@ -30,7 +28,6 @@ public class TestCleanupFixture : IDisposable
         }
         catch
         {
-            // Ignore cleanup errors - some tests may not have registered anything
         }
 
         try
@@ -39,7 +36,6 @@ public class TestCleanupFixture : IDisposable
         }
         catch
         {
-            // Ignore cleanup errors
         }
 
         try
@@ -48,7 +44,6 @@ public class TestCleanupFixture : IDisposable
         }
         catch
         {
-            // Ignore cleanup errors
         }
     }
 }

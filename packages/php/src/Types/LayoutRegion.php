@@ -23,8 +23,7 @@ readonly class LayoutRegion
         public float $confidence,
         public BoundingBox $boundingBox,
         public float $areaFraction,
-    ) {
-    }
+    ) {}
 
     /**
      * @param array<string, mixed> $data
@@ -32,9 +31,7 @@ readonly class LayoutRegion
     public static function fromArray(array $data): self
     {
         /** @var array<string, mixed> $bboxData */
-        $bboxData = isset($data['bounding_box']) && is_array($data['bounding_box'])
-            ? $data['bounding_box']
-            : [];
+        $bboxData = isset($data['bounding_box']) && is_array($data['bounding_box']) ? $data['bounding_box'] : [];
 
         return new self(
             className: is_string($data['class'] ?? null) ? $data['class'] : '',

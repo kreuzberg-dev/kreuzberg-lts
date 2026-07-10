@@ -12,7 +12,6 @@ use serde_json::Value;
 /// `additionalProperties` is rejected by Gemini and Anthropic but required
 /// by OpenAI strict mode. We strip it only for providers known to reject it.
 fn sanitize_schema_for_provider(schema: &Value, model: &str) -> Value {
-    // OpenAI requires additionalProperties for strict mode — don't strip
     let needs_strip = !model.starts_with("openai/");
 
     if needs_strip {
@@ -67,7 +66,6 @@ pub async fn extract_structured(
 
     let client = super::client::create_client(&config.llm)?;
 
-    // Build prompt from custom Jinja2 template or default
     let template = config
         .prompt
         .as_deref()
@@ -85,15 +83,8 @@ pub async fn extract_structured(
 
     let prompt = super::prompts::render_template(template, &ctx)?;
 
-    // Sanitize the schema for cross-provider compatibility.
-    // Some providers (Gemini, Anthropic) reject fields like `additionalProperties`
-    // that others (OpenAI) require for strict mode. Strip unsupported fields so
-    // the same schema works across all providers.
     let sanitized_schema = sanitize_schema_for_provider(&config.schema, &config.llm.model);
 
-    // Build chat request with JSON schema response format.
-    // Use field assignment because `stream` is pub(crate) in liter-llm; struct-init
-    // syntax with `..Default::default()` won't compile across the crate boundary.
     #[allow(clippy::field_reassign_with_default)]
     let request = {
         let mut req = liter_llm::ChatCompletionRequest::default();
@@ -122,11 +113,11 @@ pub async fn extract_structured(
 
     let usage = super::usage::extract_usage_from_chat(&response, "structured_extraction");
 
-    // Extract text content from the first choice.
     let text = response
         .choices
         .first()
-        .and_then(|c| c.message.content.as_deref())
+        .and_then(|c| c.message.content.as_ref())
+        .and_then(liter_llm::AssistantContent::as_text)
         .ok_or_else(|| {
             crate::KreuzbergError::parsing(format!(
                 "LLM structured extraction returned no content (model={}, {} choices)",
@@ -134,9 +125,8 @@ pub async fn extract_structured(
                 response.choices.len()
             ))
         })?;
+    let text = text.as_str();
 
-    // Parse the response as JSON. Some providers may wrap JSON in markdown
-    // code fences — strip them if present.
     let cleaned = text
         .trim()
         .strip_prefix("```json")

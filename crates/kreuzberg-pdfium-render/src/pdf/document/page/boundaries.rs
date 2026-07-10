@@ -100,7 +100,7 @@ impl<'a> PdfPageBoundaries<'a> {
             PdfPageBoundaryBoxType::Bleed => self.set_bleed(rect),
             PdfPageBoundaryBoxType::Trim => self.set_trim(rect),
             PdfPageBoundaryBoxType::Crop => self.set_crop(rect),
-            PdfPageBoundaryBoxType::Bounding => Ok(()), // The bounding box is implicit and cannot be set directly.
+            PdfPageBoundaryBoxType::Bounding => Ok(()),
         }
     }
 

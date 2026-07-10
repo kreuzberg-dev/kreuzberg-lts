@@ -94,8 +94,7 @@ readonly class ImagePreprocessingConfig
          * @default false
          */
         public bool $invertColors = false,
-    ) {
-    }
+    ) {}
 
     /**
      * Create configuration from array data.

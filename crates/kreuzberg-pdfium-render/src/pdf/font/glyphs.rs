@@ -40,10 +40,6 @@ impl<'a> PdfFontGlyphs<'a> {
     #[inline]
     pub(crate) fn initialize_len(&self) {
         if self.len.get().is_none() {
-            // Pdfium does not provide a function that returns the number of glyphs in a font.
-            // We use a binary search algorithm to determine the number of glyphs as efficiently
-            // as possible.
-
             let len = self.find_maximum_valid_glyph_index(u16::MIN, u16::MAX).unwrap_or(0);
 
             self.len.replace(Some(len));
@@ -52,8 +48,6 @@ impl<'a> PdfFontGlyphs<'a> {
 
     /// Returns the highest index position of an extant glyph within the given index range.
     fn find_maximum_valid_glyph_index(&self, min: u16, max: u16) -> Option<u16> {
-        // Exit immediately if the maximum valid glyph index lies outside the given index boundaries.
-
         if !self
             .bindings
             .FPDFFont_GetGlyphPath(self.handle, max as c_uint, 1.0)
@@ -70,8 +64,6 @@ impl<'a> PdfFontGlyphs<'a> {
             return None;
         }
 
-        // Partition the given index boundaries and recursively search.
-
         let mid = min + (max - min) / 2;
 
         if self
@@ -79,16 +71,12 @@ impl<'a> PdfFontGlyphs<'a> {
             .FPDFFont_GetGlyphPath(self.handle, mid as c_uint, 1.0)
             .is_null()
         {
-            // The maximum valid glyph index must lie before the partition mid point.
-
             if mid > min {
                 self.find_maximum_valid_glyph_index(min, mid - 1)
             } else {
                 None
             }
         } else {
-            // The maximum valid glyph index must lie after the partition mid point.
-
             if mid < max {
                 self.find_maximum_valid_glyph_index(mid + 1, max)
             } else {

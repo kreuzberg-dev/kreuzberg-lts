@@ -61,8 +61,7 @@ readonly class ExtractionResult
         /** @var array<PdfAnnotation>|null */
         public ?array $annotations = null,
         public ?CodeProcessResult $codeIntelligence = null,
-    ) {
-    }
+    ) {}
 
     /**
      * Create ExtractionResult from array returned by extension.
@@ -92,7 +91,7 @@ readonly class ExtractionResult
             $chunksData = $data['chunks'];
             $chunks = array_map(
                 /** @param array<string, mixed> $chunk */
-                static fn (array $chunk): Chunk => Chunk::fromArray($chunk),
+                static fn(array $chunk): Chunk => Chunk::fromArray($chunk),
                 $chunksData,
             );
         }
@@ -103,7 +102,7 @@ readonly class ExtractionResult
             $imagesData = $data['images'];
             $images = array_map(
                 /** @param array<string, mixed> $image */
-                static fn (array $image): ExtractedImage => ExtractedImage::fromArray($image),
+                static fn(array $image): ExtractedImage => ExtractedImage::fromArray($image),
                 $imagesData,
             );
         }
@@ -114,7 +113,7 @@ readonly class ExtractionResult
             $pagesData = $data['pages'];
             $pages = array_map(
                 /** @param array<string, mixed> $page */
-                static fn (array $page): PageContent => PageContent::fromArray($page),
+                static fn(array $page): PageContent => PageContent::fromArray($page),
                 $pagesData,
             );
         }
@@ -126,7 +125,7 @@ readonly class ExtractionResult
             if (is_array($keywordsData)) {
                 $keywords = array_map(
                     /** @param array<string, mixed> $keyword */
-                    static fn (array $keyword): Keyword => Keyword::fromArray($keyword),
+                    static fn(array $keyword): Keyword => Keyword::fromArray($keyword),
                     $keywordsData,
                 );
             }
@@ -138,7 +137,7 @@ readonly class ExtractionResult
             $elementsData = $data['elements'];
             $elements = array_map(
                 /** @param array<string, mixed> $element */
-                static fn (array $element): Element => Element::fromArray($element),
+                static fn(array $element): Element => Element::fromArray($element),
                 $elementsData,
             );
         }
@@ -149,7 +148,7 @@ readonly class ExtractionResult
             $ocrElementsData = $data['ocr_elements'];
             $ocrElements = array_map(
                 /** @param array<string, mixed> $element */
-                static fn (array $element): OcrElement => OcrElement::fromArray($element),
+                static fn(array $element): OcrElement => OcrElement::fromArray($element),
                 $ocrElementsData,
             );
         }
@@ -174,7 +173,7 @@ readonly class ExtractionResult
             $extractedKeywordsData = $data['extracted_keywords'];
             $extractedKeywords = array_map(
                 /** @param array<string, mixed> $keyword */
-                static fn (array $keyword): ExtractedKeyword => ExtractedKeyword::fromArray($keyword),
+                static fn(array $keyword): ExtractedKeyword => ExtractedKeyword::fromArray($keyword),
                 $extractedKeywordsData,
             );
         }
@@ -193,7 +192,7 @@ readonly class ExtractionResult
             $processingWarningsData = $data['processing_warnings'];
             $processingWarnings = array_map(
                 /** @param array<string, mixed> $warning */
-                static fn (array $warning): ProcessingWarning => ProcessingWarning::fromArray($warning),
+                static fn(array $warning): ProcessingWarning => ProcessingWarning::fromArray($warning),
                 $processingWarningsData,
             );
         }
@@ -204,7 +203,7 @@ readonly class ExtractionResult
             $annotationsData = $data['annotations'];
             $annotations = array_map(
                 /** @param array<string, mixed> $annotation */
-                static fn (array $annotation): PdfAnnotation => PdfAnnotation::fromArray($annotation),
+                static fn(array $annotation): PdfAnnotation => PdfAnnotation::fromArray($annotation),
                 $annotationsData,
             );
         }
@@ -222,7 +221,7 @@ readonly class ExtractionResult
             metadata: Metadata::fromArray($metadataData),
             tables: array_map(
                 /** @param array<string, mixed> $table */
-                static fn (array $table): Table => Table::fromArray($table),
+                static fn(array $table): Table => Table::fromArray($table),
                 $tablesData,
             ),
             detectedLanguages: $detectedLanguages,

@@ -14,8 +14,6 @@ func TestPageConfigJSONMarshaling(t *testing.T) {
 		},
 	}
 
-	// This tests that the config can be properly serialized
-	// The actual FFI call validates JSON encoding
 	dir := t.TempDir()
 	path, err := writeValidPDFToFile(dir, "sample.pdf")
 	if err != nil {

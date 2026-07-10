@@ -52,7 +52,6 @@ test_that("kreuzberg_result print method works", {
   expect_output(print(result), "kreuzberg_result")
 })
 
-# --- Input validation tests ---
 
 test_that("extract_file_sync validates path argument", {
   expect_error(extract_file_sync(123))
@@ -65,7 +64,6 @@ test_that("extract_bytes_sync validates arguments", {
   expect_error(extract_bytes_sync(charToRaw("hi"), 123))
 })
 
-# --- S3 method tests ---
 
 test_that("S3 generics work on kreuzberg_result", {
   tmp <- tempfile(fileext = ".txt")
@@ -109,7 +107,6 @@ test_that("metadata_field returns NULL for missing fields", {
   expect_null(metadata_field(result, "nonexistent_field"))
 })
 
-# --- Typed error condition tests ---
 
 test_that("extract_file_sync produces typed error for unsupported format", {
   tmp <- tempfile(fileext = ".xyz_unsupported")
@@ -120,7 +117,6 @@ test_that("extract_file_sync produces typed error for unsupported format", {
     extract_file_sync(tmp),
     kreuzberg_error = function(e) e
   )
-  # Should produce a kreuzberg_error condition (might be UnsupportedFormatError or other)
   if (inherits(err, "kreuzberg_error")) {
     expect_true(inherits(err, "kreuzberg_error"))
   }

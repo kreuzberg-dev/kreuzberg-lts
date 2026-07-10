@@ -18,9 +18,9 @@ pub(crate) type PdfExtractionPhaseResult = (
     Vec<Table>,
     Option<Vec<PageContent>>,
     Option<Vec<PageBoundary>>,
-    Option<crate::types::internal::InternalDocument>, // pre-rendered structured doc (when output_format == Markdown/Djot/Html)
-    bool,                                             // has_font_encoding_issues (unicode map errors detected)
-    Option<Vec<PdfAnnotation>>,                       // extracted annotations (when extract_annotations is enabled)
+    Option<crate::types::internal::InternalDocument>,
+    bool,
+    Option<Vec<PdfAnnotation>>,
 );
 
 /// Extract text, metadata, and tables from a PDF document using a single shared instance.
@@ -88,9 +88,6 @@ pub(crate) fn extract_all_from_document(
 
     let mut has_font_encoding_issues = false;
 
-    // Pre-render a structured InternalDocument for output formats that benefit from it.
-    // Skip when force_ocr is set since OCR results produce their own structure via hOCR.
-    // Markdown, Djot, and HTML all gain headings, tables, bold/italic, dehyphenation.
     let needs_structured = matches!(
         config.output_format,
         OutputFormat::Markdown | OutputFormat::Djot | OutputFormat::Html
@@ -119,13 +116,8 @@ pub(crate) fn extract_all_from_document(
             .content_filter
             .as_ref()
             .map(|cf| (cf.strip_repeating_text, cf.include_headers, cf.include_footers))
-            .unwrap_or((true, false, false)); // defaults match current behavior
+            .unwrap_or((true, false, false));
 
-        // Image extraction must be explicitly enabled before we inject placeholders.
-        // Checking both config paths so that either flag (`images.extract_images` or
-        // `pdf_options.extract_images`) correctly suppresses image rendering in the
-        // structure pipeline. When disabled, `populate_images_from_pdfium` is skipped
-        // entirely, preventing base64 image data from leaking into the result.
         let images_extraction_enabled = config.images.as_ref().map(|c| c.extract_images).unwrap_or(false)
             || config.pdf_options.as_ref().map(|p| p.extract_images).unwrap_or(false);
         let inject_placeholders =
@@ -199,7 +191,6 @@ pub(crate) fn extract_all_from_document(
         "structure extraction complete"
     );
 
-    // Extract annotations when configured.
     let annotations = if config.pdf_options.as_ref().is_some_and(|opts| opts.extract_annotations) {
         let extracted = crate::pdf::annotations::extract_annotations_from_document(document);
         if extracted.is_empty() { None } else { Some(extracted) }
@@ -292,9 +283,8 @@ fn has_column_alignment(words: &[crate::pdf::table_reconstruct::HocrWord]) -> bo
         return false;
     }
 
-    // Bucket word left positions using a tolerance of 15px
     const BUCKET_TOLERANCE: u32 = 15;
-    let mut buckets: Vec<(u32, usize)> = Vec::new(); // (representative_x, count)
+    let mut buckets: Vec<(u32, usize)> = Vec::new();
 
     for w in words {
         let x = w.left;
@@ -305,10 +295,6 @@ fn has_column_alignment(words: &[crate::pdf::table_reconstruct::HocrWord]) -> bo
         }
     }
 
-    // Require ≥3 distinct columns with ≥3 words each.
-    // Two-column text layouts have exactly 2 alignment clusters, so requiring 3
-    // eliminates false positives from multi-column prose while still detecting
-    // real tables (which typically have 3+ columns).
     let significant_columns = buckets.iter().filter(|(_, count)| *count >= 3).count();
     significant_columns >= 3
 }
@@ -333,13 +319,10 @@ fn extract_tables_from_document(
     for (page_index, page) in document.pages().iter().enumerate() {
         let words = extract_words_from_page(&page, 0.0)?;
 
-        // Need at least 6 words for a meaningful table
         if words.len() < 6 {
             continue;
         }
 
-        // Pre-validate column alignment: real tables have words clustering at
-        // consistent x-positions. Body text scattered across the page won't.
         if !has_column_alignment(&words) {
             continue;
         }
@@ -353,8 +336,6 @@ fn extract_tables_from_document(
             continue;
         }
 
-        // Apply full post-processing validation: empty row removal, long cell rejection,
-        // header detection, column merging, dimension checks, and cell normalization.
         let table_cells = match post_process_table(table_cells, false, allow_single_column) {
             Some(cleaned) => cleaned,
             None => continue,
@@ -362,11 +343,8 @@ fn extract_tables_from_document(
 
         let markdown = table_to_markdown(&table_cells);
 
-        // Compute table bounding box from word positions.
         let page_height = page.height().value as f64;
 
-        // HocrWord coordinates are in image space (y=0 at top, from table.rs:finalize_word).
-        // Convert back to PDF coordinates (y=0 at bottom) for the BoundingBox.
         let img_left = words.iter().map(|w| w.left as f64).fold(f64::INFINITY, f64::min);
         let img_top = words.iter().map(|w| w.top as f64).fold(f64::INFINITY, f64::min);
         let img_right = words
@@ -381,20 +359,14 @@ fn extract_tables_from_document(
         let bounding_box = if img_left.is_finite() {
             Some(crate::types::BoundingBox {
                 x0: img_left,
-                y0: page_height - img_bottom, // bottom in PDF coords
+                y0: page_height - img_bottom,
                 x1: img_right,
-                y1: page_height - img_top, // top in PDF coords
+                y1: page_height - img_top,
             })
         } else {
             None
         };
 
-        // Reject tables with very few rows whose bbox covers most of the page.
-        // The heuristic table detector treats all words on a page as potential
-        // table content, so when it produces a 2–3 row "table" spanning the
-        // full page, it's almost certainly body text with column-like gaps
-        // (e.g., PowerPoint-exported marketing slides). The bbox would suppress
-        // all text segments for this page in the structured pipeline.
         if let Some(ref bb) = bounding_box {
             let bbox_height = (bb.y1 - bb.y0).abs();
             if table_cells.len() <= 3 && page_height > 0.0 && bbox_height / page_height > 0.5 {
@@ -425,39 +397,31 @@ mod tests {
 
     #[test]
     fn test_bounding_box_coordinate_conversion() {
-        // Test the bounding box computation logic independently
-        // Simulate words at known positions and verify the resulting bbox
         let page_height = 800.0_f64;
 
-        // Simulated word positions in image coordinates (y=0 at top)
-        // Word 1: left=50, top=100, width=200, height=20
-        // Word 2: left=50, top=130, width=250, height=20
         let img_left = 50.0_f64;
         let img_top = 100.0_f64;
-        let img_right = 300.0_f64; // max(50+200, 50+250)
-        let img_bottom = 150.0_f64; // max(100+20, 130+20)
+        let img_right = 300.0_f64;
+        let img_bottom = 150.0_f64;
 
         let bbox = crate::types::BoundingBox {
             x0: img_left,
-            y0: page_height - img_bottom, // 800 - 150 = 650
+            y0: page_height - img_bottom,
             x1: img_right,
-            y1: page_height - img_top, // 800 - 100 = 700
+            y1: page_height - img_top,
         };
 
         assert_eq!(bbox.x0, 50.0);
-        assert_eq!(bbox.y0, 650.0); // bottom in PDF coords
+        assert_eq!(bbox.y0, 650.0);
         assert_eq!(bbox.x1, 300.0);
-        assert_eq!(bbox.y1, 700.0); // top in PDF coords
-        // y1 > y0 confirms the table is above the bottom
+        assert_eq!(bbox.y1, 700.0);
         assert!(bbox.y1 > bbox.y0);
     }
 
     #[test]
     fn test_bounding_box_coordinate_conversion_different_scales() {
-        // Test with different page height and word positions
         let page_height = 1000.0_f64;
 
-        // Words spanning from top=50 to bottom=400
         let img_left = 100.0_f64;
         let img_top = 50.0_f64;
         let img_right = 600.0_f64;
@@ -465,28 +429,26 @@ mod tests {
 
         let bbox = crate::types::BoundingBox {
             x0: img_left,
-            y0: page_height - img_bottom, // 1000 - 400 = 600
+            y0: page_height - img_bottom,
             x1: img_right,
-            y1: page_height - img_top, // 1000 - 50 = 950
+            y1: page_height - img_top,
         };
 
         assert_eq!(bbox.x0, 100.0);
         assert_eq!(bbox.y0, 600.0);
         assert_eq!(bbox.x1, 600.0);
         assert_eq!(bbox.y1, 950.0);
-        // Height of table: 950 - 600 = 350 pixels
         assert_eq!(bbox.y1 - bbox.y0, 350.0);
     }
 
     #[test]
     fn test_bounding_box_coordinate_conversion_preserves_width() {
-        // Width should be preserved during coordinate transformation
-        let page_height = 595.0_f64; // Standard letter page height
+        let page_height = 595.0_f64;
 
         let img_left = 72.0_f64;
-        let img_right = 522.0_f64; // width = 450
+        let img_right = 522.0_f64;
         let img_top = 36.0_f64;
-        let img_bottom = 300.0_f64; // height = 264
+        let img_bottom = 300.0_f64;
 
         let bbox = crate::types::BoundingBox {
             x0: img_left,
@@ -525,10 +487,7 @@ mod tests {
     fn test_has_column_alignment_table_layout() {
         use crate::pdf::table_reconstruct::HocrWord;
 
-        // Simulate a 3-column table: words at x=50, x=200, x=400
-        // Requires ≥3 columns with ≥3 words each to pass.
         let words = vec![
-            // Row 1
             HocrWord {
                 text: "Name".into(),
                 left: 50,
@@ -553,7 +512,6 @@ mod tests {
                 height: 12,
                 confidence: 95.0,
             },
-            // Row 2
             HocrWord {
                 text: "Alice".into(),
                 left: 50,
@@ -578,7 +536,6 @@ mod tests {
                 height: 12,
                 confidence: 95.0,
             },
-            // Row 3
             HocrWord {
                 text: "Bob".into(),
                 left: 50,
@@ -612,7 +569,6 @@ mod tests {
     fn test_has_column_alignment_rejects_two_column_layout() {
         use crate::pdf::table_reconstruct::HocrWord;
 
-        // Two-column text layout (like academic papers) should NOT be detected as a table.
         let words = vec![
             HocrWord {
                 text: "Left".into(),
@@ -671,9 +627,6 @@ mod tests {
     fn test_has_column_alignment_body_text() {
         use crate::pdf::table_reconstruct::HocrWord;
 
-        // Body text: words flow left-to-right on each line with distinct x positions.
-        // Each word has a unique left-edge so no bucket accumulates >= 2 words,
-        // meaning column alignment should NOT be detected.
         let words = vec![
             HocrWord {
                 text: "This".into(),

@@ -28,7 +28,6 @@
 mod dependencies;
 mod sections;
 
-// Re-export all validation functions for backward compatibility
 pub use sections::{
     validate_binarization_method, validate_chunking_params, validate_confidence, validate_dpi, validate_language_code,
     validate_llm_config_model, validate_ocr_backend, validate_output_format, validate_structured_extraction_schema,
@@ -41,7 +40,6 @@ pub use dependencies::{validate_cors_origin, validate_host, validate_port, valid
 mod tests {
     use super::*;
 
-    // Tests for section validation functions
     #[test]
     fn test_validate_binarization_method_valid() {
         assert!(validate_binarization_method("otsu").is_ok());
@@ -277,7 +275,6 @@ mod tests {
         assert!(err.contains("en"));
     }
 
-    // Tests for dependency validation functions
     #[test]
     fn test_validate_port_valid() {
         assert!(validate_port(1).is_ok());

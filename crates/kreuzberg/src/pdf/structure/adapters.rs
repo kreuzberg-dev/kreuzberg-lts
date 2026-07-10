@@ -5,7 +5,6 @@ use pdfium_render::prelude::{ContentRole, ExtractedBlock};
 
 use super::content::{ContentElement, ElementLevel, PageContent, SemanticRole};
 use super::geometry::Rect;
-// ── Structure tree adapter ──────────────────────────────────────────────
 
 /// Convert structure-tree `ExtractedBlock`s into a [`PageContent`].
 ///
@@ -85,8 +84,6 @@ fn map_content_role(role: &ContentRole) -> (SemanticRole, Option<String>) {
     }
 }
 
-// ── hOCR → PdfParagraph adapter ─────────────────────────────────────────
-
 /// Convert OCR `InternalDocument` elements into `PdfParagraph`s.
 ///
 /// Works with any `InternalDocument` containing `OcrText` elements — from tesseract
@@ -99,7 +96,7 @@ fn map_content_role(role: &ContentRole) -> (SemanticRole, Option<String>) {
 /// The resulting paragraphs feed into `apply_layout_overrides` and
 /// `assemble_internal_document`, matching the pdfium native text pipeline.
 #[cfg(feature = "ocr")]
-#[allow(dead_code)] // Called from extractors/pdf/ocr.rs only when layout-detection is also enabled
+#[allow(dead_code)]
 pub(crate) fn ocr_doc_to_paragraphs(
     doc: &crate::types::internal::InternalDocument,
     page_height_px: u32,
@@ -110,32 +107,25 @@ pub(crate) fn ocr_doc_to_paragraphs(
     let page_h = page_height_px as f32;
     let default_font_size: f32 = 12.0;
 
-    // Each per-page hOCR InternalDocument is extracted independently by tesseract,
-    // so all OcrText elements belong to the current page regardless of their
-    // stored page number (which is always 1 from single-page hOCR).
     let result: Vec<super::types::PdfParagraph> = doc
         .elements
         .iter()
         .filter(|e| matches!(e.kind, ElementKind::OcrText { .. }))
         .filter(|e| !e.text.trim().is_empty())
         .map(|e| {
-            // Convert image-space bbox (y=0 top) to PDF-space (y=0 bottom).
             let block_bbox = e.bbox.as_ref().map(|bb| {
                 let left = bb.x0 as f32;
                 let right = bb.x1 as f32;
-                let pdf_bottom = page_h - bb.y1 as f32; // image y1 (bottom) → PDF bottom
-                let pdf_top = page_h - bb.y0 as f32; // image y0 (top) → PDF top
+                let pdf_bottom = page_h - bb.y1 as f32;
+                let pdf_top = page_h - bb.y0 as f32;
                 (left, pdf_bottom, right, pdf_top)
             });
 
-            // Build lines from newline-separated text.
-            // Distribute the bbox vertically across lines for spatial matching.
             let text_lines: Vec<&str> = e.text.split('\n').collect();
             let num_lines = text_lines.len().max(1);
             let (base_y, line_height) = if let Some((_left, bottom, _right, top)) = block_bbox {
                 let total_height = top - bottom;
                 let lh = total_height / num_lines as f32;
-                // Start from top line (highest y in PDF coords).
                 (top, lh)
             } else {
                 (0.0, default_font_size)
@@ -332,7 +322,6 @@ mod tests {
         }];
         let page = from_structure_tree(&blocks);
         assert_eq!(page.elements.len(), 2, "both child and parent texts must be emitted");
-        // Child first (reading order), parent own-text after.
         assert_eq!(page.elements[0].text, "Bold lead-in on child");
         assert_eq!(page.elements[1].text, " — continuation text on parent");
     }
@@ -391,8 +380,6 @@ mod tests {
         assert!(page.elements.is_empty());
     }
 
-    // ── hOCR → PdfParagraph tests ──────────────────────────────────────
-
     #[cfg(feature = "ocr")]
     fn make_ocr_element(
         text: &str,
@@ -434,14 +421,11 @@ mod tests {
     #[cfg(feature = "ocr")]
     #[test]
     fn test_ocr_doc_to_paragraphs_bbox_flip() {
-        // Image coords: y=0 at top. Element at y=50..100 on a 1000px page.
-        // PDF coords: y=0 at bottom. Should become bottom=900, top=950.
         let mut doc = crate::types::internal::InternalDocument::new("pdf");
         doc.push_element(make_ocr_element("Test", 1, 100.0, 50.0, 500.0, 100.0));
 
         let paragraphs = ocr_doc_to_paragraphs(&doc, 1000);
         let bbox = paragraphs[0].block_bbox.unwrap();
-        // (left, bottom, right, top)
         assert_eq!(bbox.0, 100.0, "left should be preserved");
         assert_eq!(bbox.1, 900.0, "bottom = page_height - image_y1 = 1000 - 100");
         assert_eq!(bbox.2, 500.0, "right should be preserved");
@@ -472,8 +456,6 @@ mod tests {
     #[cfg(feature = "ocr")]
     #[test]
     fn test_ocr_doc_to_paragraphs_all_elements() {
-        // Each per-page hOCR doc is independent, so all OcrText elements
-        // are included regardless of their stored page number.
         let mut doc = crate::types::internal::InternalDocument::new("pdf");
         doc.push_element(make_ocr_element("First text", 1, 0.0, 0.0, 100.0, 50.0));
         doc.push_element(make_ocr_element("Second text", 1, 0.0, 60.0, 100.0, 110.0));
@@ -520,11 +502,8 @@ mod tests {
         use crate::pdf::structure::layout_classify::apply_layout_overrides;
         use crate::pdf::structure::types::{LayoutHint, LayoutHintClass};
 
-        // Build an InternalDocument with 3 OcrText elements
         let mut doc = crate::types::internal::InternalDocument::new("pdf");
-        // Title at top of page
         doc.push_element(make_ocr_element("Document Title", 1, 100.0, 50.0, 500.0, 100.0));
-        // Paragraph in the middle
         doc.push_element(make_ocr_element(
             "Body paragraph text here.",
             1,
@@ -533,18 +512,12 @@ mod tests {
             500.0,
             200.0,
         ));
-        // List item lower on the page
         doc.push_element(make_ocr_element("- First list item", 1, 100.0, 250.0, 500.0, 300.0));
 
         let page_height: u32 = 1000;
         let mut paragraphs = ocr_doc_to_paragraphs(&doc, page_height);
         assert_eq!(paragraphs.len(), 3);
 
-        // Create LayoutHints matching the PDF-space bboxes.
-        // Image coords (y=0 top) are flipped in ocr_doc_to_paragraphs:
-        //   Title: image (100,50)-(500,100) → PDF bbox (100, 900, 500, 950)
-        //   Body:  image (100,150)-(500,200) → PDF bbox (100, 800, 500, 850)
-        //   List:  image (100,250)-(500,300) → PDF bbox (100, 700, 500, 750)
         let hints = vec![
             LayoutHint {
                 class: LayoutHintClass::Title,
@@ -574,20 +547,17 @@ mod tests {
 
         apply_layout_overrides(&mut paragraphs, &hints, 0.5, 0.5, None);
 
-        // Title gets heading_level = Some(1)
         assert_eq!(
             paragraphs[0].heading_level,
             Some(1),
             "Title layout hint should set heading_level to 1"
         );
 
-        // List item gets is_list_item = true
         assert!(
             paragraphs[2].is_list_item,
             "ListItem layout hint should set is_list_item"
         );
 
-        // Body paragraph stays as-is (Text class does not set heading or list)
         assert_eq!(
             paragraphs[1].heading_level, None,
             "Text layout hint should not set heading_level"
@@ -601,15 +571,6 @@ mod tests {
     #[cfg(feature = "ocr")]
     #[test]
     fn test_ocr_doc_to_paragraphs_coordinate_conversion_accuracy() {
-        // Test precise coordinate conversion from image space to PDF space.
-        // Page height: 3508 pixels (A4 at 300 DPI).
-        // Element at image coords: top-left (100, 200), bottom-right (500, 300).
-        // In image space: x0=100, y0=200 (top), x1=500, y1=300 (bottom).
-        // Expected PDF bbox (left, bottom, right, top):
-        //   left   = 100
-        //   bottom = page_height - y1 = 3508 - 300 = 3208
-        //   right  = 500
-        //   top    = page_height - y0 = 3508 - 200 = 3308
         let mut doc = crate::types::internal::InternalDocument::new("pdf");
         doc.push_element(make_ocr_element("Test text", 1, 100.0, 200.0, 500.0, 300.0));
 
@@ -618,7 +579,6 @@ mod tests {
 
         let bbox = paragraphs[0].block_bbox.expect("Paragraph should have block_bbox");
 
-        // block_bbox format: (left, bottom, right, top)
         assert_eq!(bbox.0, 100.0, "left should be 100");
         assert_eq!(bbox.1, 3208.0, "bottom should be page_height - y1 = 3508 - 300 = 3208");
         assert_eq!(bbox.2, 500.0, "right should be 500");

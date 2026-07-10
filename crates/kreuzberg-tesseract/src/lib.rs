@@ -158,10 +158,6 @@ macro_rules! ffi_extern {
 pub use error::{Result, TesseractError};
 mod error;
 
-// WASM: Override __cxa_atexit to be a no-op. WASI SDK's __cxa_atexit calls calloc during
-// C++ static initialization, which crashes because dlmalloc's heap isn't properly set up
-// for wasm32-unknown-unknown. Since WASM modules never exit normally, atexit handlers
-// are unnecessary.
 #[cfg(all(target_arch = "wasm32", not(target_os = "emscripten")))]
 mod wasm_compat {
     #[unsafe(no_mangle)]
@@ -170,7 +166,7 @@ mod wasm_compat {
         _arg: *mut core::ffi::c_void,
         _dso_handle: *mut core::ffi::c_void,
     ) -> i32 {
-        0 // Success, but don't actually register anything
+        0
     }
 }
 mod page_iterator;

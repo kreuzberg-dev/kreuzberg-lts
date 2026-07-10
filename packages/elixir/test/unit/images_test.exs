@@ -20,14 +20,12 @@ defmodule Kreuzberg.Unit.ImagesTest do
     @describetag timeout: 120_000
     test "handles corrupted image data gracefully" do
       config = %Kreuzberg.ExtractionConfig{
-        images: %{"enabled" => true}
+      images: %{"enabled" => true}
       }
 
-      # Test with minimal PDF that may not have valid images
       corrupted_pdf = <<"%PDF-1.4\n", "invalid binary content">>
       result = Kreuzberg.extract(corrupted_pdf, "application/pdf", config)
 
-      # Should return error tuple, not crash
       case result do
         {:ok, _result} -> assert true
         {:error, _reason} -> assert true
@@ -36,29 +34,26 @@ defmodule Kreuzberg.Unit.ImagesTest do
 
     test "handles PDFs with no images gracefully" do
       config = %Kreuzberg.ExtractionConfig{
-        images: %{"enabled" => true}
+      images: %{"enabled" => true}
       }
 
-      # Use a simple PDF that may not have images
       pdf_bytes = get_test_pdf_bytes("with_images.pdf")
       {:ok, result} = Kreuzberg.extract(pdf_bytes, "application/pdf", config)
 
-      # Should handle gracefully - images can be nil or empty list
       assert result.images == nil or is_list(result.images)
     end
 
     test "recovers from invalid image format specification" do
       config = %Kreuzberg.ExtractionConfig{
-        images: %{
-          "enabled" => true,
-          "target_format" => "invalid_format"
-        }
+      images: %{
+      "enabled" => true,
+      "target_format" => "invalid_format"
+      }
       }
 
       pdf_bytes = get_test_pdf_bytes("with_images.pdf")
       result = Kreuzberg.extract(pdf_bytes, "application/pdf", config)
 
-      # Should handle invalid format gracefully
       case result do
         {:ok, _result} -> assert true
         {:error, _reason} -> assert true
@@ -67,16 +62,15 @@ defmodule Kreuzberg.Unit.ImagesTest do
 
     test "validates DPI parameter is positive" do
       config = %Kreuzberg.ExtractionConfig{
-        images: %{
-          "enabled" => true,
-          "target_dpi" => -150
-        }
+      images: %{
+      "enabled" => true,
+      "target_dpi" => -150
+      }
       }
 
       pdf_bytes = get_test_pdf_bytes("with_images.pdf")
       result = Kreuzberg.extract(pdf_bytes, "application/pdf", config)
 
-      # Should handle negative DPI - either error or use default
       case result do
         {:ok, _result} -> assert true
         {:error, _reason} -> assert true
@@ -85,16 +79,15 @@ defmodule Kreuzberg.Unit.ImagesTest do
 
     test "handles zero quality setting" do
       config = %Kreuzberg.ExtractionConfig{
-        images: %{
-          "enabled" => true,
-          "quality" => 0
-        }
+      images: %{
+      "enabled" => true,
+      "quality" => 0
+      }
       }
 
       pdf_bytes = get_test_pdf_bytes("with_images.pdf")
       result = Kreuzberg.extract(pdf_bytes, "application/pdf", config)
 
-      # Should handle edge case
       case result do
         {:ok, _result} -> assert true
         {:error, _reason} -> assert true
@@ -107,7 +100,7 @@ defmodule Kreuzberg.Unit.ImagesTest do
     @describetag timeout: 120_000
     test "handles empty image config" do
       config = %Kreuzberg.ExtractionConfig{
-        images: %{}
+      images: %{}
       }
 
       pdf_bytes = get_test_pdf_bytes("with_images.pdf")
@@ -118,9 +111,9 @@ defmodule Kreuzberg.Unit.ImagesTest do
 
     test "combines image extraction with other features" do
       config = %Kreuzberg.ExtractionConfig{
-        images: %{"enabled" => true},
-        ocr: %{"enabled" => false},
-        chunking: %{"enabled" => false}
+      images: %{"enabled" => true},
+      ocr: %{"enabled" => false},
+      chunking: %{"enabled" => false}
       }
 
       pdf_bytes = get_test_pdf_bytes("with_images.pdf")
@@ -131,8 +124,8 @@ defmodule Kreuzberg.Unit.ImagesTest do
 
     test "image extraction with force_ocr flag" do
       config = %Kreuzberg.ExtractionConfig{
-        images: %{"enabled" => true},
-        force_ocr: true
+      images: %{"enabled" => true},
+      force_ocr: true
       }
 
       pdf_bytes = get_test_pdf_bytes("with_images.pdf")
@@ -143,30 +136,26 @@ defmodule Kreuzberg.Unit.ImagesTest do
 
     test "image extraction with cache enabled" do
       config = %Kreuzberg.ExtractionConfig{
-        images: %{"enabled" => true},
-        use_cache: true
+      images: %{"enabled" => true},
+      use_cache: true
       }
 
       pdf_bytes = get_test_pdf_bytes("with_images.pdf")
       {:ok, result1} = Kreuzberg.extract(pdf_bytes, "application/pdf", config)
       {:ok, result2} = Kreuzberg.extract(pdf_bytes, "application/pdf", config)
 
-      # Results should be consistent
       assert result1.content == result2.content
     end
   end
 
-  # Helper functions
 
   defp get_test_pdf_bytes(filename) do
     case get_test_pdf_path(filename) do
       {:ok, path} ->
-        File.read!(path)
+      File.read!(path)
 
       :error ->
-        # Fallback to a minimal PDF if file not found
-        # This allows tests to compile even if test files are missing
-        minimal_test_pdf()
+      minimal_test_pdf()
     end
   end
 
@@ -174,9 +163,9 @@ defmodule Kreuzberg.Unit.ImagesTest do
     repo_root = get_repo_root()
 
     possible_paths = [
-      Path.join([repo_root, "test_documents", filename]),
-      Path.join([repo_root, "test_documents", "pdf", filename]),
-      Path.join([repo_root, "test_documents", "pdfs", filename])
+    Path.join([repo_root, "test_documents", filename]),
+    Path.join([repo_root, "test_documents", "pdf", filename]),
+    Path.join([repo_root, "test_documents", "pdfs", filename])
     ]
 
     Enum.find_value(possible_paths, :error, fn path ->
@@ -186,7 +175,6 @@ defmodule Kreuzberg.Unit.ImagesTest do
 
   defp get_repo_root do
     cwd = File.cwd!()
-    # Navigate from packages/elixir to repo root
     Path.join([cwd, "..", "..", ".."])
   end
 

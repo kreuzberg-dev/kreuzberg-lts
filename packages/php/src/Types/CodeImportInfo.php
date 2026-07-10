@@ -24,8 +24,7 @@ readonly class CodeImportInfo
         public ?string $alias,
         public bool $isWildcard,
         public CodeSpan $span,
-    ) {
-    }
+    ) {}
 
     /**
      * @param array<string, mixed> $data

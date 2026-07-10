@@ -85,7 +85,6 @@ pub fn return_engine(engine: LayoutEngine) {
 pub fn take_or_create_tatr(
     accel: Option<&crate::core::config::acceleration::AccelerationConfig>,
 ) -> Option<models::tatr::TatrModel> {
-    // Fast path: if we already know TATR is unavailable, skip immediately.
     if let Some(&false) = TATR_TRIED.get() {
         return None;
     }
@@ -100,12 +99,10 @@ pub fn take_or_create_tatr(
 
     match result {
         Ok(model) => {
-            // Mark as available (no-op if already set to true).
             TATR_TRIED.get_or_init(|| true);
             Some(model)
         }
         Err(e) => {
-            // Only log and set the flag on the first failure.
             TATR_TRIED.get_or_init(|| {
                 tracing::warn!("TATR table structure model unavailable, table structure recognition disabled: {e}");
                 false
@@ -119,10 +116,6 @@ pub fn take_or_create_tatr(
 pub fn return_tatr(model: models::tatr::TatrModel) {
     CACHED_TATR.put(model);
 }
-
-// ---------------------------------------------------------------------------
-// SLANeXT table model caching
-// ---------------------------------------------------------------------------
 
 /// Global cached SLANeXT wired model.
 static CACHED_SLANET_WIRED: ModelCache<models::slanet::SlanetModel> = ModelCache::new();

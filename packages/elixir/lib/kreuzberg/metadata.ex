@@ -30,75 +30,74 @@ defmodule Kreuzberg.Metadata do
     * `:additional` - Additional metadata fields (flattened from Rust)
   """
 
-  # Known top-level metadata keys (non-format, non-additional)
   @known_keys MapSet.new([
-                "title",
-                "subject",
-                "authors",
-                "keywords",
-                "language",
-                "created_at",
-                "modified_at",
-                "created_by",
-                "modified_by",
-                "pages",
-                "image_preprocessing",
-                "json_schema",
-                "error",
-                "category",
-                "tags",
-                "document_version",
-                "abstract_text",
-                "output_format",
-                "extraction_duration_ms"
-              ])
+  "title",
+  "subject",
+  "authors",
+  "keywords",
+  "language",
+  "created_at",
+  "modified_at",
+  "created_by",
+  "modified_by",
+  "pages",
+  "image_preprocessing",
+  "json_schema",
+  "error",
+  "category",
+  "tags",
+  "document_version",
+  "abstract_text",
+  "output_format",
+  "extraction_duration_ms"
+  ])
 
   @type t :: %__MODULE__{
-          title: String.t() | nil,
-          subject: String.t() | nil,
-          authors: list(String.t()) | nil,
-          keywords: list(String.t()) | nil,
-          language: String.t() | nil,
-          created_at: String.t() | nil,
-          modified_at: String.t() | nil,
-          created_by: String.t() | nil,
-          modified_by: String.t() | nil,
-          pages: Kreuzberg.PageStructure.t() | nil,
-          format: map() | nil,
-          image_preprocessing: Kreuzberg.ImagePreprocessingMetadata.t() | nil,
-          json_schema: map() | nil,
-          error: Kreuzberg.ErrorMetadata.t() | nil,
-          category: String.t() | nil,
-          tags: list(String.t()) | nil,
-          document_version: String.t() | nil,
-          abstract_text: String.t() | nil,
-          output_format: String.t() | nil,
-          extraction_duration_ms: non_neg_integer() | nil,
-          additional: map()
-        }
+  title: String.t() | nil,
+  subject: String.t() | nil,
+  authors: list(String.t()) | nil,
+  keywords: list(String.t()) | nil,
+  language: String.t() | nil,
+  created_at: String.t() | nil,
+  modified_at: String.t() | nil,
+  created_by: String.t() | nil,
+  modified_by: String.t() | nil,
+  pages: Kreuzberg.PageStructure.t() | nil,
+  format: map() | nil,
+  image_preprocessing: Kreuzberg.ImagePreprocessingMetadata.t() | nil,
+  json_schema: map() | nil,
+  error: Kreuzberg.ErrorMetadata.t() | nil,
+  category: String.t() | nil,
+  tags: list(String.t()) | nil,
+  document_version: String.t() | nil,
+  abstract_text: String.t() | nil,
+  output_format: String.t() | nil,
+  extraction_duration_ms: non_neg_integer() | nil,
+  additional: map()
+  }
 
   defstruct [
-    :title,
-    :subject,
-    :authors,
-    :keywords,
-    :language,
-    :created_at,
-    :modified_at,
-    :created_by,
-    :modified_by,
-    :pages,
-    :format,
-    :image_preprocessing,
-    :json_schema,
-    :error,
-    :category,
-    :tags,
-    :document_version,
-    :abstract_text,
-    :output_format,
-    :extraction_duration_ms,
-    additional: %{}
+  :title,
+  :subject,
+  :authors,
+  :keywords,
+  :language,
+  :created_at,
+  :modified_at,
+  :created_by,
+  :modified_by,
+  :pages,
+  :format,
+  :image_preprocessing,
+  :json_schema,
+  :error,
+  :category,
+  :tags,
+  :document_version,
+  :abstract_text,
+  :output_format,
+  :extraction_duration_ms,
+  additional: %{}
   ]
 
   @doc """
@@ -114,45 +113,42 @@ defmodule Kreuzberg.Metadata do
   """
   @spec from_map(map()) :: t()
   def from_map(data) when is_map(data) do
-    # Collect all keys that aren't known top-level metadata fields.
-    # If "format_type" is present, these are flattened FormatMetadata fields → format.
-    # If "format_type" is absent, they are additional catch-all fields → additional.
     has_format = Map.has_key?(data, "format_type")
 
     extra =
-      Enum.reduce(data, %{}, fn {key, value}, acc ->
-        if MapSet.member?(@known_keys, key), do: acc, else: Map.put(acc, key, value)
-      end)
+    Enum.reduce(data, %{}, fn {key, value}, acc ->
+      if MapSet.member?(@known_keys, key), do: acc, else: Map.put(acc, key, value)
+    end)
 
     {format, additional_map} =
-      if has_format and map_size(extra) > 0 do
-        {extra, %{}}
-      else
-        {nil, extra}
-      end
+    if has_format and map_size(extra) > 0 do
+      {extra, %{}}
+    else
+      {nil, extra}
+    end
 
     %__MODULE__{
-      title: data["title"],
-      subject: data["subject"],
-      authors: data["authors"],
-      keywords: data["keywords"],
-      language: data["language"],
-      created_at: data["created_at"],
-      modified_at: data["modified_at"],
-      created_by: data["created_by"],
-      modified_by: data["modified_by"],
-      pages: normalize_pages(data["pages"]),
-      format: format,
-      image_preprocessing: normalize_image_preprocessing(data["image_preprocessing"]),
-      json_schema: data["json_schema"],
-      error: normalize_error(data["error"]),
-      category: data["category"],
-      tags: data["tags"],
-      document_version: data["document_version"],
-      abstract_text: data["abstract_text"],
-      output_format: data["output_format"],
-      extraction_duration_ms: data["extraction_duration_ms"],
-      additional: additional_map
+    title: data["title"],
+    subject: data["subject"],
+    authors: data["authors"],
+    keywords: data["keywords"],
+    language: data["language"],
+    created_at: data["created_at"],
+    modified_at: data["modified_at"],
+    created_by: data["created_by"],
+    modified_by: data["modified_by"],
+    pages: normalize_pages(data["pages"]),
+    format: format,
+    image_preprocessing: normalize_image_preprocessing(data["image_preprocessing"]),
+    json_schema: data["json_schema"],
+    error: normalize_error(data["error"]),
+    category: data["category"],
+    tags: data["tags"],
+    document_version: data["document_version"],
+    abstract_text: data["abstract_text"],
+    output_format: data["output_format"],
+    extraction_duration_ms: data["extraction_duration_ms"],
+    additional: additional_map
     }
   end
 
@@ -174,28 +170,27 @@ defmodule Kreuzberg.Metadata do
   @spec to_map(t()) :: map()
   def to_map(%__MODULE__{} = metadata) do
     base = %{
-      "title" => metadata.title,
-      "subject" => metadata.subject,
-      "authors" => metadata.authors,
-      "keywords" => metadata.keywords,
-      "language" => metadata.language,
-      "created_at" => metadata.created_at,
-      "modified_at" => metadata.modified_at,
-      "created_by" => metadata.created_by,
-      "modified_by" => metadata.modified_by,
-      "pages" => serialize_pages(metadata.pages),
-      "image_preprocessing" => serialize_image_preprocessing(metadata.image_preprocessing),
-      "json_schema" => metadata.json_schema,
-      "error" => serialize_error(metadata.error),
-      "category" => metadata.category,
-      "tags" => metadata.tags,
-      "document_version" => metadata.document_version,
-      "abstract_text" => metadata.abstract_text,
-      "output_format" => metadata.output_format,
-      "extraction_duration_ms" => metadata.extraction_duration_ms
+    "title" => metadata.title,
+    "subject" => metadata.subject,
+    "authors" => metadata.authors,
+    "keywords" => metadata.keywords,
+    "language" => metadata.language,
+    "created_at" => metadata.created_at,
+    "modified_at" => metadata.modified_at,
+    "created_by" => metadata.created_by,
+    "modified_by" => metadata.modified_by,
+    "pages" => serialize_pages(metadata.pages),
+    "image_preprocessing" => serialize_image_preprocessing(metadata.image_preprocessing),
+    "json_schema" => metadata.json_schema,
+    "error" => serialize_error(metadata.error),
+    "category" => metadata.category,
+    "tags" => metadata.tags,
+    "document_version" => metadata.document_version,
+    "abstract_text" => metadata.abstract_text,
+    "output_format" => metadata.output_format,
+    "extraction_duration_ms" => metadata.extraction_duration_ms
     }
 
-    # Re-flatten format and additional into root
     base
     |> maybe_merge(metadata.format)
     |> maybe_merge(metadata.additional)
@@ -214,7 +209,7 @@ defmodule Kreuzberg.Metadata do
   defp normalize_image_preprocessing(%Kreuzberg.ImagePreprocessingMetadata{} = m), do: m
 
   defp normalize_image_preprocessing(map) when is_map(map),
-    do: Kreuzberg.ImagePreprocessingMetadata.from_map(map)
+  do: Kreuzberg.ImagePreprocessingMetadata.from_map(map)
 
   defp normalize_error(nil), do: nil
   defp normalize_error(%Kreuzberg.ErrorMetadata{} = e), do: e
@@ -227,7 +222,7 @@ defmodule Kreuzberg.Metadata do
   defp serialize_image_preprocessing(nil), do: nil
 
   defp serialize_image_preprocessing(%Kreuzberg.ImagePreprocessingMetadata{} = m),
-    do: Kreuzberg.ImagePreprocessingMetadata.to_map(m)
+  do: Kreuzberg.ImagePreprocessingMetadata.to_map(m)
 
   defp serialize_image_preprocessing(other), do: other
 

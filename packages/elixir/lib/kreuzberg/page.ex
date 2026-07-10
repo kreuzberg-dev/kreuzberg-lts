@@ -25,23 +25,23 @@ defmodule Kreuzberg.Page do
   """
 
   @type t :: %__MODULE__{
-          page_number: non_neg_integer(),
-          content: String.t(),
-          tables: list(Kreuzberg.Table.t()),
-          images: list(Kreuzberg.Image.t()),
-          hierarchy: Kreuzberg.PageHierarchy.t() | nil,
-          is_blank: boolean() | nil,
-          layout_regions: list(Kreuzberg.LayoutRegion.t()) | nil
-        }
+  page_number: non_neg_integer(),
+  content: String.t(),
+  tables: list(Kreuzberg.Table.t()),
+  images: list(Kreuzberg.Image.t()),
+  hierarchy: Kreuzberg.PageHierarchy.t() | nil,
+  is_blank: boolean() | nil,
+  layout_regions: list(Kreuzberg.LayoutRegion.t()) | nil
+  }
 
   defstruct [
-    :hierarchy,
-    :is_blank,
-    :layout_regions,
-    page_number: 0,
-    content: "",
-    tables: [],
-    images: []
+  :hierarchy,
+  :is_blank,
+  :layout_regions,
+  page_number: 0,
+  content: "",
+  tables: [],
+  images: []
   ]
 
   @doc """
@@ -57,13 +57,13 @@ defmodule Kreuzberg.Page do
   @spec from_map(map()) :: t()
   def from_map(data) when is_map(data) do
     %__MODULE__{
-      page_number: data["page_number"] || 0,
-      content: data["content"] || "",
-      tables: normalize_tables(data["tables"]),
-      images: normalize_images(data["images"]),
-      hierarchy: normalize_hierarchy(data["hierarchy"]),
-      is_blank: data["is_blank"],
-      layout_regions: normalize_layout_regions(data["layout_regions"])
+    page_number: data["page_number"] || 0,
+    content: data["content"] || "",
+    tables: normalize_tables(data["tables"]),
+    images: normalize_images(data["images"]),
+    hierarchy: normalize_hierarchy(data["hierarchy"]),
+    is_blank: data["is_blank"],
+    layout_regions: normalize_layout_regions(data["layout_regions"])
     }
   end
 
@@ -73,21 +73,21 @@ defmodule Kreuzberg.Page do
   @spec to_map(t()) :: map()
   def to_map(%__MODULE__{} = page) do
     %{
-      "page_number" => page.page_number,
-      "content" => page.content,
-      "tables" => Enum.map(page.tables, &Kreuzberg.Table.to_map/1),
-      "images" => Enum.map(page.images, &Kreuzberg.Image.to_map/1),
-      "hierarchy" =>
-        case page.hierarchy do
-          nil -> nil
-          h -> Kreuzberg.PageHierarchy.to_map(h)
-        end,
-      "is_blank" => page.is_blank,
-      "layout_regions" =>
-        case page.layout_regions do
-          nil -> nil
-          regions -> Enum.map(regions, &Kreuzberg.LayoutRegion.to_map/1)
-        end
+    "page_number" => page.page_number,
+    "content" => page.content,
+    "tables" => Enum.map(page.tables, &Kreuzberg.Table.to_map/1),
+    "images" => Enum.map(page.images, &Kreuzberg.Image.to_map/1),
+    "hierarchy" =>
+    case page.hierarchy do
+      nil -> nil
+      h -> Kreuzberg.PageHierarchy.to_map(h)
+    end,
+    "is_blank" => page.is_blank,
+    "layout_regions" =>
+    case page.layout_regions do
+      nil -> nil
+      regions -> Enum.map(regions, &Kreuzberg.LayoutRegion.to_map/1)
+    end
     }
   end
 

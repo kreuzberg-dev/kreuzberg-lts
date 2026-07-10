@@ -7,8 +7,7 @@ use extendr_api::prelude::*;
 pub fn parse_config(config_json: Nullable<&str>) -> extendr_api::Result<kreuzberg::ExtractionConfig> {
     match config_json {
         Nullable::NotNull(json_str) => {
-            let config: kreuzberg::ExtractionConfig =
-                serde_json::from_str(json_str).map_err(to_r_error)?;
+            let config: kreuzberg::ExtractionConfig = serde_json::from_str(json_str).map_err(to_r_error)?;
             Ok(config)
         }
         Nullable::Null => Ok(kreuzberg::ExtractionConfig::default()),
@@ -19,8 +18,7 @@ pub fn parse_config(config_json: Nullable<&str>) -> extendr_api::Result<kreuzber
 pub fn parse_config_embedding(config_json: Nullable<&str>) -> extendr_api::Result<kreuzberg::EmbeddingConfig> {
     match config_json {
         Nullable::NotNull(json_str) => {
-            let config: kreuzberg::EmbeddingConfig =
-                serde_json::from_str(json_str).map_err(to_r_error)?;
+            let config: kreuzberg::EmbeddingConfig = serde_json::from_str(json_str).map_err(to_r_error)?;
             Ok(config)
         }
         Nullable::Null => Ok(kreuzberg::EmbeddingConfig::default()),

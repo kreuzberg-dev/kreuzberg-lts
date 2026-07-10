@@ -53,55 +53,48 @@ defmodule Kreuzberg.Test.ExampleOcrBackend do
 
   @impl true
   def initialize do
-    # No special initialization needed for mock backend
     :ok
   end
 
   @impl true
   def shutdown do
-    # No cleanup needed for mock backend
     :ok
   end
 
   @impl true
   def process_image(image_data, language) when is_binary(image_data) do
-    # Validate image data is not empty
     if byte_size(image_data) == 0 do
       {:error, "Invalid image data: empty binary"}
     else
-      # Validate language is supported
       process_with_language(language)
     end
   end
 
   @impl true
   def process_file(path, language) when is_binary(path) do
-    # Validate path is a string
     case File.read(path) do
       {:ok, image_data} ->
-        # File read successfully, process as image
-        process_image(image_data, language)
+      process_image(image_data, language)
 
       {:error, _reason} ->
-        {:error, "Cannot read file: #{path}"}
+      {:error, "Cannot read file: #{path}"}
     end
   end
 
-  # Private helpers
 
   defp process_with_language(language) do
     case language do
       "eng" ->
-        {:ok, mock_text_english()}
+      {:ok, mock_text_english()}
 
       "deu" ->
-        {:ok, mock_text_german()}
+      {:ok, mock_text_german()}
 
       "fra" ->
-        {:ok, mock_text_french()}
+      {:ok, mock_text_french()}
 
       lang ->
-        {:error, "Language not supported: #{lang}"}
+      {:error, "Language not supported: #{lang}"}
     end
   end
 

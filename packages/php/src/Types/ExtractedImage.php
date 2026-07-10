@@ -35,8 +35,7 @@ readonly class ExtractedImage
         public ?string $description = null,
         public ?ExtractionResult $ocrResult = null,
         public ?BoundingBox $boundingBox = null,
-    ) {
-    }
+    ) {}
 
     /**
      * @param array<string, mixed> $data

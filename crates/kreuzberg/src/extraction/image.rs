@@ -39,12 +39,10 @@ pub struct ImageMetadata {
 /// Supports both JP2 container format (ISO 15444-1 Annex I) and raw J2K codestream.
 /// Uses pure Rust header parsing without external dependencies.
 fn decode_jp2_metadata(bytes: &[u8]) -> Result<ImageMetadata> {
-    // Try JP2 box format first (starts with signature box)
     if is_jp2(bytes) {
         return parse_jp2_boxes(bytes);
     }
 
-    // Try J2K raw codestream (starts with SOC marker 0xFF4F)
     if bytes.len() >= 2 && bytes[0] == 0xFF && bytes[1] == 0x4F {
         return parse_j2k_siz(bytes);
     }
@@ -62,7 +60,6 @@ fn parse_jp2_boxes(bytes: &[u8]) -> Result<ImageMetadata> {
             u32::from_be_bytes([bytes[offset], bytes[offset + 1], bytes[offset + 2], bytes[offset + 3]]) as usize;
         let box_type = &bytes[offset + 4..offset + 8];
 
-        // Handle extended box length (box_len == 1 means 8-byte extended length follows)
         let (data_start, actual_len) = if box_len == 1 && offset + 16 <= len {
             let ext_len = u64::from_be_bytes([
                 bytes[offset + 8],
@@ -76,13 +73,11 @@ fn parse_jp2_boxes(bytes: &[u8]) -> Result<ImageMetadata> {
             ]) as usize;
             (offset + 16, ext_len)
         } else if box_len == 0 {
-            // Box extends to end of file
             (offset + 8, len - offset)
         } else {
             (offset + 8, box_len)
         };
 
-        // ihdr box: height(u32) + width(u32) + numcomps(u16) + bpc(u8) + ...
         if box_type == b"ihdr" && data_start + 8 <= len {
             let height = u32::from_be_bytes([
                 bytes[data_start],
@@ -104,10 +99,8 @@ fn parse_jp2_boxes(bytes: &[u8]) -> Result<ImageMetadata> {
             });
         }
 
-        // jp2h is a superbox - recurse into its contents
         if box_type == b"jp2h" {
             let end = offset + actual_len.min(len - offset);
-            // Parse sub-boxes within jp2h
             let mut sub_offset = data_start;
             while sub_offset + 8 <= end {
                 let sub_len = u32::from_be_bytes([
@@ -158,10 +151,8 @@ fn parse_jp2_boxes(bytes: &[u8]) -> Result<ImageMetadata> {
 
 /// Parse J2K raw codestream SIZ marker for image dimensions.
 fn parse_j2k_siz(bytes: &[u8]) -> Result<ImageMetadata> {
-    // Find SIZ marker (0xFF51) - usually right after SOC (0xFF4F)
     if let Some(offset) = memchr::memmem::find(bytes, &[0xFF, 0x51]) {
-        // SIZ marker found. Format: marker(2) + Lsiz(2) + Rsiz(2) + Xsiz(4) + Ysiz(4) + XOsiz(4) + YOsiz(4)
-        let data_start = offset + 4; // skip marker + length
+        let data_start = offset + 4;
         if data_start + 18 <= bytes.len() {
             let xsiz = u32::from_be_bytes([
                 bytes[data_start + 2],
@@ -220,9 +211,7 @@ pub(crate) fn decode_jp2_to_rgb(bytes: &[u8]) -> Result<image::RgbImage> {
         .decode()
         .map_err(|e| KreuzbergError::parsing(format!("JP2 pixel decode failed: {}", e)))?;
 
-    // Convert decoded pixels to RGB
     let rgb_bytes = match (num_channels, has_alpha) {
-        // Grayscale → replicate to RGB
         (1, false) => {
             let mut rgb = Vec::with_capacity(pixels.len() * 3);
             for &g in &pixels {
@@ -232,7 +221,6 @@ pub(crate) fn decode_jp2_to_rgb(bytes: &[u8]) -> Result<image::RgbImage> {
             }
             rgb
         }
-        // Grayscale + alpha → replicate gray to RGB, skip alpha
         (1, true) => {
             let mut rgb = Vec::with_capacity((pixels.len() / 2) * 3);
             for chunk in pixels.chunks_exact(2) {
@@ -242,9 +230,7 @@ pub(crate) fn decode_jp2_to_rgb(bytes: &[u8]) -> Result<image::RgbImage> {
             }
             rgb
         }
-        // RGB → use as-is
         (3, false) => pixels,
-        // RGBA → strip alpha channel
         (3, true) => {
             let mut rgb = Vec::with_capacity((pixels.len() / 4) * 3);
             for chunk in pixels.chunks_exact(4) {
@@ -254,7 +240,6 @@ pub(crate) fn decode_jp2_to_rgb(bytes: &[u8]) -> Result<image::RgbImage> {
             }
             rgb
         }
-        // CMYK → simple inversion to RGB (C=255-R, M=255-G, Y=255-B, K applied)
         (4, false) => {
             let mut rgb = Vec::with_capacity((pixels.len() / 4) * 3);
             for chunk in pixels.chunks_exact(4) {
@@ -353,12 +338,10 @@ pub fn load_image_for_ocr(image_bytes: &[u8]) -> Result<image::DynamicImage> {
 /// Attempts to decode using the standard image crate first, then falls back to
 /// pure Rust JP2 box parsing for JPEG 2000 formats if the standard decoder fails.
 pub fn extract_image_metadata(bytes: &[u8]) -> Result<ImageMetadata> {
-    // Check for JP2/J2K before attempting standard format detection
-    if is_jp2(bytes) || (bytes.len() >= 2 && bytes[0] == 0xFF && bytes[1] == 0x4F) {
-        // Try the fallback JP2 parser first for JPEG 2000 files
-        if let Ok(metadata) = decode_jp2_metadata(bytes) {
-            return Ok(metadata);
-        }
+    if (is_jp2(bytes) || (bytes.len() >= 2 && bytes[0] == 0xFF && bytes[1] == 0x4F))
+        && let Ok(metadata) = decode_jp2_metadata(bytes)
+    {
+        return Ok(metadata);
     }
 
     let reader = ImageReader::new(Cursor::new(bytes))
@@ -729,7 +712,6 @@ mod tests {
         }
 
         let _result = extract_image_metadata(&bytes);
-        // Corrupted images may or may not be detectable depending on corruption location
     }
 
     #[test]
@@ -840,9 +822,9 @@ mod tests {
     #[test]
     fn test_jp2_magic_detection() {
         assert!(is_jp2(&[0x00, 0x00, 0x00, 0x0C, 0x6A, 0x50, 0x20, 0x20, 0x0D, 0x0A]));
-        assert!(!is_jp2(&[0x89, 0x50, 0x4E, 0x47])); // PNG magic
-        assert!(!is_jp2(&[0x00, 0x00])); // too short
-        assert!(!is_jp2(&[])); // empty
+        assert!(!is_jp2(&[0x89, 0x50, 0x4E, 0x47]));
+        assert!(!is_jp2(&[0x00, 0x00]));
+        assert!(!is_jp2(&[]));
     }
 
     #[test]
@@ -876,13 +858,11 @@ mod tests {
 
     #[test]
     fn test_jp2_magic_detection_comprehensive() {
-        // Valid JP2 signature
         assert!(is_jp2(&[
             0x00, 0x00, 0x00, 0x0C, 0x6A, 0x50, 0x20, 0x20, 0x0D, 0x0A, 0x87, 0x0A
         ]));
-        // Not JP2
-        assert!(!is_jp2(&[0xFF, 0x4F, 0xFF, 0x51])); // J2K codestream
-        assert!(!is_jp2(&[0x89, 0x50, 0x4E, 0x47])); // PNG
+        assert!(!is_jp2(&[0xFF, 0x4F, 0xFF, 0x51]));
+        assert!(!is_jp2(&[0x89, 0x50, 0x4E, 0x47]));
         assert!(!is_jp2(&[]));
     }
 }
@@ -910,8 +890,8 @@ mod jp2_decode_tests {
     #[test]
     fn test_jbig2_magic_detection() {
         assert!(is_jbig2(&[0x97, 0x4A, 0x42, 0x32, 0x0D, 0x0A, 0x1A, 0x0A, 0x01]));
-        assert!(!is_jbig2(&[0x89, 0x50, 0x4E, 0x47])); // PNG
+        assert!(!is_jbig2(&[0x89, 0x50, 0x4E, 0x47]));
         assert!(!is_jbig2(&[]));
-        assert!(!is_jbig2(&[0x97, 0x4A])); // too short
+        assert!(!is_jbig2(&[0x97, 0x4A]));
     }
 }

@@ -101,7 +101,6 @@ impl TesseractBackend {
                 ..Default::default()
             },
         };
-        // Propagate top-level OcrConfig.auto_rotate (OR with any preprocessing setting)
         if config.auto_rotate {
             internal.auto_rotate = true;
         }
@@ -218,7 +217,6 @@ impl OcrBackend for TesseractBackend {
             source: Some(Box::new(e)),
         })?;
 
-        // Use resolved language from OCR result metadata (handles "all"/"*" resolution)
         let resolved_language = ocr_result
             .metadata
             .get("language")
@@ -226,14 +224,12 @@ impl OcrBackend for TesseractBackend {
             .unwrap_or(&tess_config.language)
             .to_string();
 
-        // Check if OCR pre-formatted the content (e.g., tables inlined into markdown)
         let pre_formatted = ocr_result
             .metadata
             .get("pre_formatted")
             .and_then(|v| v.as_str())
             .map(|s| s.to_string());
 
-        // Convert HashMap<String, Value> to AHashMap<Cow<'static, str>, Value>
         let mut additional = AHashMap::new();
         for (key, value) in ocr_result.metadata {
             additional.insert(Cow::Owned(key), value);
@@ -251,7 +247,6 @@ impl OcrBackend for TesseractBackend {
                     .first()
                     .and_then(|t| t.cells.first().map(|row| row.len())),
             })),
-            // Signal pre-formatted content so apply_output_format() skips re-conversion
             output_format: pre_formatted,
             additional,
             ..Default::default()
@@ -314,7 +309,6 @@ impl OcrBackend for TesseractBackend {
             source: Some(Box::new(e)),
         })?;
 
-        // Use resolved language from OCR result metadata (handles "all"/"*" resolution)
         let resolved_language = ocr_result
             .metadata
             .get("language")
@@ -322,14 +316,12 @@ impl OcrBackend for TesseractBackend {
             .unwrap_or(&tess_config.language)
             .to_string();
 
-        // Check if OCR pre-formatted the content (e.g., tables inlined into markdown)
         let pre_formatted = ocr_result
             .metadata
             .get("pre_formatted")
             .and_then(|v| v.as_str())
             .map(|s| s.to_string());
 
-        // Convert HashMap<String, Value> to AHashMap<Cow<'static, str>, Value>
         let mut additional = AHashMap::new();
         for (key, value) in ocr_result.metadata {
             additional.insert(Cow::Owned(key), value);
@@ -347,7 +339,6 @@ impl OcrBackend for TesseractBackend {
                     .first()
                     .and_then(|t| t.cells.first().map(|row| row.len())),
             })),
-            // Signal pre-formatted content so apply_output_format() skips re-conversion
             output_format: pre_formatted,
             additional,
             ..Default::default()
@@ -425,9 +416,7 @@ mod tests {
     #[test]
     fn test_tesseract_backend_supports_language() {
         let backend = TesseractBackend::new().unwrap();
-        // English should always be available
         assert!(backend.supports_language("eng"));
-        // Invalid language codes should return false
         assert!(!backend.supports_language("xyz"));
         assert!(!backend.supports_language("invalid"));
     }
@@ -442,9 +431,7 @@ mod tests {
     fn test_tesseract_backend_supported_languages() {
         let backend = TesseractBackend::new().unwrap();
         let languages = backend.supported_languages();
-        // English should always be available
         assert!(languages.contains(&"eng".to_string()));
-        // Should have at least English
         assert!(!languages.is_empty());
     }
 

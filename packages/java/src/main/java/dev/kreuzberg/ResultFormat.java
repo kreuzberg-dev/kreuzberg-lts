@@ -12,29 +12,29 @@ import com.fasterxml.jackson.annotation.JsonValue;
  * @since 4.6.0
  */
 public enum ResultFormat {
-	/** Unified format with all content in the content field. */
-	UNIFIED("unified"),
+    /** Unified format with all content in the content field. */
+    UNIFIED("unified"),
 
-	/** Element-based format with semantic element extraction. */
-	ELEMENT_BASED("element_based");
+    /** Element-based format with semantic element extraction. */
+    ELEMENT_BASED("element_based");
 
-	private final String wireValue;
+    private final String wireValue;
 
-	ResultFormat(String wireValue) {
-		this.wireValue = wireValue;
-	}
+    ResultFormat(String wireValue) {
+        this.wireValue = wireValue;
+    }
 
-	/**
+    /**
 	 * Get the wire format value for this result format.
 	 *
 	 * @return wire value used in serialization
 	 */
-	@JsonValue
-	public String wireValue() {
-		return wireValue;
-	}
+    @JsonValue
+    public String wireValue() {
+        return wireValue;
+    }
 
-	/**
+    /**
 	 * Parse a ResultFormat from its wire value.
 	 *
 	 * @param wireValue
@@ -43,12 +43,12 @@ public enum ResultFormat {
 	 * @throws IllegalArgumentException
 	 *             if the value is not recognized
 	 */
-	public static ResultFormat fromWireValue(String wireValue) {
-		for (ResultFormat type : values()) {
-			if (type.wireValue.equals(wireValue)) {
-				return type;
-			}
-		}
-		throw new IllegalArgumentException("Unknown ResultFormat: " + wireValue);
-	}
+    public static ResultFormat fromWireValue(String wireValue) {
+        for (ResultFormat type : values()) {
+            if (type.wireValue.equals(wireValue)) {
+                return type;
+            }
+        }
+        throw new IllegalArgumentException("Unknown ResultFormat: " + wireValue);
+    }
 }

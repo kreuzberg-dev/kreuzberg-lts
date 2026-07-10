@@ -29,21 +29,21 @@ defmodule Kreuzberg.OcrBoundingGeometry do
   """
 
   @type t :: %__MODULE__{
-          type: String.t(),
-          left: float() | nil,
-          top: float() | nil,
-          width: float() | nil,
-          height: float() | nil,
-          points: list(list(float())) | nil
-        }
+  type: String.t(),
+  left: float() | nil,
+  top: float() | nil,
+  width: float() | nil,
+  height: float() | nil,
+  points: list(list(float())) | nil
+  }
 
   defstruct [
-    :left,
-    :top,
-    :width,
-    :height,
-    :points,
-    type: "rect"
+  :left,
+  :top,
+  :width,
+  :height,
+  :points,
+  type: "rect"
   ]
 
   @doc """
@@ -73,12 +73,12 @@ defmodule Kreuzberg.OcrBoundingGeometry do
   @spec from_map(map()) :: t()
   def from_map(data) when is_map(data) do
     %__MODULE__{
-      type: data["type"] || "rect",
-      left: to_float(data["left"]),
-      top: to_float(data["top"]),
-      width: to_float(data["width"]),
-      height: to_float(data["height"]),
-      points: normalize_points(data["points"])
+    type: data["type"] || "rect",
+    left: to_float(data["left"]),
+    top: to_float(data["top"]),
+    width: to_float(data["width"]),
+    height: to_float(data["height"]),
+    points: normalize_points(data["points"])
     }
   end
 
@@ -112,12 +112,12 @@ defmodule Kreuzberg.OcrBoundingGeometry do
   @spec to_map(t()) :: map()
   def to_map(%__MODULE__{} = geometry) do
     %{
-      "type" => geometry.type,
-      "left" => geometry.left,
-      "top" => geometry.top,
-      "width" => geometry.width,
-      "height" => geometry.height,
-      "points" => geometry.points
+    "type" => geometry.type,
+    "left" => geometry.left,
+    "top" => geometry.top,
+    "width" => geometry.width,
+    "height" => geometry.height,
+    "points" => geometry.points
     }
   end
 
@@ -139,13 +139,13 @@ defmodule Kreuzberg.OcrBoundingGeometry do
   defp normalize_points(points) when is_list(points) do
     Enum.map(points, fn
       [x, y] ->
-        [to_float(x), to_float(y)]
+      [to_float(x), to_float(y)]
 
       point when is_list(point) and length(point) >= 2 ->
-        [to_float(Enum.at(point, 0)), to_float(Enum.at(point, 1))]
+      [to_float(Enum.at(point, 0)), to_float(Enum.at(point, 1))]
 
       _ ->
-        [0.0, 0.0]
+      [0.0, 0.0]
     end)
   end
 

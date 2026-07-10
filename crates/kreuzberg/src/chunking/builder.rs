@@ -162,7 +162,6 @@ mod tests {
     #[test]
     fn test_build_chunks_offset_from_source() {
         let source = "AAAAABBBBBCCCCC";
-        // Overlapping slices from source
         let text_chunks = vec![&source[0..5], &source[3..8], &source[6..11]];
         let result = build_chunks(source, text_chunks, None).unwrap();
 

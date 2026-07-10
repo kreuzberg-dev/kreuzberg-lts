@@ -105,7 +105,6 @@ impl Default for ServerConfig {
     }
 }
 
-// Default value functions for serde
 fn default_host() -> String {
     DEFAULT_HOST.to_string()
 }

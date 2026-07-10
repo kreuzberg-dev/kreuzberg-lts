@@ -99,7 +99,7 @@ pub fn get_worker_pool_stats(pool: &JsWorkerPool) -> Result<WorkerPoolStats> {
     Ok(WorkerPoolStats {
         size: pool_ref.size() as u32,
         active_workers: pool_ref.active_workers() as u32,
-        queued_tasks: 0, // Not tracked in simplified implementation
+        queued_tasks: 0,
     })
 }
 
@@ -152,7 +152,6 @@ pub async fn extract_file_in_worker(
             .clone()
     };
 
-    // Wait until we can accept work (respects pool size limit)
     while !pool_clone.can_accept_work() {
         tokio::time::sleep(tokio::time::Duration::from_millis(10)).await;
     }
@@ -161,7 +160,6 @@ pub async fn extract_file_in_worker(
 
     let rust_config = resolve_config(config)?;
 
-    // Spawn the extraction in a blocking thread
     let result = tokio::task::spawn_blocking(move || {
         kreuzberg::extract_file_sync(&file_path, mime_type.as_deref(), &rust_config)
     })
@@ -228,7 +226,6 @@ pub async fn batch_extract_files_in_worker(
                 .clone()
         };
 
-        // Wait until we can accept work
         while !pool_clone.can_accept_work() {
             tokio::time::sleep(tokio::time::Duration::from_millis(10)).await;
         }
@@ -237,7 +234,6 @@ pub async fn batch_extract_files_in_worker(
 
         let config_clone = rust_config.clone();
 
-        // Spawn the extraction in a blocking thread
         let result = tokio::task::spawn_blocking(move || kreuzberg::extract_file_sync(&path, None, &config_clone))
             .await
             .map_err(|e| Error::from_reason(format!("Worker thread error: {}", e)))?
@@ -287,7 +283,6 @@ pub async fn close_worker_pool(pool: &JsWorkerPool) -> Result<()> {
     };
 
     if let Some(worker_pool) = pool_opt {
-        // Wait for all active workers to complete
         worker_pool.wait_for_completion().await;
     }
 

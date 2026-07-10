@@ -130,7 +130,6 @@ pub static TESSERACT_SUPPORTED_LANGUAGE_CODES: LazyLock<AHashSet<&'static str>> 
 });
 
 pub fn validate_language_code(lang_code: &str) -> Result<(), OcrError> {
-    // Accept "all" and "*" as special values to auto-detect installed languages
     let lower = lang_code.to_ascii_lowercase();
     if lower == "all" || lower == "*" {
         return Ok(());

@@ -47,7 +47,6 @@ defmodule Kreuzberg.UtilityAPI do
 
   alias Kreuzberg.Native
 
-  # Compiled regex patterns for error classification
   @io_error_regex ~r/(io|file|not\s+found|does\s+not\s+exist|permission|denied)/i
   @invalid_format_regex ~r/(invalid|unsupported|format|corrupted|damaged)/i
   @invalid_config_regex ~r/(config|configuration|option|parameter)/i
@@ -118,7 +117,7 @@ defmodule Kreuzberg.UtilityAPI do
       "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
   """
   @spec detect_mime_type_from_path(String.t() | Path.t()) ::
-          {:ok, String.t()} | {:error, String.t()}
+  {:ok, String.t()} | {:error, String.t()}
   def detect_mime_type_from_path(path) do
     string_path = to_string(path)
 
@@ -311,25 +310,25 @@ defmodule Kreuzberg.UtilityAPI do
 
     cond do
       Regex.match?(@io_error_regex, reason_lower) ->
-        :io_error
+      :io_error
 
       Regex.match?(@invalid_format_regex, reason_lower) ->
-        :invalid_format
+      :invalid_format
 
       Regex.match?(@invalid_config_regex, reason_lower) ->
-        :invalid_config
+      :invalid_config
 
       Regex.match?(@ocr_error_regex, reason_lower) ->
-        :ocr_error
+      :ocr_error
 
       Regex.match?(@extraction_error_regex, reason_lower) ->
-        :extraction_error
+      :extraction_error
 
       Regex.match?(@embedding_error_regex, reason_lower) ->
-        :embedding_error
+      :embedding_error
 
       true ->
-        :unknown_error
+      :unknown_error
     end
   end
 
@@ -357,46 +356,46 @@ defmodule Kreuzberg.UtilityAPI do
   @spec get_error_details() :: {:ok, map()} | {:error, String.t()}
   def get_error_details do
     {:ok,
-     %{
-       io_error: %{
-         "name" => "IO Error",
-         "description" => "File I/O related errors such as file not found or permission denied",
-         "examples" => ["File not found", "Permission denied", "No such file or directory"]
-       },
-       invalid_format: %{
-         "name" => "Invalid Format",
-         "description" => "File format errors including corrupted files or unsupported formats",
-         "examples" => ["Invalid PDF format", "Corrupted file", "Unsupported format"]
-       },
-       invalid_config: %{
-         "name" => "Invalid Configuration",
-         "description" => "Configuration or parameter validation errors",
-         "examples" => [
-           "Invalid configuration",
-           "Invalid parameter",
-           "Unknown option"
-         ]
-       },
-       ocr_error: %{
-         "name" => "OCR Error",
-         "description" => "OCR engine or processing errors",
-         "examples" => ["OCR failed", "OCR timeout", "Recognition failed"]
-       },
-       extraction_error: %{
-         "name" => "Extraction Error",
-         "description" => "General extraction and processing failures",
-         "examples" => ["Extraction failed", "Processing error"]
-       },
-       embedding_error: %{
-         "name" => "Embedding Error",
-         "description" => "Errors during text embedding generation and vector processing",
-         "examples" => ["Embedding failed", "Inference error", "Model load error"]
-       },
-       unknown_error: %{
-         "name" => "Unknown Error",
-         "description" => "Errors that don't match other categories",
-         "examples" => ["Unexpected error", "Internal error"]
-       }
-     }}
+    %{
+    io_error: %{
+    "name" => "IO Error",
+    "description" => "File I/O related errors such as file not found or permission denied",
+    "examples" => ["File not found", "Permission denied", "No such file or directory"]
+    },
+    invalid_format: %{
+    "name" => "Invalid Format",
+    "description" => "File format errors including corrupted files or unsupported formats",
+    "examples" => ["Invalid PDF format", "Corrupted file", "Unsupported format"]
+    },
+    invalid_config: %{
+    "name" => "Invalid Configuration",
+    "description" => "Configuration or parameter validation errors",
+    "examples" => [
+    "Invalid configuration",
+    "Invalid parameter",
+    "Unknown option"
+    ]
+    },
+    ocr_error: %{
+    "name" => "OCR Error",
+    "description" => "OCR engine or processing errors",
+    "examples" => ["OCR failed", "OCR timeout", "Recognition failed"]
+    },
+    extraction_error: %{
+    "name" => "Extraction Error",
+    "description" => "General extraction and processing failures",
+    "examples" => ["Extraction failed", "Processing error"]
+    },
+    embedding_error: %{
+    "name" => "Embedding Error",
+    "description" => "Errors during text embedding generation and vector processing",
+    "examples" => ["Embedding failed", "Inference error", "Model load error"]
+    },
+    unknown_error: %{
+    "name" => "Unknown Error",
+    "description" => "Errors that don't match other categories",
+    "examples" => ["Unexpected error", "Internal error"]
+    }
+    }}
   end
 end

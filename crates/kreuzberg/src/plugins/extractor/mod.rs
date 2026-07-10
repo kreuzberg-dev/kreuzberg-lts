@@ -8,10 +8,8 @@ mod r#trait;
 #[cfg(feature = "otel")]
 pub(crate) mod instrumented;
 
-// Re-export trait for backward compatibility
 pub use r#trait::DocumentExtractor;
 
-// Re-export registry functions for backward compatibility
 pub use registry::{clear_extractors, list_extractors, register_extractor, unregister_extractor};
 
 #[cfg(test)]

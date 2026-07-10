@@ -226,8 +226,7 @@ readonly class HtmlConversionOptions
          * @var bool|null
          */
         public ?bool $debug = null,
-    ) {
-    }
+    ) {}
 
     /**
      * Create configuration from array data.
@@ -306,36 +305,39 @@ readonly class HtmlConversionOptions
      */
     public function toArray(): array
     {
-        return array_filter([
-            'heading_style' => $this->headingStyle,
-            'list_indent_type' => $this->listIndentType,
-            'list_indent_width' => $this->listIndentWidth,
-            'bullets' => $this->bullets,
-            'list_style' => $this->listStyle,
-            'list_format' => $this->listFormat,
-            'strong_em_symbol' => $this->strongEmSymbol,
-            'escape_asterisks' => $this->escapeAsterisks,
-            'escape_underscores' => $this->escapeUnderscores,
-            'escape_misc' => $this->escapeMisc,
-            'escape_ascii' => $this->escapeAscii,
-            'code_language' => $this->codeLanguage,
-            'autolinks' => $this->autolinks,
-            'default_title' => $this->defaultTitle,
-            'br_in_tables' => $this->brInTables,
-            'hocr_spatial_tables' => $this->hocrSpatialTables,
-            'highlight_style' => $this->highlightStyle,
-            'extract_metadata' => $this->extractMetadata,
-            'whitespace_mode' => $this->whitespaceMode,
-            'strip_newlines' => $this->stripNewlines,
-            'wrap' => $this->wrap,
-            'wrap_width' => $this->wrapWidth,
-            'convert_as_inline' => $this->convertAsInline,
-            'sub_symbol' => $this->subSymbol,
-            'sup_symbol' => $this->supSymbol,
-            'newline_style' => $this->newlineStyle,
-            'code_block_style' => $this->codeBlockStyle,
-            'encoding' => $this->encoding,
-            'debug' => $this->debug,
-        ], static fn ($value): bool => $value !== null);
+        return array_filter(
+            [
+                'heading_style' => $this->headingStyle,
+                'list_indent_type' => $this->listIndentType,
+                'list_indent_width' => $this->listIndentWidth,
+                'bullets' => $this->bullets,
+                'list_style' => $this->listStyle,
+                'list_format' => $this->listFormat,
+                'strong_em_symbol' => $this->strongEmSymbol,
+                'escape_asterisks' => $this->escapeAsterisks,
+                'escape_underscores' => $this->escapeUnderscores,
+                'escape_misc' => $this->escapeMisc,
+                'escape_ascii' => $this->escapeAscii,
+                'code_language' => $this->codeLanguage,
+                'autolinks' => $this->autolinks,
+                'default_title' => $this->defaultTitle,
+                'br_in_tables' => $this->brInTables,
+                'hocr_spatial_tables' => $this->hocrSpatialTables,
+                'highlight_style' => $this->highlightStyle,
+                'extract_metadata' => $this->extractMetadata,
+                'whitespace_mode' => $this->whitespaceMode,
+                'strip_newlines' => $this->stripNewlines,
+                'wrap' => $this->wrap,
+                'wrap_width' => $this->wrapWidth,
+                'convert_as_inline' => $this->convertAsInline,
+                'sub_symbol' => $this->subSymbol,
+                'sup_symbol' => $this->supSymbol,
+                'newline_style' => $this->newlineStyle,
+                'code_block_style' => $this->codeBlockStyle,
+                'encoding' => $this->encoding,
+                'debug' => $this->debug,
+            ],
+            static fn($value): bool => $value !== null,
+        );
     }
 }

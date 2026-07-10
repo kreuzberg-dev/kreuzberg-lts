@@ -39,9 +39,9 @@ import type { ExtractionConfig, ExtractionResult, WorkerPool, WorkerPoolStats } 
  * ```
  */
 export function createWorkerPool(size?: number): WorkerPool {
-	const binding = getBinding();
-	const rawPool = binding.createWorkerPool(size);
-	return rawPool as unknown as WorkerPool;
+  const binding = getBinding();
+  const rawPool = binding.createWorkerPool(size);
+  return rawPool as unknown as WorkerPool;
 }
 
 /**
@@ -66,9 +66,9 @@ export function createWorkerPool(size?: number): WorkerPool {
  * ```
  */
 export function getWorkerPoolStats(pool: WorkerPool): WorkerPoolStats {
-	const binding = getBinding();
-	const rawStats = binding.getWorkerPoolStats(pool as unknown as Record<string, unknown>);
-	return rawStats as unknown as WorkerPoolStats;
+  const binding = getBinding();
+  const rawStats = binding.getWorkerPoolStats(pool as unknown as Record<string, unknown>);
+  return rawStats as unknown as WorkerPoolStats;
 }
 
 /**
@@ -109,34 +109,34 @@ export function getWorkerPoolStats(pool: WorkerPool): WorkerPoolStats {
  * ```
  */
 export async function extractFileInWorker(
-	pool: WorkerPool,
-	filePath: string,
-	mimeTypeOrConfig?: string | null | ExtractionConfig,
-	maybeConfig?: ExtractionConfig | null,
+  pool: WorkerPool,
+  filePath: string,
+  mimeTypeOrConfig?: string | null | ExtractionConfig,
+  maybeConfig?: ExtractionConfig | null,
 ): Promise<ExtractionResult> {
-	let mimeType: string | null = null;
-	let config: ExtractionConfig | null = null;
+  let mimeType: string | null = null;
+  let config: ExtractionConfig | null = null;
 
-	if (typeof mimeTypeOrConfig === "string") {
-		mimeType = mimeTypeOrConfig;
-		config = maybeConfig ?? null;
-	} else if (mimeTypeOrConfig !== null && typeof mimeTypeOrConfig === "object") {
-		config = mimeTypeOrConfig;
-		mimeType = null;
-	} else {
-		config = maybeConfig ?? null;
-		mimeType = null;
-	}
+  if (typeof mimeTypeOrConfig === "string") {
+    mimeType = mimeTypeOrConfig;
+    config = maybeConfig ?? null;
+  } else if (mimeTypeOrConfig !== null && typeof mimeTypeOrConfig === "object") {
+    config = mimeTypeOrConfig;
+    mimeType = null;
+  } else {
+    config = maybeConfig ?? null;
+    mimeType = null;
+  }
 
-	const normalizedConfig = normalizeExtractionConfig(config);
-	const binding = getBinding();
-	const rawResult = await binding.extractFileInWorker(
-		pool as unknown as Record<string, unknown>,
-		filePath,
-		mimeType,
-		normalizedConfig,
-	);
-	return convertResult(rawResult);
+  const normalizedConfig = normalizeExtractionConfig(config);
+  const binding = getBinding();
+  const rawResult = await binding.extractFileInWorker(
+    pool as unknown as Record<string, unknown>,
+    filePath,
+    mimeType,
+    normalizedConfig,
+  );
+  return convertResult(rawResult);
 }
 
 /**
@@ -172,18 +172,18 @@ export async function extractFileInWorker(
  * ```
  */
 export async function batchExtractFilesInWorker(
-	pool: WorkerPool,
-	paths: string[],
-	config: ExtractionConfig | null = null,
+  pool: WorkerPool,
+  paths: string[],
+  config: ExtractionConfig | null = null,
 ): Promise<ExtractionResult[]> {
-	const normalizedConfig = normalizeExtractionConfig(config);
-	const binding = getBinding();
-	const rawResults = await binding.batchExtractFilesInWorker(
-		pool as unknown as Record<string, unknown>,
-		paths,
-		normalizedConfig,
-	);
-	return rawResults.map(convertResult);
+  const normalizedConfig = normalizeExtractionConfig(config);
+  const binding = getBinding();
+  const rawResults = await binding.batchExtractFilesInWorker(
+    pool as unknown as Record<string, unknown>,
+    paths,
+    normalizedConfig,
+  );
+  return rawResults.map(convertResult);
 }
 
 /**
@@ -213,6 +213,6 @@ export async function batchExtractFilesInWorker(
  * ```
  */
 export async function closeWorkerPool(pool: WorkerPool): Promise<void> {
-	const binding = getBinding();
-	await binding.closeWorkerPool(pool as unknown as Record<string, unknown>);
+  const binding = getBinding();
+  await binding.closeWorkerPool(pool as unknown as Record<string, unknown>);
 }

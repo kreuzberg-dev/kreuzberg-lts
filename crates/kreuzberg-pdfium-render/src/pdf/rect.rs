@@ -17,7 +17,6 @@ use std::hash::{Hash, Hasher};
 /// y values increasing as coordinates move vertically up.
 #[derive(Debug, Copy, Clone)]
 pub struct PdfRect {
-    // TODO: AJRC - 28/12/24 - direct field access to be removed as part of release 0.9.0.
     #[deprecated(
         since = "0.8.28",
         note = "Use the PdfRect::bottom() function instead of direct field access. Direct field access will be removed in release 0.9.0."
@@ -76,10 +75,6 @@ impl PdfRect {
     /// y values increasing as coordinates move vertically up.
     #[inline]
     pub const fn new(bottom: PdfPoints, left: PdfPoints, top: PdfPoints, right: PdfPoints) -> Self {
-        // Check all given points to ensure they are ordered in accordance with the PDF
-        // coordinate system, i.e. bottom should always be <= top and left should always
-        // be <= right. See: https://github.com/ajrcarey/pdfium-render/issues/223
-
         let (ordered_bottom, ordered_top) = if bottom.value > top.value {
             (top, bottom)
         } else {
@@ -196,8 +191,6 @@ impl PdfRect {
     /// the given rectangle.
     #[inline]
     pub fn does_overlap(&self, other: &PdfRect) -> bool {
-        // As per https://stackoverflow.com/questions/306316/determine-if-two-rectangles-overlap-each-other
-
         self.left() < other.right()
             && self.right() > other.left()
             && self.top() > other.bottom()
@@ -237,9 +230,6 @@ impl PdfRect {
     }
 }
 
-// We could derive PartialEq automatically, but it's good practice to implement PartialEq
-// by hand when implementing Hash.
-
 impl PartialEq for PdfRect {
     fn eq(&self, other: &Self) -> bool {
         self.bottom() == other.bottom()
@@ -248,9 +238,6 @@ impl PartialEq for PdfRect {
             && self.right() == other.right()
     }
 }
-
-// The f32 values inside PdfRect will never be NaN or Infinity, so these implementations
-// of Eq and Hash are safe.
 
 impl Eq for PdfRect {}
 
@@ -342,16 +329,7 @@ mod tests {
 
     #[test]
     fn test_coordinate_space_order_guard() {
-        // We create a rectangle with the horizontal and vertical coordinates
-        // around the wrong way...
-
-        let result = PdfRect::new_from_values(
-            149.0, 544.0, 73.0, // Note: top < bottom but should be bottom <= top
-            48.0, // Note: right < left but should be left <= right
-        );
-
-        // ... and confirm that the rectangle returns the coordinates in
-        // the correct order.
+        let result = PdfRect::new_from_values(149.0, 544.0, 73.0, 48.0);
 
         assert_eq!(result.bottom().value, 73.0);
         assert_eq!(result.top().value, 149.0);

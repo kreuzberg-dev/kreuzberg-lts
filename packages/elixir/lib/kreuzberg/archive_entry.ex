@@ -12,10 +12,10 @@ defmodule Kreuzberg.ArchiveEntry do
   """
 
   @type t :: %__MODULE__{
-          path: String.t(),
-          mime_type: String.t(),
-          result: map() | nil
-        }
+  path: String.t(),
+  mime_type: String.t(),
+  result: map() | nil
+  }
 
   defstruct path: "", mime_type: "", result: nil
 
@@ -38,9 +38,9 @@ defmodule Kreuzberg.ArchiveEntry do
   @spec from_map(map()) :: t()
   def from_map(data) when is_map(data) do
     %__MODULE__{
-      path: data["path"] || "",
-      mime_type: data["mime_type"] || "",
-      result: data["result"]
+    path: data["path"] || "",
+    mime_type: data["mime_type"] || "",
+    result: data["result"]
     }
   end
 
@@ -60,9 +60,9 @@ defmodule Kreuzberg.ArchiveEntry do
   @spec to_map(t()) :: map()
   def to_map(%__MODULE__{} = entry) do
     %{
-      "path" => entry.path,
-      "mime_type" => entry.mime_type,
-      "result" => entry.result
+    "path" => entry.path,
+    "mime_type" => entry.mime_type,
+    "result" => entry.result
     }
   end
 end

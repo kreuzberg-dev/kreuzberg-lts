@@ -103,12 +103,10 @@ pub fn merge_segments(
     for group in &groups {
         let group_segments = &segments[group.clone()];
 
-        // Groups are always non-empty: formed from `start..i` where start < i.
         let group_byte_start = group_segments.first().unwrap().byte_start;
         let last_seg = group_segments.last().unwrap();
         let group_byte_end = last_seg.byte_start + last_seg.text.len();
 
-        // Use the original text slice so byte offsets stay valid.
         let group_text = &source_text[group_byte_start..group_byte_end];
 
         if group_text.chars().count() <= max_characters {
@@ -167,22 +165,20 @@ mod tests {
 
     #[test]
     fn two_segments_same_topic_merged() {
-        // Source text with segments at known byte offsets.
         let source = "first     second";
         let segments = [
             Segment {
-                text: &source[0..5], // "first"
+                text: &source[0..5],
                 byte_start: 0,
             },
             Segment {
-                text: &source[10..16], // "second"
+                text: &source[10..16],
                 byte_start: 10,
             },
         ];
         let boundaries = [true, false];
         let chunks = merge_segments(source, &segments, &boundaries, 200, 0);
         assert_eq!(chunks.len(), 1);
-        // The merged text is the original slice source[0..16].
         assert_eq!(chunks[0].text, "first     second");
         assert_eq!(chunks[0].byte_start, 0);
         assert_eq!(chunks[0].byte_end, 16);
@@ -193,11 +189,11 @@ mod tests {
         let source = "topic one           topic two";
         let segments = [
             Segment {
-                text: &source[0..9], // "topic one"
+                text: &source[0..9],
                 byte_start: 0,
             },
             Segment {
-                text: &source[20..29], // "topic two"
+                text: &source[20..29],
                 byte_start: 20,
             },
         ];
@@ -210,7 +206,7 @@ mod tests {
 
     #[test]
     fn oversized_group_falls_back_to_splitter() {
-        let long_text = "word ".repeat(100); // ~500 chars
+        let long_text = "word ".repeat(100);
         let trimmed = long_text.trim_end();
         let segments = [Segment {
             text: trimmed,
@@ -235,20 +231,18 @@ mod tests {
         let source = "abcdefghij          klmnop";
         let segments = [
             Segment {
-                text: &source[0..10], // "abcdefghij"
+                text: &source[0..10],
                 byte_start: 0,
             },
             Segment {
-                text: &source[20..26], // "klmnop"
+                text: &source[20..26],
                 byte_start: 20,
             },
         ];
         let boundaries = [true, true];
         let chunks = merge_segments(source, &segments, &boundaries, 200, 5);
         assert_eq!(chunks.len(), 2);
-        // First chunk has no overlap (no predecessor).
         assert_eq!(chunks[0].text, "abcdefghij");
-        // Second chunk should start with tail of previous group's text.
         assert!(
             chunks[1].text.starts_with("fghij"),
             "expected overlap prefix, got: {:?}",
@@ -268,31 +262,29 @@ mod tests {
         let source = "a1   a2   b1   b2   c1";
         let segments = [
             Segment {
-                text: &source[0..2], // "a1"
+                text: &source[0..2],
                 byte_start: 0,
             },
             Segment {
-                text: &source[5..7], // "a2"
+                text: &source[5..7],
                 byte_start: 5,
             },
             Segment {
-                text: &source[10..12], // "b1"
+                text: &source[10..12],
                 byte_start: 10,
             },
             Segment {
-                text: &source[15..17], // "b2"
+                text: &source[15..17],
                 byte_start: 15,
             },
             Segment {
-                text: &source[20..22], // "c1"
+                text: &source[20..22],
                 byte_start: 20,
             },
         ];
-        // Group A: [a1, a2], Group B: [b1, b2], Group C: [c1]
         let boundaries = [true, false, true, false, true];
         let chunks = merge_segments(source, &segments, &boundaries, 200, 0);
         assert_eq!(chunks.len(), 3);
-        // Merged text is original slice source[0..7], source[10..17], source[20..22]
         assert_eq!(chunks[0].text, "a1   a2");
         assert_eq!(chunks[1].text, "b1   b2");
         assert_eq!(chunks[2].text, "c1");
@@ -307,7 +299,6 @@ mod tests {
 
     #[test]
     fn tail_chars_unicode() {
-        // Each emoji is one char but multiple bytes.
         let s = "abc🦀🐍";
         assert_eq!(tail_chars(s, 2), "🦀🐍");
         assert_eq!(tail_chars(s, 5), s);
@@ -315,7 +306,6 @@ mod tests {
 
     #[test]
     fn tail_chars_utf8_multibyte() {
-        // "café" — 'é' is a multi-byte char; must not split mid-char.
         assert_eq!(tail_chars("café", 2), "fé");
     }
 
@@ -333,8 +323,7 @@ mod tests {
 
     #[test]
     fn single_segment_exceeds_max_characters() {
-        // A single segment larger than max_characters should be split by TextSplitter.
-        let big = "word ".repeat(200); // ~1000 chars
+        let big = "word ".repeat(200);
         let trimmed = big.trim_end();
         let segments = [Segment {
             text: trimmed,
@@ -357,18 +346,17 @@ mod tests {
     #[test]
     fn three_groups_middle_oversized() {
         let small_a = "Alpha content";
-        let big_b = "word ".repeat(200); // ~1000 chars — oversized
+        let big_b = "word ".repeat(200);
         let big_b_trimmed = big_b.trim_end();
         let small_c = "Gamma content";
 
-        // Build a source text that contains all segments at their byte offsets.
         let mut source = String::new();
-        source.push_str(small_a); // 0..13
-        source.push_str(&" ".repeat(100 - small_a.len())); // pad to offset 100
-        source.push_str(big_b_trimmed); // 100..100+len
+        source.push_str(small_a);
+        source.push_str(&" ".repeat(100 - small_a.len()));
+        source.push_str(big_b_trimmed);
         let pad_to = 1200usize.saturating_sub(source.len());
-        source.push_str(&" ".repeat(pad_to)); // pad to offset 1200
-        source.push_str(small_c); // 1200..1213
+        source.push_str(&" ".repeat(pad_to));
+        source.push_str(small_c);
 
         let segments = [
             Segment {
@@ -384,15 +372,12 @@ mod tests {
                 byte_start: 1200,
             },
         ];
-        let boundaries = [true, true, true]; // each segment is its own group
+        let boundaries = [true, true, true];
         let max = 80;
         let chunks = merge_segments(&source, &segments, &boundaries, max, 0);
 
-        // First chunk fits as-is.
         assert_eq!(chunks[0].text, small_a);
-        // Last chunk fits as-is.
         assert_eq!(chunks.last().unwrap().text, small_c);
-        // Middle group must have been split into multiple chunks.
         let middle_chunks: Vec<_> = chunks[1..chunks.len() - 1].to_vec();
         assert!(
             middle_chunks.len() > 1,
@@ -405,21 +390,18 @@ mod tests {
 
     #[test]
     fn merge_with_overlap_and_oversized_group() {
-        // Group A: small, Group B: oversized, Group C: small.
-        // Overlap is enabled — verify overlap is applied correctly alongside splitting.
         let small_a = "alpha text here";
-        let big_b = "word ".repeat(100); // ~500 chars — oversized at max=60
+        let big_b = "word ".repeat(100);
         let big_b_trimmed = big_b.trim_end();
         let small_c = "gamma text";
 
-        // Build source text with segments at known offsets.
         let mut source = String::new();
-        source.push_str(small_a); // 0..15
-        source.push_str(&" ".repeat(50 - small_a.len())); // pad to offset 50
-        source.push_str(big_b_trimmed); // 50..50+len
+        source.push_str(small_a);
+        source.push_str(&" ".repeat(50 - small_a.len()));
+        source.push_str(big_b_trimmed);
         let pad_to = 600usize.saturating_sub(source.len());
-        source.push_str(&" ".repeat(pad_to)); // pad to offset 600
-        source.push_str(small_c); // 600..610
+        source.push_str(&" ".repeat(pad_to));
+        source.push_str(small_c);
 
         let segments = [
             Segment {
@@ -440,14 +422,11 @@ mod tests {
         let overlap = 5;
         let chunks = merge_segments(&source, &segments, &boundaries, max, overlap);
 
-        // First chunk: no overlap (no predecessor).
         assert_eq!(chunks[0].text, small_a);
 
-        // Last chunk should contain overlap from the previous group's last segment.
         let last = chunks.last().unwrap();
         assert!(last.text.contains(small_c), "last chunk should contain its own text");
 
-        // Middle chunks (oversized group) should all respect the budget.
         for chunk in &chunks[1..chunks.len() - 1] {
             assert!(
                 chunk.text.len() <= max,
@@ -460,18 +439,14 @@ mod tests {
 
     #[test]
     fn tail_chars_cjk_characters() {
-        // CJK characters are multi-byte (3 bytes each in UTF-8).
-        let s = "hello\u{4e16}\u{754c}"; // "hello世界"
+        let s = "hello\u{4e16}\u{754c}";
         assert_eq!(tail_chars(s, 2), "\u{4e16}\u{754c}");
         assert_eq!(tail_chars(s, 7), s);
     }
 
     #[test]
     fn tail_chars_cafe_accent() {
-        // "cafe\u{0301}" — 'e' + combining acute accent = 2 chars but visually one.
-        // tail_chars works on chars, not grapheme clusters.
         let s = "cafe\u{0301}";
-        // 5 chars: c, a, f, e, \u{0301}
         assert_eq!(tail_chars(s, 3), "fe\u{0301}");
     }
 }

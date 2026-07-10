@@ -31,7 +31,6 @@ mod interned;
 mod language_pool;
 mod mime_pool;
 
-// Re-export public types and functions
 pub use buffer_pool::{PoolConfig, PooledString, STRING_BUFFER_POOL, StringBufferPool, acquire_string_buffer};
 pub use interned::InternedString;
 pub use language_pool::intern_language_code;

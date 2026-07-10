@@ -19,8 +19,7 @@ readonly class FictionBookMetadata
         public array $genres = [],
         public array $sequences = [],
         public ?string $annotation = null,
-    ) {
-    }
+    ) {}
 
     /**
      * @param array<string, mixed> $data
@@ -42,11 +41,7 @@ readonly class FictionBookMetadata
         /** @var string|null $annotation */
         $annotation = $data['annotation'] ?? null;
 
-        return new self(
-            genres: $genres,
-            sequences: $sequences,
-            annotation: $annotation,
-        );
+        return new self(genres: $genres, sequences: $sequences, annotation: $annotation);
     }
 
     /**

@@ -1,5 +1,4 @@
 // Vendored from yake-rust 1.0.3 (MIT) — https://github.com/quesurifn/yake-rust
-// Inlined levenshtein distance to eliminate the levenshtein crate dependency.
 
 use super::Candidate;
 
@@ -66,7 +65,6 @@ fn levenshtein_distance(a: &str, b: &str) -> usize {
         return m;
     }
 
-    // Single-row DP
     let mut prev_row: Vec<usize> = (0..=n).collect();
     let mut curr_row = vec![0usize; n + 1];
 

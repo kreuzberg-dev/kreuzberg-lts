@@ -69,8 +69,7 @@ readonly class HierarchyConfig
          * @default null (disabled)
          */
         public ?float $ocrCoverageThreshold = null,
-    ) {
-    }
+    ) {}
 
     /**
      * Create configuration from array data.

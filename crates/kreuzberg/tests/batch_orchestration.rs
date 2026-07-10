@@ -300,8 +300,6 @@ fn test_ocr_multipage_efficiency() {
         first_duration.as_secs_f64() / second_duration.as_secs_f64().max(0.001)
     );
 
-    // Note: caching speedup is system-dependent and may not be 2x under load.
-    // Only assert the second run completes successfully; the speedup is informational.
     assert!(
         second_duration < first_duration * 2,
         "Second OCR run should not be significantly slower. First: {:?}, Second: {:?}",

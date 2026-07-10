@@ -300,7 +300,6 @@ mod tests {
 
     #[test]
     fn test_detect_mime_type_from_bytes_pdf() {
-        // PDF magic bytes: %PDF-
         let pdf_bytes = b"%PDF-1.4\n";
         let result = unsafe { kreuzberg_detect_mime_type_from_bytes(pdf_bytes.as_ptr(), pdf_bytes.len()) };
         assert!(!result.is_null());

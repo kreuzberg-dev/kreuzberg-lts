@@ -17,7 +17,7 @@ use crate::types::internal_builder::InternalDocumentBuilder;
 pub(crate) fn assemble_internal_document(
     pages: Vec<Vec<PdfParagraph>>,
     tables: &[crate::types::Table],
-    image_positions: &[(usize, usize)], // (page_idx, image_index) for image placeholders
+    image_positions: &[(usize, usize)],
 ) -> InternalDocument {
     tracing::debug!(
         page_count = pages.len(),
@@ -28,7 +28,6 @@ pub(crate) fn assemble_internal_document(
     );
     let mut builder = InternalDocumentBuilder::new("pdf");
 
-    // Group tables by page number (1-indexed → 0-indexed)
     let mut tables_by_page: std::collections::BTreeMap<usize, Vec<&crate::types::Table>> =
         std::collections::BTreeMap::new();
     for table in tables {
@@ -40,7 +39,6 @@ pub(crate) fn assemble_internal_document(
         tables_by_page.entry(page_idx).or_default().push(table);
     }
 
-    // Group image positions by page
     let mut images_by_page: std::collections::BTreeMap<usize, Vec<usize>> = std::collections::BTreeMap::new();
     for &(page_idx, image_index) in image_positions {
         images_by_page.entry(page_idx).or_default().push(image_index);
@@ -51,15 +49,12 @@ pub(crate) fn assemble_internal_document(
         let page_num = Some((page_idx + 1) as u32);
         let page_tables = tables_by_page.remove(&page_idx);
 
-        // Check whether this page has any content (paragraphs, tables, or images).
         let page_has_content = !paragraphs.is_empty()
             || page_tables
                 .as_ref()
                 .is_some_and(|t| t.iter().any(|tb| !tb.markdown.trim().is_empty()))
             || images_by_page.contains_key(&(page_idx + 1));
 
-        // Insert page break only between pages that both have content, so that
-        // blank leading/trailing pages do not produce spurious thematic breaks.
         if page_has_content && has_emitted_content {
             builder.push_page_break();
         }
@@ -83,7 +78,6 @@ pub(crate) fn assemble_internal_document(
             has_emitted_content = true;
         }
 
-        // Inject image placeholders for this page
         if let Some(image_indices) = images_by_page.get(&(page_idx + 1)) {
             for &image_index in image_indices {
                 let elem = crate::types::internal::InternalElement::text(
@@ -99,7 +93,6 @@ pub(crate) fn assemble_internal_document(
         }
     }
 
-    // Append tables for pages beyond what we have paragraphs for
     for (&page_idx, page_tables) in &tables_by_page {
         let page_num = Some((page_idx + 1) as u32);
         for &table in page_tables {
@@ -115,7 +108,6 @@ pub(crate) fn assemble_internal_document(
         }
     }
 
-    // Inject image placeholders for page 0 (unknown page)
     if let Some(image_indices) = images_by_page.get(&0) {
         for &image_index in image_indices {
             let elem = crate::types::internal::InternalElement::text(
@@ -142,12 +134,10 @@ fn assemble_page_elements(builder: &mut InternalDocumentBuilder, paragraphs: &[P
     let mut in_list = false;
 
     for (para_idx, para) in paragraphs.iter().enumerate() {
-        // Skip captions — they are emitted after their parent element
         if para.caption_for.is_some() {
             continue;
         }
 
-        // Manage list container markers
         if para.is_list_item && !in_list {
             builder.push_list(false);
             in_list = true;
@@ -158,7 +148,6 @@ fn assemble_page_elements(builder: &mut InternalDocumentBuilder, paragraphs: &[P
 
         let elem_idx = push_paragraph_element(builder, para, page);
 
-        // Emit captions as relationships
         emit_caption_elements(builder, paragraphs, para_idx, page, elem_idx);
     }
 
@@ -174,7 +163,6 @@ fn assemble_page_elements_with_tables(
     tables: &[&crate::types::Table],
     page: Option<u32>,
 ) {
-    // Split tables into positioned (have bounding box) and unpositioned
     let mut positioned: Vec<(f32, &crate::types::Table)> = Vec::new();
     let mut unpositioned: Vec<&crate::types::Table> = Vec::new();
 
@@ -190,10 +178,8 @@ fn assemble_page_elements_with_tables(
         }
     }
 
-    // Sort positioned tables by y-position descending (top of page first in PDF coords)
     positioned.sort_by(|a, b| b.0.total_cmp(&a.0));
 
-    // Build interleaved elements list
     enum PageElement<'a> {
         Paragraph(usize, &'a PdfParagraph),
         Table(&'a crate::types::Table),
@@ -213,7 +199,6 @@ fn assemble_page_elements_with_tables(
         elements.push((*y_pos, PageElement::Table(table)));
     }
 
-    // Sort by y descending (top of page first in PDF coordinates)
     elements.sort_by(|a, b| b.0.total_cmp(&a.0));
 
     let mut in_list = false;
@@ -221,7 +206,6 @@ fn assemble_page_elements_with_tables(
     for (_, elem) in &elements {
         match elem {
             PageElement::Paragraph(para_idx, para) => {
-                // Manage list container markers
                 if para.is_list_item && !in_list {
                     builder.push_list(false);
                     in_list = true;
@@ -253,7 +237,6 @@ fn assemble_page_elements_with_tables(
         builder.end_list();
     }
 
-    // Append unpositioned tables at end of page
     for table in &unpositioned {
         let bbox = table.bounding_box.map(|bb| BoundingBox {
             x0: bb.x0,
@@ -275,7 +258,6 @@ fn push_paragraph_element(builder: &mut InternalDocumentBuilder, para: &PdfParag
         y1: bb.3 as f64,
     });
 
-    // Log element classification for debugging.
     tracing::debug!(
         heading = ?para.heading_level,
         list = para.is_list_item,
@@ -289,7 +271,6 @@ fn push_paragraph_element(builder: &mut InternalDocumentBuilder, para: &PdfParag
         "emitting element"
     );
 
-    // Get text: prefer para.text (full-text path) over segment joining.
     let get_text = |para: &PdfParagraph| -> String {
         if !para.text.is_empty() {
             para.text.clone()
@@ -327,7 +308,6 @@ fn push_paragraph_element(builder: &mut InternalDocumentBuilder, para: &PdfParag
     if para.is_list_item {
         let text = get_text(para);
         let normalized = normalize_list_text(&text);
-        // For full-text path, block-level bold annotation; for structure tree, extract inline annotations
         let annotations = if !para.text.is_empty() && para.is_bold {
             vec![TextAnnotation {
                 start: 0,
@@ -361,9 +341,7 @@ fn push_paragraph_element(builder: &mut InternalDocumentBuilder, para: &PdfParag
         return builder.push_paragraph(&text, annotations, page, bbox);
     }
 
-    // Default: body paragraph
     if !para.text.is_empty() {
-        // Full-text path: text is already correct, add block-level bold if applicable
         let annotations = if para.is_bold {
             vec![TextAnnotation {
                 start: 0,
@@ -375,7 +353,6 @@ fn push_paragraph_element(builder: &mut InternalDocumentBuilder, para: &PdfParag
         };
         builder.push_paragraph(&para.text, annotations, page, bbox)
     } else {
-        // Structure tree path: extract inline annotations from segments
         let (text, annotations) = extract_text_and_annotations(para);
         builder.push_paragraph(&text, annotations, page, bbox)
     }
@@ -441,13 +418,11 @@ fn extract_text_and_annotations(para: &PdfParagraph) -> (String, Vec<TextAnnotat
         let bold = all_segments[i].is_bold;
         let italic = all_segments[i].is_italic;
 
-        // Find run of segments with the same formatting
         let run_start = i;
         while i < all_segments.len() && all_segments[i].is_bold == bold && all_segments[i].is_italic == italic {
             i += 1;
         }
 
-        // Collect words for this run
         let mut run_words: Vec<&str> = Vec::new();
         for seg in &all_segments[run_start..i] {
             for word in seg.text.split_whitespace() {
@@ -455,7 +430,6 @@ fn extract_text_and_annotations(para: &PdfParagraph) -> (String, Vec<TextAnnotat
             }
         }
 
-        // Add space between previous text and this run
         if !text.is_empty() && !run_words.is_empty() {
             let prev_last = all_segments[run_start - 1]
                 .text
@@ -465,7 +439,6 @@ fn extract_text_and_annotations(para: &PdfParagraph) -> (String, Vec<TextAnnotat
             let next_first = all_segments[run_start].text.split_whitespace().next().unwrap_or("");
 
             if should_dehyphenate(prev_last, next_first) {
-                // Remove trailing hyphen
                 text.pop();
             } else if needs_space_between(prev_last, next_first) {
                 text.push(' ');
@@ -474,12 +447,11 @@ fn extract_text_and_annotations(para: &PdfParagraph) -> (String, Vec<TextAnnotat
 
         let span_start = text.len();
 
-        // Build run text with CJK-aware joining
         for (wi, &word) in run_words.iter().enumerate() {
             if wi > 0 {
                 let prev = run_words[wi - 1];
                 if should_dehyphenate(prev, word) {
-                    text.pop(); // remove '-'
+                    text.pop();
                 } else if needs_space_between(prev, word) {
                     text.push(' ');
                 }
@@ -489,7 +461,6 @@ fn extract_text_and_annotations(para: &PdfParagraph) -> (String, Vec<TextAnnotat
 
         let span_end = text.len();
 
-        // Add annotations for this run
         if span_start < span_end {
             if bold {
                 annotations.push(TextAnnotation {
@@ -594,10 +565,7 @@ fn collapse_inner_spaces(line: &str) -> String {
 /// Normalize list item text: strip bullet/number prefixes and return clean text.
 fn normalize_list_text(text: &str) -> String {
     let trimmed = text.trim_start();
-    const BULLET_CHARS: &[char] = &[
-        '\u{2022}', // • BULLET
-        '\u{00B7}', // · MIDDLE DOT
-    ];
+    const BULLET_CHARS: &[char] = &['\u{2022}', '\u{00B7}'];
     for &ch in BULLET_CHARS {
         if trimmed.starts_with(ch) {
             return trimmed[ch.len_utf8()..].trim_start().to_string();
@@ -615,7 +583,6 @@ fn normalize_list_text(text: &str) -> String {
             return trimmed[ch.len_utf8()..].trim_start().to_string();
         }
     }
-    // Numbered prefix: strip "1. " or "1) "
     let bytes = trimmed.as_bytes();
     let digit_end = bytes.iter().position(|&b| !b.is_ascii_digit()).unwrap_or(0);
     if digit_end > 0 && digit_end < bytes.len() {
@@ -630,21 +597,18 @@ fn normalize_list_text(text: &str) -> String {
 
 /// Guess whether page furniture is a header or footer based on vertical position.
 fn guess_furniture_layer(para: &PdfParagraph) -> ContentLayer {
-    // Use the layout class hint if available
     match para.layout_class {
         Some(LayoutHintClass::PageHeader) => ContentLayer::Header,
         Some(LayoutHintClass::PageFooter) => ContentLayer::Footer,
         Some(LayoutHintClass::Footnote) => ContentLayer::Footnote,
         _ => {
-            // Heuristic: if baseline_y is high on the page (>700 in PDF coords),
-            // it's likely a header. If low (<100), it's a footer.
             if let Some(first_line) = para.lines.first() {
                 if first_line.baseline_y > 700.0 {
                     ContentLayer::Header
                 } else if first_line.baseline_y < 100.0 {
                     ContentLayer::Footer
                 } else {
-                    ContentLayer::Header // default for furniture
+                    ContentLayer::Header
                 }
             } else {
                 ContentLayer::Header
@@ -733,7 +697,6 @@ mod tests {
             vec![make_paragraph("Page 2", None)],
         ];
         let doc = assemble_internal_document(pages, &[], &[]);
-        // Should have page break between pages + 2 paragraphs
         let paragraphs: Vec<_> = doc
             .elements
             .iter()
@@ -795,22 +758,17 @@ mod tests {
         let pages = vec![vec![make_paragraph("Text", None)]];
         let tables = vec![crate::types::Table {
             cells: vec![],
-            markdown: "   ".to_string(), // Whitespace-only markdown
+            markdown: "   ".to_string(),
             page_number: 1,
             bounding_box: None,
         }];
         let doc = assemble_internal_document(pages, &tables, &[]);
-        // Table with whitespace-only markdown should be skipped
         assert!(doc.tables.is_empty() || doc.tables.iter().all(|t| t.markdown.trim().is_empty()));
     }
 
     #[test]
     fn test_no_page_break_when_leading_page_empty() {
-        // Blank first page, content on second page — no PageBreak should be emitted.
-        let pages = vec![
-            vec![], // empty page 1
-            vec![make_paragraph("Content on page 2", None)],
-        ];
+        let pages = vec![vec![], vec![make_paragraph("Content on page 2", None)]];
         let doc = assemble_internal_document(pages, &[], &[]);
         assert!(
             !doc.elements.iter().any(|e| matches!(e.kind, ElementKind::PageBreak)),
@@ -827,11 +785,7 @@ mod tests {
 
     #[test]
     fn test_no_page_break_when_trailing_page_empty() {
-        // Content on first page, blank second page — no PageBreak should be emitted.
-        let pages = vec![
-            vec![make_paragraph("Content on page 1", None)],
-            vec![], // empty page 2
-        ];
+        let pages = vec![vec![make_paragraph("Content on page 1", None)], vec![]];
         let doc = assemble_internal_document(pages, &[], &[]);
         assert!(
             !doc.elements.iter().any(|e| matches!(e.kind, ElementKind::PageBreak)),
@@ -841,7 +795,6 @@ mod tests {
 
     #[test]
     fn test_page_break_between_content_pages() {
-        // Both pages have content — PageBreak should be inserted between them.
         let pages = vec![
             vec![make_paragraph("Page 1", None)],
             vec![make_paragraph("Page 2", None)],
@@ -855,7 +808,6 @@ mod tests {
 
     #[test]
     fn test_no_page_break_single_page() {
-        // Single page with content — no PageBreak.
         let pages = vec![vec![make_paragraph("Only page", None)]];
         let doc = assemble_internal_document(pages, &[], &[]);
         assert!(
@@ -867,7 +819,6 @@ mod tests {
     #[test]
     fn test_image_elements_injected_with_positions() {
         let pages = vec![vec![make_paragraph("Page with image", None)]];
-        // Image at page 1 (1-indexed), image_index = 0
         let image_positions = vec![(1usize, 0usize)];
         let doc = assemble_internal_document(pages, &[], &image_positions);
 
@@ -900,12 +851,10 @@ mod tests {
     fn test_caption_skipped_in_main_flow() {
         let para1 = make_paragraph("Main text", None);
         let mut caption = make_paragraph("Caption text", None);
-        caption.caption_for = Some(0); // Caption for para at index 0
+        caption.caption_for = Some(0);
         let pages = vec![vec![para1, caption]];
         let doc = assemble_internal_document(pages, &[], &[]);
-        // Main text paragraph should be present
         assert!(doc.elements.iter().any(|e| e.text == "Main text"));
-        // Caption should be present as a separate element with italic annotation
         assert!(doc.elements.iter().any(|e| e.text == "Caption text"));
     }
 }

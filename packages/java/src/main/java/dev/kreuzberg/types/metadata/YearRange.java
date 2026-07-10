@@ -6,5 +6,5 @@ import org.jspecify.annotations.Nullable;
 
 /** Year range for bibliographic metadata. */
 public record YearRange(@JsonProperty("min") @Nullable Integer min, @JsonProperty("max") @Nullable Integer max,
-		@JsonProperty("years") List<Integer> years) {
+    @JsonProperty("years") List<Integer> years) {
 }

@@ -276,7 +276,6 @@ impl TryFrom<RustExtractionResult> for JsExtractionResult {
         let metadata = serde_json::to_value(&val.metadata)
             .map_err(|e| Error::new(Status::GenericFailure, format!("Failed to serialize metadata: {}", e)))?;
 
-        // Transform snake_case keys from Rust core to camelCase for TypeScript/Node.js
         let metadata = snake_to_camel(metadata);
 
         let images = if let Some(imgs) = val.images {
@@ -685,8 +684,6 @@ impl TryFrom<RustExtractionResult> for JsExtractionResult {
             annotations,
             children,
             uris,
-            // code_intelligence will be populated once the core ExtractionResult
-            // adds the field; for now, always null.
             code_intelligence: serde_json::Value::Null,
             structured_output: val.structured_output.unwrap_or(serde_json::Value::Null),
         })

@@ -13,9 +13,9 @@ pub fn render_html(doc: &InternalDocument) -> String {
     let root = build_comrak_ast(doc, &arena);
 
     let mut options = comrak_options();
-    options.render.r#unsafe = true; // allow raw HTML passthrough
-    options.render.github_pre_lang = true; // <pre lang="X"><code> instead of <code class="language-X">
-    options.render.full_info_string = true; // preserve full info string in data-meta attribute
+    options.render.r#unsafe = true;
+    options.render.github_pre_lang = true;
+    options.render.full_info_string = true;
 
     let mut output = String::new();
     format_html(root, &options, &mut output).expect("comrak HTML formatting should not fail");

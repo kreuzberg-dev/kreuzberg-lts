@@ -22,8 +22,7 @@ readonly class DjotImage
         public ?string $alt = null,
         public ?string $title = null,
         public ?array $attributes = null,
-    ) {
-    }
+    ) {}
 
     /**
      * Create DjotImage from array.
@@ -44,11 +43,6 @@ readonly class DjotImage
         /** @var array<string, mixed>|null $attributes */
         $attributes = $data['attributes'] ?? null;
 
-        return new self(
-            url: $url,
-            alt: $alt,
-            title: $title,
-            attributes: $attributes,
-        );
+        return new self(url: $url, alt: $alt, title: $title, attributes: $attributes);
     }
 }

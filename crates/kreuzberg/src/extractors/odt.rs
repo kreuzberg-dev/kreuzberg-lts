@@ -95,7 +95,6 @@ fn build_style_map(root: roxmltree::Node) -> AHashMap<String, OdtStyleProps> {
                     let mut props = OdtStyleProps::default();
                     for prop_child in style_node.children() {
                         if prop_child.tag_name().name() == "text-properties" {
-                            // Bold: fo:font-weight="bold"
                             if let Some(fw) = prop_child
                                 .attribute((
                                     "urn:oasis:names:tc:opendocument:xmlns:xsl-fo-compatible:1.0",
@@ -105,7 +104,6 @@ fn build_style_map(root: roxmltree::Node) -> AHashMap<String, OdtStyleProps> {
                             {
                                 props.bold = fw == "bold";
                             }
-                            // Italic: fo:font-style="italic"
                             if let Some(fs) = prop_child
                                 .attribute((
                                     "urn:oasis:names:tc:opendocument:xmlns:xsl-fo-compatible:1.0",
@@ -115,7 +113,6 @@ fn build_style_map(root: roxmltree::Node) -> AHashMap<String, OdtStyleProps> {
                             {
                                 props.italic = fs == "italic";
                             }
-                            // Underline: style:text-underline-style != "none"
                             if let Some(ul) = prop_child
                                 .attribute((
                                     "urn:oasis:names:tc:opendocument:xmlns:style:1.0",
@@ -125,7 +122,6 @@ fn build_style_map(root: roxmltree::Node) -> AHashMap<String, OdtStyleProps> {
                             {
                                 props.underline = ul != "none";
                             }
-                            // Strikethrough: style:text-line-through-style != "none"
                             if let Some(st) = prop_child
                                 .attribute((
                                     "urn:oasis:names:tc:opendocument:xmlns:style:1.0",
@@ -135,7 +131,6 @@ fn build_style_map(root: roxmltree::Node) -> AHashMap<String, OdtStyleProps> {
                             {
                                 props.strikethrough = st != "none";
                             }
-                            // Color: fo:color="#rrggbb"
                             if let Some(color) = prop_child
                                 .attribute(("urn:oasis:names:tc:opendocument:xmlns:xsl-fo-compatible:1.0", "color"))
                                 .or_else(|| prop_child.attribute("fo:color"))
@@ -143,7 +138,6 @@ fn build_style_map(root: roxmltree::Node) -> AHashMap<String, OdtStyleProps> {
                             {
                                 props.color = Some(color.to_string());
                             }
-                            // Font size: fo:font-size="12pt"
                             if let Some(size) = prop_child
                                 .attribute((
                                     "urn:oasis:names:tc:opendocument:xmlns:xsl-fo-compatible:1.0",
@@ -214,7 +208,6 @@ fn pre_extract_formulas(archive: &mut zip::ZipArchive<Cursor<Vec<u8>>>) -> AHash
         .collect();
 
     for name in &names {
-        // Formula objects live in e.g. "Object 1/content.xml"
         if !name.ends_with("/content.xml") || name == "content.xml" {
             continue;
         }
@@ -223,9 +216,7 @@ fn pre_extract_formulas(archive: &mut zip::ZipArchive<Cursor<Vec<u8>>>) -> AHash
             if file.read_to_string(&mut xml).is_ok() && xml.contains("math") {
                 let text = extract_mathml_text(&xml);
                 if !text.is_empty() {
-                    // Key is the object directory path without trailing /content.xml
                     let dir = name.trim_end_matches("/content.xml");
-                    // Also store with trailing slash variant for flexible lookup
                     formulas.insert(dir.to_string(), text.clone());
                     formulas.insert(format!("{}/", dir), text);
                 }
@@ -252,7 +243,6 @@ fn extract_mathml_text(xml: &str) -> String {
 fn collect_mathml_tokens(node: roxmltree::Node, tokens: &mut Vec<String>) {
     let tag = node.tag_name().name();
     match tag {
-        // Token elements that contain displayable text
         "mi" | "mn" | "mo" | "ms" | "mtext" => {
             if let Some(t) = node.text() {
                 let trimmed = t.trim();
@@ -261,7 +251,6 @@ fn collect_mathml_tokens(node: roxmltree::Node, tokens: &mut Vec<String>) {
                 }
             }
         }
-        // Fraction: a/b
         "mfrac" => {
             let children: Vec<_> = node.children().filter(|c| c.is_element()).collect();
             if children.len() == 2 {
@@ -278,7 +267,6 @@ fn collect_mathml_tokens(node: roxmltree::Node, tokens: &mut Vec<String>) {
                 collect_mathml_tokens(child, tokens);
             }
         }
-        // Superscript: base^exp
         "msup" => {
             let children: Vec<_> = node.children().filter(|c| c.is_element()).collect();
             if children.len() == 2 {
@@ -293,7 +281,6 @@ fn collect_mathml_tokens(node: roxmltree::Node, tokens: &mut Vec<String>) {
                 collect_mathml_tokens(child, tokens);
             }
         }
-        // Subscript: base_sub
         "msub" => {
             let children: Vec<_> = node.children().filter(|c| c.is_element()).collect();
             if children.len() == 2 {
@@ -308,7 +295,6 @@ fn collect_mathml_tokens(node: roxmltree::Node, tokens: &mut Vec<String>) {
                 collect_mathml_tokens(child, tokens);
             }
         }
-        // Square root
         "msqrt" => {
             let mut inner = Vec::new();
             for child in node.children() {
@@ -316,7 +302,6 @@ fn collect_mathml_tokens(node: roxmltree::Node, tokens: &mut Vec<String>) {
             }
             tokens.push(format!("sqrt({})", inner.join(" ")));
         }
-        // All other elements: recurse
         _ => {
             for child in node.children() {
                 collect_mathml_tokens(child, tokens);
@@ -328,7 +313,6 @@ fn collect_mathml_tokens(node: roxmltree::Node, tokens: &mut Vec<String>) {
 /// Extract description text from a `draw:frame` element by looking at
 /// `svg:title`, `svg:desc`, and `text:p` children of the frame.
 fn extract_frame_description(frame: roxmltree::Node) -> Option<String> {
-    // Try svg:title first
     for child in frame.children() {
         let name = child.tag_name().name();
         if name == "title"
@@ -340,7 +324,6 @@ fn extract_frame_description(frame: roxmltree::Node) -> Option<String> {
             }
         }
     }
-    // Try svg:desc
     for child in frame.children() {
         let name = child.tag_name().name();
         if name == "desc"
@@ -352,7 +335,6 @@ fn extract_frame_description(frame: roxmltree::Node) -> Option<String> {
             }
         }
     }
-    // Try text:p children (used for captions inside the frame)
     for child in frame.children() {
         if child.tag_name().name() == "p"
             && let Some(text) = extract_node_text(child)
@@ -372,7 +354,6 @@ fn extract_frame_description(frame: roxmltree::Node) -> Option<String> {
 /// Captures headings, paragraphs, lists, tables, images, formulas, footnotes
 /// (with inline markers), and headers/footers with appropriate content layers.
 fn build_internal_document(archive: &mut zip::ZipArchive<Cursor<Vec<u8>>>) -> crate::error::Result<InternalDocument> {
-    // Pre-extract images so we don't need the archive borrow during XML walking
     let image_data = pre_extract_images(archive);
     let formula_data = pre_extract_formulas(archive);
 
@@ -406,7 +387,6 @@ fn build_internal_document(archive: &mut zip::ZipArchive<Cursor<Vec<u8>>>) -> cr
         }
     }
 
-    // Extract headers/footers from styles.xml
     extract_odt_internal_headers_footers(archive, &mut builder);
 
     Ok(builder.build())
@@ -442,13 +422,10 @@ fn build_internal_elements(
                 }
             }
             "p" => {
-                // Collect footnote markers for inline injection
                 let mut footnote_markers: Vec<(String, String)> = Vec::new();
 
-                // Check for draw:frame children — may contain images or embedded formulas
                 for desc in node.descendants() {
                     if desc.tag_name().name() == "frame" {
-                        // Check if this frame contains a draw:object referencing a formula
                         let mut is_formula = false;
                         for frame_child in desc.children() {
                             if frame_child.tag_name().name() == "object" {
@@ -456,7 +433,6 @@ fn build_internal_elements(
                                     .attribute(("http://www.w3.org/1999/xlink", "href"))
                                     .or_else(|| frame_child.attribute("xlink:href"));
                                 if let Some(href) = obj_href {
-                                    // Normalize: remove leading "./" if present
                                     let normalized = href.trim_start_matches("./");
                                     if let Some(formula_text) = formula_data.get(normalized) {
                                         builder.push_formula(formula_text, None, None);
@@ -468,14 +444,12 @@ fn build_internal_elements(
                         }
 
                         if !is_formula {
-                            // Look for image inside this frame
                             for frame_child in desc.descendants() {
                                 if frame_child.tag_name().name() == "image" {
                                     let href = frame_child
                                         .attribute(("http://www.w3.org/1999/xlink", "href"))
                                         .or_else(|| frame_child.attribute("xlink:href"));
 
-                                    // Use extract_frame_description for richer alt text
                                     let description = extract_frame_description(desc).or_else(|| {
                                         desc.attribute((
                                             "urn:oasis:names:tc:opendocument:xmlns:svg-compatible:1.0",
@@ -528,7 +502,6 @@ fn build_internal_elements(
                     }
                 }
 
-                // Extract footnotes from this paragraph and collect markers for inline injection
                 for child in node.descendants() {
                     if child.tag_name().name() == "note" {
                         let _ = child
@@ -576,9 +549,6 @@ fn build_internal_elements(
                     builder.push_uri(uri);
                 }
 
-                // Also extract text from caption paragraphs nested inside
-                // draw:frame > draw:text-box, which collect_odt_annotations misses
-                // because it only walks direct children.
                 for frame in node.children().filter(|n| n.tag_name().name() == "frame") {
                     for text_box in frame.children().filter(|n| n.tag_name().name() == "text-box") {
                         for nested_p in text_box.children().filter(|n| n.tag_name().name() == "p") {
@@ -597,10 +567,8 @@ fn build_internal_elements(
                     }
                 }
 
-                // Inject inline footnote markers [^N] into the paragraph text
                 for (citation, _key) in &footnote_markers {
                     let marker = format!("[^{}]", citation);
-                    // Append marker if not already present in text
                     if !text.contains(&marker) {
                         text.push_str(&marker);
                     }
@@ -726,7 +694,6 @@ fn collect_odt_annotations(
                 text.push_str(span_text);
                 let end = text.len() as u32;
 
-                // Resolve style
                 let style_name = child
                     .attribute(("urn:oasis:names:tc:opendocument:xmlns:text:1.0", "style-name"))
                     .or_else(|| child.attribute("text:style-name"));
@@ -767,11 +734,8 @@ fn collect_odt_annotations(
             "line-break" => {
                 text.push('\n');
             }
-            "note" => {
-                // Footnotes/endnotes: skip inline (handled separately)
-            }
+            "note" => {}
             "a" => {
-                // Hyperlinks inside paragraphs
                 let link_text = child.text().unwrap_or("");
                 if !link_text.is_empty() {
                     let start = text.len() as u32;
@@ -807,7 +771,6 @@ fn collect_odt_annotations(
         }
     }
 
-    // Fallback: if no children produced text, try the node's own text
     if text.is_empty()
         && let Some(t) = node.text()
     {
@@ -831,7 +794,6 @@ fn extract_table_cells(table_node: roxmltree::Node) -> Vec<Vec<String>> {
                 }
             }
             "table-header-rows" => {
-                // Header rows are wrapped in a container element
                 for row_node in child.children() {
                     if row_node.tag_name().name() == "table-row"
                         && let Some(row) = extract_row_cells(row_node)
@@ -925,7 +887,6 @@ impl DocumentExtractor for OdtExtractor {
         let mut doc = build_internal_document(&mut archive)?;
         doc.mime_type = Cow::Owned(mime_type.to_string());
 
-        // Extract metadata from meta.xml
         let mut metadata_map = AHashMap::new();
 
         let meta_cursor = Cursor::new(content_owned);
@@ -1021,7 +982,6 @@ impl DocumentExtractor for OdtExtractor {
             }
         }
 
-        // Map standard fields from metadata_map to typed Metadata fields
         let title = metadata_map
             .remove(&Cow::Borrowed("title"))
             .and_then(|v| v.as_str().map(|s| s.to_string()));
@@ -1066,9 +1026,6 @@ impl DocumentExtractor for OdtExtractor {
             ..Default::default()
         };
 
-        // Filter headers/footers based on content_filter config.
-        // When content_filter is None, keep current behavior (headers/footers included).
-        // When content_filter is Some(...), respect include_headers/include_footers flags.
         if let Some(ref filter) = config.content_filter {
             use crate::types::document_structure::ContentLayer;
             doc.elements.retain(|elem| match elem.layer {
@@ -1169,7 +1126,6 @@ mod tests {
     async fn test_odt_footnote_extraction() {
         let doc = extract_odt_with_structure("footnote.odt").await;
         let Some(doc) = doc else { return };
-        // Should contain at least one Footnote node
         let has_footnote = doc.nodes.iter().any(|n| {
             matches!(
                 n.content,
@@ -1186,8 +1142,6 @@ mod tests {
     async fn test_odt_header_extraction() {
         let doc = extract_odt_with_structure("headers.odt").await;
         let Some(doc) = doc else { return };
-        // headers.odt contains document headings (text:h elements), which are stored as
-        // NodeContent::Group nodes with heading_level set.
         let has_heading = doc.nodes.iter().any(|n| {
             matches!(
                 n.content,
@@ -1248,7 +1202,6 @@ mod tests {
     async fn test_odt_underline_annotations() {
         let doc = extract_odt_with_structure("strikeout.odt").await;
         let Some(doc) = doc else { return };
-        // strikeout.odt should have strikethrough annotations
         let has_strikethrough = doc.nodes.iter().any(|n| {
             n.annotations
                 .iter()

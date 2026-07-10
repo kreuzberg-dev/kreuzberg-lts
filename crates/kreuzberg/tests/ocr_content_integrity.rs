@@ -53,12 +53,10 @@ fn test_ocr_content_not_doubled() {
 
     let content_words: Vec<&str> = result.content.split_whitespace().collect();
 
-    // If content is empty there is no text to double — skip the assertion.
     if content_words.is_empty() {
         return;
     }
 
-    // The pages array must be populated.
     let pages = result
         .pages
         .as_ref()
@@ -68,11 +66,6 @@ fn test_ocr_content_not_doubled() {
     let page_content = &pages[0].content;
     let page_words: Vec<&str> = page_content.split_whitespace().collect();
 
-    // Core invariant: top-level content word count must be close to page content
-    // word count.  Before the fix, content was roughly 2× the page content because
-    // the word-element dump was appended after the HOCR text.
-    //
-    // Allow a 30 % margin to absorb minor whitespace / formatting differences.
     if !page_words.is_empty() {
         let ratio = content_words.len() as f64 / page_words.len() as f64;
         assert!(
@@ -86,9 +79,6 @@ fn test_ocr_content_not_doubled() {
         );
     }
 
-    // Secondary invariant: the content string must NOT contain the page content
-    // verbatim twice in a row (i.e. the string is not literally concatenated with
-    // itself).
     if page_content.trim().len() > 4 {
         let trimmed = page_content.trim();
         let doubled = format!("{trimmed}{trimmed}");
@@ -125,7 +115,6 @@ fn test_ocr_page_content_matches_top_level_content() {
     let result = extract_file_sync(&file_path, None, &config).expect("OCR extraction must succeed");
 
     if result.content.trim().is_empty() {
-        // No text detected — nothing to assert.
         return;
     }
 
@@ -135,9 +124,6 @@ fn test_ocr_page_content_matches_top_level_content() {
         .expect("pages must be populated when extract_pages=true");
     assert!(!pages.is_empty(), "at least one page must be present");
 
-    // For a single-page image the page content must not be dramatically shorter
-    // than the top-level content. Before the fix, top-level content was bloated
-    // with the word dump while page content was absent or minimal.
     let top_words = result.content.split_whitespace().count();
     let page_words = pages[0].content.split_whitespace().count();
 

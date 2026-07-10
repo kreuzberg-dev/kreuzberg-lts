@@ -21,17 +21,17 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  * @since 4.0.0
  */
 public record PageBoundary(@JsonProperty("byte_start") long byteStart, @JsonProperty("byte_end") long byteEnd,
-		@JsonProperty("page_number") long pageNumber) {
-	@JsonCreator
-	public PageBoundary {
-		if (byteStart < 0) {
-			throw new IllegalArgumentException("byteStart must be non-negative");
-		}
-		if (byteEnd < byteStart) {
-			throw new IllegalArgumentException("byteEnd must be >= byteStart");
-		}
-		if (pageNumber < 1) {
-			throw new IllegalArgumentException("pageNumber must be positive");
-		}
-	}
+    @JsonProperty("page_number") long pageNumber) {
+    @JsonCreator
+    public PageBoundary {
+        if (byteStart < 0) {
+            throw new IllegalArgumentException("byteStart must be non-negative");
+        }
+        if (byteEnd < byteStart) {
+            throw new IllegalArgumentException("byteEnd must be >= byteStart");
+        }
+        if (pageNumber < 1) {
+            throw new IllegalArgumentException("pageNumber must be positive");
+        }
+    }
 }

@@ -12,36 +12,36 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
  * Looks for test_documents directory as the main indicator of workspace root.
  */
 function resolveWorkspaceRoot(): string {
-	const envRoot = process.env.KREUZBERG_WORKSPACE_ROOT ?? process.env.GITHUB_WORKSPACE;
-	if (envRoot && existsSync(envRoot)) {
-		return envRoot;
-	}
+  const envRoot = process.env.KREUZBERG_WORKSPACE_ROOT ?? process.env.GITHUB_WORKSPACE;
+  if (envRoot && existsSync(envRoot)) {
+    return envRoot;
+  }
 
-	let current = __dirname;
-	while (true) {
-		if (existsSync(join(current, "test_documents"))) {
-			return current;
-		}
-		const parent = dirname(current);
-		if (parent === current) {
-			break;
-		}
-		current = parent;
-	}
+  let current = __dirname;
+  while (true) {
+    if (existsSync(join(current, "test_documents"))) {
+      return current;
+    }
+    const parent = dirname(current);
+    if (parent === current) {
+      break;
+    }
+    current = parent;
+  }
 
-	current = process.cwd();
-	while (true) {
-		if (existsSync(join(current, "test_documents"))) {
-			return current;
-		}
-		const parent = dirname(current);
-		if (parent === current) {
-			break;
-		}
-		current = parent;
-	}
+  current = process.cwd();
+  while (true) {
+    if (existsSync(join(current, "test_documents"))) {
+      return current;
+    }
+    const parent = dirname(current);
+    if (parent === current) {
+      break;
+    }
+    current = parent;
+  }
 
-	return join(__dirname, "../../../../");
+  return join(__dirname, "../../../../");
 }
 
 /**
@@ -51,8 +51,8 @@ function resolveWorkspaceRoot(): string {
  * @returns Absolute path to the test document
  */
 export function getTestDocumentPath(relativePath: string): string {
-	const workspaceRoot = resolveWorkspaceRoot();
-	return join(workspaceRoot, "test_documents", relativePath);
+  const workspaceRoot = resolveWorkspaceRoot();
+  return join(workspaceRoot, "test_documents", relativePath);
 }
 
 /**
@@ -61,8 +61,8 @@ export function getTestDocumentPath(relativePath: string): string {
  * @returns true if test_documents exists
  */
 export function testDocumentsAvailable(): boolean {
-	const workspaceRoot = resolveWorkspaceRoot();
-	return existsSync(join(workspaceRoot, "test_documents"));
+  const workspaceRoot = resolveWorkspaceRoot();
+  return existsSync(join(workspaceRoot, "test_documents"));
 }
 
 /**
@@ -72,7 +72,7 @@ export function testDocumentsAvailable(): boolean {
  * @param expectedMimeType - Expected MIME type (can be partial match)
  */
 export function assertMimeType(result: ExtractionResult, expectedMimeType: string): void {
-	expect(result.mimeType).toContain(expectedMimeType);
+  expect(result.mimeType).toContain(expectedMimeType);
 }
 
 /**
@@ -82,8 +82,8 @@ export function assertMimeType(result: ExtractionResult, expectedMimeType: strin
  * @param minLength - Minimum content length (default: 1)
  */
 export function assertNonEmptyContent(result: ExtractionResult, minLength = 1): void {
-	expect(result.content).toBeTruthy();
-	expect(result.content.length).toBeGreaterThanOrEqual(minLength);
+  expect(result.content).toBeTruthy();
+  expect(result.content.length).toBeGreaterThanOrEqual(minLength);
 }
 
 /**
@@ -93,31 +93,31 @@ export function assertNonEmptyContent(result: ExtractionResult, minLength = 1): 
  * @param result - Extraction result
  */
 export function assertValidExtractionResult(result: ExtractionResult): void {
-	expect(result).toHaveProperty("content");
-	expect(result).toHaveProperty("mimeType");
-	expect(result).toHaveProperty("metadata");
-	expect(result).toHaveProperty("tables");
-	expect(result).toHaveProperty("detectedLanguages");
-	expect(result).toHaveProperty("chunks");
-	expect(result).toHaveProperty("images");
+  expect(result).toHaveProperty("content");
+  expect(result).toHaveProperty("mimeType");
+  expect(result).toHaveProperty("metadata");
+  expect(result).toHaveProperty("tables");
+  expect(result).toHaveProperty("detectedLanguages");
+  expect(result).toHaveProperty("chunks");
+  expect(result).toHaveProperty("images");
 
-	expect(typeof result.content).toBe("string");
-	expect(typeof result.mimeType).toBe("string");
-	expect(typeof result.metadata).toBe("object");
-	expect(result.metadata).not.toBeNull();
-	expect(Array.isArray(result.tables)).toBe(true);
+  expect(typeof result.content).toBe("string");
+  expect(typeof result.mimeType).toBe("string");
+  expect(typeof result.metadata).toBe("object");
+  expect(result.metadata).not.toBeNull();
+  expect(Array.isArray(result.tables)).toBe(true);
 
-	if (result.detectedLanguages !== null) {
-		expect(Array.isArray(result.detectedLanguages)).toBe(true);
-	}
+  if (result.detectedLanguages !== null) {
+    expect(Array.isArray(result.detectedLanguages)).toBe(true);
+  }
 
-	if (result.chunks !== null) {
-		expect(Array.isArray(result.chunks)).toBe(true);
-	}
+  if (result.chunks !== null) {
+    expect(Array.isArray(result.chunks)).toBe(true);
+  }
 
-	if (result.images !== null) {
-		expect(Array.isArray(result.images)).toBe(true);
-	}
+  if (result.images !== null) {
+    expect(Array.isArray(result.images)).toBe(true);
+  }
 }
 
 /**
@@ -127,11 +127,11 @@ export function assertValidExtractionResult(result: ExtractionResult): void {
  * @param metadata - Extraction metadata
  */
 export function assertPdfMetadata(metadata: Metadata): void {
-	if (metadata.pdf) {
-		if (metadata.pdf.pageCount !== undefined) {
-			expect(metadata.pdf.pageCount).toBeGreaterThan(0);
-		}
-	}
+  if (metadata.pdf) {
+    if (metadata.pdf.pageCount !== undefined) {
+      expect(metadata.pdf.pageCount).toBeGreaterThan(0);
+    }
+  }
 }
 
 /**
@@ -141,14 +141,14 @@ export function assertPdfMetadata(metadata: Metadata): void {
  * @param metadata - Extraction metadata
  */
 export function assertExcelMetadata(metadata: Metadata): void {
-	if (metadata.excel) {
-		if (metadata.excel.sheetCount !== undefined) {
-			expect(metadata.excel.sheetCount).toBeGreaterThan(0);
-		}
-		if (metadata.excel.sheetNames !== undefined) {
-			expect(Array.isArray(metadata.excel.sheetNames)).toBe(true);
-		}
-	}
+  if (metadata.excel) {
+    if (metadata.excel.sheetCount !== undefined) {
+      expect(metadata.excel.sheetCount).toBeGreaterThan(0);
+    }
+    if (metadata.excel.sheetNames !== undefined) {
+      expect(Array.isArray(metadata.excel.sheetNames)).toBe(true);
+    }
+  }
 }
 
 /**
@@ -157,26 +157,26 @@ export function assertExcelMetadata(metadata: Metadata): void {
  * @param metadata - Extraction metadata
  */
 export function assertImageMetadata(metadata: Metadata): void {
-	if (metadata.image) {
-		expect(metadata.image.width).toBeTruthy();
-		expect(metadata.image.height).toBeTruthy();
-		expect(metadata.image.width).toBeGreaterThan(0);
-		expect(metadata.image.height).toBeGreaterThan(0);
+  if (metadata.image) {
+    expect(metadata.image.width).toBeTruthy();
+    expect(metadata.image.height).toBeTruthy();
+    expect(metadata.image.width).toBeGreaterThan(0);
+    expect(metadata.image.height).toBeGreaterThan(0);
 
-		if (metadata.image.format) {
-			expect(typeof metadata.image.format).toBe("string");
-		}
-		return;
-	}
+    if (metadata.image.format) {
+      expect(typeof metadata.image.format).toBe("string");
+    }
+    return;
+  }
 
-	expect(typeof (metadata as any).width).toBe("number");
-	expect(typeof (metadata as any).height).toBe("number");
-	expect((metadata as any).width).toBeGreaterThan(0);
-	expect((metadata as any).height).toBeGreaterThan(0);
+  expect(typeof (metadata as any).width).toBe("number");
+  expect(typeof (metadata as any).height).toBe("number");
+  expect((metadata as any).width).toBeGreaterThan(0);
+  expect((metadata as any).height).toBeGreaterThan(0);
 
-	if ((metadata as any).format) {
-		expect(typeof (metadata as any).format).toBe("string");
-	}
+  if ((metadata as any).format) {
+    expect(typeof (metadata as any).format).toBe("string");
+  }
 }
 
 /**
@@ -187,25 +187,25 @@ export function assertImageMetadata(metadata: Metadata): void {
  * @param minConfidence - Minimum acceptable confidence (default: 0.3)
  */
 export function assertOcrResult(result: ExtractionResult, expectedWords: string[], minConfidence = 0.3): void {
-	assertValidExtractionResult(result);
+  assertValidExtractionResult(result);
 
-	const contentLower = result.content.toLowerCase().replace(/\n/g, " ").trim();
+  const contentLower = result.content.toLowerCase().replace(/\n/g, " ").trim();
 
-	const foundWords = expectedWords.filter((word) => contentLower.includes(word.toLowerCase()));
+  const foundWords = expectedWords.filter((word) => contentLower.includes(word.toLowerCase()));
 
-	expect(foundWords.length).toBeGreaterThan(0);
+  expect(foundWords.length).toBeGreaterThan(0);
 
-	if (result.metadata.ocr) {
-		const metadata: any = result.metadata;
-		if (metadata.confidence !== undefined) {
-			expect(metadata.confidence).toBeGreaterThanOrEqual(0.0);
-			expect(metadata.confidence).toBeLessThanOrEqual(1.0);
+  if (result.metadata.ocr) {
+    const metadata: any = result.metadata;
+    if (metadata.confidence !== undefined) {
+      expect(metadata.confidence).toBeGreaterThanOrEqual(0.0);
+      expect(metadata.confidence).toBeLessThanOrEqual(1.0);
 
-			if (foundWords.length > 0) {
-				expect(metadata.confidence).toBeGreaterThanOrEqual(minConfidence);
-			}
-		}
-	}
+      if (foundWords.length > 0) {
+        expect(metadata.confidence).toBeGreaterThanOrEqual(minConfidence);
+      }
+    }
+  }
 }
 
 /**
@@ -215,8 +215,8 @@ export function assertOcrResult(result: ExtractionResult, expectedWords: string[
  * @param minBytes - Minimum content size in bytes
  */
 export function assertSubstantialContent(result: ExtractionResult, minBytes = 1000): void {
-	assertNonEmptyContent(result, minBytes);
-	expect(result.content.length).toBeGreaterThanOrEqual(minBytes);
+  assertNonEmptyContent(result, minBytes);
+  expect(result.content.length).toBeGreaterThanOrEqual(minBytes);
 }
 
 /**
@@ -226,18 +226,18 @@ export function assertSubstantialContent(result: ExtractionResult, minBytes = 10
  * @param minTables - Minimum number of tables expected
  */
 export function assertTablesExtracted(result: ExtractionResult, minTables = 1): void {
-	expect(result.tables.length).toBeGreaterThanOrEqual(minTables);
+  expect(result.tables.length).toBeGreaterThanOrEqual(minTables);
 
-	for (const table of result.tables) {
-		expect(table.cells).toBeTruthy();
-		expect(Array.isArray(table.cells)).toBe(true);
-		expect(table.cells.length).toBeGreaterThan(0);
+  for (const table of result.tables) {
+    expect(table.cells).toBeTruthy();
+    expect(Array.isArray(table.cells)).toBe(true);
+    expect(table.cells.length).toBeGreaterThan(0);
 
-		expect(Array.isArray(table.cells[0])).toBe(true);
+    expect(Array.isArray(table.cells[0])).toBe(true);
 
-		expect(table.markdown).toBeTruthy();
-		expect(typeof table.markdown).toBe("string");
-	}
+    expect(table.markdown).toBeTruthy();
+    expect(typeof table.markdown).toBe("string");
+  }
 }
 
 /**
@@ -246,14 +246,14 @@ export function assertTablesExtracted(result: ExtractionResult, minTables = 1): 
  * @param result - Extraction result
  */
 export function assertMarkdownConversion(result: ExtractionResult): void {
-	assertNonEmptyContent(result);
+  assertNonEmptyContent(result);
 
-	const hasHeaders = result.content.includes("##") || result.content.includes("#");
-	const hasTables = result.content.includes("|");
-	const hasLinks = result.content.includes("[");
-	const hasBold = result.content.includes("**");
+  const hasHeaders = result.content.includes("##") || result.content.includes("#");
+  const hasTables = result.content.includes("|");
+  const hasLinks = result.content.includes("[");
+  const hasBold = result.content.includes("**");
 
-	expect(hasHeaders || hasTables || hasLinks || hasBold).toBe(true);
+  expect(hasHeaders || hasTables || hasLinks || hasBold).toBe(true);
 }
 
 /**
@@ -263,32 +263,32 @@ export function assertMarkdownConversion(result: ExtractionResult): void {
  * @returns Promise resolving to ZIP archive as Uint8Array
  */
 export async function createZip(files: Record<string, string | Buffer | Uint8Array>): Promise<Uint8Array> {
-	return new Promise<Uint8Array>((resolve, reject) => {
-		const archive = archiver("zip", { zlib: { level: 9 } });
-		const chunks: Buffer[] = [];
+  return new Promise<Uint8Array>((resolve, reject) => {
+    const archive = archiver("zip", { zlib: { level: 9 } });
+    const chunks: Buffer[] = [];
 
-		archive.on("data", (chunk: Buffer) => {
-			chunks.push(chunk);
-		});
+    archive.on("data", (chunk: Buffer) => {
+      chunks.push(chunk);
+    });
 
-		archive.on("end", () => {
-			resolve(new Uint8Array(Buffer.concat(chunks)));
-		});
+    archive.on("end", () => {
+      resolve(new Uint8Array(Buffer.concat(chunks)));
+    });
 
-		archive.on("error", (err) => {
-			reject(err);
-		});
+    archive.on("error", (err) => {
+      reject(err);
+    });
 
-		for (const [path, content] of Object.entries(files)) {
-			if (typeof content === "string") {
-				archive.append(content, { name: path });
-			} else {
-				archive.append(content instanceof Uint8Array ? Buffer.from(content) : (content as Buffer), { name: path });
-			}
-		}
+    for (const [path, content] of Object.entries(files)) {
+      if (typeof content === "string") {
+        archive.append(content, { name: path });
+      } else {
+        archive.append(content instanceof Uint8Array ? Buffer.from(content) : (content as Buffer), { name: path });
+      }
+    }
 
-		archive.finalize();
-	});
+    archive.finalize();
+  });
 }
 
 /**
@@ -298,30 +298,30 @@ export async function createZip(files: Record<string, string | Buffer | Uint8Arr
  * @returns Promise resolving to TAR archive as Uint8Array
  */
 export async function createTar(files: Record<string, string | Buffer | Uint8Array>): Promise<Uint8Array> {
-	return new Promise<Uint8Array>((resolve, reject) => {
-		const archive = archiver("tar", {});
-		const chunks: Buffer[] = [];
+  return new Promise<Uint8Array>((resolve, reject) => {
+    const archive = archiver("tar", {});
+    const chunks: Buffer[] = [];
 
-		archive.on("data", (chunk: Buffer) => {
-			chunks.push(chunk);
-		});
+    archive.on("data", (chunk: Buffer) => {
+      chunks.push(chunk);
+    });
 
-		archive.on("end", () => {
-			resolve(new Uint8Array(Buffer.concat(chunks)));
-		});
+    archive.on("end", () => {
+      resolve(new Uint8Array(Buffer.concat(chunks)));
+    });
 
-		archive.on("error", (err) => {
-			reject(err);
-		});
+    archive.on("error", (err) => {
+      reject(err);
+    });
 
-		for (const [path, content] of Object.entries(files)) {
-			if (typeof content === "string") {
-				archive.append(content, { name: path });
-			} else {
-				archive.append(content instanceof Uint8Array ? Buffer.from(content) : (content as Buffer), { name: path });
-			}
-		}
+    for (const [path, content] of Object.entries(files)) {
+      if (typeof content === "string") {
+        archive.append(content, { name: path });
+      } else {
+        archive.append(content instanceof Uint8Array ? Buffer.from(content) : (content as Buffer), { name: path });
+      }
+    }
 
-		archive.finalize();
-	});
+    archive.finalize();
+  });
 }

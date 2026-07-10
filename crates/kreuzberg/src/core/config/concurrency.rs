@@ -108,7 +108,6 @@ mod tests {
 
     #[test]
     fn test_init_thread_pools_idempotent() {
-        // Should not panic when called multiple times.
         init_thread_pools(2);
         init_thread_pools(4);
     }

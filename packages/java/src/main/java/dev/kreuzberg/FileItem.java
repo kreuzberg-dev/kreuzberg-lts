@@ -13,20 +13,20 @@ import java.util.Objects;
  * @since 4.6.0
  */
 public record FileItem(String path, FileExtractionConfig config) {
-	public FileItem {
-		Objects.requireNonNull(path, "path must not be null");
-		if (path.isBlank()) {
-			throw new IllegalArgumentException("path must not be blank");
-		}
-	}
+    public FileItem {
+        Objects.requireNonNull(path, "path must not be null");
+        if (path.isBlank()) {
+            throw new IllegalArgumentException("path must not be blank");
+        }
+    }
 
-	/**
+    /**
 	 * Create a FileItem with no per-file config override.
 	 *
 	 * @param path
 	 *            the file path
 	 */
-	public FileItem(String path) {
-		this(path, null);
-	}
+    public FileItem(String path) {
+        this(path, null);
+    }
 }

@@ -78,7 +78,6 @@ pub unsafe extern "C" fn kreuzberg_cancel_token_cancel(token: *mut CancellationT
         return;
     }
     // SAFETY: Caller guarantees `token` is a non-null, live pointer to a
-    // `CancellationToken` allocated by `kreuzberg_cancel_token_new`.
     unsafe { (*token).inner.cancel() };
 }
 
@@ -125,8 +124,6 @@ pub unsafe extern "C" fn kreuzberg_cancel_token_free(token: *mut CancellationTok
         return;
     }
     // SAFETY: We checked for null above. The caller guarantees the pointer was
-    // returned by `kreuzberg_cancel_token_new` and has not been freed; we take
-    // ownership back here and immediately drop the Box.
     unsafe { drop(Box::from_raw(token)) };
 }
 

@@ -24,21 +24,21 @@ defmodule Kreuzberg.DocumentTextAnnotation do
   """
 
   @type annotation_kind ::
-          :bold
-          | :italic
-          | :underline
-          | :strikethrough
-          | :code
-          | :subscript
-          | :superscript
-          | :link
+  :bold
+  | :italic
+  | :underline
+  | :strikethrough
+  | :code
+  | :subscript
+  | :superscript
+  | :link
 
   @type t :: %__MODULE__{
-          start: non_neg_integer(),
-          end: non_neg_integer(),
-          kind: String.t(),
-          url: String.t() | nil
-        }
+  start: non_neg_integer(),
+  end: non_neg_integer(),
+  kind: String.t(),
+  url: String.t() | nil
+  }
 
   defstruct [:start, :end, :kind, :url]
 
@@ -69,10 +69,10 @@ defmodule Kreuzberg.DocumentTextAnnotation do
   @spec from_map(map()) :: t()
   def from_map(data) when is_map(data) do
     %__MODULE__{
-      start: data["start"] || 0,
-      end: data["end"] || 0,
-      kind: data["kind"] || data["annotation_type"] || "",
-      url: data["url"]
+    start: data["start"] || 0,
+    end: data["end"] || 0,
+    kind: data["kind"] || data["annotation_type"] || "",
+    url: data["url"]
     }
   end
 
@@ -102,10 +102,10 @@ defmodule Kreuzberg.DocumentTextAnnotation do
   @spec to_map(t()) :: map()
   def to_map(%__MODULE__{} = annotation) do
     %{
-      "start" => annotation.start,
-      "end" => annotation.end,
-      "kind" => annotation.kind,
-      "url" => annotation.url
+    "start" => annotation.start,
+    "end" => annotation.end,
+    "kind" => annotation.kind,
+    "url" => annotation.url
     }
   end
 
@@ -198,44 +198,44 @@ defmodule Kreuzberg.DocumentNode do
   """
 
   @type node_type ::
-          :title
-          | :heading
-          | :paragraph
-          | :list
-          | :list_item
-          | :table
-          | :image
-          | :code
-          | :quote
-          | :formula
-          | :footnote
-          | :group
-          | :page_break
+  :title
+  | :heading
+  | :paragraph
+  | :list
+  | :list_item
+  | :table
+  | :image
+  | :code
+  | :quote
+  | :formula
+  | :footnote
+  | :group
+  | :page_break
 
   @type t :: %__MODULE__{
-          id: String.t(),
-          node_type: String.t(),
-          content: map(),
-          content_layer: String.t() | nil,
-          parent: non_neg_integer() | nil,
-          children: list(non_neg_integer()),
-          page_number: non_neg_integer() | nil,
-          page_number_end: non_neg_integer() | nil,
-          bbox: Kreuzberg.BoundingBox.t() | nil,
-          annotations: list(Kreuzberg.DocumentTextAnnotation.t())
-        }
+  id: String.t(),
+  node_type: String.t(),
+  content: map(),
+  content_layer: String.t() | nil,
+  parent: non_neg_integer() | nil,
+  children: list(non_neg_integer()),
+  page_number: non_neg_integer() | nil,
+  page_number_end: non_neg_integer() | nil,
+  bbox: Kreuzberg.BoundingBox.t() | nil,
+  annotations: list(Kreuzberg.DocumentTextAnnotation.t())
+  }
 
   defstruct [
-    :id,
-    :node_type,
-    :content,
-    :content_layer,
-    :parent,
-    :page_number,
-    :page_number_end,
-    :bbox,
-    children: [],
-    annotations: []
+  :id,
+  :node_type,
+  :content,
+  :content_layer,
+  :parent,
+  :page_number,
+  :page_number_end,
+  :bbox,
+  children: [],
+  annotations: []
   ]
 
   @doc """
@@ -267,50 +267,50 @@ defmodule Kreuzberg.DocumentNode do
   @spec from_map(map()) :: t()
   def from_map(data) when is_map(data) do
     children =
-      case data["children"] do
-        nil -> []
-        list when is_list(list) -> Enum.filter(list, &is_integer/1)
-        _ -> []
-      end
+    case data["children"] do
+      nil -> []
+      list when is_list(list) -> Enum.filter(list, &is_integer/1)
+      _ -> []
+    end
 
     bbox =
-      case data["bbox"] do
-        nil -> nil
-        %Kreuzberg.BoundingBox{} = b -> b
-        map when is_map(map) -> Kreuzberg.BoundingBox.from_map(map)
-        _ -> nil
-      end
+    case data["bbox"] do
+      nil -> nil
+      %Kreuzberg.BoundingBox{} = b -> b
+      map when is_map(map) -> Kreuzberg.BoundingBox.from_map(map)
+      _ -> nil
+    end
 
     annotations =
-      case data["annotations"] do
-        nil ->
-          []
+    case data["annotations"] do
+      nil ->
+      []
 
-        list when is_list(list) ->
-          Enum.map(list, fn
-            %Kreuzberg.DocumentTextAnnotation{} = ann -> ann
-            map when is_map(map) -> Kreuzberg.DocumentTextAnnotation.from_map(map)
-            _ -> nil
-          end)
-          |> Enum.reject(&is_nil/1)
+      list when is_list(list) ->
+      Enum.map(list, fn
+        %Kreuzberg.DocumentTextAnnotation{} = ann -> ann
+        map when is_map(map) -> Kreuzberg.DocumentTextAnnotation.from_map(map)
+        _ -> nil
+      end)
+      |> Enum.reject(&is_nil/1)
 
-        _ ->
-          []
-      end
+      _ ->
+      []
+    end
 
     content_map = data["content"] || %{}
 
     %__MODULE__{
-      id: data["id"] || "",
-      node_type: (is_map(content_map) && content_map["node_type"]) || "",
-      content: content_map,
-      content_layer: data["content_layer"],
-      parent: data["parent"],
-      children: children,
-      page_number: data["page"],
-      page_number_end: data["page_end"],
-      bbox: bbox,
-      annotations: annotations
+    id: data["id"] || "",
+    node_type: (is_map(content_map) && content_map["node_type"]) || "",
+    content: content_map,
+    content_layer: data["content_layer"],
+    parent: data["parent"],
+    children: children,
+    page_number: data["page"],
+    page_number_end: data["page_end"],
+    bbox: bbox,
+    annotations: annotations
     }
   end
 
@@ -341,20 +341,20 @@ defmodule Kreuzberg.DocumentNode do
   @spec to_map(t()) :: map()
   def to_map(%__MODULE__{} = node) do
     %{
-      "id" => node.id,
-      "node_type" => node.node_type,
-      "content" => node.content,
-      "content_layer" => node.content_layer,
-      "parent" => node.parent,
-      "children" => node.children,
-      "page" => node.page_number,
-      "page_end" => node.page_number_end,
-      "bbox" =>
-        case node.bbox do
-          nil -> nil
-          bbox -> Kreuzberg.BoundingBox.to_map(bbox)
-        end,
-      "annotations" => Enum.map(node.annotations, &Kreuzberg.DocumentTextAnnotation.to_map/1)
+    "id" => node.id,
+    "node_type" => node.node_type,
+    "content" => node.content,
+    "content_layer" => node.content_layer,
+    "parent" => node.parent,
+    "children" => node.children,
+    "page" => node.page_number,
+    "page_end" => node.page_number_end,
+    "bbox" =>
+    case node.bbox do
+      nil -> nil
+      bbox -> Kreuzberg.BoundingBox.to_map(bbox)
+    end,
+    "annotations" => Enum.map(node.annotations, &Kreuzberg.DocumentTextAnnotation.to_map/1)
     }
   end
 
@@ -467,8 +467,8 @@ defmodule Kreuzberg.DocumentStructure do
   """
 
   @type t :: %__MODULE__{
-          nodes: list(Kreuzberg.DocumentNode.t())
-        }
+  nodes: list(Kreuzberg.DocumentNode.t())
+  }
 
   defstruct [:nodes]
 
@@ -504,24 +504,24 @@ defmodule Kreuzberg.DocumentStructure do
   @spec from_map(map()) :: t()
   def from_map(data) when is_map(data) do
     nodes =
-      case data["nodes"] do
-        nil ->
-          []
+    case data["nodes"] do
+      nil ->
+      []
 
-        nodes_list when is_list(nodes_list) ->
-          Enum.map(nodes_list, fn
-            %Kreuzberg.DocumentNode{} = node -> node
-            map when is_map(map) -> Kreuzberg.DocumentNode.from_map(map)
-            _ -> nil
-          end)
-          |> Enum.reject(&is_nil/1)
+      nodes_list when is_list(nodes_list) ->
+      Enum.map(nodes_list, fn
+        %Kreuzberg.DocumentNode{} = node -> node
+        map when is_map(map) -> Kreuzberg.DocumentNode.from_map(map)
+        _ -> nil
+      end)
+      |> Enum.reject(&is_nil/1)
 
-        _ ->
-          []
-      end
+      _ ->
+      []
+    end
 
     %__MODULE__{
-      nodes: nodes
+    nodes: nodes
     }
   end
 
@@ -547,7 +547,7 @@ defmodule Kreuzberg.DocumentStructure do
   @spec to_map(t()) :: map()
   def to_map(%__MODULE__{} = structure) do
     %{
-      "nodes" => Enum.map(structure.nodes, &Kreuzberg.DocumentNode.to_map/1)
+    "nodes" => Enum.map(structure.nodes, &Kreuzberg.DocumentNode.to_map/1)
     }
   end
 
@@ -643,7 +643,7 @@ defmodule Kreuzberg.DocumentStructure do
   """
   @spec root_nodes(t()) :: list(Kreuzberg.DocumentNode.t())
   def root_nodes(%__MODULE__{nodes: nodes}) do
-    Enum.filter(nodes, fn node -> is_nil(node.parent) end)
+  Enum.filter(nodes, fn node -> is_nil(node.parent) end)
   end
 
   @doc """
@@ -673,12 +673,12 @@ defmodule Kreuzberg.DocumentStructure do
   """
   @spec nodes_by_type(t(), String.t() | atom()) :: list(Kreuzberg.DocumentNode.t())
   def nodes_by_type(%__MODULE__{nodes: nodes}, node_type) when is_binary(node_type) do
-    Enum.filter(nodes, fn node -> node.node_type === node_type end)
+  Enum.filter(nodes, fn node -> node.node_type === node_type end)
   end
 
   def nodes_by_type(%__MODULE__{nodes: nodes}, node_type) when is_atom(node_type) do
     type_str = Atom.to_string(node_type)
-    Enum.filter(nodes, fn node -> node.node_type === type_str end)
+  Enum.filter(nodes, fn node -> node.node_type === type_str end)
   end
 
   @doc """
@@ -710,11 +710,11 @@ defmodule Kreuzberg.DocumentStructure do
   def children(%__MODULE__{nodes: nodes}, parent_index) when is_integer(parent_index) do
     case Enum.at(nodes, parent_index) do
       nil ->
-        []
+      []
 
       parent ->
-        Enum.map(parent.children, &Enum.at(nodes, &1))
-        |> Enum.reject(&is_nil/1)
+      Enum.map(parent.children, &Enum.at(nodes, &1))
+      |> Enum.reject(&is_nil/1)
     end
   end
 

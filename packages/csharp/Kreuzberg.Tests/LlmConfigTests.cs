@@ -89,7 +89,6 @@ public class LlmConfigTests
     [Fact]
     public void OcrConfig_VlmConfig_DeserializesFromRustShapedJson()
     {
-        // Matches what the Rust core emits for OcrConfig { vlm_config: Some(...) }.
         const string rustJson = """
             {
                 "backend": "vlm",

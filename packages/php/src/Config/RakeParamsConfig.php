@@ -25,8 +25,7 @@ readonly class RakeParamsConfig
          * @default null (use algorithm default)
          */
         public ?int $maxWordsPerPhrase = null,
-    ) {
-    }
+    ) {}
 
     /**
      * Create configuration from array data.
@@ -51,9 +50,12 @@ readonly class RakeParamsConfig
      */
     public function toArray(): array
     {
-        return array_filter([
-            'min_word_length' => $this->minWordLength,
-            'max_words_per_phrase' => $this->maxWordsPerPhrase,
-        ], static fn ($value): bool => $value !== null);
+        return array_filter(
+            [
+                'min_word_length' => $this->minWordLength,
+                'max_words_per_phrase' => $this->maxWordsPerPhrase,
+            ],
+            static fn($value): bool => $value !== null,
+        );
     }
 }

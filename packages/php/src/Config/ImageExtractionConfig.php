@@ -74,8 +74,7 @@ readonly class ImageExtractionConfig
          * @default 600
          */
         public int $maxDpi = 600,
-    ) {
-    }
+    ) {}
 
     /**
      * Create configuration from array data.

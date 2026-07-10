@@ -38,7 +38,6 @@ fn build_internal_document(content: &[u8], mime_type: &str) -> InternalDocument 
                 let name_bytes = e.name().as_ref().to_vec();
                 let name_owned = String::from_utf8_lossy(&name_bytes).into_owned();
 
-                // Extract element attributes
                 let mut attrs = AHashMap::new();
                 for attr in e.attributes().flatten() {
                     let key: Cow<str> = String::from_utf8_lossy(attr.key.as_ref());

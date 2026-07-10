@@ -1,9 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Only install dev dependencies in CI
-# - benchmark group: only for benchmark runs
-# - doc group: only for doc publishing workflow
 uv sync --all-packages --group dev --all-extras --no-install-project --no-install-workspace
 
 if ! uv run python -c "import cv2; assert hasattr(cv2, 'cvtColor')" 2>/dev/null; then

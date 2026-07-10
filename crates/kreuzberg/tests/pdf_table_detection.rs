@@ -77,7 +77,6 @@ const ALL_PDFS: &[&str] = &[
 fn format_cell(cell: &str) -> String {
     let max_len = 50;
     if cell.len() > max_len {
-        // Find a valid UTF-8 boundary at or before max_len
         let truncated = &cell[..cell.floor_char_boundary(max_len)];
         format!("{truncated}...")
     } else {
@@ -245,7 +244,6 @@ fn test_table_detection_focus_on_table_documents() {
                     println!("    Dimensions: {} rows × {} cols", rows, cols);
                     println!("    Cell count: {}", rows * cols);
 
-                    // Full preview (up to 10x10)
                     if rows > 0 && cols > 0 {
                         let preview_rows = rows.min(10);
                         let preview_cols = cols.min(10);

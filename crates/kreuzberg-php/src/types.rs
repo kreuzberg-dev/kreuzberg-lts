@@ -8,10 +8,6 @@ use ext_php_rs::prelude::*;
 use ext_php_rs::types::Zval;
 use std::collections::HashMap;
 
-// ---------------------------------------------------------------------------
-// ClassBuilder modifier functions for virtual properties
-// ---------------------------------------------------------------------------
-
 /// Declare virtual properties on ExtractionResult for `ReflectionClass::hasProperty()` parity.
 ///
 /// All properties declared here have a corresponding `#[php(getter)]` method.
@@ -21,12 +17,6 @@ use std::collections::HashMap;
 /// needed so that `ReflectionClass::hasProperty()` returns `true`.
 pub fn extraction_result_builder_modifier(builder: ClassBuilder) -> ClassBuilder {
     // NOTE: Properties backed by #[php(getter)] are already registered by ext-php-rs's
-    // module builder (from T::get_properties()). We do NOT add them again here — double-
-    // declaring via ClassBuilder::property() causes PHP to bypass ext-php-rs's
-    // read_property handler and return null instead of invoking the getter.
-    //
-    // All properties that need ReflectionClass::hasProperty() to return true are
-    // already handled by the auto-registration. This modifier is kept for clarity.
     builder
 }
 
@@ -39,9 +29,7 @@ pub fn archive_entry_builder_modifier(builder: ClassBuilder) -> ClassBuilder {
     builder
 }
 
-// ---------------------------------------------------------------------------
 // PHP Enums (backed enums via #[php_enum])
-// ---------------------------------------------------------------------------
 
 /// Content layer classification.
 #[php_enum]
@@ -186,10 +174,6 @@ pub enum UriKind {
     #[php(name = "email")]
     Email,
 }
-
-// ---------------------------------------------------------------------------
-// Additional struct types required by parity tests
-// ---------------------------------------------------------------------------
 
 /// Archive entry containing extraction result for a file within an archive.
 #[php_class]
@@ -452,13 +436,11 @@ pub(crate) fn json_value_to_php(value: &serde_json::Value) -> PhpResult<Zval> {
             Ok(php_arr.into_zval(false)?)
         }
         serde_json::Value::Object(obj) => {
-            // Create a proper PHP object (stdClass) for JSON objects
             use ext_php_rs::boxed::ZBox;
             use ext_php_rs::types::ZendObject;
 
             let mut std_obj = ZendObject::new_stdclass();
 
-            // Set properties on the stdClass object
             for (k, v) in obj {
                 std_obj.set_property(k.as_str(), json_value_to_php(v)?)?;
             }
@@ -578,10 +560,6 @@ pub struct ExtractionResult {
 #[php_impl]
 #[allow(non_snake_case)]
 impl ExtractionResult {
-    // -----------------------------------------------------------------------
-    // Getter-backed properties (creates PHP properties visible to reflection)
-    // -----------------------------------------------------------------------
-
     /// Tables property getter.
     #[php(getter)]
     pub fn get_tables(&self) -> Vec<ExtractedTable> {
@@ -630,12 +608,7 @@ impl ExtractionResult {
         self.llm_usage.clone()
     }
 
-    // -----------------------------------------------------------------------
     // JSON-deserialized virtual properties (via #[php(getter)])
-    // These are backed by raw JSON fields and exposed as typed property
-    // accessors. The getter takes priority over any ClassBuilder::property()
-    // null declaration, ensuring __get is NOT invoked for these names.
-    // -----------------------------------------------------------------------
 
     /// Metadata property getter.
     ///
@@ -705,10 +678,6 @@ impl ExtractionResult {
         })
     }
 
-    // -----------------------------------------------------------------------
-    // Regular methods
-    // -----------------------------------------------------------------------
-
     /// Magic getter for accessing properties that are not directly exposed.
     ///
     /// Allows access like $result->metadata, $result->chunks, $result->images, $result->pages, $result->tables.
@@ -716,7 +685,6 @@ impl ExtractionResult {
         match name {
             "metadata" => {
                 // Handled by #[php(getter)] get_metadata — this arm is kept for
-                // backward compatibility but will not be reached for declared properties.
                 match self.get_metadata() {
                     Some(metadata) => Ok(Some(metadata.into_zval(false)?)),
                     None => Ok(None),
@@ -730,7 +698,6 @@ impl ExtractionResult {
                 }
             }
             "embeddings" => {
-                // Extract embeddings from chunks if available
                 if let Some(chunks) = &self.chunks {
                     use ext_php_rs::boxed::ZBox;
                     use ext_php_rs::types::ZendObject;
@@ -738,7 +705,6 @@ impl ExtractionResult {
                     let mut php_embeddings = Vec::new();
                     for chunk in chunks {
                         if let Some(embedding) = &chunk.embedding {
-                            // Create a proper PHP object (stdClass) with vector property
                             let mut embedding_obj = ZendObject::new_stdclass();
                             embedding_obj.set_property("vector", embedding.clone().into_zval(false)?)?;
 
@@ -774,10 +740,8 @@ impl ExtractionResult {
                     use ext_php_rs::boxed::ZBox;
                     use ext_php_rs::types::ZendObject;
 
-                    // Convert keywords to PHP array of objects (stdClass)
                     let mut php_keywords = Vec::new();
                     for kw in keywords {
-                        // Create a proper PHP object with text and score properties
                         let mut kw_obj = ZendObject::new_stdclass();
                         kw_obj.set_property("text", kw.text.as_str().into_zval(false)?)?;
                         kw_obj.set_property("score", kw.score.into_zval(false)?)?;
@@ -831,10 +795,8 @@ impl ExtractionResult {
                     use ext_php_rs::boxed::ZBox;
                     use ext_php_rs::types::ZendObject;
 
-                    // Convert keywords to PHP array of objects (stdClass)
                     let mut php_keywords = Vec::new();
                     for kw in keywords {
-                        // Create a proper PHP object with text, score, and algorithm properties
                         let mut kw_obj = ZendObject::new_stdclass();
                         kw_obj.set_property("text", kw.text.as_str().into_zval(false)?)?;
                         kw_obj.set_property("score", kw.score.into_zval(false)?)?;
@@ -926,12 +888,10 @@ impl ExtractionResult {
     pub fn from_rust_with_config(result: kreuzberg::ExtractionResult, extract_tables: bool) -> PhpResult<Self> {
         use serde_json::json;
 
-        // Serialize the full result to JSON before destructuring for serialize_to_toon/json
         let result_json = serde_json::to_string(&result).map_err(|e| format!("Failed to serialize result: {}", e))?;
 
         let mut metadata_obj = serde_json::Map::new();
 
-        // Add common metadata fields
         if let Some(title) = &result.metadata.title {
             metadata_obj.insert("title".to_string(), json!(title));
         }
@@ -960,12 +920,9 @@ impl ExtractionResult {
             metadata_obj.insert("modified_by".to_string(), json!(modified_by));
         }
 
-        // Add page count - try multiple sources
         let page_count = if let Some(pages_meta) = &result.metadata.pages {
-            // Prefer page structure metadata if available
             Some(pages_meta.total_count)
         } else {
-            // Fallback to counting pages array
             result.pages.as_ref().map(|pages_array| pages_array.len())
         };
 
@@ -973,30 +930,24 @@ impl ExtractionResult {
             metadata_obj.insert("page_count".to_string(), json!(count));
         }
 
-        // Add pages metadata structure if available
         if let Some(pages) = &result.metadata.pages {
             let pages_json = serde_json::to_value(pages).map_err(|e| format!("Failed to serialize pages: {}", e))?;
             metadata_obj.insert("pages".to_string(), pages_json);
         }
 
-        // Add format metadata (both nested and flattened for compatibility)
         if let Some(format) = &result.metadata.format {
             let format_json = serde_json::to_value(format).map_err(|e| format!("Failed to serialize format: {}", e))?;
 
             // The format_json will have a "format_type" field due to the #[serde(tag = "format_type")] attribute
-            // We flatten it into the root metadata object for fields like format_type, sheet_count, etc.
             if let serde_json::Value::Object(ref format_obj) = format_json {
                 for (key, value) in format_obj {
                     metadata_obj.insert(key.clone(), value.clone());
                 }
             }
 
-            // Also add the full format object as a nested "format_nested" key for paths like "format_nested.format"
-            // (renamed from "format" to avoid conflicts with ImageMetadata.format)
             metadata_obj.insert("format_nested".to_string(), format_json);
         }
 
-        // Extract keywords from additional metadata before adding all additional fields
         let keywords = if let Some(keywords_value) = result.metadata.additional.get("keywords") {
             if let Some(arr) = keywords_value.as_array() {
                 let mut keywords_vec = Vec::new();
@@ -1033,18 +984,15 @@ impl ExtractionResult {
 
         let quality_score = result.quality_score;
 
-        // Add error metadata if present (for batch operations)
         if let Some(error) = &result.metadata.error {
             let error_json = serde_json::to_value(error).map_err(|e| format!("Failed to serialize error: {}", e))?;
             metadata_obj.insert("error".to_string(), error_json);
         }
 
-        // Add additional metadata fields (from postprocessors)
         for (key, value) in &result.metadata.additional {
             metadata_obj.insert(key.to_string(), value.clone());
         }
 
-        // Serialize the metadata to JSON string
         let metadata_json =
             serde_json::to_string(&metadata_obj).map_err(|e| format!("Failed to serialize metadata: {}", e))?;
 
@@ -1086,14 +1034,12 @@ impl ExtractionResult {
             })
             .transpose()?;
 
-        // Serialize djot_content to JSON if present
         let djot_content_json = result
             .djot_content
             .map(|djot| serde_json::to_string(&djot))
             .transpose()
             .map_err(|e| format!("Failed to serialize djot_content: {}", e))?;
 
-        // Serialize elements to JSON if present
         let elements_json = result
             .elements
             .as_ref()
@@ -1101,7 +1047,6 @@ impl ExtractionResult {
             .transpose()
             .map_err(|e| format!("Failed to serialize elements: {}", e))?;
 
-        // Serialize document structure to JSON if present
         let document_json = result
             .document
             .as_ref()
@@ -1109,7 +1054,6 @@ impl ExtractionResult {
             .transpose()
             .map_err(|e| format!("Failed to serialize document: {}", e))?;
 
-        // Serialize OCR elements to JSON if present
         let ocr_elements_json = result
             .ocr_elements
             .as_ref()
@@ -1129,7 +1073,6 @@ impl ExtractionResult {
             .transpose()
             .map_err(|e| format!("Failed to serialize uris: {}", e))?;
 
-        // Convert annotations if present
         let annotations = result
             .annotations
             .map(|anns| {
@@ -1592,7 +1535,6 @@ impl Metadata {
 
         if let serde_json::Value::Object(obj) = value {
             let mut result = HashMap::new();
-            // Exclude the common fields we already exposed
             let excluded = [
                 "title",
                 "subject",
@@ -1846,7 +1788,6 @@ pub(crate) fn php_zval_to_json_value(zval: &Zval) -> PhpResult<serde_json::Value
     if let Some(arr) = zval.array() {
         let mut map = serde_json::Map::new();
         for (key, val) in arr.iter() {
-            // Convert key to string, handling both numeric and string keys
             let key_str = format!("{}", key);
             map.insert(key_str, php_zval_to_json_value(val)?);
         }
@@ -1857,7 +1798,6 @@ pub(crate) fn php_zval_to_json_value(zval: &Zval) -> PhpResult<serde_json::Value
 
 /// Convert PHP array to kreuzberg::types::Table.
 pub(crate) fn php_array_to_table(arr: &ext_php_rs::types::ZendHashTable) -> PhpResult<kreuzberg::types::Table> {
-    // Extract cells as 2D array
     let cells = if let Some(cells_val) = arr.get("cells") {
         if let Some(cells_arr) = cells_val.array() {
             let mut rows = Vec::new();

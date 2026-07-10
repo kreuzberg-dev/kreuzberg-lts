@@ -34,20 +34,20 @@ defmodule Kreuzberg.Error do
   defexception [:message, :reason, :context]
 
   @type t :: %__MODULE__{
-          message: String.t() | nil,
-          reason: atom() | nil,
-          context: map() | nil
-        }
+  message: String.t() | nil,
+  reason: atom() | nil,
+  context: map() | nil
+  }
 
   @type reason ::
-          :invalid_format
-          | :invalid_config
-          | :ocr_error
-          | :extraction_error
-          | :io_error
-          | :embedding_error
-          | :nif_error
-          | :unknown_error
+  :invalid_format
+  | :invalid_config
+  | :ocr_error
+  | :extraction_error
+  | :io_error
+  | :embedding_error
+  | :nif_error
+  | :unknown_error
 
   @doc """
   Creates a new Kreuzberg error.
@@ -81,9 +81,9 @@ defmodule Kreuzberg.Error do
   @spec new(String.t(), reason(), map() | nil) :: t()
   def new(message, reason, context \\ nil) do
     %__MODULE__{
-      message: message,
-      reason: reason,
-      context: context
+    message: message,
+    reason: reason,
+    context: context
     }
   end
 
@@ -129,19 +129,19 @@ defmodule Kreuzberg.Error do
   def message(%__MODULE__{message: message, reason: reason, context: context}) do
     cond do
       message && reason && context ->
-        "#{message} (#{reason}) - context: #{inspect(context)}"
+      "#{message} (#{reason}) - context: #{inspect(context)}"
 
       message && reason ->
-        "#{message} (#{reason})"
+      "#{message} (#{reason})"
 
       message ->
-        message
+      message
 
       reason ->
-        Atom.to_string(reason)
+      Atom.to_string(reason)
 
       true ->
-        "Kreuzberg error"
+      "Kreuzberg error"
     end
   end
 end

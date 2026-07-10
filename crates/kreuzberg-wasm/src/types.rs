@@ -25,9 +25,6 @@ use wasm_bindgen::prelude::*;
 pub fn parse_config(config: Option<JsValue>) -> Result<ExtractionConfig, JsValue> {
     match config {
         Some(js_config) => {
-            // JS consumers send camelCase keys (e.g. includeDocumentStructure).
-            // serde expects snake_case field names, so convert first:
-            // JsValue → serde_json::Value → camel_to_snake → deserialize.
             let json_value: serde_json::Value = serde_wasm_bindgen::from_value(js_config)
                 .map_err(|e| JsValue::from_str(&format!("Failed to parse config: {e}")))?;
             let snake_value = camel_to_snake(json_value);
@@ -51,7 +48,6 @@ pub fn parse_config(config: Option<JsValue>) -> Result<ExtractionConfig, JsValue
 pub fn result_to_js_value(result: &ExtractionResult) -> Result<JsValue, JsValue> {
     let json_value =
         serde_json::to_value(result).map_err(|e| JsValue::from_str(&format!("Failed to serialize result: {e}")))?;
-    // Transform snake_case keys to camelCase for JavaScript/TypeScript consumers
     let camel_value = snake_to_camel(json_value);
     let json_string = serde_json::to_string(&camel_value)
         .map_err(|e| JsValue::from_str(&format!("Failed to serialize result: {e}")))?;
@@ -65,7 +61,6 @@ pub fn result_to_js_value(result: &ExtractionResult) -> Result<JsValue, JsValue>
 pub fn results_to_js_value(results: &[ExtractionResult]) -> Result<JsValue, JsValue> {
     let json_value =
         serde_json::to_value(results).map_err(|e| JsValue::from_str(&format!("Failed to serialize results: {e}")))?;
-    // Transform snake_case keys to camelCase for JavaScript/TypeScript consumers
     let camel_value = snake_to_camel(json_value);
     let json_string = serde_json::to_string(&camel_value)
         .map_err(|e| JsValue::from_str(&format!("Failed to serialize results: {e}")))?;

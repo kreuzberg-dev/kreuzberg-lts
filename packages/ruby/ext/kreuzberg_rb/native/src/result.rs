@@ -7,8 +7,8 @@ use crate::error_handling::runtime_error;
 use crate::helpers::{json_value_to_ruby, set_hash_entry};
 
 use kreuzberg::ExtractionResult as RustExtractionResult;
-use magnus::{Error, RHash, Ruby, IntoValue};
 use magnus::value::ReprValue;
+use magnus::{Error, IntoValue, RHash, Ruby};
 
 /// Convert Kreuzberg ExtractionResult to Ruby Hash
 ///
@@ -23,14 +23,12 @@ use magnus::value::ReprValue;
 pub fn extraction_result_to_ruby(ruby: &Ruby, result: RustExtractionResult) -> Result<RHash, Error> {
     let hash = ruby.hash_new();
 
-    // Set content and MIME type
     let content_value = ruby.str_new(result.content.as_str()).into_value_with(ruby);
     set_hash_entry(ruby, &hash, "content", content_value)?;
 
     let mime_value = ruby.str_new(result.mime_type.as_ref()).into_value_with(ruby);
     set_hash_entry(ruby, &hash, "mime_type", mime_value)?;
 
-    // Set metadata both as JSON string and parsed hash
     let metadata_json = serde_json::to_string(&result.metadata)
         .map_err(|e| runtime_error(format!("Failed to serialize metadata: {}", e)))?;
     let metadata_json_value = ruby.str_new(&metadata_json).into_value_with(ruby);
@@ -40,7 +38,6 @@ pub fn extraction_result_to_ruby(ruby: &Ruby, result: RustExtractionResult) -> R
     let metadata_hash = json_value_to_ruby(ruby, &metadata_value)?;
     set_hash_entry(ruby, &hash, "metadata", metadata_hash)?;
 
-    // Convert tables
     let tables_array = ruby.ary_new();
     for table in result.tables {
         let table_hash = ruby.hash_new();
@@ -69,7 +66,6 @@ pub fn extraction_result_to_ruby(ruby: &Ruby, result: RustExtractionResult) -> R
     let tables_value = tables_array.into_value_with(ruby);
     set_hash_entry(ruby, &hash, "tables", tables_value)?;
 
-    // Convert detected languages
     if let Some(langs) = result.detected_languages {
         let langs_array = ruby.ary_from_vec(langs);
         let langs_value = langs_array.into_value_with(ruby);
@@ -78,7 +74,6 @@ pub fn extraction_result_to_ruby(ruby: &Ruby, result: RustExtractionResult) -> R
         set_hash_entry(ruby, &hash, "detected_languages", ruby.qnil().as_value())?;
     }
 
-    // Convert chunks
     if let Some(chunks) = result.chunks {
         let chunks_array = ruby.ary_new();
         for chunk in chunks {
@@ -120,7 +115,6 @@ pub fn extraction_result_to_ruby(ruby: &Ruby, result: RustExtractionResult) -> R
         set_hash_entry(ruby, &hash, "chunks", ruby.qnil().as_value())?;
     }
 
-    // Convert images
     if let Some(images) = result.images {
         let images_array = ruby.ary_new();
         for image in images {
@@ -191,7 +185,6 @@ pub fn extraction_result_to_ruby(ruby: &Ruby, result: RustExtractionResult) -> R
         set_hash_entry(ruby, &hash, "images", ruby.qnil().as_value())?;
     }
 
-    // Convert pages
     if let Some(page_content_list) = result.pages {
         let pages_array = ruby.ary_new();
         for page_content in page_content_list {
@@ -299,14 +292,12 @@ pub fn extraction_result_to_ruby(ruby: &Ruby, result: RustExtractionResult) -> R
         set_hash_entry(ruby, &hash, "pages", ruby.qnil().as_value())?;
     }
 
-    // Convert elements (element-based format)
     if let Some(elements_list) = result.elements {
         let elements_array = ruby.ary_new();
         for element in elements_list {
             let element_hash = ruby.hash_new();
             element_hash.aset("element_id", element.element_id.as_ref())?;
 
-            // Convert ElementType to snake_case string
             use kreuzberg::types::ElementType as ET;
             let element_type_str = match element.element_type {
                 ET::Title => "title",
@@ -364,7 +355,6 @@ pub fn extraction_result_to_ruby(ruby: &Ruby, result: RustExtractionResult) -> R
         set_hash_entry(ruby, &hash, "elements", ruby.qnil().as_value())?;
     }
 
-    // Convert ocr_elements
     if let Some(ocr_elements) = result.ocr_elements {
         let elements_array = ruby.ary_new();
         for elem in ocr_elements {
@@ -378,7 +368,6 @@ pub fn extraction_result_to_ruby(ruby: &Ruby, result: RustExtractionResult) -> R
         set_hash_entry(ruby, &hash, "ocr_elements", ruby.qnil().as_value())?;
     }
 
-    // Convert document structure
     if let Some(doc_structure) = result.document {
         let document_hash = ruby.hash_new();
         let nodes_array = ruby.ary_new();
@@ -387,7 +376,6 @@ pub fn extraction_result_to_ruby(ruby: &Ruby, result: RustExtractionResult) -> R
             let node_hash = ruby.hash_new();
             node_hash.aset("id", node.id.as_ref())?;
 
-            // Convert NodeContent to hash
             let content_hash = ruby.hash_new();
             use kreuzberg::types::NodeContent;
             match node.content {
@@ -406,7 +394,14 @@ pub fn extraction_result_to_ruby(ruby: &Ruby, result: RustExtractionResult) -> R
                 }
                 NodeContent::List { ordered } => {
                     content_hash.aset("node_type", "list")?;
-                    content_hash.aset("ordered", if ordered { ruby.qtrue().as_value() } else { ruby.qfalse().as_value() })?;
+                    content_hash.aset(
+                        "ordered",
+                        if ordered {
+                            ruby.qtrue().as_value()
+                        } else {
+                            ruby.qfalse().as_value()
+                        },
+                    )?;
                 }
                 NodeContent::ListItem { text } => {
                     content_hash.aset("node_type", "list_item")?;
@@ -425,7 +420,14 @@ pub fn extraction_result_to_ruby(ruby: &Ruby, result: RustExtractionResult) -> R
                         cell_hash.aset("col", cell.col as i64)?;
                         cell_hash.aset("row_span", cell.row_span as i64)?;
                         cell_hash.aset("col_span", cell.col_span as i64)?;
-                        cell_hash.aset("is_header", if cell.is_header { ruby.qtrue().as_value() } else { ruby.qfalse().as_value() })?;
+                        cell_hash.aset(
+                            "is_header",
+                            if cell.is_header {
+                                ruby.qtrue().as_value()
+                            } else {
+                                ruby.qfalse().as_value()
+                            },
+                        )?;
                         if let Some(bbox) = cell.bbox {
                             let bbox_hash = ruby.hash_new();
                             bbox_hash.aset("x0", bbox.x0)?;
@@ -441,7 +443,11 @@ pub fn extraction_result_to_ruby(ruby: &Ruby, result: RustExtractionResult) -> R
                     grid_hash.aset("cells", cells_array)?;
                     content_hash.aset("grid", grid_hash)?;
                 }
-                NodeContent::Image { description, image_index, src } => {
+                NodeContent::Image {
+                    description,
+                    image_index,
+                    src,
+                } => {
                     content_hash.aset("node_type", "image")?;
                     if let Some(desc) = description {
                         content_hash.aset("description", desc)?;
@@ -479,7 +485,11 @@ pub fn extraction_result_to_ruby(ruby: &Ruby, result: RustExtractionResult) -> R
                     content_hash.aset("node_type", "footnote")?;
                     content_hash.aset("text", text)?;
                 }
-                NodeContent::Group { label, heading_level, heading_text } => {
+                NodeContent::Group {
+                    label,
+                    heading_level,
+                    heading_text,
+                } => {
                     content_hash.aset("node_type", "group")?;
                     if let Some(lbl) = label {
                         content_hash.aset("label", lbl)?;
@@ -599,7 +609,6 @@ pub fn extraction_result_to_ruby(ruby: &Ruby, result: RustExtractionResult) -> R
                 ann_hash.aset("start", annotation.start as i64)?;
                 ann_hash.aset("end", annotation.end as i64)?;
 
-                // Convert AnnotationKind to hash
                 let kind_hash = ruby.hash_new();
                 use kreuzberg::types::AnnotationKind;
                 match annotation.kind {
@@ -667,7 +676,6 @@ pub fn extraction_result_to_ruby(ruby: &Ruby, result: RustExtractionResult) -> R
         set_hash_entry(ruby, &hash, "document", ruby.qnil().as_value())?;
     }
 
-    // Convert extracted keywords
     if let Some(keywords) = result.extracted_keywords {
         let keywords_array = ruby.ary_new();
         for kw in keywords {
@@ -695,14 +703,17 @@ pub fn extraction_result_to_ruby(ruby: &Ruby, result: RustExtractionResult) -> R
         set_hash_entry(ruby, &hash, "extracted_keywords", ruby.qnil().as_value())?;
     }
 
-    // Convert quality score
     if let Some(score) = result.quality_score {
-        set_hash_entry(ruby, &hash, "quality_score", ruby.float_from_f64(score).into_value_with(ruby))?;
+        set_hash_entry(
+            ruby,
+            &hash,
+            "quality_score",
+            ruby.float_from_f64(score).into_value_with(ruby),
+        )?;
     } else {
         set_hash_entry(ruby, &hash, "quality_score", ruby.qnil().as_value())?;
     }
 
-    // Convert processing warnings
     let warnings_array = ruby.ary_new();
     for warning in result.processing_warnings {
         let w_hash = ruby.hash_new();
@@ -712,7 +723,6 @@ pub fn extraction_result_to_ruby(ruby: &Ruby, result: RustExtractionResult) -> R
     }
     set_hash_entry(ruby, &hash, "processing_warnings", warnings_array.into_value_with(ruby))?;
 
-    // Convert LLM usage
     if let Some(usages) = result.llm_usage {
         let usage_array = ruby.ary_new();
         for usage in usages {
@@ -751,14 +761,12 @@ pub fn extraction_result_to_ruby(ruby: &Ruby, result: RustExtractionResult) -> R
         set_hash_entry(ruby, &hash, "llm_usage", ruby.qnil().as_value())?;
     }
 
-    // Convert structured output (Value::Null maps to qnil via json_value_to_ruby)
     let structured_ruby = match &result.structured_output {
         Some(val) => json_value_to_ruby(ruby, val)?,
         None => ruby.qnil().as_value(),
     };
     set_hash_entry(ruby, &hash, "structured_output", structured_ruby)?;
 
-    // Convert annotations
     if let Some(annotations) = result.annotations {
         let annotations_array = ruby.ary_new();
         for annot in annotations {
@@ -791,7 +799,6 @@ pub fn extraction_result_to_ruby(ruby: &Ruby, result: RustExtractionResult) -> R
         set_hash_entry(ruby, &hash, "annotations", ruby.qnil().as_value())?;
     }
 
-    // Convert uris
     if let Some(uris) = result.uris {
         let uris_array = ruby.ary_new();
         for uri in uris {
@@ -819,7 +826,6 @@ pub fn extraction_result_to_ruby(ruby: &Ruby, result: RustExtractionResult) -> R
         set_hash_entry(ruby, &hash, "uris", ruby.qnil().as_value())?;
     }
 
-    // Convert children (archive entries)
     if let Some(children) = result.children {
         let children_array = ruby.ary_new();
         for entry in children {

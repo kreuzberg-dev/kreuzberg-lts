@@ -6,9 +6,9 @@
  */
 
 import {
-	getWasmModule as getWasmModuleFromState,
-	isInitialized as isInitializedFromState,
-	type WasmModule,
+  getWasmModule as getWasmModuleFromState,
+  isInitialized as isInitializedFromState,
+  type WasmModule,
 } from "../initialization/state.js";
 
 /**
@@ -18,12 +18,12 @@ import {
  * @throws {Error} If WASM module is not loaded
  */
 export function getWasmModule(): WasmModule {
-	const wasm = getWasmModuleFromState();
-	if (!wasm) {
-		throw new Error("WASM module not loaded. Call initWasm() first.");
-	}
+  const wasm = getWasmModuleFromState();
+  if (!wasm) {
+    throw new Error("WASM module not loaded. Call initWasm() first.");
+  }
 
-	return wasm;
+  return wasm;
 }
 
 /**
@@ -32,5 +32,5 @@ export function getWasmModule(): WasmModule {
  * @returns True if WASM module is initialized
  */
 export function isInitialized(): boolean {
-	return isInitializedFromState();
+  return isInitializedFromState();
 }

@@ -9,7 +9,6 @@ use kreuzberg::ServerConfig;
 use std::fs;
 use tempfile::tempdir;
 
-// Helper function to cleanup environment variables
 #[allow(unsafe_code)]
 fn cleanup_env_vars() {
     unsafe {
@@ -21,7 +20,6 @@ fn cleanup_env_vars() {
     }
 }
 
-// Helper function to set environment variables
 #[allow(unsafe_code)]
 fn set_env(key: &str, value: &str) {
     unsafe {
@@ -29,14 +27,12 @@ fn set_env(key: &str, value: &str) {
     }
 }
 
-// Helper function to get and store original environment variables
 fn save_env(keys: &[&str]) -> Vec<(String, Option<String>)> {
     keys.iter()
         .map(|key| (key.to_string(), std::env::var(key).ok()))
         .collect()
 }
 
-// Helper function to restore environment variables
 #[allow(unsafe_code)]
 fn restore_env(saved: Vec<(String, Option<String>)>) {
     unsafe {
@@ -50,7 +46,6 @@ fn restore_env(saved: Vec<(String, Option<String>)>) {
     }
 }
 
-// Test 1: Config precedence order - Env wins over File
 #[test]
 #[serial_test::serial]
 fn test_config_precedence_env_over_file() {
@@ -59,7 +54,6 @@ fn test_config_precedence_env_over_file() {
     let dir = tempdir().expect("Operation failed");
     let config_path = dir.path().join("config.toml");
 
-    // Create config file with file values
     fs::write(
         &config_path,
         r#"
@@ -69,19 +63,15 @@ port = 8001
     )
     .expect("Operation failed");
 
-    // Set env vars (should override file)
     set_env("KREUZBERG_HOST", "env-host");
     set_env("KREUZBERG_PORT", "8002");
 
-    // Load and apply
     let mut config = ServerConfig::from_file(&config_path).expect("Operation failed");
     assert_eq!(config.host, "file-host");
     assert_eq!(config.port, 8001);
 
-    // Apply env overrides
     config.apply_env_overrides().expect("Operation failed");
 
-    // Verify env vars won (Env > File)
     assert_eq!(config.host, "env-host", "Env HOST should override file HOST");
     assert_eq!(config.port, 8002, "Env PORT should override file PORT");
 
@@ -89,13 +79,11 @@ port = 8001
     restore_env(saved);
 }
 
-// Test 2: File-only configuration
 #[test]
 fn test_file_only_configuration() {
     let dir = tempdir().expect("Operation failed");
     let config_path = dir.path().join("config.toml");
 
-    // Create config with specific values
     fs::write(
         &config_path,
         r#"
@@ -118,7 +106,6 @@ max_multipart_field_bytes = 75000000
     assert_eq!(config.max_multipart_field_bytes, 75_000_000);
 }
 
-// Test 3: Env-only configuration (no config file)
 #[test]
 #[serial_test::serial]
 fn test_env_only_configuration() {
@@ -131,17 +118,13 @@ fn test_env_only_configuration() {
         "https://api.example.com, https://app.example.com",
     );
 
-    // Create default config
     let mut config = ServerConfig::default();
 
-    // Verify defaults initially
     assert_eq!(config.host, "127.0.0.1");
     assert_eq!(config.port, 8000);
 
-    // Apply env overrides
     config.apply_env_overrides().expect("Operation failed");
 
-    // Verify env vars are used
     assert_eq!(config.host, "0.0.0.0");
     assert_eq!(config.port, 3000);
     assert_eq!(config.cors_origins.len(), 2);
@@ -152,27 +135,23 @@ fn test_env_only_configuration() {
     restore_env(saved);
 }
 
-// Test 4: Default configuration
 #[test]
 fn test_default_configuration() {
     let config = ServerConfig::default();
 
-    // Verify defaults
     assert_eq!(config.host, "127.0.0.1");
     assert_eq!(config.port, 8000);
     assert!(config.cors_origins.is_empty());
-    assert_eq!(config.max_request_body_bytes, 104_857_600); // 100 MB
-    assert_eq!(config.max_multipart_field_bytes, 104_857_600); // 100 MB
+    assert_eq!(config.max_request_body_bytes, 104_857_600);
+    assert_eq!(config.max_multipart_field_bytes, 104_857_600);
     assert_eq!(config.listen_addr(), "127.0.0.1:8000");
 }
 
-// Test 5: Backward compatibility - file without [server] section
 #[test]
 fn test_backward_compatibility_no_server_section() {
     let dir = tempdir().expect("Operation failed");
     let config_path = dir.path().join("config.toml");
 
-    // Create config with only extraction settings (no [server] section)
     fs::write(
         &config_path,
         r#"
@@ -183,16 +162,13 @@ enable_quality_processing = true
     )
     .expect("Operation failed");
 
-    // ServerConfig::from_file should load with defaults for missing [server] section
     let config = ServerConfig::from_file(&config_path).expect("Operation failed");
 
-    // Verify ServerConfig fields have defaults
     assert_eq!(config.host, "127.0.0.1");
     assert_eq!(config.port, 8000);
     assert!(config.cors_origins.is_empty());
 }
 
-// Test 6: All three formats - TOML
 #[test]
 fn test_config_format_toml() {
     let dir = tempdir().expect("Operation failed");
@@ -213,7 +189,6 @@ cors_origins = ["https://test.com"]
     assert_eq!(config.port, 7000);
 }
 
-// Test 7: All three formats - YAML
 #[test]
 fn test_config_format_yaml() {
     let dir = tempdir().expect("Operation failed");
@@ -235,7 +210,6 @@ cors_origins:
     assert_eq!(config.port, 7001);
 }
 
-// Test 8: All three formats - JSON
 #[test]
 fn test_config_format_json() {
     let dir = tempdir().expect("Operation failed");
@@ -257,7 +231,6 @@ fn test_config_format_json() {
     assert_eq!(config.port, 7002);
 }
 
-// Test 9: CORS configuration - empty (allow all)
 #[test]
 fn test_cors_configuration_allow_all() {
     let dir = tempdir().expect("Operation failed");
@@ -280,7 +253,6 @@ port = 8000
     assert!(config.is_origin_allowed("http://localhost:3000"));
 }
 
-// Test 10: CORS configuration - specific origins
 #[test]
 fn test_cors_configuration_specific_origins() {
     let dir = tempdir().expect("Operation failed");
@@ -304,7 +276,6 @@ cors_origins = ["https://app1.com", "https://app2.com"]
     assert!(!config.is_origin_allowed("https://app3.com"));
 }
 
-// Test 11: CORS precedence - env overrides file
 #[test]
 #[serial_test::serial]
 fn test_cors_precedence_env_over_file() {
@@ -337,7 +308,6 @@ cors_origins = ["https://file.com"]
     restore_env(saved);
 }
 
-// Test 14: Invalid env var values - invalid port
 #[test]
 #[serial_test::serial]
 fn test_invalid_env_port() {
@@ -357,7 +327,6 @@ fn test_invalid_env_port() {
     restore_env(saved);
 }
 
-// Test 15: Invalid env var values - invalid max_request_body_bytes
 #[test]
 #[serial_test::serial]
 fn test_invalid_env_max_request_body_bytes() {
@@ -376,7 +345,6 @@ fn test_invalid_env_max_request_body_bytes() {
     restore_env(saved);
 }
 
-// Test 16: Partial overrides - only host, not port
 #[test]
 #[serial_test::serial]
 fn test_partial_overrides_host_only() {
@@ -395,7 +363,6 @@ port = 8001
     .expect("Operation failed");
 
     set_env("KREUZBERG_HOST", "env-host");
-    // Explicitly don't set KREUZBERG_PORT
 
     let mut config = ServerConfig::from_file(&config_path).expect("Operation failed");
     config.apply_env_overrides().expect("Operation failed");
@@ -407,7 +374,6 @@ port = 8001
     restore_env(saved);
 }
 
-// Test 17: Partial overrides - only port, not host
 #[test]
 #[serial_test::serial]
 fn test_partial_overrides_port_only() {
@@ -426,7 +392,6 @@ port = 8001
     .expect("Operation failed");
 
     set_env("KREUZBERG_PORT", "9000");
-    // Explicitly don't set KREUZBERG_HOST
 
     let mut config = ServerConfig::from_file(&config_path).expect("Operation failed");
     config.apply_env_overrides().expect("Operation failed");
@@ -438,7 +403,6 @@ port = 8001
     restore_env(saved);
 }
 
-// Test 18: Complex scenario with multiple settings
 #[test]
 #[serial_test::serial]
 fn test_complex_scenario_multiple_settings() {
@@ -464,11 +428,9 @@ max_multipart_field_bytes = 75000000
     )
     .expect("Operation failed");
 
-    // Override some settings
     set_env("KREUZBERG_HOST", "0.0.0.0");
     set_env("KREUZBERG_PORT", "3000");
     set_env("KREUZBERG_CORS_ORIGINS", "https://env.com");
-    // Don't set max_request_body_bytes - should keep file value
 
     let mut config = ServerConfig::from_file(&config_path).expect("Operation failed");
     config.apply_env_overrides().expect("Operation failed");
@@ -484,7 +446,6 @@ max_multipart_field_bytes = 75000000
     restore_env(saved);
 }
 
-// Test 19: listen_addr helper method
 #[test]
 fn test_listen_addr_helper() {
     let mut config = ServerConfig::default();
@@ -495,29 +456,25 @@ fn test_listen_addr_helper() {
     assert_eq!(config.listen_addr(), "0.0.0.0:3000");
 }
 
-// Test 20: Upload limits conversion to MB
 #[test]
 fn test_upload_limits_to_mb_conversion() {
     let mut config = ServerConfig::default();
 
-    // Test request body MB
     assert_eq!(config.max_request_body_mb(), 100);
 
-    config.max_request_body_bytes = 1_048_576; // 1 MB
+    config.max_request_body_bytes = 1_048_576;
     assert_eq!(config.max_request_body_mb(), 1);
 
-    config.max_request_body_bytes = 1_048_577; // 1 MB + 1 byte - should round up
+    config.max_request_body_bytes = 1_048_577;
     assert_eq!(config.max_request_body_mb(), 2);
 
-    // Test multipart field MB
     config.max_multipart_field_bytes = 1_048_576;
     assert_eq!(config.max_multipart_field_mb(), 1);
 
-    config.max_multipart_field_bytes = 52_428_800; // 50 MB
+    config.max_multipart_field_bytes = 52_428_800;
     assert_eq!(config.max_multipart_field_mb(), 50);
 }
 
-// Test 21: Serialization consistency
 #[test]
 fn test_serialization_consistency() {
     let dir = tempdir().expect("Operation failed");
@@ -535,13 +492,10 @@ max_multipart_field_bytes = 75000000
 
     let config = ServerConfig::from_file(&config_path).expect("Operation failed");
 
-    // Serialize back
     let serialized = toml::to_string(&config).expect("Operation failed");
 
-    // Deserialize again
     let config2: ServerConfig = toml::from_str(&serialized).expect("Failed to parse string");
 
-    // Verify consistency
     assert_eq!(config.host, config2.host);
     assert_eq!(config.port, config2.port);
     assert_eq!(config.cors_origins, config2.cors_origins);
@@ -549,7 +503,6 @@ max_multipart_field_bytes = 75000000
     assert_eq!(config.max_multipart_field_bytes, config2.max_multipart_field_bytes);
 }
 
-// Test 22: Empty CORS origins with env override
 #[test]
 #[serial_test::serial]
 fn test_empty_cors_to_specific_via_env() {
@@ -570,7 +523,6 @@ port = 8000
     let mut config = ServerConfig::from_file(&config_path).expect("Operation failed");
     assert!(config.cors_allows_all(), "File config allows all origins");
 
-    // Override with specific origins
     set_env("KREUZBERG_CORS_ORIGINS", "https://restricted.com");
     config.apply_env_overrides().expect("Operation failed");
 
@@ -582,12 +534,10 @@ port = 8000
     restore_env(saved);
 }
 
-// Test 23: Max upload limits in different formats
 #[test]
 fn test_max_limits_across_formats() {
     let dir = tempdir().expect("Operation failed");
 
-    // Test TOML
     let toml_path = dir.path().join("config.toml");
     fs::write(
         &toml_path,
@@ -602,7 +552,6 @@ max_multipart_field_bytes = 200000000
     assert_eq!(toml_config.max_request_body_bytes, 100_000_000);
     assert_eq!(toml_config.max_multipart_field_bytes, 200_000_000);
 
-    // Test YAML
     let yaml_path = dir.path().join("config.yaml");
     fs::write(
         &yaml_path,
@@ -617,7 +566,6 @@ max_multipart_field_bytes: 200000000
     assert_eq!(yaml_config.max_request_body_bytes, 100_000_000);
     assert_eq!(yaml_config.max_multipart_field_bytes, 200_000_000);
 
-    // Test JSON
     let json_path = dir.path().join("config.json");
     fs::write(
         &json_path,
@@ -634,25 +582,21 @@ max_multipart_field_bytes: 200000000
     assert_eq!(json_config.max_multipart_field_bytes, 200_000_000);
 }
 
-// Test 24: Port validation at bounds
 #[test]
 #[serial_test::serial]
 fn test_port_validation_bounds() {
     let saved = save_env(&["KREUZBERG_PORT"]);
 
-    // Valid port: 0
     set_env("KREUZBERG_PORT", "0");
     let mut config = ServerConfig::default();
     config.apply_env_overrides().expect("Operation failed");
     assert_eq!(config.port, 0);
 
-    // Valid port: 65535 (max u16)
     set_env("KREUZBERG_PORT", "65535");
     let mut config = ServerConfig::default();
     config.apply_env_overrides().expect("Operation failed");
     assert_eq!(config.port, 65535);
 
-    // Invalid port: too large
     set_env("KREUZBERG_PORT", "65536");
     let mut config = ServerConfig::default();
     let result = config.apply_env_overrides();
@@ -662,7 +606,6 @@ fn test_port_validation_bounds() {
     restore_env(saved);
 }
 
-// Test 25: Multiple env var overrides at once
 #[test]
 #[serial_test::serial]
 fn test_multiple_env_overrides_simultaneous() {
@@ -686,7 +629,6 @@ port = 8000
     )
     .expect("Operation failed");
 
-    // Set all env vars
     set_env("KREUZBERG_HOST", "192.168.1.1");
     set_env("KREUZBERG_PORT", "5000");
     set_env("KREUZBERG_CORS_ORIGINS", "https://api.com, https://app.com");
@@ -696,7 +638,6 @@ port = 8000
     let mut config = ServerConfig::from_file(&config_path).expect("Operation failed");
     config.apply_env_overrides().expect("Operation failed");
 
-    // All should be overridden
     assert_eq!(config.host, "192.168.1.1");
     assert_eq!(config.port, 5000);
     assert_eq!(config.cors_origins.len(), 2);

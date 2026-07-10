@@ -30,8 +30,7 @@ readonly class OcrBoundingGeometry
         public ?float $width = null,
         public ?float $height = null,
         public ?array $points = null,
-    ) {
-    }
+    ) {}
 
     /**
      * Create OcrBoundingGeometry from array returned by extension.
@@ -76,13 +75,6 @@ readonly class OcrBoundingGeometry
             );
         }
 
-        return new self(
-            type: $type,
-            left: $left,
-            top: $top,
-            width: $width,
-            height: $height,
-            points: $points,
-        );
+        return new self(type: $type, left: $left, top: $top, width: $width, height: $height, points: $points);
     }
 }

@@ -9,11 +9,8 @@ ffi_name="${FFI_NAME:?FFI_NAME not set}"
 out_root="runtimes/${rid}/native"
 mkdir -p "$out_root"
 
-# Check cross-compile path first, then fall back to native build path
 ffi_path="target/${rust_target}/release/${ffi_name}"
 if [ ! -f "$ffi_path" ]; then
-  # If not in target-specific directory, check native build directory
-  # (cargo uses target/release for native builds even with --target flag)
   ffi_path="target/release/${ffi_name}"
   if [ ! -f "$ffi_path" ]; then
     echo "FFI library missing at both target/${rust_target}/release/${ffi_name} and target/release/${ffi_name}" >&2

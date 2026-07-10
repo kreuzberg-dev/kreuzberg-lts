@@ -105,7 +105,6 @@ impl EpubExtractor {
         let mut warnings = Vec::new();
 
         let (content_fragment, content_fully_converted) = if wants_markup {
-            // Apply content filter to HTML options for EPUB chapter conversion.
             let html_options = super::html::apply_content_filter_to_html_options(
                 config.html_options.clone(),
                 config.content_filter.as_ref(),
@@ -205,7 +204,6 @@ impl EpubExtractor {
 
         let mut builder = InternalDocumentBuilder::new("epub");
 
-        // Emit cover image as the first element if present
         if let Some(cover_path) = cover_image_path {
             let mut buf = Vec::new();
             if let Ok(mut entry) = archive.by_name(cover_path) {
@@ -250,7 +248,6 @@ impl EpubExtractor {
                 Err(_) => continue,
             };
 
-            // Skip EPUB3 navigation documents (TOC, landmarks, page-list)
             if nav_hrefs.contains(&file_path) {
                 continue;
             }
@@ -263,12 +260,10 @@ impl EpubExtractor {
             let normalized = content::normalize_xhtml(&xhtml_content);
             let sanitized = strip_specialized_navigation_sections(&strip_document_head(&normalized));
 
-            // Skip navigation documents (TOC pages, etc.)
             if looks_like_navigation_document(&sanitized) {
                 continue;
             }
 
-            // Skip empty chapters
             if extract_text_from_xhtml(&sanitized).is_empty() {
                 continue;
             }
@@ -276,7 +271,6 @@ impl EpubExtractor {
             let chapter_structure = crate::extraction::html::structure::build_document_structure(&sanitized);
 
             if chapter_structure.nodes.is_empty() {
-                // Fallback: extract plain text
                 let chapter_title =
                     extract_title_from_xhtml(&xhtml_content).unwrap_or_else(|| format!("Chapter {}", index + 1));
                 builder.push_heading(1, &chapter_title, None, None);
@@ -289,20 +283,17 @@ impl EpubExtractor {
                     }
                 }
             } else {
-                // Convert DocumentStructure nodes to InternalDocument elements
                 let mut first_heading_idx: Option<u32> = None;
                 let mut in_list = false;
                 for node in chapter_structure.nodes.iter() {
                     use crate::types::document_structure::NodeContent;
 
-                    // Close an open list if the current node is not a ListItem
                     if in_list && !matches!(&node.content, NodeContent::ListItem { .. }) {
                         builder.end_list();
                         in_list = false;
                     }
 
                     match &node.content {
-                        // Skip Quote container nodes — we handle them via parent tracking
                         NodeContent::Quote => continue,
                         NodeContent::Heading { level, text } => {
                             let idx = builder.push_heading(*level, text, None, None);
@@ -340,7 +331,6 @@ impl EpubExtractor {
                             builder.push_code(text, language.as_deref(), None, None);
                         }
                         NodeContent::Image { description, src, .. } => {
-                            // Collect image URI
                             if let Some(img_src) = src
                                 && !img_src.is_empty()
                             {
@@ -351,8 +341,6 @@ impl EpubExtractor {
                                     kind: UriKind::Image,
                                 });
                             }
-                            // Try to extract image binary from the EPUB ZIP.
-                            // Image src is relative to the XHTML file, not the manifest dir.
                             let xhtml_dir = file_path.rsplit_once('/').map(|(d, _)| d).unwrap_or("");
                             let image_data = src.as_ref().and_then(|img_src| {
                                 let resolved = resolve_path(xhtml_dir, img_src).ok()?;
@@ -395,7 +383,6 @@ impl EpubExtractor {
                                 };
                                 builder.push_image(description.as_deref(), image, None, None);
                             } else {
-                                // No image data — emit placeholder
                                 let text_val = description.as_deref().unwrap_or("");
                                 let elem =
                                     InternalElement::text(ElementKind::Image { image_index: u32::MAX }, text_val, 0);
@@ -404,30 +391,18 @@ impl EpubExtractor {
                         }
                         NodeContent::Group {
                             heading_text: Some(_), ..
-                        } => {
-                            // Skip: the heading text is already emitted by the
-                            // Heading node that follows this Group wrapper.
-                        }
-                        _ => {
-                            // Other node types: skip or handle generically
-                        }
+                        } => {}
+                        _ => {}
                     }
                 }
 
-                // Close any trailing open list
                 if in_list {
                     builder.end_list();
                 }
 
-                // Chapter headings get automatic slug-based anchors from push_heading,
-                // enabling TOC entry resolution in the derivation step.
                 let _ = first_heading_idx;
             }
         }
-
-        // TOC→chapter relationships: each chapter heading is a TOC target.
-        // These anchors are set automatically by push_heading (slug-based),
-        // so the derivation step can resolve TOC entries to headings by key.
 
         Some(builder.build())
     }
@@ -539,7 +514,7 @@ impl DocumentExtractor for EpubExtractor {
         config: &ExtractionConfig,
     ) -> Result<InternalDocument> {
         tracing::debug!(format = "epub", size_bytes = content.len(), "extraction starting");
-        let _ = config; // conditionally used by ocr feature
+        let _ = config;
         let cursor = Cursor::new(content.to_vec());
 
         let mut archive = ZipArchive::new(cursor).map_err(|e| crate::KreuzbergError::Parsing {
@@ -568,7 +543,6 @@ impl DocumentExtractor for EpubExtractor {
             cover_image: package.metadata.cover_image_href.clone(),
         });
 
-        // Collect nav document hrefs so we can skip them in content extraction
         let nav_hrefs: AHashSet<String> = package
             .manifest
             .values()
@@ -576,7 +550,6 @@ impl DocumentExtractor for EpubExtractor {
             .filter_map(|item| item.path.clone())
             .collect();
 
-        // Extract spine hrefs for internal document building
         let spine_hrefs: Vec<String> = package
             .spine_items
             .iter()
@@ -593,7 +566,6 @@ impl DocumentExtractor for EpubExtractor {
             .map(|(k, v)| (Cow::Owned(k), v))
             .collect();
 
-        // Build InternalDocument from spine chapters
         let cover_image_path = package.metadata.cover_image_href.as_deref();
         let mut doc =
             Self::build_internal_document(&mut archive, &spine_hrefs, &manifest_dir, &nav_hrefs, cover_image_path)
@@ -703,7 +675,6 @@ mod tests {
         assert_eq!(epub_meta.dc_type, Some("Text".to_string()));
         assert_eq!(epub_meta.cover_image_href, Some("images/cover.jpg".to_string()));
 
-        // Verify Dublin Core extension fields go into FormatMetadata::Epub
         let format_meta = FormatMetadata::Epub(EpubMetadata {
             coverage: epub_meta.coverage.clone(),
             dc_format: epub_meta.format.clone(),
@@ -724,12 +695,10 @@ mod tests {
             _ => panic!("Expected FormatMetadata::Epub variant"),
         }
 
-        // Standard Dublin Core fields still go into additional
         let additional = metadata::build_additional_metadata(epub_meta);
         assert!(additional.contains_key("publisher"));
         assert!(additional.contains_key("description"));
         assert!(additional.contains_key("rights"));
-        // These should NOT be in additional anymore
         assert!(!additional.contains_key("coverage"));
         assert!(!additional.contains_key("format"));
         assert!(!additional.contains_key("relation"));

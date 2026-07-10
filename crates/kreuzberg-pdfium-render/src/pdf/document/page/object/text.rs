@@ -83,7 +83,6 @@ impl PdfPageTextRenderMode {
 
     #[inline]
     #[allow(dead_code)]
-    // The as_pdfium() function is not currently used, but we expect it to be in future
     pub(crate) fn as_pdfium(&self) -> FPDF_TEXT_RENDERMODE {
         match self {
             PdfPageTextRenderMode::Unknown => FPDF_TEXT_RENDERMODE_FPDF_TEXTRENDERMODE_UNKNOWN,
@@ -143,10 +142,6 @@ impl<'a> PdfPageTextObject<'a> {
     ///
     /// A single space will be used if the given text is empty, in order to avoid
     /// unexpected behaviour from Pdfium when dealing with empty strings.
-    // Specifically, `FPDFPageObj_SetText()` will crash if we try to apply an empty string to a
-    // text object, and `FPDFText_LoadPage()` will crash if any text object on the page contains
-    // an empty string (so it isn't enough to avoid calling `FPDFPageObj_SetText()` for an empty
-    // text object, we _have_ to set a non-empty string to avoid segfaults).
     #[inline]
     pub fn new(
         document: &PdfDocument<'a>,
@@ -163,8 +158,6 @@ impl<'a> PdfPageTextObject<'a> {
         )
     }
 
-    // Take raw `FPDF_DOCUMENT` and `FPDF_FONT` handles to avoid cascading lifetime problems
-    // associated with borrowing `PdfDocument<'a>` and/or `PdfFont<'a>`.
     pub(crate) fn new_from_handles(
         document: FPDF_DOCUMENT,
         text: impl ToString,
@@ -256,15 +249,6 @@ impl<'a> PdfPageTextObject<'a> {
     /// The [PdfPageText] object will be closed when the binding to it (`text_page` in the example above)
     /// falls out of scope.
     pub fn text(&self) -> String {
-        // Retrieving the text from Pdfium is a two-step operation. First, we call
-        // FPDFTextObj_GetText() with a null buffer; this will retrieve the length of
-        // the text in bytes. If the length is zero, then there is no text associated
-        // with the page object.
-
-        // If the length is non-zero, then we reserve a byte buffer of the given
-        // length and call FPDFTextObj_GetText() again with a pointer to the buffer;
-        // this will write the text to the buffer in UTF16-LE format.
-
         let page_handle = match self.ownership() {
             PdfPageObjectOwnership::Page(ownership) => Some(ownership.page_handle()),
             PdfPageObjectOwnership::AttachedAnnotation(ownership) => Some(ownership.page_handle()),
@@ -280,8 +264,6 @@ impl<'a> PdfPageTextObject<'a> {
                         .FPDFTextObj_GetText(self.object_handle(), text_handle, std::ptr::null_mut(), 0);
 
                 if buffer_length == 0 {
-                    // There is no text.
-
                     return String::new();
                 }
 
@@ -300,14 +282,9 @@ impl<'a> PdfPageTextObject<'a> {
 
                 get_string_from_pdfium_utf16le_bytes(buffer).unwrap_or_default()
             } else {
-                // The PdfPage containing this page object does not have an associated
-                // FPDF_TEXTPAGE object.
-
                 String::new()
             }
         } else {
-            // This page object is not contained by a PdfPage.
-
             String::new()
         }
     }
@@ -389,17 +366,11 @@ impl<'a> PdfPageTextObject<'a> {
         "this [PdfPageTextObject],"
     );
 
-    // The transform_impl() function required by the create_transform_setters!() macro
-    // is provided by the PdfPageObjectPrivate trait.
-
     create_transform_getters!(
         "this [PdfPageTextObject]",
         "this [PdfPageTextObject].",
         "this [PdfPageTextObject],"
     );
-
-    // The get_matrix_impl() function required by the create_transform_getters!() macro
-    // is provided by the PdfPageObjectPrivate trait.
 }
 
 impl<'a> PdfPageObjectPrivate<'a> for PdfPageTextObject<'a> {

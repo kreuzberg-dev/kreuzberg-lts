@@ -309,12 +309,10 @@ const SKIP_ELEMENTS: &[&str] = &[
 /// text nodes are collected verbatim from the parse tree, with newlines inserted
 /// at block-level element boundaries.
 pub(super) fn extract_text_from_xhtml(xhtml: &str) -> String {
-    // Try direct XML tree traversal first (lossless path).
     if let Some(text) = try_extract_via_roxmltree(xhtml) {
         return text;
     }
 
-    // Fallback: strip HTML tags character-by-character.
     let normalized = normalize_xhtml(xhtml);
     strip_html_tags(&normalized)
 }
@@ -332,7 +330,6 @@ fn try_extract_via_roxmltree(xhtml: &str) -> Option<String> {
             let mut output = String::with_capacity(xhtml.len() / 2);
             visit_node(root, &mut output);
 
-            // Normalise multiple consecutive blank lines to a single blank line.
             let result = collapse_blank_lines(&output);
             let result = result.trim().to_string();
 
@@ -399,13 +396,8 @@ fn visit_node(node: roxmltree::Node<'_, '_>, output: &mut String) {
     match node.node_type() {
         roxmltree::NodeType::Text => {
             let text = node.text().unwrap_or("");
-            // Normalise whitespace within a text run (collapse runs of
-            // whitespace to single spaces) but keep the text itself intact.
             let normalised = normalise_inline_whitespace(text);
             if !normalised.is_empty() {
-                // If the output already ends with a newline (or is empty),
-                // trim leading spaces from this fragment to avoid spurious
-                // indentation; otherwise append as-is.
                 let fragment = if output.is_empty() || output.ends_with('\n') {
                     normalised.trim_start().to_string()
                 } else {
@@ -419,12 +411,10 @@ fn visit_node(node: roxmltree::Node<'_, '_>, output: &mut String) {
         roxmltree::NodeType::Element => {
             let tag = node.tag_name().name().to_ascii_lowercase();
 
-            // Skip elements whose content should never appear in plain text.
             if SKIP_ELEMENTS.iter().any(|&s| s == tag) {
                 return;
             }
 
-            // Self-closing elements that produce whitespace.
             if tag == "br" {
                 output.push('\n');
                 return;
@@ -438,32 +428,23 @@ fn visit_node(node: roxmltree::Node<'_, '_>, output: &mut String) {
 
             let is_block = BLOCK_ELEMENTS.iter().any(|&s| s == tag);
 
-            if is_block {
-                // Ensure block starts on a new line.
-                if !output.is_empty() && !output.ends_with('\n') {
-                    output.push('\n');
-                }
+            if is_block && !output.is_empty() && !output.ends_with('\n') {
+                output.push('\n');
             }
 
-            // Recurse into children.
             for child in node.children() {
                 visit_node(child, output);
             }
 
-            if is_block {
-                // Ensure block ends on a new line.
-                if !output.is_empty() && !output.ends_with('\n') {
-                    output.push('\n');
-                }
+            if is_block && !output.is_empty() && !output.ends_with('\n') {
+                output.push('\n');
             }
         }
         roxmltree::NodeType::Root => {
-            // Visit all children of the document root.
             for child in node.children() {
                 visit_node(child, output);
             }
         }
-        // Ignore PI, Comment, CDATA, etc.
         _ => {}
     }
 }
@@ -604,8 +585,6 @@ mod tests {
         assert!(text.contains("Hello") && text.contains("World"));
     }
 
-    // --- Direct XHTML extraction tests ---
-
     #[test]
     fn test_extract_text_from_xhtml_basic() {
         let xhtml = r#"<?xml version="1.0" encoding="UTF-8"?>
@@ -620,7 +599,6 @@ mod tests {
         let result = extract_text_from_xhtml(xhtml);
         assert!(result.contains("Chapter One"), "got: {result}");
         assert!(result.contains("This is paragraph text."), "got: {result}");
-        // head/title content should not appear in body text
         assert!(!result.contains("Test"), "head title should be excluded, got: {result}");
     }
 
@@ -681,7 +659,6 @@ mod tests {
         assert!(result.contains("Paragraph two."), "got: {result}");
         assert!(result.contains("Item A"), "got: {result}");
         assert!(result.contains("Item B"), "got: {result}");
-        // The two paragraphs should be on different lines
         assert!(result.contains('\n'), "should have newlines, got: {result}");
     }
 
@@ -694,7 +671,6 @@ mod tests {
   </body>
 </html>"#;
         let result = extract_text_from_xhtml(xhtml);
-        // Text content should be preserved; no markdown syntax introduced
         assert!(result.contains("bold"), "got: {result}");
         assert!(result.contains("italic"), "got: {result}");
         assert!(!result.contains("**"), "no markdown bold, got: {result}");
@@ -703,7 +679,6 @@ mod tests {
 
     #[test]
     fn test_extract_text_from_xhtml_fallback_for_invalid_xml() {
-        // Malformed XHTML that roxmltree cannot parse should fall back to tag stripping.
         let bad_xhtml = "<p>Hello <b>World</b> unclosed <p>second";
         let result = extract_text_from_xhtml(bad_xhtml);
         assert!(result.contains("Hello"), "got: {result}");

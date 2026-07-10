@@ -16,7 +16,7 @@ import { getBinding } from "../core/binding.js";
  * @returns Buffer containing PNG image data
  */
 export function renderPdfPageSync(filePath: string, pageIndex: number, options?: { dpi?: number }): Buffer {
-	return getBinding().renderPdfPageSync(filePath, pageIndex, options?.dpi ?? null);
+  return getBinding().renderPdfPageSync(filePath, pageIndex, options?.dpi ?? null);
 }
 
 /**
@@ -29,13 +29,13 @@ export function renderPdfPageSync(filePath: string, pageIndex: number, options?:
  * @returns Promise resolving to a Buffer containing PNG image data
  */
 export async function renderPdfPage(filePath: string, pageIndex: number, options?: { dpi?: number }): Promise<Buffer> {
-	return getBinding().renderPdfPage(filePath, pageIndex, options?.dpi ?? null);
+  return getBinding().renderPdfPage(filePath, pageIndex, options?.dpi ?? null);
 }
 
 /** A rendered PDF page with its index and PNG data. */
 export interface PdfPageResult {
-	pageIndex: number;
-	data: Buffer;
+  pageIndex: number;
+  data: Buffer;
 }
 
 /**
@@ -47,7 +47,7 @@ export interface PdfPageResult {
  * @returns Array of PdfPageResult objects
  */
 export function iteratePdfPagesSync(filePath: string, options?: { dpi?: number }): PdfPageResult[] {
-	return getBinding().iteratePdfPagesSync(filePath, options?.dpi ?? null);
+  return getBinding().iteratePdfPagesSync(filePath, options?.dpi ?? null);
 }
 
 /**
@@ -59,7 +59,7 @@ export function iteratePdfPagesSync(filePath: string, options?: { dpi?: number }
  * @returns Promise resolving to an array of PdfPageResult objects
  */
 export async function iteratePdfPages(filePath: string, options?: { dpi?: number }): Promise<PdfPageResult[]> {
-	return getBinding().iteratePdfPages(filePath, options?.dpi ?? null);
+  return getBinding().iteratePdfPages(filePath, options?.dpi ?? null);
 }
 
 /**
@@ -69,7 +69,7 @@ export async function iteratePdfPages(filePath: string, options?: { dpi?: number
  * @returns Number of pages
  */
 export function pdfPageCount(filePath: string): number {
-	return getBinding().pdfPageCount(filePath);
+  return getBinding().pdfPageCount(filePath);
 }
 
 /**
@@ -88,25 +88,25 @@ export function pdfPageCount(filePath: string): number {
  * ```
  */
 export class PdfPageIterator {
-	private inner: { next(): PdfPageResult | null; pageCount(): number; close(): void };
+  private inner: { next(): PdfPageResult | null; pageCount(): number; close(): void };
 
-	constructor(filePath: string, options?: { dpi?: number }) {
-		const Ctor = getBinding().JsPdfPageIterator;
-		this.inner = new Ctor(filePath, options?.dpi ?? null);
-	}
+  constructor(filePath: string, options?: { dpi?: number }) {
+    const Ctor = getBinding().JsPdfPageIterator;
+    this.inner = new Ctor(filePath, options?.dpi ?? null);
+  }
 
-	/** Advance and return the next page, or null when exhausted. */
-	next(): PdfPageResult | null {
-		return this.inner.next();
-	}
+  /** Advance and return the next page, or null when exhausted. */
+  next(): PdfPageResult | null {
+    return this.inner.next();
+  }
 
-	/** Total number of pages in the PDF. */
-	pageCount(): number {
-		return this.inner.pageCount();
-	}
+  /** Total number of pages in the PDF. */
+  pageCount(): number {
+    return this.inner.pageCount();
+  }
 
-	/** Free native resources. Safe to call multiple times. */
-	close(): void {
-		this.inner.close();
-	}
+  /** Free native resources. Safe to call multiple times. */
+  close(): void {
+    this.inner.close();
+  }
 }

@@ -1,11 +1,4 @@
 pub(crate) mod internal {
-    // We want to make the PdfPageObjectsPrivate trait private while providing a blanket
-    // implementation of PdfPageObjectsCommon for any type T where T: PdfPageObjectsPrivate.
-    // Rust complains, however, that by doing so we are leaking the private trait outside
-    // the crate.
-
-    // Instead of making the PdfPageObjectsPrivate trait private, we leave it public but place it
-    // inside this pub(crate) module in order to prevent it from being visible outside the crate.
 
     use crate::bindings::PdfiumLibraryBindings;
     use crate::error::PdfiumError;

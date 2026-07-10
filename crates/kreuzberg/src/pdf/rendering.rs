@@ -262,7 +262,6 @@ impl PdfPageIterator {
     /// Returns an error if the PDF is invalid or password-protected without
     /// the correct password.
     pub fn new(pdf_bytes: Vec<u8>, dpi: Option<i32>, password: Option<String>) -> Result<Self> {
-        // Validate PDF and get page count (acquires + releases mutex)
         let renderer = PdfRenderer::new()?;
         let pw = password.as_deref();
         let document = renderer
@@ -271,7 +270,7 @@ impl PdfPageIterator {
             .map_err(|e| super::error::classify_pdfium_load_error(e, pw))?;
         let page_count = document.pages().len() as usize;
         drop(document);
-        drop(renderer); // release mutex immediately
+        drop(renderer);
         Ok(Self {
             pdf_bytes,
             password,
@@ -304,7 +303,6 @@ impl PdfPageIterator {
     }
 
     fn render_page(&self, page_index: usize) -> Result<Vec<u8>> {
-        // Acquire mutex, load document from owned bytes, render, release
         let renderer = PdfRenderer::new()?;
         let pw = self.password.as_deref();
         let document = renderer
@@ -313,7 +311,6 @@ impl PdfPageIterator {
             .map_err(|e| super::error::classify_pdfium_load_error(e, pw))?;
         let image = renderer.render_page_from_document(&document, page_index, &self.options)?;
         encode_png(&image)
-        // renderer dropped here → mutex released
     }
 }
 
@@ -339,7 +336,6 @@ impl ExactSizeIterator for PdfPageIterator {}
 
 fn encode_png(image: &DynamicImage) -> Result<Vec<u8>> {
     let (w, h) = image.dimensions();
-    // Raw RGB is w*h*3 bytes; PNG compresses ~50%, plus header overhead
     let estimated = (w as usize * h as usize * 3) / 2;
     let mut buf = std::io::Cursor::new(Vec::with_capacity(estimated));
     image
@@ -680,7 +676,6 @@ mod tests {
     #[serial]
     fn test_pdf_page_iterator_success() {
         let pdf_bytes = load_test_pdf();
-        // Get expected count from the iterator itself to avoid holding two pdfium handles
         let iter = PdfPageIterator::new(pdf_bytes, None, None).expect("iterator creation should succeed");
         let expected_count = iter.page_count();
         let mut count = 0;
@@ -767,6 +762,6 @@ mod tests {
         let (idx, png) = first.unwrap().expect("first page should render");
         assert_eq!(idx, 0);
         assert!(png.len() >= 4 && png[..4] == PNG_MAGIC);
-        drop(iter); // should not crash or leak
+        drop(iter);
     }
 }

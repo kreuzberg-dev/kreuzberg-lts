@@ -83,10 +83,6 @@ pub fn parse_file_config_from_json(json: &Option<String>) -> Result<Option<FileE
     }
 }
 
-// Note: PHP config classes in packages/php/src/Config/*.php are the source of truth.
-// They already have toArray(), fromArray(), toJson(), fromJson(), and fromFile() methods.
-// This module simply provides the Rust-side parsing when needed for extraction operations.
-
 /// Get function builders for registration with ext-php-rs module.
 ///
 /// This function is called by lib.rs during module initialization to register
@@ -96,7 +92,5 @@ pub fn parse_file_config_from_json(json: &Option<String>) -> Result<Option<FileE
 ///
 /// Empty vector (no functions currently exported)
 pub fn get_function_builders() -> Vec<ext_php_rs::builders::FunctionBuilder<'static>> {
-    // No functions exported currently - config parsing happens internally
-    // during extraction operations
     vec![]
 }

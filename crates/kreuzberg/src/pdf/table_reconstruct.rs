@@ -40,7 +40,6 @@ pub fn split_segment_to_words(seg: &SegmentData, page_height: f32) -> Vec<HocrWo
         return Vec::new();
     }
 
-    // Fast path: single word
     if !trimmed.contains(char::is_whitespace) {
         return vec![segment_to_hocr_word(seg, page_height)];
     }
@@ -57,7 +56,6 @@ pub fn split_segment_to_words(seg: &SegmentData, page_height: f32) -> Vec<HocrWo
     let mut words = Vec::new();
     let mut search_start = 0;
     for word in text.split_whitespace() {
-        // Find byte offset of this word in the original text
         let byte_offset = text[search_start..].find(word).map(|pos| search_start + pos);
         let Some(offset) = byte_offset else {
             continue;
@@ -125,13 +123,11 @@ fn post_process_table_inner(
     min_columns: usize,
     layout_guided: bool,
 ) -> Option<Vec<Vec<String>>> {
-    // Strip empty rows
     table.retain(|row| row.iter().any(|cell| !cell.trim().is_empty()));
     if table.is_empty() {
         return None;
     }
 
-    // Reject prose: if >50% of non-empty cells exceed 60 chars, it's not a table.
     let mut non_empty = 0usize;
     let mut long_cells = 0usize;
     let mut total_chars = 0usize;
@@ -150,13 +146,8 @@ fn post_process_table_inner(
         }
     }
 
-    // Prose detection: reject if too many cells contain long text.
-    // Layout-guided tables use relaxed thresholds since the model already
-    // confirmed this is a table region, but multi-column prose can still
-    // fool the layout model (e.g., 2-column academic papers).
     if non_empty > 0 {
         if layout_guided {
-            // Relaxed: reject if >70% of cells exceed 100 chars
             if long_cells > 0 {
                 let long_cells_100 = table
                     .iter()
@@ -170,16 +161,13 @@ fn post_process_table_inner(
                     return None;
                 }
             }
-            // Relaxed: reject if avg cell length > 80 chars
             if total_chars / non_empty > 80 {
                 return None;
             }
         } else {
-            // Unsupervised: reject if >50% of cells exceed 60 chars
             if long_cells * 2 > non_empty {
                 return None;
             }
-            // Unsupervised: reject if avg cell length > 50 chars
             if total_chars / non_empty > 50 {
                 return None;
             }
@@ -191,7 +179,6 @@ fn post_process_table_inner(
         return None;
     }
 
-    // Find where data rows start (first row with ≥3 cells containing digits)
     let data_start = table
         .iter()
         .enumerate()
@@ -211,12 +198,10 @@ fn post_process_table_inner(
     };
     let mut data_rows = table[data_start..].to_vec();
 
-    // Keep at most 2 header rows
     if header_rows.len() > 2 {
         header_rows = header_rows[header_rows.len() - 2..].to_vec();
     }
 
-    // If no header detected, promote first data row
     if header_rows.is_empty() {
         if data_rows.len() < 2 {
             return None;
@@ -231,7 +216,6 @@ fn post_process_table_inner(
         return None;
     }
 
-    // Merge multi-row headers into a single header row
     let mut header = vec![String::new(); column_count];
     for row in &header_rows {
         for (idx, cell) in row.iter().enumerate() {
@@ -254,7 +238,6 @@ fn post_process_table_inner(
         return None;
     }
 
-    // Remove header-only columns (header text but no data)
     let mut col = 0;
     while col < processed[0].len() {
         let header_text = processed[0][col].trim().to_string();
@@ -273,15 +256,10 @@ fn post_process_table_inner(
         }
     }
 
-    // Final dimension check: must have ≥2 columns and ≥2 rows
     if processed[0].len() < 2 || processed.len() <= 1 {
         return None;
     }
 
-    // Column sparsity check: reject if any column is too sparse.
-    // Threshold: >75% empty (unsupervised) or >95% empty (layout-guided).
-    // Layout-guided uses a very permissive threshold because layout models
-    // can confidently detect tables with optional/sparse columns.
     let data_row_count = processed.len() - 1;
     if data_row_count > 0 {
         for c in 0..processed[0].len() {
@@ -290,9 +268,9 @@ fn post_process_table_inner(
                 .filter(|row| row.get(c).is_none_or(|cell| cell.trim().is_empty()))
                 .count();
             let too_sparse = if layout_guided {
-                empty_count * 20 > data_row_count * 19 // >95%
+                empty_count * 20 > data_row_count * 19
             } else {
-                empty_count * 4 > data_row_count * 3 // >75%
+                empty_count * 4 > data_row_count * 3
             };
             if too_sparse {
                 return None;
@@ -300,11 +278,6 @@ fn post_process_table_inner(
         }
     }
 
-    // Overall density check: reject if too few data cells are filled.
-    // Threshold: <40% filled (unsupervised) or <15% filled (layout-guided).
-    // Layout-guided uses a lower threshold because the model already confirmed
-    // this is a table — sparse tables (e.g., with merged cells or optional
-    // fields) are legitimate.
     {
         let total_data_cells = data_row_count * processed[0].len();
         if total_data_cells > 0 {
@@ -314,9 +287,9 @@ fn post_process_table_inner(
                 .filter(|cell| !cell.trim().is_empty())
                 .count();
             let too_sparse = if layout_guided {
-                filled * 20 < total_data_cells * 3 // <15%
+                filled * 20 < total_data_cells * 3
             } else {
-                filled * 5 < total_data_cells * 2 // <40%
+                filled * 5 < total_data_cells * 2
             };
             if too_sparse {
                 return None;
@@ -324,14 +297,6 @@ fn post_process_table_inner(
         }
     }
 
-    // Prose detection: reject tables where most non-empty cells contain only single words.
-    // When justified prose text is falsely detected as a table, the reconstruction
-    // splits sentences across many columns, producing cells with single words.
-    // Real tables typically have meaningful multi-word content in their cells.
-    // Only check tables with 5+ columns, since 2-4 column tables with short cells
-    // are common and legitimate (e.g., Name | Department | Salary).
-    // Layout-guided uses a stricter threshold (>85%) since the model has some
-    // confidence, but multi-column prose can still fool it.
     if processed[0].len() >= 5 {
         let mut single_word_cells = 0usize;
         let mut non_empty_cells = 0usize;
@@ -348,24 +313,12 @@ fn post_process_table_inner(
                 }
             }
         }
-        let threshold = if layout_guided {
-            // Layout-guided: reject if >85% single-word cells
-            85
-        } else {
-            // Unsupervised: reject if >70% single-word cells
-            70
-        };
+        let threshold = if layout_guided { 85 } else { 70 };
         if non_empty_cells >= 6 && single_word_cells * 100 > non_empty_cells * threshold {
             return None;
         }
     }
 
-    // Column-text-flow check: detect multi-column prose masquerading as a table.
-    // The key signal is that cells in adjacent columns form sentence continuations:
-    // column 0 ends without sentence-ending punctuation and column 1 starts with a
-    // lowercase letter. If >60% of non-empty rows exhibit this "flow-through"
-    // pattern, the content is prose, not a table.
-    // Applied for both layout-guided and unsupervised modes.
     if processed[0].len() >= 2 {
         let mut flow_rows = 0usize;
         let mut eligible_rows = 0usize;
@@ -388,8 +341,6 @@ fn post_process_table_inner(
         }
     }
 
-    // Content asymmetry check: reject if one column has the vast majority of text.
-    // Layout-guided uses relaxed threshold (>92%) vs unsupervised (>85%).
     {
         let num_cols = processed[0].len();
         let col_char_counts: Vec<usize> = (0..num_cols)
@@ -403,7 +354,6 @@ fn post_process_table_inner(
         let total_chars_asym: usize = col_char_counts.iter().sum();
 
         if total_chars_asym > 0 {
-            // Check for dominant column (one column has almost all the text)
             let max_col_share = col_char_counts
                 .iter()
                 .map(|&cc| cc as f64 / total_chars_asym as f64)
@@ -413,7 +363,6 @@ fn post_process_table_inner(
                 return None;
             }
 
-            // Check for sparse + low-content columns (unsupervised only)
             if !layout_guided {
                 for (c, &col_chars) in col_char_counts.iter().enumerate() {
                     let char_share = col_chars as f64 / total_chars_asym as f64;
@@ -431,11 +380,6 @@ fn post_process_table_inner(
         }
     }
 
-    // Row-to-row sentence continuation check: detect multi-column prose by looking
-    // at whether text flows from the last column of one row into the first column
-    // of the next row. In prose laid out as columns, the last cell of a row ends
-    // mid-sentence (no terminal punctuation) and the first cell of the next row
-    // starts with a lowercase letter. If >40% of row transitions show this, reject.
     if processed.len() > 3 && processed[0].len() >= 2 {
         let last_col = processed[0].len() - 1;
         let mut continuation_count = 0usize;
@@ -462,10 +406,6 @@ fn post_process_table_inner(
         }
     }
 
-    // High-row low-column prose check: multi-column prose typically produces tables
-    // with many rows (>20), few columns (≤3), and high fill rate (>80%).
-    // Real tables with this shape usually have sparse or structured data.
-    // Applied for both layout-guided and unsupervised modes.
     {
         let num_cols = processed[0].len();
         let num_data_rows = processed.len() - 1;
@@ -482,11 +422,6 @@ fn post_process_table_inner(
         }
     }
 
-    // Uniform column width check: in real tables, columns have varying average cell
-    // lengths (e.g., narrow ID column vs wide description column). In multi-column
-    // prose, all columns carry similar amounts of text. If we have 3-5 text columns
-    // where the longest average cell length is within 2x of the shortest, AND the
-    // table has many rows with high fill rate, reject as likely prose.
     {
         let num_cols = processed[0].len();
         let num_data_rows = processed.len() - 1;
@@ -510,18 +445,13 @@ fn post_process_table_inner(
                 })
                 .collect();
 
-            // Only consider columns with substantial text (avg > 15 chars).
-            // Prose columns have sentence-like content with avg cell length well above
-            // 15 chars. Short-valued columns (IDs, codes, short labels) are excluded.
             let text_col_avgs: Vec<f64> = col_avg_lengths.iter().copied().filter(|&avg| avg > 15.0).collect();
 
             if text_col_avgs.len() >= 3 {
                 let min_avg = text_col_avgs.iter().copied().fold(f64::INFINITY, f64::min);
                 let max_avg = text_col_avgs.iter().copied().fold(0.0_f64, f64::max);
 
-                // All text columns within 2x of each other
                 if min_avg > 0.0 && max_avg <= min_avg * 2.0 {
-                    // Also check fill rate
                     let total_data_cells = num_data_rows * num_cols;
                     let filled_cells = processed[1..]
                         .iter()
@@ -537,7 +467,6 @@ fn post_process_table_inner(
         }
     }
 
-    // Normalize cells
     for cell in &mut processed[0] {
         let text = cell.trim().replace("  ", " ");
         *cell = text;
@@ -571,11 +500,6 @@ pub fn is_well_formed_table(grid: &[Vec<String>]) -> bool {
         return false;
     }
 
-    // --- Check 1: Row coherence (prose detection) ---
-    // For each data row, concatenate all cells left-to-right. If the result
-    // reads like a coherent sentence fragment (>30 chars, last cell ends without
-    // punctuation and next row's first cell starts lowercase), the grid is
-    // likely prose laid out in columns.
     let data_rows = &grid[1..];
     if data_rows.len() >= 3 && num_cols >= 2 {
         let mut prose_like_rows = 0usize;
@@ -593,8 +517,6 @@ pub fn is_well_formed_table(grid: &[Vec<String>]) -> bool {
             }
             eligible_rows += 1;
 
-            // Check if the row reads like prose: mostly alphabetic, few abrupt
-            // breaks, and doesn't look like structured data (numbers, codes).
             let alpha_ratio = {
                 let alpha = concatenated
                     .chars()
@@ -602,7 +524,6 @@ pub fn is_well_formed_table(grid: &[Vec<String>]) -> bool {
                     .count();
                 alpha as f64 / concatenated.len() as f64
             };
-            // Prose has high alpha ratio (>0.8) — structured data has numbers, symbols
             if alpha_ratio > 0.8 {
                 prose_like_rows += 1;
             }
@@ -613,11 +534,6 @@ pub fn is_well_formed_table(grid: &[Vec<String>]) -> bool {
         }
     }
 
-    // --- Check 2: Column semantic uniformity ---
-    // In real tables, columns have different character: a narrow ID column, a wide
-    // description column, a numeric column. In multi-column prose, all columns
-    // carry similar-length text. Check if cell lengths within each column have
-    // low variance AND all columns have similar average length.
     if num_cols >= 3 && data_rows.len() >= 4 {
         let col_stats: Vec<(f64, f64)> = (0..num_cols)
             .map(|c| {
@@ -638,7 +554,6 @@ pub fn is_well_formed_table(grid: &[Vec<String>]) -> bool {
             })
             .collect();
 
-        // Filter to columns with meaningful content (mean > 3 chars)
         let meaningful: Vec<(f64, f64)> = col_stats.iter().copied().filter(|(m, _)| *m > 3.0).collect();
 
         if meaningful.len() >= 3 {
@@ -646,10 +561,8 @@ pub fn is_well_formed_table(grid: &[Vec<String>]) -> bool {
             let min_mean = means.iter().copied().fold(f64::INFINITY, f64::min);
             let max_mean = means.iter().copied().fold(0.0_f64, f64::max);
 
-            // All columns within 2x of each other in avg length
             let columns_uniform = min_mean > 0.0 && max_mean <= min_mean * 2.0;
 
-            // Low coefficient of variation within each column (cells ±30% of mean)
             let low_variance = meaningful
                 .iter()
                 .all(|(mean, stddev)| *mean > 0.0 && *stddev / *mean < 0.3);
@@ -660,10 +573,6 @@ pub fn is_well_formed_table(grid: &[Vec<String>]) -> bool {
         }
     }
 
-    // --- Check 3: Minimum meaningful content (repetitive vocabulary) ---
-    // If the table has ≥3 columns but total unique words across all cells is
-    // < 2× the number of rows, the same few words are repeated in every row
-    // (e.g., "Bookmark | File PDF | Year 4" repeated 83 times).
     if num_cols >= 3 {
         let mut unique_words: std::collections::HashSet<&str> = std::collections::HashSet::new();
         for row in data_rows {
@@ -679,17 +588,12 @@ pub fn is_well_formed_table(grid: &[Vec<String>]) -> bool {
         }
     }
 
-    // --- Check 4: Repeated header detection ---
-    // If the header row (first row) appears identically as a data row multiple
-    // times, the layout model is detecting a repeating page element (running
-    // header/footer) as a table.
     if !grid.is_empty() {
         let header = &grid[0];
         let header_matches = data_rows
             .iter()
             .filter(|row| row.len() == header.len() && row.iter().zip(header.iter()).all(|(a, b)| a.trim() == b.trim()))
             .count();
-        // If header appears 2+ times in data rows, it's a repeating element
         if header_matches >= 2 {
             return false;
         }
@@ -812,8 +716,6 @@ mod tests {
         assert_eq!(words.len(), 2);
         assert_eq!(words[0].text, "Col");
         assert_eq!(words[1].text, "A");
-        // "A" starts at byte 4 of "Col A" (len=5), so frac_start = 4/5 = 0.8
-        // word_x = 100 + 0.8 * 100 = 180
         assert_eq!(words[1].left, 180);
     }
 
@@ -833,7 +735,6 @@ mod tests {
         assert_eq!(words[1].text, "b");
         assert_eq!(words[2].text, "c");
         assert_eq!(words[3].text, "d");
-        // Words should be spaced across the 700pt width
         assert!(words[1].left > words[0].left);
         assert!(words[2].left > words[1].left);
         assert!(words[3].left > words[2].left);
@@ -841,8 +742,6 @@ mod tests {
 
     #[test]
     fn test_split_y_coordinate_conversion() {
-        // Segment at y=500 (PDF bottom-up), height=12, page_height=800
-        // Image top = 800 - (500 + 12) = 288
         let seg = make_seg("word", 100.0, 500.0, 50.0, 12.0);
         let words = split_segment_to_words(&seg, 800.0);
         assert_eq!(words[0].top, 288);
@@ -863,10 +762,7 @@ mod tests {
 
     #[test]
     fn test_post_process_rejects_prose_as_table() {
-        // Simulates what happens when justified prose text is incorrectly
-        // split into a multi-column table: most cells contain single words.
         let table = vec![
-            // header
             vec![
                 "Foreword".into(),
                 "".into(),
@@ -877,7 +773,6 @@ mod tests {
                 "".into(),
                 "".into(),
             ],
-            // data rows: single words per cell (prose split across columns)
             vec![
                 "ISO".into(),
                 "(the".into(),
@@ -909,14 +804,12 @@ mod tests {
                 "in".into(),
             ],
         ];
-        // This should be rejected because most cells are single words (prose).
         let result = post_process_table(table, false, false);
         assert!(result.is_none(), "Prose-like table should be rejected");
     }
 
     #[test]
     fn test_post_process_accepts_real_table() {
-        // A real table with meaningful multi-word content in cells.
         let table = vec![
             vec!["Name".into(), "Department".into(), "Annual Salary".into()],
             vec!["John Smith".into(), "Engineering Dept".into(), "$95,000".into()],
@@ -930,8 +823,6 @@ mod tests {
 
     #[test]
     fn test_column_text_flow_rejects_multicolumn_prose() {
-        // Simulates 2-column academic paper prose reconstructed as a table.
-        // Column 0 ends mid-sentence (no punctuation), column 1 starts lowercase.
         let table = vec![
             vec!["Header Left".into(), "Header Right".into()],
             vec![
@@ -951,7 +842,6 @@ mod tests {
                 "attention mechanisms and transformer-based embeddings".into(),
             ],
         ];
-        // Both unsupervised and layout-guided should reject this
         let result_unsupervised = post_process_table(table.clone(), false, false);
         assert!(
             result_unsupervised.is_none(),
@@ -966,7 +856,6 @@ mod tests {
 
     #[test]
     fn test_column_text_flow_accepts_real_two_column_table() {
-        // A real 2-column table where cells are independent (sentences end properly).
         let table = vec![
             vec!["Feature".into(), "Description".into()],
             vec!["Authentication.".into(), "OAuth 2.0 with JWT tokens.".into()],
@@ -983,7 +872,6 @@ mod tests {
 
     #[test]
     fn test_column_text_flow_not_triggered_with_few_rows() {
-        // Only 2 eligible rows — below the 3-row minimum for the check.
         let table = vec![
             vec!["Left".into(), "Right".into()],
             vec![
@@ -992,15 +880,11 @@ mod tests {
             ],
             vec!["another partial sentence".into(), "flowing into next column".into()],
         ];
-        // With only 2 data rows (eligible_rows < 3), the flow check should not trigger.
-        // The table may still be rejected by other checks, but not by flow-through.
-        // We just verify it doesn't panic and runs without issues.
         let _ = post_process_table(table, true, false);
     }
 
     #[test]
     fn test_layout_guided_rejects_prose_with_long_cells() {
-        // Layout-guided should now reject tables where >70% of cells exceed 100 chars.
         let long_cell = "a".repeat(120);
         let table = vec![
             vec!["Header A".into(), "Header B".into()],
@@ -1018,9 +902,6 @@ mod tests {
 
     #[test]
     fn test_layout_guided_accepts_table_with_some_long_cells() {
-        // A layout-guided table where some cells are long (description column)
-        // but not overwhelming — should be accepted. The first column has enough
-        // text to avoid the content asymmetry rejection (>92% in one column).
         let table = vec![
             vec!["Feature Name".into(), "Description".into()],
             vec![
@@ -1046,7 +927,6 @@ mod tests {
 
     #[test]
     fn test_layout_guided_rejects_dominant_column() {
-        // One column has >92% of all text content — asymmetric.
         let table = vec![
             vec!["Tag".into(), "Content".into()],
             vec!["x".into(), "This is a very long paragraph of text that contains almost all content in the table and dwarfs the tag column.".into()],
@@ -1062,7 +942,6 @@ mod tests {
 
     #[test]
     fn test_layout_guided_single_word_prose_rejected() {
-        // Layout-guided mode with 5+ columns where >85% cells are single words.
         let table = vec![
             vec!["A".into(), "B".into(), "C".into(), "D".into(), "E".into(), "F".into()],
             vec![
@@ -1123,10 +1002,7 @@ mod tests {
 
     #[test]
     fn test_row_continuation_rejects_prose_flowing_across_rows() {
-        // Simulates 2-column prose where the last column of row N flows into
-        // the first column of row N+1 (no terminal punctuation + lowercase start).
         let mut table = vec![vec!["Left Column".into(), "Right Column".into()]];
-        // Generate enough rows to trigger the check (>3 rows, >=3 eligible transitions)
         let prose_pairs = vec![
             ("The experiment was conducted", "over several weeks and the"),
             ("results clearly demonstrate", "that the proposed method is"),
@@ -1151,7 +1027,6 @@ mod tests {
 
     #[test]
     fn test_row_continuation_accepts_table_with_sentence_endings() {
-        // A real 2-column table where cells end with proper punctuation.
         let table = vec![
             vec!["Parameter".into(), "Value".into()],
             vec!["Max connections.".into(), "100 per host.".into()],
@@ -1169,7 +1044,6 @@ mod tests {
 
     #[test]
     fn test_high_row_low_column_rejects_prose() {
-        // 2-column table with >20 rows and >80% fill rate — classic multi-column prose.
         let mut table = vec![vec!["Column A".into(), "Column B".into()]];
         for i in 0..25 {
             table.push(vec![
@@ -1191,7 +1065,6 @@ mod tests {
 
     #[test]
     fn test_high_row_low_column_accepts_sparse_table() {
-        // 2-column table with >20 rows but <80% fill rate (many empty cells).
         let mut table = vec![vec!["Date".into(), "Event".into()]];
         for i in 0..25 {
             if i % 3 == 0 {
@@ -1201,14 +1074,11 @@ mod tests {
             }
         }
         let result = post_process_table(table, true, false);
-        // Should not be rejected by the high-row check since fill rate < 80%
-        // (may be rejected by other checks like column sparsity, which is fine)
-        let _ = result; // Just ensure no panic
+        let _ = result;
     }
 
     #[test]
     fn test_high_row_low_column_allows_four_plus_columns() {
-        // 4-column table with many rows and high fill rate — NOT rejected since cols > 3.
         let mut table = vec![vec!["ID".into(), "Name".into(), "Dept".into(), "Salary".into()]];
         for i in 0..25 {
             table.push(vec![
@@ -1227,8 +1097,6 @@ mod tests {
 
     #[test]
     fn test_uniform_column_width_rejects_prose() {
-        // 3-column table where all columns have similar average cell length
-        // and high fill rate — characteristic of multi-column prose.
         let mut table = vec![vec!["Col A".into(), "Col B".into(), "Col C".into()]];
         for _ in 0..8 {
             table.push(vec![
@@ -1251,9 +1119,6 @@ mod tests {
 
     #[test]
     fn test_uniform_column_width_accepts_varied_columns() {
-        // Real table where columns have very different average cell lengths.
-        // The Name column is long enough to avoid the content asymmetry check
-        // (no single column has >85% of total chars).
         let table = vec![
             vec!["ID".into(), "Product Name".into(), "Short Note".into()],
             vec![
@@ -1286,8 +1151,6 @@ mod tests {
         assert!(result.is_some(), "Table with varied column widths should be accepted");
     }
 
-    // --- Tests for is_well_formed_table ---
-
     #[test]
     fn test_well_formed_rejects_single_row() {
         let grid = vec![vec!["Header".into(), "Value".into()]];
@@ -1317,7 +1180,6 @@ mod tests {
 
     #[test]
     fn test_well_formed_rejects_repetitive_content() {
-        // Same few words repeated in every row — like "Bookmark | File PDF | Year 4"
         let grid = vec![
             vec!["Bookmark".into(), "File PDF".into(), "Year 4".into()],
             vec!["Bookmark".into(), "File PDF".into(), "Year 4".into()],
@@ -1333,7 +1195,6 @@ mod tests {
 
     #[test]
     fn test_well_formed_rejects_repeated_header_in_data() {
-        // Header appears identically in 3 data rows — repeated page element
         let grid = vec![
             vec!["Title".into(), "Author".into(), "Page".into()],
             vec!["Chapter 1".into(), "Smith".into(), "10".into()],
@@ -1349,7 +1210,6 @@ mod tests {
 
     #[test]
     fn test_well_formed_rejects_prose_rows() {
-        // Multi-column prose: each row concatenates to a coherent sentence
         let grid = vec![
             vec!["Column A".into(), "Column B".into(), "Column C".into()],
             vec![
@@ -1381,7 +1241,6 @@ mod tests {
 
     #[test]
     fn test_well_formed_rejects_uniform_columns() {
-        // All 3 columns have similar average cell length and low variance — prose signal
         let grid = vec![
             vec!["Col A".into(), "Col B".into(), "Col C".into()],
             vec!["twelve chars".into(), "twelve char2".into(), "twelve char3".into()],
@@ -1397,7 +1256,6 @@ mod tests {
 
     #[test]
     fn test_well_formed_accepts_varied_columns() {
-        // Columns have clearly different character: ID (short), name (medium), amount (numeric)
         let grid = vec![
             vec!["ID".into(), "Product Name".into(), "Price".into()],
             vec!["1".into(), "Widget Alpha Premium".into(), "$29.99".into()],
@@ -1413,9 +1271,6 @@ mod tests {
 
     #[test]
     fn test_well_formed_rejects_multicolumn_prose_short_cells() {
-        // nougat_008 pattern: scanned 3-column PDF where prose text flow is
-        // misdetected as a table. Cells are short (1-3 words each) but the
-        // concatenated rows read as prose with high alphabetic ratio.
         let grid = vec![
             vec!["Bookmark".into(), "File PDF".into(), "Year 4".into()],
             vec!["Numeracy".into(), "Essment".into(), "Test".into()],

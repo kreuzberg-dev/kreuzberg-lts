@@ -111,10 +111,10 @@ defmodule Kreuzberg.CacheAPI do
   def cache_stats do
     case Native.cache_stats() do
       {:ok, stats_map} when is_map(stats_map) ->
-        {:ok, Helpers.normalize_stats_keys(stats_map)}
+      {:ok, Helpers.normalize_stats_keys(stats_map)}
 
       {:error, _reason} = err ->
-        err
+      err
     end
   end
 
@@ -142,10 +142,10 @@ defmodule Kreuzberg.CacheAPI do
   def cache_stats! do
     case cache_stats() do
       {:ok, stats} ->
-        stats
+      stats
 
       {:error, reason} ->
-        raise Error, message: reason, reason: Kreuzberg.UtilityAPI.classify_error(reason)
+      raise Error, message: reason, reason: Kreuzberg.UtilityAPI.classify_error(reason)
     end
   end
 
@@ -194,10 +194,10 @@ defmodule Kreuzberg.CacheAPI do
   def clear_cache! do
     case clear_cache() do
       :ok ->
-        :ok
+      :ok
 
       {:error, reason} ->
-        raise Error, message: reason, reason: Kreuzberg.UtilityAPI.classify_error(reason)
+      raise Error, message: reason, reason: Kreuzberg.UtilityAPI.classify_error(reason)
     end
   end
 end

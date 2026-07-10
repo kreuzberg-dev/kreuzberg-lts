@@ -343,8 +343,6 @@ impl ExtractionConfig {
     /// assert!(resolved.force_ocr);
     /// ```
     pub fn with_file_overrides(&self, overrides: &FileExtractionConfig) -> Self {
-        // Destructure to ensure compile-time exhaustiveness: adding a field to
-        // FileExtractionConfig without handling it here will produce a compile error.
         let FileExtractionConfig {
             ref enable_quality_processing,
             ref ocr,
@@ -489,12 +487,10 @@ impl ExtractionConfig {
     /// - Pipeline stage backends and VLM configs are valid
     /// - Structured extraction schema and LLM model are non-empty
     pub fn validate(&self) -> Result<(), crate::error::KreuzbergError> {
-        // Validate OCR config if present
         if let Some(ref ocr) = self.ocr {
             ocr.validate()?;
         }
 
-        // Validate structured extraction config if present
         if let Some(ref se) = self.structured_extraction {
             crate::core::config_validation::validate_structured_extraction_schema(&se.schema, &se.llm.model)?;
         }

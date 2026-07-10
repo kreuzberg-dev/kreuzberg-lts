@@ -44,6 +44,5 @@ pub(crate) fn is_truly_monospace(pdfium_fixed_pitch: bool, font_name: &str) -> b
         return false;
     }
     let lower = font_name.to_ascii_lowercase();
-    // If the font name matches a known proportional family, ignore the flag.
     !KNOWN_PROPORTIONAL_FONTS.iter().any(|p| lower.contains(p))
 }

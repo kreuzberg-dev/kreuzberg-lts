@@ -47,60 +47,60 @@ import { getWasmModule, isInitialized } from "./internal.js";
  * ```
  */
 export async function extractFile(
-	path: string,
-	mimeType?: string | null,
-	config?: ExtractionConfigType | null,
+  path: string,
+  mimeType?: string | null,
+  config?: ExtractionConfigType | null,
 ): Promise<ExtractionResult> {
-	if (!isInitialized()) {
-		throw new Error("WASM module not initialized. Call initWasm() first.");
-	}
+  if (!isInitialized()) {
+    throw new Error("WASM module not initialized. Call initWasm() first.");
+  }
 
-	const wasm = getWasmModule();
+  const wasm = getWasmModule();
 
-	try {
-		if (!path) {
-			throw new Error("File path is required");
-		}
+  try {
+    if (!path) {
+      throw new Error("File path is required");
+    }
 
-		const runtime = detectRuntime();
-		if (runtime === "browser") {
-			throw new Error("Use extractBytes with fileToUint8Array for browser environments");
-		}
+    const runtime = detectRuntime();
+    if (runtime === "browser") {
+      throw new Error("Use extractBytes with fileToUint8Array for browser environments");
+    }
 
-		let fileData: Uint8Array;
+    let fileData: Uint8Array;
 
-		if (runtime === "node") {
-			const { readFile } = await import("node:fs/promises");
-			const buffer = await readFile(path);
-			fileData = new Uint8Array(buffer);
-		} else if (runtime === "deno") {
-			const deno = (globalThis as Record<string, unknown>).Deno as {
-				readFile: (path: string) => Promise<Uint8Array>;
-			};
-			fileData = await deno.readFile(path);
-		} else if (runtime === "bun") {
-			const { readFile } = await import("node:fs/promises");
-			const buffer = await readFile(path);
-			fileData = new Uint8Array(buffer);
-		} else {
-			throw new Error(`Unsupported runtime for file extraction: ${runtime}`);
-		}
+    if (runtime === "node") {
+      const { readFile } = await import("node:fs/promises");
+      const buffer = await readFile(path);
+      fileData = new Uint8Array(buffer);
+    } else if (runtime === "deno") {
+      const deno = (globalThis as Record<string, unknown>).Deno as {
+        readFile: (path: string) => Promise<Uint8Array>;
+      };
+      fileData = await deno.readFile(path);
+    } else if (runtime === "bun") {
+      const { readFile } = await import("node:fs/promises");
+      const buffer = await readFile(path);
+      fileData = new Uint8Array(buffer);
+    } else {
+      throw new Error(`Unsupported runtime for file extraction: ${runtime}`);
+    }
 
-		let detectedMimeType = mimeType;
-		if (!detectedMimeType) {
-			detectedMimeType = wasm.detectMimeFromBytes(fileData);
-		}
+    let detectedMimeType = mimeType;
+    if (!detectedMimeType) {
+      detectedMimeType = wasm.detectMimeFromBytes(fileData);
+    }
 
-		if (!detectedMimeType) {
-			throw new Error("Could not detect MIME type for file. Please provide mimeType parameter.");
-		}
+    if (!detectedMimeType) {
+      throw new Error("Could not detect MIME type for file. Please provide mimeType parameter.");
+    }
 
-		detectedMimeType = wasm.normalizeMimeType(detectedMimeType);
+    detectedMimeType = wasm.normalizeMimeType(detectedMimeType);
 
-		return await extractBytes(fileData, detectedMimeType, config);
-	} catch (error) {
-		throw wrapWasmError(error, `extracting from file: ${path}`);
-	}
+    return await extractBytes(fileData, detectedMimeType, config);
+  } catch (error) {
+    throw wrapWasmError(error, `extracting from file: ${path}`);
+  }
 }
 
 /**
@@ -136,24 +136,24 @@ export async function extractFile(
  * ```
  */
 export async function extractFromFile(
-	file: File | Blob,
-	mimeType?: string | null,
-	config?: ExtractionConfigType | null,
+  file: File | Blob,
+  mimeType?: string | null,
+  config?: ExtractionConfigType | null,
 ): Promise<ExtractionResult> {
-	if (!isInitialized()) {
-		throw new Error("WASM module not initialized. Call initWasm() first.");
-	}
+  if (!isInitialized()) {
+    throw new Error("WASM module not initialized. Call initWasm() first.");
+  }
 
-	const wasm = getWasmModule();
+  const wasm = getWasmModule();
 
-	try {
-		const bytes = await fileToUint8Array(file);
-		let type = mimeType ?? (file instanceof File ? file.type : "application/octet-stream");
+  try {
+    const bytes = await fileToUint8Array(file);
+    let type = mimeType ?? (file instanceof File ? file.type : "application/octet-stream");
 
-		type = wasm.normalizeMimeType(type);
+    type = wasm.normalizeMimeType(type);
 
-		return await extractBytes(bytes, type, config);
-	} catch (error) {
-		throw wrapWasmError(error, `extracting from ${file instanceof File ? "file" : "blob"}`);
-	}
+    return await extractBytes(bytes, type, config);
+  } catch (error) {
+    throw wrapWasmError(error, `extracting from ${file instanceof File ? "file" : "blob"}`);
+  }
 }

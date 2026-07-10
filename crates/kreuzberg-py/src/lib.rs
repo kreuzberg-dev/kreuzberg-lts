@@ -25,7 +25,7 @@ mod ffi;
 mod helpers;
 mod html_options;
 mod keywords;
-mod plugins; // Now a module directory with submodules
+mod plugins;
 mod types;
 mod validation;
 
@@ -56,9 +56,6 @@ fn init_async_runtime() -> PyResult<()> {
 /// Internal bindings module for Kreuzberg
 #[pymodule]
 fn _internal_bindings(m: &Bound<'_, PyModule>) -> PyResult<()> {
-    // ORT discovery is handled by _setup_lib_path.py (pure Python) which runs
-    // before this module is imported. It sets ORT_DYLIB_PATH from the pip
-    // onnxruntime package if available. The core handles system-level discovery.
     kreuzberg::ort_discovery::ensure_ort_available();
 
     m.add("ValidationError", m.py().get_type::<error::ValidationError>())?;

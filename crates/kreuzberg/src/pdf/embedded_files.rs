@@ -30,7 +30,6 @@ pub fn extract_embedded_files(document: &Document) -> Vec<EmbeddedFile> {
         Err(_) => return files,
     };
 
-    // Get /Names dictionary.
     let names_obj = match catalog.get(b"Names") {
         Ok(obj) => resolve_object(document, obj),
         Err(_) => return files,
@@ -41,7 +40,6 @@ pub fn extract_embedded_files(document: &Document) -> Vec<EmbeddedFile> {
         _ => return files,
     };
 
-    // Get /EmbeddedFiles from /Names.
     let ef_obj = match names_dict.get(b"EmbeddedFiles") {
         Ok(obj) => resolve_object(document, obj),
         Err(_) => return files,
@@ -52,7 +50,6 @@ pub fn extract_embedded_files(document: &Document) -> Vec<EmbeddedFile> {
         _ => return files,
     };
 
-    // The name tree can have /Names (leaf) or /Kids (intermediate nodes).
     collect_from_name_tree(document, &ef_dict, &mut files);
 
     files
@@ -60,7 +57,6 @@ pub fn extract_embedded_files(document: &Document) -> Vec<EmbeddedFile> {
 
 /// Recursively collect embedded files from a PDF name tree node.
 fn collect_from_name_tree(document: &Document, dict: &lopdf::Dictionary, files: &mut Vec<EmbeddedFile>) {
-    // Leaf node: /Names array with alternating [name filespec name filespec ...].
     if let Ok(Object::Array(names_arr)) = dict.get(b"Names") {
         let mut i = 0;
         while i + 1 < names_arr.len() {
@@ -83,7 +79,6 @@ fn collect_from_name_tree(document: &Document, dict: &lopdf::Dictionary, files: 
         }
     }
 
-    // Intermediate node: /Kids array of child name tree nodes.
     if let Ok(Object::Array(kids)) = dict.get(b"Kids") {
         for kid in kids {
             let kid_obj = resolve_object(document, kid);
@@ -105,7 +100,6 @@ fn extract_file_from_filespec(
     tree_name: &str,
     fs_dict: &lopdf::Dictionary,
 ) -> Option<EmbeddedFile> {
-    // Determine the display filename: prefer /UF (Unicode), then /F, then the tree name.
     let display_name = fs_dict
         .get(b"UF")
         .or_else(|_| fs_dict.get(b"F"))
@@ -116,14 +110,12 @@ fn extract_file_from_filespec(
         })
         .unwrap_or_else(|| tree_name.to_string());
 
-    // Get /EF (embedded file dictionary).
     let ef_obj = resolve_object(document, fs_dict.get(b"EF").ok()?)?;
     let ef_dict = match ef_obj {
         Object::Dictionary(d) => d,
         _ => return None,
     };
 
-    // Get /F stream reference from /EF.
     let stream_obj = ef_dict.get(b"F").or_else(|_| ef_dict.get(b"UF")).ok()?;
     let stream_id = stream_obj.as_reference().ok()?;
 
@@ -132,10 +124,8 @@ fn extract_file_from_filespec(
         _ => return None,
     };
 
-    // Try to decompress. lopdf's `get_decompressed_content` returns decoded bytes.
     let data = stream.decompressed_content().unwrap_or_else(|_| stream.content.clone());
 
-    // Try to get MIME type from the stream dictionary's /Subtype.
     let mime_type = stream
         .dict
         .get(b"Subtype")
@@ -143,7 +133,6 @@ fn extract_file_from_filespec(
         .and_then(|obj| obj.as_name().ok())
         .map(|name| String::from_utf8_lossy(name).into_owned())
         .or_else(|| {
-            // Detect from filename extension.
             std::path::Path::new(&display_name)
                 .extension()
                 .and_then(|ext| ext.to_str())
@@ -187,7 +176,6 @@ pub async fn extract_and_process_embedded_files(
         return (children, warnings);
     }
 
-    // Don't recurse if we've exhausted archive depth.
     if config.max_archive_depth == 0 {
         return (children, warnings);
     }
@@ -197,7 +185,6 @@ pub async fn extract_and_process_embedded_files(
 
     for file in embedded {
         let mime = file.mime_type.unwrap_or_else(|| {
-            // Detect from filename extension.
             std::path::Path::new(&file.name)
                 .extension()
                 .and_then(|ext| ext.to_str())

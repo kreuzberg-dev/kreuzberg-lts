@@ -37,7 +37,6 @@ impl<'a> LatexParser<'a> {
         let mut in_document = false;
         let mut i = 0;
 
-        // Detect plain TeX documents (no \begin{document})
         let is_plain_tex = self.source.contains("\\bye") && !self.source.contains("\\begin{document}");
         if is_plain_tex {
             in_document = true;
@@ -47,21 +46,17 @@ impl<'a> LatexParser<'a> {
             let line = lines[i];
             let trimmed = line.trim();
 
-            // Handle plain TeX end marker
             if is_plain_tex && trimmed.contains("\\bye") {
                 break;
             }
 
-            // Extract metadata from preamble
             if !in_document && !is_plain_tex {
                 extract_metadata_from_line(trimmed, &mut self.metadata);
             }
 
-            // Handle \begin{document}
             if !is_plain_tex && trimmed.contains("\\begin{document}") {
                 in_document = true;
 
-                // Handle single-line documents
                 if trimmed.contains("\\end{document}") {
                     self.process_single_line_document(trimmed);
                     break;
@@ -71,12 +66,10 @@ impl<'a> LatexParser<'a> {
                 continue;
             }
 
-            // Handle \end{document}
             if !is_plain_tex && trimmed.contains("\\end{document}") {
                 break;
             }
 
-            // Process document content
             if in_document {
                 if self.process_environments(&lines, trimmed, &mut i) {
                     continue;
@@ -154,16 +147,13 @@ impl<'a> LatexParser<'a> {
                 *i = new_i;
                 true
             }
-            // For all other environments, extract text content instead of dropping
             _ => {
                 let (env_content, new_i) = collect_environment(lines, *i, &env_name);
-                // Process content line by line to extract text
                 for line in env_content.lines() {
                     let trimmed_line = line.trim();
                     if trimmed_line.is_empty() || trimmed_line.starts_with('%') {
                         continue;
                     }
-                    // Skip nested \begin/\end markers
                     if trimmed_line.contains("\\begin{")
                         || trimmed_line.contains("\\begin {")
                         || trimmed_line.contains("\\end{")
@@ -171,7 +161,6 @@ impl<'a> LatexParser<'a> {
                     {
                         continue;
                     }
-                    // Extract caption text from figure/table environments
                     if trimmed_line.contains("\\caption{") {
                         if let Some(caption) = extract_braced(trimmed_line, "caption") {
                             self.output.push_str(&process_line(&caption));
@@ -193,8 +182,6 @@ impl<'a> LatexParser<'a> {
 
     /// Processes section headings, display math, and regular content.
     fn process_sections_and_content(&mut self, trimmed: &str, lines: &[&str], i: &mut usize) {
-        // Check for heading commands: \chapter, \section, \subsection, etc.
-        // Also handles starred variants (\section*) and optional args (\section[short]{title})
         let heading_commands = [
             ("chapter*", "\n# "),
             ("chapter", "\n# "),
@@ -225,10 +212,8 @@ impl<'a> LatexParser<'a> {
         }
 
         if trimmed.starts_with("\\[") {
-            // Display math mode
             self.process_display_math(trimmed, lines, i);
         } else if !trimmed.is_empty() && !trimmed.starts_with("%") {
-            // Regular content
             let processed = process_line(trimmed);
             if !processed.is_empty() {
                 self.output.push_str(&processed);
@@ -243,7 +228,6 @@ impl<'a> LatexParser<'a> {
     fn process_display_math(&mut self, trimmed: &str, lines: &[&str], i: &mut usize) {
         let mut math_content = trimmed.to_string();
         if !trimmed.contains("\\]") {
-            // Math spans multiple lines
             *i += 1;
             while *i < lines.len() {
                 let math_line = lines[*i];
@@ -255,7 +239,6 @@ impl<'a> LatexParser<'a> {
                 *i += 1;
             }
         }
-        // Convert \[...\] to $$...$$ format
         let converted = math_content.trim_start_matches("\\[").trim_end_matches("\\]").trim();
         self.output.push_str("$$");
         self.output.push_str(converted);

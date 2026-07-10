@@ -12,35 +12,35 @@ import com.fasterxml.jackson.annotation.JsonValue;
  * @since 4.6.0
  */
 public enum ContentLayer {
-	/** Main document body content. */
-	BODY("body"),
+    /** Main document body content. */
+    BODY("body"),
 
-	/** Page/section header (running header). */
-	HEADER("header"),
+    /** Page/section header (running header). */
+    HEADER("header"),
 
-	/** Page/section footer (running footer). */
-	FOOTER("footer"),
+    /** Page/section footer (running footer). */
+    FOOTER("footer"),
 
-	/** Footnote content. */
-	FOOTNOTE("footnote");
+    /** Footnote content. */
+    FOOTNOTE("footnote");
 
-	private final String wireValue;
+    private final String wireValue;
 
-	ContentLayer(String wireValue) {
-		this.wireValue = wireValue;
-	}
+    ContentLayer(String wireValue) {
+        this.wireValue = wireValue;
+    }
 
-	/**
+    /**
 	 * Get the wire format value for this content layer.
 	 *
 	 * @return wire value used in serialization
 	 */
-	@JsonValue
-	public String wireValue() {
-		return wireValue;
-	}
+    @JsonValue
+    public String wireValue() {
+        return wireValue;
+    }
 
-	/**
+    /**
 	 * Parse a ContentLayer from its wire value.
 	 *
 	 * @param wireValue
@@ -49,12 +49,12 @@ public enum ContentLayer {
 	 * @throws IllegalArgumentException
 	 *             if the value is not recognized
 	 */
-	public static ContentLayer fromWireValue(String wireValue) {
-		for (ContentLayer type : values()) {
-			if (type.wireValue.equals(wireValue)) {
-				return type;
-			}
-		}
-		throw new IllegalArgumentException("Unknown ContentLayer: " + wireValue);
-	}
+    public static ContentLayer fromWireValue(String wireValue) {
+        for (ContentLayer type : values()) {
+            if (type.wireValue.equals(wireValue)) {
+                return type;
+            }
+        }
+        throw new IllegalArgumentException("Unknown ContentLayer: " + wireValue);
+    }
 }

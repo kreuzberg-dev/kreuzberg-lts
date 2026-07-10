@@ -41,8 +41,7 @@ readonly class CodeProcessResult
         public array $symbols = [],
         public array $diagnostics = [],
         public array $chunks = [],
-    ) {
-    }
+    ) {}
 
     /**
      * @param array<string, mixed> $data
@@ -84,42 +83,42 @@ readonly class CodeProcessResult
             metrics: CodeFileMetrics::fromArray($metricsData),
             structure: array_map(
                 /** @param array<string, mixed> $item */
-                static fn (array $item): CodeStructureItem => CodeStructureItem::fromArray($item),
+                static fn(array $item): CodeStructureItem => CodeStructureItem::fromArray($item),
                 $structureData,
             ),
             imports: array_map(
                 /** @param array<string, mixed> $item */
-                static fn (array $item): CodeImportInfo => CodeImportInfo::fromArray($item),
+                static fn(array $item): CodeImportInfo => CodeImportInfo::fromArray($item),
                 $importsData,
             ),
             exports: array_map(
                 /** @param array<string, mixed> $item */
-                static fn (array $item): CodeExportInfo => CodeExportInfo::fromArray($item),
+                static fn(array $item): CodeExportInfo => CodeExportInfo::fromArray($item),
                 $exportsData,
             ),
             comments: array_map(
                 /** @param array<string, mixed> $item */
-                static fn (array $item): CodeCommentInfo => CodeCommentInfo::fromArray($item),
+                static fn(array $item): CodeCommentInfo => CodeCommentInfo::fromArray($item),
                 $commentsData,
             ),
             docstrings: array_map(
                 /** @param array<string, mixed> $item */
-                static fn (array $item): CodeDocstringInfo => CodeDocstringInfo::fromArray($item),
+                static fn(array $item): CodeDocstringInfo => CodeDocstringInfo::fromArray($item),
                 $docstringsData,
             ),
             symbols: array_map(
                 /** @param array<string, mixed> $item */
-                static fn (array $item): CodeSymbolInfo => CodeSymbolInfo::fromArray($item),
+                static fn(array $item): CodeSymbolInfo => CodeSymbolInfo::fromArray($item),
                 $symbolsData,
             ),
             diagnostics: array_map(
                 /** @param array<string, mixed> $item */
-                static fn (array $item): CodeDiagnostic => CodeDiagnostic::fromArray($item),
+                static fn(array $item): CodeDiagnostic => CodeDiagnostic::fromArray($item),
                 $diagnosticsData,
             ),
             chunks: array_map(
                 /** @param array<string, mixed> $item */
-                static fn (array $item): CodeChunk => CodeChunk::fromArray($item),
+                static fn(array $item): CodeChunk => CodeChunk::fromArray($item),
                 $chunksData,
             ),
         );

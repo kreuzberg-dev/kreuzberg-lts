@@ -12,11 +12,6 @@ use ort::{
     value::Tensor,
 };
 
-// PP-LCNet_x1_0_textline_ori preprocessing (ImageNet normalization).
-// Input: resize to 160×80 (W×H), normalize with ImageNet mean/std.
-// Formula in substract_mean_normalize: (pixel - MEAN) * NORM
-// For ImageNet: (pixel/255 - mean) / std = (pixel - mean*255) * (1/(std*255))
-// V2 PP-LCNet angle classifier expects [3, 80, 160] input (NCHW).
 const ANGLE_DST_WIDTH: u32 = 160;
 const ANGLE_DST_HEIGHT: u32 = 80;
 const ANGLE_COLS: usize = 2;
@@ -52,7 +47,6 @@ impl AngleNet {
         most_angle: bool,
         cls_thresh: f32,
     ) -> Result<Vec<Angle>, OcrError> {
-        // Pre-allocate — we know exact count upfront.
         let mut angles = Vec::with_capacity(part_imgs.len());
 
         if do_angle {
@@ -103,9 +97,8 @@ impl AngleNet {
 
         let mut angle = Self::score_to_angle(&outputs, ANGLE_COLS)?;
 
-        // Only apply rotation if confidence exceeds threshold (matches PaddleOCR's cls_thresh=0.9)
         if angle.score < cls_thresh {
-            angle.index = 0; // Keep original orientation when confidence is low
+            angle.index = 0;
         }
 
         Ok(angle)

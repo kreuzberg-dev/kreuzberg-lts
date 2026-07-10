@@ -3,8 +3,6 @@ use rmcp::schemars::schema_for;
 
 #[test]
 fn test_file_configs_items_is_object_not_boolean() {
-    // Regression test for https://github.com/kreuzberg-dev/kreuzberg-lts/issues/877
-    // Moonshot AI (Kimi) rejects `"items": true` — items must be an object.
     let schema = schema_for!(BatchExtractFilesParams);
     let schema_value = serde_json::to_value(&schema).unwrap();
 
@@ -18,7 +16,6 @@ fn test_file_configs_items_is_object_not_boolean() {
 
 #[test]
 fn test_file_configs_items_accepts_null_and_object() {
-    // items schema must accept both null (use default) and object (per-file config).
     let schema = schema_for!(BatchExtractFilesParams);
     let schema_value = serde_json::to_value(&schema).unwrap();
 
@@ -39,8 +36,6 @@ fn test_file_configs_items_accepts_null_and_object() {
 
 #[test]
 fn test_file_configs_is_not_required() {
-    // schema_with bypasses automatic Option<> handling — verify schemars still
-    // leaves file_configs out of `required` (the field is optional at the call site).
     let schema = schema_for!(BatchExtractFilesParams);
     let schema_value = serde_json::to_value(&schema).unwrap();
 

@@ -30,16 +30,13 @@ def test_single_file_async_equals_sync() -> None:
     in asyncio.run() can cause subprocess-level initialization issues. This test
     verifies that async extraction works with a simple text file.
     """
-    # Use a simple text file to avoid PDFium initialization issues with async
     fixture = Path(__file__).parent.parent.parent.parent.parent / "test_documents" / "text" / "fake_text.txt"
 
     if not fixture.exists():
         pytest.skip("Test document not found")
 
-    # Extract file using async to verify async extraction works
     result_async = asyncio.run(extract_file(str(fixture)))
 
-    # Verify extraction succeeded
     assert result_async is not None, "Result should not be None"
     assert len(result_async.content) > 0, "Result should have content"
 

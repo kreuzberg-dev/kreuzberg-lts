@@ -7,17 +7,11 @@ use super::patterns::*;
 use memchr::memmem;
 
 // ============================================================================
-// Structure Thresholds
-// ============================================================================
 
 const MIN_SENTENCE_WORDS: f64 = 10.0;
 const MAX_SENTENCE_WORDS: f64 = 30.0;
 const MIN_PARAGRAPH_WORDS: f64 = 50.0;
 const MAX_PARAGRAPH_WORDS: f64 = 300.0;
-
-// ============================================================================
-// Structure Analysis
-// ============================================================================
 
 /// Calculate bonus based on text structure quality
 #[inline]

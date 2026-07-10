@@ -1,8 +1,12 @@
 //! Post-processor plugin registration and management
 
-use crate::{error_handling::{kreuzberg_error, runtime_error}, gc_guarded_value::GcGuardedValue, helpers::get_kw};
-use magnus::{Error, Ruby, Value, scan_args::scan_args, TryConvert};
+use crate::{
+    error_handling::{kreuzberg_error, runtime_error},
+    gc_guarded_value::GcGuardedValue,
+    helpers::get_kw,
+};
 use magnus::value::ReprValue;
+use magnus::{Error, Ruby, TryConvert, Value, scan_args::scan_args};
 use std::sync::Arc;
 
 /// Register a post-processor plugin
@@ -59,12 +63,13 @@ pub fn register_post_processor(args: &[Value]) -> Result<(), Error> {
 
             let updated_result = tokio::task::block_in_place(|| {
                 let ruby = Ruby::get().expect("Ruby not initialized");
-                let result_hash = crate::result::extraction_result_to_ruby(&ruby, result_clone.clone()).map_err(|e| {
-                    kreuzberg::KreuzbergError::Plugin {
-                        message: format!("Failed to convert result to Ruby: {}", e),
-                        plugin_name: processor_name.clone(),
-                    }
-                })?;
+                let result_hash =
+                    crate::result::extraction_result_to_ruby(&ruby, result_clone.clone()).map_err(|e| {
+                        kreuzberg::KreuzbergError::Plugin {
+                            message: format!("Failed to convert result to Ruby: {}", e),
+                            plugin_name: processor_name.clone(),
+                        }
+                    })?;
 
                 let modified = processor
                     .funcall::<_, _, magnus::Value>("call", (result_hash,))

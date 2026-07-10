@@ -324,10 +324,6 @@ async fn test_malformed_email() {
     );
 }
 
-// ---------------------------------------------------------------------------
-// MSG (Outlook) integration tests — exercises the direct CFB parser
-// ---------------------------------------------------------------------------
-
 /// Test MSG extraction with subject, sender, recipients, and body.
 #[tokio::test]
 async fn test_msg_basic_extraction() {

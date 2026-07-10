@@ -5,13 +5,11 @@ Usage:
     python3 scripts/publish/check_all_registries.py <version>
 """
 
-
 import importlib.util
 import os
 import sys
 from pathlib import Path
 
-# Locate check.py from the shared actions repo
 SCRIPT_DIR = Path(__file__).resolve().parent
 REPO_ROOT = SCRIPT_DIR.parent.parent
 CHECK_PY = REPO_ROOT.parent / "actions" / "check-registry" / "scripts" / "check.py"
@@ -21,7 +19,6 @@ if not CHECK_PY.exists():
     print("Ensure the shared actions repo is checked out at ../actions/", file=sys.stderr)
     sys.exit(1)
 
-# Import check.py as a module
 spec = importlib.util.spec_from_file_location("check_registry", CHECK_PY)
 assert spec and spec.loader
 check_mod = importlib.util.module_from_spec(spec)
@@ -33,7 +30,6 @@ RED = "\033[31m"
 RESET = "\033[0m"
 
 CHECKS: list[tuple[str, str, str, dict[str, str]]] = [
-    # (registry, package, label, kwargs)
     ("pypi", "kreuzberg", "PyPI", {}),
     ("npm", "@kreuzberg/node", "npm (@kreuzberg/node)", {}),
     ("npm", "@kreuzberg/wasm", "npm (WASM)", {}),
@@ -51,7 +47,6 @@ CHECKS: list[tuple[str, str, str, dict[str, str]]] = [
 ]
 
 GH_ASSET_CHECKS: list[tuple[str, str, dict[str, str]]] = [
-    # (label, asset_prefix_or_assets, kwargs)
     ("CLI binaries", "", {"asset_prefix": "kreuzberg-cli-"}),
     ("Go FFI", "", {"asset_prefix": "go-ffi-"}),
     ("C FFI", "", {"asset_prefix": "c-ffi-"}),
@@ -68,7 +63,6 @@ def main() -> None:
     version = sys.argv[1].lstrip("v")
     tag = f"v{version}"
 
-    # Suppress GITHUB_OUTPUT writes during local check-all
     old_output = os.environ.pop("GITHUB_OUTPUT", None)
 
     results: list[tuple[str, bool]] = []
@@ -81,13 +75,11 @@ def main() -> None:
         exists = check_fn(package, version, **kwargs)
         results.append((label, exists))
 
-    # GitHub release asset checks
     print("\nChecking GitHub Release assets...")
     for label, _, kwargs in GH_ASSET_CHECKS:
         exists = check_mod.check_github_release("kreuzberg", version, tag=tag, **kwargs)
         results.append((f"GH: {label}", exists))
 
-    # Summary
     print("\n" + "=" * 60)
     print("Results:\n")
     passed = 0

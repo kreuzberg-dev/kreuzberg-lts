@@ -3,13 +3,11 @@
 mod worker_pool;
 mod worker_pool_api;
 
-// Re-export worker pool APIs
 pub use worker_pool_api::{
     JsWorkerPool, WorkerPoolStats, batch_extract_files_in_worker, close_worker_pool, create_worker_pool,
     extract_file_in_worker, get_worker_pool_stats,
 };
 
-// Module declarations
 mod batch;
 mod config;
 mod embedding_presets;
@@ -20,7 +18,6 @@ mod plugins;
 mod result;
 mod validation;
 
-// Re-export all public items from modules
 pub use error_handling::{ErrorClassification, classify_error, get_error_code_description, get_error_code_name};
 
 pub use config::{
@@ -64,7 +61,6 @@ pub use plugins::{
     unregister_post_processor, unregister_validator,
 };
 
-// Core imports for utilities and FFI types
 use ahash::AHashSet;
 use kreuzberg::{ExtractionConfig, ExtractionResult as RustExtractionResult, KNOWN_FORMATS};
 use once_cell::sync::Lazy;

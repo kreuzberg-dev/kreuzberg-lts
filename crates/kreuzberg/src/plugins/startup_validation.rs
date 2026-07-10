@@ -117,7 +117,6 @@ impl PluginHealthStatus {
 pub fn validate_plugins_at_startup() -> Result<PluginHealthStatus> {
     let status = PluginHealthStatus::check();
 
-    // Log OCR backend status
     if status.ocr_backends_count == 0 {
         tracing::warn!(
             "No OCR backends registered. OCR functionality will be unavailable. \
@@ -136,7 +135,6 @@ pub fn validate_plugins_at_startup() -> Result<PluginHealthStatus> {
         );
     }
 
-    // Log document extractor status
     if status.extractors_count == 0 {
         tracing::warn!(
             "No document extractors registered. \
@@ -148,17 +146,14 @@ pub fn validate_plugins_at_startup() -> Result<PluginHealthStatus> {
         tracing::info!("Document extractors registered: [{}]", status.extractors.join(", "));
     }
 
-    // Log post-processor status
     if status.post_processors_count > 0 {
         tracing::info!("Post-processors registered: [{}]", status.post_processors.join(", "));
     }
 
-    // Log validator status
     if status.validators_count > 0 {
         tracing::info!("Validators registered: [{}]", status.validators.join(", "));
     }
 
-    // Check for common environment variables
     check_environment_variables();
 
     Ok(status)
@@ -170,11 +165,9 @@ pub fn validate_plugins_at_startup() -> Result<PluginHealthStatus> {
 /// particularly useful for Kubernetes deployments where configuration
 /// is often done via environment variables.
 fn check_environment_variables() {
-    // Check TESSDATA_PREFIX for OCR
     match std::env::var("TESSDATA_PREFIX") {
         Ok(path) => {
             tracing::debug!("TESSDATA_PREFIX={}", path);
-            // Verify the path exists
             if let Ok(metadata) = std::fs::metadata(&path) {
                 if metadata.is_dir() {
                     tracing::debug!(
@@ -202,12 +195,10 @@ fn check_environment_variables() {
         }
     }
 
-    // Check for common Kubernetes/Docker volume mount points
     if std::path::Path::new("/usr/share/tesseract-ocr/tessdata").exists() {
         tracing::debug!("Found tessdata at system default: /usr/share/tesseract-ocr/tessdata");
     }
 
-    // Check RUST_LOG for debugging
     if let Ok(log_level) = std::env::var("RUST_LOG") {
         tracing::debug!("RUST_LOG={}", log_level);
     }
@@ -220,14 +211,12 @@ mod tests {
     #[test]
     fn test_plugin_health_status_check() {
         let status = PluginHealthStatus::check();
-        // Just verify the status can be created (counts are always non-negative)
         let _ = status.ocr_backends_count;
         let _ = status.extractors_count;
     }
 
     #[test]
     fn test_validate_plugins_at_startup() {
-        // Initialize tracing for tests
         let _ = tracing_subscriber::fmt()
             .with_max_level(tracing::Level::DEBUG)
             .with_test_writer()
@@ -236,35 +225,30 @@ mod tests {
         let result = validate_plugins_at_startup();
         assert!(result.is_ok());
         let status = result.unwrap();
-        // Status created successfully (counts are always non-negative)
         let _ = status.ocr_backends_count;
     }
 
     #[test]
     fn test_plugin_health_status_ocr_backends_empty() {
         let status = PluginHealthStatus::check();
-        // Status is valid even with no backends
         assert_eq!(status.ocr_backends.len(), status.ocr_backends_count);
     }
 
     #[test]
     fn test_plugin_health_status_extractors_empty() {
         let status = PluginHealthStatus::check();
-        // Status is valid even with no extractors
         assert_eq!(status.extractors.len(), status.extractors_count);
     }
 
     #[test]
     fn test_plugin_health_status_post_processors_empty() {
         let status = PluginHealthStatus::check();
-        // Status is valid even with no post-processors
         assert_eq!(status.post_processors.len(), status.post_processors_count);
     }
 
     #[test]
     fn test_plugin_health_status_validators_empty() {
         let status = PluginHealthStatus::check();
-        // Status is valid even with no validators
         assert_eq!(status.validators.len(), status.validators_count);
     }
 
@@ -279,7 +263,6 @@ mod tests {
         assert!(result.is_ok());
 
         let status = result.unwrap();
-        // Verify all fields are present
         assert_eq!(status.ocr_backends.len(), status.ocr_backends_count);
         assert_eq!(status.extractors.len(), status.extractors_count);
         assert_eq!(status.post_processors.len(), status.post_processors_count);
@@ -291,7 +274,6 @@ mod tests {
         let status1 = PluginHealthStatus::check();
         let status2 = PluginHealthStatus::check();
 
-        // Counts should be consistent between calls
         assert_eq!(status1.ocr_backends_count, status2.ocr_backends_count);
         assert_eq!(status1.extractors_count, status2.extractors_count);
         assert_eq!(status1.post_processors_count, status2.post_processors_count);
@@ -300,7 +282,6 @@ mod tests {
 
     #[test]
     fn test_validate_plugins_at_startup_with_logging() {
-        // Initialize tracing with test writer
         let _ = tracing_subscriber::fmt()
             .with_max_level(tracing::Level::INFO)
             .with_test_writer()
@@ -309,7 +290,6 @@ mod tests {
         let result = validate_plugins_at_startup();
         assert!(result.is_ok());
 
-        // Verify status is returned with consistent counts
         let status = result.unwrap();
         assert_eq!(status.ocr_backends.len(), status.ocr_backends_count);
         assert_eq!(status.extractors.len(), status.extractors_count);
@@ -321,7 +301,6 @@ mod tests {
     fn test_plugin_health_status_all_counts_valid() {
         let status = PluginHealthStatus::check();
 
-        // All counts should be valid and consistent with vectors
         assert_eq!(status.ocr_backends.len(), status.ocr_backends_count);
         assert_eq!(status.extractors.len(), status.extractors_count);
         assert_eq!(status.post_processors.len(), status.post_processors_count);
@@ -332,7 +311,6 @@ mod tests {
     fn test_plugin_health_status_vec_sizes_match_counts() {
         let status = PluginHealthStatus::check();
 
-        // Vector sizes should match their counts
         assert_eq!(status.ocr_backends.len(), status.ocr_backends_count);
         assert_eq!(status.extractors.len(), status.extractors_count);
         assert_eq!(status.post_processors.len(), status.post_processors_count);
@@ -346,7 +324,6 @@ mod tests {
             .with_test_writer()
             .try_init();
 
-        // Call validation which should log warnings if no extractors
         let result = validate_plugins_at_startup();
         assert!(result.is_ok());
 
@@ -361,7 +338,6 @@ mod tests {
             .with_test_writer()
             .try_init();
 
-        // This test just verifies that check_environment_variables doesn't panic
         let result = validate_plugins_at_startup();
         assert!(result.is_ok());
     }
@@ -371,7 +347,6 @@ mod tests {
         let status1 = PluginHealthStatus::check();
         let status2 = status1.clone();
 
-        // Cloned status should be equal to original
         assert_eq!(status1.ocr_backends_count, status2.ocr_backends_count);
         assert_eq!(status1.extractors_count, status2.extractors_count);
         assert_eq!(status1.post_processors_count, status2.post_processors_count);

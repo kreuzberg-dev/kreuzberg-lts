@@ -55,9 +55,7 @@ final class PostProcessorRegistry
     /**
      * Private constructor to enforce singleton pattern.
      */
-    private function __construct()
-    {
-    }
+    private function __construct() {}
 
     /**
      * Get the singleton registry instance.

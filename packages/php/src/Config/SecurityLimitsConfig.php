@@ -96,8 +96,7 @@ readonly class SecurityLimitsConfig
          * @default null (use Rust default)
          */
         public ?int $maxTableCells = null,
-    ) {
-    }
+    ) {}
 
     /**
      * Create configuration from array data.
@@ -147,17 +146,20 @@ readonly class SecurityLimitsConfig
     public function toArray(): array
     {
         /** @var array<string, int> $result */
-        $result = array_filter([
-            'max_archive_size' => $this->maxArchiveSize,
-            'max_compression_ratio' => $this->maxCompressionRatio,
-            'max_files_in_archive' => $this->maxFilesInArchive,
-            'max_nesting_depth' => $this->maxNestingDepth,
-            'max_entity_length' => $this->maxEntityLength,
-            'max_content_size' => $this->maxContentSize,
-            'max_iterations' => $this->maxIterations,
-            'max_xml_depth' => $this->maxXmlDepth,
-            'max_table_cells' => $this->maxTableCells,
-        ], static fn ($value): bool => $value !== null);
+        $result = array_filter(
+            [
+                'max_archive_size' => $this->maxArchiveSize,
+                'max_compression_ratio' => $this->maxCompressionRatio,
+                'max_files_in_archive' => $this->maxFilesInArchive,
+                'max_nesting_depth' => $this->maxNestingDepth,
+                'max_entity_length' => $this->maxEntityLength,
+                'max_content_size' => $this->maxContentSize,
+                'max_iterations' => $this->maxIterations,
+                'max_xml_depth' => $this->maxXmlDepth,
+                'max_table_cells' => $this->maxTableCells,
+            ],
+            static fn($value): bool => $value !== null,
+        );
 
         return $result;
     }

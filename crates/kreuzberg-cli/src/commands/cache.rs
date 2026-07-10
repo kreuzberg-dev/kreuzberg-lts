@@ -248,8 +248,6 @@ pub fn warm_command(
         let paddle_dir = cache_base.join("paddle-ocr");
         let manager = kreuzberg::paddle_ocr::ModelManager::new(paddle_dir);
 
-        // ensure_all_models downloads v2 det (server+mobile), cls (PP-LCNet),
-        // doc_ori, v2 unified rec models, and all per-script rec families
         manager
             .ensure_all_models()
             .context("Failed to download PaddleOCR v2 models")?;
@@ -262,7 +260,6 @@ pub fn warm_command(
         let manager = kreuzberg::layout::LayoutModelManager::new(Some(layout_dir));
 
         if all_table_models {
-            // Download rtdetr + tatr + all SLANeXT variants (~730MB)
             let was_cached = manager.is_rtdetr_cached() && manager.is_tatr_cached();
             if was_cached {
                 already_cached.push("layout (rtdetr, tatr, slanet variants)".to_string());
@@ -273,7 +270,6 @@ pub fn warm_command(
                 downloaded.push("layout (rtdetr, tatr, slanet variants)".to_string());
             }
         } else {
-            // Default: download only rtdetr + tatr
             let was_cached = manager.is_rtdetr_cached() && manager.is_tatr_cached();
             if was_cached {
                 already_cached.push("layout (rtdetr, tatr)".to_string());
@@ -343,7 +339,6 @@ pub fn warm_command(
         }
     }
 
-    // Tree-sitter grammar downloads
     #[cfg(feature = "tree-sitter")]
     {
         if all_grammars {

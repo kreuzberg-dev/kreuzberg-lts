@@ -7,7 +7,7 @@ pub mod highlight;
 pub mod ink;
 pub mod link;
 pub mod objects;
-pub(crate) mod private; // Keep private so that the PdfPageAnnotationPrivate trait is not exposed.
+pub(crate) mod private;
 pub mod square;
 pub mod squiggly;
 pub mod stamp;
@@ -149,7 +149,6 @@ impl PdfPageAnnotationType {
     }
 
     #[allow(dead_code)]
-    // The as_pdfium() function is not currently used, but we expect it to be in future
     pub(crate) fn as_pdfium(&self) -> FPDF_ANNOTATION_SUBTYPE {
         (match self {
             PdfPageAnnotationType::Unknown => FPDF_ANNOT_UNKNOWN,
@@ -312,7 +311,7 @@ impl<'a> PdfPageAnnotation<'a> {
     }
 
     #[inline]
-    #[allow(dead_code)] // We don't currently use unwrap_as_trait_mut(), but we expect to in the future
+    #[allow(dead_code)]
     pub(crate) fn unwrap_as_trait_mut(&mut self) -> &mut dyn PdfPageAnnotationPrivate<'a> {
         match self {
             PdfPageAnnotation::Circle(annotation) => annotation,
@@ -915,8 +914,6 @@ pub trait PdfPageAnnotationCommon {
     /// ```
     fn attachment_points(&self) -> &PdfPageAnnotationAttachmentPoints<'_>;
 }
-
-// Blanket implementation for all PdfPageAnnotation types.
 
 impl<'a, T> PdfPageAnnotationCommon for T
 where

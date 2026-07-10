@@ -226,12 +226,10 @@ pub(super) fn handle_block_start(
             true
         }
         Container::Footnote { label } => {
-            // Start tracking a footnote definition
             footnotes.push(crate::types::Footnote {
                 label: label.to_string(),
                 content: Vec::new(),
             });
-            // We'll collect the content as blocks
             push_block(
                 state,
                 FormattedBlock {

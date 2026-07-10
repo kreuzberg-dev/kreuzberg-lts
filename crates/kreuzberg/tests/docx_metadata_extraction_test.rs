@@ -123,26 +123,17 @@ async fn test_docx_minimal_metadata_extraction() {
 
 #[tokio::test]
 async fn test_docx_keywords_extraction() {
-    // This test verifies that DOCX keywords metadata is properly parsed
-    // from comma-separated strings into Vec<String> in Metadata.keywords
-    //
-    // Addresses GitHub issue #309: DOCX keyword extraction was returning
-    // strings instead of parsed keyword lists, causing FunctionClauseError
-    // in the Elixir binding.
-
     use std::io::Write;
     use tempfile::NamedTempFile;
     use zip::CompressionMethod;
     use zip::write::{FileOptions, ZipWriter};
 
-    // Create a minimal DOCX with keywords metadata
     let mut temp_file = NamedTempFile::new().expect("Failed to create temp file");
 
     {
         let mut zip = ZipWriter::new(&mut temp_file);
         let options: FileOptions<()> = FileOptions::default().compression_method(CompressionMethod::Stored);
 
-        // Add [Content_Types].xml
         zip.start_file("[Content_Types].xml", options)
             .expect("Operation failed");
         zip.write_all(br#"<?xml version="1.0" encoding="UTF-8"?>
@@ -153,7 +144,6 @@ async fn test_docx_keywords_extraction() {
   <Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml"/>
 </Types>"#).expect("Operation failed");
 
-        // Add _rels/.rels
         zip.start_file("_rels/.rels", options).expect("Operation failed");
         zip.write_all(br#"<?xml version="1.0" encoding="UTF-8"?>
 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
@@ -161,7 +151,6 @@ async fn test_docx_keywords_extraction() {
   <Relationship Id="rId2" Type="http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties" Target="docProps/core.xml"/>
 </Relationships>"#).expect("Operation failed");
 
-        // Add word/document.xml with simple content
         zip.start_file("word/document.xml", options).expect("Operation failed");
         zip.write_all(
             br#"<?xml version="1.0" encoding="UTF-8"?>
@@ -177,7 +166,6 @@ async fn test_docx_keywords_extraction() {
         )
         .expect("Operation failed");
 
-        // Add docProps/core.xml with keywords (comma-separated string)
         zip.start_file("docProps/core.xml", options).expect("Operation failed");
         zip.write_all(
             br#"<?xml version="1.0" encoding="UTF-8"?>
@@ -195,7 +183,6 @@ async fn test_docx_keywords_extraction() {
         zip.finish().expect("Operation failed");
     }
 
-    // Extract the DOCX file
     let result = extract_file(
         temp_file.path(),
         Some("application/vnd.openxmlformats-officedocument.wordprocessingml.document"),
@@ -204,14 +191,12 @@ async fn test_docx_keywords_extraction() {
     .await
     .expect("Should extract DOCX with keywords successfully");
 
-    // Verify content was extracted
     assert!(!result.content.is_empty(), "Content should not be empty");
     assert!(
         result.content.contains("Test document for keyword extraction"),
         "Content should match document text"
     );
 
-    // Verify keywords were parsed into Vec<String> in Metadata.keywords
     assert!(
         result.metadata.keywords.is_some(),
         "Keywords should be present in metadata.keywords"
@@ -224,14 +209,12 @@ async fn test_docx_keywords_extraction() {
         "Should have 5 keywords parsed from comma-separated string"
     );
 
-    // Verify individual keywords were trimmed and parsed correctly
     assert_eq!(keywords[0], "rust", "First keyword should be 'rust'");
     assert_eq!(keywords[1], "docx", "Second keyword should be 'docx'");
     assert_eq!(keywords[2], "extraction", "Third keyword should be 'extraction'");
     assert_eq!(keywords[3], "metadata", "Fourth keyword should be 'metadata'");
     assert_eq!(keywords[4], "test", "Fifth keyword should be 'test'");
 
-    // Verify other metadata was also extracted via typed fields
     assert_eq!(
         result.metadata.created_by.as_deref(),
         Some("Test Author"),

@@ -235,7 +235,6 @@ async fn test_native_epub_deterministic_extraction() {
 async fn test_native_epub_no_content_loss() {
     let epub_files = vec![
         ("epub2_cover.epub", 10),
-        // This fixture contains a single title line in one XHTML body document.
         ("epub2_no_cover.epub", 10),
         ("img.epub", 50),
         ("features.epub", 1000),

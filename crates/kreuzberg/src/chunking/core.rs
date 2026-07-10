@@ -77,12 +77,10 @@ pub fn chunk_text_with_heading_source(
         validate_utf8_boundaries(text, boundaries)?;
     }
 
-    // Yaml creates new content per chunk (key prefix), can't use generic &str splitter.
     if config.chunker_type == ChunkerType::Yaml {
         return super::yaml_section::chunk_yaml_by_sections(text, config);
     }
 
-    // Semantic chunker has its own pipeline (segment → topic detect → merge).
     if config.chunker_type == ChunkerType::Semantic {
         return super::semantic::chunk_semantic(text, config, page_boundaries);
     }
@@ -99,7 +97,6 @@ pub fn chunk_text_with_heading_source(
                     .map_err(|e| crate::KreuzbergError::validation(format!("Invalid chunking configuration: {}", e)))?;
             split_with_config(text, &config.chunker_type, chunk_config)
         }
-        // Characters sizing (default) — also matches when no token features are enabled
         _ => {
             let chunk_config = build_chunk_config(config.max_characters, config.overlap, config.trim)?;
             split_with_config(text, &config.chunker_type, chunk_config)
@@ -108,8 +105,6 @@ pub fn chunk_text_with_heading_source(
 
     let mut chunks = build_chunks(text, text_chunks, page_boundaries)?;
 
-    // For Markdown chunker, resolve heading context for each chunk.
-    // Use the heading_source (markdown-formatted content) if provided, otherwise fall back to text.
     if config.chunker_type == ChunkerType::Markdown {
         let heading_map = build_heading_map(heading_source.unwrap_or(text));
         if !heading_map.is_empty() {
@@ -117,14 +112,12 @@ pub fn chunk_text_with_heading_source(
                 chunk.metadata.heading_context = resolve_heading_context(chunk.metadata.byte_start, &heading_map);
             }
 
-            // Optionally prepend heading hierarchy path to chunk content.
             if config.prepend_heading_context {
                 for chunk in &mut chunks {
                     let Some(ref ctx) = chunk.metadata.heading_context else {
                         continue;
                     };
 
-                    // Build breadcrumb prefix directly into the output buffer.
                     let mut new_content = String::with_capacity(chunk.content.len() + 64);
                     for (i, h) in ctx.headings.iter().enumerate() {
                         if i > 0 {
@@ -133,13 +126,10 @@ pub fn chunk_text_with_heading_source(
                         for _ in 0..h.level {
                             new_content.push('#');
                         }
-                        // Writing to String is infallible.
                         let _ = write!(new_content, " {}", h.text);
                     }
                     new_content.push_str("\n\n");
 
-                    // If the markdown splitter included the deepest heading at the
-                    // start of the chunk, skip it to avoid duplication.
                     let body = match ctx.headings.last() {
                         Some(h) => strip_leading_heading(&chunk.content, h.level, &h.text),
                         None => &chunk.content,
@@ -165,7 +155,6 @@ fn strip_leading_heading<'a>(text: &'a str, level: u8, title: &str) -> &'a str {
     debug_assert!(level > 0, "heading level must be 1..=6");
     let n = level as usize;
     let bytes = text.as_bytes();
-    // Must start with exactly `n` '#' characters followed by a space.
     if bytes.len() <= n || bytes[..n].iter().any(|&b| b != b'#') || bytes[n] != b' ' {
         return text;
     }
@@ -173,8 +162,6 @@ fn strip_leading_heading<'a>(text: &'a str, level: u8, title: &str) -> &'a str {
     if !after_prefix.starts_with(title) {
         return text;
     }
-    // Consume only through the end of the heading line, then trim leading newlines.
-    // This avoids greedily eating into body content that follows on the same line.
     let rest = &after_prefix[title.len()..];
     let line_end = rest.find('\n').unwrap_or(rest.len());
     rest[line_end..].trim_start_matches('\n')
@@ -632,8 +619,6 @@ mod tests {
         let markdown = "# Title\n\nSome text\n\n## Section\n\nMore text";
         let result = chunk_text(markdown, &config, None).unwrap();
         assert!(result.chunk_count >= 1);
-        // Each chunk with heading context should have its content prefixed with
-        // a heading breadcrumb path like "# Title" or "# Title > ## Section".
         for chunk in &result.chunks {
             if chunk.metadata.heading_context.is_some() {
                 assert!(
@@ -643,7 +628,6 @@ mod tests {
                 );
             }
         }
-        // At least one chunk should contain the section breadcrumb
         let has_section = result
             .chunks
             .iter()
@@ -652,7 +636,6 @@ mod tests {
             has_section,
             "Expected at least one chunk with heading breadcrumb in content"
         );
-        // No heading should appear more than once per chunk (breadcrumb + body duplication).
         for chunk in &result.chunks {
             if let Some(ref ctx) = chunk.metadata.heading_context
                 && let Some(deepest) = ctx.headings.last()
@@ -1260,7 +1243,6 @@ mod tests {
 
         let result = chunk_text(&full_text, &config, Some(&boundaries)).unwrap();
 
-        // The last chunk must reference pages near the end of the document
         let last_chunk = result.chunks.last().unwrap();
         assert!(
             last_chunk.metadata.last_page.unwrap() >= num_pages - 2,
@@ -1269,8 +1251,6 @@ mod tests {
             last_chunk.metadata.last_page
         );
 
-        // Every chunk's byte range must correspond to where its content
-        // actually lives in the original text
         for (i, chunk) in result.chunks.iter().enumerate() {
             let actual_pos = full_text
                 .find(&chunk.content)
@@ -1337,7 +1317,6 @@ mod tests {
         let result = chunk_text(&repeated, &config, Some(&boundaries)).unwrap();
 
         for (i, chunk) in result.chunks.iter().enumerate() {
-            // The chunk content at byte_start..byte_end must match the actual content
             let byte_start = chunk.metadata.byte_start;
             let byte_end = chunk.metadata.byte_end;
             assert!(

@@ -36,35 +36,35 @@ import type { ExtractionResult, ValidatorProtocol } from "../types.js";
  * ```
  */
 export function registerValidator(validator: ValidatorProtocol): void {
-	const binding = getBinding();
+  const binding = getBinding();
 
-	const wrappedValidator = {
-		name: typeof validator.name === "function" ? validator.name() : validator.name,
-		priority: typeof validator.priority === "function" ? validator.priority() : validator.priority,
-		async validate(...args: unknown[]): Promise<string> {
-			const jsonString = args[0] as string;
+  const wrappedValidator = {
+    name: typeof validator.name === "function" ? validator.name() : validator.name,
+    priority: typeof validator.priority === "function" ? validator.priority() : validator.priority,
+    async validate(...args: unknown[]): Promise<string> {
+      const jsonString = args[0] as string;
 
-			if (!jsonString || jsonString === "undefined") {
-				throw new Error("Validator received invalid JSON string");
-			}
+      if (!jsonString || jsonString === "undefined") {
+        throw new Error("Validator received invalid JSON string");
+      }
 
-			const wireResult = JSON.parse(jsonString);
-			const result: ExtractionResult = {
-				content: wireResult.content,
-				mimeType: wireResult.mime_type,
-				metadata: typeof wireResult.metadata === "string" ? JSON.parse(wireResult.metadata) : wireResult.metadata,
-				tables: wireResult.tables || [],
-				detectedLanguages: wireResult.detected_languages,
-				chunks: wireResult.chunks,
-				images: wireResult.images ?? null,
-			};
+      const wireResult = JSON.parse(jsonString);
+      const result: ExtractionResult = {
+        content: wireResult.content,
+        mimeType: wireResult.mime_type,
+        metadata: typeof wireResult.metadata === "string" ? JSON.parse(wireResult.metadata) : wireResult.metadata,
+        tables: wireResult.tables || [],
+        detectedLanguages: wireResult.detected_languages,
+        chunks: wireResult.chunks,
+        images: wireResult.images ?? null,
+      };
 
-			await Promise.resolve(validator.validate(result));
-			return "";
-		},
-	};
+      await Promise.resolve(validator.validate(result));
+      return "";
+    },
+  };
 
-	binding.registerValidator(wrappedValidator);
+  binding.registerValidator(wrappedValidator);
 }
 
 /**
@@ -83,8 +83,8 @@ export function registerValidator(validator: ValidatorProtocol): void {
  * ```
  */
 export function unregisterValidator(name: string): void {
-	const binding = getBinding();
-	binding.unregisterValidator(name);
+  const binding = getBinding();
+  binding.unregisterValidator(name);
 }
 
 /**
@@ -101,8 +101,8 @@ export function unregisterValidator(name: string): void {
  * ```
  */
 export function clearValidators(): void {
-	const binding = getBinding();
-	binding.clearValidators();
+  const binding = getBinding();
+  binding.clearValidators();
 }
 
 /**
@@ -121,8 +121,8 @@ export function clearValidators(): void {
  * ```
  */
 export function listValidators(): string[] {
-	const binding = getBinding();
-	return binding.listValidators();
+  const binding = getBinding();
+  return binding.listValidators();
 }
 
 /**
@@ -144,8 +144,6 @@ export function listValidators(): string[] {
  * ```
  */
 export function getValidator(name: string): unknown {
-	// Note: This function is not directly exposed by the native binding
-	// It's a helper function that uses listValidators to check if a validator exists
-	const validators = listValidators();
-	return validators.includes(name) ? { name } : null;
+  const validators = listValidators();
+  return validators.includes(name) ? { name } : null;
 }

@@ -14,10 +14,6 @@ use kreuzberg::extraction::derive::derive_extraction_result;
 use kreuzberg::types::document_structure::{AnnotationKind, TextAnnotation};
 use kreuzberg::types::internal_builder::InternalDocumentBuilder;
 
-// ============================================================================
-// Helpers
-// ============================================================================
-
 /// Build a rich document containing a heading, paragraph, list, code block,
 /// and table — the structural elements every format must handle.
 fn build_rich_document() -> kreuzberg::types::internal::InternalDocument {
@@ -61,39 +57,26 @@ fn effective_content(result: &kreuzberg::types::ExtractionResult) -> &str {
     result.formatted_content.as_deref().unwrap_or(&result.content)
 }
 
-// ============================================================================
-// 1. Markdown output preserves structure
-// ============================================================================
-
 #[tokio::test]
 async fn test_markdown_output_preserves_structure() {
     let doc = build_rich_document();
     let result = derive(doc, OutputFormat::Markdown);
     let md = effective_content(&result);
 
-    // Heading
     assert!(
         md.contains("# Main Heading"),
         "Markdown should contain an ATX heading, got:\n{md}"
     );
-    // Paragraph
     assert!(
         md.contains("This is a paragraph"),
         "Markdown should contain the paragraph text"
     );
-    // List items
     assert!(md.contains("First item"), "Markdown should contain list items");
-    // Code block
     assert!(md.contains("```"), "Markdown should contain a fenced code block");
     assert!(md.contains("fn main()"), "Markdown code block should contain the code");
-    // Table (pipe-delimited)
     assert!(md.contains('|'), "Markdown should contain pipe-delimited table syntax");
     assert!(md.contains("Name"), "Markdown table should contain header cells");
 }
-
-// ============================================================================
-// 2. Djot output format through pipeline
-// ============================================================================
 
 #[tokio::test]
 async fn test_djot_output_preserves_structure() {
@@ -101,23 +84,16 @@ async fn test_djot_output_preserves_structure() {
     let result = derive(doc, OutputFormat::Djot);
     let djot = effective_content(&result);
 
-    // Djot headings use `#` just like markdown
     assert!(
         djot.contains("# Main Heading"),
         "Djot should contain a heading, got:\n{djot}"
     );
-    // Paragraph text
     assert!(
         djot.contains("This is a paragraph"),
         "Djot should contain the paragraph text"
     );
-    // Code (djot uses ``` fences too)
     assert!(djot.contains("fn main()"), "Djot should contain the code content");
 }
-
-// ============================================================================
-// 3. HTML output format through pipeline
-// ============================================================================
 
 #[tokio::test]
 async fn test_html_output_preserves_structure() {
@@ -139,16 +115,11 @@ async fn test_html_output_preserves_structure() {
     );
 }
 
-// ============================================================================
-// 4. Plain text output through pipeline
-// ============================================================================
-
 #[tokio::test]
 async fn test_plain_text_output_has_no_formatting() {
     let doc = build_rich_document();
     let result = derive(doc, OutputFormat::Plain);
 
-    // For plain text the formatted_content should be None
     assert!(
         result.formatted_content.is_none(),
         "Plain format should not set formatted_content"
@@ -156,7 +127,6 @@ async fn test_plain_text_output_has_no_formatting() {
 
     let plain = &result.content;
 
-    // Should contain the words
     assert!(plain.contains("Main Heading"), "Plain text should contain heading text");
     assert!(
         plain.contains("This is a paragraph"),
@@ -165,7 +135,6 @@ async fn test_plain_text_output_has_no_formatting() {
     assert!(plain.contains("First item"), "Plain text should contain list items");
     assert!(plain.contains("fn main()"), "Plain text should contain code content");
 
-    // Should NOT contain markdown/html formatting
     assert!(!plain.contains("<h1"), "Plain text should not contain HTML tags");
     assert!(
         !plain.lines().any(|l| l.starts_with("# ")),
@@ -173,14 +142,8 @@ async fn test_plain_text_output_has_no_formatting() {
     );
 }
 
-// ============================================================================
-// 5. Format switching consistency
-// ============================================================================
-
 #[tokio::test]
 async fn test_format_switching_consistency() {
-    // Render the same logical document to every format and check that the
-    // plain-text words are present in all of them.
     let formats = [
         OutputFormat::Plain,
         OutputFormat::Markdown,
@@ -213,10 +176,6 @@ async fn test_format_switching_consistency() {
     }
 }
 
-// ============================================================================
-// 6. Footnote rendering end-to-end
-// ============================================================================
-
 #[tokio::test]
 async fn test_footnote_rendering_end_to_end() {
     let mut b = InternalDocumentBuilder::new("test");
@@ -230,27 +189,20 @@ async fn test_footnote_rendering_end_to_end() {
     let result = derive(doc, OutputFormat::Markdown);
     let md = effective_content(&result);
 
-    // The footnote reference marker should appear
     assert!(
         md.contains("[^") || md.contains("fn1") || md.contains("[1]"),
         "Markdown should contain a footnote reference marker, got:\n{md}"
     );
-    // The footnote definition content should appear
     assert!(
         md.contains("This is the footnote content"),
         "Markdown should contain the footnote definition text, got:\n{md}"
     );
 }
 
-// ============================================================================
-// 7. Annotation rendering end-to-end
-// ============================================================================
-
 #[tokio::test]
 async fn test_annotation_rendering_end_to_end() {
     let mut b = InternalDocumentBuilder::new("test");
 
-    // "Hello bold world" with "bold" annotated as Bold (bytes 6..10)
     let bold_text = "Hello bold world";
     b.push_paragraph(
         bold_text,
@@ -263,7 +215,6 @@ async fn test_annotation_rendering_end_to_end() {
         None,
     );
 
-    // "Some italic text" with "italic" annotated as Italic (bytes 5..11)
     let italic_text = "Some italic text";
     b.push_paragraph(
         italic_text,
@@ -276,7 +227,6 @@ async fn test_annotation_rendering_end_to_end() {
         None,
     );
 
-    // "Click here for info" with "here" as a Link (bytes 6..10)
     let link_text = "Click here for info";
     b.push_paragraph(
         link_text,
@@ -296,26 +246,19 @@ async fn test_annotation_rendering_end_to_end() {
     let result = derive(doc, OutputFormat::Markdown);
     let md = effective_content(&result);
 
-    // Bold: **bold**
     assert!(
         md.contains("**bold**"),
         "Markdown should render bold annotation as **bold**, got:\n{md}"
     );
-    // Italic: *italic*
     assert!(
         md.contains("*italic*"),
         "Markdown should render italic annotation as *italic*, got:\n{md}"
     );
-    // Link: [here](https://example.com)
     assert!(
         md.contains("[here](https://example.com)"),
         "Markdown should render link annotation, got:\n{md}"
     );
 }
-
-// ============================================================================
-// 8. Empty document handling
-// ============================================================================
 
 #[tokio::test]
 async fn test_empty_document_handling() {
@@ -329,10 +272,8 @@ async fn test_empty_document_handling() {
     for format in &formats {
         let b = InternalDocumentBuilder::new("test");
         let doc = b.build();
-        // Should not panic
         let result = derive(doc, format.clone());
 
-        // Content can be empty or whitespace-only — the key is no panic
         let text = effective_content(&result);
         assert!(
             text.len() < 100,
@@ -341,10 +282,6 @@ async fn test_empty_document_handling() {
         );
     }
 }
-
-// ============================================================================
-// 9. Large document performance smoke test
-// ============================================================================
 
 #[tokio::test]
 async fn test_large_document_renders_without_timeout() {
@@ -362,7 +299,6 @@ async fn test_large_document_renders_without_timeout() {
 
     let _doc = b.build();
 
-    // Render to each format — this is a smoke test; we just verify it completes.
     let formats = [
         OutputFormat::Plain,
         OutputFormat::Markdown,
@@ -371,7 +307,6 @@ async fn test_large_document_renders_without_timeout() {
     ];
 
     for format in &formats {
-        // Clone the doc elements into a new document for each format
         let mut b2 = InternalDocumentBuilder::new("test");
         b2.push_heading(1, "Large Document", None, None);
         for i in 0..1000 {

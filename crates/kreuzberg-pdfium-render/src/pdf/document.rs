@@ -39,10 +39,6 @@ use wasm_bindgen::JsValue;
 #[cfg(target_arch = "wasm32")]
 use web_sys::Blob;
 
-// The following dummy declaration is used only when running cargo doc.
-// It allows documentation of WASM-specific functionality to be included
-// in documentation generated on non-WASM targets.
-
 #[cfg(doc)]
 struct Blob;
 
@@ -152,7 +148,6 @@ pub struct PdfDocument<'a> {
     source_byte_buffer: Option<Vec<u8>>,
 
     #[cfg_attr(target_arch = "wasm32", allow(dead_code))]
-    // This field is never used when compiling to WASM.
     file_access_reader: Option<Box<FpdfFileAccessExt<'a>>>,
 }
 
@@ -199,7 +194,6 @@ impl<'a> PdfDocument<'a> {
     /// Binds an `FPDF_FILEACCESS` reader to the lifetime of this [PdfDocument], so that
     /// it will always be available for Pdfium to read data from as needed.
     #[cfg_attr(target_arch = "wasm32", allow(dead_code))]
-    // This function is never used when compiling to WASM.
     #[inline]
     pub(crate) fn set_file_access_reader(&mut self, reader: Box<FpdfFileAccessExt<'a>>) {
         self.file_access_reader = Some(reader);
@@ -270,10 +264,8 @@ impl<'a> PdfDocument<'a> {
 
     /// Writes this [PdfDocument] to the given writer.
     pub fn save_to_writer<W: Write + 'static>(&self, writer: &mut W) -> Result<(), PdfiumError> {
-        // TODO: AJRC - 25/5/22 - investigate supporting the FPDF_INCREMENTAL, FPDF_NO_INCREMENTAL,
-        // and FPDF_REMOVE_SECURITY flags defined in fpdf_save.h. There's not a lot of information
-        // on what they actually do, however.
-        // Some small info at https://forum.patagames.com/posts/t155-PDF-SaveFlags.
+        // ~keep TODO: evaluate whether Pdfium save flags FPDF_INCREMENTAL,
+        // FPDF_NO_INCREMENTAL, and FPDF_REMOVE_SECURITY should be exposed.
 
         let flags = 0;
 
@@ -294,16 +286,8 @@ impl<'a> PdfDocument<'a> {
         };
 
         match self.bindings.is_true(result) {
-            true => {
-                // Pdfium's return value indicated success. Flush the buffer.
-
-                pdfium_file_writer.flush().map_err(PdfiumError::IoError)
-            }
-            false => {
-                // Pdfium's return value indicated failure.
-
-                Err(PdfiumError::PdfiumLibraryInternalError(PdfiumInternalError::Unknown))
-            }
+            true => pdfium_file_writer.flush().map_err(PdfiumError::IoError),
+            false => Err(PdfiumError::PdfiumLibraryInternalError(PdfiumInternalError::Unknown)),
         }
     }
 
@@ -352,14 +336,8 @@ impl<'a> Drop for PdfDocument<'a> {
     /// from a file, the file handle on the document.
     #[inline]
     fn drop(&mut self) {
-        // Drop this document's PdfForm, if any, before we close the document itself.
-        // This ensures that FPDFDOC_ExitFormFillEnvironment() is called _before_ FPDF_CloseDocument(),
-        // avoiding a segmentation fault when using Pdfium builds compiled with V8/XFA support.
-
         self.form = None;
 
-        // Clear all cached page indices for this document before closing.
-        // This prevents stale cache entries if Pdfium reuses the document handle.
         PdfPageIndexCache::clear_document(self.handle);
 
         self.bindings.FPDF_CloseDocument(self.handle);

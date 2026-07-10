@@ -15,11 +15,11 @@ import java.util.List;
  *            hierarchical blocks with heading levels
  */
 public record PageHierarchy(@JsonProperty("block_count") int blockCount,
-		@JsonDeserialize(contentAs = HierarchicalBlock.class) @JsonProperty("blocks") List<HierarchicalBlock> blocks) {
-	@JsonCreator
-	public PageHierarchy(@JsonProperty("block_count") int blockCount,
-			@JsonProperty("blocks") List<HierarchicalBlock> blocks) {
-		this.blockCount = blockCount;
-		this.blocks = blocks != null ? Collections.unmodifiableList(blocks) : List.of();
-	}
+    @JsonDeserialize(contentAs = HierarchicalBlock.class) @JsonProperty("blocks") List<HierarchicalBlock> blocks) {
+    @JsonCreator
+    public PageHierarchy(@JsonProperty("block_count") int blockCount,
+        @JsonProperty("blocks") List<HierarchicalBlock> blocks) {
+        this.blockCount = blockCount;
+        this.blocks = blocks != null ? Collections.unmodifiableList(blocks) : List.of();
+    }
 }

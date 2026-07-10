@@ -14,38 +14,38 @@ import { initializePdfiumAsync } from "./pdfium-loader.js";
  * Options for initializing the WASM module.
  */
 export interface InitWasmOptions {
-	/**
-	 * A pre-loaded WebAssembly.Module for the Kreuzberg WASM binary.
-	 *
-	 * Required in restricted edge environments (Cloudflare Workers, Vercel Edge,
-	 * Supabase edge functions) where the runtime cannot fetch `file://` URLs.
-	 * Import the `.wasm` file as a static import and pass it here.
-	 *
-	 * @example Cloudflare Workers
-	 * ```typescript
-	 * import wasmModule from '@kreuzberg/wasm/kreuzberg_wasm_bg.wasm';
-	 * import { initWasm } from '@kreuzberg/wasm';
-	 *
-	 * export default {
-	 *   async fetch(request: Request): Promise<Response> {
-	 *     await initWasm({ wasmModule });
-	 *     // ... use extraction functions
-	 *   }
-	 * };
-	 * ```
-	 *
-	 * @example Supabase Edge Functions (Deno)
-	 * ```typescript
-	 * import wasmModule from '@kreuzberg/wasm/kreuzberg_wasm_bg.wasm';
-	 * import { initWasm, extractBytes } from '@kreuzberg/wasm';
-	 *
-	 * Deno.serve(async (req: Request) => {
-	 *   await initWasm({ wasmModule });
-	 *   // ... use extraction functions
-	 * });
-	 * ```
-	 */
-	wasmModule?: WebAssembly.Module;
+  /**
+   * A pre-loaded WebAssembly.Module for the Kreuzberg WASM binary.
+   *
+   * Required in restricted edge environments (Cloudflare Workers, Vercel Edge,
+   * Supabase edge functions) where the runtime cannot fetch `file://` URLs.
+   * Import the `.wasm` file as a static import and pass it here.
+   *
+   * @example Cloudflare Workers
+   * ```typescript
+   * import wasmModule from '@kreuzberg/wasm/kreuzberg_wasm_bg.wasm';
+   * import { initWasm } from '@kreuzberg/wasm';
+   *
+   * export default {
+   *   async fetch(request: Request): Promise<Response> {
+   *     await initWasm({ wasmModule });
+   *     // ... use extraction functions
+   *   }
+   * };
+   * ```
+   *
+   * @example Supabase Edge Functions (Deno)
+   * ```typescript
+   * import wasmModule from '@kreuzberg/wasm/kreuzberg_wasm_bg.wasm';
+   * import { initWasm, extractBytes } from '@kreuzberg/wasm';
+   *
+   * Deno.serve(async (req: Request) => {
+   *   await initWasm({ wasmModule });
+   *   // ... use extraction functions
+   * });
+   * ```
+   */
+  wasmModule?: WebAssembly.Module;
 }
 
 /**
@@ -53,65 +53,52 @@ export interface InitWasmOptions {
  * Returns undefined in browser/edge environments (fetch or explicit module will be used instead).
  */
 async function loadWasmBinaryForNode(): Promise<Uint8Array | undefined> {
-	if (isNode()) {
-		try {
-			// Dynamic import to avoid bundling Node.js modules
-			const fs = await import(/* @vite-ignore */ "node:fs/promises");
-			const path = await import(/* @vite-ignore */ "node:path");
-			const url = await import(/* @vite-ignore */ "node:url");
+  if (isNode()) {
+    try {
+      const fs = await import("node:fs/promises");
+      const path = await import("node:path");
+      const url = await import("node:url");
 
-			// Resolve the WASM file path relative to this module
-			// The module is in dist/initialization/wasm-loader.js
-			// The WASM file is in dist/pkg/kreuzberg_wasm_bg.wasm
-			const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
-			const wasmPath = path.join(__dirname, "..", "pkg", "kreuzberg_wasm_bg.wasm");
+      const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
+      const wasmPath = path.join(__dirname, "..", "pkg", "kreuzberg_wasm_bg.wasm");
 
-			const wasmBuffer = await fs.readFile(wasmPath);
-			return new Uint8Array(wasmBuffer);
-		} catch {
-			// Fall back to fetch-based loading if file system access fails
-			return undefined;
-		}
-	}
+      const wasmBuffer = await fs.readFile(wasmPath);
+      return new Uint8Array(wasmBuffer);
+    } catch {
+      return undefined;
+    }
+  }
 
-	if (isDeno()) {
-		try {
-			// In Deno, use Deno.readFile to load the WASM binary from disk.
-			// import.meta.url is a file:// URL pointing to the current module.
-			// Construct the path to dist/pkg/kreuzberg_wasm_bg.wasm relative to this module.
-			// This works in regular Deno but will throw in restricted environments
-			// (e.g. Supabase edge) where file:// access is blocked — the caller
-			// then falls through to the edge-environment error with instructions.
-			const denoGlobal = globalThis as unknown as Record<string, unknown>;
-			const DenoNs = denoGlobal.Deno as Record<string, unknown>;
-			const readFile = DenoNs.readFile as (path: URL) => Promise<Uint8Array>;
+  if (isDeno()) {
+    try {
+      const denoGlobal = globalThis as unknown as Record<string, unknown>;
+      const DenoNs = denoGlobal.Deno as Record<string, unknown>;
+      const readFile = DenoNs.readFile as (path: URL) => Promise<Uint8Array>;
 
-			const moduleUrl = new URL(import.meta.url);
-			const wasmUrl = new URL("../pkg/kreuzberg_wasm_bg.wasm", moduleUrl);
+      const moduleUrl = new URL(import.meta.url);
+      const wasmUrl = new URL("../pkg/kreuzberg_wasm_bg.wasm", moduleUrl);
 
-			const wasmBuffer = await readFile(wasmUrl);
-			return wasmBuffer;
-		} catch {
-			// Supabase edge and other restricted Deno environments block file:// reads.
-			// Fall through to let the caller handle the edge environment case.
-			return undefined;
-		}
-	}
+      const wasmBuffer = await readFile(wasmUrl);
+      return wasmBuffer;
+    } catch {
+      return undefined;
+    }
+  }
 
-	return undefined;
+  return undefined;
 }
 
 import {
-	getInitializationError,
-	getInitializationPromise,
-	getWasmModule,
-	isInitialized,
-	type ModuleInfo,
-	setInitializationError,
-	setInitializationPromise,
-	setInitialized,
-	setWasmModule,
-	type WasmModule,
+  getInitializationError,
+  getInitializationPromise,
+  getWasmModule,
+  isInitialized,
+  type ModuleInfo,
+  setInitializationError,
+  setInitializationPromise,
+  setInitialized,
+  setWasmModule,
+  type WasmModule,
 } from "./state.js";
 
 export type { ModuleInfo, WasmModule };
@@ -141,16 +128,16 @@ export { getInitializationError, getWasmModule, isInitialized };
  * @returns The version string of the WASM module
  */
 export function getVersion(): string {
-	if (!isInitialized()) {
-		throw new Error("WASM module not initialized. Call initWasm() first.");
-	}
+  if (!isInitialized()) {
+    throw new Error("WASM module not initialized. Call initWasm() first.");
+  }
 
-	const wasmModule = getWasmModule();
-	if (!wasmModule) {
-		throw new Error("WASM module not loaded. Call initWasm() first.");
-	}
+  const wasmModule = getWasmModule();
+  if (!wasmModule) {
+    throw new Error("WASM module not loaded. Call initWasm() first.");
+  }
 
-	return wasmModule.version();
+  return wasmModule.version();
 }
 
 /**
@@ -213,91 +200,82 @@ export function getVersion(): string {
  * ```
  */
 export async function initWasm(options?: InitWasmOptions): Promise<void> {
-	if (isInitialized()) {
-		return;
-	}
+  if (isInitialized()) {
+    return;
+  }
 
-	let currentPromise = getInitializationPromise();
-	if (currentPromise) {
-		return currentPromise;
-	}
+  let currentPromise = getInitializationPromise();
+  if (currentPromise) {
+    return currentPromise;
+  }
 
-	currentPromise = (async () => {
-		try {
-			if (!hasWasm()) {
-				throw new Error("WebAssembly is not supported in this environment");
-			}
+  currentPromise = (async () => {
+    try {
+      if (!hasWasm()) {
+        throw new Error("WebAssembly is not supported in this environment");
+      }
 
-			// Import the wasm-bindgen JS glue module. We try multiple paths to handle:
-			//   - URL-based: ../pkg/ (workspace-linked), ./kreuzberg_wasm.js (legacy)
-			//   - String-based: ./pkg/, ../pkg/ (edge runtimes that can't resolve file:// URLs)
-			// String paths use variable construction to avoid Vite static analysis failures.
-			const baseUrl = new URL(import.meta.url);
-			const modulePaths = [
-				new URL("../pkg/kreuzberg_wasm.js", baseUrl).href,
-				new URL("./kreuzberg_wasm.js", baseUrl).href,
-				[".", "pkg", "kreuzberg_wasm.js"].join("/"),
-				["..", "pkg", "kreuzberg_wasm.js"].join("/"),
-			];
+      const baseUrl = new URL(import.meta.url);
+      const modulePaths = [
+        new URL("../pkg/kreuzberg_wasm.js", baseUrl).href,
+        new URL("./kreuzberg_wasm.js", baseUrl).href,
+        [".", "pkg", "kreuzberg_wasm.js"].join("/"),
+        ["..", "pkg", "kreuzberg_wasm.js"].join("/"),
+      ];
 
-			let wasmModule: unknown;
-			let lastError: unknown;
-			for (const modulePath of modulePaths) {
-				try {
-					wasmModule = await import(/* @vite-ignore */ modulePath);
-					break;
-				} catch (e) {
-					lastError = e;
-				}
-			}
-			if (!wasmModule) {
-				throw lastError;
-			}
-			const loadedModule = wasmModule as unknown as WasmModule;
-			setWasmModule(loadedModule);
+      let wasmModule: unknown;
+      let lastError: unknown;
+      for (const modulePath of modulePaths) {
+        try {
+          wasmModule = await import(modulePath);
+          break;
+        } catch (e) {
+          lastError = e;
+        }
+      }
+      if (!wasmModule) {
+        throw lastError;
+      }
+      const loadedModule = wasmModule as unknown as WasmModule;
+      setWasmModule(loadedModule);
 
-			if (loadedModule && typeof loadedModule.default === "function") {
-				// If a WebAssembly.Module was provided (e.g. for Cloudflare Workers), use it directly.
-				if (options?.wasmModule) {
-					await loadedModule.default(options.wasmModule);
-				} else {
-					// In Node.js / Deno, load WASM binary from file system to avoid fetch issues.
-					// In restricted Deno environments (Supabase edge) file:// access fails and
-					// loadWasmBinaryForNode() returns undefined — we then require an explicit module.
-					// In browsers, the default() function uses fetch with import.meta.url.
-					const wasmBinary = await loadWasmBinaryForNode();
-					if (wasmBinary) {
-						await loadedModule.default(wasmBinary);
-					} else if (isEdgeEnvironment() || isDeno()) {
-						throw new Error(
-							"Edge/restricted environment detected (Cloudflare Workers / Vercel Edge / Supabase). " +
-								"Cannot automatically load .wasm file because fetch() does not support file:// URLs. " +
-								"Pass the WASM module explicitly:\n\n" +
-								"  import wasmModule from '@kreuzberg/wasm/kreuzberg_wasm_bg.wasm';\n" +
-								"  await initWasm({ wasmModule });\n",
-						);
-					} else {
-						await loadedModule.default();
-					}
-				}
-			}
+      if (loadedModule && typeof loadedModule.default === "function") {
+        if (options?.wasmModule) {
+          await loadedModule.default(options.wasmModule);
+        } else {
+          const wasmBinary = await loadWasmBinaryForNode();
+          if (wasmBinary) {
+            await loadedModule.default(wasmBinary);
+          } else if (isEdgeEnvironment() || isDeno()) {
+            throw new Error(
+              "Edge/restricted environment detected (Cloudflare Workers / Vercel Edge / Supabase). " +
+                "Cannot automatically load .wasm file because fetch() does not support file:// URLs. " +
+                "Pass the WASM module explicitly:\n\n" +
+                "  import wasmModule from '@kreuzberg/wasm/kreuzberg_wasm_bg.wasm';\n" +
+                "  await initWasm({ wasmModule });\n",
+            );
+          } else {
+            await loadedModule.default();
+          }
+        }
+      }
 
-			if (loadedModule && typeof loadedModule.initialize_pdfium_render === "function") {
-				try {
-					await initializePdfiumAsync(loadedModule);
-				} catch (error) {
-					console.warn("PDFium auto-initialization failed (PDF extraction disabled):", error);
-				}
-			}
+      if (loadedModule && typeof loadedModule.initialize_pdfium_render === "function") {
+        try {
+          await initializePdfiumAsync(loadedModule);
+        } catch (error) {
+          console.warn("PDFium auto-initialization failed (PDF extraction disabled):", error);
+        }
+      }
 
-			setInitialized(true);
-			setInitializationError(null);
-		} catch (error) {
-			setInitializationError(error instanceof Error ? error : new Error(String(error)));
-			throw wrapWasmError(error, "initializing Kreuzberg WASM module");
-		}
-	})();
+      setInitialized(true);
+      setInitializationError(null);
+    } catch (error) {
+      setInitializationError(error instanceof Error ? error : new Error(String(error)));
+      throw wrapWasmError(error, "initializing Kreuzberg WASM module");
+    }
+  })();
 
-	setInitializationPromise(currentPromise);
-	return currentPromise;
+  setInitializationPromise(currentPromise);
+  return currentPromise;
 }

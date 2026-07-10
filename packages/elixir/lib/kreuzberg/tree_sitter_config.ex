@@ -17,28 +17,28 @@ defmodule Kreuzberg.TreeSitterProcessConfig do
   """
 
   @type t :: %__MODULE__{
-          structure: boolean(),
-          imports: boolean(),
-          exports: boolean(),
-          comments: boolean(),
-          docstrings: boolean(),
-          symbols: boolean(),
-          diagnostics: boolean(),
-          chunk_max_size: non_neg_integer() | nil,
-          content_mode: String.t() | nil
-        }
+  structure: boolean(),
+  imports: boolean(),
+  exports: boolean(),
+  comments: boolean(),
+  docstrings: boolean(),
+  symbols: boolean(),
+  diagnostics: boolean(),
+  chunk_max_size: non_neg_integer() | nil,
+  content_mode: String.t() | nil
+  }
 
   @derive Jason.Encoder
   defstruct [
-    :chunk_max_size,
-    :content_mode,
-    structure: true,
-    imports: true,
-    exports: true,
-    comments: false,
-    docstrings: false,
-    symbols: false,
-    diagnostics: false
+  :chunk_max_size,
+  :content_mode,
+  structure: true,
+  imports: true,
+  exports: true,
+  comments: false,
+  docstrings: false,
+  symbols: false,
+  diagnostics: false
   ]
 
   @doc """
@@ -52,15 +52,15 @@ defmodule Kreuzberg.TreeSitterProcessConfig do
   @spec from_map(map()) :: t()
   def from_map(data) when is_map(data) do
     %__MODULE__{
-      structure: Map.get(data, "structure", Map.get(data, :structure, true)),
-      imports: Map.get(data, "imports", Map.get(data, :imports, true)),
-      exports: Map.get(data, "exports", Map.get(data, :exports, true)),
-      comments: Map.get(data, "comments", Map.get(data, :comments, false)),
-      docstrings: Map.get(data, "docstrings", Map.get(data, :docstrings, false)),
-      symbols: Map.get(data, "symbols", Map.get(data, :symbols, false)),
-      diagnostics: Map.get(data, "diagnostics", Map.get(data, :diagnostics, false)),
-      chunk_max_size: Map.get(data, "chunk_max_size", Map.get(data, :chunk_max_size)),
-      content_mode: Map.get(data, "content_mode", Map.get(data, :content_mode))
+    structure: Map.get(data, "structure", Map.get(data, :structure, true)),
+    imports: Map.get(data, "imports", Map.get(data, :imports, true)),
+    exports: Map.get(data, "exports", Map.get(data, :exports, true)),
+    comments: Map.get(data, "comments", Map.get(data, :comments, false)),
+    docstrings: Map.get(data, "docstrings", Map.get(data, :docstrings, false)),
+    symbols: Map.get(data, "symbols", Map.get(data, :symbols, false)),
+    diagnostics: Map.get(data, "diagnostics", Map.get(data, :diagnostics, false)),
+    chunk_max_size: Map.get(data, "chunk_max_size", Map.get(data, :chunk_max_size)),
+    content_mode: Map.get(data, "content_mode", Map.get(data, :content_mode))
     }
   end
 
@@ -72,15 +72,15 @@ defmodule Kreuzberg.TreeSitterProcessConfig do
 
   def to_map(%__MODULE__{} = config) do
     %{
-      "structure" => config.structure,
-      "imports" => config.imports,
-      "exports" => config.exports,
-      "comments" => config.comments,
-      "docstrings" => config.docstrings,
-      "symbols" => config.symbols,
-      "diagnostics" => config.diagnostics,
-      "chunk_max_size" => config.chunk_max_size,
-      "content_mode" => config.content_mode
+    "structure" => config.structure,
+    "imports" => config.imports,
+    "exports" => config.exports,
+    "comments" => config.comments,
+    "docstrings" => config.docstrings,
+    "symbols" => config.symbols,
+    "diagnostics" => config.diagnostics,
+    "chunk_max_size" => config.chunk_max_size,
+    "content_mode" => config.content_mode
     }
   end
 end
@@ -102,20 +102,20 @@ defmodule Kreuzberg.TreeSitterConfig do
   alias Kreuzberg.TreeSitterProcessConfig
 
   @type t :: %__MODULE__{
-          enabled: boolean() | nil,
-          cache_dir: String.t() | nil,
-          languages: [String.t()] | nil,
-          groups: [String.t()] | nil,
-          process: TreeSitterProcessConfig.t() | nil
-        }
+  enabled: boolean() | nil,
+  cache_dir: String.t() | nil,
+  languages: [String.t()] | nil,
+  groups: [String.t()] | nil,
+  process: TreeSitterProcessConfig.t() | nil
+  }
 
   @derive Jason.Encoder
   defstruct [
-    :enabled,
-    :cache_dir,
-    :languages,
-    :groups,
-    :process
+  :enabled,
+  :cache_dir,
+  :languages,
+  :groups,
+  :process
   ]
 
   @doc """
@@ -129,18 +129,18 @@ defmodule Kreuzberg.TreeSitterConfig do
   @spec from_map(map()) :: t()
   def from_map(data) when is_map(data) do
     process =
-      case Map.get(data, "process", Map.get(data, :process)) do
-        %TreeSitterProcessConfig{} = p -> p
-        %{} = p -> TreeSitterProcessConfig.from_map(p)
-        _ -> nil
-      end
+    case Map.get(data, "process", Map.get(data, :process)) do
+      %TreeSitterProcessConfig{} = p -> p
+      %{} = p -> TreeSitterProcessConfig.from_map(p)
+      _ -> nil
+    end
 
     %__MODULE__{
-      enabled: Map.get(data, "enabled", Map.get(data, :enabled)),
-      cache_dir: Map.get(data, "cache_dir", Map.get(data, :cache_dir)),
-      languages: Map.get(data, "languages", Map.get(data, :languages)),
-      groups: Map.get(data, "groups", Map.get(data, :groups)),
-      process: process
+    enabled: Map.get(data, "enabled", Map.get(data, :enabled)),
+    cache_dir: Map.get(data, "cache_dir", Map.get(data, :cache_dir)),
+    languages: Map.get(data, "languages", Map.get(data, :languages)),
+    groups: Map.get(data, "groups", Map.get(data, :groups)),
+    process: process
     }
   end
 
@@ -152,14 +152,14 @@ defmodule Kreuzberg.TreeSitterConfig do
 
   def to_map(%__MODULE__{} = config) do
     %{
-      "enabled" => config.enabled,
-      "cache_dir" => config.cache_dir,
-      "languages" => config.languages,
-      "groups" => config.groups,
-      "process" =>
-        if config.process do
-          TreeSitterProcessConfig.to_map(config.process)
-        end
+    "enabled" => config.enabled,
+    "cache_dir" => config.cache_dir,
+    "languages" => config.languages,
+    "groups" => config.groups,
+    "process" =>
+    if config.process do
+      TreeSitterProcessConfig.to_map(config.process)
+    end
     }
   end
 end

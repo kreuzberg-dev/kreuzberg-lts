@@ -144,7 +144,6 @@ mod tests {
     fn test_intersection_over_self_half() {
         let a = Rect::new(0.0, 10.0, 0.0, 10.0);
         let b = Rect::new(5.0, 15.0, 0.0, 10.0);
-        // intersection is 5x10 = 50, a area is 100 → 0.5
         assert!((a.intersection_over_self(&b) - 0.5).abs() < f32::EPSILON);
     }
 
@@ -218,7 +217,6 @@ mod tests {
 
     #[test]
     fn test_from_ltrb() {
-        // from_ltrb(left, top, right, bottom) — image coords
         let r = Rect::from_ltrb(10.0, 80.0, 50.0, 20.0);
         assert!((r.left - 10.0).abs() < f32::EPSILON);
         assert!((r.right - 50.0).abs() < f32::EPSILON);
@@ -250,7 +248,6 @@ mod tests {
 
     #[test]
     fn test_adjacent_rects_no_intersection() {
-        // Touching at edge (left=10 meets right=10)
         let a = Rect::new(0.0, 10.0, 0.0, 10.0);
         let b = Rect::new(10.0, 20.0, 0.0, 10.0);
         assert!((a.intersection_area(&b) - 0.0).abs() < f32::EPSILON);

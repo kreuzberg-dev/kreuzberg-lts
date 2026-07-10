@@ -8,10 +8,6 @@ use ahash::AHashMap;
 use memchr::memmem;
 use regex::Regex;
 
-// ============================================================================
-// Scoring Constants and Weights
-// ============================================================================
-
 pub(crate) const OCR_PENALTY_WEIGHT: f64 = 0.3;
 pub(crate) const SCRIPT_PENALTY_WEIGHT: f64 = 0.2;
 pub(crate) const NAV_PENALTY_WEIGHT: f64 = 0.1;
@@ -21,19 +17,11 @@ pub(crate) const METADATA_BONUS_WEIGHT: f64 = 0.1;
 pub(crate) const MIN_TEXT_LENGTH: usize = 10;
 pub(crate) const LARGE_TEXT_LENGTH: usize = 1000;
 
-// ============================================================================
-// Helper Functions
-// ============================================================================
-
 /// Sums the total length of all regex matches in the text
 #[inline]
 pub(crate) fn sum_match_lengths(text: &str, pattern: &Regex) -> usize {
     pattern.find_iter(text).map(|m| m.len()).sum()
 }
-
-// ============================================================================
-// Penalty Calculation Functions
-// ============================================================================
 
 /// Calculate penalty based on OCR artifacts in the text
 #[inline]
@@ -114,10 +102,6 @@ pub(crate) fn calculate_navigation_penalty(text: &str, total_chars: f64) -> f64 
 
     (nav_chars as f64 / total_chars).min(1.0)
 }
-
-// ============================================================================
-// Bonus Calculation Functions
-// ============================================================================
 
 /// Calculate bonus based on document metadata quality
 #[inline]

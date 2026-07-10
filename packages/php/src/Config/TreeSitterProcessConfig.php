@@ -46,8 +46,7 @@ readonly class TreeSitterProcessConfig
         public bool $diagnostics = false,
         public ?int $chunkMaxSize = null,
         public ?string $contentMode = null,
-    ) {
-    }
+    ) {}
 
     /**
      * Create configuration from array data.

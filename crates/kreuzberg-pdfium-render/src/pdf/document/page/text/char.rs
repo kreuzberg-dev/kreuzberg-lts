@@ -132,15 +132,6 @@ impl<'a> PdfPageTextChar<'a> {
 
     /// Returns the font name and raw font descriptor flags for the font applied to this character.
     fn font(&self) -> (Option<String>, FpdfFontDescriptorFlags) {
-        // Retrieving the font name from Pdfium is a two-step operation. First, we call
-        // FPDFText_GetFontInfo() with a null buffer; this will retrieve the length of
-        // the font name in bytes. If the length is zero, then there is no font name.
-
-        // If the length is non-zero, then we reserve a byte buffer of the given
-        // length and call FPDFText_GetFontInfo() again with a pointer to the buffer;
-        // this will write the font name into the buffer. Unlike most text handling in
-        // Pdfium, font names are returned in UTF-8 format.
-
         let mut flags = 0;
 
         let buffer_length =
@@ -148,8 +139,6 @@ impl<'a> PdfPageTextChar<'a> {
                 .FPDFText_GetFontInfo(self.text_page_handle, self.index, std::ptr::null_mut(), 0, &mut flags);
 
         if buffer_length == 0 {
-            // The font name is not present.
-
             return (None, FpdfFontDescriptorFlags::from_bits_truncate(flags as u32));
         }
 
@@ -167,8 +156,6 @@ impl<'a> PdfPageTextChar<'a> {
 
         (
             String::from_utf8(buffer)
-                // Trim any trailing nulls. All strings returned from Pdfium are generally terminated
-                // by one null byte.
                 .map(|str| str.trim_end_matches(char::from(0)).to_owned())
                 .ok(),
             FpdfFontDescriptorFlags::from_bits_truncate(flags as u32),
@@ -239,8 +226,6 @@ impl<'a> PdfPageTextChar<'a> {
     ///
     /// Pdfium may not reliably return the correct value of this flag for built-in fonts.
     pub fn font_is_symbolic(&self) -> bool {
-        // This flag bit and the non-symbolic flag bit cannot both be set or both be clear.
-
         self.font_flags_bits().contains(FpdfFontDescriptorFlags::SYMBOLIC_BIT_3)
     }
 
@@ -253,8 +238,6 @@ impl<'a> PdfPageTextChar<'a> {
     ///
     /// Pdfium may not reliably return the correct value of this flag for built-in fonts.
     pub fn font_is_non_symbolic(&self) -> bool {
-        // This flag bit and the symbolic flag bit cannot both be set or both be clear.
-
         self.font_flags_bits()
             .contains(FpdfFontDescriptorFlags::NON_SYMBOLIC_BIT_6)
     }

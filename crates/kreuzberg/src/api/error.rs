@@ -31,7 +31,6 @@ where
     type Rejection = ApiError;
 
     async fn from_request(req: Request, state: &S) -> Result<Self, Self::Rejection> {
-        // First, extract the body to check if it's a valid JSON object (not array)
         let (parts, body) = req.into_parts();
         let bytes = to_bytes(body, usize::MAX).await.map_err(|_| {
             ApiError::new(
@@ -40,7 +39,6 @@ where
             )
         })?;
 
-        // Validate that the root JSON is an object, not an array
         if !bytes.is_empty() {
             let trimmed = std::str::from_utf8(&bytes).unwrap_or("").trim_start();
             if trimmed.starts_with('[') {
@@ -54,7 +52,6 @@ where
             }
         }
 
-        // Reconstruct the request and use the standard Json extractor
         let req = Request::from_parts(parts, axum::body::Body::from(bytes));
         match Json::<T>::from_request(req, state).await {
             Ok(Json(value)) => Ok(JsonApi(value)),

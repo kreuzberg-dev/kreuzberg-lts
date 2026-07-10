@@ -163,7 +163,7 @@ impl<'a> PdfPermissions<'a> {
             PdfSecurityHandlerRevision::Revision2 => {
                 permissions.contains(FpdfPermissions::CAN_EXTRACT_TEXT_AND_GRAPHICS_BIT_5)
             }
-            // TODO: AJRC - 27/5/22 - what operations are permitted by bit 10 but prevented by bit 5?
+            // ~keep TODO: determine which PDF permission operations bit 10 allows while bit 5 forbids.
             PdfSecurityHandlerRevision::Revision3 | PdfSecurityHandlerRevision::Revision4 => {
                 permissions.contains(FpdfPermissions::V3_CAN_EXTRACT_TEXT_AND_GRAPHICS_BIT_10)
             }

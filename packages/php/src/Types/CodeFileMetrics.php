@@ -27,8 +27,7 @@ readonly class CodeFileMetrics
         public int $nodeCount,
         public int $errorCount,
         public int $maxDepth,
-    ) {
-    }
+    ) {}
 
     /**
      * @param array<string, mixed> $data

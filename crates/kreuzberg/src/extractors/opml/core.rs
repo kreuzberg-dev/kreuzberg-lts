@@ -80,7 +80,6 @@ impl DocumentExtractor for OpmlExtractor {
         tracing::debug!(format = "opml", size_bytes = content.len(), "extraction starting");
         let (_extracted_content, mut metadata_map) = parser::extract_content_and_metadata(content)?;
 
-        // Map standard OPML metadata to typed Metadata fields
         let meta_title = metadata_map
             .remove("title")
             .and_then(|v| v.as_str().map(|s| s.to_string()));

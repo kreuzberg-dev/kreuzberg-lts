@@ -89,8 +89,6 @@ where
         Some(secs) => match tokio::time::timeout(std::time::Duration::from_secs(secs), extraction_future).await {
             Ok(inner) => inner,
             Err(_elapsed) => {
-                // Signal the cancellation token so that any blocking pdfium thread can
-                // detect it at the next inter-page checkpoint and stop processing.
                 if let Some(ref token) = cancel_token {
                     token.cancel();
                 }
@@ -199,7 +197,6 @@ pub async fn batch_extract_file(
     config: &ExtractionConfig,
 ) -> Result<Vec<ExtractionResult>> {
     let config_arc = Arc::new(config.clone());
-    // Use Arc<Vec> for file items — paths are small, so keeping them all alive is fine.
     let items_arc = Arc::new(items);
     let count = items_arc.len();
 
@@ -293,10 +290,6 @@ pub async fn batch_extract_bytes(
     let config_arc = Arc::new(config.clone());
     let count = items.len();
 
-    // Move items into individually-indexed slots so each task can take ownership
-    // of its bytes without cloning. This avoids the memory regression of
-    // Arc<Vec<(Vec<u8>, ...)>> which would keep all byte arrays alive for the
-    // entire batch duration.
     type BytesSlot = parking_lot::Mutex<Option<(Vec<u8>, String, Option<FileExtractionConfig>)>>;
     let slots: Arc<Vec<BytesSlot>> = Arc::new(
         items

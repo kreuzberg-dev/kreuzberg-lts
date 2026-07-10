@@ -142,15 +142,12 @@ def test_serve_command_starts_and_responds() -> None:
     )
 
     try:
-        # Wait for server to be ready with proper polling
         if not _wait_for_server_ready(port, timeout=30.0):
-            # Check if process died
             if process.poll() is not None:
                 stdout, stderr = process.communicate()
                 if "unrecognized subcommand" in stderr.lower() or "not found" in stderr.lower():
                     _cli_feature_unavailable_skip("serve", stderr)
                 raise AssertionError(f"Server process died. stdout: {stdout}, stderr: {stderr}")
-            # Process still running but server not ready
             process.kill()
             stdout, stderr = process.communicate()
             raise AssertionError(f"Server did not become ready within 30 seconds. stdout: {stdout}, stderr: {stderr}")
@@ -219,15 +216,12 @@ language = "eng"
     )
 
     try:
-        # Wait for server to be ready with proper polling
         if not _wait_for_server_ready(port, timeout=30.0):
-            # Check if process died
             if process.poll() is not None:
                 stdout, stderr = process.communicate()
                 if "unrecognized subcommand" in stderr.lower() or "not found" in stderr.lower():
                     _cli_feature_unavailable_skip("serve", stderr)
                 raise AssertionError(f"Server process died. stdout: {stdout}, stderr: {stderr}")
-            # Process still running but server not ready
             process.kill()
             stdout, stderr = process.communicate()
             raise AssertionError(f"Server did not become ready within 30 seconds. stdout: {stdout}, stderr: {stderr}")
@@ -265,15 +259,12 @@ def test_serve_command_extract_endpoint(tmp_path: Path) -> None:
     )
 
     try:
-        # Wait for server to be ready with proper polling
         if not _wait_for_server_ready(port, timeout=30.0):
-            # Check if process died
             if process.poll() is not None:
                 stdout, stderr = process.communicate()
                 if "unrecognized subcommand" in stderr.lower() or "not found" in stderr.lower():
                     _cli_feature_unavailable_skip("serve", stderr)
                 raise AssertionError(f"Server process died. stdout: {stdout}, stderr: {stderr}")
-            # Process still running but server not ready
             process.kill()
             stdout, stderr = process.communicate()
             raise AssertionError(f"Server did not become ready within 30 seconds. stdout: {stdout}, stderr: {stderr}")
@@ -281,10 +272,9 @@ def test_serve_command_extract_endpoint(tmp_path: Path) -> None:
         test_file = tmp_path / "test.txt"
         test_file.write_text("Hello, Kreuzberg API!")
 
-        with httpx.Client() as client:
-            with test_file.open("rb") as f:
-                files = {"files": ("test.txt", f, "text/plain")}
-                response = client.post(f"http://127.0.0.1:{port}/extract", files=files, timeout=10.0)
+        with httpx.Client() as client, test_file.open("rb") as f:
+            files = {"files": ("test.txt", f, "text/plain")}
+            response = client.post(f"http://127.0.0.1:{port}/extract", files=files, timeout=10.0)
 
         assert response.status_code == 200
         results = response.json()

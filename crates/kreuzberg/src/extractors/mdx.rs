@@ -77,7 +77,6 @@ impl MdxExtractor {
         for line in content.lines() {
             let trimmed = line.trim();
 
-            // Track code fences - toggle on ``` lines
             if trimmed.starts_with("```") {
                 in_code_fence = !in_code_fence;
                 result.push_str(line);
@@ -85,14 +84,12 @@ impl MdxExtractor {
                 continue;
             }
 
-            // Inside code fence - preserve everything
             if in_code_fence {
                 result.push_str(line);
                 result.push('\n');
                 continue;
             }
 
-            // Handle multi-line import/export blocks (tracking brace depth)
             if skip_block_depth > 0 {
                 skip_block_depth += count_braces(trimmed);
                 if skip_block_depth <= 0 {
@@ -101,7 +98,6 @@ impl MdxExtractor {
                 continue;
             }
 
-            // Skip import statements
             if trimmed.starts_with("import ") || trimmed == "import" {
                 let depth = count_braces(trimmed);
                 if depth > 0 {
@@ -110,7 +106,6 @@ impl MdxExtractor {
                 continue;
             }
 
-            // Skip export statements
             if trimmed.starts_with("export ") || trimmed == "export" {
                 let depth = count_braces(trimmed);
                 if depth > 0 {
@@ -119,21 +114,16 @@ impl MdxExtractor {
                 continue;
             }
 
-            // Skip standalone JSX expression lines ({...} on own line)
             if JSX_EXPR_LINE_RE.is_match(trimmed) {
                 continue;
             }
 
-            // Strip inline JSX comments like {/* ... */}
             let without_comments = JSX_INLINE_COMMENT_RE.replace_all(line, "");
 
-            // Strip JSX component tags from the line, keeping text content
             let processed = JSX_TAG_RE.replace_all(&without_comments, "");
             let processed_trimmed = processed.trim();
 
-            // Lines that became empty after stripping were pure JSX tag lines
             if processed_trimmed.is_empty() && !trimmed.is_empty() {
-                // Collect stripped JSX tags if requested
                 if let Some(ref mut blocks) = jsx_blocks {
                     let tags: Vec<String> = JSX_TAG_RE
                         .find_iter(&without_comments)
@@ -166,7 +156,6 @@ impl MdxExtractor {
 
         let mut b = InternalDocumentBuilder::new("mdx");
 
-        // Emit frontmatter as a metadata block
         if let Some(serde_yaml_ng::Value::Mapping(map)) = yaml {
             let entries: Vec<(String, String)> = map
                 .iter()
@@ -184,7 +173,6 @@ impl MdxExtractor {
             }
         }
 
-        // Emit stripped JSX components as raw blocks
         for jsx in raw_jsx_blocks {
             if !jsx.trim().is_empty() {
                 b.push_raw_block("jsx", jsx, None);
@@ -399,7 +387,6 @@ impl MdxExtractor {
                                     list_item_annotations.push(builder::link(start, end, &url, title.as_deref()));
                                 }
                             }
-                            // Collect URI
                             if !url.is_empty() {
                                 b.push_uri(Uri::hyperlink(&url, title));
                             }
@@ -499,7 +486,6 @@ impl MdxExtractor {
                 }
                 Event::End(TagEnd::Image) => {
                     in_image = false;
-                    // Push a proper image element (no ExtractedImage data, use sentinel index)
                     let trimmed = image_alt.trim();
                     let desc = if trimmed.is_empty() { "" } else { trimmed };
                     {
@@ -523,7 +509,6 @@ impl MdxExtractor {
                             ocr_rotation: None,
                         });
                     }
-                    // Collect image URI
                     if let Some(url) = image_url.take().filter(|u| !u.is_empty()) {
                         b.push_uri(Uri {
                             url,
@@ -674,10 +659,9 @@ impl DocumentExtractor for MdxExtractor {
         mime_type: &str,
         config: &ExtractionConfig,
     ) -> Result<InternalDocument> {
-        let _ = config; // config is used by the pipeline for image OCR
+        let _ = config;
         let text = String::from_utf8_lossy(content).into_owned();
 
-        // Extract frontmatter first (before stripping MDX syntax)
         let (yaml, remaining_content) = extract_frontmatter(&text);
 
         let mut metadata = if let Some(ref yaml_value) = yaml {
@@ -686,8 +670,6 @@ impl DocumentExtractor for MdxExtractor {
             Metadata::default()
         };
 
-        // Strip MDX-specific syntax from the remaining content,
-        // collecting JSX blocks.
         let mut jsx_blocks_buf = Some(Vec::new());
         let clean_markdown = Self::strip_mdx_syntax_collecting(&remaining_content, jsx_blocks_buf.as_mut());
 
@@ -707,15 +689,10 @@ impl DocumentExtractor for MdxExtractor {
 
         let raw_jsx = jsx_blocks_buf.unwrap_or_default();
 
-        // Build InternalDocument from events, frontmatter, and JSX blocks
         let mut doc = Self::build_internal_document(&events, &yaml, &raw_jsx);
         doc.mime_type = Cow::Owned(mime_type.to_string());
         doc.metadata = metadata;
 
-        // Tables are already pushed by `build_internal_document` via the builder,
-        // so we do NOT push them again here (that would create duplicates).
-
-        // Add extracted images to InternalDocument
         if !extracted_images.is_empty() {
             for image in extracted_images {
                 doc.push_image(image);
@@ -746,8 +723,6 @@ impl DocumentExtractor for MdxExtractor {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    // ── strip_mdx_syntax tests ──────────────────────────────────────────
 
     #[test]
     fn test_strip_import_statements() {
@@ -899,8 +874,6 @@ Final paragraph.
         assert!(result.is_empty());
     }
 
-    // ── Full extraction tests ───────────────────────────────────────────
-
     #[test]
     fn test_plugin_interface() {
         let extractor = MdxExtractor::new();
@@ -958,8 +931,6 @@ Final paragraph.
         assert!(result.content.contains("Important message"));
         assert!(result.content.contains("Regular text"));
         // NOTE: JSX tags appear in content because they are stored as RawBlock elements
-        // in the InternalDocument. The tags are preserved as structural metadata in
-        // DocumentStructure RawBlock nodes.
     }
 
     #[tokio::test]
@@ -992,8 +963,6 @@ Final paragraph.
         assert_eq!(result.metadata.title, Some("My Document Title".to_string()));
     }
 
-    // ── count_braces tests ──────────────────────────────────────────────
-
     #[test]
     fn test_count_braces_balanced() {
         assert_eq!(count_braces("{ a: 1 }"), 0);
@@ -1019,8 +988,6 @@ Final paragraph.
         assert_eq!(count_braces("no braces here"), 0);
     }
 
-    // ── Real-world MDX file integration tests ────────────────────────────
-
     /// Helper: load a test document from the test_documents directory.
     fn load_test_doc(relative_path: &str) -> Vec<u8> {
         let manifest_dir = env!("CARGO_MANIFEST_DIR");
@@ -1045,16 +1012,13 @@ Final paragraph.
         let result =
             crate::extraction::derive::derive_extraction_result(result, true, crate::core::config::OutputFormat::Plain);
 
-        // Should extract the main heading
         assert!(result.content.contains("Getting started"), "Missing main heading");
 
-        // Should contain real prose content
         assert!(
             result.content.contains("how to integrate MDX into your project"),
             "Missing introductory text"
         );
 
-        // Sections should be present
         assert!(
             result.content.contains("Prerequisites"),
             "Missing Prerequisites section"
@@ -1064,12 +1028,10 @@ Final paragraph.
         assert!(result.content.contains("Security"), "Missing Security section");
         assert!(result.content.contains("Integrations"), "Missing Integrations section");
 
-        // Framework names should appear in prose
         assert!(result.content.contains("React"), "Missing React mention");
         assert!(result.content.contains("webpack"), "Missing webpack mention");
         assert!(result.content.contains("esbuild"), "Missing esbuild mention");
 
-        // Import/export statements should be stripped
         assert!(
             !result.content.contains("import {Note}"),
             "import statement not stripped"
@@ -1084,18 +1046,14 @@ Final paragraph.
         );
 
         // NOTE: JSX component tags appear in content as RawBlock element text from the derive pipeline.
-        // They are preserved as structural metadata in DocumentStructure.
 
-        // JSX comments should be stripped
         assert!(!result.content.contains("{/* more */}"), "JSX comment not stripped");
 
-        // Code blocks should be preserved (content inside fences)
         assert!(
             result.content.contains("npm install @types/mdx"),
             "Code block content should be preserved"
         );
 
-        // Substantial content length
         assert!(
             result.content.len() > 2000,
             "Extracted content too short: {} chars",
@@ -1114,10 +1072,8 @@ Final paragraph.
         let result =
             crate::extraction::derive::derive_extraction_result(result, true, crate::core::config::OutputFormat::Plain);
 
-        // Main heading
         assert!(result.content.contains("Using MDX"), "Missing main heading");
 
-        // Key sections
         assert!(
             result.content.contains("How MDX works"),
             "Missing 'How MDX works' section"
@@ -1128,13 +1084,11 @@ Final paragraph.
         assert!(result.content.contains("Layout"), "Missing Layout section");
         assert!(result.content.contains("MDX provider"), "Missing MDX provider section");
 
-        // Import/export stripped
         assert!(!result.content.contains("import {Note}"), "import not stripped");
         assert!(!result.content.contains("export const info"), "export not stripped");
 
         // NOTE: JSX component tags appear in content as RawBlock element text from the derive pipeline.
 
-        // Substantial content
         assert!(
             result.content.len() > 2000,
             "Extracted content too short: {} chars",
@@ -1153,10 +1107,8 @@ Final paragraph.
         let result =
             crate::extraction::derive::derive_extraction_result(result, true, crate::core::config::OutputFormat::Plain);
 
-        // Main heading
         assert!(result.content.contains("Troubleshooting MDX"), "Missing main heading");
 
-        // Key error sections
         assert!(
             result.content.contains("Problems integrating MDX"),
             "Missing integrating section"
@@ -1168,22 +1120,18 @@ Final paragraph.
             "Missing writing section"
         );
 
-        // Import/export stripped
         assert!(!result.content.contains("import {Note}"), "import not stripped");
         assert!(!result.content.contains("export const info"), "export not stripped");
 
-        // JSX lint disable comment should be stripped
         assert!(!result.content.contains("{/* lint disable"), "JSX comment not stripped");
 
         // NOTE: JSX component tags appear in content as RawBlock element text from the derive pipeline.
 
-        // Content inside Note components should be preserved
         assert!(
             result.content.contains("Had trouble with something"),
             "Content inside <Note> should be preserved"
         );
 
-        // Substantial content
         assert!(
             result.content.len() > 2000,
             "Extracted content too short: {} chars",
@@ -1193,7 +1141,6 @@ Final paragraph.
 
     #[tokio::test]
     async fn test_strip_mdx_real_world_multiline_exports() {
-        // Test the specific pattern from getting-started.mdx with nested Date objects
         let input = r#"import {Note} from '../_component/note.jsx'
 
 export const info = {

@@ -13,10 +13,6 @@ use tower::{Layer, Service};
 use crate::service::request::{ExtractionRequest, ExtractionSource};
 use crate::telemetry::conventions;
 
-// ---------------------------------------------------------------------------
-// Layer
-// ---------------------------------------------------------------------------
-
 /// A [`tower::Layer`] that records service-level extraction metrics.
 #[derive(Debug, Clone, Default)]
 pub struct MetricsLayer;
@@ -34,10 +30,6 @@ impl<S> Layer<S> for MetricsLayer {
         MetricsService { inner }
     }
 }
-
-// ---------------------------------------------------------------------------
-// Service
-// ---------------------------------------------------------------------------
 
 /// Middleware service that records extraction metrics.
 #[derive(Debug, Clone)]

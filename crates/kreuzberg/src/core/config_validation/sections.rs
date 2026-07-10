@@ -74,7 +74,6 @@ const VALID_LANGUAGE_CODES: &[&str] = &[
     "slv",
     "swe",
     "tur",
-    // PaddleOCR-specific language codes (non-ISO but widely used)
     "ch",
     "chinese_cht",
     "latin",
@@ -226,7 +225,6 @@ pub fn validate_ocr_backend(backend: &str) -> Result<()> {
 pub fn validate_language_code(code: &str) -> Result<()> {
     let code_lower = code.to_lowercase();
 
-    // Accept "all" and "*" as special values to auto-detect installed languages
     if code_lower == "all" || code_lower == "*" {
         return Ok(());
     }

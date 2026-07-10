@@ -35,26 +35,26 @@ export type RuntimeType = "browser" | "node" | "deno" | "bun" | "cloudflare-work
  * WebAssembly capabilities available in the runtime
  */
 export interface WasmCapabilities {
-	/** Runtime environment type */
-	runtime: RuntimeType;
-	/** WebAssembly support available */
-	hasWasm: boolean;
-	/** Streaming WebAssembly instantiation available */
-	hasWasmStreaming: boolean;
-	/** File API available (browser) */
-	hasFileApi: boolean;
-	/** Blob API available */
-	hasBlob: boolean;
-	/** Worker support available */
-	hasWorkers: boolean;
-	/** SharedArrayBuffer available (may be restricted) */
-	hasSharedArrayBuffer: boolean;
-	/** Module Workers available */
-	hasModuleWorkers: boolean;
-	/** BigInt support */
-	hasBigInt: boolean;
-	/** Specific runtime version if available */
-	runtimeVersion?: string;
+  /** Runtime environment type */
+  runtime: RuntimeType;
+  /** WebAssembly support available */
+  hasWasm: boolean;
+  /** Streaming WebAssembly instantiation available */
+  hasWasmStreaming: boolean;
+  /** File API available (browser) */
+  hasFileApi: boolean;
+  /** Blob API available */
+  hasBlob: boolean;
+  /** Worker support available */
+  hasWorkers: boolean;
+  /** SharedArrayBuffer available (may be restricted) */
+  hasSharedArrayBuffer: boolean;
+  /** Module Workers available */
+  hasModuleWorkers: boolean;
+  /** BigInt support */
+  hasBigInt: boolean;
+  /** Specific runtime version if available */
+  runtimeVersion?: string;
 }
 
 /**
@@ -87,41 +87,39 @@ export interface WasmCapabilities {
  * ```
  */
 export function detectRuntime(): RuntimeType {
-	// Check for Cloudflare Workers - has caches global with a default property but no window/document
-	const globalCaches = (globalThis as unknown as Record<string, unknown>).caches;
-	if (
-		typeof caches !== "undefined" &&
-		globalCaches !== null &&
-		typeof globalCaches === "object" &&
-		"default" in (globalCaches as object) &&
-		typeof window === "undefined" &&
-		typeof document === "undefined"
-	) {
-		return "cloudflare-workers";
-	}
+  const globalCaches = (globalThis as unknown as Record<string, unknown>).caches;
+  if (
+    typeof caches !== "undefined" &&
+    globalCaches !== null &&
+    typeof globalCaches === "object" &&
+    "default" in (globalCaches as object) &&
+    typeof window === "undefined" &&
+    typeof document === "undefined"
+  ) {
+    return "cloudflare-workers";
+  }
 
-	// Check for Vercel Edge Runtime / other edge runtimes
-	if (typeof (globalThis as unknown as Record<string, unknown>).EdgeRuntime !== "undefined") {
-		return "edge-runtime";
-	}
+  if (typeof (globalThis as unknown as Record<string, unknown>).EdgeRuntime !== "undefined") {
+    return "edge-runtime";
+  }
 
-	if (typeof (globalThis as unknown as Record<string, unknown>).Deno !== "undefined") {
-		return "deno";
-	}
+  if (typeof (globalThis as unknown as Record<string, unknown>).Deno !== "undefined") {
+    return "deno";
+  }
 
-	if (typeof (globalThis as unknown as Record<string, unknown>).Bun !== "undefined") {
-		return "bun";
-	}
+  if (typeof (globalThis as unknown as Record<string, unknown>).Bun !== "undefined") {
+    return "bun";
+  }
 
-	if (typeof process !== "undefined" && process.versions && process.versions.node) {
-		return "node";
-	}
+  if (typeof process !== "undefined" && process.versions && process.versions.node) {
+    return "node";
+  }
 
-	if (typeof window !== "undefined" && typeof document !== "undefined") {
-		return "browser";
-	}
+  if (typeof window !== "undefined" && typeof document !== "undefined") {
+    return "browser";
+  }
 
-	return "unknown";
+  return "unknown";
 }
 
 /**
@@ -130,7 +128,7 @@ export function detectRuntime(): RuntimeType {
  * @returns True if running in a browser, false otherwise
  */
 export function isBrowser(): boolean {
-	return detectRuntime() === "browser";
+  return detectRuntime() === "browser";
 }
 
 /**
@@ -139,7 +137,7 @@ export function isBrowser(): boolean {
  * @returns True if running in Node.js, false otherwise
  */
 export function isNode(): boolean {
-	return detectRuntime() === "node";
+  return detectRuntime() === "node";
 }
 
 /**
@@ -148,7 +146,7 @@ export function isNode(): boolean {
  * @returns True if running in Deno, false otherwise
  */
 export function isDeno(): boolean {
-	return detectRuntime() === "deno";
+  return detectRuntime() === "deno";
 }
 
 /**
@@ -157,7 +155,7 @@ export function isDeno(): boolean {
  * @returns True if running in Bun, false otherwise
  */
 export function isBun(): boolean {
-	return detectRuntime() === "bun";
+  return detectRuntime() === "bun";
 }
 
 /**
@@ -166,7 +164,7 @@ export function isBun(): boolean {
  * @returns True if running in Cloudflare Workers, false otherwise
  */
 export function isCloudflareWorkers(): boolean {
-	return detectRuntime() === "cloudflare-workers";
+  return detectRuntime() === "cloudflare-workers";
 }
 
 /**
@@ -175,7 +173,7 @@ export function isCloudflareWorkers(): boolean {
  * @returns True if running in an edge runtime, false otherwise
  */
 export function isEdgeRuntime(): boolean {
-	return detectRuntime() === "edge-runtime";
+  return detectRuntime() === "edge-runtime";
 }
 
 /**
@@ -186,8 +184,8 @@ export function isEdgeRuntime(): boolean {
  * @returns True if running in an edge environment, false otherwise
  */
 export function isEdgeEnvironment(): boolean {
-	const runtime = detectRuntime();
-	return runtime === "cloudflare-workers" || runtime === "edge-runtime";
+  const runtime = detectRuntime();
+  return runtime === "cloudflare-workers" || runtime === "edge-runtime";
 }
 
 /**
@@ -196,8 +194,8 @@ export function isEdgeEnvironment(): boolean {
  * @returns True if running in a web browser, false otherwise
  */
 export function isWebEnvironment(): boolean {
-	const runtime = detectRuntime();
-	return runtime === "browser";
+  const runtime = detectRuntime();
+  return runtime === "browser";
 }
 
 /**
@@ -206,14 +204,14 @@ export function isWebEnvironment(): boolean {
  * @returns True if running on a server runtime, false otherwise
  */
 export function isServerEnvironment(): boolean {
-	const runtime = detectRuntime();
-	return (
-		runtime === "node" ||
-		runtime === "deno" ||
-		runtime === "bun" ||
-		runtime === "cloudflare-workers" ||
-		runtime === "edge-runtime"
-	);
+  const runtime = detectRuntime();
+  return (
+    runtime === "node" ||
+    runtime === "deno" ||
+    runtime === "bun" ||
+    runtime === "cloudflare-workers" ||
+    runtime === "edge-runtime"
+  );
 }
 
 /**
@@ -235,7 +233,7 @@ export function isServerEnvironment(): boolean {
  * ```
  */
 export function hasFileApi(): boolean {
-	return typeof window !== "undefined" && typeof File !== "undefined" && typeof Blob !== "undefined";
+  return typeof window !== "undefined" && typeof File !== "undefined" && typeof Blob !== "undefined";
 }
 
 /**
@@ -244,7 +242,7 @@ export function hasFileApi(): boolean {
  * @returns True if Blob API is available, false otherwise
  */
 export function hasBlob(): boolean {
-	return typeof Blob !== "undefined";
+  return typeof Blob !== "undefined";
 }
 
 /**
@@ -253,7 +251,7 @@ export function hasBlob(): boolean {
  * @returns True if Web Workers can be created, false otherwise
  */
 export function hasWorkers(): boolean {
-	return typeof Worker !== "undefined";
+  return typeof Worker !== "undefined";
 }
 
 /**
@@ -265,7 +263,7 @@ export function hasWorkers(): boolean {
  * @returns True if SharedArrayBuffer is available, false otherwise
  */
 export function hasSharedArrayBuffer(): boolean {
-	return typeof SharedArrayBuffer !== "undefined";
+  return typeof SharedArrayBuffer !== "undefined";
 }
 
 /**
@@ -276,23 +274,23 @@ export function hasSharedArrayBuffer(): boolean {
  * @returns True if module workers are supported, false otherwise
  */
 export function hasModuleWorkers(): boolean {
-	if (!hasWorkers()) {
-		return false;
-	}
+  if (!hasWorkers()) {
+    return false;
+  }
 
-	try {
-		const blob = new Blob(['console.log("test")'], {
-			type: "application/javascript",
-		});
-		const workerUrl = URL.createObjectURL(blob);
-		try {
-			return true;
-		} finally {
-			URL.revokeObjectURL(workerUrl);
-		}
-	} catch {
-		return false;
-	}
+  try {
+    const blob = new Blob(['console.log("test")'], {
+      type: "application/javascript",
+    });
+    const workerUrl = URL.createObjectURL(blob);
+    try {
+      return true;
+    } finally {
+      URL.revokeObjectURL(workerUrl);
+    }
+  } catch {
+    return false;
+  }
 }
 
 /**
@@ -301,7 +299,7 @@ export function hasModuleWorkers(): boolean {
  * @returns True if WebAssembly is supported, false otherwise
  */
 export function hasWasm(): boolean {
-	return typeof WebAssembly !== "undefined" && WebAssembly.instantiate !== undefined;
+  return typeof WebAssembly !== "undefined" && WebAssembly.instantiate !== undefined;
 }
 
 /**
@@ -312,7 +310,7 @@ export function hasWasm(): boolean {
  * @returns True if streaming WebAssembly is supported, false otherwise
  */
 export function hasWasmStreaming(): boolean {
-	return typeof WebAssembly !== "undefined" && WebAssembly.instantiateStreaming !== undefined;
+  return typeof WebAssembly !== "undefined" && WebAssembly.instantiateStreaming !== undefined;
 }
 
 /**
@@ -321,12 +319,12 @@ export function hasWasmStreaming(): boolean {
  * @returns True if BigInt type is supported, false otherwise
  */
 export function hasBigInt(): boolean {
-	try {
-		const test = BigInt("1");
-		return typeof test === "bigint";
-	} catch {
-		return false;
-	}
+  try {
+    const test = BigInt("1");
+    return typeof test === "bigint";
+  } catch {
+    return false;
+  }
 }
 
 /**
@@ -341,23 +339,23 @@ export function hasBigInt(): boolean {
  * ```
  */
 export function getRuntimeVersion(): string | undefined {
-	const runtime = detectRuntime();
+  const runtime = detectRuntime();
 
-	switch (runtime) {
-		case "node":
-			return process.version?.substring(1);
-		case "deno": {
-			const deno = (globalThis as unknown as Record<string, unknown>).Deno as Record<string, unknown> | undefined;
-			const version = deno?.version as Record<string, unknown> | undefined;
-			return version?.deno as string | undefined;
-		}
-		case "bun": {
-			const bun = (globalThis as unknown as Record<string, unknown>).Bun as Record<string, unknown> | undefined;
-			return bun?.version as string | undefined;
-		}
-		default:
-			return undefined;
-	}
+  switch (runtime) {
+    case "node":
+      return process.version?.substring(1);
+    case "deno": {
+      const deno = (globalThis as unknown as Record<string, unknown>).Deno as Record<string, unknown> | undefined;
+      const version = deno?.version as Record<string, unknown> | undefined;
+      return version?.deno as string | undefined;
+    }
+    case "bun": {
+      const bun = (globalThis as unknown as Record<string, unknown>).Bun as Record<string, unknown> | undefined;
+      return bun?.version as string | undefined;
+    }
+    default:
+      return undefined;
+  }
 }
 
 /**
@@ -383,21 +381,21 @@ export function getRuntimeVersion(): string | undefined {
  * ```
  */
 export function getWasmCapabilities(): WasmCapabilities {
-	const runtime = detectRuntime();
-	const version = getRuntimeVersion();
-	const capabilities: WasmCapabilities = {
-		runtime,
-		hasWasm: hasWasm(),
-		hasWasmStreaming: hasWasmStreaming(),
-		hasFileApi: hasFileApi(),
-		hasBlob: hasBlob(),
-		hasWorkers: hasWorkers(),
-		hasSharedArrayBuffer: hasSharedArrayBuffer(),
-		hasModuleWorkers: hasModuleWorkers(),
-		hasBigInt: hasBigInt(),
-		...(version !== undefined ? { runtimeVersion: version } : {}),
-	};
-	return capabilities;
+  const runtime = detectRuntime();
+  const version = getRuntimeVersion();
+  const capabilities: WasmCapabilities = {
+    runtime,
+    hasWasm: hasWasm(),
+    hasWasmStreaming: hasWasmStreaming(),
+    hasFileApi: hasFileApi(),
+    hasBlob: hasBlob(),
+    hasWorkers: hasWorkers(),
+    hasSharedArrayBuffer: hasSharedArrayBuffer(),
+    hasModuleWorkers: hasModuleWorkers(),
+    hasBigInt: hasBigInt(),
+    ...(version !== undefined ? { runtimeVersion: version } : {}),
+  };
+  return capabilities;
 }
 
 /**
@@ -418,19 +416,19 @@ export function getWasmCapabilities(): WasmCapabilities {
  * ```
  */
 export function getRuntimeInfo() {
-	const runtime = detectRuntime();
-	const capabilities = getWasmCapabilities();
+  const runtime = detectRuntime();
+  const capabilities = getWasmCapabilities();
 
-	return {
-		runtime,
-		isBrowser: isBrowser(),
-		isNode: isNode(),
-		isDeno: isDeno(),
-		isBun: isBun(),
-		isWeb: isWebEnvironment(),
-		isServer: isServerEnvironment(),
-		runtimeVersion: getRuntimeVersion(),
-		userAgent: typeof navigator !== "undefined" ? navigator.userAgent : "N/A",
-		capabilities,
-	};
+  return {
+    runtime,
+    isBrowser: isBrowser(),
+    isNode: isNode(),
+    isDeno: isDeno(),
+    isBun: isBun(),
+    isWeb: isWebEnvironment(),
+    isServer: isServerEnvironment(),
+    runtimeVersion: getRuntimeVersion(),
+    userAgent: typeof navigator !== "undefined" ? navigator.userAgent : "N/A",
+    capabilities,
+  };
 }

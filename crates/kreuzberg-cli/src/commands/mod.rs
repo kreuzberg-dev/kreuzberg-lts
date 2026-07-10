@@ -22,7 +22,6 @@ pub mod overrides;
 #[cfg(any(feature = "api", feature = "mcp"))]
 pub mod server;
 
-// Re-export command functions for convenience
 pub use cache::{clear_command, manifest_command, stats_command, warm_command};
 pub use chunk::chunk_command;
 pub use config::load_config;

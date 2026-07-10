@@ -121,10 +121,7 @@ pub fn from_json_file(path: impl AsRef<Path>) -> Result<ServerConfig> {
     Ok(config)
 }
 
-// Helper functions for parsing different formats
-
 fn from_toml_str(content: &str, path: &Path) -> Result<ServerConfig> {
-    // Try nested format first (with [server] section)
     #[derive(Deserialize)]
     struct RootConfig {
         #[serde(default)]
@@ -135,19 +132,16 @@ fn from_toml_str(content: &str, path: &Path) -> Result<ServerConfig> {
         if let Some(server) = root.server {
             return Ok(server);
         } else {
-            // No [server] section, try flat format
             return toml::from_str::<ServerConfig>(content)
                 .map_err(|e| KreuzbergError::validation(format!("Invalid TOML in {}: {}", path.display(), e)));
         }
     }
 
-    // Fall back to flat format
     toml::from_str::<ServerConfig>(content)
         .map_err(|e| KreuzbergError::validation(format!("Invalid TOML in {}: {}", path.display(), e)))
 }
 
 fn from_yaml_str(content: &str, path: &Path) -> Result<ServerConfig> {
-    // Try nested format first (with server: section)
     #[derive(Deserialize)]
     struct RootConfig {
         #[serde(default)]
@@ -158,19 +152,16 @@ fn from_yaml_str(content: &str, path: &Path) -> Result<ServerConfig> {
         if let Some(server) = root.server {
             return Ok(server);
         } else {
-            // No server section, try flat format
             return serde_yaml_ng::from_str::<ServerConfig>(content)
                 .map_err(|e| KreuzbergError::validation(format!("Invalid YAML in {}: {}", path.display(), e)));
         }
     }
 
-    // Fall back to flat format
     serde_yaml_ng::from_str::<ServerConfig>(content)
         .map_err(|e| KreuzbergError::validation(format!("Invalid YAML in {}: {}", path.display(), e)))
 }
 
 fn from_json_str(content: &str, path: &Path) -> Result<ServerConfig> {
-    // Try nested format first (with "server" key)
     #[derive(Deserialize)]
     struct RootConfig {
         #[serde(default)]
@@ -181,13 +172,11 @@ fn from_json_str(content: &str, path: &Path) -> Result<ServerConfig> {
         if let Some(server) = root.server {
             return Ok(server);
         } else {
-            // No server key, try flat format
             return serde_json::from_str::<ServerConfig>(content)
                 .map_err(|e| KreuzbergError::validation(format!("Invalid JSON in {}: {}", path.display(), e)));
         }
     }
 
-    // Fall back to flat format
     serde_json::from_str::<ServerConfig>(content)
         .map_err(|e| KreuzbergError::validation(format!("Invalid JSON in {}: {}", path.display(), e)))
 }

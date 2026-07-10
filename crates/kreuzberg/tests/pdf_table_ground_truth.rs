@@ -79,12 +79,6 @@ fn print_table_summary(result: &kreuzberg::types::ExtractionResult) {
     }
 }
 
-// ═══════════════════════════════════════════════════════════════════
-// Section 1: False Positive Regression Tests
-// Non-table PDFs must NOT have tables detected.
-// These are the hard gate — they must pass for a commit.
-// ═══════════════════════════════════════════════════════════════════
-
 /// Helper to run a false-positive check for a non-table PDF.
 /// Only checks when the ocr feature is enabled (table detection requires it).
 #[cfg(feature = "ocr")]
@@ -130,11 +124,6 @@ fn test_false_positive_searchable() {
 fn test_false_positive_google_doc() {
     assert_no_tables("google_doc_document.pdf");
 }
-
-// ═══════════════════════════════════════════════════════════════════
-// Section 2: Markdown Quality Tests (pdfium path, no OCR needed)
-// Tests that text-bearing PDFs produce reasonable markdown.
-// ═══════════════════════════════════════════════════════════════════
 
 #[test]
 fn test_markdown_quality_fake_memo() {
@@ -183,7 +172,6 @@ fn test_markdown_quality_multi_page() {
     println!("=== multi_page.pdf markdown quality ===");
     println!("Content length: {} chars", result.content.len());
 
-    // multi_page.pdf is text-based and should produce substantial markdown
     assert!(
         result.content.len() > 5000,
         "multi_page.pdf should produce >5000 chars (got {})",
@@ -213,19 +201,12 @@ fn test_markdown_quality_vs_ground_truth_simple() {
     println!("Ground truth length: {} chars", ground_truth.len());
     println!("Word similarity: {:.1}%", similarity * 100.0);
 
-    // table_document.pdf is image-only, so pdfium extracts almost nothing.
-    // This test tracks progress — similarity should increase with OCR improvements.
-    // Currently: ~3% (only image placeholder matches a few words).
     println!("NOTE: table_document.pdf is image-only; low similarity expected without OCR.");
 }
 
-// ═══════════════════════════════════════════════════════════════════
-// Section 3: OCR Path Table Detection (slow, run with --ignored)
-// ═══════════════════════════════════════════════════════════════════
-
 #[cfg(feature = "ocr")]
 #[test]
-#[ignore] // Slow OCR tests, run explicitly
+#[ignore]
 fn test_ocr_path_table_document() {
     use kreuzberg::core::config::OcrConfig;
 
@@ -241,7 +222,7 @@ fn test_ocr_path_table_document() {
             language: "eng".to_string(),
             ..Default::default()
         }),
-        force_ocr: true, // Force OCR since this is image-only
+        force_ocr: true,
         ..Default::default()
     };
 
@@ -258,11 +239,6 @@ fn test_ocr_path_table_document() {
         result.content.len()
     );
 }
-
-// ═══════════════════════════════════════════════════════════════════
-// Section 4: Comprehensive Baseline Snapshot
-// Full scan of all PDFs — run with --ignored for complete picture.
-// ═══════════════════════════════════════════════════════════════════
 
 #[test]
 #[ignore]

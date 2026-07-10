@@ -4,7 +4,6 @@
 #include <string.h>
 
 int main(void) {
-    /* Test error code name functions */
     assert(strcmp(kreuzberg_error_code_name(0), "validation") == 0);
     assert(strcmp(kreuzberg_error_code_name(1), "parsing") == 0);
     assert(strcmp(kreuzberg_error_code_name(2), "ocr") == 0);
@@ -17,17 +16,14 @@ int main(void) {
     assert(strcmp(kreuzberg_error_code_name(9), "cancelled") == 0);
     assert(strcmp(kreuzberg_error_code_name(99), "unknown") == 0);
 
-    /* Test error code description */
     assert(strcmp(kreuzberg_error_code_description(0), "Input validation error") == 0);
     assert(strcmp(kreuzberg_error_code_description(7), "Internal library error") == 0);
     assert(strcmp(kreuzberg_error_code_description(8), "Embedding generation error") == 0);
     assert(strcmp(kreuzberg_error_code_description(9), "Extraction cancelled") == 0);
     assert(strcmp(kreuzberg_error_code_description(99), "Unknown error code") == 0);
 
-    /* Test error code count */
     assert(kreuzberg_error_code_count() == 10);
 
-    /* Test individual error code accessors */
     assert(kreuzberg_error_code_validation() == 0);
     assert(kreuzberg_error_code_parsing() == 1);
     assert(kreuzberg_error_code_ocr() == 2);

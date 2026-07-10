@@ -13,8 +13,7 @@ use crate::safe::catch_native_panic;
 use rustler::{Binary, Encoder, Env, NifResult, ResourceArc, Term};
 use std::sync::Mutex;
 
-// Constants for validation
-const MAX_BINARY_SIZE: usize = 500 * 1024 * 1024; // 500MB
+const MAX_BINARY_SIZE: usize = 500 * 1024 * 1024;
 
 /// Extract text and data from a document binary with default configuration
 ///
@@ -220,9 +219,6 @@ pub fn render_pdf_pages_iter_next<'a>(
         None => return Ok(atoms::done().encode(env)),
     };
 
-    // Note: catch_unwind can't easily wrap Iterator::next with a mutable borrow,
-    // so we accept the risk here. The iterator is already behind a Mutex and
-    // runs on a dirty scheduler.
     match iter.next() {
         Some(Ok((page_index, png))) => {
             let mut obin = match rustler::OwnedBinary::new(png.len()) {

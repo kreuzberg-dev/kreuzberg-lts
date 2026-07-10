@@ -91,10 +91,6 @@ impl CrnnNet {
             ))
         })?;
 
-        // PP-OCRv5 model metadata already includes the CTC blank token ("#") at
-        // index 0 and the space token (" ") at the end.  Do NOT prepend/append
-        // extra tokens — doing so shifts every character index by one and
-        // produces garbled output.
         let keys: Vec<String> = model_charater_list.split('\n').map(|s: &str| s.to_string()).collect();
 
         Ok(keys)
@@ -103,10 +99,6 @@ impl CrnnNet {
     fn read_keys_from_file(&mut self, path: &str) -> Result<(), OcrError> {
         let content = std::fs::read_to_string(path)?;
 
-        // PP-OCRv5 dict files already include the CTC blank token ("#") at
-        // index 0 and the space token (" ") at the end.  Do NOT prepend/append
-        // extra tokens — doing so shifts every character index by one and
-        // produces garbled output.
         let keys: Vec<String> = content.split('\n').map(|s| s.to_string()).collect();
 
         self.keys = keys;
@@ -124,10 +116,8 @@ impl CrnnNet {
             return Ok(Vec::new());
         }
 
-        // Batch recognition: sort by aspect ratio, batch, pad to max width
         let mut text_lines = self.get_text_lines_batched(part_imgs, batch_size)?;
 
-        // Angle rollback: re-recognize individual images that scored poorly
         for (index, text_line) in text_lines.iter_mut().enumerate() {
             if (text_line.text_score.is_nan() || text_line.text_score < angle_rollback_threshold)
                 && let Some(angle_rollback_record) = angle_rollback_records.get(&index)
@@ -149,7 +139,6 @@ impl CrnnNet {
         let session = self.session.as_ref().ok_or(OcrError::SessionNotInitialized)?;
         let batch_size = (batch_size as usize).max(1);
 
-        // Compute target widths and sort indices by aspect ratio (width/height)
         let mut indexed_widths: Vec<(usize, u32)> = part_imgs
             .iter()
             .enumerate()
@@ -163,20 +152,16 @@ impl CrnnNet {
 
         let mut results: Vec<(usize, TextLine)> = Vec::with_capacity(part_imgs.len());
 
-        // Process in batches
         for chunk in indexed_widths.chunks(batch_size) {
             if chunk.len() == 1 {
-                // Single image — use existing path (no padding overhead)
                 let (orig_idx, _) = chunk[0];
                 let text_line = self.get_text_line(&part_imgs[orig_idx])?;
                 results.push((orig_idx, text_line));
                 continue;
             }
 
-            // Find max width in this batch
             let max_width = chunk.iter().map(|&(_, w)| w).max().unwrap_or(1);
 
-            // Build batch tensor [N, 3, 48, max_width] with zero-padding
             let n = chunk.len();
             let mut batch_data = Array4::<f32>::zeros((n, 3, CRNN_DST_HEIGHT as usize, max_width as usize));
 
@@ -185,9 +170,6 @@ impl CrnnNet {
                 let resized =
                     image::imageops::resize(img, dst_width, CRNN_DST_HEIGHT, image::imageops::FilterType::Triangle);
 
-                // Normalize and fill into batch tensor (zero-padded on right).
-                // Use raw slice access instead of per-pixel get_pixel() to
-                // eliminate millions of bounds checks in the hot loop.
                 let cols = resized.width() as usize;
                 let rows = resized.height() as usize;
                 let raw = resized.as_raw();
@@ -206,7 +188,6 @@ impl CrnnNet {
                         }
                     }
                 }
-                // Remaining columns stay zero (padding)
             }
 
             let input_tensor = Tensor::from_array(batch_data)?;
@@ -226,7 +207,6 @@ impl CrnnNet {
             })?;
 
             let (shape, flat_data) = output_value.try_extract_tensor::<f32>()?;
-            // Shape: [batch, timesteps, num_classes]
             let batch_dim = *shape.first().unwrap_or(&1) as usize;
             let timesteps = *shape.get(1).unwrap_or(&0) as usize;
             let num_classes = *shape.get(2).unwrap_or(&0) as usize;
@@ -239,7 +219,6 @@ impl CrnnNet {
             }
         }
 
-        // Reorder results back to original index order
         results.sort_by_key(|&(idx, _)| idx);
         Ok(results.into_iter().map(|(_, tl)| tl).collect())
     }
@@ -328,7 +307,6 @@ impl CrnnNet {
             last_index = max_index;
         }
 
-        // Avoid division by zero: handle case where no characters were found
         text_line.text_score = if text_score_count > 0 {
             text_score_sum / text_score_count as f32
         } else {
@@ -344,14 +322,8 @@ mod tests {
 
     #[test]
     fn test_score_to_text_line_skips_blank_index() {
-        // keys[0] = "#" (CTC blank), keys[1] = "a", keys[2] = "b"
         let keys = vec!["#".to_string(), "a".to_string(), "b".to_string()];
-        // 3 timesteps, 3 classes each. Simulate: blank, "a", "b"
-        let output = vec![
-            1.0, 0.0, 0.0, // timestep 0: max at index 0 (blank) -> skip
-            0.0, 0.9, 0.1, // timestep 1: max at index 1 ("a")
-            0.0, 0.1, 0.8, // timestep 2: max at index 2 ("b")
-        ];
+        let output = vec![1.0, 0.0, 0.0, 0.0, 0.9, 0.1, 0.0, 0.1, 0.8];
         let result = CrnnNet::score_to_text_line(&output, 3, 3, &keys).unwrap();
         assert_eq!(result.text, "ab");
     }
@@ -359,13 +331,7 @@ mod tests {
     #[test]
     fn test_score_to_text_line_deduplicates_consecutive() {
         let keys = vec!["#".to_string(), "h".to_string(), "i".to_string()];
-        // 4 timesteps: "h", "h", "i", "i" -> should deduplicate to "hi"
-        let output = vec![
-            0.0, 0.9, 0.0, // "h"
-            0.0, 0.8, 0.0, // "h" again (same index, skip)
-            0.0, 0.0, 0.9, // "i"
-            0.0, 0.0, 0.8, // "i" again (same index, skip)
-        ];
+        let output = vec![0.0, 0.9, 0.0, 0.0, 0.8, 0.0, 0.0, 0.0, 0.9, 0.0, 0.0, 0.8];
         let result = CrnnNet::score_to_text_line(&output, 4, 3, &keys).unwrap();
         assert_eq!(result.text, "hi");
     }
@@ -375,13 +341,11 @@ mod tests {
         let dir = std::env::temp_dir().join("kreuzberg_test_dict");
         std::fs::create_dir_all(&dir).unwrap();
         let dict_path = dir.join("test_dict.txt");
-        // PP-OCRv5 dict files already include "#" (blank) at start and " " at end.
         std::fs::write(&dict_path, "#\na\nb\nc\n ").unwrap();
 
         let mut net = CrnnNet::new();
         net.read_keys_from_file(dict_path.to_str().unwrap()).unwrap();
 
-        // Dict is loaded as-is: ["#", "a", "b", "c", " "]
         assert_eq!(net.keys[0], "#");
         assert_eq!(net.keys[1], "a");
         assert_eq!(net.keys[2], "b");

@@ -11,39 +11,37 @@ internal static class NativeTestHelper
 {
     private static readonly Lazy<string> WorkspaceRootLoader = new(ResolveWorkspaceRoot);
     private static readonly Lazy<bool> LibraryLoaded = new(() =>
-    {
-        var root = WorkspaceRoot;
-        var lib = LibraryFileName();
-        var candidateList = new List<string>();
-        var ffiDir = Environment.GetEnvironmentVariable("KREUZBERG_FFI_DIR");
-        if (!string.IsNullOrEmpty(ffiDir))
         {
-            candidateList.Add(Path.Combine(ffiDir, lib));
-        }
-        candidateList.Add(Path.Combine(root, "target", "release", lib));
-        candidateList.Add(Path.Combine(root, "target", "debug", lib));
-        var candidates = candidateList.ToArray();
-
-        // Load Pdfium before loading the FFI library to ensure it's available
-        LoadPdfiumIfPresent(root);
-
-        foreach (var candidate in candidates)
-        {
-            if (File.Exists(candidate))
+            var root = WorkspaceRoot;
+            var lib = LibraryFileName();
+            var candidateList = new List<string>();
+            var ffiDir = Environment.GetEnvironmentVariable("KREUZBERG_FFI_DIR");
+            if (!string.IsNullOrEmpty(ffiDir))
             {
-                try
-                {
-                    NativeLibrary.Load(candidate);
-                }
-                catch (InvalidOperationException ex) when (ex.Message.Contains("already loaded"))
-                {
-                    // Library already loaded - this is fine when using a custom test framework
-                }
-                return true;
+                candidateList.Add(Path.Combine(ffiDir, lib));
             }
-        }
+            candidateList.Add(Path.Combine(root, "target", "release", lib));
+            candidateList.Add(Path.Combine(root, "target", "debug", lib));
+            var candidates = candidateList.ToArray();
 
-        throw new XunitException($"Native library not found. Checked: {string.Join(", ", candidates)}");
+            LoadPdfiumIfPresent(root);
+
+            foreach (var candidate in candidates)
+            {
+                if (File.Exists(candidate))
+                {
+                    try
+                    {
+                        NativeLibrary.Load(candidate);
+                    }
+                    catch (InvalidOperationException ex) when (ex.Message.Contains("already loaded"))
+                    {
+                    }
+                    return true;
+                }
+            }
+
+            throw new XunitException($"Native library not found. Checked: {string.Join(", ", candidates)}");
     });
 
     internal static string WorkspaceRoot => WorkspaceRootLoader.Value;
@@ -121,7 +119,6 @@ internal static class NativeTestHelper
                 }
                 catch (InvalidOperationException ex) when (ex.Message.Contains("already loaded"))
                 {
-                    // Pdfium already loaded - this is fine when using a custom test framework
                 }
                 return;
             }

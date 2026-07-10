@@ -37,8 +37,7 @@ readonly class HtmlOutputConfig
         public string $theme = 'default',
         public string $classPrefix = 'kb-',
         public bool $embedCss = true,
-    ) {
-    }
+    ) {}
 
     /**
      * Create configuration from array data.
@@ -82,13 +81,7 @@ readonly class HtmlOutputConfig
             $embedCss = (bool) $embedCss;
         }
 
-        return new self(
-            css: $css,
-            cssFile: $cssFile,
-            theme: $theme,
-            classPrefix: $classPrefix,
-            embedCss: $embedCss,
-        );
+        return new self(css: $css, cssFile: $cssFile, theme: $theme, classPrefix: $classPrefix, embedCss: $embedCss);
     }
 
     /**

@@ -61,8 +61,7 @@ readonly class OcrElementConfig
          * @default false
          */
         public bool $buildHierarchy = false,
-    ) {
-    }
+    ) {}
 
     /**
      * Create configuration from array data.
@@ -141,12 +140,15 @@ readonly class OcrElementConfig
      */
     public function toArray(): array
     {
-        return array_filter([
-            'include_elements' => $this->includeElements,
-            'min_level' => $this->minLevel,
-            'min_confidence' => $this->minConfidence,
-            'build_hierarchy' => $this->buildHierarchy,
-        ], static fn ($value): bool => $value !== null && $value !== false);
+        return array_filter(
+            [
+                'include_elements' => $this->includeElements,
+                'min_level' => $this->minLevel,
+                'min_confidence' => $this->minConfidence,
+                'build_hierarchy' => $this->buildHierarchy,
+            ],
+            static fn($value): bool => $value !== null && $value !== false,
+        );
     }
 
     /**

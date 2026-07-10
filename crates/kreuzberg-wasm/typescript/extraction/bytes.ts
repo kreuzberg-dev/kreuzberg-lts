@@ -50,37 +50,37 @@ import { getWasmModule, isInitialized } from "./internal.js";
  * ```
  */
 export async function extractBytes(
-	data: Uint8Array,
-	mimeType: string,
-	config?: ExtractionConfigType | null,
+  data: Uint8Array,
+  mimeType: string,
+  config?: ExtractionConfigType | null,
 ): Promise<ExtractionResult> {
-	if (!isInitialized()) {
-		throw new Error("WASM module not initialized. Call initWasm() first.");
-	}
+  if (!isInitialized()) {
+    throw new Error("WASM module not initialized. Call initWasm() first.");
+  }
 
-	const wasm = getWasmModule();
+  const wasm = getWasmModule();
 
-	try {
-		if (!data || data.length === 0) {
-			throw new Error("Document data cannot be empty");
-		}
+  try {
+    if (!data || data.length === 0) {
+      throw new Error("Document data cannot be empty");
+    }
 
-		if (!mimeType) {
-			throw new Error("MIME type is required");
-		}
+    if (!mimeType) {
+      throw new Error("MIME type is required");
+    }
 
-		const normalizedConfig = configToJS(config ?? null);
+    const normalizedConfig = configToJS(config ?? null);
 
-		const result = await wasm.extractBytes(data, mimeType, normalizedConfig);
+    const result = await wasm.extractBytes(data, mimeType, normalizedConfig);
 
-		if (!result) {
-			throw new Error("Invalid extraction result: no result from WASM module");
-		}
+    if (!result) {
+      throw new Error("Invalid extraction result: no result from WASM module");
+    }
 
-		return jsToExtractionResult(result);
-	} catch (error) {
-		throw wrapWasmError(error, "extracting from bytes");
-	}
+    return jsToExtractionResult(result);
+  } catch (error) {
+    throw wrapWasmError(error, "extracting from bytes");
+  }
 }
 
 /**
@@ -106,35 +106,35 @@ export async function extractBytes(
  * ```
  */
 export function extractBytesSync(
-	data: Uint8Array,
-	mimeType: string,
-	config?: ExtractionConfigType | null,
+  data: Uint8Array,
+  mimeType: string,
+  config?: ExtractionConfigType | null,
 ): ExtractionResult {
-	if (!isInitialized()) {
-		throw new Error("WASM module not initialized. Call initWasm() first.");
-	}
+  if (!isInitialized()) {
+    throw new Error("WASM module not initialized. Call initWasm() first.");
+  }
 
-	const wasm = getWasmModule();
+  const wasm = getWasmModule();
 
-	try {
-		if (!data || data.length === 0) {
-			throw new Error("Document data cannot be empty");
-		}
+  try {
+    if (!data || data.length === 0) {
+      throw new Error("Document data cannot be empty");
+    }
 
-		if (!mimeType) {
-			throw new Error("MIME type is required");
-		}
+    if (!mimeType) {
+      throw new Error("MIME type is required");
+    }
 
-		const normalizedConfig = configToJS(config ?? null);
+    const normalizedConfig = configToJS(config ?? null);
 
-		const result = wasm.extractBytesSync(data, mimeType, normalizedConfig);
+    const result = wasm.extractBytesSync(data, mimeType, normalizedConfig);
 
-		if (!result) {
-			throw new Error("Invalid extraction result: no result from WASM module");
-		}
+    if (!result) {
+      throw new Error("Invalid extraction result: no result from WASM module");
+    }
 
-		return jsToExtractionResult(result);
-	} catch (error) {
-		throw wrapWasmError(error, "extracting from bytes (sync)");
-	}
+    return jsToExtractionResult(result);
+  } catch (error) {
+    throw wrapWasmError(error, "extracting from bytes (sync)");
+  }
 }

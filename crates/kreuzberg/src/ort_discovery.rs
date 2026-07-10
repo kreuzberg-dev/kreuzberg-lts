@@ -32,7 +32,6 @@ pub fn ensure_ort_available() {
 
 #[cfg(not(feature = "ort-bundled"))]
 fn try_discover_ort() -> Result<(), &'static str> {
-    // Already set and valid?
     if let Ok(path) = std::env::var("ORT_DYLIB_PATH")
         && std::path::Path::new(&path).exists()
     {

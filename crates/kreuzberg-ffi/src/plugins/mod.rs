@@ -7,7 +7,6 @@ pub mod ocr_backend;
 pub mod post_processor;
 pub mod validator;
 
-// Re-export all public items
 pub use document_extractor::*;
 pub use ocr_backend::*;
 pub use post_processor::*;

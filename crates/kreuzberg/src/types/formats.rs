@@ -363,7 +363,6 @@ impl Default for TesseractConfig {
     fn default() -> Self {
         Self {
             language: "eng".to_string(),
-            // PSM_AUTO (3) hangs 60-90s on sparse/no-text images in WASM (issue #855)
             #[cfg(target_arch = "wasm32")]
             psm: 6,
             #[cfg(not(target_arch = "wasm32"))]

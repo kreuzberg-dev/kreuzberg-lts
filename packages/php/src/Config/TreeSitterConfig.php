@@ -45,8 +45,7 @@ readonly class TreeSitterConfig
         public ?array $languages = null,
         public ?array $groups = null,
         public ?TreeSitterProcessConfig $process = null,
-    ) {
-    }
+    ) {}
 
     /**
      * Create configuration from array data.
@@ -68,19 +67,13 @@ readonly class TreeSitterConfig
         /** @var string[]|null $languages */
         $languages = null;
         if (isset($data['languages']) && is_array($data['languages'])) {
-            $languages = array_values(array_filter(
-                $data['languages'],
-                static fn (mixed $v): bool => is_string($v),
-            ));
+            $languages = array_values(array_filter($data['languages'], static fn(mixed $v): bool => is_string($v)));
         }
 
         /** @var string[]|null $groups */
         $groups = null;
         if (isset($data['groups']) && is_array($data['groups'])) {
-            $groups = array_values(array_filter(
-                $data['groups'],
-                static fn (mixed $v): bool => is_string($v),
-            ));
+            $groups = array_values(array_filter($data['groups'], static fn(mixed $v): bool => is_string($v)));
         }
 
         $process = null;

@@ -32,7 +32,6 @@ pub(super) fn split_objects_into_columns(objects: &[PdfPageObject]) -> Vec<Vec<u
     let bounds: Vec<ObjectBounds> = objects
         .iter()
         .filter_map(|obj| {
-            // Only consider text objects for column detection
             obj.as_text_object()?;
             obj.bounds().ok().map(|b| ObjectBounds {
                 left: b.left().value,
@@ -58,7 +57,6 @@ pub(super) fn split_objects_into_columns(objects: &[PdfPageObject]) -> Vec<Vec<u
         let mut left_indices: Vec<usize> = Vec::new();
         let mut right_indices: Vec<usize> = Vec::new();
 
-        // Partition ALL objects (not just text) by midpoint relative to split
         for (i, obj) in objects.iter().enumerate() {
             let mid_x = obj
                 .bounds()
@@ -73,7 +71,6 @@ pub(super) fn split_objects_into_columns(objects: &[PdfPageObject]) -> Vec<Vec<u
             }
         }
 
-        // Validate column sizes (text objects only)
         let left_text_count = left_indices
             .iter()
             .filter(|&&i| objects[i].as_text_object().is_some())
@@ -120,11 +117,9 @@ fn find_column_split(bounds: &[ObjectBounds], min_gap: f32, page_y_min: f32, pag
         return None;
     }
 
-    // Collect (left, right) edges sorted by left edge
     let mut edges: Vec<(f32, f32)> = bounds.iter().map(|b| (b.left, b.right)).collect();
     edges.sort_by(|a, b| a.0.total_cmp(&b.0));
 
-    // Track the running maximum right edge to find true gaps
     let mut max_right = f32::MIN;
     let mut best_gap = 0.0_f32;
     let mut best_split = None;
@@ -140,7 +135,6 @@ fn find_column_split(bounds: &[ObjectBounds], min_gap: f32, page_y_min: f32, pag
         max_right = max_right.max(right);
     }
 
-    // Validate: both sides must span a significant portion of page height
     if let Some(split_x) = best_split {
         let left_y_range = vertical_span(bounds.iter().filter(|b| b.left < split_x));
         let right_y_range = vertical_span(bounds.iter().filter(|b| b.left >= split_x));

@@ -104,7 +104,6 @@ pub fn map_kreuzberg_error_to_mcp(error: KreuzbergError) -> McpError {
 
         KreuzbergError::Other(msg) => McpError::internal_error(msg, None),
 
-        // MCP spec error code -32800: RequestCancelled
         KreuzbergError::Cancelled => McpError {
             code: rmcp::model::ErrorCode(-32800),
             message: "Extraction cancelled".into(),

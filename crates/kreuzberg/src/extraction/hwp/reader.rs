@@ -7,8 +7,6 @@ use flate2::read::{DeflateDecoder, ZlibDecoder};
 use std::io::{Cursor, Read, Seek};
 
 // ---------------------------------------------------------------------------
-// CfbReader — opens a CFB compound file and reads named streams
-// ---------------------------------------------------------------------------
 
 pub struct CfbReader<F> {
     cfb: CompoundFile<F>,
@@ -40,10 +38,6 @@ impl<F: Read + Seek> CfbReader<F> {
         self.cfb.exists(path)
     }
 }
-
-// ---------------------------------------------------------------------------
-// StreamReader — cursor-backed little-endian binary reader
-// ---------------------------------------------------------------------------
 
 pub struct StreamReader {
     cursor: Cursor<Vec<u8>>,
@@ -93,10 +87,6 @@ impl StreamReader {
     }
 }
 
-// ---------------------------------------------------------------------------
-// Decompression — HWP sections use raw deflate (with zlib fallback)
-// ---------------------------------------------------------------------------
-
 /// Decompress a raw-deflate stream from an HWP section.
 ///
 /// HWP 5.0 compresses sections with raw deflate (no zlib header). Falls back
@@ -106,20 +96,17 @@ pub fn decompress_stream(data: &[u8]) -> Result<Vec<u8>> {
         return Ok(Vec::new());
     }
 
-    // Try raw deflate first (HWP standard)
     let mut decoder = DeflateDecoder::new(data);
     let mut decompressed = Vec::new();
     if decoder.read_to_end(&mut decompressed).is_ok() {
         return Ok(decompressed);
     }
 
-    // Fall back to zlib
     let mut decoder = ZlibDecoder::new(data);
     let mut decompressed = Vec::new();
     if decoder.read_to_end(&mut decompressed).is_ok() {
         return Ok(decompressed);
     }
 
-    // Return data unchanged (section may not actually be compressed)
     Ok(data.to_vec())
 }

@@ -6,7 +6,7 @@ pub(crate) mod group;
 pub(crate) mod image;
 pub(crate) mod ownership;
 pub(crate) mod path;
-pub(crate) mod private; // Keep private so that the PdfPageObjectPrivate trait is not exposed.
+pub(crate) mod private;
 pub(crate) mod shading;
 pub(crate) mod text;
 pub(crate) mod unsupported;
@@ -577,13 +577,7 @@ impl<'a> PdfPageObject<'a> {
         "this [PdfPageObject],"
     );
 
-    // The transform_impl() and reset_matrix_impl() functions required by the
-    // create_transform_setters!() macro are provided by the PdfPageObjectPrivate trait.
-
     create_transform_getters!("this [PdfPageObject]", "this [PdfPageObject].", "this [PdfPageObject],");
-
-    // The get_matrix_impl() function required by the create_transform_getters!() macro
-    // is provided by the PdfPageObjectPrivate trait.
 }
 
 /// Functionality common to all [PdfPageObject] objects, regardless of their [PdfPageObjectType].
@@ -838,8 +832,6 @@ pub trait PdfPageObjectCommon<'a> {
     /// over marks or access them by index.
     fn content_marks(&self) -> PdfPageObjectContentMarks<'_>;
 }
-
-// Blanket implementation for all PdfPageObject types.
 
 impl<'a, T> PdfPageObjectCommon<'a> for T
 where
@@ -1260,16 +1252,6 @@ impl<'a> Drop for PdfPageObject<'a> {
     /// Closes this [PdfPageObject], releasing held memory.
     #[inline]
     fn drop(&mut self) {
-        // The documentation for FPDFPageObj_Destroy() states that we only need
-        // call the function for page objects created by FPDFPageObj_CreateNew*() or
-        // FPDFPageObj_New*Obj() _and_ where the newly-created object was _not_ subsequently
-        // added to a PdfPage or PdfPageAnnotation via a call to FPDFPage_InsertObject() or
-        // FPDFAnnot_AppendObject().
-
-        // In other words, retrieving a page object that already exists in a document evidently
-        // does not allocate any additional resources, so we don't need to free anything.
-        // (Indeed, if we try to, Pdfium segfaults.)
-
         if !self.ownership().is_owned() {
             self.bindings().FPDFPageObj_Destroy(self.object_handle());
         }
@@ -1299,16 +1281,12 @@ mod tests {
             PdfPoints::new(10.0),
         )?;
 
-        // Apply some basic transformations to the object...
-
         object.translate(PdfPoints::new(100.0), PdfPoints::new(100.0))?;
         object.flip_vertically()?;
         object.rotate_clockwise_degrees(45.0)?;
         object.scale(3.0, 4.0)?;
 
         let previous_matrix = object.matrix()?;
-
-        // _Applying_ the identity matrix should not alter the current matrix.
 
         object.apply_matrix(PdfMatrix::IDENTITY)?;
 
@@ -1335,17 +1313,12 @@ mod tests {
             PdfPoints::new(10.0),
         )?;
 
-        // Apply some basic transformations to the object...
-
         object.translate(PdfPoints::new(100.0), PdfPoints::new(100.0))?;
         object.flip_vertically()?;
         object.rotate_clockwise_degrees(45.0)?;
         object.scale(3.0, 4.0)?;
 
         let previous_matrix = object.matrix()?;
-
-        // _Resetting_ the object's matrix back to the identity matrix should wipe out
-        // the current matrix.
 
         object.reset_matrix_to_identity()?;
 
@@ -1357,11 +1330,6 @@ mod tests {
 
     #[test]
     fn test_transform_captured_in_content_regeneration() -> Result<(), PdfiumError> {
-        // The purpose of the test is to confirm that object transformations are correctly
-        // applied to the page's content streams by automatic content regeneration.
-        // In pdfium-render versions 0.8.27 and earlier, this was not reliably the case.
-        // See: https://github.com/ajrcarey/pdfium-render/issues/168
-
         let pdfium = test_bind_to_pdfium();
 
         let mut document = pdfium.create_new_pdf()?;
@@ -1380,18 +1348,10 @@ mod tests {
 
             let object_matrix_before_rotation = object.matrix()?;
 
-            // In pdfium-render versions 0.8.27 and earlier, the following transformation
-            // will not be captured by automatic content regeneration. It will be lost
-            // when the page falls out of scope.
             object.rotate_clockwise_degrees(45.0)?;
 
             object_matrix_before_rotation
         };
-
-        // The page has now been dropped since it has fallen out of scope. Re-open it,
-        // retrieve the page object, and test its transformation matrix. It should be
-        // correctly rotated, indicating the transformation was correctly captured by
-        // automatic content regeneration.
 
         assert_eq!(
             object_matrix_before_rotation.rotate_clockwise_degrees(45.0)?,

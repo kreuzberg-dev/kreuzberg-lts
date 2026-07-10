@@ -88,13 +88,11 @@ impl DocumentExtractor for CitationExtractor {
         let mut keywords_set = AHashSet::new();
         let mut formatted_content = String::new();
 
-        // Parse based on MIME type
         let (parse_result, format_string) = match mime_type {
             "application/x-research-info-systems" => (RisParser::new().parse(&citation_str), "RIS"),
             "application/x-pubmed" => (PubMedParser::new().parse(&citation_str), "PubMed"),
             "application/x-endnote+xml" => (EndNoteXmlParser::new().parse(&citation_str), "EndNote XML"),
             _ => {
-                // Fallback: return empty document if MIME type is unexpected
                 let citation_metadata = CitationMetadata {
                     citation_count: 0,
                     format: Some("Unknown".to_string()),
@@ -110,7 +108,6 @@ impl DocumentExtractor for CitationExtractor {
             }
         };
 
-        // Build InternalDocument with citation elements
         let mut builder = InternalDocumentBuilder::new("citation");
 
         match parse_result {
@@ -118,7 +115,6 @@ impl DocumentExtractor for CitationExtractor {
                 for citation in &citations {
                     citations_vec.push(citation.title.clone());
 
-                    // Collect authors
                     for author in &citation.authors {
                         let author_name = if let Some(given) = &author.given_name {
                             format!("{} {}", given, author.name)
@@ -130,14 +126,12 @@ impl DocumentExtractor for CitationExtractor {
                         }
                     }
 
-                    // Collect years
                     if let Some(date) = &citation.date
                         && date.year > 0
                     {
                         years_set.insert(date.year as u32);
                     }
 
-                    // Collect DOIs and add as URI
                     if let Some(doi) = &citation.doi
                         && !doi.is_empty()
                     {
@@ -148,14 +142,12 @@ impl DocumentExtractor for CitationExtractor {
                         ));
                     }
 
-                    // Collect keywords
                     for keyword in &citation.keywords {
                         if !keyword.is_empty() {
                             keywords_set.insert(keyword.clone());
                         }
                     }
 
-                    // Format citation as readable text
                     if !citation.title.is_empty() {
                         formatted_content.push_str(&format!("Title: {}\n", citation.title));
                     }
@@ -215,7 +207,6 @@ impl DocumentExtractor for CitationExtractor {
                     formatted_content.push_str("---\n");
                 }
 
-                // Push citation elements
                 for (i, title) in citations_vec.iter().enumerate() {
                     let key = if title.is_empty() {
                         format!("citation_{}", i + 1)
@@ -229,7 +220,6 @@ impl DocumentExtractor for CitationExtractor {
                 #[cfg(feature = "otel")]
                 tracing::warn!("Citation parsing failed, returning raw content: {}", _err);
                 formatted_content = citation_str.to_string();
-                // Push as a single code block when parsing fails
                 builder.push_code(&formatted_content, None, None, None);
             }
         }
@@ -435,8 +425,6 @@ ER  -"#;
         assert!(result.is_ok());
         let result = result.expect("Should extract malformed as raw content");
 
-        // When RIS parser encounters unparseable content, it may return empty results
-        // Verify we get a result either way
         let metadata = &result.metadata;
         if let Some(FormatMetadata::Citation(cit)) = &metadata.format {
             assert_eq!(cit.citation_count, 0);

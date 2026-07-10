@@ -19,25 +19,25 @@ defmodule Kreuzberg.ChunkMetadata do
   @type heading_context :: %{headings: [heading_level()]}
 
   @type t :: %__MODULE__{
-          byte_start: non_neg_integer(),
-          byte_end: non_neg_integer(),
-          token_count: non_neg_integer() | nil,
-          chunk_index: non_neg_integer(),
-          total_chunks: non_neg_integer(),
-          first_page: non_neg_integer() | nil,
-          last_page: non_neg_integer() | nil,
-          heading_context: heading_context() | nil
-        }
+  byte_start: non_neg_integer(),
+  byte_end: non_neg_integer(),
+  token_count: non_neg_integer() | nil,
+  chunk_index: non_neg_integer(),
+  total_chunks: non_neg_integer(),
+  first_page: non_neg_integer() | nil,
+  last_page: non_neg_integer() | nil,
+  heading_context: heading_context() | nil
+  }
 
   defstruct [
-    :token_count,
-    :first_page,
-    :last_page,
-    :heading_context,
-    byte_start: 0,
-    byte_end: 0,
-    chunk_index: 0,
-    total_chunks: 0
+  :token_count,
+  :first_page,
+  :last_page,
+  :heading_context,
+  byte_start: 0,
+  byte_end: 0,
+  chunk_index: 0,
+  total_chunks: 0
   ]
 
   @doc """
@@ -51,26 +51,26 @@ defmodule Kreuzberg.ChunkMetadata do
   @spec from_map(map()) :: t()
   def from_map(data) when is_map(data) do
     heading_context =
-      case data["heading_context"] do
-        %{"headings" => headings} when is_list(headings) ->
-          %{
-            headings:
-              Enum.map(headings, fn h -> %{level: h["level"] || 0, text: h["text"] || ""} end)
-          }
+    case data["heading_context"] do
+      %{"headings" => headings} when is_list(headings) ->
+      %{
+      headings:
+    Enum.map(headings, fn h -> %{level: h["level"] || 0, text: h["text"] || ""} end)
+      }
 
-        _ ->
-          nil
-      end
+      _ ->
+      nil
+    end
 
     %__MODULE__{
-      byte_start: data["byte_start"] || 0,
-      byte_end: data["byte_end"] || 0,
-      token_count: data["token_count"],
-      chunk_index: data["chunk_index"] || 0,
-      total_chunks: data["total_chunks"] || 0,
-      first_page: data["first_page"],
-      last_page: data["last_page"],
-      heading_context: heading_context
+    byte_start: data["byte_start"] || 0,
+    byte_end: data["byte_end"] || 0,
+    token_count: data["token_count"],
+    chunk_index: data["chunk_index"] || 0,
+    total_chunks: data["total_chunks"] || 0,
+    first_page: data["first_page"],
+    last_page: data["last_page"],
+    heading_context: heading_context
     }
   end
 
@@ -82,14 +82,14 @@ defmodule Kreuzberg.ChunkMetadata do
 
   def to_map(%__MODULE__{} = meta) do
     %{
-      "byte_start" => meta.byte_start,
-      "byte_end" => meta.byte_end,
-      "token_count" => meta.token_count,
-      "chunk_index" => meta.chunk_index,
-      "total_chunks" => meta.total_chunks,
-      "first_page" => meta.first_page,
-      "last_page" => meta.last_page,
-      "heading_context" => meta.heading_context
+    "byte_start" => meta.byte_start,
+    "byte_end" => meta.byte_end,
+    "token_count" => meta.token_count,
+    "chunk_index" => meta.chunk_index,
+    "total_chunks" => meta.total_chunks,
+    "first_page" => meta.first_page,
+    "last_page" => meta.last_page,
+    "heading_context" => meta.heading_context
     }
   end
 end

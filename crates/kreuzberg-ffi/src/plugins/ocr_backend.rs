@@ -214,7 +214,6 @@ pub unsafe extern "C" fn kreuzberg_register_ocr_backend(name: *const c_char, cal
         }
 
         // SAFETY: C callers may pass NULL for function pointer parameters.
-        // `black_box` prevents the compiler from optimizing away the null check.
         if core::hint::black_box(callback as usize) == 0 {
             set_last_error("OCR backend callback cannot be NULL".to_string());
             return false;
@@ -274,7 +273,6 @@ pub unsafe extern "C" fn kreuzberg_register_ocr_backend_with_languages(
         }
 
         // SAFETY: C callers may pass NULL for function pointer parameters.
-        // `black_box` prevents the compiler from optimizing away the null check.
         if core::hint::black_box(callback as usize) == 0 {
             set_last_error("OCR backend callback cannot be NULL".to_string());
             return false;

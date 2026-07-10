@@ -66,12 +66,8 @@ class ValidationError extends KreuzbergException
      * );
      * ```
      */
-    public function __construct(
-        string $message = '',
-        array $details = [],
-        int $code = 1,
-        ?\Exception $previous = null,
-    ) {
+    public function __construct(string $message = '', array $details = [], int $code = 1, ?\Exception $previous = null)
+    {
         parent::__construct($message, $code, $previous);
         $this->details = $details;
     }
@@ -163,14 +159,11 @@ class ValidationError extends KreuzbergException
      */
     public static function missingField(string $field, string $validator = 'unknown'): self
     {
-        return new self(
-            message: "Missing required field: {$field}",
-            details: [
-                'field' => $field,
-                'error' => 'required',
-                'validator' => $validator,
-            ],
-        );
+        return new self(message: "Missing required field: {$field}", details: [
+            'field' => $field,
+            'error' => 'required',
+            'validator' => $validator,
+        ]);
     }
 
     /**
@@ -251,21 +244,15 @@ class ValidationError extends KreuzbergException
      * }
      * ```
      */
-    public static function contentTooShort(
-        int $actual,
-        int $minimum,
-        string $validator = 'min_length',
-    ): self {
-        return new self(
-            message: "Content too short: {$actual} < {$minimum} characters",
-            details: [
-                'field' => 'content',
-                'actual_length' => $actual,
-                'minimum_length' => $minimum,
-                'error' => 'too_short',
-                'validator' => $validator,
-            ],
-        );
+    public static function contentTooShort(int $actual, int $minimum, string $validator = 'min_length'): self
+    {
+        return new self(message: "Content too short: {$actual} < {$minimum} characters", details: [
+            'field' => 'content',
+            'actual_length' => $actual,
+            'minimum_length' => $minimum,
+            'error' => 'too_short',
+            'validator' => $validator,
+        ]);
     }
 
     /**
@@ -284,20 +271,14 @@ class ValidationError extends KreuzbergException
      * }
      * ```
      */
-    public static function contentTooLong(
-        int $actual,
-        int $maximum,
-        string $validator = 'max_length',
-    ): self {
-        return new self(
-            message: "Content too long: {$actual} > {$maximum} characters",
-            details: [
-                'field' => 'content',
-                'actual_length' => $actual,
-                'maximum_length' => $maximum,
-                'error' => 'too_long',
-                'validator' => $validator,
-            ],
-        );
+    public static function contentTooLong(int $actual, int $maximum, string $validator = 'max_length'): self
+    {
+        return new self(message: "Content too long: {$actual} > {$maximum} characters", details: [
+            'field' => 'content',
+            'actual_length' => $actual,
+            'maximum_length' => $maximum,
+            'error' => 'too_long',
+            'validator' => $validator,
+        ]);
     }
 }

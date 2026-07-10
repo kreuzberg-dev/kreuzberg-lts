@@ -96,7 +96,6 @@ pub fn kreuzberg_extract_bytes_async(
 
     let extract_tables = should_extract_tables(&config_json)?;
 
-    // Copy the data since we need to send it to the async task
     let bytes: &[u8] = data.as_ref();
     let data_owned: Vec<u8> = bytes.to_vec();
 
@@ -245,7 +244,6 @@ pub fn kreuzberg_batch_extract_bytes_async(
 
     let extract_tables = should_extract_tables(&config_json)?;
 
-    // Build items with optional per-file configs
     let items: Vec<(Vec<u8>, String, Option<kreuzberg::FileExtractionConfig>)> = match file_configs_json {
         Some(fc_list) => {
             if data_list.len() != fc_list.len() {

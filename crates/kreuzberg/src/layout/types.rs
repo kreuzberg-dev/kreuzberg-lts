@@ -152,14 +152,14 @@ impl LayoutClass {
         match id {
             0 => Some(Self::Title),
             1 => Some(Self::Text),
-            2 => Some(Self::Text),    // Abandoned Text → Text
-            3 => Some(Self::Picture), // Figure
-            4 => Some(Self::Caption), // Figure Caption
+            2 => Some(Self::Text),
+            3 => Some(Self::Picture),
+            4 => Some(Self::Caption),
             5 => Some(Self::Table),
-            6 => Some(Self::Caption),  // Table Caption
-            7 => Some(Self::Footnote), // Table Footnote
-            8 => Some(Self::Formula),  // Isolated Formula
-            9 => Some(Self::Caption),  // Formula Caption
+            6 => Some(Self::Caption),
+            7 => Some(Self::Footnote),
+            8 => Some(Self::Formula),
+            9 => Some(Self::Caption),
             _ => None,
         }
     }

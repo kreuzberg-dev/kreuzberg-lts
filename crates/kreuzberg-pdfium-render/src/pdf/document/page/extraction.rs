@@ -84,12 +84,10 @@ pub struct PageExtraction {
 /// extraction if the page is untagged or the structure tree yields insufficient
 /// content.
 pub fn extract_page_content(page: &PdfPage<'_>) -> Result<PageExtraction, PdfiumError> {
-    // Try structure tree extraction first.
     if let Some(extraction) = extract_via_structure_tree(page)? {
         return Ok(extraction);
     }
 
-    // Fall back to heuristic extraction.
     extract_via_heuristics(page)
 }
 
@@ -105,16 +103,12 @@ fn extract_via_structure_tree(page: &PdfPage<'_>) -> Result<Option<PageExtractio
         return Ok(None);
     }
 
-    // Build maps from MCID → text content and MCID → style in a single pass
-    // over all page objects (avoids iterating the object list twice).
     let (mcid_text_map, mcid_style_map) = build_mcid_maps(page)?;
 
     if mcid_text_map.is_empty() {
         return Ok(None);
     }
 
-    // Walk the structure tree top-down (NOT using tree.iter() which would
-    // cause double-processing since extract_element_block also recurses children).
     let mut blocks = Vec::new();
     let mut resolved = false;
 
@@ -131,7 +125,6 @@ fn extract_via_structure_tree(page: &PdfPage<'_>) -> Result<Option<PageExtractio
         return Ok(None);
     }
 
-    // Flatten nested blocks that don't add semantic value (Document, Part, Div wrappers).
     let blocks = flatten_structural_wrappers(blocks);
 
     Ok(Some(PageExtraction {
@@ -169,7 +162,6 @@ fn build_mcid_maps(page: &PdfPage<'_>) -> Result<McidMaps, PdfiumError> {
         if let Some(text_obj) = object.as_text_object()
             && let Some(mcid) = object.marked_content_id()
         {
-            // Text: use pre-loaded text page handle (fast path).
             let text = text_page.for_object(text_obj);
             if !text.is_empty() {
                 text_map
@@ -178,7 +170,6 @@ fn build_mcid_maps(page: &PdfPage<'_>) -> Result<McidMaps, PdfiumError> {
                     .or_insert(text);
             }
 
-            // Style: only store the first text object's style per MCID.
             style_map.entry(mcid).or_insert_with(|| {
                 let font = text_obj.font();
                 let is_bold = font.weight().ok().is_some_and(|w| {
@@ -214,12 +205,8 @@ fn extract_element_block(
 ) -> Option<ExtractedBlock> {
     let element_type = element.element_type();
 
-    // Skip pure structural wrappers that don't carry content directly —
-    // their children will be processed separately by the tree iterator.
-    // However, we still process them if they have actual text or alt text.
     let role = element_type_to_role(&element_type, element);
 
-    // Collect text from all MCIDs associated with this element.
     let mcids = element.all_marked_content_ids();
     let mut text_parts: Vec<&str> = Vec::new();
     let mut style: Option<&TextStyle> = None;
@@ -233,7 +220,6 @@ fn extract_element_block(
         }
     }
 
-    // Also check for actual text and alt text on the element itself.
     let actual_text = element.actual_text();
     let alt_text = element.alt_text();
 
@@ -247,10 +233,8 @@ fn extract_element_block(
         String::new()
     };
 
-    // Process children for composite elements (tables, lists).
     let children = extract_children_blocks(element, mcid_text_map, mcid_style_map);
 
-    // Skip elements with no text and no children.
     if text.is_empty() && children.is_empty() {
         return None;
     }
@@ -296,7 +280,6 @@ fn element_type_to_role(element_type: &PdfStructElementType, element: &PdfStruct
         PdfStructElementType::H6 => ContentRole::Heading { level: 6 },
         PdfStructElementType::P | PdfStructElementType::Span => ContentRole::Paragraph,
         PdfStructElementType::LI => {
-            // Try to find a label child.
             let label = find_child_text_by_type(element, &PdfStructElementType::Lbl);
             ContentRole::ListItem { label }
         }
@@ -308,7 +291,6 @@ fn element_type_to_role(element_type: &PdfStructElementType, element: &PdfStruct
         PdfStructElementType::Code => ContentRole::Code,
         PdfStructElementType::BlockQuote => ContentRole::BlockQuote,
         PdfStructElementType::Link => {
-            // Try to extract URL from element attributes.
             let url = element.string_attribute("O");
             ContentRole::Link { url }
         }
@@ -350,7 +332,6 @@ fn flatten_structural_wrappers(blocks: Vec<ExtractedBlock>) -> Vec<ExtractedBloc
     let mut result = Vec::new();
     for block in blocks {
         if is_structural_wrapper(&block.role) && block.text.is_empty() {
-            // Lift children up.
             let children = flatten_structural_wrappers(block.children);
             result.extend(children);
         } else {
@@ -377,8 +358,6 @@ fn extract_via_heuristics(page: &PdfPage<'_>) -> Result<PageExtraction, PdfiumEr
     let text_page = page.text()?;
     let mut text_entries: Vec<TextEntry> = Vec::new();
 
-    // Collect all text objects with their properties.
-    // Uses pre-loaded text_page handle to avoid calling FPDFText_LoadPage per object.
     for i in 0..objects.len() {
         let object = objects.get(i)?;
 
@@ -420,10 +399,8 @@ fn extract_via_heuristics(page: &PdfPage<'_>) -> Result<PageExtraction, PdfiumEr
         });
     }
 
-    // Determine the body font size (most common font size).
     let body_font_size = find_body_font_size(&text_entries);
 
-    // Group text entries into blocks based on vertical position.
     let blocks = group_text_into_blocks(text_entries, body_font_size, page.height());
 
     Ok(PageExtraction {
@@ -446,7 +423,6 @@ struct TextEntry {
 fn find_body_font_size(entries: &[TextEntry]) -> f32 {
     let mut size_counts: HashMap<u32, usize> = HashMap::new();
     for entry in entries {
-        // Round to nearest 0.5pt for grouping.
         let key = (entry.font_size * 2.0).round() as u32;
         *size_counts.entry(key).or_insert(0) += 1;
     }
@@ -464,7 +440,6 @@ fn group_text_into_blocks(entries: Vec<TextEntry>, body_font_size: f32, page_hei
         return Vec::new();
     }
 
-    // Sort by vertical position (top-to-bottom), then left-to-right.
     let mut sorted = entries;
     sorted.sort_by(|a, b| {
         let a_top = a
@@ -484,7 +459,6 @@ fn group_text_into_blocks(entries: Vec<TextEntry>, body_font_size: f32, page_hei
         })
     });
 
-    // Group entries that are close together vertically.
     let mut blocks = Vec::new();
     let mut current_group: Vec<TextEntry> = vec![sorted.remove(0)];
 
@@ -492,7 +466,6 @@ fn group_text_into_blocks(entries: Vec<TextEntry>, body_font_size: f32, page_hei
         let should_break = {
             let last = current_group.last().unwrap();
             let gap = vertical_gap(last, &entry, page_height);
-            // Break if gap is larger than the body font size.
             gap > body_font_size * 1.2
         };
 
@@ -530,16 +503,13 @@ fn vertical_gap(a: &TextEntry, b: &TextEntry, page_height: PdfPoints) -> f32 {
 fn finalize_block(group: Vec<TextEntry>, body_font_size: f32) -> ExtractedBlock {
     let text: String = group.iter().map(|e| e.text.as_str()).collect::<Vec<_>>().join(" ");
 
-    // Use the first entry's style as representative.
     let first = &group[0];
     let font_size = first.font_size;
     let is_bold = first.is_bold;
     let is_italic = first.is_italic;
     let is_monospace = first.is_monospace;
 
-    // Determine role based on font size relative to body.
     let role = if font_size > body_font_size * 1.3 {
-        // Significantly larger than body → heading.
         let level = if font_size > body_font_size * 1.8 {
             1
         } else if font_size > body_font_size * 1.5 {
@@ -552,7 +522,6 @@ fn finalize_block(group: Vec<TextEntry>, body_font_size: f32) -> ExtractedBlock 
         ContentRole::Paragraph
     };
 
-    // Compute bounding box union.
     let bounds = compute_union_bounds(&group);
 
     ExtractedBlock {
@@ -737,7 +706,6 @@ mod tests {
     fn test_finalize_block_heading_detection() {
         let group = vec![make_entry("Title", 24.0, 100.0, 80.0)];
         let block = finalize_block(group, 12.0);
-        // 24 > 12 * 1.8 = 21.6, so should be H1
         assert_eq!(block.role, ContentRole::Heading { level: 1 });
     }
 
@@ -745,7 +713,6 @@ mod tests {
     fn test_finalize_block_h2_detection() {
         let group = vec![make_entry("Subtitle", 20.0, 100.0, 80.0)];
         let block = finalize_block(group, 12.0);
-        // 20 > 12 * 1.5 = 18.0, but 20 < 12 * 1.8 = 21.6, so H2
         assert_eq!(block.role, ContentRole::Heading { level: 2 });
     }
 
@@ -753,7 +720,6 @@ mod tests {
     fn test_finalize_block_h3_detection() {
         let group = vec![make_entry("Section", 16.5, 100.0, 80.0)];
         let block = finalize_block(group, 12.0);
-        // 16.5 > 12 * 1.3 = 15.6, but 16.5 < 12 * 1.5 = 18.0, so H3
         assert_eq!(block.role, ContentRole::Heading { level: 3 });
     }
 
@@ -816,9 +782,6 @@ mod tests {
         let a = make_entry("first", 12.0, 700.0, 688.0);
         let b = make_entry("second", 12.0, 680.0, 668.0);
         let gap = vertical_gap(&a, &b, PdfPoints::new(800.0));
-        // a_bottom = 800 - 688 = 112
-        // b_top = 800 - 680 = 120
-        // gap = |120 - 112| = 8
         assert!((gap - 8.0).abs() < 0.01);
     }
 }

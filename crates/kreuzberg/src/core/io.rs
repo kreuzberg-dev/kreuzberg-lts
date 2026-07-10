@@ -13,7 +13,7 @@ use std::path::Path;
 /// mmap overhead (open, fstat, mmap syscalls + TLB pressure) outweighs the
 /// benefit for small allocations.
 #[cfg(not(target_arch = "wasm32"))]
-const MMAP_THRESHOLD_BYTES: u64 = 1_048_576; // 1 MiB
+const MMAP_THRESHOLD_BYTES: u64 = 1_048_576;
 
 /// An owned buffer of file bytes.
 ///
@@ -73,19 +73,12 @@ pub fn open_file_bytes(path: &Path) -> Result<FileBytes> {
         if metadata.len() > MMAP_THRESHOLD_BYTES {
             let file = std::fs::File::open(path).map_err(KreuzbergError::Io)?;
             // SAFETY: The file is opened read-only and we do not write to the
-            // mapped region.  The `FileBytes` value owns the `Mmap` handle and
-            // the mapping is live for exactly as long as the bytes are accessed.
-            // External modification of the file while mapped is a documented
-            // TOCTOU risk inherent to mmap on all platforms; it is acceptable
-            // here because kreuzberg only reads user-supplied documents and
-            // makes no correctness guarantees about files modified concurrently.
             let mmap = unsafe { memmap2::Mmap::map(&file) }.map_err(KreuzbergError::Io)?;
             return Ok(FileBytes {
                 inner: FileBytesInner::Mapped(mmap),
             });
         }
     }
-    // Small file or WASM: regular heap read.
     let bytes = std::fs::read(path).map_err(KreuzbergError::Io)?;
     Ok(FileBytes {
         inner: FileBytesInner::Heap(bytes),

@@ -79,10 +79,6 @@ impl DocumentStructureBuilder {
         self.doc
     }
 
-    // ========================================================================
-    // Heading & Section Management
-    // ========================================================================
-
     /// Push a heading, creating a `Group` container with automatic section nesting.
     ///
     /// Headings at the same or deeper level pop existing sections. Content
@@ -90,7 +86,6 @@ impl DocumentStructureBuilder {
     ///
     /// Returns the `NodeIndex` of the `Group` node (not the heading child).
     pub fn push_heading(&mut self, level: u8, text: &str, page: Option<u32>, bbox: Option<BoundingBox>) -> NodeIndex {
-        // Pop sections at same or deeper level
         while self.section_stack.last().is_some_and(|(l, _)| *l >= level) {
             self.section_stack.pop();
         }
@@ -103,14 +98,12 @@ impl DocumentStructureBuilder {
 
         let group_idx = self.push_node_raw(group_content, page, bbox, ContentLayer::Body, vec![]);
 
-        // Wire parent: section stack first (for heading nesting), then container
         if let Some((_, parent_idx)) = self.section_stack.last() {
             self.doc.add_child(*parent_idx, group_idx);
         } else if let Some(container_idx) = self.container_stack.last() {
             self.doc.add_child(*container_idx, group_idx);
         }
 
-        // Add heading as child of group
         let heading_content = NodeContent::Heading {
             level,
             text: text.to_string(),
@@ -121,10 +114,6 @@ impl DocumentStructureBuilder {
         self.section_stack.push((level, group_idx));
         group_idx
     }
-
-    // ========================================================================
-    // Content Nodes
-    // ========================================================================
 
     /// Push a paragraph node. Nested under current section if one exists.
     pub fn push_paragraph(
@@ -234,13 +223,8 @@ impl DocumentStructureBuilder {
     /// Push a page break marker (always root-level, never nested under sections).
     pub fn push_page_break(&mut self, page: Option<u32>) -> NodeIndex {
         let content = NodeContent::PageBreak;
-        // PageBreak is always root-level
         self.push_node_raw(content, page, None, ContentLayer::Body, vec![])
     }
-
-    // ========================================================================
-    // New Node Types
-    // ========================================================================
 
     /// Push a slide container (PPTX) and enter it.
     ///
@@ -249,7 +233,6 @@ impl DocumentStructureBuilder {
     /// until [`exit_container`](Self::exit_container) is called or a new
     /// slide is pushed.
     pub fn push_slide(&mut self, number: u32, title: Option<&str>) -> NodeIndex {
-        // Clear stacks for each new slide — slides are top-level containers
         self.section_stack.clear();
         self.container_stack.clear();
 
@@ -323,10 +306,6 @@ impl DocumentStructureBuilder {
         self.push_body_node(content, page, None, vec![])
     }
 
-    // ========================================================================
-    // Furniture (Header/Footer)
-    // ========================================================================
-
     /// Push a header paragraph (running page header).
     pub fn push_header(&mut self, text: &str, page: Option<u32>) -> NodeIndex {
         let content = NodeContent::Paragraph { text: text.to_string() };
@@ -338,10 +317,6 @@ impl DocumentStructureBuilder {
         let content = NodeContent::Paragraph { text: text.to_string() };
         self.push_node_raw(content, page, None, ContentLayer::Footer, vec![])
     }
-
-    // ========================================================================
-    // Node Attributes
-    // ========================================================================
 
     /// Set format-specific attributes on an existing node.
     pub fn set_attributes(&mut self, index: NodeIndex, attrs: AHashMap<String, String>) {
@@ -403,10 +378,6 @@ impl DocumentStructureBuilder {
     pub fn exit_container(&mut self) {
         self.container_stack.pop();
     }
-
-    // ========================================================================
-    // Internal Helpers
-    // ========================================================================
 
     /// Push a body-layer node, nesting under the current section first
     /// (for heading-driven nesting), then falling back to the active
@@ -495,10 +466,6 @@ fn cells_to_grid(cells: &[Vec<String>]) -> TableGrid {
 fn is_always_root(content: &NodeContent) -> bool {
     matches!(content, NodeContent::PageBreak)
 }
-
-// ============================================================================
-// Annotation Helpers
-// ============================================================================
 
 /// Create a bold annotation for the given byte range.
 pub fn bold(start: u32, end: u32) -> TextAnnotation {
@@ -606,10 +573,6 @@ pub fn highlight(start: u32, end: u32) -> TextAnnotation {
     }
 }
 
-// ============================================================================
-// Tests
-// ============================================================================
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -643,9 +606,7 @@ mod tests {
         let doc = b.build();
 
         assert!(doc.validate().is_ok());
-        // Root: 1 Group(h1)
         assert_eq!(doc.body_roots().count(), 1);
-        // h1 Group has: Heading + Paragraph + Group(h2)
         assert_eq!(doc.nodes[0].children.len(), 3);
     }
 
@@ -659,7 +620,6 @@ mod tests {
         let doc = b.build();
 
         assert!(doc.validate().is_ok());
-        // Two root-level h1 groups
         assert_eq!(doc.body_roots().count(), 2);
     }
 
@@ -673,7 +633,7 @@ mod tests {
         let doc = b.build();
 
         assert!(doc.validate().is_ok());
-        assert_eq!(doc.len(), 4); // 1 list + 3 items
+        assert_eq!(doc.len(), 4);
         assert_eq!(doc.nodes[0].children.len(), 3);
     }
 
@@ -713,17 +673,13 @@ mod tests {
         let doc = b.build();
 
         assert!(doc.validate().is_ok());
-        // Two root-level slides
         assert_eq!(doc.body_roots().count(), 2);
 
-        // Slide 1 has Group(h1) as child
         let slide1 = &doc.nodes[0];
-        assert_eq!(slide1.children.len(), 1); // Group(h1)
-        // Group(h1) has Heading + Paragraph
+        assert_eq!(slide1.children.len(), 1);
         let group = &doc.nodes[slide1.children[0].0 as usize];
         assert_eq!(group.children.len(), 2);
 
-        // Slide 2 has paragraph as child
         let (_, slide2) = doc.body_roots().nth(1).unwrap();
         assert_eq!(slide2.children.len(), 1);
     }
@@ -802,7 +758,6 @@ mod tests {
             }
             _ => panic!("Expected Admonition"),
         }
-        // Admonition is the only root; paragraph is its child
         assert_eq!(doc.body_roots().count(), 1);
         assert_eq!(doc.nodes[adm.0 as usize].children.len(), 1);
     }
@@ -836,7 +791,6 @@ mod tests {
         let doc = b.build();
 
         assert!(doc.validate().is_ok());
-        // PageBreak should be root-level (not nested under h1 group)
         let page_break = doc.nodes.iter().find(|n| matches!(n.content, NodeContent::PageBreak));
         assert!(page_break.is_some());
         assert!(page_break.unwrap().parent.is_none());
@@ -878,14 +832,11 @@ mod tests {
         b.push_paragraph("First quoted line.", vec![], Some(1), None);
         b.push_paragraph("Second quoted line.", vec![], Some(1), None);
         b.exit_container();
-        // Paragraph after exiting quote should be root-level
         b.push_paragraph("Not in quote.", vec![], Some(1), None);
         let doc = b.build();
 
         assert!(doc.validate().is_ok());
-        // Quote + trailing paragraph at root
         assert_eq!(doc.body_roots().count(), 2);
-        // Quote has two paragraph children
         assert_eq!(doc.nodes[q.0 as usize].children.len(), 2);
     }
 
@@ -915,12 +866,9 @@ mod tests {
         let doc = b.build();
 
         assert!(doc.validate().is_ok());
-        // Single root: Slide
         assert_eq!(doc.body_roots().count(), 1);
         let slide = &doc.nodes[0];
-        // Slide has one child: Group(h1)
         assert_eq!(slide.children.len(), 1);
-        // Group(h1) has: Heading, Paragraph, Group(h2)
         let h1_group = &doc.nodes[slide.children[0].0 as usize];
         assert_eq!(h1_group.children.len(), 3);
     }
@@ -932,25 +880,21 @@ mod tests {
         b.push_paragraph("Before quote.", vec![], None, None);
         let q = b.push_quote(None);
         b.push_paragraph("Quoted text.", vec![], None, None);
-        b.exit_container(); // exit quote
+        b.exit_container();
         b.push_paragraph("After quote.", vec![], None, None);
-        b.exit_container(); // exit slide
+        b.exit_container();
         let doc = b.build();
 
         assert!(doc.validate().is_ok());
-        // Single root: Slide
         assert_eq!(doc.body_roots().count(), 1);
         let slide = &doc.nodes[0];
-        // Slide has: paragraph, quote, paragraph
         assert_eq!(slide.children.len(), 3);
-        // Quote has one paragraph child
         assert_eq!(doc.nodes[q.0 as usize].children.len(), 1);
     }
 
     #[test]
     fn test_enter_exit_container_manual() {
         let mut b = DocumentStructureBuilder::new();
-        // Create a quote without auto-enter (using push_body_node indirectly)
         let content = NodeContent::Quote;
         let q = b.push_raw(content, Some(1), None, ContentLayer::Body, vec![]);
         b.enter_container(q);
@@ -967,7 +911,7 @@ mod tests {
     #[test]
     fn test_exit_container_on_empty_stack_is_noop() {
         let mut b = DocumentStructureBuilder::new();
-        b.exit_container(); // should not panic
+        b.exit_container();
         b.push_paragraph("Still works.", vec![], None, None);
         let doc = b.build();
         assert!(doc.validate().is_ok());

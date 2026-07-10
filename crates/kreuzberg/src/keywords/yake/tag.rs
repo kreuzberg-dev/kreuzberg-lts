@@ -1,5 +1,4 @@
 // Vendored from yake-rust 1.0.3 (MIT) — https://github.com/quesurifn/yake-rust
-// Replaced std::collections::HashSet with inline checks for punctuation.
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
 pub(crate) enum Tag {
@@ -36,7 +35,6 @@ impl Tag {
 
     #[inline]
     fn is_numeric(word: &str) -> bool {
-        // Check if word is a number (possibly with commas)
         let s = word.as_bytes();
         if s.is_empty() {
             return false;
@@ -156,7 +154,6 @@ mod tests {
     fn tag_uppercase_strict() {
         let p = default_punct();
         assert_eq!(Tag::classify("Paypal", false, &p, true), Tag::Uppercase);
-        // PayPal has intermediate uppercase, so strict mode rejects it
         assert_eq!(Tag::classify("PayPal", false, &p, true), Tag::Parsable);
     }
 

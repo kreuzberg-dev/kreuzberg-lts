@@ -19,8 +19,7 @@ readonly class DjotLink
         public string $text,
         public ?string $title = null,
         public ?string $linkType = null,
-    ) {
-    }
+    ) {}
 
     /**
      * Create DjotLink from array.
@@ -41,11 +40,6 @@ readonly class DjotLink
         /** @var string|null $linkType */
         $linkType = $data['link_type'] ?? null;
 
-        return new self(
-            url: $url,
-            text: $text,
-            title: $title,
-            linkType: $linkType,
-        );
+        return new self(url: $url, text: $text, title: $title, linkType: $linkType);
     }
 }

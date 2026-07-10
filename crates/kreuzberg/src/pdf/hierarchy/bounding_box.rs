@@ -3,7 +3,6 @@
 //! This module provides the BoundingBox type and geometric operations used
 //! for spatial analysis of text elements in PDF documents.
 
-// Constants for weighted distance calculation
 const WEIGHTED_DISTANCE_X_WEIGHT: f32 = 5.0;
 const WEIGHTED_DISTANCE_Y_WEIGHT: f32 = 1.0;
 

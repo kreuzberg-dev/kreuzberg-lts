@@ -22,63 +22,56 @@ const pkgDir = path.join(__dirname, "..", "pkg");
 const jsFile = path.join(pkgDir, "kreuzberg_wasm.js");
 
 if (!fs.existsSync(jsFile)) {
-	console.log("No pkg/kreuzberg_wasm.js found, skipping WASI import fix.");
-	process.exit(0);
+  console.log("No pkg/kreuzberg_wasm.js found, skipping WASI import fix.");
+  process.exit(0);
 }
 
 let content = fs.readFileSync(jsFile, "utf-8");
 const originalContent = content;
 
-// Check if already patched (idempotent)
 if (content.includes("__wasi_stubs__")) {
-	console.log("WASI imports already patched, skipping.");
-	process.exit(0);
+  console.log("WASI imports already patched, skipping.");
+  process.exit(0);
 }
 
-// Check if there are any env/wasi imports to fix (ESM or CJS)
 const hasEsmImports = content.includes('from "env"') || content.includes('from "wasi_snapshot_preview1"');
 const hasCjsImports = content.includes('require("env")') || content.includes('require("wasi_snapshot_preview1")');
 if (!hasEsmImports && !hasCjsImports) {
-	console.log("No env/wasi_snapshot_preview1 imports found, skipping WASI import fix.");
-	process.exit(0);
+  console.log("No env/wasi_snapshot_preview1 imports found, skipping WASI import fix.");
+  process.exit(0);
 }
 
 console.log("Fixing WASI and env imports in kreuzberg_wasm.js...\n");
 
-// Step 1: Collect all importN identifiers and their source modules
-// Support both ESM: import * as importN from "env"
-// and CJS: const importN = require("env")
 const esmPattern = /^import \* as (import\d+) from "(env|wasi_snapshot_preview1)";?$/gm;
 const cjsPattern = /^const (import\d+) = require\("(env|wasi_snapshot_preview1)"\);?$/gm;
 const envImports = [];
 const wasiImports = [];
 
 for (const match of content.matchAll(esmPattern)) {
-	const [, varName, moduleName] = match;
-	if (moduleName === "env") {
-		envImports.push(varName);
-	} else {
-		wasiImports.push(varName);
-	}
+  const [, varName, moduleName] = match;
+  if (moduleName === "env") {
+    envImports.push(varName);
+  } else {
+    wasiImports.push(varName);
+  }
 }
 
 for (const match of content.matchAll(cjsPattern)) {
-	const [, varName, moduleName] = match;
-	if (moduleName === "env") {
-		envImports.push(varName);
-	} else {
-		wasiImports.push(varName);
-	}
+  const [, varName, moduleName] = match;
+  if (moduleName === "env") {
+    envImports.push(varName);
+  } else {
+    wasiImports.push(varName);
+  }
 }
 
 console.log(`Found ${envImports.length} env imports: ${envImports.join(", ")}`);
 console.log(`Found ${wasiImports.length} wasi_snapshot_preview1 imports: ${wasiImports.join(", ")}`);
 
-// Step 2: Remove all import/require statements for env and wasi_snapshot_preview1
 content = content.replace(/^import \* as import\d+ from "(env|wasi_snapshot_preview1)";?\n/gm, "");
 content = content.replace(/^const import\d+ = require\("(env|wasi_snapshot_preview1)"\);?\n/gm, "");
 
-// Step 3: Insert stub definitions at the same location (before __wbg_get_imports)
 const stubCode = `// __wasi_stubs__ - WASI and env import stubs for in-memory OCR processing
 // Lazy reference to WASM memory, populated after module instantiation.
 // Stubs that write output values use this to access WASM linear memory.
@@ -169,96 +162,75 @@ const __wasi_stubs__ = {
 
 `;
 
-// Insert stubs before __wbg_get_imports function
 const getImportsIdx = content.indexOf("function __wbg_get_imports()");
 if (getImportsIdx === -1) {
-	console.error("ERROR: Could not find __wbg_get_imports() function in kreuzberg_wasm.js");
-	process.exit(1);
+  console.error("ERROR: Could not find __wbg_get_imports() function in kreuzberg_wasm.js");
+  process.exit(1);
 }
 content = content.slice(0, getImportsIdx) + stubCode + content.slice(getImportsIdx);
 
-// Step 4: Replace all importN references for env/wasi with the stub objects
 for (const varName of envImports) {
-	content = content.replaceAll(varName, "__env_stubs__");
+  content = content.replaceAll(varName, "__env_stubs__");
 }
 for (const varName of wasiImports) {
-	content = content.replaceAll(varName, "__wasi_stubs__");
+  content = content.replaceAll(varName, "__wasi_stubs__");
 }
 
-// Step 5: Merge duplicate keys in the __wbg_get_imports return object
-// The return block looks like:
-//   return {
-//       __proto__: null,
-//       "./kreuzberg_wasm_bg.js": import0,
-//       "env": __env_stubs__,
-//       "env": __env_stubs__,
-//       "wasi_snapshot_preview1": __wasi_stubs__,
-//       "wasi_snapshot_preview1": __wasi_stubs__,
-//       ...
-//   };
-// Since all env stubs point to the same object and all wasi stubs point to the same object,
-// we just need to deduplicate the keys. Remove all duplicate "env" and "wasi_snapshot_preview1" lines.
 const returnBlockStart = content.indexOf('"./kreuzberg_wasm_bg.js": import0,');
 if (returnBlockStart !== -1) {
-	const returnBlockEnd = content.indexOf("};", returnBlockStart);
-	if (returnBlockEnd !== -1) {
-		const returnBlock = content.slice(returnBlockStart, returnBlockEnd);
+  const returnBlockEnd = content.indexOf("};", returnBlockStart);
+  if (returnBlockEnd !== -1) {
+    const returnBlock = content.slice(returnBlockStart, returnBlockEnd);
 
-		// Remove duplicate "env" lines (keep first)
-		let seenEnv = false;
-		let seenWasi = false;
-		const lines = returnBlock.split("\n");
-		const dedupedLines = lines.filter((line) => {
-			const trimmed = line.trim();
-			if (trimmed.startsWith('"env"')) {
-				if (seenEnv) return false;
-				seenEnv = true;
-				return true;
-			}
-			if (trimmed.startsWith('"wasi_snapshot_preview1"')) {
-				if (seenWasi) return false;
-				seenWasi = true;
-				return true;
-			}
-			return true;
-		});
+    let seenEnv = false;
+    let seenWasi = false;
+    const lines = returnBlock.split("\n");
+    const dedupedLines = lines.filter((line) => {
+      const trimmed = line.trim();
+      if (trimmed.startsWith('"env"')) {
+        if (seenEnv) return false;
+        seenEnv = true;
+        return true;
+      }
+      if (trimmed.startsWith('"wasi_snapshot_preview1"')) {
+        if (seenWasi) return false;
+        seenWasi = true;
+        return true;
+      }
+      return true;
+    });
 
-		content = content.slice(0, returnBlockStart) + dedupedLines.join("\n") + content.slice(returnBlockEnd);
-	}
+    content = content.slice(0, returnBlockStart) + dedupedLines.join("\n") + content.slice(returnBlockEnd);
+  }
 }
 
-// Step 6: Inject WASI memory reference after WASM instantiation
-// The WASI stubs need access to WASM linear memory to write output values.
-// Look for the wasm instantiation pattern and add memory ref after it.
 const instantiatePatterns = [
-	// CJS pattern: let wasm = new WebAssembly.Instance(...).exports;
-	/^(let wasm = new WebAssembly\.Instance\(.*\)\.exports;)$/m,
-	// ESM/async pattern: const instance = await WebAssembly.instantiate(...)
-	/^(const \{ instance \} = await WebAssembly\.instantiate\(.*\);)$/m,
+  /^(let wasm = new WebAssembly\.Instance\(.*\)\.exports;)$/m,
+  /^(const \{ instance \} = await WebAssembly\.instantiate\(.*\);)$/m,
 ];
 let memRefInjected = false;
 for (const pattern of instantiatePatterns) {
-	if (pattern.test(content)) {
-		content = content.replace(
-			pattern,
-			"$1\n// Populate WASI memory reference for stubs that write output values\n__wasi_mem_ref.memory = wasm.memory || (typeof instance !== 'undefined' && instance.exports.memory);",
-		);
-		memRefInjected = true;
-		break;
-	}
+  if (pattern.test(content)) {
+    content = content.replace(
+      pattern,
+      "$1\n// Populate WASI memory reference for stubs that write output values\n__wasi_mem_ref.memory = wasm.memory || (typeof instance !== 'undefined' && instance.exports.memory);",
+    );
+    memRefInjected = true;
+    break;
+  }
 }
 if (!memRefInjected) {
-	console.log("WARNING: Could not find WASM instantiation to inject memory reference.");
-	console.log("WASI stubs that write to memory output pointers may not work correctly.");
+  console.log("WARNING: Could not find WASM instantiation to inject memory reference.");
+  console.log("WASI stubs that write to memory output pointers may not work correctly.");
 }
 
 if (content === originalContent) {
-	console.log("No changes needed.");
+  console.log("No changes needed.");
 } else {
-	fs.writeFileSync(jsFile, content);
-	const removedImports = envImports.length + wasiImports.length;
-	console.log(`Replaced ${removedImports} external imports with inline stubs.`);
-	console.log("Deduplicated import keys in __wbg_get_imports().");
-	if (memRefInjected) console.log("Injected WASI memory reference after WASM instantiation.");
-	console.log("Done.");
+  fs.writeFileSync(jsFile, content);
+  const removedImports = envImports.length + wasiImports.length;
+  console.log(`Replaced ${removedImports} external imports with inline stubs.`);
+  console.log("Deduplicated import keys in __wbg_get_imports().");
+  if (memRefInjected) console.log("Injected WASI memory reference after WASM instantiation.");
+  console.log("Done.");
 }

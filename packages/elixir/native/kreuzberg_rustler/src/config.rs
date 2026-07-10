@@ -43,14 +43,12 @@ use std::collections::HashMap;
 /// - Unknown fields are logged but don't cause failure (forward compatibility)
 /// - Invalid types result in descriptive error messages
 pub fn parse_extraction_config(_env: Env, options: Term) -> Result<kreuzberg::core::config::ExtractionConfig, String> {
-    // Handle nil case - return default config
     if let Ok(atom_str) = options.atom_to_string()
         && atom_str == "nil"
     {
         return Ok(kreuzberg::core::config::ExtractionConfig::default());
     }
 
-    // Try to decode as a map with string keys
     let opts_map: HashMap<String, Term> = match options.decode() {
         Ok(map) => map,
         Err(_) => {
@@ -58,10 +56,8 @@ pub fn parse_extraction_config(_env: Env, options: Term) -> Result<kreuzberg::co
         }
     };
 
-    // Initialize config with defaults
     let mut config = kreuzberg::core::config::ExtractionConfig::default();
 
-    // Define field categories for validation
     let boolean_fields = [
         "use_cache",
         "enable_quality_processing",
@@ -84,28 +80,22 @@ pub fn parse_extraction_config(_env: Env, options: Term) -> Result<kreuzberg::co
         "security_limits",
         "content_filter",
     ];
-    // String/enum fields that are passed through via serde deserialization
     let string_fields = ["result_format", "output_format"];
-    // Integer fields that are passed through via serde deserialization
     let integer_fields = ["max_concurrent_extractions"];
 
-    // Process each key in the map with validation
     for (key, value) in opts_map.iter() {
         let field_name = key.as_str();
 
-        // Validate boolean fields
         if boolean_fields.contains(&field_name) {
             match value.decode::<bool>() {
-                Ok(bool_val) => {
-                    match field_name {
-                        "use_cache" => config.use_cache = bool_val,
-                        "enable_quality_processing" => config.enable_quality_processing = bool_val,
-                        "force_ocr" => config.force_ocr = bool_val,
-                        "disable_ocr" => config.disable_ocr = bool_val,
-                        "include_document_structure" => config.include_document_structure = bool_val,
-                        _ => {} // Already checked above
-                    }
-                }
+                Ok(bool_val) => match field_name {
+                    "use_cache" => config.use_cache = bool_val,
+                    "enable_quality_processing" => config.enable_quality_processing = bool_val,
+                    "force_ocr" => config.force_ocr = bool_val,
+                    "disable_ocr" => config.disable_ocr = bool_val,
+                    "include_document_structure" => config.include_document_structure = bool_val,
+                    _ => {}
+                },
                 Err(_) => {
                     return Err(format!(
                         "Invalid configuration: field '{}' must be a boolean, got: {}",
@@ -117,22 +107,15 @@ pub fn parse_extraction_config(_env: Env, options: Term) -> Result<kreuzberg::co
             continue;
         }
 
-        // Validate and handle nested map fields
         if nested_fields.contains(&field_name) {
-            // Check if value is a map or nil
             if let Ok(atom_str) = value.atom_to_string()
                 && atom_str == "nil"
             {
-                // nil is acceptable for optional nested configs
                 continue;
             }
 
-            // Try to decode as a HashMap to validate it's a map
             match value.decode::<HashMap<String, Term>>() {
-                Ok(_) => {
-                    // Map is valid, it will be handled by serde_json if needed
-                    // For now, we just validate the structure exists
-                }
+                Ok(_) => {}
                 Err(_) => {
                     return Err(format!(
                         "Invalid configuration: field '{}' must be a map or nil, got: {}",
@@ -144,7 +127,6 @@ pub fn parse_extraction_config(_env: Env, options: Term) -> Result<kreuzberg::co
             continue;
         }
 
-        // String/enum fields - validated as strings, handled by serde deserialization
         if string_fields.contains(&field_name) {
             match value.decode::<String>() {
                 Ok(_) => {}
@@ -159,9 +141,7 @@ pub fn parse_extraction_config(_env: Env, options: Term) -> Result<kreuzberg::co
             continue;
         }
 
-        // Integer fields - validated as integers, handled by serde deserialization
         if integer_fields.contains(&field_name) {
-            // Check if value is nil (allowed for optional integer fields)
             if let Ok(atom_str) = value.atom_to_string()
                 && atom_str == "nil"
             {
@@ -180,19 +160,13 @@ pub fn parse_extraction_config(_env: Env, options: Term) -> Result<kreuzberg::co
             }
             continue;
         }
-
-        // Unknown fields are accepted for forward compatibility
-        // This allows newer Elixir code to pass options that Rust may not recognize yet
     }
 
-    // Now attempt full deserialization using serde_json for nested structures
     let json_value =
         term_to_json(options).map_err(|e| format!("Invalid configuration: failed to parse options - {}", e))?;
 
-    // Deserialize using serde_json - this handles nested structures automatically
     match serde_json::from_value::<kreuzberg::core::config::ExtractionConfig>(json_value) {
         Ok(deserialized) => {
-            // Use deserialized config but prefer validated boolean fields
             config.ocr = deserialized.ocr;
             config.chunking = deserialized.chunking;
             config.images = deserialized.images;
@@ -200,11 +174,8 @@ pub fn parse_extraction_config(_env: Env, options: Term) -> Result<kreuzberg::co
             config.language_detection = deserialized.language_detection;
             config.postprocessor = deserialized.postprocessor;
             config.token_reduction = deserialized.token_reduction;
-            // Keywords are always available since kreuzberg is compiled with "full" feature
             config.keywords = deserialized.keywords;
-            // PDF options are always available since kreuzberg is compiled with "full" feature
             config.pdf_options = deserialized.pdf_options;
-            // Forward remaining fields from deserialized config
             config.result_format = deserialized.result_format;
             config.output_format = deserialized.output_format;
             config.html_options = deserialized.html_options;
@@ -214,7 +185,6 @@ pub fn parse_extraction_config(_env: Env, options: Term) -> Result<kreuzberg::co
             config.content_filter = deserialized.content_filter;
         }
         Err(e) => {
-            // Nested structure deserialization failed
             return Err(format!(
                 "Invalid configuration: failed to deserialize nested configs - {}",
                 e
@@ -222,7 +192,6 @@ pub fn parse_extraction_config(_env: Env, options: Term) -> Result<kreuzberg::co
         }
     }
 
-    // Validate the final configuration
     validate_extraction_config(&config)?;
 
     Ok(config)
@@ -233,7 +202,6 @@ pub fn parse_extraction_config(_env: Env, options: Term) -> Result<kreuzberg::co
 /// - `nil` → `None` (use batch-level defaults)
 /// - map  → convert to JSON via `term_to_json`, then deserialize to `FileExtractionConfig`
 pub fn parse_file_extraction_config(_env: Env, term: Term) -> Result<Option<kreuzberg::FileExtractionConfig>, String> {
-    // Handle nil case
     if let Ok(atom_str) = term.atom_to_string()
         && atom_str == "nil"
     {
@@ -253,16 +221,7 @@ pub fn parse_file_extraction_config(_env: Env, term: Term) -> Result<Option<kreu
 /// Ensures that:
 /// - Boolean flags are consistent with each other
 /// - The configuration won't cause runtime issues
-fn validate_extraction_config(config: &kreuzberg::core::config::ExtractionConfig) -> Result<(), String> {
-    // If force_ocr is true, quality processing should ideally be enabled for best results
-    // However, we don't enforce this as a hard error - it's valid to disable it
-    if config.force_ocr && !config.enable_quality_processing {
-        // This is a valid but potentially suboptimal configuration
-    }
-
-    // Add more sophisticated validation as needed
-    // For example: validate nested config structure, check for conflicting options, etc.
-
+fn validate_extraction_config(_config: &kreuzberg::core::config::ExtractionConfig) -> Result<(), String> {
     Ok(())
 }
 
@@ -271,7 +230,6 @@ fn validate_extraction_config(config: &kreuzberg::core::config::ExtractionConfig
 /// - `nil` → uses defaults
 /// - map  → convert to JSON via `term_to_json`, then deserialize
 pub fn parse_embedding_config(_env: Env, term: Term) -> Result<kreuzberg::EmbeddingConfig, String> {
-    // Handle nil case
     if let Ok(atom_str) = term.atom_to_string()
         && atom_str == "nil"
     {

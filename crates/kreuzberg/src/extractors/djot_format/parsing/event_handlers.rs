@@ -65,7 +65,6 @@ pub(super) fn handle_thematic_break(
 /// Handle end of footnote definition.
 pub(super) fn handle_footnote_end(state: &mut ExtractionState, footnotes: &mut [crate::types::Footnote]) {
     state.flush_text();
-    // Pop the footnote content block and add to the last footnote
     if let Some(mut block) = state.block_stack.pop() {
         block.inline_content.append(&mut state.current_inline_elements);
         if let Some(footnote) = footnotes.last_mut() {
@@ -76,10 +75,8 @@ pub(super) fn handle_footnote_end(state: &mut ExtractionState, footnotes: &mut [
 
 /// Finalize block element content and pop from stack.
 pub(super) fn finalize_block_element(state: &mut ExtractionState, blocks: &mut Vec<FormattedBlock>) {
-    // Flush any remaining text
     state.flush_text();
 
-    // For code blocks, set the accumulated code content
     if state.in_code_block {
         if let Some(block) = state.block_stack.last_mut() {
             block.code = Some(std::mem::take(&mut state.code_content));
@@ -87,7 +84,6 @@ pub(super) fn finalize_block_element(state: &mut ExtractionState, blocks: &mut V
         state.in_code_block = false;
     }
 
-    // For raw blocks
     if state.in_raw_block {
         if let Some(block) = state.block_stack.last_mut() {
             block.code = Some(std::mem::take(&mut state.code_content));

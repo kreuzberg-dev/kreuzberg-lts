@@ -527,8 +527,6 @@ pub extern "C" fn kreuzberg_get_error_details() -> CErrorDetails {
         (None, None, 0)
     };
 
-    // Helper to convert string to C string with proper error handling.
-    // On failure, logs the error and returns a fallback heap-allocated string.
     fn string_to_cstring_with_fallback(value: String, fallback: &str, field_name: &str) -> *mut c_char {
         match CString::new(value) {
             Ok(cstr) => cstr.into_raw(),
@@ -538,9 +536,7 @@ pub extern "C" fn kreuzberg_get_error_details() -> CErrorDetails {
                     field_name,
                     e
                 );
-                // Allocate a proper CString for the fallback so it can be safely freed
                 CString::new(fallback).map(CString::into_raw).unwrap_or_else(|_| {
-                    // This should never happen since fallback is a static string without NUL bytes
                     log::warn!(
                         "kreuzberg_get_error_details: CRITICAL - fallback CString creation also failed for {}",
                         field_name
@@ -551,7 +547,6 @@ pub extern "C" fn kreuzberg_get_error_details() -> CErrorDetails {
         }
     }
 
-    // Helper for optional string fields (accepts &str to match panic context types)
     fn optional_str_to_cstring(value: Option<&str>, field_name: &str) -> *mut c_char {
         match value {
             Some(s) => match CString::new(s) {
@@ -618,7 +613,6 @@ pub extern "C" fn kreuzberg_free_error_details(details: *mut CErrorDetails) {
     }
     unsafe {
         let details = Box::from_raw(details);
-        // Free all non-null string fields
         if !details.message.is_null() {
             let _ = CString::from_raw(details.message);
         }

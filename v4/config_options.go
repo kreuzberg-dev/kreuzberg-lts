@@ -903,7 +903,6 @@ func WithEmbeddingDimensions(dimensions int) EmbeddingModelTypeOption {
 
 // NewEmbeddingConfig creates a new EmbeddingConfig with the given options.
 func NewEmbeddingConfig(opts ...EmbeddingOption) *EmbeddingConfig {
-	// Provide default model (balanced preset) if not specified
 	cfg := &EmbeddingConfig{
 		Model: &EmbeddingModelType{
 			Type: "preset",
@@ -964,7 +963,6 @@ func WithEmbeddingAcceleration(config *AccelerationConfig) EmbeddingOption {
 
 // NewKeywordConfig creates a new KeywordConfig with the given options.
 func NewKeywordConfig(opts ...KeywordOption) *KeywordConfig {
-	// Provide default values matching Rust defaults
 	minScore := 0.0
 	maxKeywords := 10
 	ngramRange := [2]int{1, 3}

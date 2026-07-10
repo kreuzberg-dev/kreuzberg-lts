@@ -15,8 +15,7 @@ readonly class ProcessingWarning
     public function __construct(
         public string $source,
         public string $message,
-    ) {
-    }
+    ) {}
 
     /**
      * @param array<string, mixed> $data
@@ -29,9 +28,6 @@ readonly class ProcessingWarning
         /** @var string $message */
         $message = $data['message'] ?? '';
 
-        return new self(
-            source: $source,
-            message: $message,
-        );
+        return new self(source: $source, message: $message);
     }
 }

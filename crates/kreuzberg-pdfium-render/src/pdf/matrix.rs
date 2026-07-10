@@ -225,9 +225,6 @@ impl PdfMatrix {
     /// as [PdfPoints].
     #[inline]
     pub fn apply_to_points(&self, x: PdfPoints, y: PdfPoints) -> (PdfPoints, PdfPoints) {
-        // The formula for applying transform to coordinates is provided in
-        // The PDF Reference Manual, version 1.7, on page 208.
-
         (
             PdfPoints::new(self.a() * x.value + self.c() * y.value + self.e()),
             PdfPoints::new(self.b() * x.value + self.d() * y.value + self.f()),
@@ -242,7 +239,6 @@ impl PdfMatrix {
         "this [PdfMatrix],"
     );
 
-    // The internal implementation of the transform() function used by the create_transform_setters!() macro.
     fn transform_impl(
         mut self,
         a: PdfMatrixValue,
@@ -263,7 +259,6 @@ impl PdfMatrix {
         }
     }
 
-    // The internal implementation of the reset_matrix() function used by the create_transform_setters!() macro.
     fn reset_matrix_impl(mut self, matrix: PdfMatrix) -> Result<Self, PdfiumError> {
         self.set_a(matrix.a());
         self.set_b(matrix.b());
@@ -277,15 +272,11 @@ impl PdfMatrix {
 
     create_transform_getters!("this [PdfMatrix]", "this [PdfMatrix].", "this [PdfMatrix],");
 
-    // The internal implementation of the get_matrix_impl() function used by the create_transform_getters!() macro.
     #[inline]
     fn get_matrix_impl(&self) -> Result<PdfMatrix, PdfiumError> {
         Ok(*self)
     }
 }
-
-// We could derive PartialEq automatically, but it's good practice to implement PartialEq
-// by hand when implementing Hash.
 
 impl PartialEq for PdfMatrix {
     fn eq(&self, other: &Self) -> bool {
@@ -297,9 +288,6 @@ impl PartialEq for PdfMatrix {
             && (self.f() - other.f()).abs() < 0.0001
     }
 }
-
-// The PdfMatrixValue values inside PdfMatrix will never be NaN or Infinity, so these implementations
-// of Eq and Hash are safe.
 
 impl Eq for PdfMatrix {}
 
@@ -319,7 +307,6 @@ impl Add for PdfMatrix {
 
     #[inline]
     fn add(self, rhs: Self) -> Self::Output {
-        // Add::add() shadows Self::add(), so we must be explicit about which function to call.
         Self::add(&self, rhs)
     }
 }

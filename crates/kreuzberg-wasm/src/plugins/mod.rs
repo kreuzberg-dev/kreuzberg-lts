@@ -39,7 +39,6 @@ pub mod validator_bridge;
 use parking_lot::{RwLock, RwLockReadGuard, RwLockWriteGuard};
 use wasm_bindgen::prelude::*;
 
-// Re-export public API
 pub use ocr_bridge::{clear_ocr_backends, list_ocr_backends, register_ocr_backend, unregister_ocr_backend};
 pub use processor_bridge::{
     clear_post_processors, list_post_processors, register_post_processor, unregister_post_processor,
@@ -179,13 +178,11 @@ mod tests {
     #[wasm_bindgen_test]
     fn test_make_send_wrapper_exists() {
         let _wrapper = MakeSend(async { 42 });
-        // If this compiles, the wrapper works correctly
     }
 
     #[wasm_bindgen_test]
     fn test_js_plugin_value_is_clone() {
         let val = JsPluginValue(JsValue::from_str("test"));
         let _cloned = val.clone();
-        // If this compiles, the wrapper is cloneable
     }
 }

@@ -15,7 +15,6 @@ public class ImmutabilityTests
 {
     public ImmutabilityTests()
     {
-        // Clean up any registered callbacks from previous tests to prevent GCHandle accumulation
         try { KreuzbergClient.ClearPostProcessors(); } catch { }
         try { KreuzbergClient.ClearValidators(); } catch { }
         try { KreuzbergClient.ClearOcrBackends(); } catch { }
@@ -30,11 +29,11 @@ public class ImmutabilityTests
     private static bool HasIsExternalInitModifier(PropertyInfo property)
     {
         if (property.SetMethod == null)
-            return false;
+        return false;
 
         return property.SetMethod.ReturnParameter?
-            .GetRequiredCustomModifiers()
-            .Any(m => m.Name == "IsExternalInit") ?? false;
+        .GetRequiredCustomModifiers()
+        .Any(m => m.Name == "IsExternalInit") ?? false;
     }
 
     /// <summary>
@@ -43,10 +42,9 @@ public class ImmutabilityTests
     private void VerifyConfigTypeIsImmutable(Type configType)
     {
         var properties = configType.GetProperties(BindingFlags.Public | BindingFlags.Instance)
-            .Where(p => p.SetMethod != null)
-            .ToList();
+        .Where(p => p.SetMethod != null)
+        .ToList();
 
-        // All config types should have at least one settable property
         Assert.True(properties.Count > 0, $"{configType.Name} should have at least one settable property");
 
         foreach (var prop in properties)
@@ -75,13 +73,11 @@ public class ImmutabilityTests
             MaxConcurrentExtractions = 5
         };
 
-        // Verify values were set during initialization
         Assert.Equal(true, config.UseCache);
         Assert.Equal(false, config.EnableQualityProcessing);
         Assert.Equal(true, config.ForceOcr);
         Assert.Equal(5, config.MaxConcurrentExtractions);
 
-        // Verify all writable properties have init-only accessors
         VerifyConfigTypeIsImmutable(typeof(ExtractionConfig));
     }
 
@@ -99,7 +95,6 @@ public class ImmutabilityTests
         Assert.True(HasIsExternalInitModifier(useCacheProperty),
             "UseCache property must have IsExternalInit modifier to prevent post-initialization mutation");
 
-        // Verify we can read the value (public getter)
         var value = useCacheProperty.GetValue(config);
         Assert.Equal(true, value);
     }
@@ -124,7 +119,6 @@ public class ImmutabilityTests
         Assert.Equal("tesseract", config.Backend);
         Assert.Equal("eng", config.Language);
 
-        // Verify all properties have init-only accessors
         VerifyConfigTypeIsImmutable(typeof(OcrConfig));
     }
 
@@ -150,7 +144,6 @@ public class ImmutabilityTests
         Assert.Equal(3, config.Psm);
         Assert.Equal(0.5, config.MinConfidence);
 
-        // Verify all properties with setters are init-only
         VerifyConfigTypeIsImmutable(typeof(TesseractConfig));
     }
 
@@ -213,13 +206,11 @@ public class ImmutabilityTests
         Assert.NotNull(config.Embedding);
         Assert.True(config.Enabled);
 
-        // Verify embedding property is init-only
         var embeddingProp = typeof(ChunkingConfig).GetProperty("Embedding");
         Assert.NotNull(embeddingProp);
         Assert.True(HasIsExternalInitModifier(embeddingProp),
             "Embedding property must have init-only accessor");
 
-        // Verify all properties are init-only
         VerifyConfigTypeIsImmutable(typeof(ChunkingConfig));
     }
 
@@ -247,7 +238,6 @@ public class ImmutabilityTests
         Assert.True(config.ExtractImages);
         Assert.Equal(300, config.TargetDpi);
 
-        // Verify all properties are init-only
         VerifyConfigTypeIsImmutable(typeof(ImageExtractionConfig));
     }
 
@@ -289,13 +279,11 @@ public class ImmutabilityTests
         Assert.NotNull(config.Hierarchy);
         Assert.True(config.FontConfig.FontFallbackEnabled);
 
-        // Verify nested config properties are init-only
         var fontConfigProp = typeof(PdfConfig).GetProperty("FontConfig");
         Assert.NotNull(fontConfigProp);
         Assert.True(HasIsExternalInitModifier(fontConfigProp),
             "FontConfig property must have init-only accessor");
 
-        // Verify all properties in PdfConfig and nested types are init-only
         VerifyConfigTypeIsImmutable(typeof(PdfConfig));
         VerifyConfigTypeIsImmutable(typeof(FontConfig));
         VerifyConfigTypeIsImmutable(typeof(HierarchyConfig));
@@ -322,7 +310,6 @@ public class ImmutabilityTests
         Assert.True(config.ExtractPages);
         Assert.Equal("[PAGE_{0}]", config.MarkerFormat);
 
-        // Verify all properties are init-only
         VerifyConfigTypeIsImmutable(typeof(PageConfig));
     }
 
@@ -378,7 +365,6 @@ public class ImmutabilityTests
     {
         var config = new PostProcessorConfig();
 
-        // Verify all properties are init-only
         VerifyConfigTypeIsImmutable(typeof(PostProcessorConfig));
     }
 
@@ -394,7 +380,6 @@ public class ImmutabilityTests
     {
         var config = new HtmlConversionOptions();
 
-        // Verify all properties are init-only
         VerifyConfigTypeIsImmutable(typeof(HtmlConversionOptions));
     }
 
@@ -410,7 +395,6 @@ public class ImmutabilityTests
     {
         var config = new HtmlPreprocessingOptions();
 
-        // Verify all properties are init-only
         VerifyConfigTypeIsImmutable(typeof(HtmlPreprocessingOptions));
     }
 
@@ -504,22 +488,17 @@ public class ImmutabilityTests
             }
         };
 
-        // Verify root level immutability
         Assert.True(config.UseCache);
 
-        // Verify nested level 1 immutability
         Assert.NotNull(config.Ocr);
         Assert.Equal("tesseract", config.Ocr.Backend);
 
-        // Verify nested level 2 immutability
         Assert.NotNull(config.Ocr.TesseractConfig);
         Assert.Equal("eng", config.Ocr.TesseractConfig.Language);
 
-        // Verify nested level 3 immutability
         Assert.NotNull(config.Ocr.TesseractConfig.Preprocessing);
         Assert.Equal(300, config.Ocr.TesseractConfig.Preprocessing.TargetDpi);
 
-        // Verify all nested configs at each level have init-only properties
         VerifyConfigTypeIsImmutable(typeof(ExtractionConfig));
         VerifyConfigTypeIsImmutable(typeof(OcrConfig));
         VerifyConfigTypeIsImmutable(typeof(TesseractConfig));
@@ -543,7 +522,6 @@ public class ImmutabilityTests
     [Fact]
     public void ObjectInitializerSyntax_WorksWithInitOnlyProperties()
     {
-        // Using object initializer syntax with init-only properties
         var config = new ExtractionConfig
         {
             UseCache = true,
@@ -562,7 +540,6 @@ public class ImmutabilityTests
             }
         };
 
-        // Verify all values were set correctly
         Assert.True(config.UseCache);
         Assert.False(config.EnableQualityProcessing);
         Assert.True(config.ForceOcr);
@@ -586,16 +563,13 @@ public class ImmutabilityTests
     {
         var config = new ExtractionConfig();
 
-        // All nullable properties should be null by default
         Assert.Null(config.UseCache);
         Assert.Null(config.EnableQualityProcessing);
         Assert.Null(config.ForceOcr);
         Assert.Null(config.Ocr);
         Assert.Null(config.Chunking);
 
-        // Should still be readable
         var _ = config.UseCache;
-        // If no exception, reading properties works correctly
     }
 
     #endregion
@@ -632,10 +606,9 @@ public class ImmutabilityTests
         foreach (var configType in configTypes)
         {
             var properties = configType.GetProperties(BindingFlags.Public | BindingFlags.Instance)
-                .Where(p => p.SetMethod != null && !p.Name.StartsWith("_"))
-                .ToList();
+            .Where(p => p.SetMethod != null && !p.Name.StartsWith("_"))
+            .ToList();
 
-            // If type has any settable properties, verify they're all init-only
             if (properties.Count > 0)
             {
                 foreach (var prop in properties)

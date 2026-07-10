@@ -94,8 +94,6 @@ fn parse_html_options(dict: &Bound<'_, PyDict>) -> PyResult<ConversionOptions> {
         opts.br_in_tables = value.extract()?;
     }
 
-    // hocr_spatial_tables removed in html-to-markdown v3
-
     if let Some(value) = dict.get_item("highlight_style")? {
         let style: String = value.extract()?;
         opts.highlight_style = parse_highlight_style(&style)?;

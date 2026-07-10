@@ -12,44 +12,44 @@ import com.fasterxml.jackson.annotation.JsonValue;
  * @since 4.6.0
  */
 public enum PdfAnnotationType {
-	/** Sticky note / text annotation. */
-	TEXT("text"),
+    /** Sticky note / text annotation. */
+    TEXT("text"),
 
-	/** Highlighted text region. */
-	HIGHLIGHT("highlight"),
+    /** Highlighted text region. */
+    HIGHLIGHT("highlight"),
 
-	/** Hyperlink annotation. */
-	LINK("link"),
+    /** Hyperlink annotation. */
+    LINK("link"),
 
-	/** Rubber stamp annotation. */
-	STAMP("stamp"),
+    /** Rubber stamp annotation. */
+    STAMP("stamp"),
 
-	/** Underline text markup. */
-	UNDERLINE("underline"),
+    /** Underline text markup. */
+    UNDERLINE("underline"),
 
-	/** Strikeout text markup. */
-	STRIKE_OUT("strike_out"),
+    /** Strikeout text markup. */
+    STRIKE_OUT("strike_out"),
 
-	/** Any other annotation type. */
-	OTHER("other");
+    /** Any other annotation type. */
+    OTHER("other");
 
-	private final String wireValue;
+    private final String wireValue;
 
-	PdfAnnotationType(String wireValue) {
-		this.wireValue = wireValue;
-	}
+    PdfAnnotationType(String wireValue) {
+        this.wireValue = wireValue;
+    }
 
-	/**
+    /**
 	 * Get the wire format value for this annotation type.
 	 *
 	 * @return wire value used in serialization
 	 */
-	@JsonValue
-	public String wireValue() {
-		return wireValue;
-	}
+    @JsonValue
+    public String wireValue() {
+        return wireValue;
+    }
 
-	/**
+    /**
 	 * Parse a PdfAnnotationType from its wire value.
 	 *
 	 * @param wireValue
@@ -58,12 +58,12 @@ public enum PdfAnnotationType {
 	 * @throws IllegalArgumentException
 	 *             if the value is not recognized
 	 */
-	public static PdfAnnotationType fromWireValue(String wireValue) {
-		for (PdfAnnotationType type : values()) {
-			if (type.wireValue.equals(wireValue)) {
-				return type;
-			}
-		}
-		throw new IllegalArgumentException("Unknown PdfAnnotationType: " + wireValue);
-	}
+    public static PdfAnnotationType fromWireValue(String wireValue) {
+        for (PdfAnnotationType type : values()) {
+            if (type.wireValue.equals(wireValue)) {
+                return type;
+            }
+        }
+        throw new IllegalArgumentException("Unknown PdfAnnotationType: " + wireValue);
+    }
 }

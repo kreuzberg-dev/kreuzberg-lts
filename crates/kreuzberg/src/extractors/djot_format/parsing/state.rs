@@ -6,11 +6,11 @@ use crate::types::{Attributes, FormattedBlock, InlineElement, InlineType};
 
 /// State tracking using a block stack for proper nesting.
 pub(super) struct ExtractionState {
-    pub block_stack: Vec<FormattedBlock>,   // Stack for nested blocks
-    pub inline_type_stack: Vec<InlineType>, // Stack for nested inline element types
-    pub current_text: String,               // Text accumulator
+    pub block_stack: Vec<FormattedBlock>,
+    pub inline_type_stack: Vec<InlineType>,
+    pub current_text: String,
     pub pending_attributes: Option<Attributes>,
-    pub code_content: String, // Accumulator for code blocks
+    pub code_content: String,
     pub in_code_block: bool,
     pub in_math: bool,
     pub math_display: bool,
@@ -64,11 +64,9 @@ pub(super) fn push_block(state: &mut ExtractionState, block: FormattedBlock) {
 /// Helper to pop a block from the stack and add to parent or blocks list.
 pub(super) fn pop_block(state: &mut ExtractionState, blocks: &mut Vec<FormattedBlock>) {
     if let Some(mut block) = state.block_stack.pop() {
-        // Add any pending inline elements to the block
         if !state.current_inline_elements.is_empty() {
             block.inline_content.append(&mut state.current_inline_elements);
         }
-        // If there's a parent block, add as child; otherwise add to top-level blocks
         if let Some(parent) = state.block_stack.last_mut() {
             parent.children.push(block);
         } else {

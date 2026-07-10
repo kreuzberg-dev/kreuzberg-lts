@@ -81,13 +81,10 @@ pub fn kreuzberg_version() -> String {
 /// Exports all extraction functions, configuration types, error handling, and plugin management.
 #[php_module]
 pub fn get_module(module: ModuleBuilder) -> ModuleBuilder {
-    // Note: ORT_DYLIB_PATH is set by setup_onnx_runtime_path() which runs automatically
     // via the #[ctor::ctor] attribute before this function is called
 
-    // Register the main module function
     let mut module = module.function(wrap_function!(kreuzberg_version));
 
-    // Register functions from all submodules
     for builder in config::get_function_builders() {
         module = module.function(builder);
     }
@@ -110,9 +107,6 @@ pub fn get_module(module: ModuleBuilder) -> ModuleBuilder {
         module = module.function(builder);
     }
 
-    // Register all PHP classes (order matters for dependencies)
-    // Types module - enums (must be registered before structs that reference them)
-    // Use .enumeration::<T>() so that PHP enum cases are registered (not just the class skeleton)
     module = module
         .enumeration::<types::ContentLayer>()
         .enumeration::<types::ElementType>()
@@ -123,37 +117,30 @@ pub fn get_module(module: ModuleBuilder) -> ModuleBuilder {
         .enumeration::<types::RelationshipKind>()
         .enumeration::<types::ResultFormat>()
         .enumeration::<types::UriKind>()
-        .enumeration::<types::PdfAnnotationType>(); // Must be registered before PdfAnnotation
+        .enumeration::<types::PdfAnnotationType>();
 
-    // Types module - struct types
     module = module
         .class::<types::Metadata>()
         .class::<types::ExtractedImage>()
         .class::<types::ExtractedTable>()
-        .class::<types::ChunkMetadata>()         // Must be registered before TextChunk
+        .class::<types::ChunkMetadata>()
         .class::<types::TextChunk>()
         .class::<types::PageResult>()
-        .class::<types::Keyword>()               // Must be registered before ExtractionResult
-        .class::<types::PdfAnnotation>()          // Must be registered before ExtractionResult
+        .class::<types::Keyword>()
+        .class::<types::PdfAnnotation>()
         .class::<types::ProcessingWarning>()
         .class::<types::LlmUsage>()
         .class::<types::BoundingBoxType>()
         .class::<types::UriType>()
         .class::<types::ExtractionResult>()
-        .class::<types::ArchiveEntry>()           // Depends on ExtractionResult
+        .class::<types::ArchiveEntry>()
         .class::<types::ExtractionConfigType>()
         .class::<types::TableType>();
 
-    // Async module - DeferredResult for async operations
     module = module.class::<deferred::DeferredResult>();
 
-    // Note: Config classes are pure PHP (packages/php/src/Config/*.php)
-    // No Rust config classes are exposed - configs are passed as JSON
-
-    // Embeddings module
     module = module.class::<embeddings::EmbeddingPreset>();
 
-    // Error module
     module = module.class::<error::ErrorClassification>();
 
     module

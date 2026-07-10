@@ -41,8 +41,5 @@ runs:
       env:
         FASTEMBED_VERSION: ${{ inputs.fastembed-version }}
         MODELS: ${{ inputs.models }}
-        # HF_HUB_CACHE tells hf-hub (used by fastembed internally) where to store models.
-        # Setting it to KREUZBERG_CACHE_DIR/embeddings ensures the prefetch populates exactly
-        # the directory that kreuzberg's embedding engine reads from at runtime.
         HF_HUB_CACHE: ${{ inputs.kreuzberg-cache-dir }}/embeddings
       run: scripts/ci/actions/cache-hf-fastembed/prefetch.sh

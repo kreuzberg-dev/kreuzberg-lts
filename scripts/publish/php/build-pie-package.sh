@@ -51,7 +51,6 @@ WORKSPACE="${GITHUB_WORKSPACE:-$(pwd)}"
 PHP_DIR="${WORKSPACE}/packages/php"
 TARGET_DIR="${WORKSPACE}/target/release"
 
-# On Windows, Rust builds DLLs without the "lib" prefix
 if [[ "$OS" == "windows" ]]; then
   EXT_FILE="kreuzberg_php.${EXT_SUFFIX}"
 else
@@ -60,7 +59,6 @@ fi
 
 echo "Looking for extension file: ${TARGET_DIR}/${EXT_FILE}"
 
-# Debug: list contents of target/release directory
 if [[ -d "${TARGET_DIR}" ]]; then
   echo "Contents of ${TARGET_DIR}:"
   shopt -s nullglob
@@ -77,7 +75,6 @@ fi
 
 if [[ ! -f "${TARGET_DIR}/${EXT_FILE}" ]]; then
   echo "::error::Extension file not found: ${TARGET_DIR}/${EXT_FILE}" >&2
-  # Try alternative names
   echo "Attempting to find alternative file names..."
   for ext in .dll .so .dylib; do
     for prefix in libkreuzberg_php kreuzberg_php; do
@@ -180,7 +177,6 @@ echo "Creating tarball: ${TARBALL_NAME}"
 tar -czf "${OUTPUT_DIR}/${TARBALL_NAME}" -C "${OUTPUT_DIR}" "${PKG_NAME}"
 
 cd "${OUTPUT_DIR}"
-# Use sha256sum (cross-platform) instead of shasum (not available on Windows)
 if command -v sha256sum &>/dev/null; then
   sha256sum "${TARBALL_NAME}" >"${TARBALL_NAME}.sha256"
 elif command -v shasum &>/dev/null; then

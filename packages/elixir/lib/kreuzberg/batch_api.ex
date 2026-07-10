@@ -37,35 +37,31 @@ defmodule Kreuzberg.BatchAPI do
       {:ok, results} = Kreuzberg.BatchAPI.batch_extract_files(paths)
   """
   @spec batch_extract_files(
-          [String.t() | Path.t()],
-          String.t() | nil,
-          ExtractionConfig.t() | map() | keyword() | nil
-        ) :: {:ok, [ExtractionResult.t()]} | {:error, String.t()}
+  [String.t() | Path.t()],
+  String.t() | nil,
+  ExtractionConfig.t() | map() | keyword() | nil
+  ) :: {:ok, [ExtractionResult.t()]} | {:error, String.t()}
 
-  # Default value header
   def batch_extract_files(paths, config_or_mime, third_arg \\ nil)
 
-  # Handle case where second arg is a config (struct/map/keyword) not a mime_type
   def batch_extract_files(paths, config, third_arg)
-      when is_list(paths) and
-             (is_map(config) or is_list(config)) and
-             not is_binary(config) and
-             is_nil(third_arg) do
-    # Second arg is the config, mime_type should be nil
+  when is_list(paths) and
+  (is_map(config) or is_list(config)) and
+  not is_binary(config) and
+  is_nil(third_arg) do
     batch_extract_files(paths, nil, config)
   end
 
   def batch_extract_files(paths, mime_type, config)
-      when is_list(paths) and (is_nil(mime_type) or is_binary(mime_type)) do
-    # Convert all paths to strings
+  when is_list(paths) and (is_nil(mime_type) or is_binary(mime_type)) do
     string_paths = Enum.map(paths, &to_string/1)
 
     case call_native_batch_files(string_paths, mime_type, config) do
       {:ok, results_list} when is_list(results_list) ->
-        process_batch_results(results_list, string_paths, "file")
+      process_batch_results(results_list, string_paths, "file")
 
       {:error, _reason} = err ->
-        err
+      err
     end
   end
 
@@ -80,31 +76,28 @@ defmodule Kreuzberg.BatchAPI do
       results = Kreuzberg.BatchAPI.batch_extract_files!(paths, "application/pdf")
   """
   @spec batch_extract_files!(
-          [String.t() | Path.t()],
-          String.t() | nil,
-          ExtractionConfig.t() | map() | keyword() | nil
-        ) :: [ExtractionResult.t()]
+  [String.t() | Path.t()],
+  String.t() | nil,
+  ExtractionConfig.t() | map() | keyword() | nil
+  ) :: [ExtractionResult.t()]
 
-  # Default value header
   def batch_extract_files!(paths, config_or_mime, third_arg \\ nil)
 
-  # Handle case where second arg is a config (struct/map/keyword) not a mime_type
   def batch_extract_files!(paths, config, third_arg)
-      when is_list(paths) and
-             (is_map(config) or is_list(config)) and
-             not is_binary(config) and
-             is_nil(third_arg) do
-    # Second arg is the config, mime_type should be nil
+  when is_list(paths) and
+  (is_map(config) or is_list(config)) and
+  not is_binary(config) and
+  is_nil(third_arg) do
     batch_extract_files!(paths, nil, config)
   end
 
   def batch_extract_files!(paths, mime_type, config) do
     case batch_extract_files(paths, mime_type, config) do
       {:ok, results} ->
-        results
+      results
 
       {:error, reason} ->
-        raise Error, message: reason, reason: Kreuzberg.UtilityAPI.classify_error(reason)
+      raise Error, message: reason, reason: Kreuzberg.UtilityAPI.classify_error(reason)
     end
   end
 
@@ -137,25 +130,23 @@ defmodule Kreuzberg.BatchAPI do
       {:ok, results} = Kreuzberg.BatchAPI.batch_extract_bytes(data_list, mime_types, config)
   """
   @spec batch_extract_bytes(
-          [binary()],
-          String.t() | [String.t()],
-          ExtractionConfig.t() | map() | keyword() | nil
-        ) :: {:ok, [ExtractionResult.t()]} | {:error, String.t()}
+  [binary()],
+  String.t() | [String.t()],
+  ExtractionConfig.t() | map() | keyword() | nil
+  ) :: {:ok, [ExtractionResult.t()]} | {:error, String.t()}
   def batch_extract_bytes(data_list, mime_types, config \\ nil)
-      when is_list(data_list) and (is_binary(mime_types) or is_list(mime_types)) do
-    # Normalize mime_types to a list
+  when is_list(data_list) and (is_binary(mime_types) or is_list(mime_types)) do
     normalized_mime_types = normalize_mime_types(mime_types, data_list)
 
-    # Validate that we have the same number of inputs and MIME types
     if length(data_list) != length(normalized_mime_types) do
       mismatch_error(data_list, normalized_mime_types)
     else
       case call_native_batch_bytes(data_list, normalized_mime_types, config) do
         {:ok, results_list} when is_list(results_list) ->
-          process_batch_results(results_list, normalized_mime_types, "mime_type")
+        process_batch_results(results_list, normalized_mime_types, "mime_type")
 
         {:error, _reason} = err ->
-          err
+        err
       end
     end
   end
@@ -171,21 +162,20 @@ defmodule Kreuzberg.BatchAPI do
       results = Kreuzberg.BatchAPI.batch_extract_bytes!(data_list, "application/pdf")
   """
   @spec batch_extract_bytes!(
-          [binary()],
-          String.t() | [String.t()],
-          ExtractionConfig.t() | map() | keyword() | nil
-        ) :: [ExtractionResult.t()]
+  [binary()],
+  String.t() | [String.t()],
+  ExtractionConfig.t() | map() | keyword() | nil
+  ) :: [ExtractionResult.t()]
   def batch_extract_bytes!(data_list, mime_types, config \\ nil) do
     case batch_extract_bytes(data_list, mime_types, config) do
       {:ok, results} ->
-        results
+      results
 
       {:error, reason} ->
-        raise Error, message: reason, reason: Kreuzberg.UtilityAPI.classify_error(reason)
+      raise Error, message: reason, reason: Kreuzberg.UtilityAPI.classify_error(reason)
     end
   end
 
-  # Private
 
   defp normalize_mime_types(mime_types, data_list) do
     if is_binary(mime_types) do
@@ -197,49 +187,47 @@ defmodule Kreuzberg.BatchAPI do
 
   defp mismatch_error(data_list, mime_types) do
     {:error,
-     "Mismatch between data_list length (#{length(data_list)}) and mime_types length (#{length(mime_types)})"}
+    "Mismatch between data_list length (#{length(data_list)}) and mime_types length (#{length(mime_types)})"}
   end
 
   defp process_batch_results(results_list, reference_list, reference_type) do
     results =
-      results_list
-      |> Enum.with_index()
-      |> Enum.map(fn {result_map, index} ->
-        case Helpers.into_result(result_map) do
-          {:ok, result} -> {:ok, result}
-          {:error, reason} -> {:error, index, reason}
-        end
-      end)
+    results_list
+    |> Enum.with_index()
+    |> Enum.map(fn {result_map, index} ->
+      case Helpers.into_result(result_map) do
+        {:ok, result} -> {:ok, result}
+        {:error, reason} -> {:error, index, reason}
+      end
+    end)
 
-    # Check if any failed
-    case Enum.find(results, fn r -> match?({:error, _, _}, r) end) do
+  case Enum.find(results, fn r -> match?({:error, _, _}, r) end) do
       nil ->
-        # All succeeded
-        {:ok, Enum.map(results, fn {:ok, result} -> result end)}
+    {:ok, Enum.map(results, fn {:ok, result} -> result end)}
 
       {:error, index, reason} ->
-        reference = Enum.at(reference_list, index, "unknown")
-        {:error, "Failed at index #{index} (#{reference_type}: '#{reference}'): #{reason}"}
+      reference = Enum.at(reference_list, index, "unknown")
+      {:error, "Failed at index #{index} (#{reference_type}: '#{reference}'): #{reason}"}
     end
   end
 
   defp call_native_batch_files(paths, mime_type, config) do
     Helpers.call_native(
-      fn -> Native.batch_extract_files(paths, mime_type) end,
-      fn config_map ->
-        Native.batch_extract_files_with_options(paths, mime_type, config_map, nil)
-      end,
-      config
+  fn -> Native.batch_extract_files(paths, mime_type) end,
+    fn config_map ->
+      Native.batch_extract_files_with_options(paths, mime_type, config_map, nil)
+    end,
+    config
     )
   end
 
   defp call_native_batch_bytes(data_list, mime_types, config) do
     Helpers.call_native(
-      fn -> Native.batch_extract_bytes(data_list, mime_types) end,
-      fn config_map ->
-        Native.batch_extract_bytes_with_options(data_list, mime_types, config_map, nil)
-      end,
-      config
+  fn -> Native.batch_extract_bytes(data_list, mime_types) end,
+    fn config_map ->
+      Native.batch_extract_bytes_with_options(data_list, mime_types, config_map, nil)
+    end,
+    config
     )
   end
 end

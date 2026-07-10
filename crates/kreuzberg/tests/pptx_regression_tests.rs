@@ -81,7 +81,6 @@ async fn test_ppsx_with_explicit_mime_type() {
         return;
     }
 
-    // Explicitly provide the PPSX MIME type
     let result = extract_file(
         &test_file,
         Some("application/vnd.openxmlformats-officedocument.presentationml.slideshow"),
@@ -114,14 +113,12 @@ async fn test_ppsx_with_explicit_mime_type() {
 /// GitHub Issue #321 Bug 1
 #[tokio::test]
 async fn test_pptx_with_image_placeholder_no_txbody() {
-    // Create a minimal PPTX with a shape that has no txBody (image placeholder)
     let mut temp_file = NamedTempFile::with_suffix(".pptx").expect("Failed to create temp file");
 
     {
         let mut zip = ZipWriter::new(&mut temp_file);
         let options: FileOptions<()> = FileOptions::default().compression_method(CompressionMethod::Stored);
 
-        // Add [Content_Types].xml
         zip.start_file("[Content_Types].xml", options)
             .expect("Operation failed");
         zip.write_all(br#"<?xml version="1.0" encoding="UTF-8"?>
@@ -132,14 +129,12 @@ async fn test_pptx_with_image_placeholder_no_txbody() {
   <Override PartName="/ppt/slides/slide1.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slide+xml"/>
 </Types>"#).expect("Operation failed");
 
-        // Add _rels/.rels
         zip.start_file("_rels/.rels", options).expect("Operation failed");
         zip.write_all(br#"<?xml version="1.0" encoding="UTF-8"?>
 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
   <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="ppt/presentation.xml"/>
 </Relationships>"#).expect("Operation failed");
 
-        // Add ppt/presentation.xml
         zip.start_file("ppt/presentation.xml", options)
             .expect("Operation failed");
         zip.write_all(
@@ -154,7 +149,6 @@ async fn test_pptx_with_image_placeholder_no_txbody() {
         )
         .expect("Operation failed");
 
-        // Add ppt/_rels/presentation.xml.rels
         zip.start_file("ppt/_rels/presentation.xml.rels", options)
             .expect("Operation failed");
         zip.write_all(br#"<?xml version="1.0" encoding="UTF-8"?>
@@ -162,8 +156,6 @@ async fn test_pptx_with_image_placeholder_no_txbody() {
   <Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" Target="slides/slide1.xml"/>
 </Relationships>"#).expect("Operation failed");
 
-        // Add ppt/slides/slide1.xml with a shape WITHOUT txBody (image placeholder)
-        // This is the critical test case - a <p:sp> element with no <p:txBody>
         zip.start_file("ppt/slides/slide1.xml", options)
             .expect("Operation failed");
         zip.write_all(
@@ -267,7 +259,6 @@ async fn test_pptx_with_image_placeholder_no_txbody() {
         )
         .expect("Operation failed");
 
-        // Add ppt/slides/_rels/slide1.xml.rels (empty)
         zip.start_file("ppt/slides/_rels/slide1.xml.rels", options)
             .expect("Operation failed");
         zip.write_all(
@@ -280,7 +271,6 @@ async fn test_pptx_with_image_placeholder_no_txbody() {
         zip.finish().expect("Operation failed");
     }
 
-    // Extract the PPTX file
     let result = extract_file(
         temp_file.path(),
         Some("application/vnd.openxmlformats-officedocument.presentationml.presentation"),
@@ -292,7 +282,6 @@ async fn test_pptx_with_image_placeholder_no_txbody() {
         Ok(extraction) => {
             assert!(!extraction.content.is_empty(), "Content should not be empty");
 
-            // Verify we extracted text from shapes that DO have txBody
             assert!(
                 extraction.content.contains("title text"),
                 "Should extract text from first shape with txBody. Got: {}",
@@ -335,14 +324,12 @@ async fn test_pptx_with_image_placeholder_no_txbody() {
 /// GitHub Issue #321 Bug 1
 #[tokio::test]
 async fn test_pptx_mixed_shapes_extraction() {
-    // Create a PPTX with multiple slides, each containing mixed shapes
     let mut temp_file = NamedTempFile::with_suffix(".pptx").expect("Failed to create temp file");
 
     {
         let mut zip = ZipWriter::new(&mut temp_file);
         let options: FileOptions<()> = FileOptions::default().compression_method(CompressionMethod::Stored);
 
-        // Add [Content_Types].xml
         zip.start_file("[Content_Types].xml", options)
             .expect("Operation failed");
         zip.write_all(br#"<?xml version="1.0" encoding="UTF-8"?>
@@ -353,14 +340,12 @@ async fn test_pptx_mixed_shapes_extraction() {
   <Override PartName="/ppt/slides/slide1.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slide+xml"/>
 </Types>"#).expect("Operation failed");
 
-        // Add _rels/.rels
         zip.start_file("_rels/.rels", options).expect("Operation failed");
         zip.write_all(br#"<?xml version="1.0" encoding="UTF-8"?>
 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
   <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="ppt/presentation.xml"/>
 </Relationships>"#).expect("Operation failed");
 
-        // Add ppt/presentation.xml
         zip.start_file("ppt/presentation.xml", options)
             .expect("Operation failed");
         zip.write_all(
@@ -375,7 +360,6 @@ async fn test_pptx_mixed_shapes_extraction() {
         )
         .expect("Operation failed");
 
-        // Add ppt/_rels/presentation.xml.rels
         zip.start_file("ppt/_rels/presentation.xml.rels", options)
             .expect("Operation failed");
         zip.write_all(br#"<?xml version="1.0" encoding="UTF-8"?>
@@ -383,7 +367,6 @@ async fn test_pptx_mixed_shapes_extraction() {
   <Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" Target="slides/slide1.xml"/>
 </Relationships>"#).expect("Operation failed");
 
-        // Add slide with various shapes - some with txBody, some without
         zip.start_file("ppt/slides/slide1.xml", options)
             .expect("Operation failed");
         zip.write_all(
@@ -466,7 +449,6 @@ async fn test_pptx_mixed_shapes_extraction() {
         )
         .expect("Operation failed");
 
-        // Add empty rels
         zip.start_file("ppt/slides/_rels/slide1.xml.rels", options)
             .expect("Operation failed");
         zip.write_all(
@@ -488,7 +470,6 @@ async fn test_pptx_mixed_shapes_extraction() {
 
     match result {
         Ok(extraction) => {
-            // All three text shapes should be extracted
             assert!(
                 extraction.content.contains("First Text Shape"),
                 "Should extract first text shape"
@@ -523,34 +504,19 @@ async fn test_pptx_mixed_shapes_extraction() {
 /// GitHub Issue #329: Image on slide 1 of 2-slide PPTX reports page_number=2
 #[tokio::test]
 async fn test_pptx_image_page_numbers_not_reversed() {
-    // Create a PPTX with 2 slides, image on slide 1
     let mut temp_file = NamedTempFile::with_suffix(".pptx").expect("Failed to create temp file");
 
-    // A minimal 1x1 red PNG image (valid PNG format)
     let png_image: &[u8] = &[
-        0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, // PNG signature
-        0x00, 0x00, 0x00, 0x0D, // IHDR chunk length
-        0x49, 0x48, 0x44, 0x52, // "IHDR"
-        0x00, 0x00, 0x00, 0x01, // width: 1
-        0x00, 0x00, 0x00, 0x01, // height: 1
-        0x08, 0x02, // bit depth: 8, color type: RGB
-        0x00, 0x00, 0x00, // compression, filter, interlace
-        0x90, 0x77, 0x53, 0xDE, // IHDR CRC
-        0x00, 0x00, 0x00, 0x0C, // IDAT chunk length
-        0x49, 0x44, 0x41, 0x54, // "IDAT"
-        0x08, 0xD7, 0x63, 0xF8, 0xCF, 0xC0, 0x00, 0x00, // compressed data
-        0x01, 0x01, 0x01, 0x00, // checksum
-        0x18, 0xDD, 0x8D, 0xB4, // IDAT CRC
-        0x00, 0x00, 0x00, 0x00, // IEND chunk length
-        0x49, 0x45, 0x4E, 0x44, // "IEND"
-        0xAE, 0x42, 0x60, 0x82, // IEND CRC
+        0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x00, 0x00, 0x00, 0x0D, 0x49, 0x48, 0x44, 0x52, 0x00, 0x00,
+        0x00, 0x01, 0x00, 0x00, 0x00, 0x01, 0x08, 0x02, 0x00, 0x00, 0x00, 0x90, 0x77, 0x53, 0xDE, 0x00, 0x00, 0x00,
+        0x0C, 0x49, 0x44, 0x41, 0x54, 0x08, 0xD7, 0x63, 0xF8, 0xCF, 0xC0, 0x00, 0x00, 0x01, 0x01, 0x01, 0x00, 0x18,
+        0xDD, 0x8D, 0xB4, 0x00, 0x00, 0x00, 0x00, 0x49, 0x45, 0x4E, 0x44, 0xAE, 0x42, 0x60, 0x82,
     ];
 
     {
         let mut zip = ZipWriter::new(&mut temp_file);
         let options: FileOptions<()> = FileOptions::default().compression_method(CompressionMethod::Stored);
 
-        // Add [Content_Types].xml
         zip.start_file("[Content_Types].xml", options)
             .expect("Operation failed");
         zip.write_all(br#"<?xml version="1.0" encoding="UTF-8"?>
@@ -563,14 +529,12 @@ async fn test_pptx_image_page_numbers_not_reversed() {
   <Override PartName="/ppt/slides/slide2.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slide+xml"/>
 </Types>"#).expect("Operation failed");
 
-        // Add _rels/.rels
         zip.start_file("_rels/.rels", options).expect("Operation failed");
         zip.write_all(br#"<?xml version="1.0" encoding="UTF-8"?>
 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
   <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="ppt/presentation.xml"/>
 </Relationships>"#).expect("Operation failed");
 
-        // Add ppt/presentation.xml
         zip.start_file("ppt/presentation.xml", options)
             .expect("Operation failed");
         zip.write_all(
@@ -585,10 +549,7 @@ async fn test_pptx_image_page_numbers_not_reversed() {
         )
         .expect("Operation failed");
 
-        // Add ppt/_rels/presentation.xml.rels
         // BUG REPRODUCTION: Slides listed in REVERSE order in XML (slide2 before slide1)
-        // This is valid XML - PowerPoint doesn't guarantee order in rels files
-        // GitHub Issue #329: This causes page numbers to be reversed
         zip.start_file("ppt/_rels/presentation.xml.rels", options)
             .expect("Operation failed");
         zip.write_all(br#"<?xml version="1.0" encoding="UTF-8"?>
@@ -597,12 +558,10 @@ async fn test_pptx_image_page_numbers_not_reversed() {
   <Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" Target="slides/slide1.xml"/>
 </Relationships>"#).expect("Operation failed");
 
-        // Add the image file
         zip.start_file("ppt/media/image1.png", options)
             .expect("Operation failed");
         zip.write_all(png_image).expect("Operation failed");
 
-        // Add slide 1 WITH an image
         zip.start_file("ppt/slides/slide1.xml", options)
             .expect("Operation failed");
         zip.write_all(
@@ -640,7 +599,6 @@ async fn test_pptx_image_page_numbers_not_reversed() {
         )
         .expect("Operation failed");
 
-        // Add slide 1 relationships (points to the image)
         zip.start_file("ppt/slides/_rels/slide1.xml.rels", options)
             .expect("Operation failed");
         zip.write_all(br#"<?xml version="1.0" encoding="UTF-8"?>
@@ -648,7 +606,6 @@ async fn test_pptx_image_page_numbers_not_reversed() {
   <Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="../media/image1.png"/>
 </Relationships>"#).expect("Operation failed");
 
-        // Add slide 2 WITHOUT an image
         zip.start_file("ppt/slides/slide2.xml", options)
             .expect("Operation failed");
         zip.write_all(
@@ -671,7 +628,6 @@ async fn test_pptx_image_page_numbers_not_reversed() {
         )
         .expect("Operation failed");
 
-        // Add empty slide 2 relationships
         zip.start_file("ppt/slides/_rels/slide2.xml.rels", options)
             .expect("Operation failed");
         zip.write_all(
@@ -684,7 +640,6 @@ async fn test_pptx_image_page_numbers_not_reversed() {
         zip.finish().expect("Operation failed");
     }
 
-    // Extract with images enabled
     let config = ExtractionConfig {
         images: Some(ImageExtractionConfig {
             extract_images: true,
@@ -708,15 +663,12 @@ async fn test_pptx_image_page_numbers_not_reversed() {
 
     match result {
         Ok(extraction) => {
-            // Verify text extraction works
             assert!(extraction.content.contains("Slide 1"), "Should extract slide 1 text");
             assert!(extraction.content.contains("Slide 2"), "Should extract slide 2 text");
 
-            // Verify we got an image
             let images = extraction.images.as_ref().expect("Images should be present");
             assert!(!images.is_empty(), "Should extract at least one image");
 
-            // THE CRITICAL TEST: Image on slide 1 should have page_number=1, NOT 2
             let image = &images[0];
             assert_eq!(
                 image.page_number,
@@ -753,7 +705,6 @@ async fn test_pptx_image_page_numbers_issue329_user_file() {
         return;
     }
 
-    // Extract with images enabled
     let config = ExtractionConfig {
         images: Some(ImageExtractionConfig {
             extract_images: true,
@@ -772,7 +723,6 @@ async fn test_pptx_image_page_numbers_issue329_user_file() {
 
     match result {
         Ok(extraction) => {
-            // The user's file has an image on slide 1
             let images = extraction.images.as_ref().expect("Images should be extracted");
 
             if images.is_empty() {
@@ -780,7 +730,6 @@ async fn test_pptx_image_page_numbers_issue329_user_file() {
                 return;
             }
 
-            // All images should have page_number = 1 since they're on the first slide
             for (idx, image) in images.iter().enumerate() {
                 assert_eq!(
                     image.page_number,

@@ -15,14 +15,12 @@ use std::io::{Cursor, Read, Seek};
 use quick_xml::Reader;
 use quick_xml::events::{BytesStart, Event};
 
-// --- Types ---
-
 /// Tracks document element ordering (paragraphs, tables, and drawings interleaved).
 #[derive(Debug, Clone)]
 pub enum DocumentElement {
-    Paragraph(usize), // index into Document::paragraphs
-    Table(usize),     // index into Document::tables
-    Drawing(usize),   // index into Document::drawings
+    Paragraph(usize),
+    Table(usize),
+    Drawing(usize),
     PageBreak,
 }
 
@@ -132,8 +130,6 @@ pub enum NoteType {
     Endnote,
 }
 
-// --- Helper functions ---
-
 /// Check if a formatting element is enabled (not explicitly set to false/0/none).
 fn is_format_enabled(e: &BytesStart) -> bool {
     for attr in e.attributes().flatten() {
@@ -143,7 +139,7 @@ fn is_format_enabled(e: &BytesStart) -> bool {
             return !matches!(val, "false" | "0" | "none");
         }
     }
-    true // no w:val attribute means enabled
+    true
 }
 
 /// Read `w:val` attribute as i64.
@@ -179,7 +175,6 @@ fn heading_level_from_style_name(style: &str) -> Option<u8> {
             if let Ok(n) = num_part.parse::<u8>()
                 && (1..=6).contains(&n)
             {
-                // Title is h1, so Heading1 becomes h2, etc. Clamp to 6 (max markdown heading level).
                 return Some((n + 1).min(6));
             }
             None
@@ -187,8 +182,6 @@ fn heading_level_from_style_name(style: &str) -> Option<u8> {
         _ => None,
     }
 }
-
-// --- Impls ---
 
 impl Document {
     pub fn new() -> Self {
@@ -213,11 +206,10 @@ impl Document {
                 byte_end: idx,
                 page_number: page_num,
             });
-            start_idx = idx + 1; // Skip the \f character
+            start_idx = idx + 1;
             page_num += 1;
         }
 
-        // Add the last page
         boundaries.push(crate::types::PageBoundary {
             byte_start: start_idx,
             byte_end: text.len(),
@@ -263,20 +255,17 @@ impl Document {
     /// Returns 1-6 (markdown heading levels).
     pub fn resolve_heading_level(&self, style_id: &str) -> Option<u8> {
         if let Some(ref catalog) = self.style_catalog {
-            // Walk inheritance chain looking for outline_level
             let mut current_id = Some(style_id);
             let mut visited = 0;
             while let Some(id) = current_id {
                 if visited > 20 {
-                    break; // prevent infinite loops
+                    break;
                 }
                 visited += 1;
                 if let Some(style_def) = catalog.styles.get(id) {
                     if let Some(level) = style_def.paragraph_properties.outline_level {
-                        // outline_level 0 = h1, 1 = h2, ..., clamped to 6
                         return Some((level + 1).min(6));
                     }
-                    // Check style name for "Title" pattern
                     if let Some(ref name) = style_def.name
                         && (name == "Title" || name == "title")
                     {
@@ -288,7 +277,6 @@ impl Document {
                 }
             }
         }
-        // Fallback: string-match on style ID
         heading_level_from_style_name(style_id)
     }
 
@@ -334,7 +322,6 @@ impl Document {
         let mut list_counters: AHashMap<(i64, i64), usize> = AHashMap::new();
         let mut prev_was_list = false;
 
-        // Use elements ordering if populated, otherwise fall back to paragraphs-only
         if !self.elements.is_empty() {
             for element in &self.elements {
                 match element {
@@ -346,7 +333,6 @@ impl Document {
                     }
                     DocumentElement::Table(idx) => {
                         let Some(table) = self.tables.get(*idx) else { continue };
-                        // Ensure blank line separation before table
                         Self::ensure_blank_line(&mut output);
                         if let Some(ref props) = table.properties
                             && let Some(ref caption) = props.caption
@@ -361,7 +347,6 @@ impl Document {
                         let Some(drawing) = self.drawings.get(*idx) else {
                             continue;
                         };
-                        // Skip drawings without an image reference (e.g. textbox shapes)
                         if drawing.image_ref.is_none() {
                             continue;
                         }
@@ -371,16 +356,12 @@ impl Document {
                                 .as_ref()
                                 .and_then(|dp| dp.description.as_deref())
                                 .unwrap_or("");
-                            // Ensure blank line separation before image
                             Self::ensure_blank_line(&mut output);
                             let _ = writeln!(output, "![{}](image)", alt);
                         }
                         prev_was_list = false;
                     }
                     DocumentElement::PageBreak => {
-                        // In markdown, we can represent a page break as a form feed character \f
-                        // or a triple dash at the start of a line. For now, we use \f which
-                        // is a standard page break marker and easy to find for boundary mapping.
                         output.push('\x0c');
                         prev_was_list = false;
                     }
@@ -392,7 +373,6 @@ impl Document {
             }
         }
 
-        // Footnotes
         if !self.footnotes.is_empty() {
             output.push_str("\n\n");
             for note in &self.footnotes {
@@ -408,7 +388,6 @@ impl Document {
             }
         }
 
-        // Endnotes
         if !self.endnotes.is_empty() {
             output.push_str("\n\n");
             for note in &self.endnotes {
@@ -424,7 +403,6 @@ impl Document {
             }
         }
 
-        // Trim output in-place
         let trimmed_end = output.trim_end().len();
         output.truncate(trimmed_end);
         let trimmed_start = output.len() - output.trim_start().len();
@@ -438,7 +416,6 @@ impl Document {
     pub fn to_plain_text(&self) -> String {
         let mut output = String::new();
 
-        // Use elements ordering if populated, otherwise fall back to paragraphs-only
         if !self.elements.is_empty() {
             for element in &self.elements {
                 match element {
@@ -489,7 +466,6 @@ impl Document {
             }
         }
 
-        // Footnotes
         if !self.footnotes.is_empty() {
             output.push_str("\n\n");
             for note in &self.footnotes {
@@ -508,7 +484,6 @@ impl Document {
             }
         }
 
-        // Endnotes
         if !self.endnotes.is_empty() {
             output.push_str("\n\n");
             for note in &self.endnotes {
@@ -527,7 +502,6 @@ impl Document {
             }
         }
 
-        // Trim output in-place
         let trimmed_end = output.trim_end().len();
         output.truncate(trimmed_end);
         let trimmed_start = output.len() - output.trim_start().len();
@@ -547,12 +521,10 @@ impl Document {
     ) {
         let is_list = paragraph.numbering_id.is_some();
 
-        // Add blank line before list block when transitioning from non-list
         if is_list && !*prev_was_list {
             Self::ensure_blank_line(output);
         }
 
-        // Add blank line after list block when transitioning to non-list
         if !is_list && *prev_was_list {
             Self::ensure_blank_line(output);
         }
@@ -564,14 +536,12 @@ impl Document {
             return;
         }
 
-        // Check if this paragraph has a quote/blockquote style
         let is_quote = paragraph.style.as_deref().is_some_and(|s| {
             let lower = s.to_ascii_lowercase();
             lower == "quote" || lower == "blockquote" || lower.contains("quote")
         });
 
         if is_list {
-            // List items separated by single newline
             if *prev_was_list {
                 output.push('\n');
             }
@@ -581,7 +551,6 @@ impl Document {
             output.push_str("> ");
             output.push_str(&md);
         } else {
-            // Non-list paragraphs separated by blank lines
             Self::ensure_blank_line(output);
             output.push_str(&md);
         }
@@ -624,15 +593,12 @@ impl Paragraph {
         while i < self.runs.len() {
             let run = &self.runs[i];
 
-            // For math runs or empty runs, emit individually.
             if run.math_latex.is_some() || run.text.is_empty() {
                 text.push_str(&run.to_markdown());
                 i += 1;
                 continue;
             }
 
-            // Collect a group of consecutive runs sharing the same bold/italic/hyperlink.
-            // Inner formatting (underline, strikethrough) may differ within the group.
             let group_start = i;
             let mut j = i + 1;
             while j < self.runs.len() {
@@ -649,14 +615,11 @@ impl Paragraph {
             }
             let group_end = j;
 
-            // If the group is a single run with uniform formatting, use simple merge.
-            // Also check if all runs in group have identical inner formatting — merge text.
             let all_same_inner = self.runs[group_start..group_end]
                 .iter()
                 .all(|r| r.underline == run.underline && r.strikethrough == run.strikethrough);
 
             if all_same_inner {
-                // Merge all text and emit as one run.
                 let mut merged_text = String::new();
                 for r in &self.runs[group_start..group_end] {
                     merged_text.push_str(&r.text);
@@ -672,7 +635,6 @@ impl Paragraph {
                 };
                 text.push_str(&merged_run.to_markdown());
             } else {
-                // Group has mixed inner formatting.  Open bold/italic once, toggle inner per run.
                 if run.hyperlink_url.is_some() {
                     text.push('[');
                 }
@@ -731,13 +693,11 @@ impl Paragraph {
     ) -> String {
         let inline = self.runs_to_markdown();
 
-        // Check for heading level (resolved from StyleCatalog or style name fallback)
         if let Some(level) = heading_level {
             let hashes = "#".repeat(level as usize);
             return format!("{} {}", hashes, inline);
         }
 
-        // Check for list item
         if let (Some(num_id), Some(level)) = (self.numbering_id, self.numbering_level) {
             let indent = "  ".repeat(level as usize);
             let key = (num_id, level);
@@ -755,7 +715,6 @@ impl Paragraph {
             }
         }
 
-        // Plain paragraph
         inline
     }
 
@@ -774,7 +733,6 @@ impl Run {
 
     /// Render this run as markdown with formatting markers.
     pub fn to_markdown(&self) -> String {
-        // Math runs: wrap LaTeX in $ or $$
         if let Some((ref latex, is_display)) = self.math_latex {
             if latex.is_empty() {
                 return String::new();
@@ -860,13 +818,10 @@ impl Table {
             return String::new();
         }
 
-        // Build cells, accounting for grid_span (horizontal cell merging)
         let mut cells: Vec<Vec<String>> = Vec::new();
         for row in &self.rows {
             let mut row_cells = Vec::new();
             for cell in &row.cells {
-                // Cells with v_merge=Continue are continuations of a vertically merged cell above;
-                // render them as empty in the markdown table.
                 let is_vmerge_continue = cell
                     .properties
                     .as_ref()
@@ -885,7 +840,6 @@ impl Table {
                 };
                 row_cells.push(cell_text);
 
-                // Add empty cells for grid_span > 1 (horizontal merging)
                 let span = cell.properties.as_ref().and_then(|p| p.grid_span).unwrap_or(1);
                 for _ in 1..span {
                     row_cells.push(String::new());
@@ -903,7 +857,6 @@ impl Table {
             return String::new();
         }
 
-        // Calculate column widths
         let mut col_widths = vec![3usize; num_cols];
         for row in &cells {
             for (i, cell) in row.iter().enumerate() {
@@ -911,31 +864,26 @@ impl Table {
             }
         }
 
-        // Determine which row is the header.
-        // Prefer explicitly marked header rows; fall back to first row if none found.
         let header_row_index = self
             .rows
             .iter()
             .position(|row| row.properties.as_ref().map(|p| p.is_header).unwrap_or(false))
-            .unwrap_or(0); // Default to first row if no explicit header found
+            .unwrap_or(0);
 
         let mut md = String::new();
 
-        // Render rows
         for (row_idx, row) in cells.iter().enumerate() {
             md.push('|');
             for (i, cell) in row.iter().enumerate() {
                 let width = col_widths.get(i).copied().unwrap_or(3);
                 md.push_str(&format!(" {:width$} |", cell, width = width));
             }
-            // Pad missing columns
             for i in row.len()..num_cols {
                 let width = col_widths.get(i).copied().unwrap_or(3);
                 md.push_str(&format!(" {:width$} |", "", width = width));
             }
             md.push('\n');
 
-            // Insert separator after header row
             if row_idx == header_row_index {
                 md.push('|');
                 for i in 0..num_cols {
@@ -988,8 +936,6 @@ impl Table {
         crate::extraction::cells_to_text(&cells)
     }
 }
-
-// --- Parser ---
 
 /// Context for tracking nested table parsing state.
 ///
@@ -1111,8 +1057,6 @@ fn apply_paragraph_property(
     }
 }
 
-// --- Security Validation ---
-
 /// Validate archive against ZIP bomb attacks and resource exhaustion.
 ///
 /// Checks:
@@ -1122,7 +1066,6 @@ fn apply_paragraph_property(
 fn validate_archive_security(archive: &mut zip::ZipArchive<impl Read + Seek>) -> Result<(), DocxParseError> {
     use super::{MAX_TOTAL_UNCOMPRESSED_SIZE, MAX_UNCOMPRESSED_FILE_SIZE, MAX_ZIP_ENTRIES};
 
-    // Check entry count
     if archive.len() > MAX_ZIP_ENTRIES {
         return Err(DocxParseError::SecurityLimit(format!(
             "Archive contains {} entries, exceeds limit of {}",
@@ -1131,7 +1074,6 @@ fn validate_archive_security(archive: &mut zip::ZipArchive<impl Read + Seek>) ->
         )));
     }
 
-    // Check individual file sizes and accumulate total
     let mut total_uncompressed: u64 = 0;
     for i in 0..archive.len() {
         let file = archive
@@ -1149,7 +1091,6 @@ fn validate_archive_security(archive: &mut zip::ZipArchive<impl Read + Seek>) ->
         total_uncompressed = total_uncompressed.saturating_add(size);
     }
 
-    // Check total uncompressed size
     if total_uncompressed > MAX_TOTAL_UNCOMPRESSED_SIZE {
         return Err(DocxParseError::SecurityLimit(format!(
             "Total uncompressed size {} bytes exceeds limit of {} bytes",
@@ -1173,7 +1114,6 @@ impl<R: Read + Seek> DocxParser<R> {
         let mut archive = zip::ZipArchive::new(reader)?;
         validate_archive_security(&mut archive)?;
 
-        // Load styles catalog (best-effort - styles.xml is optional)
         let styles = {
             let mut styles_result = None;
             if let Ok(file) = archive.by_name("word/styles.xml") {
@@ -1189,7 +1129,6 @@ impl<R: Read + Seek> DocxParser<R> {
             styles_result
         };
 
-        // Load theme (best-effort - theme1.xml is optional)
         let theme = {
             let mut theme_result = None;
             if let Ok(file) = archive.by_name("word/theme/theme1.xml") {
@@ -1216,7 +1155,6 @@ impl<R: Read + Seek> DocxParser<R> {
     fn parse(mut self) -> Result<Document, DocxParseError> {
         let mut document = Document::new();
 
-        // Parse relationships first for hyperlink URL resolution
         if let Ok(rels_xml) = self.read_file("word/_rels/document.xml.rels") {
             self.relationships = Self::parse_relationships_xml(&rels_xml);
         }
@@ -1241,14 +1179,10 @@ impl<R: Read + Seek> DocxParser<R> {
 
         document.style_catalog = self.styles.take();
         document.theme = self.theme.take();
-        // Filter to only image relationships (exclude hyperlinks)
         document.image_relationships = self
             .relationships
             .iter()
-            .filter(|(_, target)| {
-                // Image targets point to media/ paths, not URLs
-                !target.starts_with("http://") && !target.starts_with("https://")
-            })
+            .filter(|(_, target)| !target.starts_with("http://") && !target.starts_with("https://"))
             .map(|(k, v)| (k.clone(), v.clone()))
             .collect();
 
@@ -1282,7 +1216,6 @@ impl<R: Read + Seek> DocxParser<R> {
                             _ => {}
                         }
                     }
-                    // Include hyperlink and image relationships
                     if let (Some(id_val), Some(target_val)) = (id, target)
                         && rel_type_matches
                     {
@@ -1354,10 +1287,7 @@ impl<R: Read + Seek> DocxParser<R> {
                             }
                         }
                     }
-                    b"w:instrText" => {
-                        // Skip field instruction text
-                    }
-                    // OMML display math — delegate to math.rs
+                    b"w:instrText" => {}
                     b"m:oMathPara" => {
                         let latex = super::math::collect_and_convert_omath_para(&mut reader);
                         if !latex.is_empty() {
@@ -1381,7 +1311,6 @@ impl<R: Read + Seek> DocxParser<R> {
                             }
                         }
                     }
-                    // OMML inline math — delegate to math.rs
                     b"m:oMath" => {
                         let latex = super::math::collect_and_convert_omath(&mut reader);
                         if !latex.is_empty() {
@@ -1464,7 +1393,6 @@ impl<R: Read + Seek> DocxParser<R> {
                         document.drawings.push(drawing);
                         document.elements.push(DocumentElement::Drawing(idx));
                     }
-                    // Line break (when not self-closing) or Page break
                     b"w:br" => {
                         let mut is_page_break = false;
                         for attr in e.attributes().flatten() {
@@ -1508,7 +1436,6 @@ impl<R: Read + Seek> DocxParser<R> {
                     b"w:pStyle" | b"w:ilvl" | b"w:numId" => {
                         apply_paragraph_property(e, &mut table_stack, &mut current_paragraph);
                     }
-                    // Line break: insert newline to separate adjacent text
                     b"w:br" => {
                         let mut is_page_break = false;
                         for attr in e.attributes().flatten() {
@@ -1528,22 +1455,19 @@ impl<R: Read + Seek> DocxParser<R> {
                         document.elements.push(DocumentElement::PageBreak);
                     }
                     b"w:footnoteReference" | b"w:endnoteReference" => {
-                        // Insert inline footnote/endnote reference marker [^N]
                         if let Some(ref mut run) = current_run {
                             for attr in e.attributes().flatten() {
                                 if attr.key.as_ref() == b"w:id"
                                     && let Ok(id) = std::str::from_utf8(&attr.value)
+                                    && id != "0"
+                                    && id != "1"
                                 {
-                                    // Skip separator references (id 0 and 1)
-                                    if id != "0" && id != "1" {
-                                        run.text.push_str(&format!("[^{}]", id));
-                                    }
+                                    run.text.push_str(&format!("[^{}]", id));
                                 }
                             }
                         }
                     }
                     b"w:sectPr" => {
-                        // Self-closing <w:sectPr/> (empty section properties)
                         document.sections.push(super::section::SectionProperties::default());
                     }
                     b"w:tblPr" => {
@@ -1632,7 +1556,6 @@ impl<R: Read + Seek> DocxParser<R> {
                         if let Some(completed_ctx) = table_stack.pop() {
                             let completed_table = completed_ctx.table;
                             if let Some(parent_ctx) = table_stack.last_mut() {
-                                // Nested table: flatten content into parent cell
                                 if let Some(ref mut cell) = parent_ctx.current_cell {
                                     for row in completed_table.rows {
                                         for table_cell in row.cells {
@@ -1643,7 +1566,6 @@ impl<R: Read + Seek> DocxParser<R> {
                                     }
                                 }
                             } else {
-                                // Top-level table
                                 let idx = document.tables.len();
                                 document.tables.push(completed_table);
                                 document.elements.push(DocumentElement::Table(idx));
@@ -1767,7 +1689,6 @@ impl<R: Read + Seek> DocxParser<R> {
             buf.clear();
         }
 
-        // Build final numbering_defs by resolving num → abstractNum references
         for (num_id, abstract_id) in &num_to_abstract {
             if let Some(formats) = abstract_num_formats.get(abstract_id) {
                 for (lvl, list_type) in formats {
@@ -1935,7 +1856,6 @@ impl<R: Read + Seek> DocxParser<R> {
                         }
                     }
                     b"w:footnote" | b"w:endnote" => {
-                        // Filter separator/continuation separator notes (id -1, 0, 1)
                         if let Some(note) = current_note.take()
                             && note.id != "-1"
                             && note.id != "0"
@@ -1956,8 +1876,6 @@ impl<R: Read + Seek> DocxParser<R> {
     }
 }
 
-// --- Error ---
-
 #[derive(Debug, thiserror::Error)]
 enum DocxParseError {
     #[error("IO error: {0}")]
@@ -1976,14 +1894,11 @@ enum DocxParseError {
     SecurityLimit(String),
 }
 
-// quick-xml's unescape returns an encoding error type
 impl From<quick_xml::encoding::EncodingError> for DocxParseError {
     fn from(e: quick_xml::encoding::EncodingError) -> Self {
         DocxParseError::Xml(quick_xml::Error::Encoding(e))
     }
 }
-
-// --- Public API ---
 
 /// Parse a DOCX document from bytes and return the structured document.
 pub fn parse_document(bytes: &[u8]) -> crate::error::Result<Document> {
@@ -2045,8 +1960,6 @@ mod tests {
         para.add_run(Run::new("fox".to_string()));
         assert_eq!(para.to_text(), "The quick fox");
     }
-
-    // --- Markdown rendering unit tests ---
 
     #[test]
     fn test_run_bold_to_markdown() {
@@ -2242,7 +2155,7 @@ mod tests {
         assert_eq!(heading_level_from_style_name("Heading1"), Some(2));
         assert_eq!(heading_level_from_style_name("Heading2"), Some(3));
         assert_eq!(heading_level_from_style_name("Heading3"), Some(4));
-        assert_eq!(heading_level_from_style_name("Heading6"), Some(6)); // clamped to max markdown level
+        assert_eq!(heading_level_from_style_name("Heading6"), Some(6));
         assert_eq!(heading_level_from_style_name("Normal"), None);
     }
 
@@ -2253,7 +2166,6 @@ mod tests {
         let mut doc = Document::new();
         let mut catalog = StyleCatalog::default();
 
-        // Style with outline_level = 2 (should become h3)
         catalog.styles.insert(
             "CustomHeading".to_string(),
             StyleDefinition {
@@ -2282,7 +2194,6 @@ mod tests {
         let mut doc = Document::new();
         let mut catalog = StyleCatalog::default();
 
-        // Parent has outline_level
         catalog.styles.insert(
             "ParentStyle".to_string(),
             StyleDefinition {
@@ -2300,7 +2211,6 @@ mod tests {
             },
         );
 
-        // Child inherits from parent
         catalog.styles.insert(
             "ChildStyle".to_string(),
             StyleDefinition {
@@ -2316,7 +2226,6 @@ mod tests {
         );
 
         doc.style_catalog = Some(catalog);
-        // Child resolves to parent's outline_level 0 → h1
         assert_eq!(doc.resolve_heading_level("ChildStyle"), Some(1));
     }
 
@@ -2344,28 +2253,24 @@ mod tests {
     fn test_header_footer_excluded_from_output() {
         let mut doc = Document::new();
 
-        // Add a header
         let mut header = HeaderFooter::default();
         let mut para = Paragraph::new();
         para.add_run(Run::new("Header Text".to_string()));
         header.paragraphs.push(para);
         doc.headers.push(header);
 
-        // Add body content
         let mut body_para = Paragraph::new();
         body_para.add_run(Run::new("Body content".to_string()));
         let idx = doc.paragraphs.len();
         doc.paragraphs.push(body_para);
         doc.elements.push(DocumentElement::Paragraph(idx));
 
-        // Add a footer
         let mut footer = HeaderFooter::default();
         let mut footer_para = Paragraph::new();
         footer_para.add_run(Run::new("Footer Text".to_string()));
         footer.paragraphs.push(footer_para);
         doc.footers.push(footer);
 
-        // Headers/footers should NOT appear in text output
         let md = doc.to_markdown(true);
         assert!(!md.contains("Header Text"), "Header should not be in markdown output");
         assert!(md.contains("Body content"), "Should contain body content");
@@ -2382,7 +2287,6 @@ mod tests {
             "Footer should not be in plain text output"
         );
 
-        // But headers/footers should still be accessible via struct fields
         assert_eq!(doc.headers.len(), 1);
         assert_eq!(doc.footers.len(), 1);
         assert_eq!(doc.headers[0].paragraphs[0].runs[0].text, "Header Text");
@@ -2391,7 +2295,6 @@ mod tests {
 
     #[test]
     fn test_footnote_reference_in_parsing() {
-        // Simulate parsing a paragraph with a footnote reference
         let xml = r#"<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
             <w:body>
                 <w:p>
@@ -2415,7 +2318,6 @@ mod tests {
         parser_struct.parse_document_xml(xml, &mut document).unwrap();
 
         assert_eq!(document.paragraphs.len(), 1);
-        // The second run should contain the footnote reference marker
         let full_text = document.paragraphs[0].to_text();
         assert!(
             full_text.contains("[^2]"),
@@ -2426,7 +2328,6 @@ mod tests {
 
     #[test]
     fn test_separator_footnotes_filtered() {
-        // Separator footnotes (id 0 and 1) should be excluded
         let xml = r#"<w:footnotes xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
             <w:footnote w:id="0">
                 <w:p><w:r><w:t>separator</w:t></w:r></w:p>
@@ -2452,7 +2353,6 @@ mod tests {
         assert_eq!(notes[0].id, "2");
     }
 
-    // Helper to create a minimal valid ZIP for parser construction in tests
     fn create_minimal_zip() -> Vec<u8> {
         use std::io::Write;
         let buf = Vec::new();
@@ -2466,7 +2366,6 @@ mod tests {
 
     #[test]
     fn test_is_format_enabled_no_val() {
-        // <w:b/> - no w:val attribute means enabled
         let xml = r#"<w:b/>"#;
         let mut reader = Reader::from_str(xml);
         let mut buf = Vec::new();
@@ -2475,25 +2374,15 @@ mod tests {
         }
     }
 
-    // --- Security validation tests ---
-
     #[test]
     fn test_security_valid_minimal_archive() {
-        // Create a minimal valid ZIP archive (empty) - should pass
         use std::io::Cursor;
         let zip_data = vec![
-            0x50, 0x4b, 0x05, 0x06, // End of central directory signature
-            0x00, 0x00, // Disk number
-            0x00, 0x00, // Disk with central directory
-            0x00, 0x00, // Number of entries on this disk
-            0x00, 0x00, // Total number of entries
-            0x00, 0x00, 0x00, 0x00, // Size of central directory
-            0x00, 0x00, 0x00, 0x00, // Offset of central directory
-            0x00, 0x00, // Comment length
+            0x50, 0x4b, 0x05, 0x06, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00,
         ];
         let cursor = Cursor::new(zip_data);
         let result = DocxParser::new(cursor);
-        // Empty archive should pass security checks (0 entries, 0 size)
         assert!(
             result.is_ok(),
             "Empty valid ZIP should pass security checks: {:?}",
@@ -2549,8 +2438,6 @@ mod tests {
     fn test_security_rejects_too_many_entries() {
         use std::io::{Cursor, Write};
 
-        // Create a ZIP with 10,001 entries to exceed the 10,000 limit.
-        // Each entry is an empty file, so this is fast.
         let buffer = Vec::new();
         let cursor = Cursor::new(buffer);
         let mut zip = zip::ZipWriter::new(cursor);
@@ -2580,18 +2467,11 @@ mod tests {
     fn test_security_rejects_oversized_file() {
         use std::io::{Cursor, Write};
 
-        // We cannot actually write 100 MB in a unit test, but we can verify the
-        // validation path by confirming a small archive passes and the error
-        // message format is correct when it would fail. The constant-based test
-        // above already validates the limit values are reasonable.
-        //
-        // Here we verify that a single-file archive just under the limit passes.
         let buffer = Vec::new();
         let cursor = Cursor::new(buffer);
         let mut zip = zip::ZipWriter::new(cursor);
         let options = zip::write::FileOptions::<()>::default().compression_method(zip::CompressionMethod::Stored);
 
-        // Write a small file (1 KB) - well under limits
         zip.start_file("word/document.xml", options).unwrap();
         zip.write_all(&[b'x'; 1024]).unwrap();
 
@@ -2606,8 +2486,6 @@ mod tests {
             result.err()
         );
     }
-
-    // --- Nested table integration test ---
 
     /// Helper: create a minimal DOCX ZIP with the given XML as word/document.xml.
     fn create_test_docx(document_xml: &str) -> Vec<u8> {
@@ -2653,14 +2531,12 @@ mod tests {
         let bytes = create_test_docx(xml);
         let doc = parse_document(&bytes).expect("parse_document should succeed");
 
-        // Only the outer table is stored; nested table content is flattened.
         assert_eq!(doc.tables.len(), 1, "Expected exactly 1 (outer) table");
 
         let table = &doc.tables[0];
         assert_eq!(table.rows.len(), 1, "Outer table should have 1 row");
         assert_eq!(table.rows[0].cells.len(), 2, "Outer row should have 2 cells");
 
-        // First cell: "Outer Cell 1" paragraph + flattened "Inner Cell" paragraph
         let cell0 = &table.rows[0].cells[0];
         let cell0_texts: Vec<String> = cell0.paragraphs.iter().map(|p| p.to_text()).collect();
         assert!(
@@ -2674,7 +2550,6 @@ mod tests {
             cell0_texts
         );
 
-        // Second cell: "Outer Cell 2"
         let cell1 = &table.rows[0].cells[1];
         let cell1_texts: Vec<String> = cell1.paragraphs.iter().map(|p| p.to_text()).collect();
         assert!(
@@ -2726,13 +2601,11 @@ mod tests {
 
         let doc = parse_document(&bytes).expect("should parse");
 
-        // Verify styles were loaded
         assert!(doc.style_catalog.is_some(), "Style catalog should be loaded");
         let catalog = doc.style_catalog.as_ref().unwrap();
         assert!(catalog.styles.contains_key("Heading1"));
         assert!(catalog.styles.contains_key("Normal"));
 
-        // Verify heading1 has bold and font size
         let h1 = &catalog.styles["Heading1"];
         assert_eq!(h1.run_properties.bold, Some(true));
         assert_eq!(h1.run_properties.font_size_half_points, Some(32));
@@ -2794,29 +2667,24 @@ mod tests {
         assert_eq!(doc.tables.len(), 1);
         let table = &doc.tables[0];
 
-        // Table properties
         let tbl_props = table.properties.as_ref().expect("table should have properties");
         assert_eq!(tbl_props.style_id.as_deref(), Some("TableGrid"));
         assert_eq!(tbl_props.alignment.as_deref(), Some("center"));
         assert!(tbl_props.width.is_some());
         assert_eq!(tbl_props.width.as_ref().unwrap().value, 5000);
 
-        // Table grid
         let grid = table.grid.as_ref().expect("table should have grid");
         assert_eq!(grid.columns, vec![2500, 2500]);
 
-        // Row 0 header
         let row0 = &table.rows[0];
         let row_props = row0.properties.as_ref().expect("header row should have properties");
         assert!(row_props.is_header);
 
-        // Cell 0,0 shading
         let cell00 = &row0.cells[0];
         let cell_props = cell00.properties.as_ref().expect("cell should have properties");
         assert!(cell_props.shading.is_some());
         assert_eq!(cell_props.shading.as_ref().unwrap().fill.as_deref(), Some("D9E2F3"));
 
-        // Cell 1,0 vMerge
         let cell10 = &table.rows[1].cells[0];
         let cell10_props = cell10.properties.as_ref().expect("merged cell should have properties");
         assert_eq!(
@@ -2860,25 +2728,21 @@ mod tests {
         assert_eq!(doc.tables.len(), 1);
         let table = &doc.tables[0];
 
-        // Verify first row is marked as header
         let row0_props = table.rows[0]
             .properties
             .as_ref()
             .expect("first row should have properties");
         assert!(row0_props.is_header, "First row should be marked as header");
 
-        // Verify markdown rendering has separator after header row
         let markdown = table.to_markdown();
         let lines: Vec<&str> = markdown.lines().collect();
 
-        // Should have at least 3 lines: header, separator, data row
         assert!(
             lines.len() >= 3,
             "Table should have at least 3 lines, got: {}",
             markdown
         );
 
-        // Line 1 should be separator (all dashes)
         assert!(
             lines[1].contains("---"),
             "Second line should be separator, got: {}",
@@ -2918,28 +2782,21 @@ mod tests {
         assert_eq!(doc.tables.len(), 1);
         let table = &doc.tables[0];
 
-        // Verify second row cell has grid_span=2
         let merged_cell = &table.rows[1].cells[0];
         let cell_props = merged_cell.properties.as_ref().expect("cell should have properties");
         assert_eq!(cell_props.grid_span, Some(2), "Cell should have grid_span=2");
 
-        // Verify markdown rendering produces equal number of columns
         let markdown = table.to_markdown();
         let lines: Vec<&str> = markdown.lines().collect();
 
-        // Both rows should have same number of pipe characters (column count)
         let pipes_row0 = lines[0].matches('|').count();
-        let pipes_row1 = lines[2].matches('|').count(); // After separator
+        let pipes_row1 = lines[2].matches('|').count();
 
         assert_eq!(
             pipes_row0, pipes_row1,
             "All rows should have same column count in markdown"
         );
     }
-
-    // ========================================================================
-    // Comprehensive DOCX extraction tests (python-docx parity)
-    // ========================================================================
 
     /// Helper: parse document XML through DocxParser and return the Document.
     fn parse_xml(xml: &str) -> Document {
@@ -2974,8 +2831,6 @@ mod tests {
             body
         )
     }
-
-    // --- Group 1: Text Extraction Basics ---
 
     #[test]
     fn test_plain_paragraph_text() {
@@ -3033,8 +2888,6 @@ mod tests {
         assert!(text.contains("After"));
         assert!(text.contains('\n'));
     }
-
-    // --- Group 2: Run Formatting ---
 
     #[test]
     fn test_bold_formatting() {
@@ -3102,8 +2955,6 @@ mod tests {
         assert!(doc.paragraphs[0].runs[0].strikethrough);
     }
 
-    // --- Group 3: Hyperlinks ---
-
     #[test]
     fn test_external_hyperlink() {
         let mut rels = AHashMap::new();
@@ -3122,7 +2973,6 @@ mod tests {
 
     #[test]
     fn test_hyperlink_with_no_relationship() {
-        // Hyperlink with r:id that doesn't exist in relationships
         let xml = wrap_body(r#"<w:p><w:hyperlink r:id="rId99"><w:r><w:t>Broken link</w:t></w:r></w:hyperlink></w:p>"#);
         let doc = parse_xml(&xml);
         let run = &doc.paragraphs[0].runs[0];
@@ -3148,8 +2998,6 @@ mod tests {
         assert!(md.contains("[First](https://one.com)"), "Markdown: {}", md);
         assert!(md.contains("[Second](https://two.com)"), "Markdown: {}", md);
     }
-
-    // --- Group 4: Tables ---
 
     #[test]
     fn test_basic_2x2_table() {
@@ -3255,13 +3103,11 @@ mod tests {
         );
         let doc = parse_xml(&xml);
         let table = &doc.tables[0];
-        // First row, first cell: vMerge restart
         let cell_0_0 = &table.rows[0].cells[0];
         assert_eq!(
             cell_0_0.properties.as_ref().and_then(|p| p.v_merge.as_ref()),
             Some(&super::super::table::VerticalMerge::Restart)
         );
-        // Second row, first cell: vMerge continue
         let cell_1_0 = &table.rows[1].cells[0];
         assert_eq!(
             cell_1_0.properties.as_ref().and_then(|p| p.v_merge.as_ref()),
@@ -3286,8 +3132,6 @@ mod tests {
         assert!(md.contains("Has content"), "Markdown: {}", md);
     }
 
-    // --- Group 5: Lists ---
-
     #[test]
     fn test_bullet_list_extraction() {
         let xml = wrap_body(
@@ -3304,8 +3148,6 @@ mod tests {
         assert_eq!(doc.paragraphs[0].to_text(), "Bullet item");
         assert!(doc.paragraphs[0].numbering_id.is_some());
     }
-
-    // --- Group 6: Headings & Styles ---
 
     #[test]
     fn test_heading_style() {
@@ -3344,11 +3186,8 @@ mod tests {
         );
         let doc = parse_xml(&xml);
         let md = doc.to_markdown(true);
-        // Title maps to heading level (varies by implementation)
         assert!(md.contains("Document Title"), "Markdown: {}", md);
     }
-
-    // --- Group 7: Images/Drawings ---
 
     #[test]
     fn test_inline_drawing_with_alt_text() {
@@ -3398,11 +3237,9 @@ mod tests {
         );
         let doc = parse_xml(&xml);
         let extent = doc.drawings[0].extent.as_ref().unwrap();
-        assert_eq!(extent.cx, 1828800); // 2 inches
-        assert_eq!(extent.cy, 914400); // 1 inch
+        assert_eq!(extent.cx, 1828800);
+        assert_eq!(extent.cy, 914400);
     }
-
-    // --- Group 8: Sections ---
 
     #[test]
     fn test_section_properties_parsed() {
@@ -3421,8 +3258,6 @@ mod tests {
         assert_eq!(sect.margins.top, Some(1440));
         assert_eq!(sect.margins.left, Some(1800));
     }
-
-    // --- Group 9: Footnotes & Endnotes ---
 
     #[test]
     fn test_footnote_reference_marker() {
@@ -3454,12 +3289,8 @@ mod tests {
         assert!(text.contains("[^2]"), "Real footnote 2 should be present");
     }
 
-    // --- Group 10: Field Codes (Fix 3 verification) ---
-
     #[test]
     fn test_field_instruction_skipped_result_kept() {
-        // Field instructions (between begin and separate) are skipped,
-        // but field results (between separate and end) are kept.
         let xml = wrap_body(
             r#"<w:p>
                 <w:r><w:t>Before </w:t></w:r>
@@ -3481,7 +3312,6 @@ mod tests {
 
     #[test]
     fn test_page_field_result_kept() {
-        // PAGE field result is kept in output
         let xml = wrap_body(
             r#"<w:p>
                 <w:r><w:t>Page </w:t></w:r>
@@ -3500,7 +3330,6 @@ mod tests {
 
     #[test]
     fn test_text_after_field_resumes() {
-        // Field result is kept, and text after field resumes normally
         let xml = wrap_body(
             r#"<w:p>
                 <w:r><w:fldChar w:fldCharType="begin"/></w:r>
@@ -3516,8 +3345,6 @@ mod tests {
         assert!(text.contains("Normal text"), "Text: {}", text);
         assert!(text.contains("10"), "Field result should be kept: {}", text);
     }
-
-    // --- Group 11: OMML Math ---
 
     #[test]
     fn test_math_text_extracted() {
@@ -3538,13 +3365,10 @@ mod tests {
         let text = doc.paragraphs[0].to_text();
         assert!(text.contains("E=mc"), "Math text should contain E=mc: {}", text);
         assert!(text.contains("^{2}"), "Math text should contain ^{{2}}: {}", text);
-        // Markdown should have $ delimiters
         let md = doc.paragraphs[0].runs_to_markdown();
         assert!(md.starts_with('$'), "Inline math should start with $: {}", md);
         assert!(md.ends_with('$'), "Inline math should end with $: {}", md);
     }
-
-    // --- Group 12: Element ordering ---
 
     #[test]
     fn test_element_ordering_preserved() {
@@ -3562,7 +3386,6 @@ mod tests {
         assert!(matches!(doc.elements[1], DocumentElement::Table(0)));
         assert!(matches!(doc.elements[2], DocumentElement::Paragraph(1)));
 
-        // Verify ordering in output
         let md = doc.to_markdown(true);
         let para1_pos = md.find("Para 1").unwrap();
         let cell_pos = md.find("Cell").unwrap();
@@ -3570,8 +3393,6 @@ mod tests {
         assert!(para1_pos < cell_pos, "Para 1 before table");
         assert!(cell_pos < para2_pos, "Table before Para 2");
     }
-
-    // --- Group 13: Edge cases ---
 
     #[test]
     fn test_empty_document() {
@@ -3589,8 +3410,6 @@ mod tests {
         let doc = parse_xml(&xml);
         assert_eq!(doc.paragraphs[0].to_text(), "   ");
     }
-
-    // --- Group 14: Real document extraction tests ---
 
     #[test]
     fn test_extract_lorem_ipsum_docx() {
@@ -3641,8 +3460,7 @@ mod tests {
             .join("../../test_documents/vendored/python-docx/having-images.docx");
         if let Ok(bytes) = std::fs::read(&path) {
             let text = super::super::extract_text(&bytes).unwrap();
-            // Document with images should still extract any surrounding text
-            let _ = text; // Should not crash on images document
+            let _ = text;
         }
     }
 
@@ -3652,8 +3470,6 @@ mod tests {
         if let Ok(bytes) = std::fs::read(&path) {
             let text = super::super::extract_text(&bytes).unwrap();
             assert!(!text.is_empty());
-            // After Fix 3: SEQ field results should not leak
-            // The word_sample.docx has SEQ Figure fields that produced "2"
         }
     }
 
@@ -3679,7 +3495,6 @@ mod tests {
         if let Ok(bytes) = std::fs::read(&path) {
             let text = super::super::extract_text(&bytes).unwrap();
             assert!(!text.is_empty());
-            // After Fix 1: Headers/footers should not appear in text output
         }
     }
 

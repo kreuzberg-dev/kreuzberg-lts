@@ -35,8 +35,7 @@ readonly class ContentFilterConfig
         public bool $includeFooters = false,
         public bool $stripRepeatingText = true,
         public bool $includeWatermarks = false,
-    ) {
-    }
+    ) {}
 
     /**
      * Create configuration from array data.

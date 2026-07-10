@@ -22,8 +22,6 @@ pub struct OcrLite {
 }
 
 // SAFETY: OcrLite inference methods (&self) use unsafe pointer casts to call
-// ort Session::run, which is thread-safe at the ONNX Runtime C API level.
-// After initialization (&mut self), no mutable state is accessed during inference.
 unsafe impl Send for OcrLite {}
 unsafe impl Sync for OcrLite {}
 
@@ -154,7 +152,6 @@ impl OcrLite {
         }
         resize += 2 * padding;
 
-        // Cow avoids cloning the image when padding=0 (the common case).
         let padding_src = OcrUtils::make_padding(img_src, padding)?;
 
         let scale = ScaleParam::get_scale_param(&padding_src, resize);
@@ -320,7 +317,6 @@ impl OcrLite {
             self.db_net
                 .get_text_boxes(img_src, scale, box_score_thresh, box_thresh, un_clip_ratio, thresh)?;
 
-        // Sort boxes in reading order (top-to-bottom, left-to-right)
         Self::sort_text_boxes(&mut text_boxes);
 
         let part_images = OcrUtils::get_part_images(img_src, &text_boxes);
@@ -331,13 +327,11 @@ impl OcrLite {
 
         let mut rotated_images: Vec<image::RgbImage> = Vec::with_capacity(part_images.len());
 
-        // Angle correction rollback
         let mut angle_rollback_records = HashMap::<usize, ImageBuffer<image::Rgb<u8>, Vec<u8>>>::new();
 
         for (index, (angle, mut part_image)) in angles.iter().zip(part_images).enumerate() {
             if angle.index == 1 {
                 if angle_rollback {
-                    // Keep original copy
                     angle_rollback_records.insert(index, part_image.clone());
                 }
 
@@ -404,7 +398,6 @@ mod tests {
 
     #[test]
     fn test_sort_text_boxes_same_line_left_to_right() {
-        // Boxes with the same Y are sorted left-to-right by X
         let mut boxes = vec![make_box(200, 10), make_box(100, 10), make_box(50, 10)];
         OcrLite::sort_text_boxes(&mut boxes);
         assert_eq!(boxes[0].points[0].x, 50);
@@ -414,19 +407,16 @@ mod tests {
 
     #[test]
     fn test_sort_text_boxes_multi_line() {
-        // Boxes sorted strictly by (y, x): y=50/x=50, y=50/x=300, y=100/x=100, y=100/x=200
         let mut boxes = vec![
-            make_box(300, 50),  // line 1, right
-            make_box(100, 100), // line 2, left
-            make_box(50, 50),   // line 1, left (same y=50)
-            make_box(200, 100), // line 2, right (same y=100)
+            make_box(300, 50),
+            make_box(100, 100),
+            make_box(50, 50),
+            make_box(200, 100),
         ];
         OcrLite::sort_text_boxes(&mut boxes);
 
-        // Line 1 (y=50): left first, then right
         assert_eq!(boxes[0].points[0].x, 50);
         assert_eq!(boxes[1].points[0].x, 300);
-        // Line 2 (y=100): left first, then right
         assert_eq!(boxes[2].points[0].x, 100);
         assert_eq!(boxes[3].points[0].x, 200);
     }

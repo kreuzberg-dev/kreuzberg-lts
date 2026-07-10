@@ -18,8 +18,7 @@ readonly class OcrRotation
     public function __construct(
         public ?float $angleDegrees = null,
         public ?float $confidence = null,
-    ) {
-    }
+    ) {}
 
     /**
      * Create OcrRotation from array returned by extension.
@@ -38,9 +37,6 @@ readonly class OcrRotation
             ? (float) $data['confidence']
             : null;
 
-        return new self(
-            angleDegrees: $angleDegrees,
-            confidence: $confidence,
-        );
+        return new self(angleDegrees: $angleDegrees, confidence: $confidence);
     }
 }

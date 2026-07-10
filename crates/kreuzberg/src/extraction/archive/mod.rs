@@ -14,7 +14,6 @@ mod sevenz;
 mod tar;
 mod zip;
 
-// Re-export all public functions for backward compatibility
 pub use gzip::{
     decompress_gzip, extract_gzip, extract_gzip_metadata, extract_gzip_text_content, extract_gzip_with_bytes,
 };
@@ -868,13 +867,12 @@ mod tests {
         use flate2::write::GzEncoder;
         use std::io::Write;
 
-        // Create data that exceeds a tiny limit
         let mut encoder = GzEncoder::new(Vec::new(), Compression::default());
         encoder.write_all(&[b'A'; 1024]).unwrap();
         let compressed = encoder.finish().unwrap();
 
         let limits = SecurityLimits {
-            max_archive_size: 100, // 100 bytes limit
+            max_archive_size: 100,
             ..SecurityLimits::default()
         };
         let result = extract_gzip_metadata(&compressed, &limits);
@@ -887,7 +885,6 @@ mod tests {
         use flate2::write::GzEncoder;
         use std::io::Write;
 
-        // Create a tar archive
         let mut tar_data = Vec::new();
         {
             let mut tar = TarBuilder::new(&mut tar_data);
@@ -909,12 +906,10 @@ mod tests {
             tar.finish().unwrap();
         }
 
-        // Gzip compress the tar data
         let mut encoder = GzEncoder::new(Vec::new(), Compression::default());
         encoder.write_all(&tar_data).unwrap();
         let gzip_compressed = encoder.finish().unwrap();
 
-        // Extract metadata from the gzip-compressed tar
         let metadata = extract_gzip_metadata(&gzip_compressed, &default_limits()).unwrap();
 
         assert_eq!(metadata.format, "GZIP+TAR");
@@ -922,7 +917,6 @@ mod tests {
         assert_eq!(metadata.file_list.len(), 2);
         assert!(metadata.total_size > 0);
 
-        // Verify file paths are preserved
         let paths: Vec<&str> = metadata.file_list.iter().map(|e| e.path.as_str()).collect();
         assert!(paths.contains(&"test.txt"));
         assert!(paths.contains(&"readme.md"));
@@ -934,7 +928,6 @@ mod tests {
         use flate2::write::GzEncoder;
         use std::io::Write;
 
-        // Create a tar archive
         let mut tar_data = Vec::new();
         {
             let mut tar = TarBuilder::new(&mut tar_data);
@@ -956,12 +949,10 @@ mod tests {
             tar.finish().unwrap();
         }
 
-        // Gzip compress the tar data
         let mut encoder = GzEncoder::new(Vec::new(), Compression::default());
         encoder.write_all(&tar_data).unwrap();
         let gzip_compressed = encoder.finish().unwrap();
 
-        // Extract text content from the gzip-compressed tar
         let contents = extract_gzip_text_content(&gzip_compressed, &default_limits()).unwrap();
 
         assert_eq!(contents.len(), 2);
@@ -975,7 +966,6 @@ mod tests {
         use flate2::write::GzEncoder;
         use std::io::Write;
 
-        // Create a tar archive
         let mut tar_data = Vec::new();
         {
             let mut tar = TarBuilder::new(&mut tar_data);
@@ -990,12 +980,10 @@ mod tests {
             tar.finish().unwrap();
         }
 
-        // Gzip compress the tar data
         let mut encoder = GzEncoder::new(Vec::new(), Compression::default());
         encoder.write_all(&tar_data).unwrap();
         let gzip_compressed = encoder.finish().unwrap();
 
-        // Extract both metadata and content in one call
         let (metadata, contents) = extract_gzip(&gzip_compressed, &default_limits()).unwrap();
 
         assert_eq!(metadata.format, "GZIP+TAR");

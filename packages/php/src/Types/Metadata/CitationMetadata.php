@@ -24,8 +24,7 @@ readonly class CitationMetadata
         public ?YearRange $yearRange = null,
         public array $dois = [],
         public array $keywords = [],
-    ) {
-    }
+    ) {}
 
     /**
      * @param array<string, mixed> $data
@@ -33,7 +32,9 @@ readonly class CitationMetadata
     public static function fromArray(array $data): self
     {
         $rawCitationCount = $data['citation_count'] ?? 0;
-        $citationCount = is_int($rawCitationCount) ? $rawCitationCount : (is_numeric($rawCitationCount) ? (int) $rawCitationCount : 0);
+        $citationCount = is_int($rawCitationCount)
+            ? $rawCitationCount
+            : (is_numeric($rawCitationCount) ? (int) $rawCitationCount : 0);
 
         /** @var string|null $format */
         $format = $data['format'] ?? null;

@@ -74,8 +74,6 @@ impl NativeTextStats {
             alnum as f64 / non_whitespace as f64
         };
 
-        // Compute fragmented word ratio: fraction of words that are 1-2 chars.
-        // Only meaningful when there are enough words to judge.
         let words: Vec<&str> = text.split_whitespace().collect();
         let fragmented_word_ratio = if words.len() >= 10 {
             let short_count = words.iter().filter(|w| w.len() <= 2).count();
@@ -84,9 +82,6 @@ impl NativeTextStats {
             0.0
         };
 
-        // Compute consecutive word repetition ratio: fraction of adjacent word pairs
-        // that are identical. High values indicate column scrambling where pdfium
-        // reads multi-column text row-by-row, duplicating words.
         let consecutive_repeat_ratio = if words.len() >= thresholds.min_words_for_repeat_check {
             let repeat_count = words.windows(2).filter(|pair| pair[0] == pair[1]).count();
             repeat_count as f64 / (words.len() - 1) as f64
@@ -159,7 +154,6 @@ pub fn evaluate_native_text_for_ocr(
         && avg_non_whitespace >= thresholds.min_non_whitespace_per_page
         && stats.meaningful_words >= thresholds.min_meaningful_words;
 
-    // Definitive quality failures — always trigger OCR fallback
     let definitive_failure = stats.non_whitespace == 0
         || stats.alnum == 0
         || stats.garbage_char_count >= thresholds.min_garbage_chars
@@ -204,7 +198,6 @@ pub fn compute_quality_score(text: &str, thresholds: &OcrQualityThresholds) -> f
 
     let stats = NativeTextStats::compute(trimmed, thresholds);
 
-    // Component scores (each 0.0-1.0, higher is better)
     let alnum_score = stats.alnum_ratio.min(1.0);
     let fragmentation_score = 1.0 - stats.fragmented_word_ratio.min(1.0);
     let word_length_score = (stats.avg_word_length / 5.0).min(1.0);
@@ -226,7 +219,6 @@ pub fn compute_quality_score(text: &str, thresholds: &OcrQualityThresholds) -> f
         (1.0 - stats.garbage_char_count as f64 / (thresholds.min_garbage_chars as f64 * 2.0)).max(0.0)
     };
 
-    // Weighted average
     (alnum_score * 0.25
         + fragmentation_score * 0.20
         + word_length_score * 0.15
@@ -263,9 +255,6 @@ pub fn evaluate_per_page_ocr(
 
     document_decision
 }
-
-// We no longer pre-render all pages for OCR to prevent OOMs.
-// See `extract_with_ocr` for lazy streaming logic.
 
 /// Render only specific PDF pages to images for OCR processing.
 ///
@@ -358,7 +347,6 @@ pub(crate) async fn extract_mixed_ocr_native(
 ) -> crate::Result<(String, Vec<crate::types::LlmUsage>)> {
     use std::collections::HashSet;
 
-    // Deduplicate and validate page numbers (must be >= 1)
     let ocr_set: HashSet<usize> = ocr_page_numbers
         .iter()
         .copied()
@@ -376,7 +364,6 @@ pub(crate) async fn extract_mixed_ocr_native(
         return Ok((native_text.to_string(), Vec::new()));
     }
 
-    // Convert 1-indexed page numbers to 0-indexed for rendering (sorted + deduplicated)
     let mut page_indices: Vec<usize> = ocr_set.iter().map(|&p| p - 1).collect();
     page_indices.sort_unstable();
     let page_images = render_selected_pages_for_ocr(content, &page_indices)?;
@@ -385,8 +372,6 @@ pub(crate) async fn extract_mixed_ocr_native(
         return Ok((native_text.to_string(), Vec::new()));
     }
 
-    // OCR all selected pages concurrently using the same batched pipeline pattern
-    // as extract_with_ocr: rayon-parallel PNG encoding + tokio JoinSet OCR calls.
     use image::ImageEncoder;
     use image::codecs::png::PngEncoder;
     use rayon::prelude::*;
@@ -412,12 +397,10 @@ pub(crate) async fn extract_mixed_ocr_native(
     let mut ocr_results: ahash::AHashMap<usize, String> = ahash::AHashMap::with_capacity(total);
     let mut accumulated_llm_usage: Vec<crate::types::LlmUsage> = Vec::new();
 
-    // Process in batches to bound peak memory (PNG buffers freed between batches)
     for batch_start in (0..total).step_by(batch_size) {
         let batch_end = (batch_start + batch_size).min(total);
         let batch_slice = &page_images[batch_start..batch_end];
 
-        // Encode this batch's images to PNG in parallel (CPU-bound, rayon)
         let encoded: crate::Result<Vec<(usize, Arc<Vec<u8>>)>> = batch_slice
             .par_iter()
             .map(|(page_idx, image)| {
@@ -435,7 +418,6 @@ pub(crate) async fn extract_mixed_ocr_native(
             .collect();
         let encoded = encoded?;
 
-        // OCR this batch concurrently (tokio JoinSet)
         let mut join_set = tokio::task::JoinSet::new();
         for (page_idx, data) in &encoded {
             let backend_clone = Arc::clone(&backend);
@@ -457,13 +439,10 @@ pub(crate) async fn extract_mixed_ocr_native(
             if let Some(usage) = extraction_result.llm_usage.take() {
                 accumulated_llm_usage.extend(usage);
             }
-            ocr_results.insert(page_idx + 1, extraction_result.content); // 1-indexed
+            ocr_results.insert(page_idx + 1, extraction_result.content);
         }
-        // encoded PNGs dropped here — memory freed before next batch
     }
 
-    // Assemble final text by replacing OCR pages in-place within the native text.
-    // Process boundaries in reverse byte order so offsets remain valid after replacement.
     let mut result = native_text.to_string();
 
     let mut sorted_boundaries: Vec<&crate::types::PageBoundary> = boundaries
@@ -519,7 +498,6 @@ pub(crate) async fn extract_with_ocr(
     let default_ocr_config = crate::core::config::OcrConfig::default();
     let base_ocr_config = config.ocr.as_ref().unwrap_or(&default_ocr_config);
 
-    // Propagate acceleration from ExtractionConfig if not set on OcrConfig
     let accel_ocr_config;
     let base_ocr_config = if base_ocr_config.acceleration.is_none() && config.acceleration.is_some() {
         accel_ocr_config = {
@@ -532,8 +510,6 @@ pub(crate) async fn extract_with_ocr(
         base_ocr_config
     };
 
-    // When layout detections are available, ensure OCR produces elements
-    // so the layout assembly module can use them for structured markdown.
     #[cfg(feature = "layout-detection")]
     let layout_ocr_config;
     let ocr_config = {
@@ -556,10 +532,6 @@ pub(crate) async fn extract_with_ocr(
         registry.get(&ocr_config.backend)?
     };
 
-    // If the backend supports direct document processing and we have a path,
-    // use it to process the entire document at once, bypassing page rendering.
-    // This is currently only supported when layout detection is NOT active,
-    // as layout assembly requires per-rendering results.
     #[cfg(not(feature = "layout-detection"))]
     let supports_doc = backend.supports_document_processing();
     #[cfg(feature = "layout-detection")]
@@ -601,20 +573,12 @@ pub(crate) async fn extract_with_ocr(
         }
     }
 
-    // Encode and OCR pages in bounded batches so that at most `batch_size`
-    // PNG-encoded images are alive at a time. This caps peak memory to roughly
-    // batch_size * (encoded_PNG + OCR working set) instead of
-    // page_count * that amount. Images are rendered and encoded one at a time
-    // within each batch to avoid holding multiple decoded RGB buffers.
     use rayon::prelude::*;
     use std::sync::Arc;
     use tokio::task::JoinSet;
 
     let configured_batch_size = crate::core::config::concurrency::resolve_thread_budget(config.concurrency.as_ref());
 
-    // Estimate per-page memory cost and adapt batch size to available system memory.
-    // A rendered page at 300 DPI (A4) is ~26MB RGB + ~5MB PNG + ~100MB OCR working set.
-    // We also need headroom for the PDF document itself and other allocations.
     let batch_size = if images.is_none() {
         adapt_batch_size_to_memory(configured_batch_size, content.map(|b| b.len()).unwrap_or(0))
     } else {
@@ -647,8 +611,6 @@ pub(crate) async fn extract_with_ocr(
     let mut conf_sum: f64 = 0.0;
     let mut conf_count: usize = 0;
 
-    // Initialize TATR for table structure recognition when layout detection is active.
-    // TATR requires mutable access so pages are processed sequentially after OCR.
     #[cfg(feature = "layout-detection")]
     let mut tatr_model = if layout_detections.is_some() {
         crate::layout::take_or_create_tatr(config.acceleration.as_ref())
@@ -659,13 +621,9 @@ pub(crate) async fn extract_with_ocr(
     for batch_start in (0..total_pages).step_by(batch_size) {
         let batch_end = (batch_start + batch_size).min(total_pages);
 
-        // Render and encode pages one at a time within the batch to avoid holding
-        // multiple decoded RGB buffers (~26MB each at 300 DPI) simultaneously.
-        // Only the compact PNG-encoded bytes are kept for the batch's OCR phase.
         #[allow(unused_variables)]
         let (batch_slice, encoded_batch) = if let Some(imgs) = images {
             let slice: Cow<'_, [image::DynamicImage]> = Cow::Borrowed(&imgs[batch_start..batch_end]);
-            // Encode pre-rendered images in parallel.
             #[allow(clippy::type_complexity)]
             let encoded: crate::Result<Vec<(usize, Arc<Vec<u8>>, u32, u32)>> = slice
                 .par_iter()
@@ -689,8 +647,6 @@ pub(crate) async fn extract_with_ocr(
         } else {
             #[cfg(feature = "pdf")]
             let encoded = {
-                // Render each page, encode to PNG immediately, then drop the RGB buffer.
-                // This keeps only one ~26MB RGB image alive at a time instead of batch_size.
                 let renderer =
                     crate::pdf::rendering::PdfRenderer::new().map_err(|e| crate::KreuzbergError::Parsing {
                         message: format!("Failed to initialize PDF renderer for OCR batch: {:?}", e),
@@ -711,7 +667,6 @@ pub(crate) async fn extract_with_ocr(
                         );
                         image::DynamicImage::ImageRgb8(image::RgbImage::new(1, 1))
                     });
-                    // Encode immediately so the DynamicImage can be dropped.
                     let rgb_image = image.to_rgb8();
                     let (width, height) = rgb_image.dimensions();
                     let mut image_bytes = Cursor::new(Vec::new());
@@ -723,7 +678,6 @@ pub(crate) async fn extract_with_ocr(
                             source: None,
                         })?;
                     batch_encoded.push((i, Arc::new(image_bytes.into_inner()), width, height));
-                    // `image` and `rgb_image` are dropped here, freeing ~52MB per page.
                 }
                 batch_encoded
             };
@@ -732,7 +686,6 @@ pub(crate) async fn extract_with_ocr(
             (None::<Cow<'_, [image::DynamicImage]>>, encoded)
         };
 
-        // OCR this batch concurrently (tokio JoinSet).
         let mut join_set: JoinSet<(usize, crate::Result<crate::types::ExtractionResult>)> = JoinSet::new();
 
         for (page_idx, image_data, _width, _height) in &encoded_batch {
@@ -756,7 +709,6 @@ pub(crate) async fn extract_with_ocr(
             batch_ocr_results[page_idx - batch_start] = Some(ocr_result?);
         }
 
-        // Sequential post-processing for this batch utilizing TATR.
         for offset in 0..batch_count {
             let page_idx = batch_start + offset;
             let mut ocr_result = batch_ocr_results[offset].take().expect("OCR result missing for page");
@@ -773,12 +725,10 @@ pub(crate) async fn extract_with_ocr(
                 conf_count += 1;
             }
 
-            // Accumulate LLM usage from this page (e.g., VLM OCR).
             if let Some(usage) = ocr_result.llm_usage.take() {
                 accumulated_llm_usage.extend(usage);
             }
 
-            // Accumulate OCR elements from this page.
             if let Some(ref mut elems) = ocr_result.ocr_elements {
                 for elem in elems.iter_mut() {
                     elem.page_number = page_idx + 1;
@@ -793,10 +743,6 @@ pub(crate) async fn extract_with_ocr(
             {
                 let detection = detections.get(page_idx);
 
-                // Scale layout detection bounding boxes from layout-model resolution
-                // (e.g. 640×640) to OCR render resolution so that coordinates are
-                // consistent when passed to recognize_page_tables and
-                // detection_to_layout_hints (both use pixel-space coordinates).
                 let ocr_render_width = encoded_batch[offset].2;
                 let ocr_render_height = encoded_batch[offset].3;
                 let scaled_detection: Option<crate::layout::DetectionResult> = detection.map(|det| {
@@ -816,9 +762,6 @@ pub(crate) async fn extract_with_ocr(
 
                 let recognized_tables = match (scaled_detection.as_ref(), tatr_model.as_mut()) {
                     (Some(scaled_det), Some(model)) => {
-                        // Decode the page image from its PNG for TATR table recognition.
-                        // When pre-rendered images are available, use them directly.
-                        // Otherwise, decode from the PNG we already encoded.
                         let rgb = if let Some(ref slice) = batch_slice {
                             slice[offset].to_rgb8()
                         } else {
@@ -836,7 +779,6 @@ pub(crate) async fn extract_with_ocr(
                     _ => Vec::new(),
                 };
 
-                // Collect recognized tables as Table structs for ExtractionResult.tables
                 for rt in &recognized_tables {
                     if !rt.markdown.is_empty() {
                         collected_tables.push(crate::types::Table {
@@ -848,16 +790,12 @@ pub(crate) async fn extract_with_ocr(
                     }
                 }
 
-                // Convert hOCR structure to PdfParagraphs, then apply layout overrides.
-                // This mirrors the pdfium path: structure → layout classify → assemble.
                 if let Some(ref ocr_doc) = ocr_result.ocr_internal_document {
                     let mut paragraphs =
                         crate::pdf::structure::adapters::ocr_doc_to_paragraphs(ocr_doc, ocr_render_height);
 
                     if let Some(ref scaled_det) = scaled_detection {
                         let hints = detection_to_layout_hints(scaled_det, ocr_render_height as f32);
-                        // Trust the layout model for OCR — no body-font-size guard
-                        // since OCR text lacks reliable font size information.
                         crate::pdf::structure::layout_classify::apply_layout_overrides(
                             &mut paragraphs,
                             &hints,
@@ -874,13 +812,9 @@ pub(crate) async fn extract_with_ocr(
                         "OCR page layout classification complete"
                     );
 
-                    // Don't filter page furniture for OCR — the layout model's
-                    // header/footer detection is less reliable on OCR-rendered pages,
-                    // and falsely filtering content is worse than keeping it.
                     all_page_paragraphs[page_idx] = Some(paragraphs);
                 }
 
-                // Use tesseract's own text output (preserves reading order).
                 page_texts[page_idx] = ocr_result.content;
                 continue;
             }
@@ -975,12 +909,9 @@ fn adapt_batch_size_to_memory(configured: usize, document_size: usize) -> usize 
         return configured;
     }
 
-    // Reserve memory for: the document itself, base process overhead, and safety margin.
-    let reserved = document_size + 512 * 1024 * 1024; // document + 512MB overhead
+    let reserved = document_size + 512 * 1024 * 1024;
     let usable = available_bytes.saturating_sub(reserved);
 
-    // Estimated memory per concurrent page in OCR batch:
-    // ~50MB render/encode working set + ~100MB OCR working set
     const PER_PAGE_ESTIMATE: usize = 150 * 1024 * 1024;
 
     let memory_limited_batch = (usable / PER_PAGE_ESTIMATE).max(1);
@@ -1023,14 +954,11 @@ fn get_available_memory() -> usize {
     }
     #[cfg(target_os = "macos")]
     {
-        // On macOS, read page size and free+inactive pages from vm_stat.
-        // This is a rough estimate since macOS memory management is complex.
         use std::process::Command;
         if let Ok(output) = Command::new("sysctl").args(["-n", "hw.memsize"]).output()
             && let Ok(s) = std::str::from_utf8(&output.stdout)
             && let Ok(total) = s.trim().parse::<usize>()
         {
-            // Use 50% of total as a conservative "available" estimate.
             return total / 2;
         }
         0
@@ -1067,11 +995,9 @@ pub(crate) async fn run_ocr_pipeline(
     let default_ocr_config = crate::core::config::OcrConfig::default();
     let ocr_config = config.ocr.as_ref().unwrap_or(&default_ocr_config);
 
-    // Sort stages by priority (highest first)
     let mut stages = pipeline.stages.clone();
     stages.sort_by_key(|b| std::cmp::Reverse(b.priority));
 
-    // Filter to available backends
     let requested_backends: Vec<String> = stages.iter().map(|s| s.backend.clone()).collect();
     let available_stages: Vec<_> = {
         let registry = get_ocr_backend_registry();
@@ -1101,12 +1027,9 @@ pub(crate) async fn run_ocr_pipeline(
         Option<crate::types::internal::InternalDocument>,
     )> = None;
 
-    // Accumulate LLM usage from ALL attempted stages for accurate billing.
-    // Usage is incurred even when a backend doesn't win the quality race.
     let mut accumulated_usage: Vec<crate::types::LlmUsage> = Vec::new();
 
     for stage in &available_stages {
-        // Build a modified config for this stage
         let mut stage_ocr = ocr_config.clone();
         stage_ocr.backend = stage.backend.clone();
         if let Some(ref lang) = stage.language {
@@ -1158,14 +1081,12 @@ pub(crate) async fn run_ocr_pipeline(
                     "Pipeline: backend produced result"
                 );
 
-                // Always accumulate usage regardless of whether this stage wins.
                 accumulated_usage.extend(stage_llm_usage);
 
                 if score >= pipeline.quality_thresholds.pipeline_min_quality {
                     return Ok((text, stage_tables, stage_ocr_elements, stage_doc, accumulated_usage));
                 }
 
-                // Track best-so-far (without usage, which is in accumulated_usage)
                 match best_result {
                     Some((_, best_score, _, _, _)) if score > best_score => {
                         best_result = Some((text, score, stage_tables, stage_ocr_elements, stage_doc));
@@ -1186,7 +1107,6 @@ pub(crate) async fn run_ocr_pipeline(
         }
     }
 
-    // Return best result (with warning) or error if all backends failed entirely
     match best_result {
         Some((text, score, tables, elements, doc)) => {
             tracing::warn!(
@@ -1471,8 +1391,6 @@ mod tests {
     #[cfg(feature = "ocr")]
     #[test]
     fn test_quality_score_garbled_text() {
-        // Fragmented text with single-character words should score significantly
-        // lower than good text, even if individual chars are alphanumeric
         let text = "x y z a b c d e f g h i j k l m n o p q r s t u v w";
         let score = compute_quality_score(text, &t());
         let good_score = compute_quality_score("This is a well-formed sentence with proper words and structure.", &t());
@@ -1482,14 +1400,11 @@ mod tests {
         );
     }
 
-    // ── compute_quality_score tests ──
-
     #[cfg(feature = "ocr")]
     #[test]
     fn test_quality_score_zero_min_meaningful_words_no_panic() {
         let mut thresholds = t();
         thresholds.min_meaningful_words = 0;
-        // Should not panic and should treat meaningful_score as 1.0
         let score = compute_quality_score("hello world", &thresholds);
         assert!(score > 0.0);
     }
@@ -1499,7 +1414,6 @@ mod tests {
     fn test_quality_score_zero_min_consecutive_repeat_ratio_no_panic() {
         let mut thresholds = t();
         thresholds.min_consecutive_repeat_ratio = 0.0;
-        // Should not panic; repeat_score should be 1.0 when threshold is zero
         let score = compute_quality_score("hello hello world world", &thresholds);
         assert!(score > 0.0);
     }
@@ -1509,10 +1423,8 @@ mod tests {
     fn test_quality_score_zero_min_garbage_chars_no_panic() {
         let mut thresholds = t();
         thresholds.min_garbage_chars = 0;
-        // Text without garbage chars should score normally
         let score = compute_quality_score("hello world testing", &thresholds);
         assert!(score > 0.0);
-        // Text WITH garbage chars should get garbage_score = 0.0
         let score_with_garbage = compute_quality_score("hello \u{FFFD} world", &thresholds);
         assert!(score > score_with_garbage);
     }
@@ -1520,13 +1432,9 @@ mod tests {
     #[cfg(feature = "ocr")]
     #[test]
     fn test_quality_score_meaningful_words_not_capped() {
-        // If meaningful_words were capped (e.g. .take(3)), text with 50 meaningful
-        // words would still only count 3. With the fix, it counts all of them.
         let words: Vec<&str> = vec!["programming"; 50];
         let text = words.join(" ");
         let score = compute_quality_score(&text, &t());
-        // meaningful_score = min(50 / 3, 1.0) = 1.0
-        // The score should be high because all components are good
         let stats = NativeTextStats::compute(&text, &t());
         assert_eq!(stats.meaningful_words, 50);
         let meaningful_score = (stats.meaningful_words as f64 / t().min_meaningful_words as f64).min(1.0);
@@ -1543,10 +1451,7 @@ mod tests {
     #[cfg(feature = "ocr")]
     #[test]
     fn test_quality_score_repeat_threshold_relative_normalization() {
-        // repeat_score = 1.0 - (ratio / threshold).min(1.0)
-        // With ratio = half the threshold, repeat_score should be ~0.5
         let thresholds = t();
-        // Verify the formula: at half the threshold, repeat_score should be ~0.5
         let text = "The quick brown fox jumps over the lazy dog near the stream. \
                     The quick brown fox jumps over the lazy dog near the stream. \
                     The quick brown fox jumps over the lazy dog near the stream.";
@@ -1556,9 +1461,8 @@ mod tests {
         {
             let expected_repeat_score =
                 1.0 - (stats.consecutive_repeat_ratio / thresholds.min_consecutive_repeat_ratio).min(1.0);
-            let _ = expected_repeat_score; // just verifying the formula doesn't panic
+            let _ = expected_repeat_score;
         }
-        // Direct formula check: if ratio is exactly half the threshold
         let half_ratio = thresholds.min_consecutive_repeat_ratio / 2.0;
         let expected = 1.0 - (half_ratio / thresholds.min_consecutive_repeat_ratio).min(1.0);
         assert!(
@@ -1615,7 +1519,6 @@ mod tests {
     #[test]
     fn test_quality_score_high_garbage_chars() {
         let thresholds = t();
-        // Text with many garbage chars
         let text = format!("Hello world testing {} more words here", "\u{FFFD}".repeat(20));
         let score = compute_quality_score(&text, &thresholds);
         let clean_score = compute_quality_score("Hello world testing more words here", &thresholds);
@@ -1629,7 +1532,6 @@ mod tests {
     #[test]
     fn test_quality_score_high_consecutive_repetition() {
         let thresholds = t();
-        // Build highly repetitive text
         let mut words = Vec::new();
         for _ in 0..30 {
             words.push("word");
@@ -1647,12 +1549,9 @@ mod tests {
         );
     }
 
-    // ── evaluate_native_text_for_ocr tests ──
-
     #[cfg(feature = "ocr")]
     #[test]
     fn test_definitive_failure_all_zeros() {
-        // Non-whitespace chars that are all non-alphanumeric (alnum == 0)
         let text = "... --- !!! @@@ ### $$$ %%% ^^^ &&& *** ((( )))";
         let decision = evaluate_native_text_for_ocr(text, Some(1), &t());
         assert!(decision.fallback, "All non-alnum text should trigger fallback");
@@ -1675,8 +1574,6 @@ mod tests {
     #[test]
     fn test_definitive_failure_fragmented_few_meaningful() {
         let thresholds = t();
-        // High fragmented_word_ratio AND few meaningful words
-        // Need >= 10 words for fragmented_word_ratio to be computed
         let text = "I a b c d e f g h j k l m n o p q r s u";
         let stats = NativeTextStats::compute(text, &thresholds);
         assert!(stats.fragmented_word_ratio >= thresholds.max_fragmented_word_ratio);
@@ -1691,8 +1588,6 @@ mod tests {
     #[cfg(feature = "ocr")]
     #[test]
     fn test_definitive_failure_critical_fragmentation_with_meaningful_words() {
-        // Already tested above in test_critical_fragmentation_triggers_fallback,
-        // but let's verify the specific definitive_failure path
         let thresholds = t();
         let mut words: Vec<&str> = vec!["A"; 90];
         words.extend(vec!["document"; 10]);
@@ -1711,7 +1606,6 @@ mod tests {
     #[test]
     fn test_definitive_failure_low_avg_word_length() {
         let thresholds = t();
-        // Many very short words (avg word length < 2.0) with enough words
         let mut words: Vec<&str> = vec!["a"; 55];
         words.push("hello");
         let text = words.join(" ");
@@ -1745,13 +1639,8 @@ mod tests {
     #[test]
     fn test_non_definitive_fails_on_alnum_ratio() {
         let thresholds = t();
-        // Text that is NOT a definitive failure but has low alnum_ratio and low avg_alnum
-        // Needs: non_whitespace > 0, alnum > 0, no garbage, no fragmentation issues,
-        //        but alnum_ratio < min_alnum_ratio and avg_alnum < min_non_whitespace_per_page
-        // Also: not has_substantial_text (so small text)
         let text = "a!@# b%^ c*( d_+";
         let stats = NativeTextStats::compute(text, &thresholds);
-        // If alnum is 0, it's definitive. We need alnum > 0 but ratio < threshold
         if stats.alnum > 0 && stats.alnum_ratio < thresholds.min_alnum_ratio && stats.non_whitespace != 0 {
             let decision = evaluate_native_text_for_ocr(text, Some(1), &thresholds);
             assert!(
@@ -1777,13 +1666,10 @@ mod tests {
         assert!(decision.stats.garbage_char_count < thresholds.min_garbage_chars);
     }
 
-    // ── NativeTextStats::compute tests ──
-
     #[cfg(feature = "ocr")]
     #[test]
     fn test_stats_meaningful_words_actual_count_not_capped() {
         let thresholds = t();
-        // Create text with many meaningful words (>= 4 chars each)
         let words: Vec<&str> = vec!["programming"; 20];
         let text = words.join(" ");
         let stats = NativeTextStats::compute(&text, &thresholds);
@@ -1798,11 +1684,9 @@ mod tests {
     #[test]
     fn test_stats_fragmented_word_ratio_calculation() {
         let thresholds = t();
-        // 10 words, 5 are short (1-2 chars) => ratio = 0.5
         let text = "I a am b so the one quick brown fox";
         let stats = NativeTextStats::compute(text, &thresholds);
         assert_eq!(stats.word_count, 10);
-        // Count short words: "I"(1), "a"(1), "am"(2), "b"(1), "so"(2) = 5 short
         let expected_ratio = 5.0 / 10.0;
         assert!(
             (stats.fragmented_word_ratio - expected_ratio).abs() < 0.01,
@@ -1815,7 +1699,6 @@ mod tests {
     #[test]
     fn test_stats_fragmented_word_ratio_below_10_words() {
         let thresholds = t();
-        // Fewer than 10 words => fragmented_word_ratio should be 0.0
         let text = "a b c d e f g h i";
         let stats = NativeTextStats::compute(text, &thresholds);
         assert_eq!(stats.word_count, 9);
@@ -1829,13 +1712,11 @@ mod tests {
     #[test]
     fn test_stats_consecutive_repeat_ratio_calculation() {
         let thresholds = t();
-        // Need >= min_words_for_repeat_check words
         let mut words = Vec::new();
         for _ in 0..25 {
             words.push("alpha");
             words.push("beta");
         }
-        // No consecutive repeats (alternating pattern)
         let text = words.join(" ");
         let stats = NativeTextStats::compute(&text, &thresholds);
         assert_eq!(stats.word_count, 50);
@@ -1845,7 +1726,6 @@ mod tests {
             stats.consecutive_repeat_ratio
         );
 
-        // Now with all repeats
         let mut repeat_words = Vec::new();
         for _ in 0..25 {
             repeat_words.push("same");
@@ -1864,7 +1744,6 @@ mod tests {
     #[test]
     fn test_stats_consecutive_repeat_below_min_words() {
         let thresholds = t();
-        // Below min_words_for_repeat_check => ratio should be 0.0
         let text = "same same same";
         let stats = NativeTextStats::compute(text, &thresholds);
         assert!(stats.word_count < thresholds.min_words_for_repeat_check);
@@ -1912,7 +1791,7 @@ mod tests {
         assert_eq!(stats.word_count, 1);
         assert_eq!(stats.non_whitespace, 1);
         assert_eq!(stats.alnum, 1);
-        assert_eq!(stats.meaningful_words, 0); // "x" has len 1 < min_meaningful_word_len (4)
+        assert_eq!(stats.meaningful_words, 0);
         assert_eq!(stats.avg_word_length, 1.0);
     }
 
@@ -1976,15 +1855,14 @@ mod tests {
             ..Default::default()
         };
 
-        // Register the mock backend so extract_with_ocr can find it
         crate::plugins::register_ocr_backend(backend).unwrap();
 
         let path = Path::new("test.pdf");
         let result = extract_with_ocr(
-            None,      // No content
-            Some(&[]), // No images
+            None,
+            Some(&[]),
             #[cfg(feature = "layout-detection")]
-            None, // No layout
+            None,
             &config,
             Some(path),
         )
@@ -1995,7 +1873,6 @@ mod tests {
         let (_, _, _, _, _, llm_usage) = result.unwrap();
         assert!(llm_usage.is_empty(), "No LLM usage expected for mock backend");
 
-        // Clean up
         crate::plugins::unregister_ocr_backend("mock").unwrap();
     }
 
@@ -2065,7 +1942,6 @@ mod tests {
 
         crate::plugins::register_ocr_backend(backend).unwrap();
 
-        // Provide two synthetic 1x1 pixel images so extract_with_ocr processes two pages.
         let tiny_png = {
             use image::ImageEncoder;
             use image::codecs::png::PngEncoder;

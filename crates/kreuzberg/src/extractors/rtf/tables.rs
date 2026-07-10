@@ -36,8 +36,6 @@ impl TableState {
 
     /// Push the current row to the rows collection.
     pub fn push_row(&mut self) {
-        // Only push the current cell if it has content — avoid adding a
-        // trailing empty cell when \cell already pushed all cells.
         if !self.current_cell.is_empty() {
             self.push_cell();
         }

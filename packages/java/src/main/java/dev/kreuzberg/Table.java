@@ -25,8 +25,8 @@ import java.util.Objects;
  *            available
  */
 public record Table(@JsonProperty("cells") List<List<String>> cells, @JsonProperty("markdown") String markdown,
-		@JsonProperty("page_number") int pageNumber, @JsonProperty("bounding_box") BoundingBox boundingBox) {
-	/**
+    @JsonProperty("page_number") int pageNumber, @JsonProperty("bounding_box") BoundingBox boundingBox) {
+    /**
 	 * Creates a new Table.
 	 *
 	 * @param cells
@@ -43,21 +43,21 @@ public record Table(@JsonProperty("cells") List<List<String>> cells, @JsonProper
 	 * @throws IllegalArgumentException
 	 *             if pageNumber is negative
 	 */
-	@JsonCreator
-	public Table(@JsonProperty("cells") List<List<String>> cells, @JsonProperty("markdown") String markdown,
-			@JsonProperty("page_number") int pageNumber, @JsonProperty("bounding_box") BoundingBox boundingBox) {
-		Objects.requireNonNull(cells, "cells must not be null");
-		Objects.requireNonNull(markdown, "markdown must not be null");
-		if (pageNumber < 0) {
-			throw new IllegalArgumentException("pageNumber must be non-negative, got " + pageNumber);
-		}
-		this.cells = deepCopyTable(cells);
-		this.markdown = markdown;
-		this.pageNumber = pageNumber;
-		this.boundingBox = boundingBox;
-	}
+    @JsonCreator
+    public Table(@JsonProperty("cells") List<List<String>> cells, @JsonProperty("markdown") String markdown,
+        @JsonProperty("page_number") int pageNumber, @JsonProperty("bounding_box") BoundingBox boundingBox) {
+        Objects.requireNonNull(cells, "cells must not be null");
+        Objects.requireNonNull(markdown, "markdown must not be null");
+        if (pageNumber < 0) {
+            throw new IllegalArgumentException("pageNumber must be non-negative, got " + pageNumber);
+        }
+        this.cells = deepCopyTable(cells);
+        this.markdown = markdown;
+        this.pageNumber = pageNumber;
+        this.boundingBox = boundingBox;
+    }
 
-	/**
+    /**
 	 * Creates a Table from raw values.
 	 *
 	 * @param cells
@@ -70,20 +70,20 @@ public record Table(@JsonProperty("cells") List<List<String>> cells, @JsonProper
 	 *            the bounding box coordinates, or null if not available
 	 * @return a new Table
 	 */
-	public static Table of(List<List<String>> cells, String markdown, int pageNumber, BoundingBox boundingBox) {
-		return new Table(cells, markdown, pageNumber, boundingBox);
-	}
+    public static Table of(List<List<String>> cells, String markdown, int pageNumber, BoundingBox boundingBox) {
+        return new Table(cells, markdown, pageNumber, boundingBox);
+    }
 
-	/**
+    /**
 	 * Returns the number of rows in the table.
 	 *
 	 * @return the row count
 	 */
-	public int getRowCount() {
-		return cells.size();
-	}
+    public int getRowCount() {
+        return cells.size();
+    }
 
-	/**
+    /**
 	 * Returns the number of columns in the table.
 	 *
 	 * <p>
@@ -92,11 +92,11 @@ public record Table(@JsonProperty("cells") List<List<String>> cells, @JsonProper
 	 *
 	 * @return the column count
 	 */
-	public int getColumnCount() {
-		return cells.isEmpty() ? 0 : cells.get(0).size();
-	}
+    public int getColumnCount() {
+        return cells.isEmpty() ? 0 : cells.get(0).size();
+    }
 
-	/**
+    /**
 	 * Returns the cell at the specified row and column.
 	 *
 	 * @param row
@@ -107,11 +107,11 @@ public record Table(@JsonProperty("cells") List<List<String>> cells, @JsonProper
 	 * @throws IndexOutOfBoundsException
 	 *             if row or column is out of bounds
 	 */
-	public String getCell(int row, int col) {
-		return cells.get(row).get(col);
-	}
+    public String getCell(int row, int col) {
+        return cells.get(row).get(col);
+    }
 
-	/**
+    /**
 	 * Returns a row from the table.
 	 *
 	 * @param row
@@ -120,57 +120,57 @@ public record Table(@JsonProperty("cells") List<List<String>> cells, @JsonProper
 	 * @throws IndexOutOfBoundsException
 	 *             if row is out of bounds
 	 */
-	public List<String> getRow(int row) {
-		return Collections.unmodifiableList(cells.get(row));
-	}
+    public List<String> getRow(int row) {
+        return Collections.unmodifiableList(cells.get(row));
+    }
 
-	/**
+    /**
 	 * Returns the table cells as a 2D list (rows x columns).
 	 *
 	 * @return an unmodifiable 2D list of cell values
 	 */
-	public List<List<String>> getCells() {
-		return cells;
-	}
+    public List<List<String>> getCells() {
+        return cells;
+    }
 
-	/**
+    /**
 	 * Returns the Markdown representation of the table.
 	 *
 	 * @return the Markdown string
 	 */
-	public String getMarkdown() {
-		return markdown;
-	}
+    public String getMarkdown() {
+        return markdown;
+    }
 
-	/**
+    /**
 	 * Returns the page number where the table was found.
 	 *
 	 * @return the page number (1-indexed, or 0 for non-paginated documents)
 	 */
-	public int getPageNumber() {
-		return pageNumber;
-	}
+    public int getPageNumber() {
+        return pageNumber;
+    }
 
-	/**
+    /**
 	 * Returns the bounding box of the table.
 	 *
 	 * @return the bounding box, or null if not available
 	 */
-	public BoundingBox getBoundingBox() {
-		return boundingBox;
-	}
+    public BoundingBox getBoundingBox() {
+        return boundingBox;
+    }
 
-	@Override
-	public String toString() {
-		return "Table{" + "rows=" + getRowCount() + ", cols=" + getColumnCount() + ", page=" + pageNumber
-				+ ", boundingBox=" + boundingBox + '}';
-	}
+    @Override
+    public String toString() {
+        return "Table{" + "rows=" + getRowCount() + ", cols=" + getColumnCount() + ", page=" + pageNumber
+        + ", boundingBox=" + boundingBox + '}';
+    }
 
-	private static List<List<String>> deepCopyTable(List<List<String>> table) {
-		List<List<String>> copy = new ArrayList<>(table.size());
-		for (List<String> row : table) {
-			copy.add(Collections.unmodifiableList(new ArrayList<>(row)));
-		}
-		return Collections.unmodifiableList(copy);
-	}
+    private static List<List<String>> deepCopyTable(List<List<String>> table) {
+        List<List<String>> copy = new ArrayList<>(table.size());
+        for (List<String> row : table) {
+            copy.add(Collections.unmodifiableList(new ArrayList<>(row)));
+        }
+        return Collections.unmodifiableList(copy);
+    }
 }

@@ -79,8 +79,6 @@ pub struct Theme {
     pub font_scheme: Option<FontScheme>,
 }
 
-// --- Parsing ---
-
 /// Parse `word/theme/theme1.xml` content into a `Theme`.
 ///
 /// Uses `roxmltree` for tree-based XML parsing of DrawingML theme elements.
@@ -103,13 +101,11 @@ pub fn parse_theme_xml(xml: &str) -> Result<Theme> {
         font_scheme: None,
     };
 
-    // Find themeElements
     if let Some(theme_elements) = root.children().find(|n| {
         n.is_element()
             && n.tag_name().name() == "themeElements"
             && n.tag_name().namespace() == Some(DRAWINGML_NAMESPACE)
     }) {
-        // Parse color scheme
         if let Some(color_scheme_elem) = theme_elements.children().find(|n| {
             n.is_element()
                 && n.tag_name().name() == "clrScheme"
@@ -118,7 +114,6 @@ pub fn parse_theme_xml(xml: &str) -> Result<Theme> {
             theme.color_scheme = Some(parse_color_scheme(color_scheme_elem));
         }
 
-        // Parse font scheme
         if let Some(font_scheme_elem) = theme_elements.children().find(|n| {
             n.is_element()
                 && n.tag_name().name() == "fontScheme"
@@ -287,8 +282,6 @@ fn parse_font_family(elem: roxmltree::Node, scheme: &mut FontScheme, is_major: b
     }
 }
 
-// --- Utilities ---
-
 /// Resolve a theme color reference to an RGB hex string.
 ///
 /// Given a color reference like "accent1" or "dk1", returns the RGB hex value
@@ -410,11 +403,9 @@ mod tests {
     fn test_resolve_theme_color_by_reference() {
         let theme = parse_theme_xml(STANDARD_THEME_XML).expect("Failed to parse theme");
 
-        // Test RGB color
         let accent1 = resolve_theme_color(&theme, "accent1");
         assert_eq!(accent1, Some("156082"));
 
-        // Test system color (returns lastClr)
         let dk1 = resolve_theme_color(&theme, "dk1");
         assert_eq!(dk1, Some("000000"));
 
@@ -470,7 +461,6 @@ mod tests {
         let theme = parse_theme_xml(STANDARD_THEME_XML).expect("Failed to parse theme");
         let color_scheme = theme.color_scheme.as_ref().unwrap();
 
-        // dk1 should be system color
         match &color_scheme.dk1 {
             Some(ThemeColor::System { name, last_color }) => {
                 assert_eq!(name, "windowText");
@@ -479,7 +469,6 @@ mod tests {
             _ => panic!("dk1 should be a system color"),
         }
 
-        // accent1 should be RGB color
         match &color_scheme.accent1 {
             Some(ThemeColor::Rgb(hex)) => {
                 assert_eq!(hex, "156082");

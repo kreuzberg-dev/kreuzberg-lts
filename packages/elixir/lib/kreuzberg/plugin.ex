@@ -309,8 +309,7 @@ defmodule Kreuzberg.Plugin do
   @spec list_post_processors() :: {:ok, [{atom(), module()}]} | {:error, String.t()}
   def list_post_processors do
     processors = Kreuzberg.Plugin.Registry.list_post_processors()
-    # Extract just the name and module from the metadata
-    result = Enum.map(processors, fn {name, metadata} -> {name, metadata.module} end)
+  result = Enum.map(processors, fn {name, metadata} -> {name, metadata.module} end)
     {:ok, result}
   end
 
@@ -378,7 +377,6 @@ defmodule Kreuzberg.Plugin do
   """
   @spec unregister_validator(module()) :: :ok | {:error, String.t()}
   def unregister_validator(module) when is_atom(module) do
-    # Convert module to name for unregistration
     name = Kreuzberg.Plugin.Registry.module_to_name(module)
     Kreuzberg.Plugin.Registry.unregister_validator(name)
   end
@@ -438,8 +436,7 @@ defmodule Kreuzberg.Plugin do
   @spec list_validators() :: {:ok, [module()]} | {:error, String.t()}
   def list_validators do
     validators = Kreuzberg.Plugin.Registry.list_validators()
-    # Extract just the modules
-    result = Enum.map(validators, fn {_name, metadata} -> metadata.module end)
+  result = Enum.map(validators, fn {_name, metadata} -> metadata.module end)
     {:ok, result}
   end
 
@@ -513,7 +510,6 @@ defmodule Kreuzberg.Plugin do
   """
   @spec unregister_ocr_backend(module()) :: :ok | {:error, String.t()}
   def unregister_ocr_backend(module) when is_atom(module) do
-    # Convert module to name for unregistration
     name = Kreuzberg.Plugin.Registry.module_to_name(module)
     Kreuzberg.Plugin.Registry.unregister_ocr_backend(name)
   end
@@ -573,14 +569,10 @@ defmodule Kreuzberg.Plugin do
   @spec list_ocr_backends() :: {:ok, [module()]} | {:error, String.t()}
   def list_ocr_backends do
     backends = Kreuzberg.Plugin.Registry.list_ocr_backends()
-    # Extract just the modules
-    result = Enum.map(backends, fn {_name, metadata} -> metadata.module end)
+  result = Enum.map(backends, fn {_name, metadata} -> metadata.module end)
     {:ok, result}
   end
 
-  # ============================================================================
-  # Document Extractor Management (NIF-backed, managed by Rust core)
-  # ============================================================================
 
   @doc """
   List all registered document extractors.

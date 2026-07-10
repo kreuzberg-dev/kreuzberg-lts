@@ -21,33 +21,33 @@ defmodule Kreuzberg.Image do
   """
 
   @type t :: %__MODULE__{
-          data: binary(),
-          format: String.t(),
-          image_index: non_neg_integer(),
-          page_number: non_neg_integer() | nil,
-          width: non_neg_integer() | nil,
-          height: non_neg_integer() | nil,
-          colorspace: String.t() | nil,
-          bits_per_component: non_neg_integer() | nil,
-          is_mask: boolean(),
-          description: String.t() | nil,
-          ocr_result: Kreuzberg.ExtractionResult.t() | nil,
-          bounding_box: map() | nil
-        }
+  data: binary(),
+  format: String.t(),
+  image_index: non_neg_integer(),
+  page_number: non_neg_integer() | nil,
+  width: non_neg_integer() | nil,
+  height: non_neg_integer() | nil,
+  colorspace: String.t() | nil,
+  bits_per_component: non_neg_integer() | nil,
+  is_mask: boolean(),
+  description: String.t() | nil,
+  ocr_result: Kreuzberg.ExtractionResult.t() | nil,
+  bounding_box: map() | nil
+  }
 
   defstruct [
-    :page_number,
-    :width,
-    :height,
-    :colorspace,
-    :bits_per_component,
-    :description,
-    :ocr_result,
-    :bounding_box,
-    data: <<>>,
-    format: "",
-    image_index: 0,
-    is_mask: false
+  :page_number,
+  :width,
+  :height,
+  :colorspace,
+  :bits_per_component,
+  :description,
+  :ocr_result,
+  :bounding_box,
+  data: <<>>,
+  format: "",
+  image_index: 0,
+  is_mask: false
   ]
 
   @doc """
@@ -61,17 +61,17 @@ defmodule Kreuzberg.Image do
   @spec new(String.t(), keyword()) :: t()
   def new(format, opts \\ []) when is_binary(format) do
     %__MODULE__{
-      format: format,
-      data: Keyword.get(opts, :data, <<>>),
-      image_index: Keyword.get(opts, :image_index, 0),
-      page_number: Keyword.get(opts, :page_number),
-      width: Keyword.get(opts, :width),
-      height: Keyword.get(opts, :height),
-      colorspace: Keyword.get(opts, :colorspace),
-      bits_per_component: Keyword.get(opts, :bits_per_component),
-      is_mask: Keyword.get(opts, :is_mask, false),
-      description: Keyword.get(opts, :description),
-      ocr_result: Keyword.get(opts, :ocr_result)
+    format: format,
+    data: Keyword.get(opts, :data, <<>>),
+    image_index: Keyword.get(opts, :image_index, 0),
+    page_number: Keyword.get(opts, :page_number),
+    width: Keyword.get(opts, :width),
+    height: Keyword.get(opts, :height),
+    colorspace: Keyword.get(opts, :colorspace),
+    bits_per_component: Keyword.get(opts, :bits_per_component),
+    is_mask: Keyword.get(opts, :is_mask, false),
+    description: Keyword.get(opts, :description),
+    ocr_result: Keyword.get(opts, :ocr_result)
     }
   end
 
@@ -89,18 +89,18 @@ defmodule Kreuzberg.Image do
   @spec from_map(map()) :: t()
   def from_map(data) when is_map(data) do
     %__MODULE__{
-      data: normalize_image_data(data["data"]),
-      format: data["format"] || "",
-      image_index: data["image_index"] || 0,
-      page_number: data["page_number"],
-      width: data["width"],
-      height: data["height"],
-      colorspace: data["colorspace"],
-      bits_per_component: data["bits_per_component"],
-      is_mask: data["is_mask"] || false,
-      description: data["description"],
-      ocr_result: normalize_ocr_result(data["ocr_result"]),
-      bounding_box: data["bounding_box"]
+    data: normalize_image_data(data["data"]),
+    format: data["format"] || "",
+    image_index: data["image_index"] || 0,
+    page_number: data["page_number"],
+    width: data["width"],
+    height: data["height"],
+    colorspace: data["colorspace"],
+    bits_per_component: data["bits_per_component"],
+    is_mask: data["is_mask"] || false,
+    description: data["description"],
+    ocr_result: normalize_ocr_result(data["ocr_result"]),
+    bounding_box: data["bounding_box"]
     }
   end
 
@@ -110,23 +110,23 @@ defmodule Kreuzberg.Image do
   @spec to_map(t()) :: map()
   def to_map(%__MODULE__{} = image) do
     %{
-      "data" => image.data,
-      "format" => image.format,
-      "image_index" => image.image_index,
-      "page_number" => image.page_number,
-      "width" => image.width,
-      "height" => image.height,
-      "colorspace" => image.colorspace,
-      "bits_per_component" => image.bits_per_component,
-      "is_mask" => image.is_mask,
-      "description" => image.description,
-      "ocr_result" =>
-        case image.ocr_result do
-          nil -> nil
-          %Kreuzberg.ExtractionResult{} = r -> Kreuzberg.ExtractionResult.to_map(r)
-          other -> other
-        end,
-      "bounding_box" => image.bounding_box
+    "data" => image.data,
+    "format" => image.format,
+    "image_index" => image.image_index,
+    "page_number" => image.page_number,
+    "width" => image.width,
+    "height" => image.height,
+    "colorspace" => image.colorspace,
+    "bits_per_component" => image.bits_per_component,
+    "is_mask" => image.is_mask,
+    "description" => image.description,
+    "ocr_result" =>
+    case image.ocr_result do
+      nil -> nil
+      %Kreuzberg.ExtractionResult{} = r -> Kreuzberg.ExtractionResult.to_map(r)
+      other -> other
+    end,
+    "bounding_box" => image.bounding_box
     }
   end
 
@@ -135,22 +135,20 @@ defmodule Kreuzberg.Image do
 
   defp normalize_ocr_result(map) when is_map(map) do
     Kreuzberg.ExtractionResult.new(
-      map["content"] || "",
-      map["mime_type"] || "",
-      map["metadata"] || %{},
-      map["tables"] || [],
-      detected_languages: map["detected_languages"],
-      chunks: map["chunks"],
-      images: map["images"],
-      pages: map["pages"],
-      elements: map["elements"],
-      djot_content: map["djot_content"],
-      annotations: map["annotations"]
+    map["content"] || "",
+    map["mime_type"] || "",
+    map["metadata"] || %{},
+    map["tables"] || [],
+    detected_languages: map["detected_languages"],
+    chunks: map["chunks"],
+    images: map["images"],
+    pages: map["pages"],
+    elements: map["elements"],
+    djot_content: map["djot_content"],
+    annotations: map["annotations"]
     )
   end
 
-  # bytes::Bytes serializes via serde as an array of u8 integers.
-  # Convert list of integers to binary for Elixir.
   defp normalize_image_data(nil), do: <<>>
   defp normalize_image_data(data) when is_binary(data), do: data
   defp normalize_image_data(data) when is_list(data), do: :binary.list_to_bin(data)

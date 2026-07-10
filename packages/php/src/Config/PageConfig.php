@@ -53,8 +53,7 @@ readonly class PageConfig
          * @default '--- Page {page_num} ---'
          */
         public string $markerFormat = '--- Page {page_num} ---',
-    ) {
-    }
+    ) {}
 
     /**
      * Create configuration from array data.

@@ -40,8 +40,7 @@ readonly class LlmConfig
         public ?int $maxRetries = null,
         public ?float $temperature = null,
         public ?int $maxTokens = null,
-    ) {
-    }
+    ) {}
 
     /**
      * Create configuration from array data.

@@ -19,8 +19,7 @@ readonly class CodeSymbolInfo
         public string $kind,
         public ?string $typeAnnotation,
         public CodeSpan $span,
-    ) {
-    }
+    ) {}
 
     /**
      * @param array<string, mixed> $data

@@ -887,7 +887,6 @@ fn test_ocr_backend_document_processing_fallback() {
         reg.shutdown_all().expect("Operation failed");
     }
 
-    // Backend that DOES NOT support document processing natively
     let backend = Arc::new(DocumentProcessingOcrBackend {
         name: "fallback-ocr".to_string(),
         image_call_count: AtomicUsize::new(0),
@@ -913,7 +912,6 @@ fn test_ocr_backend_document_processing_fallback() {
         ..Default::default()
     };
 
-    // Use async environment if required or standard sync method
     let result = extract_file_sync(test_document, None, &config);
 
     assert!(result.is_ok(), "Extraction failed: {:?}", result.err());
@@ -925,7 +923,6 @@ fn test_ocr_backend_document_processing_fallback() {
         extraction_result.content
     );
 
-    // It should have called process_image multiple times (one for each PDF page)
     assert!(
         backend.image_call_count.load(Ordering::SeqCst) > 0,
         "OCR fallback to image extraction was not called"
@@ -954,7 +951,6 @@ fn test_ocr_backend_document_processing_override() {
         reg.shutdown_all().expect("Operation failed");
     }
 
-    // Backend that DOES support document processing
     let backend = Arc::new(DocumentProcessingOcrBackend {
         name: "override-ocr".to_string(),
         image_call_count: AtomicUsize::new(0),
@@ -991,7 +987,6 @@ fn test_ocr_backend_document_processing_override() {
         extraction_result.content
     );
 
-    // It should have exactly one call to process_document natively
     assert_eq!(
         backend.image_call_count.load(Ordering::SeqCst),
         0,

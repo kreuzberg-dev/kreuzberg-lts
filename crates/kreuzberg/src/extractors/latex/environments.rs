@@ -19,7 +19,6 @@ pub fn process_list(content: &str, list_type: &str, output: &mut String) {
         let line = lines[i];
         let trimmed = line.trim();
 
-        // Handle nested lists
         if (trimmed.contains("\\begin{") || trimmed.contains("\\begin {"))
             && let Some(env_name) = extract_env_name(trimmed)
             && (env_name == "itemize" || env_name == "enumerate" || env_name == "description")
@@ -29,7 +28,6 @@ pub fn process_list(content: &str, list_type: &str, output: &mut String) {
             process_list(&nested_content, &env_name, output);
             let nested_output = output[current_output_len..].to_string();
             output.truncate(current_output_len);
-            // Indent nested list
             for nested_line in nested_output.lines() {
                 output.push_str("  ");
                 output.push_str(nested_line);
@@ -39,13 +37,11 @@ pub fn process_list(content: &str, list_type: &str, output: &mut String) {
             continue;
         }
 
-        // Handle \item
         if trimmed.starts_with("\\item")
             && let Some(pos) = trimmed.find("\\item")
         {
             let after = trimmed[pos + 5..].trim();
 
-            // Handle \item[label] for description lists
             if after.starts_with('[')
                 && let Some(bracket_end) = after.find(']')
             {
@@ -60,7 +56,6 @@ pub fn process_list(content: &str, list_type: &str, output: &mut String) {
                 }
             }
 
-            // Regular list item
             let prefix = if list_type == "enumerate" {
                 format!("{}. ", item_num)
             } else {
@@ -117,7 +112,6 @@ pub fn process_table(content: &str, output: &mut String, tables: &mut Vec<Table>
             }
             markdown.push('\n');
 
-            // Add header separator after first row
             if i == 0 && rows.len() > 1 {
                 markdown.push('|');
                 for _ in row {
@@ -143,7 +137,6 @@ pub fn process_table(content: &str, output: &mut String, tables: &mut Vec<Table>
 ///
 /// Extracts the caption and processes the embedded tabular environment.
 pub fn process_table_with_caption(content: &str, output: &mut String, tables: &mut Vec<Table>) {
-    // Extract and add caption if present
     if content.contains("\\caption{")
         && let Some(caption) = extract_braced(content, "caption")
     {
@@ -151,7 +144,6 @@ pub fn process_table_with_caption(content: &str, output: &mut String, tables: &m
         output.push('\n');
     }
 
-    // Process the tabular environment inside
     let end_tag = "\\end{tabular}";
     if content.contains("\\begin{tabular}")
         && let Some(start) = content.find("\\begin{tabular}")

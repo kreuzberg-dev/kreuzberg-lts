@@ -15,8 +15,7 @@ readonly class HeadingLevel
     public function __construct(
         public int $level,
         public string $text,
-    ) {
-    }
+    ) {}
 
     /**
      * @param array<string, mixed> $data
@@ -31,9 +30,6 @@ readonly class HeadingLevel
         /** @var string $text */
         $text = isset($data['text']) && is_string($data['text']) ? $data['text'] : '';
 
-        return new self(
-            level: $level,
-            text: $text,
-        );
+        return new self(level: $level, text: $text);
     }
 }

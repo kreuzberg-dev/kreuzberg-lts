@@ -19,12 +19,10 @@ fn run() -> Result<(), String> {
         .map_err(|e| format!("Failed to generate C bindings: {}", e))?
         .write_to_file("kreuzberg.h");
 
-    // Inject version constants into generated header
     let version = env::var("CARGO_PKG_VERSION").map_err(|_| "CARGO_PKG_VERSION not set".to_string())?;
     let version_parts: Vec<&str> = version.split('.').collect();
     let major = version_parts.first().unwrap_or(&"0");
     let minor = version_parts.get(1).unwrap_or(&"0");
-    // Strip pre-release suffix from patch (e.g., "8-rc1" → "8")
     let raw_patch = version_parts.get(2).unwrap_or(&"0");
     let patch = raw_patch.split('-').next().unwrap_or("0");
 

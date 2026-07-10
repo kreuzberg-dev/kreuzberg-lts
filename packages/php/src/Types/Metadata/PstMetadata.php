@@ -13,8 +13,7 @@ readonly class PstMetadata
 {
     public function __construct(
         public int $messageCount = 0,
-    ) {
-    }
+    ) {}
 
     /**
      * @param array<string, mixed> $data
@@ -24,9 +23,7 @@ readonly class PstMetadata
         $rawCount = $data['message_count'] ?? 0;
         $messageCount = is_int($rawCount) ? $rawCount : (is_numeric($rawCount) ? (int) $rawCount : 0);
 
-        return new self(
-            messageCount: $messageCount,
-        );
+        return new self(messageCount: $messageCount);
     }
 
     /**

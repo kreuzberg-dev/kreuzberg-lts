@@ -70,7 +70,6 @@ pub(crate) fn extract_text_from_events(events: &[Event], images: &mut Vec<Extrac
                     text.push_str(dest_url);
                 }
                 text.push(']');
-                // Extract image from data URIs
                 if dest_url.starts_with("data:image/")
                     && let Some(image) = decode_data_uri_image(dest_url, images.len())
                 {

@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require 'json'
+require "json"
 
 module Kreuzberg
   module ErrorContext
@@ -115,7 +115,7 @@ module Kreuzberg
       def error_code_name(code)
         Kreuzberg._error_code_name_native(code)
       rescue StandardError
-        'unknown'
+        "unknown"
       end
 
       # Get the description of an error code.
@@ -129,7 +129,7 @@ module Kreuzberg
       def error_code_description(code)
         Kreuzberg._error_code_description_native(code)
       rescue StandardError
-        'Unknown error code'
+        "Unknown error code"
       end
     end
   end

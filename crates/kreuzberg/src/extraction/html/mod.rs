@@ -39,7 +39,6 @@ mod stack_management;
 pub(crate) mod structure;
 mod types;
 
-// Public API re-exports
 pub use converter::convert_html_to_markdown;
 pub use converter::convert_html_to_markdown_with_metadata;
 pub use converter::convert_html_to_markdown_with_tables;
@@ -50,5 +49,4 @@ pub use types::{
 };
 pub use types::{ExtractedInlineImage, HtmlExtractionResult};
 
-// Re-export from html-to-markdown-rs for convenience
 pub use html_to_markdown_rs::ConversionOptions;

@@ -1,14 +1,19 @@
 # frozen_string_literal: true
 
-require 'open3'
-require 'json'
+require "open3"
+require "json"
 
 module Kreuzberg
   # @example Start MCP server
   module MCPProxy
-    class Error < Kreuzberg::Errors::Error; end
-    class MissingBinaryError < Error; end
-    class ServerError < Error; end
+    class Error < Kreuzberg::Errors::Error
+    end
+
+    class MissingBinaryError < Error
+    end
+
+    class ServerError < Error
+    end
 
     # MCP server instance
     class Server
@@ -18,7 +23,7 @@ module Kreuzberg
       #
       # @param transport [String] Transport method ("stdio" or "sse")
       #
-      def initialize(transport: 'stdio')
+      def initialize(transport: "stdio")
         @transport = transport
         @pid = nil
         @stdin = nil
@@ -34,9 +39,9 @@ module Kreuzberg
         binary = MCPProxy.find_mcp_binary
 
         case @transport
-        when 'stdio'
+        when "stdio"
           start_stdio(binary)
-        when 'sse'
+        when "sse"
           start_sse(binary)
         else
           raise ServerError, "Unknown transport: #{@transport}"
@@ -50,9 +55,10 @@ module Kreuzberg
       def stop
         return unless @pid
 
-        Process.kill('TERM', @pid)
+        Process.kill("TERM", @pid)
         Process.wait(@pid)
-      rescue Errno::ESRCH, Errno::ECHILD # rubocop:disable Lint/SuppressedException
+        # rubocop:disable Lint/SuppressedException
+      rescue Errno::ESRCH, Errno::ECHILD
       ensure
         @pid = nil
         close_pipes
@@ -64,8 +70,8 @@ module Kreuzberg
       # @return [void]
       #
       def send_message(message)
-        raise ServerError, 'Can only send messages in stdio mode' unless @transport == 'stdio'
-        raise ServerError, 'Server not started' unless @stdin
+        raise ServerError, "Can only send messages in stdio mode" unless @transport == "stdio"
+        raise ServerError, "Server not started" unless @stdin
 
         @stdin.puts(JSON.generate(message))
         @stdin.flush
@@ -76,8 +82,8 @@ module Kreuzberg
       # @return [Hash] JSON-RPC message
       #
       def read_message
-        raise ServerError, 'Can only read messages in stdio mode' unless @transport == 'stdio'
-        raise ServerError, 'Server not started' unless @stdout
+        raise ServerError, "Can only read messages in stdio mode" unless @transport == "stdio"
+        raise ServerError, "Server not started" unless @stdout
 
         line = @stdout.gets
         JSON.parse(line) if line
@@ -99,7 +105,7 @@ module Kreuzberg
       private
 
       def start_stdio(binary)
-        @stdin, @stdout, @stderr, wait_thr = Open3.popen3(binary.to_s, 'mcp', '--transport', 'stdio')
+        @stdin, @stdout, @stderr, wait_thr = Open3.popen3(binary.to_s, "mcp", "--transport", "stdio")
         @pid = wait_thr.pid
         nil
       end
@@ -107,13 +113,14 @@ module Kreuzberg
       def start_sse(binary)
         @pid = spawn(
           binary.to_s,
-          'mcp',
-          '--transport', 'sse',
+          "mcp",
+          "--transport",
+          "sse",
           out: $stdout,
           err: $stderr
         )
         Process.detach(@pid)
-        sleep 1
+        sleep(1)
         @pid
       end
 
@@ -139,7 +146,7 @@ module Kreuzberg
     #     response = server.read_message
     #   end
     #
-    def run(transport: 'stdio')
+    def run(transport: "stdio")
       server = Server.new(transport: transport)
       server.start
       yield server
@@ -153,7 +160,7 @@ module Kreuzberg
     # @raise [MissingBinaryError] If not found
     #
     def find_mcp_binary
-      binary_name = Gem.win_platform? ? 'kreuzberg.exe' : 'kreuzberg'
+      binary_name = Gem.win_platform? ? "kreuzberg.exe" : "kreuzberg"
       found = CLIProxy.search_paths(binary_name).find(&:file?)
       return found if found
 
@@ -165,12 +172,13 @@ module Kreuzberg
     # @return [String]
     #
     def missing_binary_message
-      <<~MSG.strip
+      <<~MSG
         kreuzberg binary not found for MCP server. Build it with:
         `cargo build --release --package kreuzberg-cli`
 
         Or ensure kreuzberg is installed with MCP support.
       MSG
+        .strip
     end
   end
 end

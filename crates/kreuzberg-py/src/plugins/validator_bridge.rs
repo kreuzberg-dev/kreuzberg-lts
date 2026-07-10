@@ -128,7 +128,6 @@ impl Validator for PythonValidator {
             Python::attach(|py| {
                 let obj = self.python_obj.bind(py);
 
-                // Convert Rust ExtractionResult to Python ExtractionResult class instance
                 let py_extraction_result =
                     PyExtractionResult::from_rust(result.clone(), py, None, None).map_err(|e| {
                         KreuzbergError::Plugin {

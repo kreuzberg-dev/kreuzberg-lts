@@ -13,44 +13,44 @@ import com.fasterxml.jackson.annotation.JsonValue;
  * @since 4.6.0
  */
 public enum RelationshipKind {
-	/** Footnote marker to footnote definition. */
-	FOOTNOTE_REFERENCE("footnote_reference"),
+    /** Footnote marker to footnote definition. */
+    FOOTNOTE_REFERENCE("footnote_reference"),
 
-	/** Citation marker to bibliography entry. */
-	CITATION_REFERENCE("citation_reference"),
+    /** Citation marker to bibliography entry. */
+    CITATION_REFERENCE("citation_reference"),
 
-	/** Internal anchor link to target heading/element. */
-	INTERNAL_LINK("internal_link"),
+    /** Internal anchor link to target heading/element. */
+    INTERNAL_LINK("internal_link"),
 
-	/** Caption paragraph to figure/table it describes. */
-	CAPTION("caption"),
+    /** Caption paragraph to figure/table it describes. */
+    CAPTION("caption"),
 
-	/** Label to labeled element. */
-	LABEL("label"),
+    /** Label to labeled element. */
+    LABEL("label"),
 
-	/** TOC entry to target section. */
-	TOC_ENTRY("toc_entry"),
+    /** TOC entry to target section. */
+    TOC_ENTRY("toc_entry"),
 
-	/** Cross-reference to target element. */
-	CROSS_REFERENCE("cross_reference");
+    /** Cross-reference to target element. */
+    CROSS_REFERENCE("cross_reference");
 
-	private final String wireValue;
+    private final String wireValue;
 
-	RelationshipKind(String wireValue) {
-		this.wireValue = wireValue;
-	}
+    RelationshipKind(String wireValue) {
+        this.wireValue = wireValue;
+    }
 
-	/**
+    /**
 	 * Get the wire format value for this relationship kind.
 	 *
 	 * @return wire value used in serialization
 	 */
-	@JsonValue
-	public String wireValue() {
-		return wireValue;
-	}
+    @JsonValue
+    public String wireValue() {
+        return wireValue;
+    }
 
-	/**
+    /**
 	 * Parse a RelationshipKind from its wire value.
 	 *
 	 * @param wireValue
@@ -59,12 +59,12 @@ public enum RelationshipKind {
 	 * @throws IllegalArgumentException
 	 *             if the value is not recognized
 	 */
-	public static RelationshipKind fromWireValue(String wireValue) {
-		for (RelationshipKind type : values()) {
-			if (type.wireValue.equals(wireValue)) {
-				return type;
-			}
-		}
-		throw new IllegalArgumentException("Unknown RelationshipKind: " + wireValue);
-	}
+    public static RelationshipKind fromWireValue(String wireValue) {
+        for (RelationshipKind type : values()) {
+            if (type.wireValue.equals(wireValue)) {
+                return type;
+            }
+        }
+        throw new IllegalArgumentException("Unknown RelationshipKind: " + wireValue);
+    }
 }

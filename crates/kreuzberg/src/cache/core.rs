@@ -131,7 +131,6 @@ impl GenericCache {
             && let Ok(modified) = metadata.modified()
             && let Ok(elapsed) = SystemTime::now().duration_since(modified)
         {
-            // Check TTL from .meta file first, then override, then global max_age_days
             let max_age_secs = if let Some(ttl) = ttl_override_secs {
                 ttl as f64
             } else if let Some(meta_ttl) = self.read_meta_ttl(cache_path) {
@@ -196,7 +195,7 @@ impl GenericCache {
             // SAFETY: slice is exactly 8 bytes; guaranteed by the `bytes.len() >= 24` check above.
             Some(u64::from_le_bytes(bytes[16..24].try_into().unwrap()))
         } else {
-            None // Old-format 16-byte .meta, no TTL stored
+            None
         }
     }
 
@@ -239,7 +238,6 @@ impl GenericCache {
             bytes.extend_from_slice(&0u64.to_le_bytes());
         }
 
-        // TTL in seconds (0 = use global default)
         bytes.extend_from_slice(&ttl_secs.unwrap_or(0).to_le_bytes());
 
         let _ = fs::write(meta_path, bytes);
@@ -317,7 +315,6 @@ impl GenericCache {
         namespace: Option<&str>,
         ttl_secs: Option<u64>,
     ) -> Result<()> {
-        // create_dir_all is idempotent — safe for concurrent multi-worker calls
         let dir = self.resolve_dir(namespace);
         fs::create_dir_all(&dir)
             .map_err(|e| KreuzbergError::cache(format!("Failed to create cache namespace dir: {}", e)))?;
@@ -421,7 +418,6 @@ impl GenericCache {
 
             let path = entry.path();
 
-            // Skip the cleanup marker file
             if path.file_name().and_then(|n| n.to_str()) == Some(".last_cleanup") {
                 continue;
             }
@@ -431,7 +427,6 @@ impl GenericCache {
                 Err(_) => continue,
             };
 
-            // Recursively clear namespace subdirectories
             if metadata.is_dir() {
                 let (ns_removed, ns_freed) = self.delete_namespace_inner(&path)?;
                 removed_count += ns_removed;
@@ -492,7 +487,6 @@ impl GenericCache {
         let mut removed_count = 0;
         let mut removed_size = 0.0;
 
-        // Count files before removal
         if let Ok(read_dir) = fs::read_dir(dir) {
             for entry in read_dir.flatten() {
                 if let Ok(meta) = entry.metadata()

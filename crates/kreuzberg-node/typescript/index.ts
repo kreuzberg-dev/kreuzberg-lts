@@ -60,182 +60,105 @@
  * @module @kreuzberg/node
  */
 
-// ============================================================================
-// Types
-// ============================================================================
-
 export type {
-	Chunk,
-	ChunkingConfig,
-	ErrorClassification,
-	ExtractedImage,
-	ExtractionConfig,
-	ExtractionResult,
-	HtmlConversionOptions,
-	HtmlOutputConfig,
-	HtmlPreprocessingOptions,
-	ImageExtractionConfig,
-	KeywordConfig,
-	LanguageDetectionConfig,
-	OcrBackendProtocol,
-	OcrConfig,
-	PageContent,
-	PageExtractionConfig,
-	PdfConfig,
-	PostProcessorConfig,
-	PostProcessorProtocol,
-	Table,
-	TesseractConfig,
-	TokenReductionConfig,
-	ValidatorProtocol,
-	WorkerPool,
-	WorkerPoolStats,
+  Chunk,
+  ChunkingConfig,
+  ErrorClassification,
+  ExtractedImage,
+  ExtractionConfig,
+  ExtractionResult,
+  HtmlConversionOptions,
+  HtmlOutputConfig,
+  HtmlPreprocessingOptions,
+  ImageExtractionConfig,
+  KeywordConfig,
+  LanguageDetectionConfig,
+  OcrBackendProtocol,
+  OcrConfig,
+  PageContent,
+  PageExtractionConfig,
+  PdfConfig,
+  PostProcessorConfig,
+  PostProcessorProtocol,
+  Table,
+  TesseractConfig,
+  TokenReductionConfig,
+  ValidatorProtocol,
+  WorkerPool,
+  WorkerPoolStats,
 } from "./types.js";
 
-// ============================================================================
-// Errors and Error Handling
-// ============================================================================
-
 export {
-	classifyError,
-	getErrorCodeDescription,
-	getErrorCodeName,
-	getLastErrorCode,
-	getLastPanicContext,
+  classifyError,
+  getErrorCodeDescription,
+  getErrorCodeName,
+  getLastErrorCode,
+  getLastPanicContext,
 } from "./errors/diagnostics.js";
 export type { PanicContext } from "./errors.js";
 export {
-	CacheError,
-	EmbeddingError,
-	ErrorCode,
-	ImageProcessingError,
-	KreuzbergError,
-	MissingDependencyError,
-	OcrError,
-	ParsingError,
-	PluginError,
-	ValidationError,
+  CacheError,
+  EmbeddingError,
+  ErrorCode,
+  ImageProcessingError,
+  KreuzbergError,
+  MissingDependencyError,
+  OcrError,
+  ParsingError,
+  PluginError,
+  ValidationError,
 } from "./errors.js";
 
-// ============================================================================
-// Core Extraction APIs
-// ============================================================================
-
 export {
-	batchExtractBytes,
-	batchExtractBytesSync,
-	batchExtractFiles,
-	batchExtractFilesSync,
+  batchExtractBytes,
+  batchExtractBytesSync,
+  batchExtractFiles,
+  batchExtractFilesSync,
 } from "./extraction/batch.js";
 export type { PdfPageResult } from "./extraction/render.js";
 export {
-	iteratePdfPages,
-	iteratePdfPagesSync,
-	PdfPageIterator,
-	pdfPageCount,
-	renderPdfPage,
-	renderPdfPageSync,
+  iteratePdfPages,
+  iteratePdfPagesSync,
+  PdfPageIterator,
+  pdfPageCount,
+  renderPdfPage,
+  renderPdfPageSync,
 } from "./extraction/render.js";
-export {
-	extractBytes,
-	extractBytesSync,
-	extractFile,
-	extractFileSync,
-} from "./extraction/single.js";
-
-// ============================================================================
-// Worker Pool APIs
-// ============================================================================
+export { extractBytes, extractBytesSync, extractFile, extractFileSync } from "./extraction/single.js";
 
 export {
-	batchExtractFilesInWorker,
-	closeWorkerPool,
-	createWorkerPool,
-	extractFileInWorker,
-	getWorkerPoolStats,
+  batchExtractFilesInWorker,
+  closeWorkerPool,
+  createWorkerPool,
+  extractFileInWorker,
+  getWorkerPoolStats,
 } from "./extraction/worker-pool.js";
 
-// ============================================================================
-// Plugin System: Post-Processors
-// ============================================================================
-
 export {
-	clearPostProcessors,
-	listPostProcessors,
-	registerPostProcessor,
-	unregisterPostProcessor,
+  clearPostProcessors,
+  listPostProcessors,
+  registerPostProcessor,
+  unregisterPostProcessor,
 } from "./plugins/post-processors.js";
 
-// ============================================================================
-// Plugin System: Validators
-// ============================================================================
+export { clearValidators, listValidators, registerValidator, unregisterValidator } from "./plugins/validators.js";
+
+export { clearOcrBackends, listOcrBackends, registerOcrBackend, unregisterOcrBackend } from "./plugins/ocr-backends.js";
 
 export {
-	clearValidators,
-	listValidators,
-	registerValidator,
-	unregisterValidator,
-} from "./plugins/validators.js";
-
-// ============================================================================
-// Plugin System: OCR Backends
-// ============================================================================
-
-export {
-	clearOcrBackends,
-	listOcrBackends,
-	registerOcrBackend,
-	unregisterOcrBackend,
-} from "./plugins/ocr-backends.js";
-
-// ============================================================================
-// Registry: Document Extractors
-// ============================================================================
-
-export {
-	clearDocumentExtractors,
-	listDocumentExtractors,
-	unregisterDocumentExtractor,
+  clearDocumentExtractors,
+  listDocumentExtractors,
+  unregisterDocumentExtractor,
 } from "./registry/document-extractors.js";
-
-// ============================================================================
-// Configuration
-// ============================================================================
 
 export * from "./config/loader.js";
 
-// ============================================================================
-// MIME Type Utilities
-// ============================================================================
-
-export {
-	detectMimeType,
-	detectMimeTypeFromPath,
-	getExtensionsForMime,
-	validateMimeType,
-} from "./mime/utilities.js";
-
-// ============================================================================
-// Embeddings
-// ============================================================================
+export { detectMimeType, detectMimeTypeFromPath, getExtensionsForMime, validateMimeType } from "./mime/utilities.js";
 
 export type { EmbeddingConfig, EmbeddingModelType } from "./types.js";
 export type { EmbeddingPreset } from "./embeddings/presets.js";
-export {
-	embed,
-	embedSync,
-	getEmbeddingPreset,
-	listEmbeddingPresets,
-} from "./embeddings/presets.js";
-
-// ============================================================================
-// Version
-// ============================================================================
+export { embed, embedSync, getEmbeddingPreset, listEmbeddingPresets } from "./embeddings/presets.js";
 
 export const __version__ = "4.9.9";
-
-// ============================================================================
-// Test Utilities
-// ============================================================================
 
 export { __resetBindingForTests, __setBindingForTests } from "./core/binding.js";

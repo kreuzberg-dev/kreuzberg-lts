@@ -76,8 +76,8 @@ mod tests {
     #[test]
     fn test_detect_emf() {
         let mut data = vec![0x01, 0x00, 0x00, 0x00];
-        data.extend(vec![0u8; 36]); // padding to reach offset 40
-        data.extend(b" EMF"); // EMF signature at bytes 40-43
+        data.extend(vec![0u8; 36]);
+        data.extend(b" EMF");
         assert_eq!(detect_image_format(&data), "emf");
     }
 

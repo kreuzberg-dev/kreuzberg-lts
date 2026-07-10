@@ -4,7 +4,7 @@
 pub mod embedded_destination;
 pub mod launch;
 pub mod local_destination;
-pub(crate) mod private; // Keep private so that the PdfActionPrivate trait is not exposed.
+pub(crate) mod private;
 pub mod remote_destination;
 pub mod unsupported;
 pub mod uri;
@@ -96,7 +96,7 @@ impl<'a> PdfAction<'a> {
     }
 
     #[inline]
-    #[allow(dead_code)] // AJRC - 18/2/23 - We expect this function to be used in future.
+    #[allow(dead_code)]
     pub(crate) fn unwrap_as_trait_mut(&mut self) -> &mut dyn PdfActionPrivate<'a> {
         match self {
             PdfAction::LocalDestination(action) => action,
@@ -248,11 +248,7 @@ impl<'a> PdfAction<'a> {
 }
 
 /// Functionality common to all [PdfAction] objects, regardless of their [PdfActionType].
-pub trait PdfActionCommon<'a> {
-    // TODO: AJRC - 18/2/23 - this trait is reserved for future expansion.
-}
-
-// Blanket implementation for all PdfAction types.
+pub trait PdfActionCommon<'a> {}
 
 impl<'a, T> PdfActionCommon<'a> for T where T: PdfActionPrivate<'a> {}
 

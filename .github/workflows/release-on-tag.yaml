@@ -25,10 +25,6 @@ jobs:
             exit 1
           fi
 
-      # Use the GitHub App token (not GITHUB_TOKEN) so the resulting
-      # release event cascades to publish.yaml / publish-docker.yaml /
-      # publish-helm.yaml. GitHub deliberately suppresses downstream
-      # workflows when a release is created with the default token.
       - name: Generate GitHub App token
         id: app-token
         uses: actions/create-github-app-token@v2

@@ -17,9 +17,6 @@ defmodule KreuzbergTest.Unit.UtilityAPITest do
 
   alias Kreuzberg.UtilityAPI
 
-  # ============================================================================
-  # detect_mime_type/1 Tests
-  # ============================================================================
 
   describe "detect_mime_type/1" do
     @tag :unit
@@ -30,7 +27,6 @@ defmodule KreuzbergTest.Unit.UtilityAPITest do
 
     @tag :unit
     test "returns error for nil input" do
-      # This will raise a FunctionClauseError since the function requires binary
       assert_raise FunctionClauseError, fn ->
         UtilityAPI.detect_mime_type(nil)
       end
@@ -77,17 +73,12 @@ defmodule KreuzbergTest.Unit.UtilityAPITest do
 
     @tag :unit
     test "returns error for invalid binary data" do
-      # Random binary that may not match any known format
       invalid_binary = <<255, 254, 253, 252>>
       result = UtilityAPI.detect_mime_type(invalid_binary)
-      # May return error or a default type depending on implementation
       assert is_tuple(result) and tuple_size(result) == 2
     end
   end
 
-  # ============================================================================
-  # detect_mime_type_from_path/1 Tests
-  # ============================================================================
 
   describe "detect_mime_type_from_path/1" do
     @tag :unit
@@ -178,9 +169,6 @@ defmodule KreuzbergTest.Unit.UtilityAPITest do
     end
   end
 
-  # ============================================================================
-  # validate_mime_type/1 Tests
-  # ============================================================================
 
   describe "validate_mime_type/1" do
     @tag :unit
@@ -247,10 +235,8 @@ defmodule KreuzbergTest.Unit.UtilityAPITest do
 
     @tag :unit
     test "case sensitivity handling" do
-      # Test if MIME type validation is case-sensitive or case-insensitive
       result1 = UtilityAPI.validate_mime_type("application/pdf")
       result2 = UtilityAPI.validate_mime_type("Application/PDF")
-      # Both should either succeed or fail consistently
       assert match?({:ok, _}, result1) or match?({:error, _}, result1)
       assert match?({:ok, _}, result2) or match?({:error, _}, result2)
     end
@@ -275,9 +261,6 @@ defmodule KreuzbergTest.Unit.UtilityAPITest do
     end
   end
 
-  # ============================================================================
-  # get_extensions_for_mime/1 Tests
-  # ============================================================================
 
   describe "get_extensions_for_mime/1" do
     @tag :unit
@@ -347,7 +330,6 @@ defmodule KreuzbergTest.Unit.UtilityAPITest do
     test "returns list with multiple extensions when applicable" do
       {:ok, extensions} = UtilityAPI.get_extensions_for_mime("image/jpeg")
       assert is_list(extensions)
-      # JPEG typically has multiple extensions
       assert extensions != []
       assert all_strings?(extensions)
     end
@@ -381,9 +363,6 @@ defmodule KreuzbergTest.Unit.UtilityAPITest do
     end
   end
 
-  # ============================================================================
-  # list_embedding_presets/0 Tests
-  # ============================================================================
 
   describe "list_embedding_presets/0" do
     @tag :unit
@@ -438,9 +417,7 @@ defmodule KreuzbergTest.Unit.UtilityAPITest do
     @tag :unit
     test "returns sorted or consistent order" do
       {:ok, presets} = UtilityAPI.list_embedding_presets()
-      # Verify list is not empty and consistent
       assert presets != []
-      # Call multiple times to verify consistency
       {:ok, presets2} = UtilityAPI.list_embedding_presets()
       assert presets == presets2
     end
@@ -456,9 +433,6 @@ defmodule KreuzbergTest.Unit.UtilityAPITest do
     end
   end
 
-  # ============================================================================
-  # get_embedding_preset/1 Tests
-  # ============================================================================
 
   describe "get_embedding_preset/1" do
     @tag :unit
@@ -563,7 +537,6 @@ defmodule KreuzbergTest.Unit.UtilityAPITest do
     test "different presets have different configurations" do
       {:ok, fast} = UtilityAPI.get_embedding_preset("fast")
       {:ok, quality} = UtilityAPI.get_embedding_preset("quality")
-      # At least one of the configurations should differ
       assert fast != quality
     end
 
@@ -591,9 +564,6 @@ defmodule KreuzbergTest.Unit.UtilityAPITest do
     end
   end
 
-  # ============================================================================
-  # classify_error/1 Tests
-  # ============================================================================
 
   describe "classify_error/1" do
     @tag :unit
@@ -748,9 +718,7 @@ defmodule KreuzbergTest.Unit.UtilityAPITest do
 
     @tag :unit
     test "classification with multiple error keywords" do
-      # When multiple keywords present, first match wins
       result = UtilityAPI.classify_error("File not found - Invalid format")
-      # Should match io_error first
       assert result == :io_error
     end
 
@@ -769,9 +737,6 @@ defmodule KreuzbergTest.Unit.UtilityAPITest do
     end
   end
 
-  # ============================================================================
-  # get_error_details/0 Tests
-  # ============================================================================
 
   describe "get_error_details/0" do
     @tag :unit
@@ -974,9 +939,6 @@ defmodule KreuzbergTest.Unit.UtilityAPITest do
     end
   end
 
-  # ============================================================================
-  # Helper Functions
-  # ============================================================================
 
   defp all_strings?(list) do
     Enum.all?(list, &is_binary/1)

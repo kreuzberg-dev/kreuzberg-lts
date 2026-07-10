@@ -216,7 +216,6 @@ fn test_from_file_with_nested_server_section_toml() {
     let dir = tempdir().unwrap();
     let config_path = dir.path().join("kreuzberg.toml");
 
-    // Config file with [server] section and other sections (like ExtractionConfig)
     fs::write(
         &config_path,
         r#"
@@ -247,7 +246,6 @@ fn test_from_file_with_nested_server_section_yaml() {
     let dir = tempdir().unwrap();
     let config_path = dir.path().join("kreuzberg.yaml");
 
-    // Config file with server: section and other sections
     fs::write(
         &config_path,
         r#"
@@ -275,7 +273,6 @@ fn test_from_file_with_nested_server_section_json() {
     let dir = tempdir().unwrap();
     let config_path = dir.path().join("kreuzberg.json");
 
-    // Config file with "server" key and other sections
     fs::write(
         &config_path,
         r#"
@@ -305,7 +302,6 @@ fn test_from_file_flat_format_still_works() {
     let dir = tempdir().unwrap();
     let config_path = dir.path().join("server.toml");
 
-    // Old flat format without [server] section
     fs::write(
         &config_path,
         r#"

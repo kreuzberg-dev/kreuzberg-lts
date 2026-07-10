@@ -115,15 +115,10 @@ fn test_xlsx_excel_solver_extreme_dimensions_no_oom() {
 
     let file_path = test_file.to_str().expect("File path should be valid UTF-8");
 
-    // This should NOT cause OOM even though dimension claims A1:XFD1048575
-    // The actual data is minimal (only ~26 cells with Solver metadata)
     let result = read_excel_file(file_path).expect("Should extract XLSX with extreme dimensions without OOM");
 
-    // Verify we got the actual data, not a massive allocation
     assert!(!result.sheets.is_empty(), "Should have at least one sheet");
 
-    // The file has normal cells A1, B1 plus Solver cells at extreme positions
-    // Verify we extracted something reasonable, not 17 trillion cells
     let sheet = &result.sheets[0];
     assert!(
         sheet.markdown.len() < 10000,
@@ -131,7 +126,6 @@ fn test_xlsx_excel_solver_extreme_dimensions_no_oom() {
         sheet.markdown.len()
     );
 
-    // Verify metadata was extracted
     assert!(
         result.metadata.contains_key("sheet_count"),
         "Should have sheet_count metadata"
@@ -165,7 +159,6 @@ fn test_xlsx_markdown_vs_plain_output() {
     let file_path = test_file.to_str().expect("File path should be valid UTF-8");
     let workbook = read_excel_file(file_path).expect("Should extract XLSX successfully");
 
-    // excel_to_markdown should produce tables with | delimiters
     let md_content = excel_to_markdown(&workbook);
     assert!(
         md_content.contains("| "),
@@ -176,7 +169,6 @@ fn test_xlsx_markdown_vs_plain_output() {
         "Markdown output should contain separator rows"
     );
 
-    // excel_to_text should produce space-separated text (no pipes)
     let text_content = excel_to_text(&workbook);
     assert!(
         !text_content.contains("| "),

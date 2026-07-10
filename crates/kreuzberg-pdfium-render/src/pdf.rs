@@ -11,4 +11,4 @@ pub mod path;
 pub mod points;
 pub mod quad_points;
 pub mod rect;
-mod transform; // Keep private so that internal macros are not exposed.
+mod transform;

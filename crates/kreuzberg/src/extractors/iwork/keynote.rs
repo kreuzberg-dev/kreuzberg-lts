@@ -77,18 +77,14 @@ fn parse_keynote(content: &[u8]) -> Result<KeynoteData> {
     let iwa_paths = super::collect_iwa_paths(content)?;
     let metadata = extract_metadata_from_zip(content);
 
-    // Separate individual slide paths from master slides and other files.
-    // Slide paths typically look like `Index/Slide-NNNNN.iwa`.
     let mut slide_paths: Vec<&String> = iwa_paths
         .iter()
         .filter(|p| {
-            // Match `Slide-` or `Slide_` but not `MasterSlide`
             let filename = p.rsplit('/').next().unwrap_or(p);
             filename.starts_with("Slide") && !filename.starts_with("MasterSlide")
         })
         .collect();
 
-    // Sort slide paths so slides are in order
     slide_paths.sort();
 
     let other_paths: Vec<&String> = iwa_paths
@@ -99,7 +95,6 @@ fn parse_keynote(content: &[u8]) -> Result<KeynoteData> {
         })
         .collect();
 
-    // Extract text per slide (each slide IWA becomes a separate group)
     let mut slide_texts: Vec<Vec<String>> = Vec::new();
     let mut seen_global = std::collections::HashSet::new();
 
@@ -118,7 +113,6 @@ fn parse_keynote(content: &[u8]) -> Result<KeynoteData> {
         }
     }
 
-    // Extract remaining text from non-slide files
     let mut other_raw: Vec<String> = Vec::new();
     for path in &other_paths {
         match read_iwa_file(content, path) {
@@ -202,12 +196,10 @@ impl DocumentExtractor for KeynoteExtractor {
 fn build_keynote_internal_document(data: &KeynoteData) -> InternalDocument {
     let mut builder = InternalDocumentBuilder::new("keynote");
 
-    // Apply metadata
     if data.metadata.title.is_some() || data.metadata.authors.is_some() {
         builder.set_metadata(data.metadata.clone());
     }
 
-    // Emit per-slide elements
     for (idx, slide_lines) in data.slide_texts.iter().enumerate() {
         let slide_number = (idx + 1) as u32;
 
@@ -215,11 +207,9 @@ fn build_keynote_internal_document(data: &KeynoteData) -> InternalDocument {
             continue;
         }
 
-        // Use the first line as the slide title
         let title = slide_lines[0].trim();
         builder.push_slide(slide_number, Some(title), None);
 
-        // Remaining lines become body paragraphs
         for line in &slide_lines[1..] {
             let trimmed = line.trim();
             if !trimmed.is_empty() {
@@ -228,8 +218,6 @@ fn build_keynote_internal_document(data: &KeynoteData) -> InternalDocument {
         }
     }
 
-    // Emit any additional text that didn't belong to a specific slide
-    // (master slide text, presentation-level notes, etc.)
     if !data.other_texts.is_empty() {
         let has_slides = !data.slide_texts.is_empty();
         if has_slides {

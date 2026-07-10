@@ -163,7 +163,6 @@ impl LayoutEngine {
     /// Identical to [`detect`] but also returns a [`DetectTimings`] breakdown.
     /// Use this when you need per-step profiling (preprocess / onnx / postprocess).
     pub fn detect_timed(&mut self, img: &RgbImage) -> Result<(DetectionResult, DetectTimings), LayoutError> {
-        // Model inference (includes preprocessing + ONNX run internally).
         let model_start = Instant::now();
         let mut detections = if let Some(threshold) = self.config.confidence_threshold {
             self.model.detect_with_threshold(img, threshold)?
@@ -172,14 +171,11 @@ impl LayoutEngine {
         };
         let model_total_ms = model_start.elapsed().as_secs_f64() * 1000.0;
 
-        // Retrieve granular preprocess/onnx split recorded by the model implementation
-        // via the thread-local side-channel.
         let (preprocess_ms, onnx_ms) = crate::layout::inference_timings::take();
 
         let page_width = img.width();
         let page_height = img.height();
 
-        // Postprocessing heuristics (confidence filtering, overlap resolution).
         let postprocess_start = Instant::now();
         if self.config.apply_heuristics {
             heuristics::apply_heuristics(&mut detections, page_width as f32, page_height as f32);
@@ -222,7 +218,6 @@ impl LayoutEngine {
         let per_image_detections = self.model.detect_batch(images, self.config.confidence_threshold)?;
         let model_total_ms = model_start.elapsed().as_secs_f64() * 1000.0;
 
-        // Retrieve amortized timings written by the batch implementation.
         let (preprocess_ms, onnx_ms) = crate::layout::inference_timings::take();
 
         let postprocess_start = Instant::now();
@@ -242,13 +237,12 @@ impl LayoutEngine {
                     preprocess_ms,
                     onnx_ms,
                     model_total_ms,
-                    postprocess_ms: 0.0, // filled in after the loop
+                    postprocess_ms: 0.0,
                 },
             ));
         }
 
         let postprocess_ms = postprocess_start.elapsed().as_secs_f64() * 1000.0;
-        // Distribute postprocess time across all results (amortized per image).
         let postprocess_ms_per = postprocess_ms / images.len() as f64;
         for (_, timings) in &mut results {
             timings.postprocess_ms = postprocess_ms_per;

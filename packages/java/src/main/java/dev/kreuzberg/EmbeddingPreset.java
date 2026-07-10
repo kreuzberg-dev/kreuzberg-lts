@@ -20,16 +20,16 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  *            human-readable description
  */
 public record EmbeddingPreset(String name, int chunkSize, int overlap, String modelName, int dimensions,
-		String description) {
-	@JsonCreator
-	public EmbeddingPreset(@JsonProperty("name") String name, @JsonProperty("chunk_size") int chunkSize,
-			@JsonProperty("overlap") int overlap, @JsonProperty("model_name") String modelName,
-			@JsonProperty("dimensions") int dimensions, @JsonProperty("description") String description) {
-		this.name = name;
-		this.chunkSize = chunkSize;
-		this.overlap = overlap;
-		this.modelName = modelName;
-		this.dimensions = dimensions;
-		this.description = description;
-	}
+    String description) {
+    @JsonCreator
+    public EmbeddingPreset(@JsonProperty("name") String name, @JsonProperty("chunk_size") int chunkSize,
+        @JsonProperty("overlap") int overlap, @JsonProperty("model_name") String modelName,
+        @JsonProperty("dimensions") int dimensions, @JsonProperty("description") String description) {
+        this.name = name;
+        this.chunkSize = chunkSize;
+        this.overlap = overlap;
+        this.modelName = modelName;
+        this.dimensions = dimensions;
+        this.description = description;
+    }
 }

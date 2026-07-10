@@ -81,7 +81,6 @@ fn test_baseline_produces_structural_markdown() {
 
         let content = extract_markdown(&pdf_path);
 
-        // Basic structural assertions
         assert!(
             !content.trim().is_empty(),
             "{}: extraction produced empty content",
@@ -125,11 +124,9 @@ fn test_layout_does_not_regress_text_content() {
         let baseline = extract_markdown(&pdf_path);
         let layout = extract_markdown_with_layout(&pdf_path);
 
-        // Layout extraction should not lose significant content
         let baseline_len = baseline.len();
         let layout_len = layout.len();
 
-        // Allow up to 20% content loss (layout may restructure)
         assert!(
             layout_len as f64 >= baseline_len as f64 * 0.8,
             "{}: layout content ({} chars) is significantly shorter than baseline ({} chars)",
@@ -138,7 +135,6 @@ fn test_layout_does_not_regress_text_content() {
             baseline_len,
         );
 
-        // Layout should still have headings
         assert!(
             count_headings(&layout) > 0,
             "{}: layout extraction lost all headings",

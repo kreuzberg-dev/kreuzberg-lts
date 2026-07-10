@@ -68,13 +68,13 @@ fn test_max_multipart_field_mb() {
 #[test]
 fn test_max_bytes_to_mb_rounding() {
     let mut config = ServerConfig {
-        max_request_body_bytes: 1_048_576, // 1 MB
+        max_request_body_bytes: 1_048_576,
         ..Default::default()
     };
     assert_eq!(config.max_request_body_mb(), 1);
 
-    config.max_request_body_bytes = 1_048_577; // 1 MB + 1 byte
-    assert_eq!(config.max_request_body_mb(), 2); // Rounds up
+    config.max_request_body_bytes = 1_048_577;
+    assert_eq!(config.max_request_body_mb(), 2);
 }
 
 #[test]

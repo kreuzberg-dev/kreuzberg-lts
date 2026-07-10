@@ -49,7 +49,6 @@ class TestInvalidConfigHandling:
         assert any(keyword in error_msg for keyword in ["max_chars", "negative", "positive", "invalid", "unsigned"]), (
             f"Error message should indicate invalid max_chars: {error_msg}"
         )
-        # Validate that error type is one of the expected ones
         assert isinstance(exc_info.value, (ValueError, ValidationError, OverflowError))
         assert len(error_msg) > 5, "Error message should be descriptive"
 
@@ -115,14 +114,11 @@ class TestFileNotFoundErrors:
         assert any(keyword in error_msg for keyword in ["not found", "no such", "file", "missing"]), (
             f"Error should indicate file not found: {error_msg}"
         )
-        # Verify actual exception type
         assert isinstance(exc_info.value, (FileNotFoundError, OSError, ParsingError, ValueError))
 
     def test_nonexistent_document_file_raises_error(self, tmp_path: Path) -> None:
         """Attempting to process nonexistent document file raises error."""
         nonexistent_doc = tmp_path / "nonexistent.pdf"
-        # This test verifies that the binding properly propagates file not found errors
-        # Actual extraction would be done in rust core, but we verify the error path
         assert not nonexistent_doc.exists()
 
     def test_empty_file_path_raises_validation_error(self) -> None:
@@ -213,9 +209,7 @@ class TestOcrBackendErrors:
 
     def test_case_insensitivity_in_backend_names(self) -> None:
         """Backend names are case-insensitive in validation."""
-        # Uppercase should also work if backend is case-insensitive
         result = validate_ocr_backend("TESSERACT")
-        # This validates that backend lookup is case-insensitive or properly handles case
         assert isinstance(result, bool), "validate_ocr_backend should return boolean"
 
 
@@ -226,8 +220,6 @@ class TestConfigMergeErrors:
         """Merging conflicting config values is handled gracefully."""
         config1 = ExtractionConfig(chunking=ChunkingConfig(max_chars=1000, max_overlap=100))
         config2 = ExtractionConfig(chunking=ChunkingConfig(max_chars=2000, max_overlap=200))
-        # Merge should either succeed with last value or raise informative error
-        # This verifies error handling in merge operations
         assert config1 is not None
         assert config2 is not None
 
@@ -237,18 +229,14 @@ class TestMalformedDocumentHandling:
 
     def test_corrupted_pdf_raises_parsing_error(self, tmp_path: Path) -> None:
         """Corrupted PDF file raises ParsingError."""
-        # Create a fake corrupted PDF (just random bytes with PDF header)
         corrupted_pdf = tmp_path / "corrupted.pdf"
         corrupted_pdf.write_bytes(b"%PDF-1.4\nThis is not a valid PDF document")
 
         assert corrupted_pdf.exists()
-        # Actual extraction would be done by rust core
-        # This test verifies the error handling infrastructure
 
     def test_invalid_yaml_config_raises_error(self, tmp_path: Path) -> None:
         """Invalid YAML in config file raises parsing error."""
         invalid_yaml = tmp_path / "invalid.yaml"
-        # YAML with invalid syntax
         invalid_yaml.write_text("key: value\ninvalid indentation:\nbad\n  nesting")
 
         with pytest.raises((ValueError, ParsingError, OSError)):
@@ -257,7 +245,6 @@ class TestMalformedDocumentHandling:
     def test_invalid_toml_config_raises_error(self, tmp_path: Path) -> None:
         """Invalid TOML in config file raises parsing error."""
         invalid_toml = tmp_path / "invalid.toml"
-        # TOML with invalid syntax
         invalid_toml.write_text("[section\nmissing_bracket = true")
 
         with pytest.raises((ValueError, ParsingError, OSError)):
@@ -361,7 +348,6 @@ class TestErrorPropagation:
             ChunkingConfig(max_chars=-50)
 
         error_str = str(exc_info.value)
-        # Error should be clear about what failed
         assert len(error_str) > 0
 
     def test_parsing_error_includes_file_context(self) -> None:
@@ -440,7 +426,6 @@ class TestBoundaryConditions:
 
     def test_maximum_valid_chunk_size(self) -> None:
         """Maximum valid chunk size is accepted."""
-        # Large but valid chunk size
         config = ChunkingConfig(max_chars=1000000)
         assert config is not None
         assert config.max_chars == 1000000

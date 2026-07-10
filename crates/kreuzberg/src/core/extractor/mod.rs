@@ -20,7 +20,6 @@ mod sync;
 #[cfg(feature = "tokio-runtime")]
 mod batch;
 
-// Re-export public API
 pub use bytes::extract_bytes;
 pub use file::extract_file;
 pub use helpers::get_pool_sizing_hint;
@@ -399,7 +398,6 @@ mod tests {
 
         assert!(result.is_err());
         use crate::KreuzbergError;
-        // File validation returns Io error, not Validation error
         assert!(matches!(result.unwrap_err(), KreuzbergError::Io { .. }));
     }
 
@@ -574,7 +572,6 @@ mod tests {
         };
         let resolved = base.with_file_overrides(&overrides);
         assert!(resolved.force_ocr);
-        // Other fields unchanged
         assert_eq!(resolved.use_cache, base.use_cache);
         assert_eq!(resolved.enable_quality_processing, base.enable_quality_processing);
     }
@@ -582,9 +579,8 @@ mod tests {
     #[test]
     fn test_with_file_overrides_none_keeps_default() {
         let base = ExtractionConfig::default();
-        let overrides = crate::FileExtractionConfig::default(); // all None
+        let overrides = crate::FileExtractionConfig::default();
         let resolved = base.with_file_overrides(&overrides);
-        // All fields should match base
         assert_eq!(resolved.use_cache, base.use_cache);
         assert_eq!(resolved.force_ocr, base.force_ocr);
         assert_eq!(resolved.enable_quality_processing, base.enable_quality_processing);
@@ -604,10 +600,8 @@ mod tests {
             ..Default::default()
         };
         let resolved = base.with_file_overrides(&overrides);
-        // Batch-level fields must be preserved from base
         assert_eq!(resolved.max_concurrent_extractions, Some(42));
         assert!(!resolved.use_cache);
-        // Override applied
         assert!(resolved.force_ocr);
     }
 }

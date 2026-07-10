@@ -5,7 +5,6 @@ using Kreuzberg;
 var debug = Environment.GetEnvironmentVariable("KREUZBERG_BENCHMARK_DEBUG") == "true";
 var argsSpan = args.AsSpan();
 
-// Parse OCR flag and find mode
 var ocrEnabled = true;
 var modeIndex = -1;
 
@@ -14,18 +13,18 @@ for (var i = 0; i < argsSpan.Length; i++)
     switch (argsSpan[i])
     {
         case "--ocr":
-            ocrEnabled = true;
-            break;
+        ocrEnabled = true;
+        break;
         case "--no-ocr":
-            ocrEnabled = false;
-            break;
+        ocrEnabled = false;
+        break;
         default:
-            if (!argsSpan[i].StartsWith("--"))
+        if (!argsSpan[i].StartsWith("--"))
             {
                 modeIndex = i;
                 break;
             }
-            break;
+        break;
     }
 
     if (modeIndex >= 0)
@@ -43,8 +42,8 @@ if (modeIndex < 0)
 var mode = argsSpan[modeIndex].ToString();
 
 var benchConfig = ocrEnabled
-    ? new ExtractionConfig { UseCache = false, Ocr = new OcrConfig { } }
-    : new ExtractionConfig { UseCache = false };
+? new ExtractionConfig { UseCache = false, Ocr = new OcrConfig { } }
+: new ExtractionConfig { UseCache = false };
 
 if (debug)
 {
@@ -62,7 +61,6 @@ try
 {
     if (mode == "sync")
     {
-        // Sync mode: extract single file and output JSON
         if (modeIndex + 1 >= argsSpan.Length)
         {
             Console.Error.WriteLine("Error: File path required for sync mode");
@@ -93,7 +91,7 @@ try
 
         var formatType = result.Metadata?.Format?.Type;
         var ocrUsed = formatType == FormatType.Ocr
-            || ((formatType == FormatType.Image || formatType == FormatType.Pdf) && ocrEnabled);
+        || ((formatType == FormatType.Image || formatType == FormatType.Pdf) && ocrEnabled);
         var output = new
         {
             content = result.Content,
@@ -113,7 +111,6 @@ try
     }
     else if (mode == "batch")
     {
-        // Batch mode: extract multiple files and output JSON array
         var batchPaths = argsSpan.Slice(modeIndex + 1).ToArray();
 
         if (batchPaths.Length == 0)
@@ -143,12 +140,12 @@ try
 
                 var batchFormatType = batchResult.Metadata?.Format?.Type;
                 var batchOcrUsed = batchFormatType == FormatType.Ocr
-                    || ((batchFormatType == FormatType.Image || batchFormatType == FormatType.Pdf) && ocrEnabled);
+                || ((batchFormatType == FormatType.Image || batchFormatType == FormatType.Pdf) && ocrEnabled);
                 batchResults.Add(new
-                {
-                    content = batchResult.Content,
-                    _extraction_time_ms = batchSw.Elapsed.TotalMilliseconds,
-                    _ocr_used = batchOcrUsed
+                    {
+                        content = batchResult.Content,
+                        _extraction_time_ms = batchSw.Elapsed.TotalMilliseconds,
+                        _ocr_used = batchOcrUsed
                 });
             }
             catch (Exception ex)
@@ -167,13 +164,11 @@ try
     }
     else if (mode == "server")
     {
-        // Server mode: read file paths from stdin, extract, output JSON lines
         if (debug)
         {
             Console.Error.WriteLine("[DEBUG] Entering server mode");
         }
 
-        // Signal readiness after .NET CLR initialization is complete
         Console.Out.WriteLine("READY");
         Console.Out.Flush();
 
@@ -218,7 +213,7 @@ try
                 var formatType = result.Metadata?.Format?.Type;
                 var effectiveOcr = ocrEnabled || forceOcr;
                 var ocrUsed = formatType == FormatType.Ocr
-                    || ((formatType == FormatType.Image || formatType == FormatType.Pdf) && effectiveOcr);
+                || ((formatType == FormatType.Image || formatType == FormatType.Pdf) && effectiveOcr);
                 var output = new
                 {
                     content = result.Content,
@@ -292,7 +287,6 @@ static (string path, bool forceOcr) ParseRequest(string line)
         }
         catch (JsonException)
         {
-            // Fall through to plain path
         }
     }
     return (trimmed, false);

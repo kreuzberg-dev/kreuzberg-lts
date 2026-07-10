@@ -116,17 +116,11 @@ impl<'a> PdfPageXObjectFormObject<'a> {
         "this [PdfPageXObjectFormObject],"
     );
 
-    // The transform_impl() function required by the create_transform_setters!() macro
-    // is provided by the PdfPageObjectPrivate trait.
-
     create_transform_getters!(
         "this [PdfPageXObjectFormObject]",
         "this [PdfPageXObjectFormObject].",
         "this [PdfPageXObjectFormObject],"
     );
-
-    // The get_matrix_impl() function required by the create_transform_getters!() macro
-    // is provided by the PdfPageObjectPrivate trait.
 }
 
 impl<'a> PdfPageObjectPrivate<'a> for PdfPageXObjectFormObject<'a> {
@@ -205,8 +199,6 @@ impl<'a> PdfPageObjectsPrivate<'a> for PdfPageXObjectFormObject<'a> {
     fn iter_impl(&'a self) -> PdfPageObjectsIterator<'a> {
         PdfPageObjectsIterator::new(self)
     }
-
-    // The child objects collection is read-only.
 
     fn add_object_impl(&mut self, _object: PdfPageObject<'a>) -> Result<PdfPageObject<'a>, PdfiumError> {
         Err(PdfiumError::PageObjectsCollectionIsImmutable)

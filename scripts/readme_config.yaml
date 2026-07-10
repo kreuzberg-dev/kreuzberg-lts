@@ -63,7 +63,6 @@ languages:
       - performance
       - napi_implementation
     system_requirements:
-      # Legacy formats (DOC, XLS, PPT) are now extracted natively without external tools
     snippets:
       basic_extraction: getting-started/basic_usage.md
       async_extraction: getting-started/extract_file_async.md

@@ -96,7 +96,6 @@ fn create_pdfium_bindings(lib_dir: &Option<PathBuf>) -> Result<Box<dyn PdfiumLib
         }
     }
 
-    // For system library or WASM
     Pdfium::bind_to_system_library().map_err(|e| format!("Failed to bind to system Pdfium library: {}", e))
 }
 
@@ -114,17 +113,12 @@ fn create_pdfium_bindings(lib_dir: &Option<PathBuf>) -> Result<Box<dyn PdfiumLib
 /// `FPDF_DestroyLibrary()` which causes segfaults/SIGTRAP in FFI scenarios (exit code 201
 /// on macOS), particularly visible in Go tests where cgo cleanup order matters.
 fn initialize_pdfium() -> Result<&'static Pdfium, String> {
-    // Step 1: Extract bundled library (if applicable)
     let lib_dir = extract_and_get_lib_dir()?;
 
-    // Step 2: Create bindings to the library
     let bindings = create_pdfium_bindings(&lib_dir)?;
 
-    // Step 3: Create Pdfium instance (this calls FPDF_InitLibrary)
     let pdfium = Pdfium::new(bindings);
 
-    // Step 4: Leak the instance to prevent Drop from being called during process exit
-    // This is intentional and necessary for FFI safety across language boundaries
     Ok(Box::leak(Box::new(pdfium)))
 }
 
@@ -151,8 +145,6 @@ fn initialize_pdfium() -> Result<&'static Pdfium, String> {
 /// While this prevents parallel PDF processing, it ensures correctness and
 /// prevents crashes in batch processing scenarios.
 pub(crate) struct PdfiumHandle<'a> {
-    // Hold the mutex guard to ensure exclusive access to PDFium.
-    // The guard is automatically released when PdfiumHandle is dropped.
     #[allow(dead_code)]
     _guard: MutexGuard<'a, ()>,
 }
@@ -162,10 +154,6 @@ impl Deref for PdfiumHandle<'_> {
 
     fn deref(&self) -> &Self::Target {
         // SAFETY: We only create PdfiumHandle after successfully initializing
-        // the singleton, so this unwrap is guaranteed to succeed.
-        // The Result inside is also guaranteed to be Ok because bind_pdfium()
-        // only returns PdfiumHandle on success.
-        // Since we now store &'static Pdfium, we can directly dereference it.
         PDFIUM_SINGLETON.get().unwrap().as_ref().unwrap()
     }
 }
@@ -234,13 +222,6 @@ pub(crate) fn bind_pdfium(
     context: &'static str,
     cancel_token: Option<&CancellationToken>,
 ) -> Result<PdfiumHandle<'static>, PdfError> {
-    // Acquire exclusive lock on PDFium operations.
-    // This prevents concurrent access to PDFium which is NOT thread-safe.
-    // The lock is held for the duration of the PdfiumHandle's lifetime.
-    //
-    // When a cancellation token is provided we spin with try_lock so we can
-    // observe cancellation while waiting.  When there is no token the simpler
-    // blocking lock() path is used to avoid the spin overhead.
     let guard = if let Some(token) = cancel_token {
         loop {
             if token.is_cancelled() {
@@ -262,10 +243,8 @@ pub(crate) fn bind_pdfium(
             .map_err(|e| map_err(format!("PDFium operation lock poisoned ({}): {}", context, e)))?
     };
 
-    // Initialize the singleton on first access, or get the cached result
     let result = PDFIUM_SINGLETON.get_or_init(initialize_pdfium);
 
-    // Convert the cached Result into our return type
     match result {
         Ok(_) => Ok(PdfiumHandle { _guard: guard }),
         Err(cached_error) => Err(map_err(format!(
@@ -291,13 +270,11 @@ mod tests {
     #[test]
     #[serial]
     fn test_bind_pdfium_multiple_calls() {
-        // First call - acquire lock, test success, then drop handle to release lock
         {
             let result1 = bind_pdfium(PdfError::TextExtractionFailed, "test 1", None);
             assert!(result1.is_ok(), "First call should succeed");
-        } // result1 dropped here, releasing the lock
+        }
 
-        // Second call - can now acquire lock since first handle was dropped
         {
             let result2 = bind_pdfium(PdfError::TextExtractionFailed, "test 2", None);
             assert!(result2.is_ok(), "Second call should also succeed");
@@ -307,19 +284,16 @@ mod tests {
     #[test]
     #[serial]
     fn test_bind_pdfium_returns_same_instance() {
-        // Get pointer from first handle, then drop it to release lock
         let ptr1 = {
             let handle1 = bind_pdfium(PdfError::TextExtractionFailed, "test 1", None).unwrap();
             &*handle1 as *const Pdfium
-        }; // handle1 dropped here, releasing the lock
+        };
 
-        // Get pointer from second handle
         let ptr2 = {
             let handle2 = bind_pdfium(PdfError::TextExtractionFailed, "test 2", None).unwrap();
             &*handle2 as *const Pdfium
         };
 
-        // Both handles should dereference to the same Pdfium instance
         assert_eq!(ptr1, ptr2, "Both handles should reference the same Pdfium instance");
     }
 
@@ -342,8 +316,6 @@ mod tests {
     fn test_pdfium_handle_deref() {
         let handle = bind_pdfium(PdfError::TextExtractionFailed, "test", None).unwrap();
 
-        // Test that we can use the handle like a &Pdfium by calling a method
-        // that requires &Pdfium. create_new_pdf() takes &self and returns a Result.
         let result = handle.create_new_pdf();
         assert!(result.is_ok(), "Should be able to create a new PDF document");
     }

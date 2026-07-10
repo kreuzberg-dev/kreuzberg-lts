@@ -16,8 +16,6 @@ use crate::pdf::matrix::{PdfMatrix, PdfMatrixValue};
 use crate::pdf::points::PdfPoints;
 use std::os::raw::c_int;
 
-// TODO: AJRC - 29/7/22 - remove deprecated PdfBitmapConfig struct in 0.9.0 as part of tracking issue
-// https://github.com/ajrcarey/pdfium-render/issues/36
 #[deprecated(
     since = "0.7.12",
     note = "This struct has been renamed to better reflect its purpose. Use the PdfRenderConfig struct instead."
@@ -85,20 +83,19 @@ pub struct PdfRenderConfig {
     transformation_matrix: PdfMatrix,
     clip_rect: Option<(Pixels, Pixels, Pixels, Pixels)>,
 
-    // The fields below set Pdfium's page rendering flags. Coverage for the
     // FPDF_DEBUG_INFO and FPDF_NO_CATCH flags is omitted since they are obsolete.
-    do_set_flag_render_annotations: bool,         // Sets FPDF_ANNOT
-    do_set_flag_use_lcd_text_rendering: bool,     // Sets FPDF_LCD_TEXT
-    do_set_flag_no_native_text: bool,             // Sets FPDF_NO_NATIVETEXT
-    do_set_flag_grayscale: bool,                  // Sets FPDF_GRAYSCALE
+    do_set_flag_render_annotations: bool,
+    do_set_flag_use_lcd_text_rendering: bool,
+    do_set_flag_no_native_text: bool,
+    do_set_flag_grayscale: bool,
     do_set_flag_render_limited_image_cache: bool, // Sets FPDF_RENDER_LIMITEDIMAGECACHE
-    do_set_flag_render_force_half_tone: bool,     // Sets FPDF_RENDER_FORCEHALFTONE
-    do_set_flag_render_for_printing: bool,        // Sets FPDF_PRINTING
-    do_set_flag_render_no_smooth_text: bool,      // Sets FPDF_RENDER_NO_SMOOTHTEXT
-    do_set_flag_render_no_smooth_image: bool,     // Sets FPDF_RENDER_NO_SMOOTHIMAGE
-    do_set_flag_render_no_smooth_path: bool,      // Sets FPDF_RENDER_NO_SMOOTHPATH
-    do_set_flag_reverse_byte_order: bool,         // Sets FPDF_REVERSE_BYTE_ORDER
-    do_set_flag_convert_fill_to_stroke: bool,     // Sets FPDF_CONVERT_FILL_TO_STROKE
+    do_set_flag_render_force_half_tone: bool,
+    do_set_flag_render_for_printing: bool,
+    do_set_flag_render_no_smooth_text: bool,
+    do_set_flag_render_no_smooth_image: bool,
+    do_set_flag_render_no_smooth_path: bool,
+    do_set_flag_reverse_byte_order: bool,
+    do_set_flag_convert_fill_to_stroke: bool,
 }
 
 impl PdfRenderConfig {
@@ -136,9 +133,6 @@ impl PdfRenderConfig {
             do_set_flag_render_no_smooth_path: false,
             do_set_flag_convert_fill_to_stroke: false,
 
-            // We ask Pdfium to reverse its bitmap byte order from BGR8 to RGB8 in order
-            // to make working with Image::DynamicImage easier after version 0.24. See:
-            // https://github.com/ajrcarey/pdfium-render/issues/9
             do_set_flag_reverse_byte_order: true,
         }
     }
@@ -333,8 +327,6 @@ impl PdfRenderConfig {
             .rotate_if_landscape(rotation, do_rotate_constraints)
     }
 
-    // TODO: AJRC - 30/7/22 - remove deprecated rotate_if_portait() function in 0.9.0 as part
-    // of tracking issue https://github.com/ajrcarey/pdfium-render/issues/36
     /// Applies the given clockwise rotation settings to the [PdfPage] during rendering, if the page
     /// is in portrait orientation. If the given flag is set to `true` and the given
     /// rotation setting is [PdfBitmapRotation::Degrees90] or [PdfBitmapRotation::Degrees270]
@@ -569,7 +561,6 @@ impl PdfRenderConfig {
             form elements and form data into the containing page."
     );
 
-    // The internal implementation of the transform() function used by the create_transform_setters!() macro.
     fn transform_impl(
         mut self,
         a: PdfMatrixValue,
@@ -591,7 +582,6 @@ impl PdfRenderConfig {
         }
     }
 
-    // The internal implementation of the reset_matrix() function used by the create_transform_setters!() macro.
     fn reset_matrix_impl(mut self, matrix: PdfMatrix) -> Result<Self, PdfiumError> {
         self.transformation_matrix = matrix;
 
@@ -625,8 +615,6 @@ impl PdfRenderConfig {
 
         let source_orientation = PdfPageOrientation::from_width_and_height(source_width, source_height);
 
-        // Do we need to apply any rotation?
-
         let (target_rotation, do_rotate_constraints) =
             if source_orientation == Portrait && self.portrait_rotation != PdfPageRenderRotation::None {
                 (self.portrait_rotation, self.portrait_rotation_do_rotate_constraints)
@@ -637,8 +625,6 @@ impl PdfRenderConfig {
             };
 
         let (output_width, output_height, width_scale, height_scale) = if self.use_auto_scaling {
-            // Compute output width and height based on target sizes and page dimensions.
-
             let width_scale = if let Some(scale) = self.scale_width_factor {
                 Some(scale)
             } else {
@@ -651,20 +637,12 @@ impl PdfRenderConfig {
                 self.target_height.map(|target| (target as f32) / source_height.value)
             };
 
-            // Maintain source aspect ratio if only one dimension's scale is set.
-
             let (do_maintain_aspect_ratio, mut width_scale, mut height_scale) = match (width_scale, height_scale) {
                 (Some(width_scale), Some(height_scale)) => (width_scale == height_scale, width_scale, height_scale),
                 (Some(width_scale), None) => (true, width_scale, width_scale),
                 (None, Some(height_scale)) => (true, height_scale, height_scale),
-                (None, None) => {
-                    // Set default scale to 1.0 if neither dimension is specified.
-
-                    (false, 1.0, 1.0)
-                }
+                (None, None) => (false, 1.0, 1.0),
             };
-
-            // Apply constraints on maximum width and height, if any.
 
             let (source_width, source_height, width_constraint, height_constraint) = if do_rotate_constraints {
                 (source_height, source_width, self.maximum_height, self.maximum_width)
@@ -676,8 +654,6 @@ impl PdfRenderConfig {
                 let maximum = maximum as f32;
 
                 if source_width.value * width_scale > maximum {
-                    // Constrain the width, so it does not exceed the maximum.
-
                     width_scale = maximum / source_width.value;
 
                     if do_maintain_aspect_ratio {
@@ -690,8 +666,6 @@ impl PdfRenderConfig {
                 let maximum = maximum as f32;
 
                 if source_height.value * height_scale > maximum {
-                    // Constrain the height, so it does not exceed the maximum.
-
                     height_scale = maximum / source_height.value;
 
                     if do_maintain_aspect_ratio {
@@ -707,8 +681,6 @@ impl PdfRenderConfig {
                 height_scale,
             )
         } else {
-            // Take output width and height directly from user's fixed settings.
-
             (
                 self.fixed_width.unwrap_or(0) as c_int,
                 self.fixed_height.unwrap_or(0) as c_int,
@@ -716,8 +688,6 @@ impl PdfRenderConfig {
                 self.scale_height_factor.unwrap_or(1.0),
             )
         };
-
-        // Compose render flags.
 
         let mut render_flags = 0;
 
@@ -769,16 +739,8 @@ impl PdfRenderConfig {
             render_flags |= FPDF_CONVERT_FILL_TO_STROKE;
         }
 
-        // Pages can be rendered either _with_ transformation matrices and clipping
-        // but _without_ form data, or _with_ form data but _without_ transformation matrices
-        // and clipping. We need to be prepared for either option. If rendering of form data
-        // is disabled, then the scaled output width and height and any user-specified
-        // 90-degree rotation need to be applied to the transformation matrix now.
-
         let transformation_matrix = if !self.do_render_form_data {
             let result = if target_rotation != PdfPageRenderRotation::None {
-                // Translate the origin to the center of the page before rotating.
-
                 let (delta_x, delta_y) = match target_rotation {
                     PdfPageRenderRotation::None => unreachable!(),
                     PdfPageRenderRotation::Degrees90 => (PdfPoints::ZERO, -source_width),
@@ -857,7 +819,7 @@ pub(crate) struct PdfPageRenderSettings {
 #[cfg(test)]
 mod tests {
     use crate::prelude::*;
-    use crate::utils::test::test_bind_to_pdfium; // Temporary until PdfParagraph is included in the prelude.
+    use crate::utils::test::test_bind_to_pdfium;
 
     #[test]
     fn test_fixed_size_render_config() -> Result<(), PdfiumError> {
@@ -865,8 +827,6 @@ mod tests {
 
         assert_eq!(render_settings.width, 2000);
         assert_eq!(render_settings.height, 2000);
-
-        // Applying scaling does not affect the rendered bitmap size.
 
         let render_settings = get_render_settings_from_config(
             PdfRenderConfig::new()
@@ -887,8 +847,6 @@ mod tests {
 
         assert_eq!(render_settings.width, 1414);
         assert_eq!(render_settings.height, 2000);
-
-        // Applying scaling does affected the rendered bitmap size.
 
         let render_settings = get_render_settings_from_config(
             PdfRenderConfig::new()

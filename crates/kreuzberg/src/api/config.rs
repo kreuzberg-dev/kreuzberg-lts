@@ -49,7 +49,6 @@ pub fn load_server_config(config_path: Option<&std::path::Path>) -> Result<Serve
         ServerConfig::default()
     };
 
-    // Apply environment variable overrides with proper logging
     config.apply_env_overrides()?;
 
     tracing::info!(

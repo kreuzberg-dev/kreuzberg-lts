@@ -24,11 +24,6 @@ impl<'a> PdfPageObjectContentMark<'a> {
 
     /// Returns the name of this content mark (e.g., "P", "Span", "Artifact").
     pub fn name(&self) -> Option<String> {
-        // Retrieving the mark name from Pdfium is a two-step operation. First, we call
-        // FPDFPageObjMark_GetName() with a null buffer to retrieve the required buffer
-        // size in bytes. Then we allocate a buffer of that size and call the function
-        // again to retrieve the actual name.
-
         let mut name_length: c_ulong = 0;
 
         if !self.bindings.is_true(self.bindings.FPDFPageObjMark_GetName(

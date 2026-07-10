@@ -23,9 +23,11 @@ declare(strict_types=1);
  * @return \Kreuzberg\Types\ExtractionResult Extraction result
  * @throws \Exception If extraction fails
  */
-function kreuzberg_extract_file(string $filePath, ?string $mimeType, ?string $config): \Kreuzberg\Types\ExtractionResult
-{
-}
+function kreuzberg_extract_file(
+    string $filePath,
+    ?string $mimeType,
+    ?string $config,
+): \Kreuzberg\Types\ExtractionResult {}
 
 /**
  * Extract content from bytes (native extension function).
@@ -36,9 +38,7 @@ function kreuzberg_extract_file(string $filePath, ?string $mimeType, ?string $co
  * @return \Kreuzberg\Types\ExtractionResult Extraction result
  * @throws \Exception If extraction fails
  */
-function kreuzberg_extract_bytes(string $data, string $mimeType, ?string $config): \Kreuzberg\Types\ExtractionResult
-{
-}
+function kreuzberg_extract_bytes(string $data, string $mimeType, ?string $config): \Kreuzberg\Types\ExtractionResult {}
 
 /**
  * Extract content from multiple files in parallel (native extension function).
@@ -48,9 +48,7 @@ function kreuzberg_extract_bytes(string $data, string $mimeType, ?string $config
  * @return array<\Kreuzberg\Types\ExtractionResult> List of extraction results
  * @throws \Exception If extraction fails
  */
-function kreuzberg_batch_extract_files(array $paths, ?string $config): array
-{
-}
+function kreuzberg_batch_extract_files(array $paths, ?string $config): array {}
 
 /**
  * Extract content from multiple byte arrays in parallel (native extension function).
@@ -61,9 +59,7 @@ function kreuzberg_batch_extract_files(array $paths, ?string $config): array
  * @return array<\Kreuzberg\Types\ExtractionResult> List of extraction results
  * @throws \Exception If extraction fails
  */
-function kreuzberg_batch_extract_bytes(array $dataList, array $mimeTypes, ?string $config): array
-{
-}
+function kreuzberg_batch_extract_bytes(array $dataList, array $mimeTypes, ?string $config): array {}
 
 /**
  * Detect MIME type from file bytes (native extension function).
@@ -71,9 +67,7 @@ function kreuzberg_batch_extract_bytes(array $dataList, array $mimeTypes, ?strin
  * @param string $data File content as bytes
  * @return string Detected MIME type
  */
-function kreuzberg_detect_mime_type(string $data): string
-{
-}
+function kreuzberg_detect_mime_type(string $data): string {}
 
 /**
  * Detect MIME type from file path (native extension function).
@@ -81,9 +75,7 @@ function kreuzberg_detect_mime_type(string $data): string
  * @param string $path Path to the file
  * @return string Detected MIME type
  */
-function kreuzberg_detect_mime_type_from_path(string $path): string
-{
-}
+function kreuzberg_detect_mime_type_from_path(string $path): string {}
 
 /**
  * Register a custom document extractor (native extension function).
@@ -92,9 +84,7 @@ function kreuzberg_detect_mime_type_from_path(string $path): string
  * @param callable $extractor Extractor callback
  * @return void
  */
-function kreuzberg_register_extractor(string $mimeType, callable $extractor): void
-{
-}
+function kreuzberg_register_extractor(string $mimeType, callable $extractor): void {}
 
 /**
  * Unregister a custom document extractor (native extension function).
@@ -102,27 +92,21 @@ function kreuzberg_register_extractor(string $mimeType, callable $extractor): vo
  * @param string $mimeType MIME type to unregister
  * @return void
  */
-function kreuzberg_unregister_extractor(string $mimeType): void
-{
-}
+function kreuzberg_unregister_extractor(string $mimeType): void {}
 
 /**
  * List all registered extractors (native extension function).
  *
  * @return array<string> List of registered MIME types
  */
-function kreuzberg_list_extractors(): array
-{
-}
+function kreuzberg_list_extractors(): array {}
 
 /**
  * Clear all registered extractors (native extension function).
  *
  * @return void
  */
-function kreuzberg_clear_extractors(): void
-{
-}
+function kreuzberg_clear_extractors(): void {}
 
 /**
  * Test a plugin for compatibility (native extension function).
@@ -130,9 +114,7 @@ function kreuzberg_clear_extractors(): void
  * @param string $pluginPath Path to the plugin
  * @return bool Whether the plugin is compatible
  */
-function kreuzberg_test_plugin(string $pluginPath): bool
-{
-}
+function kreuzberg_test_plugin(string $pluginPath): bool {}
 
 /**
  * Register a custom OCR backend (native extension function).
@@ -141,9 +123,7 @@ function kreuzberg_test_plugin(string $pluginPath): bool
  * @param callable $backend Backend callback
  * @return void
  */
-function kreuzberg_register_ocr_backend(string $name, callable $backend): void
-{
-}
+function kreuzberg_register_ocr_backend(string $name, callable $backend): void {}
 
 /**
  * Unregister a custom OCR backend (native extension function).
@@ -151,18 +131,14 @@ function kreuzberg_register_ocr_backend(string $name, callable $backend): void
  * @param string $name Backend name
  * @return void
  */
-function kreuzberg_unregister_ocr_backend(string $name): void
-{
-}
+function kreuzberg_unregister_ocr_backend(string $name): void {}
 
 /**
  * List all registered OCR backends (native extension function).
  *
  * @return array<string> List of registered backend names
  */
-function kreuzberg_list_ocr_backends(): array
-{
-}
+function kreuzberg_list_ocr_backends(): array {}
 
 /**
  * Register a custom post-processor (native extension function).
@@ -171,9 +147,7 @@ function kreuzberg_list_ocr_backends(): array
  * @param callable $processor Processor callback
  * @return void
  */
-function kreuzberg_register_post_processor(string $name, callable $processor): void
-{
-}
+function kreuzberg_register_post_processor(string $name, callable $processor): void {}
 
 /**
  * Unregister a custom post-processor (native extension function).
@@ -181,27 +155,21 @@ function kreuzberg_register_post_processor(string $name, callable $processor): v
  * @param string $name Processor name
  * @return void
  */
-function kreuzberg_unregister_post_processor(string $name): void
-{
-}
+function kreuzberg_unregister_post_processor(string $name): void {}
 
 /**
  * List all registered post-processors (native extension function).
  *
  * @return array<string> List of registered processor names
  */
-function kreuzberg_list_post_processors(): array
-{
-}
+function kreuzberg_list_post_processors(): array {}
 
 /**
  * Clear all registered post-processors (native extension function).
  *
  * @return void
  */
-function kreuzberg_clear_post_processors(): void
-{
-}
+function kreuzberg_clear_post_processors(): void {}
 
 /**
  * Register a custom validator (native extension function).
@@ -210,9 +178,7 @@ function kreuzberg_clear_post_processors(): void
  * @param callable $validator Validator callback
  * @return void
  */
-function kreuzberg_register_validator(string $name, callable $validator): void
-{
-}
+function kreuzberg_register_validator(string $name, callable $validator): void {}
 
 /**
  * Unregister a custom validator (native extension function).
@@ -220,27 +186,21 @@ function kreuzberg_register_validator(string $name, callable $validator): void
  * @param string $name Validator name
  * @return void
  */
-function kreuzberg_unregister_validator(string $name): void
-{
-}
+function kreuzberg_unregister_validator(string $name): void {}
 
 /**
  * List all registered validators (native extension function).
  *
  * @return array<string> List of registered validator names
  */
-function kreuzberg_list_validators(): array
-{
-}
+function kreuzberg_list_validators(): array {}
 
 /**
  * Clear all registered validators (native extension function).
  *
  * @return void
  */
-function kreuzberg_clear_validators(): void
-{
-}
+function kreuzberg_clear_validators(): void {}
 
 /**
  * Extract content from a file asynchronously (native extension function).
@@ -251,9 +211,11 @@ function kreuzberg_clear_validators(): void
  * @return \Kreuzberg\Types\DeferredResult Deferred result
  * @throws \Exception If config parsing fails
  */
-function kreuzberg_extract_file_async(string $filePath, ?string $mimeType = null, ?string $config = null): \Kreuzberg\Types\DeferredResult
-{
-}
+function kreuzberg_extract_file_async(
+    string $filePath,
+    ?string $mimeType = null,
+    ?string $config = null,
+): \Kreuzberg\Types\DeferredResult {}
 
 /**
  * Extract content from bytes asynchronously (native extension function).
@@ -264,9 +226,11 @@ function kreuzberg_extract_file_async(string $filePath, ?string $mimeType = null
  * @return \Kreuzberg\Types\DeferredResult Deferred result
  * @throws \Exception If config parsing fails
  */
-function kreuzberg_extract_bytes_async(string $data, string $mimeType, ?string $config = null): \Kreuzberg\Types\DeferredResult
-{
-}
+function kreuzberg_extract_bytes_async(
+    string $data,
+    string $mimeType,
+    ?string $config = null,
+): \Kreuzberg\Types\DeferredResult {}
 
 /**
  * Extract content from multiple files asynchronously (native extension function).
@@ -276,9 +240,7 @@ function kreuzberg_extract_bytes_async(string $data, string $mimeType, ?string $
  * @return \Kreuzberg\Types\DeferredResult Deferred result (use getResults() for batch)
  * @throws \Exception If config parsing fails
  */
-function kreuzberg_batch_extract_files_async(array $paths, ?string $config = null): \Kreuzberg\Types\DeferredResult
-{
-}
+function kreuzberg_batch_extract_files_async(array $paths, ?string $config = null): \Kreuzberg\Types\DeferredResult {}
 
 /**
  * Extract content from multiple byte arrays asynchronously (native extension function).
@@ -289,9 +251,11 @@ function kreuzberg_batch_extract_files_async(array $paths, ?string $config = nul
  * @return \Kreuzberg\Types\DeferredResult Deferred result (use getResults() for batch)
  * @throws \Exception If config parsing fails
  */
-function kreuzberg_batch_extract_bytes_async(array $dataList, array $mimeTypes, ?string $config = null): \Kreuzberg\Types\DeferredResult
-{
-}
+function kreuzberg_batch_extract_bytes_async(
+    array $dataList,
+    array $mimeTypes,
+    ?string $config = null,
+): \Kreuzberg\Types\DeferredResult {}
 
 /**
  * Render a single PDF page to PNG bytes.
@@ -302,9 +266,7 @@ function kreuzberg_batch_extract_bytes_async(array $dataList, array $mimeTypes, 
  * @return string PNG image data
  * @throws \Exception If rendering fails
  */
-function kreuzberg_render_pdf_page(string $filePath, int $pageIndex, ?int $dpi = null): string
-{
-}
+function kreuzberg_render_pdf_page(string $filePath, int $pageIndex, ?int $dpi = null): string {}
 
 /**
  * Create a new PDF page iterator (native extension function).
@@ -314,9 +276,7 @@ function kreuzberg_render_pdf_page(string $filePath, int $pageIndex, ?int $dpi =
  * @return resource Opaque iterator handle
  * @throws \Exception If creation fails
  */
-function kreuzberg_pdf_page_iterator_new(string $filePath, int $dpi): mixed
-{
-}
+function kreuzberg_pdf_page_iterator_new(string $filePath, int $dpi): mixed {}
 
 /**
  * Advance the PDF page iterator and return the next page as PNG bytes.
@@ -325,9 +285,7 @@ function kreuzberg_pdf_page_iterator_new(string $filePath, int $dpi): mixed
  * @return string|null PNG-encoded bytes, or null when exhausted
  * @throws \Exception On rendering error
  */
-function kreuzberg_pdf_page_iterator_next(mixed $handle): ?string
-{
-}
+function kreuzberg_pdf_page_iterator_next(mixed $handle): ?string {}
 
 /**
  * Free a PDF page iterator handle.
@@ -335,9 +293,7 @@ function kreuzberg_pdf_page_iterator_next(mixed $handle): ?string
  * @param resource $handle Iterator handle
  * @return void
  */
-function kreuzberg_pdf_page_iterator_free(mixed $handle): void
-{
-}
+function kreuzberg_pdf_page_iterator_free(mixed $handle): void {}
 
 /**
  * Generate text embeddings (native extension function).
@@ -347,9 +303,7 @@ function kreuzberg_pdf_page_iterator_free(mixed $handle): void
  * @return array<array<float>> List of embedding vectors
  * @throws \Exception If embedding fails
  */
-function kreuzberg_embed(array $texts, ?string $config): array
-{
-}
+function kreuzberg_embed(array $texts, ?string $config): array {}
 
 /**
  * Generate text embeddings asynchronously (native extension function).
@@ -359,6 +313,4 @@ function kreuzberg_embed(array $texts, ?string $config): array
  * @return \Kreuzberg\Types\DeferredResult Deferred result
  * @throws \Exception If embedding fails
  */
-function kreuzberg_embed_async(array $texts, ?string $config): \Kreuzberg\Types\DeferredResult
-{
-}
+function kreuzberg_embed_async(array $texts, ?string $config): \Kreuzberg\Types\DeferredResult {}

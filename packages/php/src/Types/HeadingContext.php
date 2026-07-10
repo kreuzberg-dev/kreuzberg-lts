@@ -16,8 +16,7 @@ readonly class HeadingContext
      */
     public function __construct(
         public array $headings,
-    ) {
-    }
+    ) {}
 
     /**
      * @param array<string, mixed> $data
@@ -27,10 +26,9 @@ readonly class HeadingContext
         /** @var list<array<string, mixed>> $rawHeadings */
         $rawHeadings = is_array($data['headings'] ?? null) ? $data['headings'] : [];
         /** @var list<HeadingLevel> $headings */
-        $headings = array_values(array_map(
-            static fn (array $h): HeadingLevel => HeadingLevel::fromArray($h),
-            $rawHeadings,
-        ));
+        $headings = array_values(array_map(static fn(array $h): HeadingLevel => HeadingLevel::fromArray(
+            $h,
+        ), $rawHeadings));
 
         return new self(headings: $headings);
     }

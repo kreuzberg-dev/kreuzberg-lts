@@ -11,9 +11,9 @@ defmodule KreuzbergTest.Unit.StructRefactoringTest do
   describe "Metadata struct" do
     test "creates metadata struct from map" do
       map = %{
-        "title" => "Report 2024",
-        "authors" => ["John Doe"],
-        "created_at" => "2024-01-15T10:30:00Z"
+      "title" => "Report 2024",
+      "authors" => ["John Doe"],
+      "created_at" => "2024-01-15T10:30:00Z"
       }
 
       metadata = Kreuzberg.Metadata.from_map(map)
@@ -26,8 +26,8 @@ defmodule KreuzbergTest.Unit.StructRefactoringTest do
 
     test "converts metadata struct to map" do
       metadata = %Kreuzberg.Metadata{
-        title: "Report",
-        authors: ["Jane"]
+      title: "Report",
+      authors: ["Jane"]
       }
 
       map = Kreuzberg.Metadata.to_map(metadata)
@@ -49,8 +49,8 @@ defmodule KreuzbergTest.Unit.StructRefactoringTest do
   describe "Table struct" do
     test "creates table struct from map" do
       map = %{
-        "cells" => [["A", "B"], ["1", "2"]],
-        "markdown" => "| A | B |\n|---|---|\n| 1 | 2 |"
+      "cells" => [["A", "B"], ["1", "2"]],
+      "markdown" => "| A | B |\n|---|---|\n| 1 | 2 |"
       }
 
       table = Kreuzberg.Table.from_map(map)
@@ -62,7 +62,7 @@ defmodule KreuzbergTest.Unit.StructRefactoringTest do
 
     test "converts table struct to map" do
       table = %Kreuzberg.Table{
-        cells: [["X", "Y"]]
+      cells: [["X", "Y"]]
       }
 
       map = Kreuzberg.Table.to_map(table)
@@ -72,7 +72,7 @@ defmodule KreuzbergTest.Unit.StructRefactoringTest do
 
     test "calculates row and column counts" do
       table = %Kreuzberg.Table{
-        cells: [["A", "B"], ["1", "2"], ["3", "4"]]
+      cells: [["A", "B"], ["1", "2"], ["3", "4"]]
       }
 
       assert Kreuzberg.Table.row_count(table) == 3
@@ -99,9 +99,9 @@ defmodule KreuzbergTest.Unit.StructRefactoringTest do
 
     test "creates chunk from map" do
       map = %{
-        "content" => "content",
-        "embedding" => [0.3, 0.4, 0.5],
-        "metadata" => %{"token_count" => 15}
+      "content" => "content",
+      "embedding" => [0.3, 0.4, 0.5],
+      "metadata" => %{"token_count" => 15}
       }
 
       chunk = Kreuzberg.Chunk.from_map(map)
@@ -113,8 +113,8 @@ defmodule KreuzbergTest.Unit.StructRefactoringTest do
 
     test "converts chunk to map" do
       chunk = %Kreuzberg.Chunk{
-        content: "text",
-        embedding: [0.1, 0.2]
+      content: "text",
+      embedding: [0.1, 0.2]
       }
 
       map = Kreuzberg.Chunk.to_map(chunk)
@@ -136,10 +136,10 @@ defmodule KreuzbergTest.Unit.StructRefactoringTest do
 
     test "creates image from map" do
       map = %{
-        "format" => "jpeg",
-        "width" => 1920,
-        "height" => 1080,
-        "ocr_result" => %{"content" => "extracted text", "mime_type" => "text/plain"}
+      "format" => "jpeg",
+      "width" => 1920,
+      "height" => 1080,
+      "ocr_result" => %{"content" => "extracted text", "mime_type" => "text/plain"}
       }
 
       image = Kreuzberg.Image.from_map(map)
@@ -151,8 +151,8 @@ defmodule KreuzbergTest.Unit.StructRefactoringTest do
 
     test "converts image to map" do
       image = %Kreuzberg.Image{
-        format: "webp",
-        width: 800
+      format: "webp",
+      width: 800
       }
 
       map = Kreuzberg.Image.to_map(image)
@@ -163,8 +163,8 @@ defmodule KreuzbergTest.Unit.StructRefactoringTest do
 
     test "checks if image has data" do
       image_with_data = %Kreuzberg.Image{
-        format: "png",
-        data: <<137, 80, 78, 71>>
+      format: "png",
+      data: <<137, 80, 78, 71>>
       }
 
       image_without_data = %Kreuzberg.Image{format: "png"}
@@ -194,10 +194,10 @@ defmodule KreuzbergTest.Unit.StructRefactoringTest do
   describe "LayoutRegion struct" do
     test "creates layout region from map" do
       map = %{
-        "class" => "picture",
-        "confidence" => 0.95,
-        "bounding_box" => %{"x0" => 10.0, "y0" => 20.0, "x1" => 200.0, "y1" => 300.0},
-        "area_fraction" => 0.3
+      "class" => "picture",
+      "confidence" => 0.95,
+      "bounding_box" => %{"x0" => 10.0, "y0" => 20.0, "x1" => 200.0, "y1" => 300.0},
+      "area_fraction" => 0.3
       }
 
       region = Kreuzberg.LayoutRegion.from_map(map)
@@ -211,10 +211,10 @@ defmodule KreuzbergTest.Unit.StructRefactoringTest do
 
     test "converts layout region to map" do
       region = %Kreuzberg.LayoutRegion{
-        class: "table",
-        confidence: 0.88,
-        bounding_box: nil,
-        area_fraction: 0.15
+      class: "table",
+      confidence: 0.88,
+      bounding_box: nil,
+      area_fraction: 0.15
       }
 
       map = Kreuzberg.LayoutRegion.to_map(region)
@@ -255,8 +255,8 @@ defmodule KreuzbergTest.Unit.StructRefactoringTest do
 
     test "creates page from map" do
       map = %{
-        "page_number" => 2,
-        "content" => "page text"
+      "page_number" => 2,
+      "content" => "page text"
       }
 
       page = Kreuzberg.Page.from_map(map)
@@ -267,8 +267,8 @@ defmodule KreuzbergTest.Unit.StructRefactoringTest do
 
     test "converts page to map" do
       page = %Kreuzberg.Page{
-        page_number: 3,
-        content: "content"
+      page_number: 3,
+      content: "content"
       }
 
       map = Kreuzberg.Page.to_map(page)
@@ -285,12 +285,12 @@ defmodule KreuzbergTest.Unit.StructRefactoringTest do
 
     test "normalizes layout_regions from maps on from_map" do
       map = %{
-        "page_number" => 0,
-        "content" => "text",
-        "layout_regions" => [
-          %{"class" => "picture", "confidence" => 0.9, "area_fraction" => 0.25},
-          %{"class" => "text", "confidence" => 0.98, "area_fraction" => 0.6}
-        ]
+      "page_number" => 0,
+      "content" => "text",
+      "layout_regions" => [
+      %{"class" => "picture", "confidence" => 0.9, "area_fraction" => 0.25},
+      %{"class" => "text", "confidence" => 0.98, "area_fraction" => 0.6}
+      ]
       }
 
       page = Kreuzberg.Page.from_map(map)
@@ -312,11 +312,11 @@ defmodule KreuzbergTest.Unit.StructRefactoringTest do
       region = %Kreuzberg.LayoutRegion{class: "diagram", confidence: 0.75, area_fraction: 0.1}
 
       page =
-        Kreuzberg.Page.from_map(%{
-          "page_number" => 1,
-          "content" => "text",
-          "layout_regions" => [region]
-        })
+      Kreuzberg.Page.from_map(%{
+      "page_number" => 1,
+      "content" => "text",
+      "layout_regions" => [region]
+      })
 
       assert [^region] = page.layout_regions
     end
@@ -355,12 +355,12 @@ defmodule KreuzbergTest.Unit.StructRefactoringTest do
       table = %Kreuzberg.Table{cells: [["Col1", "Col2"]]}
 
       result =
-        Kreuzberg.ExtractionResult.new(
-          "content",
-          "application/pdf",
-          metadata,
-          [table]
-        )
+      Kreuzberg.ExtractionResult.new(
+      "content",
+      "application/pdf",
+      metadata,
+      [table]
+      )
 
       assert result.content == "content"
       assert result.mime_type == "application/pdf"
@@ -375,12 +375,12 @@ defmodule KreuzbergTest.Unit.StructRefactoringTest do
       table_map = %{"cells" => [["A", "B"]]}
 
       result =
-        Kreuzberg.ExtractionResult.new(
-          "text",
-          "text/plain",
-          metadata_map,
-          [table_map]
-        )
+      Kreuzberg.ExtractionResult.new(
+      "text",
+      "text/plain",
+      metadata_map,
+      [table_map]
+      )
 
       assert is_struct(result.metadata, Kreuzberg.Metadata)
       assert result.metadata.title == "Report"
@@ -391,13 +391,13 @@ defmodule KreuzbergTest.Unit.StructRefactoringTest do
       chunk_map = %{"content" => "chunk", "embedding" => [0.1, 0.2]}
 
       result =
-        Kreuzberg.ExtractionResult.new(
-          "content",
-          "text/plain",
-          %Kreuzberg.Metadata{},
-          [],
-          chunks: [chunk_map]
-        )
+      Kreuzberg.ExtractionResult.new(
+      "content",
+      "text/plain",
+      %Kreuzberg.Metadata{},
+      [],
+      chunks: [chunk_map]
+      )
 
       assert result.chunks != nil
       chunk = Enum.at(result.chunks, 0)
@@ -409,13 +409,13 @@ defmodule KreuzbergTest.Unit.StructRefactoringTest do
       image_map = %{"format" => "png", "width" => 800}
 
       result =
-        Kreuzberg.ExtractionResult.new(
-          "content",
-          "text/plain",
-          %Kreuzberg.Metadata{},
-          [],
-          images: [image_map]
-        )
+      Kreuzberg.ExtractionResult.new(
+      "content",
+      "text/plain",
+      %Kreuzberg.Metadata{},
+      [],
+      images: [image_map]
+      )
 
       assert result.images != nil
       image = Enum.at(result.images, 0)
@@ -427,13 +427,13 @@ defmodule KreuzbergTest.Unit.StructRefactoringTest do
       page_map = %{"page_number" => 1, "content" => "page text"}
 
       result =
-        Kreuzberg.ExtractionResult.new(
-          "content",
-          "text/plain",
-          %Kreuzberg.Metadata{},
-          [],
-          pages: [page_map]
-        )
+      Kreuzberg.ExtractionResult.new(
+      "content",
+      "text/plain",
+      %Kreuzberg.Metadata{},
+      [],
+      pages: [page_map]
+      )
 
       assert result.pages != nil
       page = Enum.at(result.pages, 0)
@@ -453,8 +453,8 @@ defmodule KreuzbergTest.Unit.StructRefactoringTest do
       result = Kreuzberg.ExtractionResult.new("content", "text/plain", metadata)
 
       assert %Kreuzberg.ExtractionResult{
-               metadata: %Kreuzberg.Metadata{title: title}
-             } = result
+      metadata: %Kreuzberg.Metadata{title: title}
+      } = result
 
       assert title == "Test"
     end
@@ -463,8 +463,8 @@ defmodule KreuzbergTest.Unit.StructRefactoringTest do
   describe "ExtractionConfig struct" do
     test "enforces struct type in to_map" do
       config = %Kreuzberg.ExtractionConfig{
-        use_cache: true,
-        chunking: %{"size" => 512}
+      use_cache: true,
+      chunking: %{"size" => 512}
       }
 
       map = Kreuzberg.ExtractionConfig.to_map(config)
@@ -487,8 +487,8 @@ defmodule KreuzbergTest.Unit.StructRefactoringTest do
 
     test "validates correct struct types" do
       config = %Kreuzberg.ExtractionConfig{
-        use_cache: true,
-        enable_quality_processing: false
+      use_cache: true,
+      enable_quality_processing: false
       }
 
       {:ok, validated} = Kreuzberg.ExtractionConfig.validate(config)
@@ -501,14 +501,14 @@ defmodule KreuzbergTest.Unit.StructRefactoringTest do
   describe "Type safety and idiomatic Elixir patterns" do
     test "all result nested fields are structs" do
       result = %Kreuzberg.ExtractionResult{
-        content: "text",
-        mime_type: "text/plain",
-        metadata: %Kreuzberg.Metadata{},
-        tables: [],
-        detected_languages: ["en"],
-        chunks: [%Kreuzberg.Chunk{content: "chunk"}],
-        images: [%Kreuzberg.Image{format: "png"}],
-        pages: [%Kreuzberg.Page{page_number: 1, content: "page"}]
+      content: "text",
+      mime_type: "text/plain",
+      metadata: %Kreuzberg.Metadata{},
+      tables: [],
+      detected_languages: ["en"],
+      chunks: [%Kreuzberg.Chunk{content: "chunk"}],
+      images: [%Kreuzberg.Image{format: "png"}],
+      pages: [%Kreuzberg.Page{page_number: 1, content: "page"}]
       }
 
       assert is_struct(result.metadata, Kreuzberg.Metadata)
@@ -537,7 +537,6 @@ defmodule KreuzbergTest.Unit.StructRefactoringTest do
     end
 
     test "struct type specs are accurate" do
-      # This test documents the type specs
       config = %Kreuzberg.ExtractionConfig{}
       {:ok, _} = Kreuzberg.ExtractionConfig.validate(config)
 

@@ -13,12 +13,12 @@ package dev.kreuzberg;
  *            the MIME type of the data (e.g., "application/pdf")
  */
 public record BytesWithMime(byte[] data, String mimeType) {
-	public BytesWithMime {
-		if (data == null || data.length == 0) {
-			throw new IllegalArgumentException("Data cannot be null or empty");
-		}
-		if (mimeType == null || mimeType.isEmpty()) {
-			throw new IllegalArgumentException("MIME type cannot be null or empty");
-		}
-	}
+    public BytesWithMime {
+        if (data == null || data.length == 0) {
+            throw new IllegalArgumentException("Data cannot be null or empty");
+        }
+        if (mimeType == null || mimeType.isEmpty()) {
+            throw new IllegalArgumentException("MIME type cannot be null or empty");
+        }
+    }
 }

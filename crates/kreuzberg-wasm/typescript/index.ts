@@ -94,133 +94,85 @@
  * ```
  */
 
-// ============================================================================
-// Type Exports
-// ============================================================================
-
 export type * from "./types.js";
-
-// ============================================================================
-// Initialization Exports
-// ============================================================================
 
 export { initializePdfiumAsync } from "./initialization/pdfium-loader.js";
 export {
-	getInitializationError,
-	getVersion,
-	getWasmModule,
-	type InitWasmOptions,
-	initWasm,
-	isInitialized,
-	type ModuleInfo,
-	type WasmModule,
+  getInitializationError,
+  getVersion,
+  getWasmModule,
+  type InitWasmOptions,
+  initWasm,
+  isInitialized,
+  type ModuleInfo,
+  type WasmModule,
 } from "./initialization/wasm-loader.js";
-
-// ============================================================================
-// Extraction Exports - Bytes
-// ============================================================================
 
 export { extractBytes, extractBytesSync } from "./extraction/bytes.js";
 
-// ============================================================================
-// Extraction Exports - Files
-// ============================================================================
-
 export { extractFile, extractFromFile } from "./extraction/files.js";
 
-// ============================================================================
-// Extraction Exports - Batch Operations
-// ============================================================================
-
-export {
-	batchExtractBytes,
-	batchExtractBytesSync,
-	batchExtractFiles,
-} from "./extraction/batch.js";
-
-// ============================================================================
-// OCR Exports
-// ============================================================================
+export { batchExtractBytes, batchExtractBytesSync, batchExtractFiles } from "./extraction/batch.js";
 
 export { enableOcr } from "./ocr/enabler.js";
 
-// ============================================================================
-// Adapter Exports (Re-exported for convenience)
-// ============================================================================
-
 export {
-	configToJS,
-	fileToUint8Array,
-	isValidExtractionResult,
-	jsToExtractionResult,
-	wrapWasmError,
+  configToJS,
+  fileToUint8Array,
+  isValidExtractionResult,
+  jsToExtractionResult,
+  wrapWasmError,
 } from "./adapters/wasm-adapter.js";
 
-// ============================================================================
-// OCR Backend Management Exports
-// ============================================================================
-
 export {
-	clearOcrBackends,
-	getOcrBackend,
-	listOcrBackends,
-	registerOcrBackend,
-	unregisterOcrBackend,
+  clearOcrBackends,
+  getOcrBackend,
+  listOcrBackends,
+  registerOcrBackend,
+  unregisterOcrBackend,
 } from "./ocr/registry.js";
 
 export { TesseractWasmBackend } from "./ocr/tesseract-wasm-backend.js";
 
-// ============================================================================
-// Plugin Management Exports
-// ============================================================================
-
 export {
-	clearPostProcessors,
-	clearValidators,
-	getPostProcessor,
-	getValidator,
-	listPostProcessors,
-	listValidators,
-	type PostProcessor,
-	registerPostProcessor,
-	registerValidator,
-	unregisterPostProcessor,
-	unregisterValidator,
-	type Validator,
+  clearPostProcessors,
+  clearValidators,
+  getPostProcessor,
+  getValidator,
+  listPostProcessors,
+  listValidators,
+  type PostProcessor,
+  registerPostProcessor,
+  registerValidator,
+  unregisterPostProcessor,
+  unregisterValidator,
+  type Validator,
 } from "./plugin-registry.js";
-
-// ============================================================================
-// MIME Utilities
-// ============================================================================
 
 export { detectMimeFromBytes, getExtensionsForMime } from "./mime/utilities.js";
 
-// ============================================================================
-// Runtime Exports
-// ============================================================================
-
 export {
-	detectRuntime,
-	getRuntimeInfo,
-	getRuntimeVersion,
-	getWasmCapabilities,
-	hasBigInt,
-	hasBlob,
-	hasFileApi,
-	hasModuleWorkers,
-	hasSharedArrayBuffer,
-	hasWasm,
-	hasWasmStreaming,
-	hasWorkers,
-	isBrowser,
-	isBun,
-	isCloudflareWorkers,
-	isDeno,
-	isEdgeEnvironment,
-	isEdgeRuntime,
-	isNode,
-	isServerEnvironment,
-	isWebEnvironment,
-	type RuntimeType,
-	type WasmCapabilities,
+  detectRuntime,
+  getRuntimeInfo,
+  getRuntimeVersion,
+  getWasmCapabilities,
+  hasBigInt,
+  hasBlob,
+  hasFileApi,
+  hasModuleWorkers,
+  hasSharedArrayBuffer,
+  hasWasm,
+  hasWasmStreaming,
+  hasWorkers,
+  isBrowser,
+  isBun,
+  isCloudflareWorkers,
+  isDeno,
+  isEdgeEnvironment,
+  isEdgeRuntime,
+  isNode,
+  isServerEnvironment,
+  isWebEnvironment,
+  type RuntimeType,
+  type WasmCapabilities,
 } from "./runtime.js";

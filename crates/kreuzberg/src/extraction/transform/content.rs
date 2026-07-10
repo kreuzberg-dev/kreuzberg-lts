@@ -63,17 +63,14 @@ fn add_paragraphs_with_classification(
             continue;
         }
 
-        // Single-line paragraphs are the only candidates for headings/placeholders.
         let is_single_line = !para_text.contains('\n');
 
         if is_single_line && let Some(level) = detect_markdown_heading(para_text) {
-            // Drain any leftover narrative paragraphs first.
             if !leftover.is_empty() {
                 add_paragraphs(elements, leftover.trim(), page_number, title);
                 leftover.clear();
             }
             let element_type = heading_level_to_element_type(level);
-            // Strip leading `#`s + whitespace for the heading text.
             let heading_text = para_text.trim_start_matches('#').trim();
             let element_id = generate_element_id(heading_text, element_type, Some(page_number));
             elements.push(Element {
@@ -134,7 +131,6 @@ fn add_paragraphs_with_classification(
 /// Adjust a byte offset to the nearest valid UTF-8 char boundary, searching forward.
 fn snap_to_char_boundary(s: &str, offset: usize) -> usize {
     let clamped = offset.min(s.len());
-    // Search forward for the next valid char boundary
     let mut pos = clamped;
     while pos < s.len() && !s.is_char_boundary(pos) {
         pos += 1;
@@ -148,18 +144,15 @@ pub(super) fn process_content(elements: &mut Vec<Element>, content: &str, page_n
     let mut current_byte_offset = 0;
 
     for list_item in list_items {
-        // Snap offsets to valid char boundaries to prevent panics on multi-byte UTF-8
         let safe_start = snap_to_char_boundary(content, list_item.byte_start);
         let safe_end = snap_to_char_boundary(content, list_item.byte_end);
         let safe_current = snap_to_char_boundary(content, current_byte_offset);
 
-        // Add narrative text/paragraphs before this list item
         if safe_current < safe_start {
             let text_slice = content[safe_current..safe_start].trim();
             add_paragraphs_with_classification(elements, text_slice, page_number, title);
         }
 
-        // Add the list item itself
         let item_text = content[safe_start..safe_end].trim();
         if !item_text.is_empty() {
             let element_id = generate_element_id(item_text, ElementType::ListItem, Some(page_number));
@@ -185,7 +178,6 @@ pub(super) fn process_content(elements: &mut Vec<Element>, content: &str, page_n
         current_byte_offset = safe_end;
     }
 
-    // Add any remaining narrative text/paragraphs
     if current_byte_offset < content.len() {
         let safe_current = snap_to_char_boundary(content, current_byte_offset);
         let text_slice = content[safe_current..].trim();
@@ -197,7 +189,6 @@ pub(super) fn process_content(elements: &mut Vec<Element>, content: &str, page_n
 pub(super) fn format_table_as_text(table: &crate::types::Table) -> String {
     let mut output = String::new();
 
-    // Simple text representation: rows separated by newlines, cells by tabs
     for row in &table.cells {
         for (i, cell) in row.iter().enumerate() {
             if i > 0 {
@@ -237,7 +228,6 @@ pub(super) fn process_hierarchy(
             "h1" => ElementType::Title,
             "h2" | "h3" | "h4" | "h5" | "h6" => ElementType::Heading,
             _ => {
-                // Body text: emit as NarrativeText with coordinates when available.
                 if block.text.trim().is_empty() {
                     continue;
                 }
@@ -308,7 +298,7 @@ pub(super) fn process_tables(
             metadata: ElementMetadata {
                 page_number: Some(page_number),
                 filename: title.clone(),
-                coordinates: None, // Tables don't have bbox in current structure
+                coordinates: None,
                 element_index: Some(elements.len()),
                 additional: HashMap::new(),
             },
@@ -340,7 +330,7 @@ pub(super) fn process_images(
             metadata: ElementMetadata {
                 page_number: Some(page_number),
                 filename: title.clone(),
-                coordinates: None, // Images don't have bbox in current structure
+                coordinates: None,
                 element_index: Some(elements.len()),
                 additional: {
                     let mut m = HashMap::new();

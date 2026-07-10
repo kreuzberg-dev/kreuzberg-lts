@@ -15,8 +15,7 @@ readonly class CodeChunkContext
     public function __construct(
         public ?string $parentName = null,
         public ?string $parentKind = null,
-    ) {
-    }
+    ) {}
 
     /**
      * @param array<string, mixed> $data
@@ -29,9 +28,6 @@ readonly class CodeChunkContext
         /** @var string|null $parentKind */
         $parentKind = $data['parent_kind'] ?? null;
 
-        return new self(
-            parentName: $parentName,
-            parentKind: $parentKind,
-        );
+        return new self(parentName: $parentName, parentKind: $parentKind);
     }
 }

@@ -99,33 +99,22 @@ type ProcessingWarning struct {
 
 // LlmUsage represents LLM usage metrics from structured extraction and other LLM-based processing.
 type LlmUsage struct {
-	// Model is the LLM model name used (e.g., "gpt-4", "claude-3").
-	Model string `json:"model,omitempty"`
-	// Source is the source component using the LLM.
-	Source string `json:"source,omitempty"`
-	// InputTokens is the number of input tokens used.
-	InputTokens *uint64 `json:"input_tokens,omitempty"`
-	// OutputTokens is the number of output tokens generated.
-	OutputTokens *uint64 `json:"output_tokens,omitempty"`
-	// TotalTokens is the total tokens used (input + output).
-	TotalTokens *uint64 `json:"total_tokens,omitempty"`
-	// EstimatedCost is the estimated cost of the LLM call in USD.
+	Model         string   `json:"model,omitempty"`
+	Source        string   `json:"source,omitempty"`
+	InputTokens   *uint64  `json:"input_tokens,omitempty"`
+	OutputTokens  *uint64  `json:"output_tokens,omitempty"`
+	TotalTokens   *uint64  `json:"total_tokens,omitempty"`
 	EstimatedCost *float64 `json:"estimated_cost,omitempty"`
-	// FinishReason is the finish reason from the LLM (e.g., "stop", "length").
-	FinishReason *string `json:"finish_reason,omitempty"`
+	FinishReason  *string  `json:"finish_reason,omitempty"`
 }
 
 // URI represents a URI extracted from a document.
 // Includes hyperlinks, image references, citations, email addresses, and other URI-like references.
 type URI struct {
-	// URL is the URL or path string.
-	URL string `json:"url"`
-	// Label is the optional display text / label for the link.
+	URL   string  `json:"url"`
 	Label *string `json:"label,omitempty"`
-	// Page is the optional 1-indexed page number where the URI was found.
-	Page *uint32 `json:"page,omitempty"`
-	// Kind is the semantic classification (hyperlink, image, anchor, citation, reference, email).
-	Kind string `json:"kind"`
+	Page  *uint32 `json:"page,omitempty"`
+	Kind  string  `json:"kind"`
 }
 
 // PdfAnnotationType enumerates the types of PDF annotations.
@@ -151,14 +140,10 @@ type PdfAnnotationBoundingBox struct {
 
 // PdfAnnotation represents an annotation extracted from a PDF document.
 type PdfAnnotation struct {
-	// AnnotationType is the type of annotation (Text, Highlight, Link, etc.).
-	AnnotationType PdfAnnotationType `json:"annotation_type"`
-	// Content is the text content of the annotation, if any.
-	Content *string `json:"content,omitempty"`
-	// PageNumber is the 1-indexed page number where the annotation appears.
-	PageNumber int `json:"page_number"`
-	// BoundingBox is the spatial location of the annotation on the page, if available.
-	BoundingBox *PdfAnnotationBoundingBox `json:"bounding_box,omitempty"`
+	AnnotationType PdfAnnotationType         `json:"annotation_type"`
+	Content        *string                   `json:"content,omitempty"`
+	PageNumber     int                       `json:"page_number"`
+	BoundingBox    *PdfAnnotationBoundingBox `json:"bounding_box,omitempty"`
 }
 
 // ExtractionResult mirrors the Rust ExtractionResult struct returned by the core API.
@@ -176,31 +161,22 @@ type ExtractionResult struct {
 	DjotContent       *DjotContent       `json:"djot_content,omitempty"`
 	Document          *DocumentStructure `json:"document,omitempty"`
 
-	// ExtractedKeywords contains keywords from RAKE/YAKE extraction.
 	ExtractedKeywords []ExtractedKeyword `json:"extracted_keywords,omitempty"`
 
-	// QualityScore is the document quality score (0.0-1.0).
 	QualityScore *float64 `json:"quality_score,omitempty"`
 
-	// ProcessingWarnings contains non-fatal warnings from pipeline stages.
 	ProcessingWarnings []ProcessingWarning `json:"processing_warnings,omitempty"`
 
-	// LlmUsage contains LLM usage metrics from structured extraction and other LLM-based processing.
 	LlmUsage []LlmUsage `json:"llm_usage,omitempty"`
 
-	// Annotations contains PDF annotations extracted from the document.
 	Annotations []PdfAnnotation `json:"annotations,omitempty"`
 
-	// Uris contains hyperlinks, image references, citations, and other URI-like references.
 	Uris []URI `json:"uris,omitempty"`
 
-	// Children contains nested extraction results (e.g., from archive entries).
 	Children []ExtractionResult `json:"children,omitempty"`
 
-	// StructuredOutput contains LLM-based structured extraction results when configured.
 	StructuredOutput interface{} `json:"structured_output,omitempty"`
 
-	// CodeIntelligence contains tree-sitter code analysis results when processing code files.
 	CodeIntelligence *CodeProcessResult `json:"code_intelligence,omitempty"`
 }
 
@@ -279,27 +255,18 @@ type Metadata struct {
 	JSONSchema         json.RawMessage             `json:"json_schema,omitempty"`
 	Error              *ErrorMetadata              `json:"error,omitempty"`
 
-	// Category from frontmatter or classification.
 	Category *string `json:"category,omitempty"`
 
-	// Tags from frontmatter.
 	Tags []string `json:"tags,omitempty"`
 
-	// DocumentVersion from frontmatter.
 	DocumentVersion *string `json:"document_version,omitempty"`
 
-	// AbstractText from frontmatter.
 	AbstractText *string `json:"abstract_text,omitempty"`
 
-	// OutputFormat identifier (e.g., "markdown", "html").
 	OutputFormat *string `json:"output_format,omitempty"`
 
-	// ExtractionDurationMs is the extraction duration in milliseconds (for benchmarking).
-	// Populated by batch extraction to provide per-file timing information.
 	ExtractionDurationMs *uint64 `json:"extraction_duration_ms,omitempty"`
 
-	// Deprecated: Use typed fields on ExtractionResult and Metadata instead.
-	// This field will be removed in a future major version.
 	Additional map[string]json.RawMessage `json:"-"`
 }
 
@@ -651,68 +618,44 @@ type PageContent struct {
 // identifying different content types (text, pictures, tables, etc.)
 // with confidence scores and spatial positions.
 type LayoutRegion struct {
-	// Class is the layout class name (e.g. "picture", "table", "text", "section_header").
-	Class string `json:"class"`
-	// Confidence is the detection confidence score (0.0 to 1.0).
-	Confidence float64 `json:"confidence"`
-	// BoundingBox contains the spatial coordinates of this region.
-	BoundingBox BoundingBox `json:"bounding_box"`
-	// AreaFraction is the fraction of the page area covered by this region (0.0 to 1.0).
-	AreaFraction float64 `json:"area_fraction"`
+	Class        string      `json:"class"`
+	Confidence   float64     `json:"confidence"`
+	BoundingBox  BoundingBox `json:"bounding_box"`
+	AreaFraction float64     `json:"area_fraction"`
 }
 
 // ElementType defines semantic classification for extracted elements.
 type ElementType string
 
 const (
-	// ElementTypeTitle marks a document title element.
-	ElementTypeTitle ElementType = "title"
-	// ElementTypeNarrativeText marks main narrative text body.
+	ElementTypeTitle         ElementType = "title"
 	ElementTypeNarrativeText ElementType = "narrative_text"
-	// ElementTypeHeading marks a section heading.
-	ElementTypeHeading ElementType = "heading"
-	// ElementTypeListItem marks a list item (bullet, numbered, etc.).
-	ElementTypeListItem ElementType = "list_item"
-	// ElementTypeTable marks a table element.
-	ElementTypeTable ElementType = "table"
-	// ElementTypeImage marks an image element.
-	ElementTypeImage ElementType = "image"
-	// ElementTypePageBreak marks a page break marker.
-	ElementTypePageBreak ElementType = "page_break"
-	// ElementTypeCodeBlock marks a code block.
-	ElementTypeCodeBlock ElementType = "code_block"
-	// ElementTypeBlockQuote marks a block quote.
-	ElementTypeBlockQuote ElementType = "block_quote"
-	// ElementTypeFooter marks footer text.
-	ElementTypeFooter ElementType = "footer"
-	// ElementTypeHeader marks header text.
-	ElementTypeHeader ElementType = "header"
+	ElementTypeHeading       ElementType = "heading"
+	ElementTypeListItem      ElementType = "list_item"
+	ElementTypeTable         ElementType = "table"
+	ElementTypeImage         ElementType = "image"
+	ElementTypePageBreak     ElementType = "page_break"
+	ElementTypeCodeBlock     ElementType = "code_block"
+	ElementTypeBlockQuote    ElementType = "block_quote"
+	ElementTypeFooter        ElementType = "footer"
+	ElementTypeHeader        ElementType = "header"
 )
 
 // BoundingBox represents bounding box coordinates for element positioning.
 type BoundingBox struct {
-	// X0 is the left x-coordinate.
 	X0 float64 `json:"x0"`
-	// Y0 is the bottom y-coordinate.
 	Y0 float64 `json:"y0"`
-	// X1 is the right x-coordinate.
 	X1 float64 `json:"x1"`
-	// Y1 is the top y-coordinate.
 	Y1 float64 `json:"y1"`
 }
 
 // ElementMetadata contains metadata for a semantic element.
 type ElementMetadata struct {
-	// PageNumber is the 1-indexed page number.
-	PageNumber *uint64 `json:"page_number,omitempty"`
-	// Filename is the source filename or document name.
-	Filename *string `json:"filename,omitempty"`
-	// Coordinates contains bounding box coordinates if available.
-	Coordinates *BoundingBox `json:"coordinates,omitempty"`
-	// ElementIndex is the position index in the element sequence.
-	ElementIndex *uint64 `json:"element_index,omitempty"`
-	// Additional contains custom metadata fields.
-	Additional map[string]string `json:"additional,omitempty"`
+	PageNumber   *uint64           `json:"page_number,omitempty"`
+	Filename     *string           `json:"filename,omitempty"`
+	Coordinates  *BoundingBox      `json:"coordinates,omitempty"`
+	ElementIndex *uint64           `json:"element_index,omitempty"`
+	Additional   map[string]string `json:"additional,omitempty"`
 }
 
 // Element represents a semantic element extracted from a document.
@@ -721,14 +664,10 @@ type ElementMetadata struct {
 // for tracking origin and position within the source document.
 // This type supports Unstructured.io element format when output_format='element_based'.
 type Element struct {
-	// ElementID is a unique element identifier (deterministic hash-based ID).
-	ElementID string `json:"element_id"`
-	// ElementType is the semantic type classification of the element.
-	ElementType ElementType `json:"element_type"`
-	// Text is the content string of the element.
-	Text string `json:"text"`
-	// Metadata contains element metadata including page number, coordinates, etc.
-	Metadata ElementMetadata `json:"metadata"`
+	ElementID   string          `json:"element_id"`
+	ElementType ElementType     `json:"element_type"`
+	Text        string          `json:"text"`
+	Metadata    ElementMetadata `json:"metadata"`
 }
 
 // OcrBoundingGeometry represents bounding box geometry for OCR elements with support for rotated bounding boxes.
@@ -768,9 +707,7 @@ type OcrElement struct {
 // DjotAttributeEntry represents a single element identifier to attributes mapping.
 // Mirrors Rust's (String, Attributes) tuple in Vec<(String, Attributes)>.
 type DjotAttributeEntry struct {
-	// Name is the element identifier.
-	Name string `json:"name"`
-	// Attrs contains the element attributes.
+	Name  string     `json:"name"`
 	Attrs Attributes `json:"attrs"`
 }
 
@@ -778,41 +715,26 @@ type DjotAttributeEntry struct {
 // This type captures the full richness of Djot markup, including block-level structures,
 // inline formatting, attributes, links, images, footnotes, and math expressions.
 type DjotContent struct {
-	// PlainText is plain text representation for backwards compatibility.
-	PlainText string `json:"plain_text"`
-	// Blocks contains structured block-level content.
-	Blocks []FormattedBlock `json:"blocks"`
-	// Metadata contains metadata from YAML frontmatter (required, non-optional).
-	Metadata Metadata `json:"metadata"`
-	// Tables contains extracted tables as structured data.
-	Tables []Table `json:"tables,omitempty"`
-	// Images contains extracted images with metadata.
-	Images []DjotImage `json:"images,omitempty"`
-	// Links contains extracted links with URLs.
-	Links []DjotLink `json:"links,omitempty"`
-	// Footnotes contains footnote definitions.
-	Footnotes []Footnote `json:"footnotes,omitempty"`
-	// Attributes maps element identifiers to their attribute sets.
+	PlainText  string               `json:"plain_text"`
+	Blocks     []FormattedBlock     `json:"blocks"`
+	Metadata   Metadata             `json:"metadata"`
+	Tables     []Table              `json:"tables,omitempty"`
+	Images     []DjotImage          `json:"images,omitempty"`
+	Links      []DjotLink           `json:"links,omitempty"`
+	Footnotes  []Footnote           `json:"footnotes,omitempty"`
 	Attributes []DjotAttributeEntry `json:"attributes,omitempty"`
 }
 
 // FormattedBlock represents a block-level element in a Djot document.
 // It represents structural elements like headings, paragraphs, lists, code blocks, etc.
 type FormattedBlock struct {
-	// BlockType is the type of block element.
-	BlockType BlockType `json:"block_type"`
-	// Level is the heading level (1-6) for headings, or nesting level for lists (optional).
-	Level *uint64 `json:"level,omitempty"`
-	// InlineContent contains inline content within the block.
-	InlineContent []InlineElement `json:"inline_content"`
-	// Attributes contains element attributes (classes, IDs, key-value pairs).
-	Attributes *Attributes `json:"attributes,omitempty"`
-	// Language is the language identifier for code blocks.
-	Language *string `json:"language,omitempty"`
-	// Code is the raw code content for code blocks.
-	Code *string `json:"code,omitempty"`
-	// Children contains nested blocks for containers (blockquotes, list items, divs).
-	Children []FormattedBlock `json:"children,omitempty"`
+	BlockType     BlockType        `json:"block_type"`
+	Level         *uint64          `json:"level,omitempty"`
+	InlineContent []InlineElement  `json:"inline_content"`
+	Attributes    *Attributes      `json:"attributes,omitempty"`
+	Language      *string          `json:"language,omitempty"`
+	Code          *string          `json:"code,omitempty"`
+	Children      []FormattedBlock `json:"children,omitempty"`
 }
 
 // BlockType represents the types of block-level elements in Djot.
@@ -840,14 +762,10 @@ const (
 // InlineElement represents an inline element within a block.
 // It represents text with formatting, links, images, etc.
 type InlineElement struct {
-	// ElementType is the type of inline element.
-	ElementType InlineType `json:"element_type"`
-	// Content is the text content.
-	Content string `json:"content"`
-	// Attributes contains element attributes.
-	Attributes *Attributes `json:"attributes,omitempty"`
-	// Metadata contains additional metadata (e.g., href for links, src/alt for images).
-	Metadata map[string]string `json:"metadata,omitempty"`
+	ElementType InlineType        `json:"element_type"`
+	Content     string            `json:"content"`
+	Attributes  *Attributes       `json:"attributes,omitempty"`
+	Metadata    map[string]string `json:"metadata,omitempty"`
 }
 
 // InlineType represents the types of inline elements in Djot.
@@ -875,63 +793,45 @@ const (
 // Attributes represents element attributes in Djot.
 // It represents the attributes attached to elements using {.class #id key="value"} syntax.
 type Attributes struct {
-	// ID is the element ID (#identifier).
-	ID *string `json:"id,omitempty"`
-	// Classes contains CSS classes (.class1 .class2).
-	Classes []string `json:"classes,omitempty"`
-	// KeyValues contains key-value pairs (key="value").
+	ID        *string     `json:"id,omitempty"`
+	Classes   []string    `json:"classes,omitempty"`
 	KeyValues [][2]string `json:"key_values,omitempty"`
 }
 
 // DjotImage represents an image element in Djot.
 type DjotImage struct {
-	// Src is the image source URL or path.
-	Src string `json:"src"`
-	// Alt is the alternative text.
-	Alt string `json:"alt"`
-	// Title is the optional title.
-	Title *string `json:"title,omitempty"`
-	// Attributes contains element attributes.
+	Src        string      `json:"src"`
+	Alt        string      `json:"alt"`
+	Title      *string     `json:"title,omitempty"`
 	Attributes *Attributes `json:"attributes,omitempty"`
 }
 
 // DjotLink represents a link element in Djot.
 type DjotLink struct {
-	// URL is the link URL.
-	URL string `json:"url"`
-	// Text is the link text content.
-	Text string `json:"text"`
-	// Title is the optional title.
-	Title *string `json:"title,omitempty"`
-	// Attributes contains element attributes.
+	URL        string      `json:"url"`
+	Text       string      `json:"text"`
+	Title      *string     `json:"title,omitempty"`
 	Attributes *Attributes `json:"attributes,omitempty"`
 }
 
 // Footnote represents a footnote in Djot.
 type Footnote struct {
-	// Label is the footnote label.
-	Label string `json:"label"`
-	// Content contains footnote content blocks.
+	Label   string           `json:"label"`
 	Content []FormattedBlock `json:"content"`
 }
 
 // ArchiveEntry represents a single file extracted from an archive.
 type ArchiveEntry struct {
-	// Path is the file path within the archive.
-	Path string `json:"path"`
-	// MimeType is the detected MIME type of the file.
-	MimeType string `json:"mime_type"`
-	// Result is the extraction result for this archive entry.
-	Result ExtractionResult `json:"result"`
+	Path     string           `json:"path"`
+	MimeType string           `json:"mime_type"`
+	Result   ExtractionResult `json:"result"`
 }
 
 // KeywordAlgorithm enumerates keyword extraction algorithm types.
 type KeywordAlgorithm string
 
 const (
-	// KeywordAlgorithmYake selects the YAKE keyword extraction algorithm.
 	KeywordAlgorithmYake KeywordAlgorithm = "yake"
-	// KeywordAlgorithmRake selects the RAKE keyword extraction algorithm.
 	KeywordAlgorithmRake KeywordAlgorithm = "rake"
 )
 

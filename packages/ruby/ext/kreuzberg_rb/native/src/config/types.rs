@@ -10,6 +10,7 @@ use html_to_markdown_rs::WhitespaceMode;
 use html_to_markdown_rs::options::{
     CodeBlockStyle, ConversionOptions, HeadingStyle, HighlightStyle, ListIndentType, NewlineStyle, PreprocessingPreset,
 };
+use kreuzberg::core::config::ContentFilterConfig;
 use kreuzberg::core::config::PageConfig;
 use kreuzberg::keywords::{
     KeywordAlgorithm as RustKeywordAlgorithm, KeywordConfig as RustKeywordConfig, RakeParams as RustRakeParams,
@@ -22,7 +23,6 @@ use kreuzberg::{
     ImageExtractionConfig, LanguageDetectionConfig, LayoutDetectionConfig, OcrConfig, OutputFormat, PdfConfig,
     PostProcessorConfig, TokenReductionConfig,
 };
-use kreuzberg::core::config::ContentFilterConfig;
 use magnus::value::ReprValue;
 use magnus::{Error, RArray, RHash, Ruby, TryConvert, Value};
 use std::fs;
@@ -1141,7 +1141,6 @@ pub fn config_from_file(path: String) -> Result<RHash, Error> {
     let content = fs::read_to_string(&path)
         .map_err(|e| validation_error(format!("Failed to read config file '{}': {}", path, e)))?;
 
-    // Detect file format from extension
     let extension = file_path
         .extension()
         .and_then(|ext| ext.to_str())
@@ -1178,7 +1177,6 @@ pub fn config_discover() -> Result<Value, Error> {
 
     let ruby = Ruby::get().expect("Ruby not initialized");
 
-    // Search for config files in order of precedence
     let config_files = vec![
         ("kreuzberg.toml", "toml"),
         ("kreuzberg.yaml", "yaml"),
@@ -1187,7 +1185,6 @@ pub fn config_discover() -> Result<Value, Error> {
         (".kreuzbergrc", "json"),
     ];
 
-    // Start from current directory and search up to parent directories
     let mut current_dir: Option<PathBuf> = std::env::current_dir().ok();
 
     while let Some(dir) = current_dir {
@@ -1206,10 +1203,8 @@ pub fn config_discover() -> Result<Value, Error> {
                 return json_value_to_ruby(&ruby, &json_value);
             }
         }
-        // Move to parent directory
         current_dir = dir.parent().map(|p| p.to_path_buf());
     }
 
-    // Return nil if no config found
     Ok(ruby.qnil().as_value())
 }

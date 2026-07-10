@@ -13,10 +13,6 @@ use kreuzberg::{
     api::{DoclingCompatResponse, OpenWebDocumentResponse, create_router},
 };
 
-// ---------------------------------------------------------------------------
-// PUT /process — OpenWebUI "External" engine
-// ---------------------------------------------------------------------------
-
 /// Test successful extraction via the external engine endpoint.
 #[tokio::test]
 async fn test_openweb_process_text_file() {
@@ -153,10 +149,6 @@ async fn test_openweb_process_octet_stream_detects_mime_from_filename() {
     assert!(doc.page_content.contains("Plain text content"));
 }
 
-// ---------------------------------------------------------------------------
-// POST /v1/convert/file — OpenWebUI "Docling" engine
-// ---------------------------------------------------------------------------
-
 /// Test successful extraction via the docling-compatible endpoint.
 #[tokio::test]
 async fn test_openweb_docling_text_file() {
@@ -291,7 +283,6 @@ async fn test_openweb_docling_response_structure() {
         .expect("Failed to read HTTP response body");
     let json: serde_json::Value = serde_json::from_slice(&body).expect("Failed to deserialize JSON response");
 
-    // OpenWebUI reads exactly these fields
     assert!(json["document"].is_object(), "Expected 'document' object");
     assert!(
         json["document"]["md_content"].is_string(),
@@ -325,7 +316,6 @@ async fn test_openweb_process_response_structure() {
         .expect("Failed to read HTTP response body");
     let json: serde_json::Value = serde_json::from_slice(&body).expect("Failed to deserialize JSON response");
 
-    // OpenWebUI reads exactly these fields
     assert!(json["page_content"].is_string(), "Expected 'page_content' string");
     assert!(json["metadata"].is_object(), "Expected 'metadata' object");
     assert!(

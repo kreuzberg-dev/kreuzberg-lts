@@ -16,8 +16,7 @@ readonly class YearRange
         public ?int $min = null,
         public ?int $max = null,
         public array $years = [],
-    ) {
-    }
+    ) {}
 
     /**
      * @param array<string, mixed> $data
@@ -36,11 +35,7 @@ readonly class YearRange
             $years = [];
         }
 
-        return new self(
-            min: $min,
-            max: $max,
-            years: array_map('intval', $years),
-        );
+        return new self(min: $min, max: $max, years: array_map('intval', $years));
     }
 
     /**

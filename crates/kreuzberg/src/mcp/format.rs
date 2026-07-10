@@ -72,7 +72,6 @@ mod tests {
     #[test]
     fn test_build_config_with_invalid_config_json() {
         let default_config = ExtractionConfig::default();
-        // Provide invalid type for a field (string instead of boolean)
         let config_json = serde_json::json!({
             "use_cache": "not_a_boolean"
         });
@@ -111,7 +110,6 @@ mod tests {
 
     #[test]
     fn test_build_config_merges_partial_config() {
-        // Base config with custom use_cache setting
         let default_config = ExtractionConfig {
             use_cache: false,
             enable_quality_processing: true,
@@ -119,21 +117,17 @@ mod tests {
             ..Default::default()
         };
 
-        // Override only force_ocr
         let config_json = serde_json::json!({
             "force_ocr": true
         });
 
         let config = build_config(&default_config, Some(config_json)).unwrap();
 
-        // use_cache should be preserved from default_config
         assert!(!config.use_cache, "use_cache should be preserved from default config");
-        // enable_quality_processing should be preserved
         assert!(
             config.enable_quality_processing,
             "enable_quality_processing should be preserved"
         );
-        // force_ocr should be overridden
         assert!(config.force_ocr, "force_ocr should be overridden to true");
     }
 
@@ -144,16 +138,13 @@ mod tests {
             ..Default::default()
         };
 
-        // Override output format only
         let config_json = serde_json::json!({
             "output_format": "markdown"
         });
 
         let config = build_config(&default_config, Some(config_json)).unwrap();
 
-        // use_cache should be preserved
         assert!(config.use_cache, "use_cache should be preserved from default config");
-        // output_format should be overridden
         assert_eq!(
             config.output_format,
             crate::core::config::formats::OutputFormat::Markdown,
@@ -163,7 +154,6 @@ mod tests {
 
     #[test]
     fn test_build_config_merges_with_custom_defaults() {
-        // Create a default config with custom values
         let default_config = ExtractionConfig {
             use_cache: false,
             enable_quality_processing: true,
@@ -171,21 +161,17 @@ mod tests {
             ..Default::default()
         };
 
-        // Provide partial override (only force_ocr)
         let config_json = serde_json::json!({
             "force_ocr": true,
         });
 
         let config = build_config(&default_config, Some(config_json)).unwrap();
 
-        // force_ocr should be overridden
         assert!(config.force_ocr, "force_ocr should be overridden to true");
-        // use_cache should be preserved from default_config
         assert!(
             !config.use_cache,
             "use_cache should be preserved from default config (false)"
         );
-        // enable_quality_processing should be preserved
         assert!(
             config.enable_quality_processing,
             "enable_quality_processing should be preserved (true)"
@@ -201,7 +187,6 @@ mod tests {
             ..Default::default()
         };
 
-        // Override multiple fields
         let config_json = serde_json::json!({
             "use_cache": false,
             "output_format": "markdown",
@@ -209,20 +194,16 @@ mod tests {
 
         let config = build_config(&default_config, Some(config_json)).unwrap();
 
-        // use_cache should be overridden
         assert!(!config.use_cache, "use_cache should be overridden to false");
-        // output_format should be overridden
         assert_eq!(
             config.output_format,
             crate::core::config::formats::OutputFormat::Markdown,
             "output_format should be overridden to markdown"
         );
-        // force_ocr should be preserved (not in override)
         assert!(
             config.force_ocr,
             "force_ocr should be preserved from default config (true)"
         );
-        // enable_quality_processing should be preserved
         assert!(
             !config.enable_quality_processing,
             "enable_quality_processing should be preserved (false)"
@@ -231,21 +212,15 @@ mod tests {
 
     #[test]
     fn test_build_config_boolean_override_to_default_value() {
-        // This test validates the critical bug fix: when user explicitly sets a boolean
-        // to its default value, the merge logic should correctly use the override value,
-        // not fall back to the base config.
         let base = ExtractionConfig {
             use_cache: false,
             ..Default::default()
         };
 
-        // User explicitly provides use_cache: true (which IS the default)
         let override_json = serde_json::json!({"use_cache": true});
 
         let merged = build_config(&base, Some(override_json)).unwrap();
 
-        // Before the fix: merged.use_cache would be false (WRONG - fell back to base)
-        // After the fix: merged.use_cache should be true (CORRECT - override applied)
         assert!(
             merged.use_cache,
             "Should use explicit override even if it matches default"
@@ -333,7 +308,6 @@ mod tests {
         let formatted = format_extraction_result(&result);
         let parsed: serde_json::Value = serde_json::from_str(&formatted).expect("Should be valid JSON");
 
-        // None fields should be omitted via skip_serializing_if
         assert!(parsed.get("chunks").is_none());
         assert!(parsed.get("images").is_none());
         assert!(parsed.get("detected_languages").is_none());

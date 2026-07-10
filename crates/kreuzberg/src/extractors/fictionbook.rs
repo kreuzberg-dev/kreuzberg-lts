@@ -35,7 +35,7 @@ fn resolve_entity(name: &str) -> Option<&'static str> {
         "quot" => Some("\""),
         "apos" => Some("'"),
         "nbsp" => Some("\u{00A0}"),
-        _ if name.starts_with('#') => None, // char refs handled separately
+        _ if name.starts_with('#') => None,
         _ => None,
     }
 }
@@ -172,7 +172,6 @@ impl FictionBookExtractor {
         let mut authors: Vec<String> = Vec::new();
         let mut annotation_text = String::new();
 
-        // Author name parts
         let mut first_name = String::new();
         let mut middle_name = String::new();
         let mut last_name = String::new();
@@ -290,7 +289,6 @@ impl FictionBookExtractor {
                         }
                         "author" if in_author => {
                             in_author = false;
-                            // Build full author name from parts
                             let mut parts = Vec::new();
                             if !first_name.is_empty() {
                                 parts.push(first_name.clone());
@@ -303,7 +301,6 @@ impl FictionBookExtractor {
                             }
                             let full_name = parts.join(" ");
                             if !full_name.is_empty() {
-                                // Store individual name parts in additional metadata
                                 let mut author_detail = serde_json::Map::new();
                                 if !first_name.is_empty() {
                                     author_detail.insert("first_name".to_string(), serde_json::json!(first_name));
@@ -319,7 +316,6 @@ impl FictionBookExtractor {
                                 }
                                 authors.push(full_name);
 
-                                // Store author details in additional metadata as array
                                 let existing = additional
                                     .entry(std::borrow::Cow::Borrowed("author_details"))
                                     .or_insert_with(|| serde_json::json!([]));
@@ -354,7 +350,6 @@ impl FictionBookExtractor {
                         annotation_text.push_str(trimmed);
                     }
                 }
-                // Self-closing tags (e.g. <sequence ... />) produce Event::Empty, not Event::Start
                 Ok(Event::Empty(e)) => {
                     let name = e.name();
                     let tag = crate::utils::xml_tag_name(name.as_ref());
@@ -532,7 +527,6 @@ impl FictionBookExtractor {
                             }
                         }
 
-                        // Read the base64 text content
                         let mut b64_text = String::new();
                         loop {
                             match reader.read_event() {
@@ -546,14 +540,12 @@ impl FictionBookExtractor {
                             }
                         }
 
-                        // Strip whitespace from base64 data and decode
                         let cleaned: String = b64_text.chars().filter(|c| !c.is_whitespace()).collect();
                         if cleaned.is_empty() {
                             continue;
                         }
 
                         if let Ok(decoded) = base64::engine::general_purpose::STANDARD.decode(&cleaned) {
-                            // Determine format from content-type or detect from bytes
                             let format = if let Some(subtype) = content_type.strip_prefix("image/") {
                                 std::borrow::Cow::Owned(subtype.to_string())
                             } else {
@@ -613,7 +605,6 @@ impl FictionBookExtractor {
                         let mut href = String::new();
                         for attr in e.attributes().flatten() {
                             let attr_name = String::from_utf8_lossy(attr.key.as_ref());
-                            // FB2 uses l:href or xlink:href; also check plain href
                             if attr_name == "l:href" || attr_name == "xlink:href" || attr_name == "href" {
                                 href = String::from_utf8_lossy(attr.value.as_ref()).to_string();
                                 break;
@@ -624,7 +615,6 @@ impl FictionBookExtractor {
                             continue;
                         }
 
-                        // Collect label text from the <a> element
                         let mut label_text = String::new();
                         let mut depth = 1;
                         loop {
@@ -711,9 +701,6 @@ impl FictionBookExtractor {
                     } else if tag == "title" && in_body {
                         match Self::extract_text_content(&mut reader) {
                             Ok(text) if !text.is_empty() => {
-                                // Body title (section_depth=0) -> H1
-                                // Top-level section title (section_depth=1) -> H2
-                                // Nested section titles -> H3, H4, etc.
                                 let level: u8 = if section_depth == 0 {
                                     1
                                 } else {
@@ -723,15 +710,7 @@ impl FictionBookExtractor {
                             }
                             _ => {}
                         }
-                    } else if tag == "p" && in_body && !is_notes_body {
-                        match Self::extract_paragraph_with_annotations(&mut reader) {
-                            Ok((text, annotations)) if !text.is_empty() => {
-                                builder.push_paragraph(&text, annotations, None, None);
-                            }
-                            _ => {}
-                        }
-                    } else if tag == "v" && in_body && !is_notes_body {
-                        // FB2 verse line inside <poem><stanza>
+                    } else if (tag == "p" || tag == "v") && in_body && !is_notes_body {
                         match Self::extract_paragraph_with_annotations(&mut reader) {
                             Ok((text, annotations)) if !text.is_empty() => {
                                 builder.push_paragraph(&text, annotations, None, None);
@@ -741,7 +720,6 @@ impl FictionBookExtractor {
                     } else if tag == "subtitle" && in_body && !is_notes_body {
                         match Self::extract_text_content(&mut reader) {
                             Ok(text) if !text.is_empty() => {
-                                // Subtitle is one level deeper than the section heading
                                 let level: u8 = std::cmp::min(section_depth.saturating_add(2), 6);
                                 builder.push_heading(level, &text, None, None);
                             }
@@ -812,7 +790,7 @@ impl FictionBookExtractor {
         let mut text = String::new();
         let mut annotations = Vec::new();
         let mut depth = 0;
-        let mut format_stack: Vec<(String, u32)> = Vec::new(); // (tag, start_byte_offset)
+        let mut format_stack: Vec<(String, u32)> = Vec::new();
 
         loop {
             match reader.read_event() {
@@ -976,17 +954,14 @@ impl DocumentExtractor for FictionBookExtractor {
         doc.mime_type = std::borrow::Cow::Owned(mime_type.to_string());
         doc.metadata = metadata;
 
-        // Add extracted tables
         for table in tables {
             doc.push_table(table);
         }
 
-        // Add extracted images
         for image in images {
             doc.push_image(image);
         }
 
-        // Add extracted links
         for uri in links {
             doc.push_uri(uri);
         }
@@ -1072,7 +1047,6 @@ mod tests {
             authors[0]
         );
 
-        // Check author details in additional metadata
         let details = metadata
             .additional
             .get("author_details")
@@ -1177,7 +1151,6 @@ mod tests {
 
     #[test]
     fn test_fictionbook_binary_images() {
-        // A minimal 1x1 red PNG as base64
         let png_b64 =
             "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwADhQGAWjR9awAAAABJRU5ErkJggg==";
         let fb2 = format!(
@@ -1198,7 +1171,6 @@ mod tests {
         assert_eq!(images[0].image_index, 0);
         assert_eq!(images[0].description, Some("cover.png".to_string()));
         assert!(!images[0].data.is_empty(), "image data should not be empty");
-        // Verify it starts with PNG magic bytes
         assert!(images[0].data.starts_with(&[0x89, 0x50, 0x4E, 0x47]));
     }
 
@@ -1215,7 +1187,6 @@ mod tests {
 </FictionBook>"#;
 
         let images = FictionBookExtractor::extract_binary_images(fb2);
-        // Both entries are present (even if base64 decodes to short data)
         assert_eq!(images.len(), 2);
         assert_eq!(images[0].image_index, 0);
         assert_eq!(images[1].image_index, 1);
@@ -1281,7 +1252,6 @@ mod tests {
   </description>
 </FictionBook>"#;
 
-        // Links outside <body> should not be extracted
         let links = FictionBookExtractor::extract_links(fb2);
         assert!(links.is_empty());
     }

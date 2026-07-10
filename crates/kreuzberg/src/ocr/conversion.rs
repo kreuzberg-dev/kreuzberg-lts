@@ -54,12 +54,10 @@ use super::table::HocrWord;
 /// Returns `Ok(None)` if the detection is filtered out due to low `box_score`.
 #[cfg(feature = "paddle-ocr")]
 pub fn text_block_to_element(block: &TextBlock, page_number: usize) -> Result<Option<OcrElement>> {
-    // Filter ghost detections: box_score below 0.3 indicates unreliable detection
     if block.box_score < 0.3 {
         return Ok(None);
     }
 
-    // Validate box_points - PaddleOCR must provide exactly 4 points
     if block.box_points.len() < 4 {
         return Err(KreuzbergError::ocr(format!(
             "PaddleOCR TextBlock has {} box_points, expected at least 4. This indicates malformed OCR output.",
@@ -67,8 +65,6 @@ pub fn text_block_to_element(block: &TextBlock, page_number: usize) -> Result<Op
         )));
     }
 
-    // Convert box_points to quadrilateral format
-    // PaddleOCR provides points in clockwise order starting from top-left
     let points: [(u32, u32); 4] = [
         (block.box_points[0].x, block.box_points[0].y),
         (block.box_points[1].x, block.box_points[1].y),
@@ -80,7 +76,6 @@ pub fn text_block_to_element(block: &TextBlock, page_number: usize) -> Result<Op
 
     let confidence = OcrConfidence::from_paddle(block.box_score, block.text_score);
 
-    // Only include rotation if angle classification was performed
     let rotation = if block.angle_index >= 0 {
         match OcrRotation::from_paddle(block.angle_index, block.angle_score) {
             Ok(rot) => Some(rot),
@@ -92,7 +87,7 @@ pub fn text_block_to_element(block: &TextBlock, page_number: usize) -> Result<Op
 
     Ok(Some(
         OcrElement::new(block.text.clone(), geometry, confidence)
-            .with_level(OcrElementLevel::Line) // PaddleOCR detects lines
+            .with_level(OcrElementLevel::Line)
             .with_page_number(page_number)
             .with_rotation_opt(rotation)
             .with_metadata("backend", serde_json::json!("paddle-ocr")),
@@ -157,16 +152,12 @@ pub fn tsv_row_to_element(row: &TsvRow) -> OcrElement {
     let confidence = OcrConfidence::from_tesseract(row.conf);
     let level = OcrElementLevel::from_tesseract_level(row.level);
 
-    // Generate a hierarchical parent ID
-    // Tesseract levels: 1=Page, 2=Block, 3=Paragraph, 4=Line, 5=Word
     let parent_id = if row.level == 5 {
-        // Word-level: parent is the line
         Some(format!(
             "p{}_b{}_par{}_l{}",
             row.page_num, row.block_num, row.par_num, row.line_num
         ))
     } else if row.level == 4 {
-        // Line-level: parent is the paragraph
         Some(format!("p{}_b{}_par{}", row.page_num, row.block_num, row.par_num))
     } else {
         None
@@ -211,7 +202,6 @@ pub fn iterator_word_to_element(
     para_info: Option<&kreuzberg_tesseract::ParaInfo>,
     page_number: usize,
 ) -> OcrElement {
-    // Compute width/height from right/bottom - left/top, clamping to zero if inverted.
     let left = word.left.max(0) as u32;
     let top = word.top.max(0) as u32;
     let width = (word.right - word.left).max(0) as u32;
@@ -230,7 +220,6 @@ pub fn iterator_word_to_element(
         .with_page_number(page_number)
         .with_metadata("backend", serde_json::json!("tesseract-iterator"));
 
-    // Populate font attributes when available.
     if let Some(ref attrs) = word.font_attrs {
         element = element
             .with_metadata("is_bold", serde_json::json!(attrs.is_bold))
@@ -243,7 +232,6 @@ pub fn iterator_word_to_element(
         }
     }
 
-    // Populate block type when available.
     if let Some(bt) = block_type {
         let block_type_str = match bt {
             kreuzberg_tesseract::TessPolyBlockType::PT_UNKNOWN => "PT_UNKNOWN",
@@ -266,7 +254,6 @@ pub fn iterator_word_to_element(
         element = element.with_metadata("block_type", serde_json::json!(block_type_str));
     }
 
-    // Populate paragraph info when available.
     if let Some(para) = para_info {
         let justification_str = match para.justification {
             kreuzberg_tesseract::TessParagraphJustification::JUSTIFICATION_UNKNOWN => "unknown",
@@ -303,7 +290,6 @@ pub fn element_to_hocr_word(element: &OcrElement) -> HocrWord {
         top,
         width,
         height,
-        // HocrWord expects confidence in 0-100 range
         confidence: element.confidence.recognition * 100.0,
     }
 }
@@ -351,7 +337,7 @@ mod tests {
     #[test]
     fn test_tsv_row_to_element() {
         let row = TsvRow {
-            level: 5, // word level (Tesseract: 1=Page, 2=Block, 3=Paragraph, 4=Line, 5=Word)
+            level: 5,
             page_num: 1,
             block_num: 1,
             par_num: 1,
@@ -373,11 +359,9 @@ mod tests {
         assert!(element.parent_id.is_some());
         assert_eq!(element.parent_id.as_ref().unwrap(), "p1_b1_par1_l2");
 
-        // Check geometry
         let (left, top, width, height) = element.geometry.to_aabb();
         assert_eq!((left, top, width, height), (100, 50, 80, 20));
 
-        // Check confidence
         assert!((element.confidence.recognition - 0.95).abs() < 0.001);
         assert!(element.confidence.detection.is_none());
     }
@@ -405,7 +389,6 @@ mod tests {
 
     #[test]
     fn test_quadrilateral_to_hocr_word() {
-        // Test conversion of rotated quad to AABB
         let geometry = OcrBoundingGeometry::Quadrilateral {
             points: [(10, 22), (108, 20), (110, 72), (12, 74)],
         };
@@ -414,13 +397,11 @@ mod tests {
 
         let word = element_to_hocr_word(&element);
 
-        // AABB should be min/max of all points
         assert_eq!(word.left, 10);
         assert_eq!(word.top, 20);
-        assert_eq!(word.width, 100); // 110 - 10
-        assert_eq!(word.height, 54); // 74 - 20
+        assert_eq!(word.width, 100);
+        assert_eq!(word.height, 54);
 
-        // Confidence in 0-100 range
         assert!((word.confidence - 88.0).abs() < 0.1);
     }
 
@@ -446,7 +427,7 @@ mod tests {
                     width: 50,
                     height: 20,
                 },
-                OcrConfidence::from_tesseract(50.0), // Low confidence
+                OcrConfidence::from_tesseract(50.0),
             )
             .with_level(OcrElementLevel::Word),
             OcrElement::new(
@@ -459,13 +440,11 @@ mod tests {
                 },
                 OcrConfidence::from_tesseract(95.0),
             )
-            .with_level(OcrElementLevel::Block), // Block level, should be filtered
+            .with_level(OcrElementLevel::Block),
         ];
 
-        // Filter with 0.6 confidence threshold
         let words = elements_to_hocr_words(&elements, 0.6);
 
-        // Should only include word1 (word2 is below threshold, block is wrong level)
         assert_eq!(words.len(), 1);
         assert_eq!(words[0].text, "word1");
     }
@@ -497,7 +476,6 @@ mod tests {
         assert_eq!(element.level, OcrElementLevel::Line);
         assert_eq!(element.page_number, 1);
 
-        // Check quadrilateral geometry is preserved
         if let OcrBoundingGeometry::Quadrilateral { points } = &element.geometry {
             assert_eq!(points[0], (10, 20));
             assert_eq!(points[1], (100, 22));
@@ -507,12 +485,10 @@ mod tests {
             panic!("Expected Quadrilateral geometry");
         }
 
-        // Check confidence
         assert!(element.confidence.detection.is_some());
         assert!((element.confidence.detection.unwrap() - 0.95).abs() < 0.001);
         assert!((element.confidence.recognition - 0.88).abs() < 0.001);
 
-        // Check rotation
         assert!(element.rotation.is_some());
         let rot = element.rotation.as_ref().unwrap();
         assert_eq!(rot.angle_degrees, 0.0);
@@ -524,13 +500,8 @@ mod tests {
     fn test_text_block_to_element_malformed_box_points() {
         use kreuzberg_paddle_ocr::Point;
 
-        // Test with insufficient box_points
         let block = TextBlock {
-            box_points: vec![
-                Point { x: 10, y: 20 },
-                Point { x: 100, y: 22 },
-                // Missing 2 points
-            ],
+            box_points: vec![Point { x: 10, y: 20 }, Point { x: 100, y: 22 }],
             box_score: 0.95,
             angle_index: 0,
             angle_score: 0.99,
@@ -559,7 +530,7 @@ mod tests {
                 Point { x: 8, y: 68 },
             ],
             box_score: 0.95,
-            angle_index: 5, // Invalid: must be 0-3
+            angle_index: 5,
             angle_score: 0.99,
             text: "Test text".to_string(),
             text_score: 0.88,

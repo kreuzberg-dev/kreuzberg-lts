@@ -7,7 +7,6 @@ mod cleanup;
 mod core;
 mod utilities;
 
-// Re-export all public types and functions for backward compatibility
 pub use cleanup::{
     batch_cleanup_caches, cleanup_cache, clear_cache_directory, get_cache_metadata, is_cache_valid, smart_cleanup_cache,
 };

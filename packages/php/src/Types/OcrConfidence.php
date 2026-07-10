@@ -18,8 +18,7 @@ readonly class OcrConfidence
     public function __construct(
         public ?float $detection = null,
         public ?float $recognition = null,
-    ) {
-    }
+    ) {}
 
     /**
      * Create OcrConfidence from array returned by extension.
@@ -32,11 +31,10 @@ readonly class OcrConfidence
         $detection = isset($data['detection']) && is_numeric($data['detection']) ? (float) $data['detection'] : null;
 
         /** @var float|null $recognition */
-        $recognition = isset($data['recognition']) && is_numeric($data['recognition']) ? (float) $data['recognition'] : null;
+        $recognition = isset($data['recognition']) && is_numeric($data['recognition'])
+            ? (float) $data['recognition']
+            : null;
 
-        return new self(
-            detection: $detection,
-            recognition: $recognition,
-        );
+        return new self(detection: $detection, recognition: $recognition);
     }
 }

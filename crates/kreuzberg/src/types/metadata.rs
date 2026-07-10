@@ -26,7 +26,6 @@ mod additional_serde {
     where
         S: Serializer,
     {
-        // Convert to HashMap for serialization
         let converted: HashMap<String, serde_json::Value> =
             map.iter().map(|(k, v)| (k.to_string(), v.clone())).collect();
         converted.serialize(serializer)
@@ -36,7 +35,6 @@ mod additional_serde {
     where
         D: Deserializer<'de>,
     {
-        // Deserialize from HashMap
         let map = HashMap::<String, serde_json::Value>::deserialize(deserializer)?;
         let result = map.into_iter().map(|(k, v)| (Cow::Owned(k), v)).collect();
         Ok(result)
@@ -81,7 +79,7 @@ pub enum FormatMetadata {
     Pst(PstMetadata),
     #[cfg(feature = "tree-sitter")]
     #[cfg_attr(feature = "api", schema(value_type = serde_json::Value))]
-    Code(tree_sitter_language_pack::ProcessResult),
+    Code(Box<tree_sitter_language_pack::ProcessResult>),
 }
 
 /// Extraction result metadata.
@@ -604,7 +602,7 @@ impl From<html_to_markdown_rs::HtmlMetadata> for HtmlMetadata {
                     src: img.src,
                     alt: img.alt,
                     title: img.title,
-                    dimensions: img.dimensions,
+                    dimensions: img.dimensions.map(|dimensions| (dimensions.width, dimensions.height)),
                     image_type: match img.image_type {
                         html_to_markdown_rs::ImageType::DataUri => ImageType::DataUri,
                         html_to_markdown_rs::ImageType::InlineSvg => ImageType::InlineSvg,
@@ -709,15 +707,7 @@ pub struct DocxMetadata {
     /// Values can be strings, numbers, booleans, or dates.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub custom_properties: Option<HashMap<String, serde_json::Value>>,
-    // Future Week 1-21 additions (commented out for now):
-    // style_catalog: OnceCell<Arc<StyleCatalog>>,       // Week 1-2: Style resolution
-    // theme: OnceCell<Arc<Theme>>,                      // Week 5: Theme colors
-    // numbering_catalog: OnceCell<Arc<NumberingCatalog>>, // Week 12-13: Numbering
-    // sections: Vec<SectionProperties>,                 // Week 3-4: Section properties
-    // document_settings: DocumentSettings,              // Week 11: Settings.xml
 }
-
-// ── Format-specific metadata structs (non-additional) ──────────────────
 
 /// CSV/TSV file metadata.
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]

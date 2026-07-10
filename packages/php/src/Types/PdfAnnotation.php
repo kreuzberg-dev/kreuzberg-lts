@@ -22,8 +22,7 @@ readonly class PdfAnnotation
         public ?string $content,
         public int $pageNumber,
         public ?array $boundingBox = null,
-    ) {
-    }
+    ) {}
 
     /**
      * @param array<string, mixed> $data
@@ -36,14 +35,10 @@ readonly class PdfAnnotation
         /** @var string|null $content */
         $content = $data['content'] ?? null;
 
-        $pageNumber = isset($data['page_number']) && is_numeric($data['page_number'])
-            ? (int) $data['page_number']
-            : 0;
+        $pageNumber = isset($data['page_number']) && is_numeric($data['page_number']) ? (int) $data['page_number'] : 0;
 
         /** @var array<string, float>|null $boundingBox */
-        $boundingBox = isset($data['bounding_box']) && is_array($data['bounding_box'])
-            ? $data['bounding_box']
-            : null;
+        $boundingBox = isset($data['bounding_box']) && is_array($data['bounding_box']) ? $data['bounding_box'] : null;
 
         return new self(
             annotationType: $annotationType,

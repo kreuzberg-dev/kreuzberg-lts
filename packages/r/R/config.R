@@ -1,5 +1,3 @@
-#' Create an extraction configuration
-#'
 #' @param force_ocr Logical. Force OCR processing. Default FALSE.
 #' @param disable_ocr Logical. Disable OCR entirely. Image files return empty content. Default FALSE.
 #' @param force_ocr_pages Integer vector or NULL. 1-indexed page numbers to force OCR on. Default NULL.
@@ -18,10 +16,6 @@
 #' @param pdf_options Named list. PDF-specific options.
 #' @param html_options Named list. HTML-specific options.
 #' @param html_output Named list. HTML styled output configuration.
-#'   Controls styled HTML rendering with fields: theme (character, one of
-#'   "default", "github", "dark", "light", "unstyled"), class_prefix (character,
-#'   default "kb-"), embed_css (logical, default TRUE), css (character or NULL,
-#'   custom CSS string), css_file (character or NULL, path to CSS file).
 #' @param postprocessor Named list. Post-processor configuration.
 #' @param security_limits Named list. Security limits configuration.
 #' @param max_concurrent_extractions Integer. Max concurrent extractions.
@@ -31,19 +25,12 @@
 #' @param email Email configuration created by \code{email_config()}.
 #' @param concurrency Concurrency configuration created by \code{concurrency_config()}.
 #' @param cache_namespace Character or NULL. Cache namespace for tenant isolation.
-#'   When set, cache keys are scoped to this namespace so that different tenants'
-#'   cached results do not collide. When NULL, the default namespace is used.
 #' @param cache_ttl_secs Integer or NULL. Per-request cache TTL in seconds.
-#'   Overrides the server default TTL for this extraction request. When NULL,
-#'   the server default is used.
 #' @param extraction_timeout_secs Integer or NULL. Extraction timeout in seconds.
-#'   When set, limits the maximum time allowed for an extraction operation.
-#'   When NULL, the server default is used.
 #' @param tree_sitter Tree-sitter configuration created by \code{tree_sitter_config()}.
 #' @param content_filter Content filter configuration created by \code{content_filter_config()}.
 #' @param ... Additional configuration options passed as named list elements.
 #' @return A named list representing the extraction configuration.
-#' @export
 extraction_config <- function(force_ocr = FALSE, disable_ocr = FALSE,
                               force_ocr_pages = NULL, ocr = NULL, chunking = NULL,
                               output_format = NULL, result_format = NULL,
@@ -124,19 +111,11 @@ extraction_config <- function(force_ocr = FALSE, disable_ocr = FALSE,
   config
 }
 
-#' Create a content filter configuration
-#'
-#' Controls whether "furniture" content (headers, footers, page numbers,
-#' watermarks, repeating text) is included in or stripped from extraction
-#' results. Applies across all extractors.
-#'
 #' @param include_headers Logical. Include running headers in output. Default FALSE.
 #' @param include_footers Logical. Include running footers in output. Default FALSE.
 #' @param strip_repeating_text Logical. Enable cross-page repeating text
-#'   detection and removal. Default TRUE.
 #' @param include_watermarks Logical. Include watermark text in output. Default FALSE.
 #' @return A named list representing the content filter configuration.
-#' @export
 content_filter_config <- function(include_headers = FALSE, include_footers = FALSE,
                                   strip_repeating_text = TRUE,
                                   include_watermarks = FALSE) {
@@ -152,14 +131,11 @@ content_filter_config <- function(include_headers = FALSE, include_footers = FAL
   )
 }
 
-#' Create an OCR configuration
-#'
 #' @param backend OCR backend name (e.g., "tesseract", "paddle-ocr").
 #' @param language Language code for OCR (e.g., "eng", "deu").
 #' @param dpi DPI for image processing. Must be a positive integer.
 #' @param ... Additional OCR options.
 #' @return A named list representing the OCR configuration.
-#' @export
 ocr_config <- function(backend = "tesseract", language = "eng", dpi = NULL, ...) {
   stopifnot(is.character(backend), length(backend) == 1L)
   stopifnot(is.character(language), length(language) == 1L)
@@ -174,16 +150,12 @@ ocr_config <- function(backend = "tesseract", language = "eng", dpi = NULL, ...)
   config
 }
 
-#' Create a chunking configuration
-#'
 #' @param max_characters Maximum characters per chunk. Must be a positive integer.
 #' @param overlap Number of overlapping characters between chunks. Must be non-negative.
 #' @param chunker_type Chunker type: "text", "markdown", "yaml", or "semantic". Default "text".
 #' @param topic_threshold Numeric or NULL. Cosine similarity threshold for semantic
-#'   topic detection (0.0-1.0). Only used when chunker_type is "semantic". Default NULL (0.75).
 #' @param ... Additional chunking options.
 #' @return A named list representing the chunking configuration.
-#' @export
 chunking_config <- function(max_characters = 1000L, overlap = 200L,
                             chunker_type = "text", topic_threshold = NULL, ...) {
   max_characters <- as.integer(max_characters)
@@ -219,23 +191,12 @@ chunking_config <- function(max_characters = 1000L, overlap = 200L,
   config
 }
 
-#' Create a layout detection configuration
-#'
 #' @param confidence_threshold Minimum confidence threshold for detected layout
-#'   regions (0.0-1.0). Regions below this threshold are discarded.
-#'   Default NULL (use engine default).
 #' @param apply_heuristics Logical. Whether to apply heuristic post-processing
-#'   to refine layout regions. Default TRUE.
 #' @param table_model Table structure recognition model to use. Supported values:
-#'   "tatr" (default), "slanet_wired", "slanet_wireless", "slanet_plus",
-#'   "slanet_auto", "disabled".
-#'   Default NULL (use engine default).
 #' @param acceleration Named list or NULL. Hardware acceleration configuration
-#'   (e.g., from \code{acceleration_config()}). Controls which ONNX execution
-#'   provider is used for layout and table models. Default NULL (auto-select).
 #' @param ... Additional layout detection options.
 #' @return A named list representing the layout detection configuration.
-#' @export
 layout_detection_config <- function(confidence_threshold = NULL,
                                     apply_heuristics = TRUE, table_model = NULL,
                                     acceleration = NULL, ...) {
@@ -268,20 +229,14 @@ layout_detection_config <- function(confidence_threshold = NULL,
   config
 }
 
-#' Create a concurrency configuration
-#'
 #' @param max_threads Integer or NULL. Maximum number of threads for parallel
-#'   processing. When NULL, the Rust default is used.
 #' @return A named list representing the concurrency configuration.
-#' @export
 concurrency_config <- function(max_threads = NULL) {
   cfg <- list()
   if (!is.null(max_threads)) cfg$max_threads <- as.integer(max_threads)
   cfg
 }
 
-#' Create a PDF extraction configuration
-#'
 #' @param extract_images Logical. Extract images from PDFs. Default FALSE.
 #' @param passwords Character vector or NULL. Passwords for encrypted PDFs.
 #' @param extract_metadata Logical. Extract PDF metadata. Default TRUE.
@@ -291,7 +246,6 @@ concurrency_config <- function(max_threads = NULL) {
 #' @param allow_single_column_tables Logical. Allow single-column tables. Default FALSE.
 #' @param ... Additional PDF options.
 #' @return A named list representing the PDF configuration.
-#' @export
 pdf_config <- function(extract_images = FALSE, passwords = NULL,
                        extract_metadata = TRUE, extract_annotations = FALSE,
                        top_margin_fraction = NULL, bottom_margin_fraction = NULL,
@@ -314,14 +268,8 @@ pdf_config <- function(extract_images = FALSE, passwords = NULL,
   config
 }
 
-#' Create an email extraction configuration
-#'
 #' @param msg_fallback_codepage Integer or NULL. Fallback Windows code page for MSG
-#'   email body decoding. Common values: 1250 (Central European), 1251 (Cyrillic),
-#'   1252 (Western European, default), 1253 (Greek), 1254 (Turkish).
-#'   When NULL, the Rust default (windows-1252) is used.
 #' @return A named list representing the email extraction configuration.
-#' @export
 email_config <- function(msg_fallback_codepage = NULL) {
   config <- list()
   if (!is.null(msg_fallback_codepage)) {
@@ -332,13 +280,9 @@ email_config <- function(msg_fallback_codepage = NULL) {
   config
 }
 
-#' Create a hardware acceleration configuration
-#'
 #' @param provider Character. Execution provider for ONNX model inference.
-#'   Supported values: "auto" (default), "cpu", "coreml", "cuda", "tensorrt".
 #' @param device_id Integer. Device ID for GPU selection. Default 0L.
 #' @return A named list representing the acceleration configuration.
-#' @export
 acceleration_config <- function(provider = "auto", device_id = 0L) {
   stopifnot(is.character(provider), length(provider) == 1L)
   valid_providers <- c("auto", "cpu", "coreml", "cuda", "tensorrt")
@@ -357,8 +301,6 @@ acceleration_config <- function(provider = "auto", device_id = 0L) {
   list(provider = provider, device_id = device_id)
 }
 
-#' Create a tree-sitter process configuration
-#'
 #' @param structure Logical. Extract structural items. Default TRUE.
 #' @param imports Logical. Extract import statements. Default TRUE.
 #' @param exports Logical. Extract export statements. Default TRUE.
@@ -368,7 +310,6 @@ acceleration_config <- function(provider = "auto", device_id = 0L) {
 #' @param diagnostics Logical. Include parse diagnostics. Default FALSE.
 #' @param chunk_max_size Integer or NULL. Maximum chunk size in bytes. NULL disables chunking.
 #' @return A named list representing the tree-sitter process configuration.
-#' @export
 tree_sitter_process_config <- function(structure = TRUE, imports = TRUE, exports = TRUE,
                                        comments = FALSE, docstrings = FALSE,
                                        symbols = FALSE, diagnostics = FALSE,
@@ -393,14 +334,11 @@ tree_sitter_process_config <- function(structure = TRUE, imports = TRUE, exports
   config
 }
 
-#' Create a tree-sitter configuration
-#'
 #' @param cache_dir Character or NULL. Custom cache directory for downloaded grammars.
 #' @param languages Character vector or NULL. Languages to pre-download on init.
 #' @param groups Character vector or NULL. Language groups to pre-download.
 #' @param process Tree-sitter process configuration created by \code{tree_sitter_process_config()}.
 #' @return A named list representing the tree-sitter configuration.
-#' @export
 tree_sitter_config <- function(cache_dir = NULL, languages = NULL, groups = NULL,
                                process = NULL, enabled = NULL) {
   config <- list()
@@ -418,13 +356,7 @@ tree_sitter_config <- function(cache_dir = NULL, languages = NULL, groups = NULL
   config
 }
 
-#' Discover extraction configuration from kreuzberg.toml
-#'
-#' Searches for a kreuzberg.toml file in the current directory and parent
-#' directories. Returns the parsed configuration or NULL if not found.
-#'
 #' @return A named list representing the extraction configuration, or NULL.
-#' @export
 discover <- function() {
   json <- check_native_result(config_discover_native())
   if (is.null(json)) {
@@ -433,14 +365,8 @@ discover <- function() {
   jsonlite::fromJSON(json, simplifyVector = FALSE)
 }
 
-#' Load extraction configuration from a file
-#'
-#' Reads and parses a configuration file. Supports TOML, YAML, and JSON formats
-#' (auto-detected from file extension).
-#'
 #' @param path Path to the configuration file.
 #' @return A named list representing the extraction configuration.
-#' @export
 from_file <- function(path) {
   stopifnot(is.character(path), length(path) == 1L)
   json <- check_native_result(config_from_file_native(path))
@@ -450,16 +376,11 @@ from_file <- function(path) {
   jsonlite::fromJSON(json, simplifyVector = FALSE)
 }
 
-#' Create an embedding configuration
-#'
 #' @param model Embedding model name or preset (e.g., "fast", "balanced", "quality", "multilingual").
 #' @param normalize Logical. Normalize embedding vectors to unit length. Default TRUE.
 #' @param batch_size Integer or NULL. Batch size for embedding generation. Default NULL.
 #' @param acceleration Named list or NULL. Hardware acceleration configuration
-#'   (e.g., from \code{acceleration_config()}). Controls which ONNX execution
-#'   provider is used for the embedding model. Default NULL (auto-select).
 #' @return A named list representing the embedding configuration.
-#' @export
 embedding_config <- function(model = "balanced", normalize = TRUE, batch_size = NULL,
                              acceleration = NULL) {
   stopifnot(is.character(model), length(model) == 1L)

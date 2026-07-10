@@ -67,25 +67,21 @@ pub fn remove_stopwords(text: &str, stopwords: &AHashSet<String>, preserve_patte
             continue;
         }
 
-        // Check preserve patterns first
         if should_preserve_word(word, preserve_patterns) {
             filtered_words.push(word);
             continue;
         }
 
-        // Preserve all-uppercase words (acronyms like API, SDK, HTTP)
         if word.len() > 1 && word.bytes().all(|b| b.is_ascii_uppercase() || !b.is_ascii_alphabetic()) {
             filtered_words.push(word);
             continue;
         }
 
-        // Preserve words containing digits (version numbers, counts, etc.)
         if word.bytes().any(|b| b.is_ascii_digit()) {
             filtered_words.push(word);
             continue;
         }
 
-        // Extract the alphabetic core of the word for stopword matching
         let clean_word = if word.is_ascii() {
             let clean_bytes: Vec<u8> = word
                 .bytes()
@@ -105,19 +101,16 @@ pub fn remove_stopwords(text: &str, stopwords: &AHashSet<String>, preserve_patte
                 .to_lowercase()
         };
 
-        // If the clean word is empty (word was all punctuation), preserve it
         if clean_word.is_empty() {
             filtered_words.push(word);
             continue;
         }
 
-        // Preserve single-letter words
         if clean_word.len() <= 1 {
             filtered_words.push(word);
             continue;
         }
 
-        // Check if the clean word is a stopword
         if !stopwords.contains(&clean_word) {
             filtered_words.push(word);
         }
@@ -155,12 +148,10 @@ pub fn split_word_boundaries(word: &str) -> (String, String, String) {
     let mut start = 0;
     let mut end = chars.len();
 
-    // Find the start of alphanumeric content
     while start < chars.len() && !chars[start].is_alphanumeric() {
         start += 1;
     }
 
-    // Find the end of alphanumeric content
     while end > start && !chars[end - 1].is_alphanumeric() {
         end -= 1;
     }

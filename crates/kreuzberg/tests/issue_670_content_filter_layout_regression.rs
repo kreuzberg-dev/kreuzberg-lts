@@ -100,10 +100,6 @@ fn test_strip_repeating_text_flag_is_not_a_noop() {
     let default_out = extract_md(&path, default_config);
     let no_strip_out = extract_md(&path, no_strip_config);
 
-    // The permissive config should produce at least as much content.
-    // If it produces more, the flag is working. If identical, that is acceptable
-    // only when the document has no furniture at all — we cannot assert strict
-    // inequality without a controlled fixture.
     assert!(
         no_strip_out.len() >= default_out.len(),
         "include_headers=true config must produce output no shorter than default \
@@ -139,8 +135,6 @@ fn test_plain_text_not_fewer_words_than_markdown() {
     let plain_words = plain_out.split_whitespace().count();
     let md_words = md_out.split_whitespace().count();
 
-    // Allow up to 10% fewer words in markdown (markdown formatting overhead),
-    // but not dramatically fewer, which would indicate furniture over-stripping.
     let threshold = (plain_words as f64 * 0.60) as usize;
     assert!(
         md_words >= threshold,

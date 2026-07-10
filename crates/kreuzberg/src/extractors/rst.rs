@@ -64,7 +64,6 @@ impl RstExtractor {
 
         let text = Self::extract_text_from_rst(content, &mut additional);
 
-        // Map standard fields from additional to typed Metadata fields
         metadata.title = additional
             .remove(&Cow::Borrowed("title"))
             .and_then(|v| v.as_str().map(|s| s.to_string()));
@@ -95,7 +94,6 @@ impl RstExtractor {
                 && line.contains(':')
                 && let Some((key, value)) = Self::parse_field_list_line(line)
             {
-                // Collect continuation lines (indented lines that follow)
                 let mut full_value = value.clone();
                 while i + 1 < lines.len() {
                     let next = lines[i + 1];
@@ -108,14 +106,11 @@ impl RstExtractor {
                     }
                 }
                 Self::add_metadata_field(&key, &full_value, metadata);
-                // Output the field list in preserved format
                 output.push_str(&format!(":{}: {}\n", key, full_value));
                 i += 1;
                 continue;
             }
 
-            // Overline+underline heading (document title): skip the overline,
-            // emit the title text, skip the underline.
             if Self::is_section_underline(line.trim())
                 && i + 2 < lines.len()
                 && !lines[i + 1].trim().is_empty()
@@ -142,16 +137,13 @@ impl RstExtractor {
             }
 
             if line.trim().starts_with(".. code-block::") || line.trim().starts_with(".. code::") {
-                // Preserve the directive line
                 output.push_str(line.trim());
                 output.push('\n');
                 i += 1;
-                // Preserve empty line after directive
                 while i < lines.len() && lines[i].trim().is_empty() {
                     output.push('\n');
                     i += 1;
                 }
-                // Preserve indented content
                 while i < lines.len() && (lines[i].starts_with("   ") || lines[i].is_empty()) {
                     output.push_str(lines[i]);
                     output.push('\n');
@@ -216,7 +208,6 @@ impl RstExtractor {
                     || directive.starts_with("hint::")
                     || directive.starts_with("tip::")
                 {
-                    // Preserve the directive marker
                     output.push_str(trimmed);
                     output.push('\n');
                     i += 1;
@@ -276,7 +267,6 @@ impl RstExtractor {
         let rest = &trimmed[1..];
         if let Some(end_pos) = rest.find(':') {
             let key = rest[..end_pos].to_string();
-            // A valid field list key must be non-empty
             if key.is_empty() {
                 return None;
             }
@@ -326,7 +316,6 @@ impl RstExtractor {
     /// Check if a line is a list item.
     fn is_list_item(line: &str) -> bool {
         let trimmed = line.trim_start();
-        // Bullet list markers: *, +, - followed by space or tab
         if trimmed.starts_with("* ")
             || trimmed.starts_with("+ ")
             || trimmed.starts_with("- ")
@@ -336,7 +325,6 @@ impl RstExtractor {
         {
             return true;
         }
-        // Auto-numbered list: #. or (#) item
         if trimmed.starts_with("#. ")
             || trimmed.starts_with("#.\t")
             || trimmed.starts_with("(#) ")
@@ -344,7 +332,6 @@ impl RstExtractor {
         {
             return true;
         }
-        // Parenthesized markers: (2), (A), (d) etc.
         if trimmed.starts_with('(')
             && let Some(close) = trimmed.find(')')
             && close > 1
@@ -358,7 +345,6 @@ impl RstExtractor {
                 return true;
             }
         }
-        // Find the first whitespace (space or tab) after the marker
         let sep_pos = trimmed.find([' ', '\t']);
         if let Some(space_pos) = sep_pos
             && space_pos > 0
@@ -367,11 +353,9 @@ impl RstExtractor {
             let prefix = &trimmed[..space_pos];
             if prefix.ends_with('.') || prefix.ends_with(')') {
                 let body = &prefix[..prefix.len() - 1];
-                // Numeric: 1. 2. etc.
                 if body.chars().all(|c| c.is_ascii_digit()) {
                     return true;
                 }
-                // Alpha: A. B. a. b. etc.
                 if body.chars().all(|c| c.is_ascii_alphabetic()) && body.len() <= 3 {
                     return true;
                 }
@@ -403,7 +387,6 @@ impl RstExtractor {
             let line = lines[i];
             let trimmed = line.trim();
 
-            // Simple table (=====  ===== separator)
             if Self::is_simple_table_separator(trimmed) {
                 let start = i;
                 let mut table_lines = Vec::new();
@@ -434,7 +417,6 @@ impl RstExtractor {
                 continue;
             }
 
-            // Grid table (+-----+-----+)
             if trimmed.starts_with('+')
                 && trimmed.ends_with('+')
                 && trimmed.contains('-')
@@ -495,7 +477,6 @@ impl RstExtractor {
         let mut i = 0;
 
         while i < len {
-            // **strong emphasis**
             if i + 1 < len
                 && bytes[i] == b'*'
                 && bytes[i + 1] == b'*'
@@ -515,29 +496,25 @@ impl RstExtractor {
                 i = end + 2;
                 continue;
             }
-            // *emphasis*  (single star, not followed by another star)
             if bytes[i] == b'*'
                 && (i + 1 >= len || bytes[i + 1] != b'*')
                 && let Some(end) = Self::find_closing_marker(raw, i + 1, "*")
+                && (end + 1 >= len || bytes[end + 1] != b'*')
             {
-                // Make sure this isn't inside a ** pair
-                if end + 1 >= len || bytes[end + 1] != b'*' {
-                    let inner = &raw[i + 1..end];
-                    let start = out.len() as u32;
-                    out.push_str(inner);
-                    let end_off = out.len() as u32;
-                    if start < end_off {
-                        annotations.push(TextAnnotation {
-                            start,
-                            end: end_off,
-                            kind: AnnotationKind::Italic,
-                        });
-                    }
-                    i = end + 1;
-                    continue;
+                let inner = &raw[i + 1..end];
+                let start = out.len() as u32;
+                out.push_str(inner);
+                let end_off = out.len() as u32;
+                if start < end_off {
+                    annotations.push(TextAnnotation {
+                        start,
+                        end: end_off,
+                        kind: AnnotationKind::Italic,
+                    });
                 }
+                i = end + 1;
+                continue;
             }
-            // ``literal``
             if i + 1 < len
                 && bytes[i] == b'`'
                 && bytes[i + 1] == b'`'
@@ -557,16 +534,13 @@ impl RstExtractor {
                 i = end + 2;
                 continue;
             }
-            // `interpreted text` or `link text <url>`_  (RST inline hyperlink)
             if bytes[i] == b'`'
                 && (i + 1 >= len || bytes[i + 1] != b'`')
                 && let Some(end) = Self::find_closing_single_backtick(raw, i + 1)
             {
                 let inner = &raw[i + 1..end];
-                // Check for trailing `_ (hyperlink marker)
-                let after_close = end + 1; // position after closing backtick
+                let after_close = end + 1;
                 if after_close < len && bytes[after_close] == b'_' {
-                    // RST inline hyperlink: `link text <url>`_
                     if let Some(angle_start) = inner.rfind('<')
                         && let Some(angle_end) = inner.rfind('>')
                         && angle_end > angle_start
@@ -583,10 +557,9 @@ impl RstExtractor {
                                 kind: AnnotationKind::Link { url, title: None },
                             });
                         }
-                        i = after_close + 1; // skip past the trailing _
+                        i = after_close + 1;
                         continue;
                     }
-                    // Plain reference like `Python`_ — treat as code/interpreted text
                     let start = out.len() as u32;
                     out.push_str(inner);
                     let end_off = out.len() as u32;
@@ -600,7 +573,6 @@ impl RstExtractor {
                     i = after_close + 1;
                     continue;
                 }
-                // Regular interpreted text (no trailing _)
                 let start = out.len() as u32;
                 out.push_str(inner);
                 let end_off = out.len() as u32;
@@ -614,19 +586,16 @@ impl RstExtractor {
                 i = end + 1;
                 continue;
             }
-            // RST citation/footnote reference: [label]_  ->  [label]
-            // Strip the trailing underscore so that the brackets render unescaped.
             if bytes[i] == b'['
                 && let Some(close) = raw[i + 1..].find(']')
             {
                 let label_end = i + 1 + close;
-                // Check for trailing _
                 if label_end + 1 < len && bytes[label_end + 1] == b'_' {
                     let label = &raw[i + 1..label_end];
                     out.push('[');
                     out.push_str(label);
                     out.push(']');
-                    i = label_end + 2; // skip past ]_
+                    i = label_end + 2;
                     continue;
                 }
             }
@@ -649,7 +618,6 @@ impl RstExtractor {
         let mut j = from;
         while j < bytes.len() {
             if bytes[j] == b'`' {
-                // Make sure it's not ``
                 if j + 1 < bytes.len() && bytes[j + 1] == b'`' {
                     j += 2;
                     continue;
@@ -673,12 +641,11 @@ impl RstExtractor {
             {
                 let label_end = i + 1 + close;
                 let label = &line[i + 1..label_end];
-                // Check for trailing _
-                if label_end + 1 < bytes.len() && bytes[label_end + 1] == b'_' {
-                    // Valid footnote ref: numeric or #-prefixed
-                    if label.chars().all(|c| c.is_ascii_digit()) || label.starts_with('#') {
-                        refs.push(label.to_string());
-                    }
+                if label_end + 1 < bytes.len()
+                    && bytes[label_end + 1] == b'_'
+                    && (label.chars().all(|c| c.is_ascii_digit()) || label.starts_with('#'))
+                {
+                    refs.push(label.to_string());
                 }
             }
             i += 1;
@@ -727,7 +694,6 @@ impl RstExtractor {
             let line = lines[i];
             let trimmed = line.trim();
 
-            // Field list metadata
             if trimmed.starts_with(':')
                 && trimmed.len() > 1
                 && let Some((key, value)) = Self::parse_field_list_line(trimmed)
@@ -750,8 +716,6 @@ impl RstExtractor {
                 continue;
             }
 
-            // Overline+underline heading (document title): markup line, then text,
-            // then same markup line.  RST convention: this is the document title → H1.
             if Self::is_section_underline(trimmed)
                 && i + 2 < lines.len()
                 && !lines[i + 1].trim().is_empty()
@@ -768,16 +732,11 @@ impl RstExtractor {
                 }
             }
 
-            // Heading: text line followed by underline
-            // Section headings (underline only) start at level 2; the first
-            // underline character seen is H2, the second is H3, etc.
             if i + 1 < lines.len() && !trimmed.is_empty() && Self::is_section_underline(lines[i + 1]) {
                 let underline_char = lines[i + 1].trim().chars().next().unwrap_or('=');
                 if !heading_char_order.contains(&underline_char) {
                     heading_char_order.push(underline_char);
                 }
-                // When an overline heading already claimed H1, underline headings
-                // start at H2 (+2 offset).  Otherwise the first underline char is H1 (+1).
                 let base = if has_overline_heading { 2 } else { 1 };
                 let level = heading_char_order
                     .iter()
@@ -789,7 +748,6 @@ impl RstExtractor {
                 continue;
             }
 
-            // Code block directive
             if trimmed.starts_with(".. code-block::") || trimmed.starts_with(".. code::") {
                 let language: Option<&str> = if let Some(rest) = trimmed.strip_prefix(".. code-block::") {
                     let lang = rest.trim();
@@ -818,7 +776,6 @@ impl RstExtractor {
                 continue;
             }
 
-            // Admonition directives
             if trimmed.starts_with(".. note::")
                 || trimmed.starts_with(".. warning::")
                 || trimmed.starts_with(".. important::")
@@ -839,15 +796,12 @@ impl RstExtractor {
                     }
                     i += 1;
                 }
-                // Replace the kind-name text with the actual body text so the
-                // rendering layer puts the content inside the alert block.
                 if !admonition_text.is_empty() {
                     b.set_text(idx, &admonition_text);
                 }
                 continue;
             }
 
-            // Image directive
             if trimmed.starts_with(".. image::") {
                 let uri = trimmed.strip_prefix(".. image::").unwrap_or("").trim();
                 i += 1;
@@ -868,19 +822,16 @@ impl RstExtractor {
                 continue;
             }
 
-            // Math directive
             if trimmed.starts_with(".. math::") {
                 let inline_math = trimmed.strip_prefix(".. math::").unwrap_or("").trim();
                 i += 1;
-                // Skip option lines (:label:, :nowrap:, etc.)
                 while i < lines.len() {
                     let l = lines[i].trim();
-                    if l.starts_with(':') && l.ends_with(':') || (l.starts_with(':') && l.contains(": ")) {
-                        // Check if it looks like a directive option
-                        if lines[i].starts_with("   ") || lines[i].starts_with("\t") {
-                            i += 1;
-                            continue;
-                        }
+                    if (l.starts_with(':') && l.ends_with(':') || (l.starts_with(':') && l.contains(": ")))
+                        && (lines[i].starts_with("   ") || lines[i].starts_with("\t"))
+                    {
+                        i += 1;
+                        continue;
                     }
                     break;
                 }
@@ -889,11 +840,8 @@ impl RstExtractor {
                 } else {
                     inline_math.to_string()
                 };
-                // Collect math content. Blank lines within separate into
-                // multiple formula elements.
                 while i < lines.len() && (lines[i].starts_with("   ") || lines[i].is_empty()) {
                     if lines[i].is_empty() {
-                        // Blank line: emit current formula and start a new one
                         if !math_content.is_empty() {
                             b.push_formula(&math_content, None, None);
                             math_content = String::new();
@@ -912,7 +860,6 @@ impl RstExtractor {
                 continue;
             }
 
-            // Footnote definitions: .. [1] text  or  .. [#label] text
             if trimmed.starts_with(".. [")
                 && let Some(close) = trimmed.find(']')
                 && close > 4
@@ -928,7 +875,6 @@ impl RstExtractor {
                     full_text.push_str(lines[i].trim());
                     i += 1;
                 }
-                // Determine if it's a citation or footnote
                 let is_citation = label.chars().all(|c| c.is_alphanumeric() || c == '_' || c == '-')
                     && !label.chars().all(|c| c.is_ascii_digit())
                     && !label.starts_with('#');
@@ -940,7 +886,6 @@ impl RstExtractor {
                 continue;
             }
 
-            // Reference target directives: .. _label: url
             if trimmed.starts_with(".. _")
                 && let Some(colon_pos) = trimmed[4..].find(": ")
             {
@@ -966,33 +911,28 @@ impl RstExtractor {
                 continue;
             }
 
-            // Highlight directive: sets the default language for subsequent :: blocks.
             if trimmed.starts_with(".. highlight::") {
                 let lang = trimmed.strip_prefix(".. highlight::").unwrap_or("").trim();
                 highlight_lang = if lang.is_empty() { None } else { Some(lang.to_string()) };
                 i += 1;
-                // Skip any options block
                 while i < lines.len() && (lines[i].starts_with("   ") || lines[i].is_empty()) {
                     i += 1;
                 }
                 continue;
             }
 
-            // Contents directive: emit the title text as a paragraph
             if trimmed.starts_with(".. contents::") {
                 let title = trimmed.strip_prefix(".. contents::").unwrap_or("").trim();
                 if !title.is_empty() {
                     b.push_paragraph(title, vec![], None, None);
                 }
                 i += 1;
-                // Skip options block
                 while i < lines.len() && (lines[i].starts_with("   ") || lines[i].is_empty()) {
                     i += 1;
                 }
                 continue;
             }
 
-            // Other directives - skip (including their indented body, tabs or spaces)
             if trimmed.starts_with(".. ") || trimmed == ".." {
                 i += 1;
                 while i < lines.len()
@@ -1003,9 +943,6 @@ impl RstExtractor {
                 continue;
             }
 
-            // Simple RST table (=====  =====  ====== separator lines)
-            // Collect all non-blank lines. The table ends at a blank line or at a
-            // closing separator followed by a blank line / EOF.
             if Self::is_simple_table_separator(trimmed) {
                 let mut table_lines = Vec::new();
                 while i < lines.len() {
@@ -1023,7 +960,6 @@ impl RstExtractor {
                 continue;
             }
 
-            // Grid table (+-----+-----+ border lines)
             if trimmed.starts_with('+') && trimmed.ends_with('+') && trimmed.contains('-') {
                 let mut table_lines = Vec::new();
                 while i < lines.len() && (lines[i].trim().starts_with('+') || lines[i].trim().starts_with('|')) {
@@ -1037,11 +973,9 @@ impl RstExtractor {
                 continue;
             }
 
-            // List items
             if Self::is_list_item(line) {
                 let is_ordered = {
                     let t = trimmed.trim_start();
-                    // Auto-numbered lists (#.) are ordered
                     if t.starts_with("#. ") || t.starts_with("#.\t") {
                         true
                     } else if let Some(space_pos) = t.find([' ', '\t']) {
@@ -1070,7 +1004,6 @@ impl RstExtractor {
                     } else {
                         item_trimmed
                     };
-                    // Collect continuation lines (indented, not a new list item)
                     let mut full_text = text.to_string();
                     i += 1;
                     while i < lines.len()
@@ -1089,11 +1022,7 @@ impl RstExtractor {
                 continue;
             }
 
-            // ``::`` literal block: a line ending with ``::`` introduces an
-            // indented code block.  The ``.. highlight::`` directive, if any,
-            // sets the default language.
             if trimmed.ends_with("::") && !trimmed.starts_with(".. ") {
-                // Emit the introductory text (strip the trailing `::`)
                 if let Some(display_text) = trimmed.strip_suffix("::")
                     && !display_text.is_empty()
                 {
@@ -1101,14 +1030,11 @@ impl RstExtractor {
                     b.push_paragraph(&stripped, annotations, None, None);
                 }
                 i += 1;
-                // Skip blank lines between intro and indented content
                 while i < lines.len() && lines[i].trim().is_empty() {
                     i += 1;
                 }
-                // Collect indented content (spaces or tabs).
-                // Detect indent level from the first non-blank content line.
                 let indent = {
-                    let mut indent_len = 3usize; // default
+                    let mut indent_len = 3usize;
                     let mut j = i;
                     while j < lines.len() {
                         let l = lines[j];
@@ -1126,7 +1052,6 @@ impl RstExtractor {
                 let mut code_content = String::new();
                 while i < lines.len() {
                     let l = lines[i];
-                    // An indented line (by at least `indent` spaces or a tab)
                     let is_indented = l.starts_with("\t")
                         || (l.len() >= indent && l.as_bytes().iter().take(indent).all(|&b| b == b' '));
                     if !is_indented && !l.is_empty() {
@@ -1148,49 +1073,35 @@ impl RstExtractor {
                 continue;
             }
 
-            // Regular paragraph with footnote refs and cross-references.
-            // Join consecutive non-blank, non-indented lines into a single paragraph
-            // (RST hard-wrapping).
             if !trimmed.is_empty() && !Self::is_markup_line(line) {
                 let mut para_text = trimmed.to_string();
-                // Peek ahead: join continuation lines that are part of the same paragraph.
-                // A continuation line is non-empty, not indented, not a list item,
-                // not a directive, not a section underline, not a markup line.
                 while i + 1 < lines.len() {
                     let next = lines[i + 1];
                     let next_trimmed = next.trim();
-                    // Stop at blank lines
                     if next_trimmed.is_empty() {
                         break;
                     }
-                    // Stop at indented lines (could be a directive body, code block, etc.)
                     if next.starts_with(' ') || next.starts_with('\t') {
                         break;
                     }
-                    // Stop at section underlines
                     if Self::is_section_underline(next_trimmed) {
                         break;
                     }
-                    // Stop at markup lines
                     if Self::is_markup_line(next) {
                         break;
                     }
-                    // Stop at directives
                     if next_trimmed.starts_with(".. ") || next_trimmed == ".." {
                         break;
                     }
-                    // Stop at list items
                     if Self::is_list_item(next) {
                         break;
                     }
-                    // Stop at field lists
                     if next_trimmed.starts_with(':')
                         && next_trimmed.len() > 1
                         && Self::parse_field_list_line(next_trimmed).is_some()
                     {
                         break;
                     }
-                    // Stop at table separators
                     if Self::is_simple_table_separator(next_trimmed) {
                         break;
                     }
@@ -1205,13 +1116,11 @@ impl RstExtractor {
                 let (stripped, annotations) = Self::parse_inline_markup(&para_text);
                 let idx = b.push_paragraph(&stripped, annotations, None, None);
 
-                // Emit footnote reference relationships
                 for fref in &footnote_refs {
                     let ref_idx = b.push_footnote_ref(&format!("[{}]", fref), fref, None);
                     let _ = ref_idx;
                 }
 
-                // Check for cross-reference patterns like :ref:`target`
                 Self::extract_rst_cross_refs(&para_text, idx, &mut b);
             }
 
@@ -1233,7 +1142,6 @@ impl RstExtractor {
                     && let Some(close) = after[1..].find('`')
                 {
                     let target = &after[1..1 + close];
-                    // Handle <display text> patterns
                     let key = if let Some(angle_pos) = target.find('<') {
                         let end = target.find('>').unwrap_or(target.len());
                         &target[angle_pos + 1..end]
@@ -1263,7 +1171,6 @@ impl RstExtractor {
             if content.is_empty() {
                 continue;
             }
-            // Skip separator lines (all dashes/equals)
             if content
                 .chars()
                 .all(|c| c == '-' || c == '=' || c == '+' || c == '|' || c == ' ')
@@ -1288,11 +1195,9 @@ impl RstExtractor {
         if trimmed.len() < 3 {
             return false;
         }
-        // Must consist only of '=' and spaces, with at least one '=' run
         if !trimmed.chars().all(|c| c == '=' || c == ' ') {
             return false;
         }
-        // Must contain at least one run of '='
         trimmed.contains('=')
     }
 
@@ -1305,7 +1210,6 @@ impl RstExtractor {
             return Vec::new();
         }
 
-        // Determine column boundaries from the first separator line
         let separator = lines[0];
         let col_ranges = Self::simple_table_column_ranges(separator);
         if col_ranges.is_empty() {
@@ -1315,7 +1219,6 @@ impl RstExtractor {
         let mut cells = Vec::new();
         for line in lines {
             let trimmed = line.trim();
-            // Skip separator lines
             if Self::is_simple_table_separator(trimmed) {
                 continue;
             }
@@ -1463,7 +1366,6 @@ impl DocumentExtractor for RstExtractor {
         doc.mime_type = Cow::Owned(mime_type.to_string());
         doc.metadata = metadata;
 
-        // Add tables to InternalDocument
         for table in tables {
             doc.push_table(table);
         }

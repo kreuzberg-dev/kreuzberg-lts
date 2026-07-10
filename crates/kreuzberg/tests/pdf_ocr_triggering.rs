@@ -53,7 +53,6 @@ fn test_ocr_trigger_low_coverage() {
 
     let page = document.pages().get(0).expect("Should get first page");
 
-    // Create text blocks covering only ~20% of the page
     let blocks = vec![
         TextBlock {
             text: "Small text block 1".to_string(),
@@ -79,7 +78,6 @@ fn test_ocr_trigger_low_coverage() {
 
     let config = ExtractionConfig::default();
 
-    // Should trigger OCR because coverage is below 50%
     assert!(
         should_trigger_ocr(&page, &blocks, &config),
         "OCR should trigger when text coverage is below 50%"
@@ -103,8 +101,6 @@ fn test_ocr_no_trigger_high_coverage() {
 
     let page = document.pages().get(0).expect("Should get first page");
 
-    // Create text blocks covering approximately 60% of the page
-    // For a typical page (~612 x 792 points), this is a large block
     let blocks = vec![TextBlock {
         text: "Large text block covering most of the page".to_string(),
         bbox: BoundingBox {
@@ -118,7 +114,6 @@ fn test_ocr_no_trigger_high_coverage() {
 
     let config = ExtractionConfig::default();
 
-    // Should NOT trigger OCR because coverage is above 50%
     assert!(
         !should_trigger_ocr(&page, &blocks, &config),
         "OCR should not trigger when text coverage is above 50%"
@@ -144,7 +139,6 @@ fn test_ocr_trigger_exact_threshold() {
     let page_width = page.width().value;
     let page_height = page.height().value;
 
-    // Create text block covering exactly 50% of the page
     let coverage_height = page_height * 0.5;
     let blocks = vec![TextBlock {
         text: "Text block at 50% threshold".to_string(),
@@ -159,8 +153,6 @@ fn test_ocr_trigger_exact_threshold() {
 
     let config = ExtractionConfig::default();
 
-    // At exactly 50%, OCR should trigger (using < not <=)
-    // Due to floating point precision, we allow a small margin
     let result = should_trigger_ocr(&page, &blocks, &config);
     assert!(
         result,
@@ -185,10 +177,6 @@ fn test_ocr_overlapping_blocks() {
 
     let page = document.pages().get(0).expect("Should get first page");
 
-    // Create overlapping text blocks
-    // Block 1: covers 150x200 area
-    // Block 2: covers 200x200 area, overlaps with Block 1
-    // Total area contribution: both areas count (not union)
     let blocks = vec![
         TextBlock {
             text: "Block 1".to_string(),
@@ -214,7 +202,6 @@ fn test_ocr_overlapping_blocks() {
 
     let config = ExtractionConfig::default();
 
-    // Should trigger OCR because combined areas are still below 50%
     assert!(
         should_trigger_ocr(&page, &blocks, &config),
         "OCR should trigger with overlapping blocks below threshold"
@@ -240,7 +227,6 @@ fn test_ocr_empty_blocks() {
     let blocks = vec![];
     let config = ExtractionConfig::default();
 
-    // Should trigger OCR because there are no text blocks (0% coverage)
     assert!(
         should_trigger_ocr(&page, &blocks, &config),
         "OCR should trigger with empty blocks (0% coverage)"
@@ -264,7 +250,6 @@ fn test_ocr_custom_threshold() {
 
     let page = document.pages().get(0).expect("Should get first page");
 
-    // Create text blocks covering ~30% of the page
     let blocks = vec![TextBlock {
         text: "Text block 30%".to_string(),
         bbox: BoundingBox {
@@ -276,7 +261,6 @@ fn test_ocr_custom_threshold() {
         font_size: 12.0,
     }];
 
-    // Set custom threshold to 25% instead of default 50%
     let config = ExtractionConfig {
         pdf_options: Some(PdfConfig {
             extract_images: false,
@@ -297,8 +281,6 @@ fn test_ocr_custom_threshold() {
         ..Default::default()
     };
 
-    // With 30% coverage and custom 25% threshold, should NOT trigger OCR
-    // (30% > 25% threshold)
     assert!(
         !should_trigger_ocr(&page, &blocks, &config),
         "OCR should respect custom threshold from config"

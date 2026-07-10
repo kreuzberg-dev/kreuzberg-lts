@@ -254,7 +254,6 @@ async fn test_pipeline_with_keyword_extraction() {
         .shutdown_all()
         .unwrap();
 
-    // Register keyword processor directly (bypasses Lazy which only runs once per process)
     let _ = crate::keywords::register_keyword_processor();
     clear_processor_cache().unwrap();
 
@@ -711,7 +710,6 @@ async fn test_multiple_postprocessors_run_before_validator() {
         registry.register(Arc::new(OrderValidator)).unwrap();
     }
 
-    // Clear the cache after registering new processors so it rebuilds with the test processors
     clear_processor_cache().unwrap();
 
     let doc = make_doc("test", "text/plain");
@@ -753,7 +751,6 @@ async fn test_run_pipeline_with_output_format_djot() {
     };
 
     let processed = run_pipeline(doc, &config).await.unwrap();
-    // The content should still be present
     assert!(!processed.content.is_empty());
     assert_eq!(processed.metadata.output_format, Some("djot".to_string()));
 }
@@ -769,7 +766,6 @@ async fn test_run_pipeline_with_output_format_html() {
     };
 
     let processed = run_pipeline(doc, &config).await.unwrap();
-    // HTML renderer produces semantic tags from InternalDocument
     assert!(processed.content.contains("test content"));
     assert_eq!(processed.metadata.output_format, Some("html".to_string()));
 }
@@ -778,9 +774,7 @@ async fn test_run_pipeline_with_output_format_html() {
 #[serial]
 #[cfg(feature = "quality")]
 async fn test_nfc_normalization_decomposes_to_composed() {
-    // NFC normalization should convert decomposed characters to composed form.
-    // "e\u{0301}" (e + combining acute accent) → "\u{00e9}" (é precomposed)
-    let doc = make_doc("caf\u{0065}\u{0301}", "text/plain"); // "café" with decomposed é
+    let doc = make_doc("caf\u{0065}\u{0301}", "text/plain");
     let config = ExtractionConfig {
         postprocessor: Some(crate::core::config::PostProcessorConfig {
             enabled: false,
@@ -790,15 +784,14 @@ async fn test_nfc_normalization_decomposes_to_composed() {
     };
 
     let processed = run_pipeline(doc, &config).await.unwrap();
-    assert_eq!(processed.content, "caf\u{00e9}"); // composed é
-    assert!(!processed.content.contains('\u{0301}')); // no combining accent
+    assert_eq!(processed.content, "caf\u{00e9}");
+    assert!(!processed.content.contains('\u{0301}'));
 }
 
 #[tokio::test]
 #[serial]
 #[cfg(feature = "quality")]
 async fn test_nfc_normalization_idempotent_on_ascii() {
-    // NFC on already-normalized/ASCII text should be a no-op.
     let doc = make_doc("Hello, world! 123", "text/plain");
     let config = ExtractionConfig {
         postprocessor: Some(crate::core::config::PostProcessorConfig {
@@ -816,7 +809,6 @@ async fn test_nfc_normalization_idempotent_on_ascii() {
 #[serial]
 #[cfg(feature = "quality")]
 async fn test_nfc_normalization_applies_to_page_content() {
-    // Create a doc with a page-1 element containing decomposed characters
     let mut doc = InternalDocument::new("plain");
     doc.mime_type = Cow::Borrowed("text/plain");
     doc.push_element(InternalElement::text(ElementKind::Paragraph, "re\u{0301}sume\u{0301}", 0).with_page(1));
@@ -829,7 +821,6 @@ async fn test_nfc_normalization_applies_to_page_content() {
     };
 
     let processed = run_pipeline(doc, &config).await.unwrap();
-    // Content derived from page element
     assert!(processed.content.contains("r\u{00e9}sum\u{00e9}"));
     let pages = processed.pages.unwrap();
     assert_eq!(pages[0].content, "r\u{00e9}sum\u{00e9}");
@@ -838,18 +829,15 @@ async fn test_nfc_normalization_applies_to_page_content() {
 #[tokio::test]
 #[serial]
 async fn test_run_pipeline_applies_output_format_last() {
-    // This test verifies that output format is applied after all other processing
     let doc = make_doc("test", "text/plain");
 
     let config = crate::core::config::ExtractionConfig {
         output_format: OutputFormat::Djot,
-        // Disable other processing to ensure pipeline runs cleanly
         enable_quality_processing: false,
         ..Default::default()
     };
 
     let processed = run_pipeline(doc, &config).await.unwrap();
-    // The result should have gone through the pipeline successfully
     assert_eq!(processed.metadata.output_format, Some("djot".to_string()));
 }
 
@@ -863,13 +851,11 @@ async fn test_chunking_populates_page_numbers_for_pdf() {
         std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../test_documents/pdf/issue-636-chunk-pages.pdf");
 
     if !pdf_path.exists() {
-        // Skip if test document not available
         return;
     }
 
     let pdf_bytes = std::fs::read(&pdf_path).unwrap();
 
-    // Configure chunking WITHOUT explicit pages config (the default user scenario)
     let config = ExtractionConfig {
         chunking: Some(ChunkingConfig {
             max_characters: 500,
@@ -882,12 +868,10 @@ async fn test_chunking_populates_page_numbers_for_pdf() {
         .await
         .unwrap();
 
-    // Chunks should exist
     assert!(result.chunks.is_some(), "Chunks should be produced");
     let chunks = result.chunks.as_ref().unwrap();
     assert!(!chunks.is_empty(), "Should have at least one chunk");
 
-    // At least some chunks should have page numbers
     let chunks_with_pages = chunks.iter().filter(|c| c.metadata.first_page.is_some()).count();
     assert!(
         chunks_with_pages > 0,

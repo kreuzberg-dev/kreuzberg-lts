@@ -31,7 +31,6 @@ defmodule KreuzbergTest.Unit.CacheAPITest do
     test "stats map contains string keys" do
       {:ok, stats} = CacheAPI.cache_stats()
 
-      # Verify all keys are strings (normalized)
       Enum.each(stats, fn {key, _value} ->
         assert is_binary(key), "Key #{inspect(key)} is not a binary string"
       end)
@@ -41,17 +40,14 @@ defmodule KreuzbergTest.Unit.CacheAPITest do
     test "stats may contain expected cache fields" do
       {:ok, stats} = CacheAPI.cache_stats()
 
-      # Check if expected fields exist (they may be present depending on cache state)
-      # These are potential fields based on the documentation
       _potential_keys = [
-        "total_files",
-        "total_size_mb",
-        "available_space_mb",
-        "oldest_file_age_days",
-        "newest_file_age_days"
+      "total_files",
+      "total_size_mb",
+      "available_space_mb",
+      "oldest_file_age_days",
+      "newest_file_age_days"
       ]
 
-      # Stats should be a map
       assert is_map(stats)
     end
 
@@ -60,16 +56,14 @@ defmodule KreuzbergTest.Unit.CacheAPITest do
       {:ok, stats} = CacheAPI.cache_stats()
 
       Enum.each(stats, fn {_key, value} ->
-        # Values should be numbers, strings, or maps/lists depending on field
         assert is_integer(value) or is_float(value) or is_binary(value) or is_map(value) or
-                 is_list(value),
-               "Value #{inspect(value)} has unexpected type"
+        is_list(value),
+        "Value #{inspect(value)} has unexpected type"
       end)
     end
 
     @tag :unit
     test "handles missing cache gracefully" do
-      # Even if cache is empty, should return ok tuple with stats
       result = CacheAPI.cache_stats()
       assert match?({:ok, _stats}, result)
     end
@@ -82,7 +76,6 @@ defmodule KreuzbergTest.Unit.CacheAPITest do
 
     @tag :unit
     test "does not raise exceptions on success" do
-      # Should not raise, should return tuple
       assert_nothing_raised(fn ->
         _result = CacheAPI.cache_stats()
       end)
@@ -93,7 +86,6 @@ defmodule KreuzbergTest.Unit.CacheAPITest do
       {:ok, stats1} = CacheAPI.cache_stats()
       {:ok, stats2} = CacheAPI.cache_stats()
 
-      # Both should be maps
       assert is_map(stats1)
       assert is_map(stats2)
     end
@@ -131,8 +123,6 @@ defmodule KreuzbergTest.Unit.CacheAPITest do
 
     @tag :unit
     test "raises Kreuzberg.Error on failure" do
-      # This test assumes cache_stats! might fail in some conditions
-      # In a normal scenario, it should succeed
       result = CacheAPI.cache_stats!()
       assert is_map(result)
     end
@@ -179,7 +169,7 @@ defmodule KreuzbergTest.Unit.CacheAPITest do
 
     @tag :unit
     test "returns :ok consistency across multiple calls" do
-      results = Enum.map(1..5, fn _i -> CacheAPI.clear_cache() end)
+    results = Enum.map(1..5, fn _i -> CacheAPI.clear_cache() end)
 
       Enum.each(results, fn result ->
         assert result == :ok
@@ -193,7 +183,6 @@ defmodule KreuzbergTest.Unit.CacheAPITest do
 
     @tag :unit
     test "result is idempotent" do
-      # Clearing cache multiple times should always return :ok
       result = CacheAPI.clear_cache()
       assert result == :ok
 
@@ -224,8 +213,6 @@ defmodule KreuzbergTest.Unit.CacheAPITest do
 
     @tag :unit
     test "raises Kreuzberg.Error on failure" do
-      # This test assumes clear_cache! might fail in some conditions
-      # In normal scenarios, it should succeed
       result = CacheAPI.clear_cache!()
       assert result == :ok
     end
@@ -241,7 +228,7 @@ defmodule KreuzbergTest.Unit.CacheAPITest do
 
     @tag :unit
     test "returns consistent :ok across multiple calls" do
-      results = Enum.map(1..5, fn _i -> CacheAPI.clear_cache!() end)
+    results = Enum.map(1..5, fn _i -> CacheAPI.clear_cache!() end)
 
       Enum.each(results, fn result ->
         assert result == :ok
@@ -250,7 +237,6 @@ defmodule KreuzbergTest.Unit.CacheAPITest do
 
     @tag :unit
     test "is idempotent" do
-      # Clearing cache multiple times should always return :ok
       result = CacheAPI.clear_cache!()
       assert result == :ok
 
@@ -264,10 +250,9 @@ defmodule KreuzbergTest.Unit.CacheAPITest do
     test "cache_stats normalizes keys to strings" do
       {:ok, stats} = CacheAPI.cache_stats()
 
-      # All keys should be binary strings
       Enum.each(stats, fn {key, _value} ->
         assert is_binary(key),
-               "Key should be binary string, got: #{inspect(key)}"
+        "Key should be binary string, got: #{inspect(key)}"
       end)
     end
 
@@ -277,7 +262,7 @@ defmodule KreuzbergTest.Unit.CacheAPITest do
 
       Enum.each(stats, fn {key, _value} ->
         assert is_binary(key),
-               "Key should be binary string, got: #{inspect(key)}"
+        "Key should be binary string, got: #{inspect(key)}"
       end)
     end
   end
@@ -293,7 +278,6 @@ defmodule KreuzbergTest.Unit.CacheAPITest do
 
     @tag :unit
     test "both functions handle edge cases" do
-      # Test calling in sequence
       clear_result = CacheAPI.clear_cache()
       assert clear_result == :ok
 
@@ -303,13 +287,10 @@ defmodule KreuzbergTest.Unit.CacheAPITest do
 
     @tag :unit
     test "bang and non-bang variants are consistent" do
-      # Non-bang variant
       {:ok, stats1} = CacheAPI.cache_stats()
 
-      # Bang variant
       stats2 = CacheAPI.cache_stats!()
 
-      # Both should return maps with same structure
       assert is_map(stats1)
       assert is_map(stats2)
     end
@@ -327,11 +308,9 @@ defmodule KreuzbergTest.Unit.CacheAPITest do
   describe "error handling in bang variants" do
     @tag :unit
     test "cache_stats! receives result from cache_stats" do
-      # Ensure both return equivalent data
       {:ok, stats_result} = CacheAPI.cache_stats()
       bang_result = CacheAPI.cache_stats!()
 
-      # Both should be maps
       assert is_map(stats_result)
       assert is_map(bang_result)
     end
@@ -347,14 +326,12 @@ defmodule KreuzbergTest.Unit.CacheAPITest do
 
     @tag :unit
     test "cache_stats! with classify_error handling" do
-      # Test that error classification works (even though we expect success)
       result = CacheAPI.cache_stats!()
       assert is_map(result)
     end
 
     @tag :unit
     test "clear_cache! with classify_error handling" do
-      # Test that error classification works (even though we expect success)
       result = CacheAPI.clear_cache!()
       assert result == :ok
     end
@@ -386,7 +363,7 @@ defmodule KreuzbergTest.Unit.CacheAPITest do
 
     @tag :unit
     test "concurrent-like cache_stats calls" do
-      results = Enum.map(1..3, fn _i -> CacheAPI.cache_stats() end)
+    results = Enum.map(1..3, fn _i -> CacheAPI.cache_stats() end)
 
       Enum.each(results, fn result ->
         assert {:ok, stats} = result
@@ -414,7 +391,6 @@ defmodule KreuzbergTest.Unit.CacheAPITest do
       {:ok, stats1} = CacheAPI.cache_stats()
       {:ok, stats2} = CacheAPI.cache_stats()
 
-      # Both maps should have same keys
       keys1 = stats1 |> Map.keys() |> Enum.sort()
       keys2 = stats2 |> Map.keys() |> Enum.sort()
 
@@ -426,10 +402,9 @@ defmodule KreuzbergTest.Unit.CacheAPITest do
       {:ok, stats} = CacheAPI.cache_stats()
 
       Enum.each(stats, fn {_key, value} ->
-        # Values should be numbers, strings, or collections
         assert is_number(value) or is_binary(value) or is_map(value) or is_list(value) or
-                 is_atom(value),
-               "Unexpected value type: #{inspect(value)}"
+        is_atom(value),
+        "Unexpected value type: #{inspect(value)}"
       end)
     end
 
@@ -437,7 +412,6 @@ defmodule KreuzbergTest.Unit.CacheAPITest do
     test "cache_stats! does not wrap result in tuple" do
       result = CacheAPI.cache_stats!()
 
-      # Should be map directly, not {:ok, map}
       assert is_map(result)
       assert not match?({:ok, _}, result)
       assert not match?({:error, _}, result)
@@ -448,7 +422,6 @@ defmodule KreuzbergTest.Unit.CacheAPITest do
       {:ok, stats1} = CacheAPI.cache_stats()
       stats2 = CacheAPI.cache_stats!()
 
-      # Should have equivalent structure (same keys)
       keys1 = stats1 |> Map.keys() |> Enum.sort()
       keys2 = stats2 |> Map.keys() |> Enum.sort()
 
@@ -459,9 +432,8 @@ defmodule KreuzbergTest.Unit.CacheAPITest do
   describe "clear_cache edge cases" do
     @tag :unit
     test "clear_cache is truly idempotent" do
-      results = Enum.map(1..10, fn _i -> CacheAPI.clear_cache() end)
+    results = Enum.map(1..10, fn _i -> CacheAPI.clear_cache() end)
 
-      # All results should be :ok
       Enum.each(results, fn result ->
         assert result == :ok
       end)
@@ -469,9 +441,8 @@ defmodule KreuzbergTest.Unit.CacheAPITest do
 
     @tag :unit
     test "clear_cache! is truly idempotent" do
-      results = Enum.map(1..10, fn _i -> CacheAPI.clear_cache!() end)
+    results = Enum.map(1..10, fn _i -> CacheAPI.clear_cache!() end)
 
-      # All results should be :ok
       Enum.each(results, fn result ->
         assert result == :ok
       end)
@@ -480,9 +451,9 @@ defmodule KreuzbergTest.Unit.CacheAPITest do
     @tag :unit
     test "clear_cache and clear_cache! always match" do
       pairs =
-        Enum.map(1..5, fn _i ->
-          {CacheAPI.clear_cache(), CacheAPI.clear_cache!()}
-        end)
+      Enum.map(1..5, fn _i ->
+        {CacheAPI.clear_cache(), CacheAPI.clear_cache!()}
+      end)
 
       Enum.each(pairs, fn {r1, r2} ->
         assert r1 == :ok
@@ -494,7 +465,6 @@ defmodule KreuzbergTest.Unit.CacheAPITest do
     test "clearing cache returns correct atom, not alternative" do
       result = CacheAPI.clear_cache()
 
-      # Should be exactly :ok atom
       assert result == :ok
       refute result == "ok"
       refute result == {:ok}
@@ -542,31 +512,25 @@ defmodule KreuzbergTest.Unit.CacheAPITest do
   describe "bang function error wrapping" do
     @tag :unit
     test "cache_stats! wraps errors in Kreuzberg.Error" do
-      # When cache_stats! succeeds, it returns normally
       result = CacheAPI.cache_stats!()
       assert is_map(result)
     end
 
     @tag :unit
     test "clear_cache! wraps errors in Kreuzberg.Error" do
-      # When clear_cache! succeeds, it returns :ok
       result = CacheAPI.clear_cache!()
       assert result == :ok
     end
 
     @tag :unit
     test "error classification in cache_stats!" do
-      # Verify the error path exists (called when cache_stats fails)
       result = CacheAPI.cache_stats!()
-      # This succeeds, proving the function exists and error classification works
       assert is_map(result)
     end
 
     @tag :unit
     test "error classification in clear_cache!" do
-      # Verify the error path exists (called when clear_cache fails)
       result = CacheAPI.clear_cache!()
-      # This succeeds, proving the function exists and error classification works
       assert result == :ok
     end
   end
@@ -574,23 +538,19 @@ defmodule KreuzbergTest.Unit.CacheAPITest do
   describe "cache_stats internal path coverage" do
     @tag :unit
     test "cache_stats normalizes map return from native" do
-      # This exercises the path where Native.cache_stats returns {:ok, stats_map}
       {:ok, stats} = CacheAPI.cache_stats()
       assert is_map(stats)
-      # The result should be a properly normalized map
-      assert Enum.all?(stats, fn {k, _v} -> is_binary(k) end)
+    assert Enum.all?(stats, fn {k, _v} -> is_binary(k) end)
     end
 
     @tag :unit
     test "cache_stats handles successful native response" do
-      # Exercise the successful path of cache_stats
       result = CacheAPI.cache_stats()
       assert match?({:ok, _map}, result)
     end
 
     @tag :unit
     test "cache_stats! successful path calls cache_stats" do
-      # This tests the successful case in the bang variant
       result = CacheAPI.cache_stats!()
       assert is_map(result)
       assert not is_tuple(result)
@@ -598,7 +558,6 @@ defmodule KreuzbergTest.Unit.CacheAPITest do
 
     @tag :unit
     test "clear_cache! successful path returns ok" do
-      # This tests the successful case in clear_cache!
       result = CacheAPI.clear_cache!()
       assert result == :ok
     end
@@ -607,7 +566,6 @@ defmodule KreuzbergTest.Unit.CacheAPITest do
   describe "cache operations atomicity and consistency" do
     @tag :unit
     test "cache_stats returns normalized keys every time" do
-      # Run multiple times to ensure consistency
       Enum.each(1..5, fn _i ->
         {:ok, stats} = CacheAPI.cache_stats()
 
@@ -619,26 +577,21 @@ defmodule KreuzbergTest.Unit.CacheAPITest do
 
     @tag :unit
     test "cache operations preserve invariants" do
-      # Verify that operations maintain cache consistency
       _clear1 = CacheAPI.clear_cache()
       {:ok, stats1} = CacheAPI.cache_stats()
       _clear2 = CacheAPI.clear_cache!()
       stats2 = CacheAPI.cache_stats!()
 
-      # Stats should be consistent maps
       assert is_map(stats1)
       assert is_map(stats2)
-      # Keys should be the same
       assert Enum.sort(Map.keys(stats1)) == Enum.sort(Map.keys(stats2))
     end
 
     @tag :unit
     test "bang variants handle all control flow paths" do
-      # cache_stats! with ok case
       stats_result = CacheAPI.cache_stats!()
       assert is_map(stats_result)
 
-      # clear_cache! with ok case
       clear_result = CacheAPI.clear_cache!()
       assert clear_result == :ok
     end
@@ -647,23 +600,18 @@ defmodule KreuzbergTest.Unit.CacheAPITest do
   describe "error handling paths in bang functions" do
     @tag :unit
     test "cache_stats! error handling infrastructure" do
-      # The bang function should handle errors via UtilityAPI.classify_error
-      # When successful, just verify it works
       result = CacheAPI.cache_stats!()
       assert is_map(result)
     end
 
     @tag :unit
     test "clear_cache! error handling infrastructure" do
-      # The bang function should handle errors via UtilityAPI.classify_error
-      # When successful, just verify it works
       result = CacheAPI.clear_cache!()
       assert result == :ok
     end
 
     @tag :unit
     test "both bang functions use proper error wrapping" do
-      # Verify both functions can execute successfully
       stats = CacheAPI.cache_stats!()
       clear = CacheAPI.clear_cache!()
 
@@ -675,14 +623,12 @@ defmodule KreuzbergTest.Unit.CacheAPITest do
   describe "cache_stats wrapper logic" do
     @tag :unit
     test "cache_stats filters non-map returns from native" do
-      # When Native.cache_stats returns {:ok, map}, it gets normalized
       {:ok, result} = CacheAPI.cache_stats()
       assert is_map(result)
     end
 
     @tag :unit
     test "cache_stats error passthrough" do
-      # When Native.cache_stats returns error, it passes through unchanged
       result = CacheAPI.cache_stats()
 
       case result do
@@ -693,7 +639,6 @@ defmodule KreuzbergTest.Unit.CacheAPITest do
 
     @tag :unit
     test "cache_stats result is always properly formatted" do
-      # The result should be either {:ok, map} or {:error, string}
       result = CacheAPI.cache_stats()
       assert is_tuple(result) and tuple_size(result) == 2
     end
@@ -702,21 +647,18 @@ defmodule KreuzbergTest.Unit.CacheAPITest do
   describe "clear_cache wrapper logic" do
     @tag :unit
     test "clear_cache success returns ok" do
-      # When Native.clear_cache returns :ok, it passes through
       result = CacheAPI.clear_cache()
       assert result == :ok
     end
 
     @tag :unit
     test "clear_cache error handling" do
-      # When Native.clear_cache returns error, it passes through
       result = CacheAPI.clear_cache()
       assert result == :ok or match?({:error, _}, result)
     end
 
     @tag :unit
     test "clear_cache result format" do
-      # Result should be atom :ok or error tuple
       result = CacheAPI.clear_cache()
       assert result == :ok or (is_tuple(result) and tuple_size(result) == 2)
     end
@@ -725,30 +667,24 @@ defmodule KreuzbergTest.Unit.CacheAPITest do
   describe "API completeness and function presence" do
     @tag :unit
     test "all four main functions exist and are callable" do
-      # cache_stats/0 exists and is callable
       result = CacheAPI.cache_stats()
       assert is_tuple(result) or is_map(result)
 
-      # cache_stats!/0 exists and returns a value
       assert is_map(CacheAPI.cache_stats!())
 
-      # clear_cache/0 exists and returns a value
       clear_result = CacheAPI.clear_cache()
       assert clear_result == :ok or (is_tuple(clear_result) and elem(clear_result, 0) == :error)
 
-      # clear_cache!/0 exists and returns a value
       assert CacheAPI.clear_cache!() == :ok
     end
 
     @tag :unit
     test "function signatures are correct" do
-      # Verify functions accept correct number of arguments (0 args)
       result1 = CacheAPI.cache_stats()
       result2 = CacheAPI.cache_stats!()
       result3 = CacheAPI.clear_cache()
       result4 = CacheAPI.clear_cache!()
 
-      # All should execute without error
       assert is_tuple(result1) or is_map(result2)
       assert result3 == :ok or (is_tuple(result3) and elem(result3, 0) == :error)
       assert result4 == :ok
@@ -756,8 +692,6 @@ defmodule KreuzbergTest.Unit.CacheAPITest do
 
     @tag :unit
     test "error wrapping in bang functions uses Kreuzberg.Error" do
-      # The bang functions should wrap errors via Error module
-      # We verify this by checking the functions exist and are called correctly
       stats = CacheAPI.cache_stats!()
       clear = CacheAPI.clear_cache!()
 
@@ -767,7 +701,6 @@ defmodule KreuzbergTest.Unit.CacheAPITest do
 
     @tag :unit
     test "non-bang functions return standard result tuples" do
-      # Verify the contract: {:ok, value} or {:error, reason}
       result1 = CacheAPI.cache_stats()
 
       case result1 do
@@ -782,17 +715,13 @@ defmodule KreuzbergTest.Unit.CacheAPITest do
 
     @tag :unit
     test "functions handle UtilityAPI.classify_error being called" do
-      # The bang functions call UtilityAPI.classify_error on errors
-      # We can't trigger errors, but we verify the functions work when no error occurs
       CacheAPI.cache_stats!()
       CacheAPI.clear_cache!()
 
-      # Functions executed without timing out - if we got here, they worked
       assert true
     end
   end
 
-  # Helper function to assert nothing was raised
   defp assert_nothing_raised(func) do
     func.()
     assert true

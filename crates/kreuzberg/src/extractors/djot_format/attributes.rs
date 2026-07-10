@@ -17,7 +17,6 @@ pub fn parse_jotdown_attributes(attrs: &jotdown::Attributes) -> crate::types::At
     for (kind, value) in attrs.iter() {
         match kind {
             AttributeKind::Id => {
-                // Last ID wins if multiple are specified
                 id = Some(value.to_string());
             }
             AttributeKind::Class => {
@@ -26,9 +25,7 @@ pub fn parse_jotdown_attributes(attrs: &jotdown::Attributes) -> crate::types::At
             AttributeKind::Pair { key } => {
                 key_values.push((key.to_string(), value.to_string()));
             }
-            AttributeKind::Comment => {
-                // Comments are ignored in our representation
-            }
+            AttributeKind::Comment => {}
         }
     }
 

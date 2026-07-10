@@ -27,8 +27,7 @@ readonly class FormattedBlock
         public ?string $content = null,
         public array $children = [],
         public ?array $attributes = null,
-    ) {
-    }
+    ) {}
 
     /**
      * Create FormattedBlock from array.
@@ -52,7 +51,7 @@ readonly class FormattedBlock
             $childrenData = $data['children'];
             $children = array_map(
                 /** @param array<string, mixed> $child */
-                static fn (array $child): FormattedBlock => self::fromArray($child),
+                static fn(array $child): FormattedBlock => self::fromArray($child),
                 $childrenData,
             );
         }

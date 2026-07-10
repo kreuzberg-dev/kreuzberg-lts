@@ -379,7 +379,6 @@ impl ExtractionResult {
             let format_json = serde_json::to_value(format).map_err(|e| {
                 PyErr::new::<pyo3::exceptions::PyRuntimeError, _>(format!("Failed to serialize format: {}", e))
             })?;
-            // Flatten format metadata into root metadata dict (matching Rust serde(flatten) behavior)
             if let serde_json::Value::Object(format_obj) = format_json {
                 for (key, value) in format_obj {
                     metadata_dict.set_item(&key, json_value_to_py(py, &value)?)?;
@@ -387,7 +386,6 @@ impl ExtractionResult {
             }
         }
 
-        // Propagate additional metadata fields (e.g. keyword extraction results)
         for (key, value) in &result.metadata.additional {
             metadata_dict.set_item(key.as_ref(), json_value_to_py(py, value)?)?;
         }
@@ -595,7 +593,6 @@ impl ExtractionResult {
             for elem in elems {
                 let elem_dict = PyDict::new(py);
                 elem_dict.set_item("element_id", elem.element_id.to_string())?;
-                // Serialize element_type to its serde name
                 let type_str = serde_json::to_value(elem.element_type)
                     .ok()
                     .and_then(|v| v.as_str().map(String::from))

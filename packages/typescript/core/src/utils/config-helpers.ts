@@ -26,7 +26,7 @@ import type { ExtractionConfig } from "../types/config.js";
  * ```
  */
 export function configToJson(config: ExtractionConfig): string {
-	return JSON.stringify(config);
+  return JSON.stringify(config);
 }
 
 /**
@@ -59,20 +59,20 @@ export function configToJson(config: ExtractionConfig): string {
  * ```
  */
 export function configGetField(config: ExtractionConfig, fieldName: string): unknown {
-	const parts = fieldName.split(".");
-	let current: unknown = config;
+  const parts = fieldName.split(".");
+  let current: unknown = config;
 
-	for (const part of parts) {
-		if (current === null || current === undefined) {
-			return undefined;
-		}
-		if (typeof current !== "object") {
-			return undefined;
-		}
-		current = (current as Record<string, unknown>)[part];
-	}
+  for (const part of parts) {
+    if (current === null || current === undefined) {
+      return undefined;
+    }
+    if (typeof current !== "object") {
+      return undefined;
+    }
+    current = (current as Record<string, unknown>)[part];
+  }
 
-	return current;
+  return current;
 }
 
 /**
@@ -112,34 +112,33 @@ export function configGetField(config: ExtractionConfig, fieldName: string): unk
  * ```
  */
 export function configMerge(base: ExtractionConfig, override: Partial<ExtractionConfig>): ExtractionConfig {
-	const result: ExtractionConfig = { ...base };
+  const result: ExtractionConfig = { ...base };
 
-	for (const key of Object.keys(override) as Array<keyof ExtractionConfig>) {
-		const overrideValue = override[key];
+  for (const key of Object.keys(override) as Array<keyof ExtractionConfig>) {
+    const overrideValue = override[key];
 
-		if (overrideValue === undefined) {
-			continue;
-		}
+    if (overrideValue === undefined) {
+      continue;
+    }
 
-		const baseValue = base[key];
+    const baseValue = base[key];
 
-		// Deep merge for nested objects (but not arrays or null)
-		if (
-			overrideValue !== null &&
-			typeof overrideValue === "object" &&
-			!Array.isArray(overrideValue) &&
-			baseValue !== null &&
-			typeof baseValue === "object" &&
-			!Array.isArray(baseValue)
-		) {
-			Reflect.set(result, key, {
-				...baseValue,
-				...overrideValue,
-			});
-		} else {
-			Reflect.set(result, key, overrideValue);
-		}
-	}
+    if (
+      overrideValue !== null &&
+      typeof overrideValue === "object" &&
+      !Array.isArray(overrideValue) &&
+      baseValue !== null &&
+      typeof baseValue === "object" &&
+      !Array.isArray(baseValue)
+    ) {
+      Reflect.set(result, key, {
+        ...baseValue,
+        ...overrideValue,
+      });
+    } else {
+      Reflect.set(result, key, overrideValue);
+    }
+  }
 
-	return result;
+  return result;
 }

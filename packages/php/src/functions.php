@@ -31,13 +31,27 @@ function normalizeExtractionResult(mixed $raw): ExtractionResult
         return ExtractionResult::fromArray($raw);
     }
 
-    // ext-php-rs object — proxy properties into fromArray
     if (is_object($raw)) {
         $data = [];
-        foreach (['content', 'mime_type', 'metadata', 'tables', 'detected_languages',
-                   'chunks', 'images', 'pages', 'keywords', 'elements', 'ocr_elements',
-                   'djot_content', 'document', 'extracted_keywords', 'quality_score',
-                   'processing_warnings', 'annotations'] as $field) {
+        foreach ([
+            'content',
+            'mime_type',
+            'metadata',
+            'tables',
+            'detected_languages',
+            'chunks',
+            'images',
+            'pages',
+            'keywords',
+            'elements',
+            'ocr_elements',
+            'djot_content',
+            'document',
+            'extracted_keywords',
+            'quality_score',
+            'processing_warnings',
+            'annotations',
+        ] as $field) {
             if (isset($raw->$field)) {
                 $data[$field] = $raw->$field;
             }
@@ -58,38 +72,38 @@ function convertToKreuzbergException(\Exception $e): KreuzbergException
 {
     $message = $e->getMessage();
 
-    // Check for validation errors
-    if (str_contains($message, '[Validation]') ||
-        str_contains($message, 'File does not exist') ||
-        str_contains($message, 'Invalid value given for argument')) {
+    if (
+        str_contains($message, '[Validation]')
+        || str_contains($message, 'File does not exist')
+        || str_contains($message, 'Invalid value given for argument')
+    ) {
         return KreuzbergException::validation($message);
     }
 
-    // Check for parsing errors
-    if (str_contains($message, 'Failed to parse') ||
-        str_contains($message, 'parsing error') ||
-        str_contains($message, 'Could not determine MIME type')) {
+    if (
+        str_contains($message, 'Failed to parse')
+        || str_contains($message, 'parsing error')
+        || str_contains($message, 'Could not determine MIME type')
+    ) {
         return KreuzbergException::parsing($message);
     }
 
-    // Check for OCR errors
     if (str_contains($message, 'OCR') || str_contains($message, 'ocr')) {
         return KreuzbergException::ocr($message);
     }
 
-    // Check for I/O errors
-    if (str_contains($message, 'I/O') ||
-        str_contains($message, 'permission') ||
-        str_contains($message, 'Permission denied')) {
+    if (
+        str_contains($message, 'I/O')
+        || str_contains($message, 'permission')
+        || str_contains($message, 'Permission denied')
+    ) {
         return KreuzbergException::io($message);
     }
 
-    // Check for embedding errors
     if (str_contains($message, '[Embedding]')) {
         return KreuzbergException::embedding($message);
     }
 
-    // Generic error
     return new KreuzbergException($message, 0, $e);
 }
 
@@ -118,11 +132,8 @@ function convertToKreuzbergException(\Exception $e): KreuzbergException
  * $result = extract_file('scanned.pdf', config: $config);
  * ```
  */
-function extract_file(
-    string $filePath,
-    ?string $mimeType = null,
-    ?ExtractionConfig $config = null,
-): ExtractionResult {
+function extract_file(string $filePath, ?string $mimeType = null, ?ExtractionConfig $config = null): ExtractionResult
+{
     try {
         $raw = \kreuzberg_extract_file($filePath, $mimeType, $config?->toJson());
 
@@ -153,11 +164,8 @@ function extract_file(
  * echo $result->content;
  * ```
  */
-function extract_bytes(
-    string $data,
-    string $mimeType,
-    ?ExtractionConfig $config = null,
-): ExtractionResult {
+function extract_bytes(string $data, string $mimeType, ?ExtractionConfig $config = null): ExtractionResult
+{
     try {
         $raw = \kreuzberg_extract_bytes($data, $mimeType, $config?->toJson());
 
@@ -190,21 +198,21 @@ function extract_bytes(
  * }
  * ```
  */
-function batch_extract_files(
-    array $paths,
-    ?ExtractionConfig $config = null,
-): array {
+function batch_extract_files(array $paths, ?ExtractionConfig $config = null): array
+{
     try {
         $rawResults = \kreuzberg_batch_extract_files($paths, $config?->toJson());
-        $results = array_map(fn ($r) => normalizeExtractionResult($r), $rawResults);
+        $results = array_map(fn($r) => normalizeExtractionResult($r), $rawResults);
 
-        // Check if any results contain errors in metadata
         foreach ($results as $result) {
-            // Check if metadata has custom error field
             if (is_object($result->metadata)) {
                 $error = $result->metadata->getCustom('error');
-                // error is an array with 'message' and 'error_type' keys
-                if (is_array($error) && isset($error['message']) && is_string($error['message']) && !empty($error['message'])) {
+                if (
+                    is_array($error)
+                    && isset($error['message'])
+                    && is_string($error['message'])
+                    && !empty($error['message'])
+                ) {
                     throw new KreuzbergException($error['message']);
                 }
             }
@@ -241,22 +249,21 @@ function batch_extract_files(
  * $results = batch_extract_bytes($files, $mimeTypes);
  * ```
  */
-function batch_extract_bytes(
-    array $dataList,
-    array $mimeTypes,
-    ?ExtractionConfig $config = null,
-): array {
+function batch_extract_bytes(array $dataList, array $mimeTypes, ?ExtractionConfig $config = null): array
+{
     try {
         $rawResults = \kreuzberg_batch_extract_bytes($dataList, $mimeTypes, $config?->toJson());
-        $results = array_map(fn ($r) => normalizeExtractionResult($r), $rawResults);
+        $results = array_map(fn($r) => normalizeExtractionResult($r), $rawResults);
 
-        // Check if any results contain errors in metadata
         foreach ($results as $result) {
-            // Check if metadata has custom error field
             if (is_object($result->metadata)) {
                 $error = $result->metadata->getCustom('error');
-                // error is an array with 'message' and 'error_type' keys
-                if (is_array($error) && isset($error['message']) && is_string($error['message']) && !empty($error['message'])) {
+                if (
+                    is_array($error)
+                    && isset($error['message'])
+                    && is_string($error['message'])
+                    && !empty($error['message'])
+                ) {
                     throw new KreuzbergException($error['message']);
                 }
             }
@@ -345,10 +352,8 @@ function detect_mime_type_from_path(string $path): string
  * $embeddings = embed(["hello", "world"]);
  * ```
  */
-function embed(
-    array $texts,
-    ?EmbeddingConfig $config = null,
-): array {
+function embed(array $texts, ?EmbeddingConfig $config = null): array
+{
     try {
         return \kreuzberg_embed($texts, $config?->toJson());
     } catch (\Exception $e) {
@@ -375,10 +380,8 @@ function embed(
  * $embeddings = $deferred->getResults();
  * ```
  */
-function embed_async(
-    array $texts,
-    ?EmbeddingConfig $config = null,
-): DeferredResult {
+function embed_async(array $texts, ?EmbeddingConfig $config = null): DeferredResult
+{
     try {
         return \kreuzberg_embed_async($texts, $config?->toJson());
     } catch (\Exception $e) {
@@ -443,11 +446,8 @@ function extract_file_async(
  * $result = $deferred->getResult();
  * ```
  */
-function extract_bytes_async(
-    string $data,
-    string $mimeType,
-    ?ExtractionConfig $config = null,
-): DeferredResult {
+function extract_bytes_async(string $data, string $mimeType, ?ExtractionConfig $config = null): DeferredResult
+{
     try {
         return \kreuzberg_extract_bytes_async($data, $mimeType, $config?->toJson());
     } catch (\Exception $e) {
@@ -474,10 +474,8 @@ function extract_bytes_async(
  * $results = $deferred->getResults();
  * ```
  */
-function batch_extract_files_async(
-    array $paths,
-    ?ExtractionConfig $config = null,
-): DeferredResult {
+function batch_extract_files_async(array $paths, ?ExtractionConfig $config = null): DeferredResult
+{
     try {
         return \kreuzberg_batch_extract_files_async($paths, $config?->toJson());
     } catch (\Exception $e) {
@@ -508,11 +506,8 @@ function batch_extract_files_async(
  * $results = $deferred->getResults();
  * ```
  */
-function batch_extract_bytes_async(
-    array $dataList,
-    array $mimeTypes,
-    ?ExtractionConfig $config = null,
-): DeferredResult {
+function batch_extract_bytes_async(array $dataList, array $mimeTypes, ?ExtractionConfig $config = null): DeferredResult
+{
     try {
         return \kreuzberg_batch_extract_bytes_async($dataList, $mimeTypes, $config?->toJson());
     } catch (\Exception $e) {

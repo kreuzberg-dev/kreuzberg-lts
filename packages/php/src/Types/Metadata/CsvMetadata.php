@@ -21,8 +21,7 @@ readonly class CsvMetadata
         public ?string $delimiter = null,
         public bool $hasHeader = false,
         public ?array $columnTypes = null,
-    ) {
-    }
+    ) {}
 
     /**
      * Create CsvMetadata from array returned by extension.
@@ -35,7 +34,9 @@ readonly class CsvMetadata
         $rowCount = is_int($rawRowCount) ? $rawRowCount : (is_numeric($rawRowCount) ? (int) $rawRowCount : 0);
 
         $rawColumnCount = $data['column_count'] ?? 0;
-        $columnCount = is_int($rawColumnCount) ? $rawColumnCount : (is_numeric($rawColumnCount) ? (int) $rawColumnCount : 0);
+        $columnCount = is_int($rawColumnCount)
+            ? $rawColumnCount
+            : (is_numeric($rawColumnCount) ? (int) $rawColumnCount : 0);
 
         /** @var string|null $delimiter */
         $delimiter = $data['delimiter'] ?? null;

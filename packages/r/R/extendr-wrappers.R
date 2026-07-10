@@ -2,20 +2,11 @@
 
 # nolint start
 
-#
-# This file was created with the following call:
-#   .Call("wrap__make_kreuzberg_wrappers", use_symbols = TRUE, package_name = "kreuzberg")
 
-#' @usage NULL
-#' @useDynLib kreuzberg, .registration = TRUE
 NULL
 
-#' Clear the extraction cache
-#' @export
 clear_cache <- function() .Call(wrap__clear_cache)
 
-#' Get cache statistics
-#' @export
 cache_stats <- function() .Call(wrap__cache_stats)
 
 extract_file_sync_native <- function(path, mime_type, config_json) .Call(wrap__extract_file_sync_native, path, mime_type, config_json)

@@ -135,7 +135,6 @@ impl PostProcessor for PythonPostProcessor {
             Python::attach(|py| {
                 let obj = self.python_obj.bind(py);
 
-                // Convert Rust ExtractionResult to Python ExtractionResult class instance
                 let py_extraction_result =
                     PyExtractionResult::from_rust(result.clone(), py, None, None).map_err(|e| {
                         KreuzbergError::Plugin {
@@ -177,12 +176,10 @@ impl PostProcessor for PythonPostProcessor {
 /// Supports both ExtractionResult class instances (attribute access) and
 /// plain dicts (dict-style access) for backward compatibility.
 fn merge_processed_result(py: Python<'_>, processed: &Bound<'_, PyAny>, result: &mut ExtractionResult) -> Result<()> {
-    // If processor returned a dict, use dict-style access for backward compatibility
     if let Ok(dict) = processed.cast::<PyDict>() {
         return merge_dict_to_extraction_result(py, dict, result);
     }
 
-    // Use attribute access (ExtractionResult or duck-typed object)
     if let Ok(content) = processed.getattr("content")
         && !content.is_none()
     {

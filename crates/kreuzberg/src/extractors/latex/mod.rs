@@ -95,14 +95,11 @@ impl LatexExtractor {
 
         while pos < len {
             if bytes[pos] == b'\\' {
-                // Try to match known inline commands
                 if let Some((kind, content, new_pos)) = Self::try_parse_inline_command(&input[pos..]) {
                     let start = output.len() as u32;
-                    // Recursively strip inner commands
                     let (inner_text, inner_anns) = Self::strip_inline_commands(&content);
                     output.push_str(&inner_text);
                     let end = output.len() as u32;
-                    // Adjust inner annotations to absolute offsets
                     for mut ann in inner_anns {
                         ann.start += start;
                         ann.end += start;
@@ -115,15 +112,12 @@ impl LatexExtractor {
                     continue;
                 }
 
-                // Try to match special character / replacement commands
                 if let Some((replacement, consumed)) = Self::try_parse_special_command(&input[pos..]) {
                     output.push_str(&replacement);
                     pos += consumed;
                     continue;
                 }
 
-                // Not a recognized command — try to skip the command name and
-                // output its braced argument (if any) as plain text.
                 if let Some((plain, consumed)) = Self::try_skip_unknown_command(&input[pos..]) {
                     if !plain.is_empty() {
                         let (inner_text, inner_anns) = Self::strip_inline_commands(&plain);
@@ -139,11 +133,9 @@ impl LatexExtractor {
                     continue;
                 }
 
-                // Bare backslash followed by non-alpha — copy as-is
                 output.push('\\');
                 pos += 1;
             } else if bytes[pos] == b'$' {
-                // Preserve inline math $...$ as-is
                 output.push('$');
                 pos += 1;
                 while pos < len && bytes[pos] != b'$' {
@@ -156,27 +148,21 @@ impl LatexExtractor {
                     pos += 1;
                 }
             } else if bytes[pos] == b'-' && pos + 2 < len && bytes[pos + 1] == b'-' && bytes[pos + 2] == b'-' {
-                // --- → em dash
                 output.push('\u{2014}');
                 pos += 3;
             } else if bytes[pos] == b'-' && pos + 1 < len && bytes[pos + 1] == b'-' {
-                // -- → en dash
                 output.push('\u{2013}');
                 pos += 2;
             } else if bytes[pos] == b'`' && pos + 1 < len && bytes[pos + 1] == b'`' {
-                // `` → left double quote
                 output.push('\u{201C}');
                 pos += 2;
             } else if bytes[pos] == b'\'' && pos + 1 < len && bytes[pos + 1] == b'\'' {
-                // '' → right double quote
                 output.push('\u{201D}');
                 pos += 2;
             } else if bytes[pos] == b'`' {
-                // ` → left single quote
                 output.push('\u{2018}');
                 pos += 1;
             } else if bytes[pos] == b'\'' {
-                // ' → right single quote
                 output.push('\u{2019}');
                 pos += 1;
             } else {
@@ -193,7 +179,6 @@ impl LatexExtractor {
     ///
     /// Returns `Some((kind, braced_content, bytes_consumed))` on success.
     fn try_parse_inline_command(text: &str) -> Option<(AnnotationKind, String, usize)> {
-        // Map command names to annotation kinds
         let commands: &[(&str, AnnotationKind)] = &[
             ("\\textbf{", AnnotationKind::Bold),
             ("\\emph{", AnnotationKind::Italic),
@@ -210,7 +195,6 @@ impl LatexExtractor {
             }
         }
 
-        // Handle \href{url}{text}
         if let Some(after_href) = text.strip_prefix("\\href{")
             && let Some((url, url_consumed)) = Self::read_braced_content(after_href)
         {
@@ -223,7 +207,6 @@ impl LatexExtractor {
             }
         }
 
-        // Handle \url{url} — URL is both content and link target
         if let Some(after_url_cmd) = text.strip_prefix("\\url{")
             && let Some((url, consumed)) = Self::read_braced_content(after_url_cmd)
         {
@@ -238,7 +221,6 @@ impl LatexExtractor {
             ));
         }
 
-        // Handle \verb!...! (or \verb|...|, \verb+...+, etc.)
         if let Some(after_verb) = text.strip_prefix("\\verb")
             && let Some(delim) = after_verb.chars().next()
             && !delim.is_alphabetic()
@@ -259,7 +241,6 @@ impl LatexExtractor {
     ///
     /// Returns `Some((replacement_string, bytes_consumed))` on success.
     fn try_parse_special_command(text: &str) -> Option<(String, usize)> {
-        // Commands with braces: \textgreater{}, \textless{}, \textbackslash{}, \ldots{}, etc.
         let braced_replacements: &[(&str, &str)] = &[
             ("\\textgreater{}", ">"),
             ("\\textless{}", "<"),
@@ -278,7 +259,6 @@ impl LatexExtractor {
             }
         }
 
-        // Commands without braces (but may have {})
         let simple_replacements: &[(&str, &str)] = &[
             ("\\ldots", "\u{2026}"),
             ("\\dots", "\u{2026}"),
@@ -303,7 +283,6 @@ impl LatexExtractor {
             }
         }
 
-        // \ensuremath{content} — pass through content as-is (inline math)
         if let Some(after) = text.strip_prefix("\\ensuremath{")
             && let Some((content, consumed)) = Self::read_braced_content(after)
         {
@@ -325,18 +304,16 @@ impl LatexExtractor {
         }
 
         let after_backslash = &text[1..];
-        // Collect alphabetic command name
         let cmd_end = after_backslash
             .find(|c: char| !c.is_alphabetic())
             .unwrap_or(after_backslash.len());
 
         if cmd_end == 0 {
-            return None; // Not an alpha command
+            return None;
         }
 
-        let total_cmd = 1 + cmd_end; // backslash + command name
+        let total_cmd = 1 + cmd_end;
 
-        // Check for optional argument [...]
         let rest = &text[total_cmd..];
         let mut consumed = total_cmd;
         let rest = if rest.starts_with('[') {
@@ -350,7 +327,6 @@ impl LatexExtractor {
             rest
         };
 
-        // If followed by braced content, extract it
         if let Some(inner) = rest.strip_prefix('{')
             && let Some((content, brace_consumed)) = Self::read_braced_content(inner)
         {
@@ -358,7 +334,6 @@ impl LatexExtractor {
             return Some((content, consumed));
         }
 
-        // No braced arg — just skip the command name
         Some((String::new(), consumed))
     }
 
@@ -399,7 +374,6 @@ impl LatexExtractor {
         let prefix = "\\includegraphics";
         let start = line.find(prefix)?;
         let after = &line[start + prefix.len()..];
-        // Skip optional [...]
         let rest = if after.starts_with('[') {
             let bracket_end = after.find(']')?;
             &after[bracket_end + 1..]
@@ -443,7 +417,6 @@ impl LatexExtractor {
             &*HEADING_LEVELS_NO_CHAPTERS
         };
 
-        // Extract metadata from preamble
         let mut metadata_entries: Vec<(String, String)> = Vec::new();
         for &cmd in &["title", "author", "date"] {
             if let Some(value) = utilities::extract_braced(source, cmd)
@@ -477,7 +450,6 @@ impl LatexExtractor {
                 continue;
             }
 
-            // Handle environments
             if (trimmed.contains("\\begin{") || trimmed.contains("\\begin {"))
                 && let Some(env_name) = extract_env_name(trimmed)
             {
@@ -560,7 +532,6 @@ impl LatexExtractor {
                         let (env_content, new_i) = collect_environment(&lines, i, &env_name);
                         let formula_text = format!("\\begin{{{}}}\n{}\\end{{{}}}", env_name, env_content, env_name);
                         let idx = b.push_formula(&formula_text, None, None);
-                        // Check for \label inside math environments
                         if let Some(lbl) = Self::extract_label(&env_content) {
                             b.set_anchor(idx, &lbl);
                         }
@@ -581,7 +552,6 @@ impl LatexExtractor {
                     "quote" | "quotation" => {
                         let (env_content, new_i) = collect_environment(&lines, i, &env_name);
                         b.push_quote_start();
-                        // Recursively process the quote content
                         let inner_lines: Vec<&str> = env_content.lines().collect();
                         Self::build_internal_body(&mut b, &inner_lines, heading_map, inject_placeholders);
                         b.push_quote_end();
@@ -590,7 +560,6 @@ impl LatexExtractor {
                     }
                     "obeylines" => {
                         let (env_content, new_i) = collect_environment(&lines, i, &env_name);
-                        // Process content line by line preserving line breaks
                         for line in env_content.lines() {
                             let line_trimmed = line.trim();
                             if !line_trimmed.is_empty() {
@@ -604,13 +573,11 @@ impl LatexExtractor {
                         continue;
                     }
                     "center" => {
-                        // \begin{center}\rule{...}{...}\end{center} is a horizontal rule
                         let (env_content, new_i) = collect_environment(&lines, i, "center");
                         let content_trimmed = env_content.trim();
                         if content_trimmed.starts_with("\\rule{") || content_trimmed.starts_with("\\rule ") {
                             b.push_paragraph("---", vec![], None, None);
                         } else {
-                            // Process center content normally
                             let inner_lines: Vec<&str> = env_content.lines().collect();
                             Self::build_internal_body(&mut b, &inner_lines, heading_map, inject_placeholders);
                         }
@@ -618,7 +585,6 @@ impl LatexExtractor {
                         continue;
                     }
                     _ => {
-                        // For unknown environments, try to extract text content
                         let (env_content, new_i) = collect_environment(&lines, i, &env_name);
                         let inner_lines: Vec<&str> = env_content.lines().collect();
                         Self::build_internal_body(&mut b, &inner_lines, heading_map, inject_placeholders);
@@ -647,7 +613,6 @@ impl LatexExtractor {
         while i < lines.len() {
             let trimmed = lines[i].trim();
 
-            // Handle environments
             if (trimmed.contains("\\begin{") || trimmed.contains("\\begin {"))
                 && let Some(env_name) = extract_env_name(trimmed)
             {
@@ -785,12 +750,10 @@ impl LatexExtractor {
             return;
         }
 
-        // Skip known non-content commands
         if Self::is_skip_command(trimmed) {
             return;
         }
 
-        // Handle heading commands
         if let Some(after_backslash) = trimmed.strip_prefix('\\') {
             let cmd_end = after_backslash
                 .find(|c: char| c == '{' || c == '[' || c.is_whitespace())
@@ -802,9 +765,7 @@ impl LatexExtractor {
                     if let Some(title) = extract_heading_title(trimmed, cmd_name) {
                         let (title_text, title_anns) = Self::strip_inline_commands(&title);
                         let idx = b.push_heading(level, &title_text, None, None);
-                        // Store heading annotations
                         if !title_anns.is_empty() {
-                            // Push annotations via a helper if available, or store on heading
                             for ann in &title_anns {
                                 if let AnnotationKind::Link { url, .. } = &ann.kind
                                     && !url.is_empty()
@@ -825,7 +786,6 @@ impl LatexExtractor {
             }
         }
 
-        // \includegraphics outside figure
         if trimmed.contains("\\includegraphics")
             && let Some(path) = Self::extract_includegraphics_path(trimmed)
         {
@@ -836,12 +796,9 @@ impl LatexExtractor {
             return;
         }
 
-        // \ref{} → CrossReference
         Self::extract_refs(trimmed, b, "\\ref{", RelationshipKind::CrossReference);
-        // \cite{} → CitationReference
         Self::extract_refs(trimmed, b, "\\cite{", RelationshipKind::CitationReference);
 
-        // Display math \[...\]
         if trimmed.starts_with("\\[") {
             let mut math_content = trimmed.to_string();
             if !trimmed.contains("\\]") {
@@ -862,7 +819,6 @@ impl LatexExtractor {
             return;
         }
 
-        // All other content: extract footnotes, then strip inline commands
         let mut line_text = trimmed.to_string();
         while let Some(fn_start) = line_text.find("\\footnote{") {
             let after = &line_text[fn_start + "\\footnote{".len()..];
@@ -885,7 +841,6 @@ impl LatexExtractor {
             let (text, annotations) = Self::strip_inline_commands(line_text);
             let text = text.trim();
             if !text.is_empty() {
-                // Extract URIs from link annotations
                 for ann in &annotations {
                     if let AnnotationKind::Link { url, .. } = &ann.kind
                         && !url.is_empty()
@@ -917,11 +872,9 @@ impl LatexExtractor {
             let abs_pos = search_from + pos;
             let after = &text[abs_pos + prefix.len()..];
             if let Some((key, consumed)) = Self::read_braced_content(after) {
-                // For \cite, handle comma-separated keys
                 let keys: Vec<&str> = key.split(',').map(|k| k.trim()).collect();
                 for k in keys {
                     if !k.is_empty() {
-                        // Push a reference marker element
                         let ref_text = format!("[{}]", k);
                         let idx = b.push_paragraph(&ref_text, vec![], None, None);
                         b.push_relationship(idx, RelationshipTarget::Key(k.to_string()), kind);
@@ -942,7 +895,6 @@ impl LatexExtractor {
         while i < all_lines.len() {
             let trimmed = all_lines[i].trim();
 
-            // Handle nested list environments
             if (trimmed.contains("\\begin{itemize}")
                 || trimmed.contains("\\begin{enumerate}")
                 || trimmed.contains("\\begin{description}"))
@@ -960,7 +912,6 @@ impl LatexExtractor {
             if trimmed.starts_with("\\item") {
                 let after = trimmed.strip_prefix("\\item").unwrap_or("").trim();
 
-                // Collect continuation lines (lines until next \item, \begin, or \end)
                 let mut item_parts = Vec::new();
                 let first_part = if after.starts_with('[') {
                     if let Some(bracket_end) = after.find(']') {
@@ -982,7 +933,6 @@ impl LatexExtractor {
                     item_parts.push(first_part);
                 }
 
-                // Collect continuation lines
                 i += 1;
                 while i < all_lines.len() {
                     let next = all_lines[i].trim();
@@ -1009,7 +959,6 @@ impl LatexExtractor {
                 continue;
             }
 
-            // Skip non-item lines (empty, comments, setcounter, etc.)
             i += 1;
         }
     }
@@ -1041,7 +990,6 @@ impl LatexExtractor {
 
     /// Extract language from code environment options.
     fn extract_code_language(begin_line: &str) -> Option<&str> {
-        // \begin{lstlisting}[language=Python] or \begin{minted}{python}
         if let Some(lang_pos) = begin_line.find("language=") {
             let after = &begin_line[lang_pos + 9..];
             let end = after.find([',', ']', '}']).unwrap_or(after.len());
@@ -1050,7 +998,6 @@ impl LatexExtractor {
                 return Some(lang);
             }
         }
-        // \begin{minted}{python}
         if begin_line.contains("minted")
             && let Some(brace_start) = begin_line.rfind('{')
         {
@@ -1199,7 +1146,6 @@ mod tests {
         let (text, anns) = LatexExtractor::strip_inline_commands("\\textbf{\\emph{nested}}");
         assert_eq!(text, "nested");
         assert_eq!(anns.len(), 2);
-        // Both annotations should cover the same range
         assert!(anns.iter().any(|a| matches!(a.kind, AnnotationKind::Bold)));
         assert!(anns.iter().any(|a| matches!(a.kind, AnnotationKind::Italic)));
     }

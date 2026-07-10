@@ -1,6 +1,5 @@
 //! Core types for document extraction.
 
-// Module declarations
 pub mod annotations;
 pub mod builder;
 pub mod djot;
@@ -16,7 +15,6 @@ pub mod serde_helpers;
 pub mod tables;
 pub mod uri;
 
-// Re-export all types for backward compatibility
 pub use annotations::*;
 pub use djot::*;
 pub use document_structure::{
@@ -349,7 +347,6 @@ mod tests {
         assert!(json.contains("\"x1\":540.0"));
         assert!(json.contains("\"y1\":600.0"));
 
-        // Round-trip
         let deserialized: ExtractedImage = serde_json::from_str(&json).unwrap();
         assert_eq!(deserialized.image_index, 0);
         assert!(deserialized.bounding_box.is_some());
@@ -384,7 +381,6 @@ mod tests {
 
     #[test]
     fn test_extracted_image_bounding_box_backward_compatibility() {
-        // Old JSON without bounding_box field should deserialize
         let json = r#"{
             "data": "Rm9v",
             "format": "png",
@@ -473,7 +469,6 @@ mod tests {
         assert_eq!(cloned.image_index, image.image_index);
         assert_eq!(cloned.bounding_box, image.bounding_box);
 
-        // Debug should work
         let debug = format!("{:?}", image);
         assert!(debug.contains("bounding_box"));
     }

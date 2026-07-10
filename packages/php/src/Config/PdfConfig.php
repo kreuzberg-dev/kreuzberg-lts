@@ -94,8 +94,7 @@ readonly class PdfConfig
          * @default false
          */
         public bool $allowSingleColumnTables = false,
-    ) {
-    }
+    ) {}
 
     /**
      * Create configuration from array data.
@@ -203,15 +202,18 @@ readonly class PdfConfig
      */
     public function toArray(): array
     {
-        $result = array_filter([
-            'extract_images' => $this->extractImages,
-            'passwords' => $this->passwords,
-            'extract_metadata' => $this->extractMetadata,
-            'hierarchy' => $this->hierarchy?->toArray(),
-            'extract_annotations' => $this->extractAnnotations,
-            'top_margin_fraction' => $this->topMarginFraction,
-            'bottom_margin_fraction' => $this->bottomMarginFraction,
-        ], static fn ($value): bool => $value !== null);
+        $result = array_filter(
+            [
+                'extract_images' => $this->extractImages,
+                'passwords' => $this->passwords,
+                'extract_metadata' => $this->extractMetadata,
+                'hierarchy' => $this->hierarchy?->toArray(),
+                'extract_annotations' => $this->extractAnnotations,
+                'top_margin_fraction' => $this->topMarginFraction,
+                'bottom_margin_fraction' => $this->bottomMarginFraction,
+            ],
+            static fn($value): bool => $value !== null,
+        );
 
         if ($this->allowSingleColumnTables) {
             $result['allow_single_column_tables'] = true;

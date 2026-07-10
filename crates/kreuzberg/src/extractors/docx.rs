@@ -54,8 +54,6 @@ fn build_document_structure(doc: &crate::extraction::docx::parser::Document) -> 
         doc.paragraphs.len() + doc.tables.len() + doc.drawings.len() + doc.headers.len() + doc.footers.len() + 16;
     let mut b = DocumentStructureBuilder::with_capacity(capacity).source_format("docx");
 
-    // Add section properties as attributes on a root-level Group node.
-    // Use the last section, which represents the document-level default in DOCX.
     if let Some(section) = doc.sections.last() {
         let mut attrs = AHashMap::new();
         if let Some(w) = section.page_width_points() {
@@ -102,24 +100,20 @@ fn build_document_structure(doc: &crate::extraction::docx::parser::Document) -> 
         }
     }
 
-    // Process body elements in document order
     for element in &doc.elements {
         match element {
             crate::extraction::docx::parser::DocumentElement::Paragraph(idx) => {
                 let paragraph = &doc.paragraphs[*idx];
 
-                // Collect plain text and annotations from runs, separating math runs
                 let (text, annotations, math_formulas) = collect_run_annotations(&paragraph.runs);
 
                 if text.is_empty() && math_formulas.is_empty() {
                     continue;
                 }
 
-                // Check if this paragraph is a heading
                 let heading_level = paragraph.style.as_deref().and_then(|s| doc.resolve_heading_level(s));
 
                 if let Some(level) = heading_level {
-                    // For headings, use plain text (annotations are less relevant for DocumentStructure)
                     let heading_text = if text.is_empty() {
                         paragraph.runs_to_markdown()
                     } else {
@@ -127,12 +121,10 @@ fn build_document_structure(doc: &crate::extraction::docx::parser::Document) -> 
                     };
                     b.push_heading(level, &heading_text, None, None);
                 } else if paragraph.numbering_id.is_some() {
-                    // Push any preceding math formulas as standalone nodes
                     for formula in &math_formulas {
                         b.push_formula(formula, None);
                     }
                     if !text.is_empty() {
-                        // List item - create as list item (list grouping done by transform)
                         let is_ordered = paragraph
                             .numbering_id
                             .zip(paragraph.numbering_level)
@@ -142,7 +134,6 @@ fn build_document_structure(doc: &crate::extraction::docx::parser::Document) -> 
                         b.push_list_item(list, &text, None);
                     }
                 } else {
-                    // Push any math formulas as standalone Formula nodes
                     for formula in &math_formulas {
                         b.push_formula(formula, None);
                     }
@@ -179,7 +170,6 @@ fn build_document_structure(doc: &crate::extraction::docx::parser::Document) -> 
                             bbox: None,
                         });
 
-                        // Collect cell styling as attributes keyed by "cell_R_C_..."
                         if let Some(ref props) = cell.properties {
                             let prefix = format!("cell_{}_{}", row_idx, col_idx);
                             if let Some(ref shading) = props.shading
@@ -214,14 +204,12 @@ fn build_document_structure(doc: &crate::extraction::docx::parser::Document) -> 
             crate::extraction::docx::parser::DocumentElement::Drawing(idx) => {
                 let drawing = &doc.drawings[*idx];
 
-                // Skip drawings without an image reference (e.g. textbox shapes)
                 if drawing.image_ref.is_none() {
                     continue;
                 }
 
                 let description = drawing.doc_properties.as_ref().and_then(|dp| dp.description.clone());
 
-                // Build bounding box from anchor position + extent
                 let bbox = match &drawing.drawing_type {
                     crate::extraction::docx::drawing::DrawingType::Anchored(anchor) => {
                         let x = anchor.position_h.as_ref().and_then(|p| p.offset).unwrap_or(0);
@@ -248,7 +236,6 @@ fn build_document_structure(doc: &crate::extraction::docx::parser::Document) -> 
         }
     }
 
-    // Add headers and footers
     for hf in &doc.headers {
         let text: String = hf
             .paragraphs
@@ -272,7 +259,6 @@ fn build_document_structure(doc: &crate::extraction::docx::parser::Document) -> 
         }
     }
 
-    // Add footnotes and endnotes
     for note in doc.footnotes.iter().chain(doc.endnotes.iter()) {
         let text: String = note
             .paragraphs
@@ -301,21 +287,17 @@ fn build_internal_document(doc: &crate::extraction::docx::parser::Document) -> I
 
     let mut builder = InternalDocumentBuilder::new("docx");
 
-    // Track current list state for grouping consecutive list items
     let mut current_list_numbering_id: Option<i64> = None;
     let mut current_list_ordered: bool = false;
 
-    // Process body elements in document order
     for element in &doc.elements {
         match element {
             crate::extraction::docx::parser::DocumentElement::Paragraph(idx) => {
                 let paragraph = &doc.paragraphs[*idx];
 
-                // Collect plain text and annotations from runs, separating math runs
                 let (text, annotations, math_formulas) = collect_run_annotations(&paragraph.runs);
 
                 if text.is_empty() && math_formulas.is_empty() {
-                    // Close any open list if we hit an empty paragraph
                     if current_list_numbering_id.is_some() {
                         builder.end_list();
                         current_list_numbering_id = None;
@@ -323,10 +305,8 @@ fn build_internal_document(doc: &crate::extraction::docx::parser::Document) -> I
                     continue;
                 }
 
-                // Check if this paragraph is a heading
                 let heading_level = paragraph.style.as_deref().and_then(|s| doc.resolve_heading_level(s));
 
-                // Check if this paragraph has a quote/blockquote style
                 let is_quote_style = paragraph.style.as_deref().is_some_and(|s| {
                     let lower = s.to_ascii_lowercase();
                     lower == "quote"
@@ -336,10 +316,7 @@ fn build_internal_document(doc: &crate::extraction::docx::parser::Document) -> I
                         || lower.contains("quote")
                 });
 
-                // Track the element index from whichever branch pushes the element,
-                // so we can scan for hyperlink URIs unconditionally afterward.
                 let element_idx: Option<u32> = if let Some(level) = heading_level {
-                    // Close any open list before a heading
                     if current_list_numbering_id.is_some() {
                         builder.end_list();
                         current_list_numbering_id = None;
@@ -355,7 +332,6 @@ fn build_internal_document(doc: &crate::extraction::docx::parser::Document) -> I
                     }
                     Some(idx)
                 } else if is_quote_style {
-                    // Close any open list before a blockquote
                     if current_list_numbering_id.is_some() {
                         builder.end_list();
                         current_list_numbering_id = None;
@@ -365,7 +341,6 @@ fn build_internal_document(doc: &crate::extraction::docx::parser::Document) -> I
                     builder.push_quote_end();
                     Some(para_idx)
                 } else if let Some(nid) = paragraph.numbering_id {
-                    // Push any preceding math formulas as standalone nodes
                     for formula in &math_formulas {
                         builder.push_formula(formula, None, None);
                     }
@@ -375,9 +350,7 @@ fn build_internal_document(doc: &crate::extraction::docx::parser::Document) -> I
                             .zip(paragraph.numbering_level)
                             .and_then(|(nid, nlvl)| doc.numbering_defs.get(&(nid, nlvl)))
                             .is_some_and(|lt| *lt == crate::extraction::docx::parser::ListType::Numbered);
-                        // Check if we need to start a new list or continue the current one
                         if current_list_numbering_id != Some(nid) {
-                            // Close previous list if open
                             if current_list_numbering_id.is_some() {
                                 builder.end_list();
                             }
@@ -392,12 +365,10 @@ fn build_internal_document(doc: &crate::extraction::docx::parser::Document) -> I
                         None
                     }
                 } else {
-                    // Close any open list before a non-list paragraph
                     if current_list_numbering_id.is_some() {
                         builder.end_list();
                         current_list_numbering_id = None;
                     }
-                    // Push any math formulas as standalone Formula nodes
                     for formula in &math_formulas {
                         builder.push_formula(formula, None, None);
                     }
@@ -409,8 +380,6 @@ fn build_internal_document(doc: &crate::extraction::docx::parser::Document) -> I
                     }
                 };
 
-                // Scan runs for hyperlink URLs to create InternalLink relationships and extract URIs.
-                // This runs for ALL paragraph types: headings, quotes, list items, and plain paragraphs.
                 if let Some(elem_idx) = element_idx {
                     for run in &paragraph.runs {
                         if run.math_latex.is_some() || run.text.is_empty() {
@@ -429,7 +398,6 @@ fn build_internal_document(doc: &crate::extraction::docx::parser::Document) -> I
                         }
                     }
 
-                    // Scan for inline footnote/endnote references ([^N]) in text
                     let mut search_start = 0;
                     while let Some(start) = text[search_start..].find("[^") {
                         let abs_start = search_start + start;
@@ -438,7 +406,6 @@ fn build_internal_document(doc: &crate::extraction::docx::parser::Document) -> I
                             if !ref_id.is_empty() && ref_id.chars().all(|c| c.is_ascii_digit()) {
                                 let key = format!("fn{}", ref_id);
                                 builder.push_footnote_ref(ref_id, &key, None);
-                                // Relationship is auto-created by push_footnote_ref
                             }
                             search_start = abs_start + end + 1;
                         } else {
@@ -448,13 +415,11 @@ fn build_internal_document(doc: &crate::extraction::docx::parser::Document) -> I
                 }
             }
             crate::extraction::docx::parser::DocumentElement::Table(idx) => {
-                // Close any open list before a table
                 if current_list_numbering_id.is_some() {
                     builder.end_list();
                     current_list_numbering_id = None;
                 }
                 let table = &doc.tables[*idx];
-                // Emit table caption as a paragraph before the table
                 if let Some(ref props) = table.properties
                     && let Some(ref caption) = props.caption
                     && !caption.is_empty()
@@ -480,7 +445,6 @@ fn build_internal_document(doc: &crate::extraction::docx::parser::Document) -> I
                     }
                     cells.push(row_cells);
                 }
-                // Fill vertically merged cells
                 for row_idx in 1..table.rows.len() {
                     let mut col = 0usize;
                     for cell in &table.rows[row_idx].cells {
@@ -505,19 +469,16 @@ fn build_internal_document(doc: &crate::extraction::docx::parser::Document) -> I
             crate::extraction::docx::parser::DocumentElement::Drawing(idx) => {
                 let drawing = &doc.drawings[*idx];
 
-                // Skip drawings without an image reference (e.g. textbox shapes)
                 if drawing.image_ref.is_none() {
                     continue;
                 }
 
-                // Close any open list before a drawing
                 if current_list_numbering_id.is_some() {
                     builder.end_list();
                     current_list_numbering_id = None;
                 }
                 let description = drawing.doc_properties.as_ref().and_then(|dp| dp.description.clone());
 
-                // Build bounding box from anchor position + extent
                 let bbox = match &drawing.drawing_type {
                     crate::extraction::docx::drawing::DrawingType::Anchored(anchor) => {
                         let x = anchor.position_h.as_ref().and_then(|p| p.offset).unwrap_or(0);
@@ -538,7 +499,6 @@ fn build_internal_document(doc: &crate::extraction::docx::parser::Document) -> I
                     _ => None,
                 };
 
-                // Push image element directly (no ExtractedImage data at this point)
                 let kind = ElementKind::Image {
                     image_index: *idx as u32,
                 };
@@ -547,7 +507,6 @@ fn build_internal_document(doc: &crate::extraction::docx::parser::Document) -> I
                 let elem = if let Some(b) = bbox { elem.with_bbox(b) } else { elem };
                 let img_elem_idx = builder.push_element(elem);
 
-                // Store the resolved image path as an attribute on the image element
                 if let Some(ref rid) = drawing.image_ref
                     && let Some(path) = doc.image_relationships.get(rid)
                 {
@@ -560,12 +519,10 @@ fn build_internal_document(doc: &crate::extraction::docx::parser::Document) -> I
         }
     }
 
-    // Close any remaining open list
     if current_list_numbering_id.is_some() {
         builder.end_list();
     }
 
-    // Add headers and footers with appropriate content layers
     for hf in &doc.headers {
         let text: String = hf
             .paragraphs
@@ -591,7 +548,6 @@ fn build_internal_document(doc: &crate::extraction::docx::parser::Document) -> I
         }
     }
 
-    // Add footnotes and endnotes as FootnoteDefinition elements with anchors
     for note in doc.footnotes.iter().chain(doc.endnotes.iter()) {
         let text: String = note
             .paragraphs
@@ -625,7 +581,6 @@ fn collect_run_annotations(
     let mut math_formulas = Vec::new();
 
     for run in runs {
-        // Math runs become standalone Formula nodes
         if let Some((ref latex, _is_display)) = run.math_latex {
             if !latex.is_empty() {
                 math_formulas.push(latex.clone());
@@ -660,7 +615,6 @@ fn collect_run_annotations(
             annotations.push(builder::superscript(start, end));
         }
         if let Some(sz) = run.font_size {
-            // sz is in half-points; convert to "Xpt" string
             let pts = sz as f64 / 2.0;
             let value = if pts.fract() == 0.0 {
                 format!("{}pt", pts as u32)
@@ -680,8 +634,6 @@ fn collect_run_annotations(
         }
     }
 
-    // Merge adjacent annotations of the same kind to avoid spurious marker sequences (e.g. `****`).
-    // Sort by (kind discriminant, start) then merge touching/overlapping ranges.
     merge_adjacent_annotations(&mut annotations);
 
     (text, annotations, math_formulas)
@@ -755,7 +707,6 @@ fn merge_adjacent_annotations(annotations: &mut Vec<crate::types::TextAnnotation
         }
     };
 
-    // Sort annotations by (kind_key, start)
     annotations.sort_by(|a, b| kind_key(&a.kind).cmp(&kind_key(&b.kind)).then(a.start.cmp(&b.start)));
 
     let mut merged = Vec::with_capacity(annotations.len());
@@ -763,7 +714,6 @@ fn merge_adjacent_annotations(annotations: &mut Vec<crate::types::TextAnnotation
     while i < annotations.len() {
         let mut ann = annotations[i].clone();
         if is_mergeable(&ann.kind) {
-            // Merge consecutive annotations of the same kind
             let mut j = i + 1;
             while j < annotations.len()
                 && same_kind_for_merge(&annotations[j].kind, &ann.kind)
@@ -803,7 +753,6 @@ fn parse_docx_core(
     let (text, page_boundaries) =
         doc.extract_text_with_boundaries(matches!(output_format, crate::core::config::OutputFormat::Markdown));
 
-    // Determine the correct 1-based page number for each top-level table.
     let table_page_nums = doc.table_page_numbers();
     let tables: Vec<Table> = doc
         .tables
@@ -875,7 +824,6 @@ impl Plugin for DocxExtractor {
 /// # Returns
 /// * `Table` - Converted table with cells and markdown representation
 fn convert_docx_table_to_table(docx_table: &crate::extraction::docx::parser::Table, page_number: usize) -> Table {
-    // Build grid with merged cell content repeated across spans.
     let mut cells: Vec<Vec<String>> = Vec::new();
     for row in &docx_table.rows {
         let mut row_cells = Vec::new();
@@ -895,7 +843,6 @@ fn convert_docx_table_to_table(docx_table: &crate::extraction::docx::parser::Tab
         }
         cells.push(row_cells);
     }
-    // Fill vertically merged cells by copying from the row above.
     for row_idx in 1..docx_table.rows.len() {
         let mut col = 0usize;
         for cell in &docx_table.rows[row_idx].cells {
@@ -936,8 +883,6 @@ impl DocumentExtractor for DocxExtractor {
     ) -> Result<InternalDocument> {
         tracing::debug!("extract_docx: starting");
 
-        // When image extraction is enabled, force Markdown output so that
-        // image placeholders (![](image)) are included in the text.
         let output_format = if config.images.as_ref().is_some_and(|i| i.extract_images) {
             crate::core::config::OutputFormat::Markdown
         } else {
@@ -1018,7 +963,6 @@ impl DocumentExtractor for DocxExtractor {
                 metadata_map.insert(Cow::Borrowed("subject"), serde_json::Value::String(subject.clone()));
             }
             if let Some(ref keywords) = core.keywords {
-                // Parse comma-separated keywords into Vec<String>
                 parsed_keywords = Some(
                     keywords
                         .split(',')
@@ -1140,36 +1084,29 @@ impl DocumentExtractor for DocxExtractor {
             None
         };
 
-        // Build image entries for ALL drawings so that image_index (= drawing index)
-        // always resolves in doc.images. When image extraction is enabled, populate
-        // actual binary data; otherwise create placeholder entries with description
-        // and source_path so the renderer can produce meaningful markdown references.
         let extract_image_data = config.images.as_ref().is_some_and(|i| i.extract_images);
         let mut extracted_images = Vec::with_capacity(drawings.len());
         for (idx, drawing) in drawings.iter().enumerate() {
             let description = drawing.doc_properties.as_ref().and_then(|dp| dp.description.clone());
             let source_path = drawing.image_ref.as_ref().and_then(|rid| image_rels.get(rid)).cloned();
 
-            // Try to extract actual image data from the archive
             let mut image_data = None;
             if extract_image_data
                 && let Some(ref rid) = drawing.image_ref
                 && let Some(target) = image_rels.get(rid)
+                && !target.contains("..")
             {
-                // Reject path traversal attempts within the archive
-                if !target.contains("..") {
-                    let zip_path = if let Some(stripped) = target.strip_prefix('/') {
-                        stripped.to_string()
-                    } else {
-                        format!("word/{}", target)
-                    };
-                    if let Ok(mut file) = archive.by_name(&zip_path)
-                        && file.size() <= crate::extraction::docx::MAX_IMAGE_FILE_SIZE
-                    {
-                        let mut data = Vec::with_capacity(file.size() as usize);
-                        if std::io::Read::read_to_end(&mut file, &mut data).is_ok() {
-                            image_data = Some(data);
-                        }
+                let zip_path = if let Some(stripped) = target.strip_prefix('/') {
+                    stripped.to_string()
+                } else {
+                    format!("word/{}", target)
+                };
+                if let Ok(mut file) = archive.by_name(&zip_path)
+                    && file.size() <= crate::extraction::docx::MAX_IMAGE_FILE_SIZE
+                {
+                    let mut data = Vec::with_capacity(file.size() as usize);
+                    if std::io::Read::read_to_end(&mut file, &mut data).is_ok() {
+                        image_data = Some(data);
                     }
                 }
             }
@@ -1189,7 +1126,6 @@ impl DocumentExtractor for DocxExtractor {
                     .unwrap_or((None, None));
                 (Bytes::from(data), format, w, h)
             } else {
-                // Derive format from source path extension
                 let format = source_path
                     .as_ref()
                     .and_then(|p| p.rsplit('.').next())
@@ -1198,7 +1134,6 @@ impl DocumentExtractor for DocxExtractor {
                 (Bytes::new(), format, None, None)
             };
 
-            // Determine page number from image placeholder position in text
             let page_number = {
                 let placeholder = format!("![](image_{})", idx);
                 let placeholder_with_desc = description.as_ref().map(|d| format!("![{}](image_{})", d, idx));
@@ -1219,7 +1154,7 @@ impl DocumentExtractor for DocxExtractor {
                         Some(1)
                     }
                 } else {
-                    Some(1) // Default to page 1 if placeholder not found
+                    Some(1)
                 }
             };
 
@@ -1240,8 +1175,6 @@ impl DocumentExtractor for DocxExtractor {
             });
         }
 
-        // Build PageContent from page boundaries and store as prebuilt_pages so
-        // derive_extraction_result can populate ExtractionResult.pages.
         let page_contents = {
             let arc_tables: Vec<Arc<Table>> = tables.iter().map(|t| Arc::new(t.clone())).collect();
             let arc_images: Vec<Arc<ExtractedImage>> = extracted_images.iter().map(|i| Arc::new(i.clone())).collect();
@@ -1253,7 +1186,6 @@ impl DocumentExtractor for DocxExtractor {
                 let mut pages = Vec::with_capacity(boundaries.len());
                 for boundary in boundaries {
                     let page_num = boundary.page_number;
-                    // Extract text slice for this page
                     let page_text = if boundary.byte_start < text.len() {
                         let mut start = boundary.byte_start.min(text.len());
                         while start < text.len() && !text.is_char_boundary(start) {
@@ -1268,14 +1200,12 @@ impl DocumentExtractor for DocxExtractor {
                         String::new()
                     };
 
-                    // Filter tables for this page
                     let page_tables: Vec<Arc<Table>> = arc_tables
                         .iter()
                         .filter(|t| t.page_number == page_num)
                         .cloned()
                         .collect();
 
-                    // Filter images for this page
                     let page_images: Vec<Arc<ExtractedImage>> = arc_images
                         .iter()
                         .filter(|i| i.page_number == Some(page_num))
@@ -1298,7 +1228,6 @@ impl DocumentExtractor for DocxExtractor {
                 }
                 Some(pages)
             } else {
-                // Single page fallback
                 Some(vec![PageContent {
                     page_number: 1,
                     content: text.clone(),
@@ -1312,7 +1241,6 @@ impl DocumentExtractor for DocxExtractor {
         };
         internal_doc.prebuilt_pages = page_contents;
 
-        // Extract typed metadata fields and remove them from additional map to avoid duplication
         let meta_title: Option<String> = metadata_map
             .remove(&Cow::Borrowed("title"))
             .and_then(|v| v.as_str().map(|s| s.to_string()));
@@ -1359,9 +1287,6 @@ impl DocumentExtractor for DocxExtractor {
             ..Default::default()
         };
 
-        // Filter headers/footers based on content_filter config.
-        // When content_filter is None, keep current behavior (headers/footers included).
-        // When content_filter is Some(...), respect include_headers/include_footers flags.
         if let Some(ref filter) = config.content_filter {
             use crate::types::document_structure::ContentLayer;
             internal_doc.elements.retain(|elem| match elem.layer {
@@ -1371,11 +1296,9 @@ impl DocumentExtractor for DocxExtractor {
             });
         }
 
-        // Transfer images to InternalDocument
         internal_doc.images = extracted_images;
         internal_doc.mime_type = std::borrow::Cow::Owned(mime_type.to_string());
 
-        // Recursively extract embedded objects from word/embeddings/
         if config.max_archive_depth > 0 {
             let (children, embed_warnings) = crate::extraction::ooxml_embedded::extract_ooxml_embedded_objects(
                 content,
@@ -1511,7 +1434,6 @@ mod tests {
         let mut zip = zip::ZipWriter::new(cursor);
         let options: zip::write::FileOptions<()> = zip::write::FileOptions::default();
 
-        // Content types
         let content_types = r#"<?xml version="1.0" encoding="UTF-8"?>
 <Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
   <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
@@ -1521,35 +1443,29 @@ mod tests {
         zip.start_file("[Content_Types].xml", options).unwrap();
         zip.write_all(content_types.as_bytes()).unwrap();
 
-        // Document
         zip.start_file("word/document.xml", options).unwrap();
         zip.write_all(document_xml.as_bytes()).unwrap();
 
-        // Styles
         if let Some(styles) = styles_xml {
             zip.start_file("word/styles.xml", options).unwrap();
             zip.write_all(styles.as_bytes()).unwrap();
         }
 
-        // Footnotes
         if let Some(fn_xml) = footnotes_xml {
             zip.start_file("word/footnotes.xml", options).unwrap();
             zip.write_all(fn_xml.as_bytes()).unwrap();
         }
 
-        // Endnotes
         if let Some(en_xml) = endnotes_xml {
             zip.start_file("word/endnotes.xml", options).unwrap();
             zip.write_all(en_xml.as_bytes()).unwrap();
         }
 
-        // Header
         if let Some(h_xml) = header_xml {
             zip.start_file("word/header1.xml", options).unwrap();
             zip.write_all(h_xml.as_bytes()).unwrap();
         }
 
-        // Footer
         if let Some(f_xml) = footer_xml {
             zip.start_file("word/footer1.xml", options).unwrap();
             zip.write_all(f_xml.as_bytes()).unwrap();
@@ -1587,7 +1503,6 @@ mod tests {
         let result =
             crate::extraction::derive::derive_extraction_result(result, true, crate::core::config::OutputFormat::Plain);
 
-        // The derive pipeline produces plain text content; heading markers are in DocumentStructure
         assert!(
             result.content.contains("Document Title"),
             "Title should be present: {}",
@@ -1601,7 +1516,6 @@ mod tests {
         assert!(result.content.contains("First paragraph content."));
         assert!(result.content.contains("Section one body text."));
 
-        // Verify headings are in DocumentStructure
         let doc = result.document.as_ref().expect("DocumentStructure should be present");
         use crate::types::NodeContent;
         let headings: Vec<_> = doc
@@ -1610,9 +1524,6 @@ mod tests {
             .filter(|n| matches!(n.content, NodeContent::Heading { .. }))
             .collect();
         assert!(!headings.is_empty(), "Should have heading nodes in DocumentStructure");
-
-        // Pages are not populated for DOCX elements without explicit page numbers
-        // (the derive pipeline only creates pages when elements have page info)
     }
 
     #[tokio::test]
@@ -1647,7 +1558,6 @@ mod tests {
         let result =
             crate::extraction::derive::derive_extraction_result(result, true, crate::core::config::OutputFormat::Plain);
 
-        // The derive pipeline produces plain text content; formatting is in annotations/DocumentStructure
         assert!(result.content.contains("Bold text"), "Bold: {}", result.content);
         assert!(result.content.contains("italic text"), "Italic: {}", result.content);
         assert!(
@@ -1656,7 +1566,6 @@ mod tests {
             result.content
         );
 
-        // Verify formatting is preserved in DocumentStructure annotations
         let doc = result.document.as_ref().expect("DocumentStructure should be present");
         let all_annotations: Vec<_> = doc.nodes.iter().flat_map(|n| &n.annotations).collect();
         assert!(
@@ -1715,15 +1624,12 @@ mod tests {
         let result =
             crate::extraction::derive::derive_extraction_result(result, true, crate::core::config::OutputFormat::Plain);
 
-        // The derive pipeline includes all element text in content (including headers/footers).
-        // Headers/footers are distinguished via content_layer in DocumentStructure.
         assert!(
             result.content.contains("Body content here."),
             "Body: {}",
             result.content
         );
 
-        // Verify headers/footers are tagged with correct content layers in DocumentStructure
         let doc = result.document.as_ref().expect("DocumentStructure should be present");
         use crate::types::ContentLayer;
         let header_nodes: Vec<_> = doc
@@ -1776,26 +1682,21 @@ mod tests {
         let result =
             crate::extraction::derive::derive_extraction_result(result, true, crate::core::config::OutputFormat::Plain);
 
-        // Should have inline reference marker in the paragraph text
         assert!(
             result.content.contains("[^2]"),
             "Should have footnote ref: {}",
             result.content
         );
-        // Footnote definitions are in the Footnote content layer, not the main content string.
-        // Verify they exist in the DocumentStructure instead.
         let doc = result.document.as_ref().expect("should have document structure");
         let has_footnote = doc.nodes.iter().any(
             |n| matches!(&n.content, crate::types::NodeContent::Footnote { text } if text.contains("footnote content")),
         );
         assert!(has_footnote, "DocumentStructure should contain footnote node");
-        // Separator footnotes should be excluded
         assert!(!result.content.contains("separator"), "Separator should be filtered");
         assert!(
             !result.content.contains("continuation"),
             "Continuation should be filtered"
         );
-        // Verify footnote relationship exists in DocumentStructure
         let doc = result.document.as_ref().expect("DocumentStructure should be present");
         assert!(
             !doc.relationships.is_empty(),
@@ -1838,13 +1739,11 @@ mod tests {
         let result =
             crate::extraction::derive::derive_extraction_result(result, true, crate::core::config::OutputFormat::Plain);
 
-        // outline_level 0 = h1 — content is plain text; heading structure is in DocumentStructure
         assert!(
             result.content.contains("Custom Title"),
             "Style-based heading text should be present: {}",
             result.content
         );
-        // Verify heading is in DocumentStructure with correct level
         let doc = result.document.as_ref().expect("DocumentStructure should be present");
         use crate::types::NodeContent;
         let h1_nodes: Vec<_> = doc
@@ -1893,17 +1792,13 @@ mod tests {
         let result =
             crate::extraction::derive::derive_extraction_result(result, true, crate::core::config::OutputFormat::Plain);
 
-        // DocumentStructure should be populated
         assert!(result.document.is_some(), "DocumentStructure should be populated");
         let doc = result.document.unwrap();
 
-        // Should have nodes
         assert!(!doc.nodes.is_empty(), "Should have document nodes");
 
-        // Validate the structure
         assert!(doc.validate().is_ok(), "DocumentStructure should be valid");
 
-        // Check for heading group
         use crate::types::NodeContent;
         let headings: Vec<_> = doc
             .nodes
@@ -1912,7 +1807,6 @@ mod tests {
             .collect();
         assert!(!headings.is_empty(), "Should have heading nodes");
 
-        // Check for paragraph
         let paragraphs: Vec<_> = doc
             .nodes
             .iter()
@@ -1920,7 +1814,6 @@ mod tests {
             .collect();
         assert!(!paragraphs.is_empty(), "Should have paragraph nodes");
 
-        // Check for table
         let tables: Vec<_> = doc
             .nodes
             .iter()
@@ -1928,7 +1821,6 @@ mod tests {
             .collect();
         assert!(!tables.is_empty(), "Should have table nodes");
 
-        // Check for header content layer
         use crate::types::ContentLayer;
         let headers: Vec<_> = doc
             .nodes
@@ -1964,9 +1856,6 @@ mod tests {
         let result =
             crate::extraction::derive::derive_extraction_result(result, true, crate::core::config::OutputFormat::Plain);
 
-        // The derive pipeline only builds pages when elements have explicit page numbers.
-        // For simple DOCX without page break info, pages may be None.
-        // Content should still be available in the main content field.
         assert!(
             result.content.contains("Simple single page document."),
             "Content should contain the document text: {}",
@@ -1983,7 +1872,6 @@ mod tests {
 
         let mut doc = Document::new();
 
-        // Add a heading paragraph
         let mut heading = Paragraph::new();
         heading.style = Some("Title".to_string());
         heading.add_run(Run::new("Test Title".to_string()));
@@ -1991,14 +1879,12 @@ mod tests {
         doc.paragraphs.push(heading);
         doc.elements.push(DocumentElement::Paragraph(h_idx));
 
-        // Add a body paragraph
         let mut body = Paragraph::new();
         body.add_run(Run::new("Body text.".to_string()));
         let b_idx = doc.paragraphs.len();
         doc.paragraphs.push(body);
         doc.elements.push(DocumentElement::Paragraph(b_idx));
 
-        // Add a table
         let mut table = DocxTable::new();
         let mut row = TableRow::default();
         let mut cell = TableCell::default();
@@ -2011,14 +1897,12 @@ mod tests {
         doc.tables.push(table);
         doc.elements.push(DocumentElement::Table(t_idx));
 
-        // Add a header
         let mut header = HeaderFooter::default();
         let mut h_para = Paragraph::new();
         h_para.add_run(Run::new("Header content".to_string()));
         header.paragraphs.push(h_para);
         doc.headers.push(header);
 
-        // Add a footnote
         doc.footnotes.push(Note {
             id: "2".to_string(),
             note_type: NoteType::Footnote,
@@ -2031,11 +1915,9 @@ mod tests {
 
         let structure = build_document_structure(&doc);
 
-        // Validate
         assert!(structure.validate().is_ok(), "Should be valid");
         assert!(!structure.nodes.is_empty(), "Should have nodes");
 
-        // Check content layers
         use crate::types::ContentLayer;
         let body_nodes: Vec<_> = structure
             .nodes
@@ -2095,20 +1977,17 @@ mod tests {
         let result =
             crate::extraction::derive::derive_extraction_result(result, true, crate::core::config::OutputFormat::Plain);
 
-        // Should have inline reference marker in the paragraph text
         assert!(
             result.content.contains("[^2]"),
             "Should have endnote ref: {}",
             result.content
         );
-        // Endnote definition text should be present (derive pipeline outputs plain text, not [^N]: format)
         assert!(
             result.document.as_ref().is_some_and(|doc| doc.nodes.iter().any(
                 |n| matches!(&n.content, crate::types::NodeContent::Footnote { text } if text.contains("endnote"))
             )),
             "DocumentStructure should contain endnote node"
         );
-        // Separator endnotes should be excluded
         assert!(!result.content.contains("separator"), "Separator should be filtered");
     }
 
@@ -2120,7 +1999,6 @@ mod tests {
         let mut zip = zip::ZipWriter::new(cursor);
         let options: zip::write::FileOptions<()> = zip::write::FileOptions::default();
 
-        // Content types
         zip.start_file("[Content_Types].xml", options).unwrap();
         zip.write_all(br#"<?xml version="1.0" encoding="UTF-8"?>
 <Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
@@ -2129,7 +2007,6 @@ mod tests {
   <Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>
 </Types>"#).unwrap();
 
-        // Document
         zip.start_file("word/document.xml", options).unwrap();
         zip.write_all(
             br#"<?xml version="1.0" encoding="UTF-8"?>
@@ -2139,7 +2016,6 @@ mod tests {
         )
         .unwrap();
 
-        // Core properties with title, creator, subject, dates
         zip.start_file("docProps/core.xml", options).unwrap();
         zip.write_all(
             br#"<?xml version="1.0" encoding="UTF-8"?>
@@ -2175,7 +2051,6 @@ mod tests {
         let result =
             crate::extraction::derive::derive_extraction_result(result, true, crate::core::config::OutputFormat::Plain);
 
-        // Verify typed metadata fields
         assert_eq!(result.metadata.title.as_deref(), Some("My Document"));
         assert_eq!(result.metadata.subject.as_deref(), Some("Test Subject"));
         assert_eq!(result.metadata.authors, Some(vec!["Jane Doe".to_string()]));
@@ -2185,7 +2060,6 @@ mod tests {
         assert_eq!(result.metadata.modified_at.as_deref(), Some("2024-02-20T14:45:00Z"));
         assert_eq!(result.metadata.language.as_deref(), Some("en-US"));
 
-        // Verify these are NOT duplicated in additional map
         assert!(
             result.metadata.additional.get("title").is_none(),
             "title should not be in additional"
@@ -2205,7 +2079,7 @@ mod tests {
 
         let data = build_test_docx(document_xml);
         let extractor = DocxExtractor::new();
-        let config = ExtractionConfig::default(); // images not enabled by default
+        let config = ExtractionConfig::default();
         let result = extractor
             .extract_bytes(
                 &data,
@@ -2230,7 +2104,6 @@ mod tests {
 
         let mut table = DocxTable::new();
 
-        // Row 1: header with "Name" | "Score" (v_merge Restart)
         let mut row1 = TableRow {
             properties: Some(RowProperties {
                 is_header: true,
@@ -2258,7 +2131,6 @@ mod tests {
         row1.cells.push(cell2);
         table.rows.push(row1);
 
-        // Row 2: "Alice" | v_merge Continue (should render empty)
         let mut row2 = TableRow::default();
         let mut cell3 = TableCell::default();
         let mut p3 = Paragraph::new();
@@ -2280,7 +2152,6 @@ mod tests {
         table.rows.push(row2);
 
         let md = table.to_markdown();
-        // The v_merge=Continue cell should be empty
         assert!(md.contains("Score"), "Restart cell should show content");
         assert!(
             !md.contains("Should be hidden"),
@@ -2297,14 +2168,12 @@ mod tests {
 
         let mut doc = Document::new();
 
-        // Add a paragraph
         let mut para = Paragraph::new();
         para.add_run(Run::new("Before image.".to_string()));
         let p_idx = doc.paragraphs.len();
         doc.paragraphs.push(para);
         doc.elements.push(DocumentElement::Paragraph(p_idx));
 
-        // Add a drawing with description
         let drawing = Drawing {
             drawing_type: DrawingType::Inline,
             extent: None,
@@ -2319,7 +2188,6 @@ mod tests {
         doc.drawings.push(drawing);
         doc.elements.push(DocumentElement::Drawing(d_idx));
 
-        // Add another paragraph
         let mut para2 = Paragraph::new();
         para2.add_run(Run::new("After image.".to_string()));
         let p2_idx = doc.paragraphs.len();
@@ -2365,7 +2233,6 @@ mod tests {
 
         let docx_bytes = build_test_docx(document_xml);
 
-        // Use default config (Plain output format) with extract_images enabled
         let config = ExtractionConfig {
             images: Some(crate::core::config::ImageExtractionConfig {
                 extract_images: true,
@@ -2386,8 +2253,6 @@ mod tests {
         let result =
             crate::extraction::derive::derive_extraction_result(result, true, crate::core::config::OutputFormat::Plain);
 
-        // The derive pipeline skips images in the content string; they are represented
-        // in the DocumentStructure as Image nodes.
         assert!(
             result.content.contains("Text before image."),
             "Should contain text before image: {}",
@@ -2471,7 +2336,6 @@ mod tests {
         let result =
             crate::extraction::derive::derive_extraction_result(result, true, crate::core::config::OutputFormat::Plain);
 
-        // Verify DocxMetadata format field
         assert!(result.metadata.format.is_some(), "Format should be populated");
         match result.metadata.format.as_ref().unwrap() {
             FormatMetadata::Docx(docx_meta) => {

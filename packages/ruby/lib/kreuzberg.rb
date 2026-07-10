@@ -1,48 +1,48 @@
 # frozen_string_literal: true
 
-require_relative 'kreuzberg/setup_lib_path'
+require_relative "kreuzberg/setup_lib_path"
 Kreuzberg::SetupLibPath.configure
 
-require_relative 'kreuzberg/version'
-require 'kreuzberg_rb'
+require_relative "kreuzberg/version"
+require "kreuzberg_rb"
 
 # Kreuzberg is a Ruby binding for the Rust core library providing document extraction,
 # text extraction, and OCR capabilities.
 module Kreuzberg
-  autoload :Config, 'kreuzberg/config'
-  autoload :Result, 'kreuzberg/result'
-  autoload :CLI, 'kreuzberg/cli'
-  autoload :CLIProxy, 'kreuzberg/cli_proxy'
-  autoload :APIProxy, 'kreuzberg/api_proxy'
-  autoload :MCPProxy, 'kreuzberg/mcp_proxy'
-  autoload :Errors, 'kreuzberg/errors'
-  autoload :ErrorContext, 'kreuzberg/error_context'
-  autoload :PostProcessorProtocol, 'kreuzberg/post_processor_protocol'
-  autoload :ValidatorProtocol, 'kreuzberg/validator_protocol'
-  autoload :OcrBackendProtocol, 'kreuzberg/ocr_backend_protocol'
+  autoload :Config, "kreuzberg/config"
+  autoload :Result, "kreuzberg/result"
+  autoload :CLI, "kreuzberg/cli"
+  autoload :CLIProxy, "kreuzberg/cli_proxy"
+  autoload :APIProxy, "kreuzberg/api_proxy"
+  autoload :MCPProxy, "kreuzberg/mcp_proxy"
+  autoload :Errors, "kreuzberg/errors"
+  autoload :ErrorContext, "kreuzberg/error_context"
+  autoload :PostProcessorProtocol, "kreuzberg/post_processor_protocol"
+  autoload :ValidatorProtocol, "kreuzberg/validator_protocol"
+  autoload :OcrBackendProtocol, "kreuzberg/ocr_backend_protocol"
 
-  autoload :BoundingBox, 'kreuzberg/types'
-  autoload :ElementMetadata, 'kreuzberg/types'
-  autoload :Element, 'kreuzberg/types'
-  autoload :HtmlMetadata, 'kreuzberg/types'
-  autoload :HeaderMetadata, 'kreuzberg/types'
-  autoload :LinkMetadata, 'kreuzberg/types'
-  autoload :ImageMetadata, 'kreuzberg/types'
-  autoload :StructuredData, 'kreuzberg/types'
-  autoload :ExtractedKeyword, 'kreuzberg/types'
-  autoload :ProcessingWarning, 'kreuzberg/types'
-  autoload :DocumentBoundingBox, 'kreuzberg/types'
-  autoload :DocumentAnnotation, 'kreuzberg/types'
-  autoload :DocumentNode, 'kreuzberg/types'
-  autoload :DocumentStructure, 'kreuzberg/types'
-  autoload :PdfAnnotation, 'kreuzberg/types'
-  autoload :PdfAnnotationBoundingBox, 'kreuzberg/types'
-  autoload :KeywordAlgorithm, 'kreuzberg/types'
+  autoload :BoundingBox, "kreuzberg/types"
+  autoload :ElementMetadata, "kreuzberg/types"
+  autoload :Element, "kreuzberg/types"
+  autoload :HtmlMetadata, "kreuzberg/types"
+  autoload :HeaderMetadata, "kreuzberg/types"
+  autoload :LinkMetadata, "kreuzberg/types"
+  autoload :ImageMetadata, "kreuzberg/types"
+  autoload :StructuredData, "kreuzberg/types"
+  autoload :ExtractedKeyword, "kreuzberg/types"
+  autoload :ProcessingWarning, "kreuzberg/types"
+  autoload :DocumentBoundingBox, "kreuzberg/types"
+  autoload :DocumentAnnotation, "kreuzberg/types"
+  autoload :DocumentNode, "kreuzberg/types"
+  autoload :DocumentStructure, "kreuzberg/types"
+  autoload :PdfAnnotation, "kreuzberg/types"
+  autoload :PdfAnnotationBoundingBox, "kreuzberg/types"
+  autoload :KeywordAlgorithm, "kreuzberg/types"
 
   ExtractionConfig = Config::Extraction
   PageConfig = Config::PageConfig
 
-  @__cache_tracker = { entries: 0, bytes: 0 }
+  @__cache_tracker = {entries: 0, bytes: 0}
 
   class << self
     alias native_extract_file_sync extract_file_sync
@@ -99,9 +99,9 @@ module Kreuzberg
   module_function :embed
 end
 
-require_relative 'kreuzberg/cache_api'
-require_relative 'kreuzberg/extraction_api'
-require_relative 'kreuzberg/djot_content'
+require_relative "kreuzberg/cache_api"
+require_relative "kreuzberg/extraction_api"
+require_relative "kreuzberg/djot_content"
 
 Kreuzberg.singleton_class.prepend(Kreuzberg::CacheAPI)
 Kreuzberg.singleton_class.prepend(Kreuzberg::ExtractionAPI)

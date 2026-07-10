@@ -89,13 +89,11 @@ echo "::group::Verifying macOS installations"
 echo "CMake:"
 if command -v cmake >/dev/null 2>&1; then
   cmake --version | head -1
-  # Export CMAKE environment variable for immediate availability in build scripts
   CMAKE_FULL_PATH="$(command -v cmake)"
   if [[ -n "$GITHUB_ENV" ]]; then
     echo "CMAKE=$CMAKE_FULL_PATH" >>"$GITHUB_ENV"
     echo "✓ Set CMAKE=$CMAKE_FULL_PATH in GITHUB_ENV"
   fi
-  # Also add cmake binary directory to GITHUB_PATH for subsequent steps
   CMAKE_BIN="$(dirname "$CMAKE_FULL_PATH")"
   if [[ -n "$GITHUB_PATH" && -d "$CMAKE_BIN" ]]; then
     echo "$CMAKE_BIN" >>"$GITHUB_PATH"

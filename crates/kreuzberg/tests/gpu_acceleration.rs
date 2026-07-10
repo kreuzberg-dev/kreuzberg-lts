@@ -44,11 +44,6 @@ fn cuda_accel() -> kreuzberg::AccelerationConfig {
     }
 }
 
-// ---------------------------------------------------------------------------
-// Tracing log capture — verifies CUDA EP is actually requested, not silently
-// falling back to CPU (the exact bug in issue #783).
-// ---------------------------------------------------------------------------
-
 struct LogCapture {
     messages: Arc<Mutex<Vec<String>>>,
 }
@@ -107,10 +102,6 @@ fn assert_cuda_requested(captured: &Arc<Mutex<Vec<String>>>) {
             .join("\n")
     );
 }
-
-// ===========================================================================
-// 1. PaddleOCR with CUDA (det + cls + rec models)
-// ===========================================================================
 
 #[cfg(feature = "paddle-ocr")]
 mod paddle_ocr_cuda {
@@ -225,10 +216,6 @@ mod paddle_ocr_cuda {
     }
 }
 
-// ===========================================================================
-// 2. Layout Detection with CUDA (RT-DETR)
-// ===========================================================================
-
 #[cfg(feature = "layout-detection")]
 mod layout_detection_cuda {
     use super::*;
@@ -290,10 +277,6 @@ mod layout_detection_cuda {
     }
 }
 
-// ===========================================================================
-// 3. Embeddings with CUDA
-// ===========================================================================
-
 #[cfg(feature = "embeddings")]
 mod embeddings_cuda {
     use super::*;
@@ -343,10 +326,6 @@ mod embeddings_cuda {
     }
 }
 
-// ===========================================================================
-// 4. Document Orientation Detection with CUDA (auto-rotate)
-// ===========================================================================
-
 #[cfg(feature = "paddle-ocr")]
 mod doc_orientation_cuda {
     use super::*;
@@ -381,10 +360,6 @@ mod doc_orientation_cuda {
         assert!(!text.is_empty(), "Auto-rotated CUDA OCR should produce text");
     }
 }
-
-// ===========================================================================
-// 5. End-to-end extraction with CUDA
-// ===========================================================================
 
 #[cfg(feature = "paddle-ocr")]
 mod e2e_cuda {

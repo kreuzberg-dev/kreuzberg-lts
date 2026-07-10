@@ -15,12 +15,10 @@ pub fn preprocess_imagenet(img: &RgbImage, target_size: u32) -> Array4<f32> {
     let pixels = resized.as_raw();
     let hw = (target_size * target_size) as usize;
 
-    // Pre-compute reciprocals to avoid repeated division.
     let inv_std_r = 1.0 / IMAGENET_STD[0];
     let inv_std_g = 1.0 / IMAGENET_STD[1];
     let inv_std_b = 1.0 / IMAGENET_STD[2];
 
-    // Allocate contiguous NCHW buffer: [R plane | G plane | B plane].
     let mut data = vec![0.0f32; 3 * hw];
 
     for i in 0..hw {
@@ -55,36 +53,29 @@ pub fn preprocess_imagenet_letterbox(img: &RgbImage, target_size: u32) -> (Array
     let new_w = (orig_w * scale).round() as u32;
     let new_h = (orig_h * scale).round() as u32;
 
-    // Resize with CatmullRom — good quality/speed trade-off for document images.
-    // Lanczos3 is ~2x slower with minimal quality gain for text-heavy pages.
     let resized = image::imageops::resize(img, new_w, new_h, image::imageops::FilterType::CatmullRom);
 
-    // Center the resized image in the target square
     let pad_x = (target_size - new_w) / 2;
     let pad_y = (target_size - new_h) / 2;
 
     let ts = target_size as usize;
     let hw = ts * ts;
 
-    // Pre-compute reciprocals
     let inv_std_r = 1.0 / IMAGENET_STD[0];
     let inv_std_g = 1.0 / IMAGENET_STD[1];
     let inv_std_b = 1.0 / IMAGENET_STD[2];
 
-    // Fill with normalized ImageNet mean (what a "blank" pixel looks like after normalization)
     let pad_r = (0.5 - IMAGENET_MEAN[0]) * inv_std_r;
     let pad_g = (0.5 - IMAGENET_MEAN[1]) * inv_std_g;
     let pad_b = (0.5 - IMAGENET_MEAN[2]) * inv_std_b;
 
     let mut data = vec![0.0f32; 3 * hw];
-    // Fill padding
     for i in 0..hw {
         data[i] = pad_r;
         data[hw + i] = pad_g;
         data[2 * hw + i] = pad_b;
     }
 
-    // Copy resized pixels into the center
     let rw = new_w as usize;
     let rh = new_h as usize;
     let resized_pixels = resized.as_raw();
@@ -146,7 +137,6 @@ pub fn preprocess_letterbox(img: &RgbImage, target_width: u32, target_height: u3
     let tw = target_width as usize;
     let th = target_height as usize;
     let hw = th * tw;
-    // Fill with padding value 114.0 (raw pixel value, no normalization).
     let mut data = vec![114.0f32; 3 * hw];
 
     let rw = new_w as usize;

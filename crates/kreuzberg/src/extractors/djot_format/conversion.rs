@@ -67,10 +67,8 @@ pub fn extraction_result_to_djot(result: &crate::types::ExtractionResult) -> cra
     if let Some(ref djot_content) = result.djot_content {
         Ok(djot_content_to_djot(djot_content))
     } else {
-        // Convert plain text to basic djot paragraphs
         let mut output = String::new();
 
-        // Split content by double newlines to create paragraphs
         let paragraphs: Vec<&str> = result.content.split("\n\n").collect();
 
         for para in paragraphs {

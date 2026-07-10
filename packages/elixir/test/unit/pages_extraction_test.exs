@@ -17,14 +17,14 @@ defmodule Kreuzberg.Unit.PagesExtractionTest do
       custom_format = "=== Page {page_num} ==="
 
       config = %Kreuzberg.ExtractionConfig{
-        pages: %{
-          insert_page_markers: true,
-          marker_format: custom_format
-        }
+      pages: %{
+      insert_page_markers: true,
+      marker_format: custom_format
+      }
       }
 
       {:ok, result} =
-        Kreuzberg.extract(get_test_pdf_bytes(), "application/pdf", config)
+      Kreuzberg.extract(get_test_pdf_bytes(), "application/pdf", config)
 
       assert String.contains?(result.content, "=== Page")
     end
@@ -33,14 +33,14 @@ defmodule Kreuzberg.Unit.PagesExtractionTest do
       custom_format = "--- BEGIN PAGE {page_num} ---"
 
       config = %Kreuzberg.ExtractionConfig{
-        pages: %{
-          insert_page_markers: true,
-          marker_format: custom_format
-        }
+      pages: %{
+      insert_page_markers: true,
+      marker_format: custom_format
+      }
       }
 
       {:ok, result} =
-        Kreuzberg.extract(get_test_pdf_bytes(), "application/pdf", config)
+      Kreuzberg.extract(get_test_pdf_bytes(), "application/pdf", config)
 
       assert String.contains?(result.content, "--- BEGIN PAGE")
     end
@@ -49,14 +49,14 @@ defmodule Kreuzberg.Unit.PagesExtractionTest do
       custom_format = "[Page {page_num}]"
 
       config = %Kreuzberg.ExtractionConfig{
-        pages: %{
-          insert_page_markers: true,
-          marker_format: custom_format
-        }
+      pages: %{
+      insert_page_markers: true,
+      marker_format: custom_format
+      }
       }
 
       {:ok, result} =
-        Kreuzberg.extract(get_test_pdf_bytes(), "application/pdf", config)
+      Kreuzberg.extract(get_test_pdf_bytes(), "application/pdf", config)
 
       assert String.contains?(result.content, "[Page")
     end
@@ -65,51 +65,47 @@ defmodule Kreuzberg.Unit.PagesExtractionTest do
       custom_format = "Page #{to_string(1)}"
 
       config = %Kreuzberg.ExtractionConfig{
-        pages: %{
-          insert_page_markers: true,
-          marker_format: custom_format
-        }
+      pages: %{
+      insert_page_markers: true,
+      marker_format: custom_format
+      }
       }
 
-      # Should not raise error even if format is partially numeric
       {:ok, _result} =
-        Kreuzberg.extract(get_test_pdf_bytes(), "application/pdf", config)
+      Kreuzberg.extract(get_test_pdf_bytes(), "application/pdf", config)
     end
   end
 
   describe "combined page extraction and markers" do
     test "extract_pages and insert_page_markers work together" do
       config = %Kreuzberg.ExtractionConfig{
-        pages: %{
-          extract_pages: true,
-          insert_page_markers: true,
-          marker_format: "### Page {page_num} ###"
-        }
+      pages: %{
+      extract_pages: true,
+      insert_page_markers: true,
+      marker_format: "### Page {page_num} ###"
+      }
       }
 
       {:ok, result} =
-        Kreuzberg.extract(get_test_pdf_bytes(), "application/pdf", config)
+      Kreuzberg.extract(get_test_pdf_bytes(), "application/pdf", config)
 
-      # Should have pages array
       assert is_list(result.pages)
       assert result.pages != []
 
-      # Should have markers in content
       assert String.contains?(result.content, "###")
     end
 
     test "markers and extracted pages are consistent" do
       config = %Kreuzberg.ExtractionConfig{
-        pages: %{
-          extract_pages: true,
-          insert_page_markers: true
-        }
+      pages: %{
+      extract_pages: true,
+      insert_page_markers: true
+      }
       }
 
       {:ok, result} =
-        Kreuzberg.extract(get_test_pdf_bytes(), "application/pdf", config)
+      Kreuzberg.extract(get_test_pdf_bytes(), "application/pdf", config)
 
-      # Number of pages in array should match document structure
       assert is_list(result.pages)
       assert result.pages != []
     end
@@ -117,23 +113,21 @@ defmodule Kreuzberg.Unit.PagesExtractionTest do
 
   describe "page configuration edge cases" do
     test "handles extraction without explicit page config" do
-      # No pages config provided
       config = %Kreuzberg.ExtractionConfig{}
 
       {:ok, result} =
-        Kreuzberg.extract(get_test_pdf_bytes(), "application/pdf", config)
+      Kreuzberg.extract(get_test_pdf_bytes(), "application/pdf", config)
 
-      # Should succeed with default behavior
       assert is_binary(result.content) or result.content == ""
     end
 
     test "handles pages config with only extract_pages set" do
       config = %Kreuzberg.ExtractionConfig{
-        pages: %{extract_pages: true}
+      pages: %{extract_pages: true}
       }
 
       {:ok, result} =
-        Kreuzberg.extract(get_test_pdf_bytes(), "application/pdf", config)
+      Kreuzberg.extract(get_test_pdf_bytes(), "application/pdf", config)
 
       assert is_list(result.pages)
       assert result.pages != []
@@ -141,40 +135,34 @@ defmodule Kreuzberg.Unit.PagesExtractionTest do
 
     test "handles pages config with only insert_page_markers set" do
       config = %Kreuzberg.ExtractionConfig{
-        pages: %{insert_page_markers: true}
+      pages: %{insert_page_markers: true}
       }
 
       {:ok, result} =
-        Kreuzberg.extract(get_test_pdf_bytes(), "application/pdf", config)
+      Kreuzberg.extract(get_test_pdf_bytes(), "application/pdf", config)
 
       assert is_binary(result.content)
     end
 
     test "handles pages config with only marker_format set" do
       config = %Kreuzberg.ExtractionConfig{
-        pages: %{marker_format: ">> Page {page_num} <<"}
+      pages: %{marker_format: ">> Page {page_num} <<"}
       }
 
       {:ok, result} =
-        Kreuzberg.extract(get_test_pdf_bytes(), "application/pdf", config)
+      Kreuzberg.extract(get_test_pdf_bytes(), "application/pdf", config)
 
-      # Marker format should apply when markers are requested
       assert is_binary(result.content)
     end
   end
 
-  # Helper function to get test PDF bytes
   defp get_test_pdf_bytes do
-    # This would typically load from a test fixture file
-    # For now, return a minimal valid PDF structure that the library can parse
-    # In a real implementation, use File.read! or similar to load actual test PDFs
     case get_test_pdf_path() do
       {:ok, path} -> File.read!(path)
       :error -> minimal_test_pdf()
     end
   end
 
-  # Helper to locate test PDF file
   defp get_test_pdf_path do
     repo_root = get_repo_root()
     test_pdf_path = Path.join([repo_root, "test_documents", "pdfs_with_tables", "tiny.pdf"])
@@ -186,14 +174,11 @@ defmodule Kreuzberg.Unit.PagesExtractionTest do
     end
   end
 
-  # Helper to get repo root
   defp get_repo_root do
     cwd = File.cwd!()
-    # Navigate up from packages/elixir to repo root
     Path.join([cwd, "..", "..", ".."])
   end
 
-  # Fallback minimal PDF (won't work for actual extraction, but helps with compilation)
   defp minimal_test_pdf do
     <<"%PDF-1.7\n", "1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj\n",
       "2 0 obj<</Type/Pages/Kids[3 0 R]/Count 1>>endobj\n",

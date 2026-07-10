@@ -21,8 +21,8 @@ mod regions;
 pub(in crate::pdf) mod text_repair;
 pub(crate) mod types;
 
-#[allow(unused_imports)] // Used by extractors/pdf/ocr.rs for building InternalDocument from OCR paragraphs
+#[allow(unused_imports)]
 pub(crate) use assembly::assemble_internal_document;
-#[allow(unused_imports)] // Used by extractors/pdf/ocr.rs when ocr feature is enabled
+#[allow(unused_imports)]
 pub(crate) use content_convert::{content_to_paragraphs, reorder_elements_reading_order};
 pub(crate) use pipeline::extract_document_structure;

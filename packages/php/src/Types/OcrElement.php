@@ -33,8 +33,7 @@ readonly class OcrElement
         public ?int $pageNumber = null,
         public ?string $parentId = null,
         public ?array $backendMetadata = null,
-    ) {
-    }
+    ) {}
 
     /**
      * Create OcrElement from array returned by extension.

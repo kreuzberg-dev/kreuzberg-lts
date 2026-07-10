@@ -209,8 +209,6 @@ fn resolve_model_info(
             Ok((preset.model_repo, preset.model_file, pooling))
         }
         crate::core::config::EmbeddingModelType::Custom { model_id, .. } => {
-            // For custom models, default to mean pooling and standard model path.
-            // Users providing custom HF models should ensure the repo has the expected layout.
             Ok((model_id.as_str(), "onnx/model.onnx", engine::Pooling::Mean))
         }
         crate::core::config::EmbeddingModelType::Llm { .. } => Err(crate::KreuzbergError::embedding(
@@ -264,7 +262,6 @@ fn load_tokenizer(
         }))
         .map_err(|e| crate::KreuzbergError::embedding(format!("Failed to configure tokenizer: {e}")))?;
 
-    // Add special tokens from special_tokens_map.json
     if let Ok(special_tokens_data) = std::fs::read(special_tokens_path)
         && let Ok(serde_json::Value::Object(map)) = serde_json::from_slice(&special_tokens_data)
     {
@@ -329,13 +326,12 @@ const STALE_DOWNLOAD_TIMEOUT: std::time::Duration = std::time::Duration::from_se
 /// [`STALE_DOWNLOAD_TIMEOUT`], no live process is actively downloading and
 /// it is safe to remove both files so that the next `repo.get()` can proceed.
 fn cleanup_stale_locks(cache_dir: &std::path::Path, repo_name: &str) {
-    // hf-hub folder_name(): "models--" + repo_id.replace('/', "--")
     let folder = format!("models--{}", repo_name.replace('/', "--"));
     let blobs_dir = cache_dir.join(folder).join("blobs");
 
     let entries = match std::fs::read_dir(&blobs_dir) {
         Ok(e) => e,
-        Err(_) => return, // blobs dir doesn't exist yet — nothing to clean
+        Err(_) => return,
     };
 
     let now = std::time::SystemTime::now();
@@ -345,9 +341,6 @@ fn cleanup_stale_locks(cache_dir: &std::path::Path, repo_name: &str) {
         if lock_path.extension().is_some_and(|ext| ext == "lock") {
             let part_path = lock_path.with_extension("part");
 
-            // Prefer the .part file's mtime: an active download writes bytes
-            // continuously, so a stale mtime there is the strongest signal.
-            // Fall back to the .lock file's mtime when no .part exists.
             let probe_path = if part_path.exists() { &part_path } else { &lock_path };
 
             let age = probe_path
@@ -403,42 +396,52 @@ fn download_model_files(
     std::path::PathBuf,
     std::path::PathBuf,
 )> {
-    // Self-heal any stale .lock/.part files from a previous interrupted download
-    // before hf-hub's own lock_file() runs and fails on them.
     cleanup_stale_locks(cache_directory, repo_name);
 
-    let api = hf_hub::api::sync::ApiBuilder::from_env()
-        .with_cache_dir(cache_directory.to_path_buf())
-        .with_progress(true)
+    let client = hf_hub::HFClient::builder()
+        .cache_dir(cache_directory.to_path_buf())
         .build()
         .map_err(|e| crate::KreuzbergError::embedding(format!("Failed to create HF API client: {e}")))?;
+    let api = hf_hub::HFClientSync::from_inner(client)
+        .map_err(|e| crate::KreuzbergError::embedding(format!("Failed to create HF API client: {e}")))?;
+    let (owner, name) = hf_hub::split_id(repo_name);
+    let repo = api.model(owner, name);
 
-    let repo = api.model(repo_name.to_string());
-
-    let model_path = repo.get(model_file).map_err(|e| {
-        let hint = if matches!(e, hf_hub::api::sync::ApiError::LockAcquisition(_)) {
-            lock_acquisition_hint(cache_directory, repo_name)
-        } else {
-            String::new()
-        };
-        crate::KreuzbergError::embedding(format!("Failed to download {model_file}: {e}{hint}"))
-    })?;
+    let model_path = repo
+        .download_file()
+        .filename(model_file.to_string())
+        .send()
+        .map_err(|e| {
+            let hint = if matches!(e, hf_hub::HFError::CacheLockTimeout { .. }) {
+                lock_acquisition_hint(cache_directory, repo_name)
+            } else {
+                String::new()
+            };
+            crate::KreuzbergError::embedding(format!("Failed to download {model_file}: {e}{hint}"))
+        })?;
 
     let tokenizer_path = repo
-        .get("tokenizer.json")
+        .download_file()
+        .filename("tokenizer.json".to_string())
+        .send()
         .map_err(|e| crate::KreuzbergError::embedding(format!("Failed to download tokenizer.json: {e}")))?;
 
     let config_path = repo
-        .get("config.json")
+        .download_file()
+        .filename("config.json".to_string())
+        .send()
         .map_err(|e| crate::KreuzbergError::embedding(format!("Failed to download config.json: {e}")))?;
 
-    // These are optional — fall back to empty paths that load_tokenizer handles gracefully
     let special_tokens_path = repo
-        .get("special_tokens_map.json")
+        .download_file()
+        .filename("special_tokens_map.json".to_string())
+        .send()
         .unwrap_or_else(|_| std::path::PathBuf::new());
 
     let tokenizer_config_path = repo
-        .get("tokenizer_config.json")
+        .download_file()
+        .filename("tokenizer_config.json".to_string())
+        .send()
         .unwrap_or_else(|_| std::path::PathBuf::new());
 
     Ok((
@@ -467,7 +470,6 @@ fn get_or_init_engine(
         cache_directory = cache_directory.display()
     );
 
-    // Fast path: read lock
     {
         match ENGINE_CACHE.read() {
             Ok(cache) => {
@@ -484,21 +486,18 @@ fn get_or_init_engine(
         }
     }
 
-    // Slow path: write lock + initialization
     {
         let mut cache = match ENGINE_CACHE.write() {
             Ok(guard) => guard,
             Err(poison_error) => poison_error.into_inner(),
         };
 
-        // Double-check after acquiring write lock
         if let Some(cached) = cache.get(&engine_key) {
             return Ok(Arc::clone(cached));
         }
 
         crate::ort_discovery::ensure_ort_available();
 
-        // Download model files
         let (model_path, tokenizer_path, config_path, special_tokens_path, tokenizer_config_path) =
             std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
                 download_model_files(repo_name, model_file, &cache_directory)
@@ -515,16 +514,14 @@ fn get_or_init_engine(
                 }
             })??;
 
-        // Load tokenizer
         let tokenizer = load_tokenizer(
             &tokenizer_path,
             &config_path,
             &special_tokens_path,
             &tokenizer_config_path,
-            512, // default max_length
+            512,
         )?;
 
-        // Create ORT session
         let thread_budget = crate::core::config::concurrency::resolve_thread_budget(None);
         let session = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
             let mut builder = ort::session::Session::builder()?;
@@ -629,19 +626,19 @@ pub fn download_model(
 
     tracing::info!(repo = %repo_name, "Downloading embedding model files (no ONNX init)");
 
-    let api = hf_hub::api::sync::ApiBuilder::from_env()
-        .with_cache_dir(cache_directory)
-        .with_progress(true)
+    let client = hf_hub::HFClient::builder()
+        .cache_dir(cache_directory)
         .build()
         .map_err(|e| crate::KreuzbergError::embedding(format!("Failed to create HF API client: {e}")))?;
-
-    let repo = api.model(repo_name.to_string());
+    let api = hf_hub::HFClientSync::from_inner(client)
+        .map_err(|e| crate::KreuzbergError::embedding(format!("Failed to create HF API client: {e}")))?;
+    let (owner, name) = hf_hub::split_id(repo_name);
+    let repo = api.model(owner, name);
 
     for file in files {
-        match repo.get(file) {
+        match repo.download_file().filename((*file).to_string()).send() {
             Ok(path) => tracing::debug!(file = %file, path = ?path, "Downloaded"),
             Err(e) => {
-                // Model and tokenizer are required; others are optional
                 if *file == model_file || *file == "tokenizer.json" {
                     return Err(crate::KreuzbergError::embedding(format!(
                         "Failed to download {file}: {e}"
@@ -701,7 +698,6 @@ pub fn generate_embeddings_for_chunks(
     let texts: Vec<&str> = chunks.iter().map(|c| c.content.as_str()).collect();
     let embeddings_result = embed_texts(&texts, config)?;
 
-    // Assign embeddings to chunks.
     for (chunk, embedding) in chunks.iter_mut().zip(embeddings_result) {
         chunk.embedding = Some(embedding);
     }
@@ -752,8 +748,6 @@ pub fn embed_texts<T: AsRef<str>>(
         return Ok(Vec::new());
     }
 
-    // Validate that no individual text is empty — empty strings produce
-    // meaningless embeddings and can cause tokenizer edge-cases.
     for (i, t) in texts.iter().enumerate() {
         if t.as_ref().is_empty() {
             return Err(crate::KreuzbergError::embedding(format!(
@@ -763,14 +757,10 @@ pub fn embed_texts<T: AsRef<str>>(
         }
     }
 
-    // Dispatch: LLM-hosted embeddings bypass the local ONNX engine entirely.
     match &config.model {
         #[cfg(feature = "liter-llm")]
         crate::core::config::EmbeddingModelType::Llm { llm } => {
             let normalize = config.normalize;
-            // If we're already inside an async runtime (e.g. server mode),
-            // use block_in_place to avoid the "cannot block inside runtime" panic.
-            // Otherwise, create a dedicated single-threaded runtime for the sync path.
             let result = if let Ok(handle) = tokio::runtime::Handle::try_current() {
                 tokio::task::block_in_place(|| {
                     handle.block_on(crate::llm::vlm_embeddings::embed_via_llm(texts, llm, normalize))
@@ -791,7 +781,6 @@ pub fn embed_texts<T: AsRef<str>>(
             "LLM embeddings require the 'liter-llm' feature. Rebuild with --features liter-llm".into(),
         )),
         _ => {
-            // Local ONNX path for Preset and Custom model types.
             let chunk_count = texts.len();
             let (repo, model_file, pooling) = resolve_model_info(&config.model)?;
             let engine = get_or_init_engine(
@@ -857,7 +846,6 @@ pub async fn embed_texts_async<T: AsRef<str> + Send + 'static>(
         return Ok(Vec::new());
     }
 
-    // LLM-hosted embeddings can be awaited directly — no need for spawn_blocking.
     #[cfg(feature = "liter-llm")]
     if let crate::core::config::EmbeddingModelType::Llm { llm } = &config.model {
         return crate::llm::vlm_embeddings::embed_via_llm(&texts, llm, config.normalize)
@@ -872,15 +860,11 @@ pub async fn embed_texts_async<T: AsRef<str> + Send + 'static>(
         ));
     }
 
-    // Acquire a permit from the global semaphore to limit concurrent ONNX
-    // inference calls, preventing resource exhaustion under high fan-out.
     let _permit = EMBED_SEMAPHORE
         .acquire()
         .await
         .map_err(|_| crate::KreuzbergError::embedding("Embedding semaphore closed".to_string()))?;
 
-    // Wrap config in Arc to avoid cloning the entire struct (strings, PathBuf)
-    // into the blocking closure.
     let config = Arc::new(config.clone());
     tokio::task::spawn_blocking(move || embed_texts(&texts, &config))
         .await
@@ -995,14 +979,10 @@ mod tests {
             },
             ..Default::default()
         };
-        // This should return an error (bad API key), NOT panic.
         let result = tokio::task::spawn_blocking(move || embed_texts(&["test text"], &config)).await;
         assert!(result.is_ok(), "spawn_blocking should not panic");
-        // The inner result should be an error (auth failure), not a panic
         assert!(result.unwrap().is_err(), "Expected auth error, not success");
     }
-
-    // ── Stale lock cleanup tests ──────────────────────────────────────────────
 
     /// Helper: write a file with a modified-time set to `age` seconds in the past.
     fn write_file_aged(path: &std::path::Path, age_secs: u64) {
@@ -1016,7 +996,6 @@ mod tests {
 
     #[test]
     fn test_cleanup_stale_locks_nonexistent_dir_is_noop() {
-        // Should not panic when the blobs dir does not exist.
         let tmp = tempfile::tempdir().unwrap();
         cleanup_stale_locks(tmp.path(), "org/model");
     }
@@ -1030,7 +1009,6 @@ mod tests {
         let lock = blobs.join("abc123.lock");
         let part = blobs.join("abc123.part");
 
-        // Write files aged beyond the timeout.
         let old_secs = STALE_DOWNLOAD_TIMEOUT.as_secs() + 60;
         write_file_aged(&lock, old_secs);
         write_file_aged(&part, old_secs);
@@ -1050,7 +1028,6 @@ mod tests {
         let lock = blobs.join("def456.lock");
         let part = blobs.join("def456.part");
 
-        // Write files that are only 60 seconds old — well within the timeout.
         write_file_aged(&lock, 60);
         write_file_aged(&part, 60);
 
@@ -1062,8 +1039,6 @@ mod tests {
 
     #[test]
     fn test_cleanup_stale_locks_removes_lock_when_no_part() {
-        // When only a .lock file exists (download killed before first byte),
-        // staleness is assessed from the .lock file's own mtime.
         let tmp = tempfile::tempdir().unwrap();
         let blobs = tmp.path().join("models--org--model").join("blobs");
         std::fs::create_dir_all(&blobs).unwrap();

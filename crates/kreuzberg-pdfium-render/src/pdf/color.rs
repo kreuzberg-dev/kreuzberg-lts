@@ -73,8 +73,6 @@ impl PdfColor {
     pub const GREY_20: PdfColor = PdfColor::new(51, 51, 51, 255);
     pub const GREY_10: PdfColor = PdfColor::new(26, 26, 26, 255);
 
-    // Additional colors taken from https://www.rapidtables.com/web/color/RGB_Color.html
-
     pub const LIME: PdfColor = PdfColor::new(0, 255, 0, 255);
     pub const BLUE: PdfColor = PdfColor::new(0, 0, 255, 255);
     pub const YELLOW: PdfColor = PdfColor::new(255, 255, 0, 255);
@@ -214,7 +212,6 @@ impl PdfColor {
     pub const WHITE_SMOKE: PdfColor = PdfColor::new(245, 245, 245, 255);
 
     #[inline]
-    // The from_pdfium() function is not currently used, but we expect it to be in future
     #[allow(dead_code)]
     pub(crate) const fn from_pdfium(argb: FPDF_DWORD) -> Self {
         Self::new(
@@ -243,22 +240,13 @@ impl PdfColor {
     pub fn from_hex(hex: &str) -> Result<Self, PdfiumError> {
         if hex.starts_with('#') {
             match hex.len() {
-                7 => {
-                    // Potential HTML-style RGB triplet in hexadecimal format
-                    // with leading #.
-
-                    FPDF_DWORD::from_str_radix(&hex[1..hex.len()], 16)
-                        .map(PdfColor::from_pdfium)
-                        .map(|color| color.with_alpha(255))
-                        .map_err(PdfiumError::ParseHexadecimalColorError)
-                }
-                9 => {
-                    // Potential ARGB quadruplet in hexadecimal format with leading #.
-
-                    FPDF_DWORD::from_str_radix(&hex[1..hex.len()], 16)
-                        .map(PdfColor::from_pdfium)
-                        .map_err(PdfiumError::ParseHexadecimalColorError)
-                }
+                7 => FPDF_DWORD::from_str_radix(&hex[1..hex.len()], 16)
+                    .map(PdfColor::from_pdfium)
+                    .map(|color| color.with_alpha(255))
+                    .map_err(PdfiumError::ParseHexadecimalColorError),
+                9 => FPDF_DWORD::from_str_radix(&hex[1..hex.len()], 16)
+                    .map(PdfColor::from_pdfium)
+                    .map_err(PdfiumError::ParseHexadecimalColorError),
                 _ => Err(PdfiumError::ParseHexadecimalColorUnexpectedLength),
             }
         } else {

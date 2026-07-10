@@ -928,7 +928,6 @@ fn main() -> Result<()> {
 
             if let Some(size) = chunk_size {
                 chunking_config.max_characters = size;
-                // If user set chunk_size but not overlap, clamp overlap to fit
                 if chunk_overlap.is_none() && chunking_config.overlap >= size {
                     chunking_config.overlap = size / 4;
                 }

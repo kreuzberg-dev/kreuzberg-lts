@@ -12,8 +12,7 @@ readonly class ContributorRole
     public function __construct(
         public string $name,
         public ?string $role = null,
-    ) {
-    }
+    ) {}
 
     /**
      * @param array<string, mixed> $data
@@ -23,10 +22,7 @@ readonly class ContributorRole
         $rawName = $data['name'] ?? '';
         $rawRole = $data['role'] ?? null;
 
-        return new self(
-            name: is_string($rawName) ? $rawName : '',
-            role: is_string($rawRole) ? $rawRole : null,
-        );
+        return new self(name: is_string($rawName) ? $rawName : '', role: is_string($rawRole) ? $rawRole : null);
     }
 
     /**

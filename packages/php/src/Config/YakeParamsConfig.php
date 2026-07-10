@@ -17,8 +17,7 @@ readonly class YakeParamsConfig
          * @default null (use algorithm default)
          */
         public ?int $windowSize = null,
-    ) {
-    }
+    ) {}
 
     /**
      * Create configuration from array data.
@@ -29,9 +28,7 @@ readonly class YakeParamsConfig
     {
         $windowSize = $data['window_size'] ?? null;
 
-        return new self(
-            windowSize: is_int($windowSize) ? $windowSize : null,
-        );
+        return new self(windowSize: is_int($windowSize) ? $windowSize : null);
     }
 
     /**
@@ -41,8 +38,11 @@ readonly class YakeParamsConfig
      */
     public function toArray(): array
     {
-        return array_filter([
-            'window_size' => $this->windowSize,
-        ], static fn ($value): bool => $value !== null);
+        return array_filter(
+            [
+                'window_size' => $this->windowSize,
+            ],
+            static fn($value): bool => $value !== null,
+        );
     }
 }

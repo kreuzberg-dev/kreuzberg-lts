@@ -17,8 +17,7 @@ readonly class CodeCommentInfo
         public string $text,
         public string $kind,
         public CodeSpan $span,
-    ) {
-    }
+    ) {}
 
     /**
      * @param array<string, mixed> $data
@@ -34,10 +33,6 @@ readonly class CodeCommentInfo
         /** @var array<string, mixed> $spanData */
         $spanData = $data['span'] ?? [];
 
-        return new self(
-            text: $text,
-            kind: $kind,
-            span: CodeSpan::fromArray($spanData),
-        );
+        return new self(text: $text, kind: $kind, span: CodeSpan::fromArray($spanData));
     }
 }

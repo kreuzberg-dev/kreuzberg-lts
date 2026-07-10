@@ -3,8 +3,8 @@ const path = require("node:path");
 
 const spec = process.env.KREUZBERG_NODE_SPEC || "";
 if (!spec) {
-	console.error("KREUZBERG_NODE_SPEC missing");
-	process.exit(1);
+  console.error("KREUZBERG_NODE_SPEC missing");
+  process.exit(1);
 }
 
 const pkgPath = path.resolve("package.json");

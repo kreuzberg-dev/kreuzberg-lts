@@ -83,7 +83,6 @@ pub fn extract_complete_djot_content(
                 handle_symbol(&mut state, sym);
             }
             Event::Attributes(attrs) => {
-                // Store attributes to be applied to the next element
                 state.pending_attributes = Some(parse_jotdown_attributes(attrs));
             }
             Event::Softbreak => {
@@ -105,13 +104,10 @@ pub fn extract_complete_djot_content(
             Event::NonBreakingSpace => {
                 state.current_text.push(' ');
             }
-            Event::Blankline => {
-                // Blank lines are typically ignored in block processing
-            }
+            Event::Blankline => {}
             Event::ThematicBreak(attrs) => {
                 handle_thematic_break(&mut state, attrs, &mut blocks);
             }
-            // Smart punctuation events
             Event::LeftSingleQuote => {
                 state.current_text.push('\'');
             }
@@ -133,21 +129,16 @@ pub fn extract_complete_djot_content(
             Event::EmDash => {
                 state.current_text.push_str("---");
             }
-            Event::Escape => {
-                // Escape is a marker, doesn't produce output
-            }
+            Event::Escape => {}
         }
     }
 
-    // Finalize any remaining content
     state.flush_text();
 
-    // Pop any remaining blocks
     while !state.block_stack.is_empty() {
         pop_block(&mut state, &mut blocks);
     }
 
-    // Add any remaining inline elements to the last block if exists
     if !state.current_inline_elements.is_empty()
         && let Some(last_block) = blocks.last_mut()
     {
@@ -176,31 +167,23 @@ fn handle_start_event(
     links: &mut Vec<DjotLink>,
     footnotes: &mut Vec<crate::types::Footnote>,
 ) {
-    // Parse attributes from jotdown's Attributes type
     let parsed_attrs = if attrs.is_empty() {
         state.pending_attributes.take()
     } else {
         Some(parse_jotdown_attributes(attrs))
     };
 
-    // Try block handlers first
     if handle_block_start(state, container, attrs, parsed_attrs.as_ref().cloned(), footnotes) {
         return;
     }
 
-    // Try inline handlers
     if handle_inline_start(state, container, parsed_attrs, images, links) {
         return;
     }
 
-    // Handle remaining containers (tables, link definitions, etc.)
     match container {
-        Container::Table | Container::TableRow { .. } | Container::TableCell { .. } | Container::Caption => {
-            // Tables are extracted separately
-        }
-        Container::LinkDefinition { .. } => {
-            // Link definitions are resolved by jotdown, not needed in output
-        }
+        Container::Table | Container::TableRow { .. } | Container::TableCell { .. } | Container::Caption => {}
+        Container::LinkDefinition { .. } => {}
         _ => {}
     }
 }
@@ -214,13 +197,11 @@ fn handle_end_event(
     links: &mut [DjotLink],
     footnotes: &mut [crate::types::Footnote],
 ) {
-    // Check if it's a block container
     if handle_block_end(state, container) {
         finalize_block_element(state, blocks);
         return;
     }
 
-    // Handle special cases
     match container {
         Container::Footnote { .. } => {
             handle_footnote_end(state, footnotes);
@@ -235,21 +216,15 @@ fn handle_end_event(
             handle_image_end(state, src, images);
         }
         _ => {
-            // Check if it's an inline element
             if handle_inline_end(state, container) {
                 finalize_inline_element(state, container);
             }
         }
     }
 
-    // Handle remaining containers (tables, link definitions, etc.)
     match container {
-        Container::Table | Container::TableRow { .. } | Container::TableCell { .. } | Container::Caption => {
-            // Tables are handled separately
-        }
-        Container::LinkDefinition { .. } => {
-            // Link definitions don't produce output
-        }
+        Container::Table | Container::TableRow { .. } | Container::TableCell { .. } | Container::Caption => {}
+        Container::LinkDefinition { .. } => {}
         _ => {}
     }
 }

@@ -162,9 +162,6 @@ pub struct ChunkTextParams {
     pub topic_threshold: Option<f32>,
 }
 
-// Emits `{"type":"array","items":{"anyOf":[{"type":"null"},{"type":"object"}]}}` instead
-// of the default `{"type":"array","items":true}` that schemars derives for Vec<Option<Value>>.
-// `items: true` is valid JSON Schema 2019-09+ but Moonshot AI rejects it (issue #877).
 fn file_configs_schema(_generator: &mut schemars::SchemaGenerator) -> schemars::Schema {
     schemars::json_schema!({
         "type": "array",
@@ -177,8 +174,6 @@ fn file_configs_schema(_generator: &mut schemars::SchemaGenerator) -> schemars::
     })
 }
 
-// These param structs are constructed by the rmcp framework via serde deserialization,
-// not directly in Rust code, so clippy's dead_code lint is a false positive.
 #[allow(dead_code)]
 #[derive(Debug, serde::Deserialize, serde::Serialize, schemars::JsonSchema)]
 pub struct DownloadGrammarsParams {

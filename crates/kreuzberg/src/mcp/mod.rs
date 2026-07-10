@@ -35,7 +35,6 @@ mod format;
 mod params;
 mod server;
 
-// Re-export public API for backward compatibility
 pub use server::{KreuzbergMcp, start_mcp_server, start_mcp_server_with_config};
 
 #[cfg(feature = "mcp-http")]

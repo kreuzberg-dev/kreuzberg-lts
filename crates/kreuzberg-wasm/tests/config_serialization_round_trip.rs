@@ -22,14 +22,11 @@ fn test_config_json_round_trip_basic() {
         "resultFormat": "unified"
     });
 
-    // Deserialize from JSON
     let config: ExtractionConfig =
         serde_json::from_value(config_json.clone()).expect("Should deserialize config from JSON");
 
-    // Serialize back to JSON
     let roundtrip_json = serde_json::to_value(&config).expect("Should serialize config back to JSON");
 
-    // Verify key fields preserved
     assert_eq!(
         config_json.get("useCache"),
         roundtrip_json.get("useCache"),
@@ -68,7 +65,6 @@ fn test_config_json_round_trip_all_booleans() {
 
     let roundtrip_json = serde_json::to_value(&config).expect("Should serialize boolean config");
 
-    // Verify all boolean fields preserved
     if let (Some(orig_cache), Some(rt_cache)) = (config_json.get("useCache"), roundtrip_json.get("useCache")) {
         assert_eq!(orig_cache, rt_cache, "useCache boolean should match");
     }
@@ -91,7 +87,6 @@ fn test_config_json_round_trip_numerics() {
 
     let roundtrip_json = serde_json::to_value(&config).expect("Should serialize numeric config");
 
-    // Verify numeric fields preserved
     if let (Some(orig), Some(rt)) = (
         config_json.get("maxConcurrentExtractions"),
         roundtrip_json.get("maxConcurrentExtractions"),
@@ -117,7 +112,6 @@ fn test_config_json_round_trip_nested_ocr() {
 
     let roundtrip_json = serde_json::to_value(&config).expect("Should serialize nested OCR config");
 
-    // Verify nested OCR structure preserved
     if let Some(ocr) = roundtrip_json.get("ocr") {
         if config_json.get("ocr").is_some() {
             let orig_ocr = config_json.get("ocr").unwrap();
@@ -147,7 +141,6 @@ fn test_config_json_round_trip_nested_chunking() {
 
     let roundtrip_json = serde_json::to_value(&config).expect("Should serialize nested chunking config");
 
-    // Verify nested chunking preserved
     if let Some(chunking) = roundtrip_json.get("chunking") {
         if let Some(orig_chunking) = config_json.get("chunking") {
             assert!(chunking.is_object(), "Chunking should serialize as object");
@@ -168,20 +161,15 @@ result_format = "unified"
 max_concurrent_extractions = 4
 "#;
 
-    // Parse TOML to config
     let config: ExtractionConfig = toml::from_str(toml_str).expect("Should parse TOML config");
 
-    // Serialize back to TOML
     let roundtrip_toml = toml::to_string(&config).expect("Should serialize config back to TOML");
 
-    // Verify roundtrip config is valid
     let config2: ExtractionConfig = toml::from_str(&roundtrip_toml).expect("Should parse roundtrip TOML config");
 
-    // Both configs should deserialize successfully
     let json1 = serde_json::to_value(&config).unwrap();
     let json2 = serde_json::to_value(&config2).unwrap();
 
-    // Verify key fields match
     assert_eq!(
         json1.get("useCache"),
         json2.get("useCache"),
@@ -201,20 +189,15 @@ resultFormat: element_based
 maxConcurrentExtractions: 6
 "#;
 
-    // Parse YAML to config
     let config: ExtractionConfig = serde_yaml::from_str(yaml_str).expect("Should parse YAML config");
 
-    // Serialize back to YAML
     let roundtrip_yaml = serde_yaml::to_string(&config).expect("Should serialize config back to YAML");
 
-    // Verify roundtrip config is valid
     let config2: ExtractionConfig = serde_yaml::from_str(&roundtrip_yaml).expect("Should parse roundtrip YAML config");
 
-    // Both configs should deserialize successfully
     let json1 = serde_json::to_value(&config).unwrap();
     let json2 = serde_json::to_value(&config2).unwrap();
 
-    // Verify key fields match
     assert_eq!(
         json1.get("outputFormat"),
         json2.get("outputFormat"),
@@ -239,7 +222,6 @@ fn test_camel_case_field_names_json() {
 
     let serialized = serde_json::to_value(&config).unwrap();
 
-    // WASM/JavaScript should use camelCase (JS naming convention)
     assert!(
         serialized.get("useCache").is_some() || serialized.get("use_cache").is_some(),
         "Should have cache field (camelCase or snake_case)"
@@ -262,19 +244,15 @@ fn test_snake_case_to_camel_case_conversion() {
         "max_concurrent_extractions": 5
     });
 
-    // Parse snake_case JSON
     let config: ExtractionConfig = serde_json::from_value(snake_case_json).expect("Should deserialize snake_case JSON");
 
-    // Serialize (may convert to preferred format)
     let serialized = serde_json::to_value(&config).expect("Should serialize config");
 
-    // Parse back to verify round-trip works regardless of naming convention
     let config2: ExtractionConfig = serde_json::from_value(serialized).expect("Should deserialize roundtrip config");
 
     let json1 = serde_json::to_value(&config).unwrap();
     let json2 = serde_json::to_value(&config2).unwrap();
 
-    // Both should deserialize successfully
     assert!(json1.is_object());
     assert!(json2.is_object());
 }
@@ -288,10 +266,8 @@ fn test_default_config_serialization() {
 
     assert!(json.is_object(), "Default config should serialize to JSON object");
 
-    // Re-parse the serialized config
     let config2: ExtractionConfig = serde_json::from_value(json).expect("Should deserialize serialized default config");
 
-    // Both should be valid
     let json2 = serde_json::to_value(&config2).expect("Should serialize re-parsed config");
 
     assert!(json2.is_object(), "Re-parsed config should also be object");
@@ -307,11 +283,9 @@ fn test_minimal_config_round_trip() {
 
     let serialized = serde_json::to_value(&config).expect("Should serialize minimal config");
 
-    // Should be able to deserialize again
     let config2: ExtractionConfig =
         serde_json::from_value(serialized).expect("Should deserialize roundtrip minimal config");
 
-    // Both configs should be valid
     assert!(serde_json::to_value(&config).is_ok());
     assert!(serde_json::to_value(&config2).is_ok());
 }
@@ -333,7 +307,6 @@ fn test_all_output_formats_round_trip() {
         let roundtrip =
             serde_json::to_value(&config).expect(&format!("Should serialize config with format: {}", format));
 
-        // Verify format field is preserved or acceptable
         assert!(
             roundtrip.get("outputFormat").is_some() || roundtrip.get("output_format").is_some(),
             "outputFormat should be present in roundtrip for format: {}",
@@ -359,7 +332,6 @@ fn test_all_result_formats_round_trip() {
         let roundtrip =
             serde_json::to_value(&config).expect(&format!("Should serialize config with result format: {}", format));
 
-        // Verify result format field is preserved
         assert!(
             roundtrip.get("resultFormat").is_some() || roundtrip.get("result_format").is_some(),
             "resultFormat should be present for format: {}",
@@ -401,13 +373,11 @@ fn test_complex_nested_config_round_trip() {
 
     let roundtrip = serde_json::to_value(&config).expect("Should serialize complex nested config");
 
-    // Parse again to verify full round-trip
     let config2: ExtractionConfig =
         serde_json::from_value(roundtrip.clone()).expect("Should deserialize roundtrip complex config");
 
     let roundtrip2 = serde_json::to_value(&config2).expect("Should serialize roundtrip complex config");
 
-    // Verify it's stable (third serialization should match second)
     assert!(roundtrip.is_object(), "Roundtrip should be object");
     assert!(roundtrip2.is_object(), "Roundtrip2 should be object");
 }
@@ -415,23 +385,18 @@ fn test_complex_nested_config_round_trip() {
 /// Test config preserves unknown fields if supported
 #[wasm_bindgen_test]
 fn test_config_custom_fields_handling() {
-    // Test with a field that might not be recognized
     let config_json = serde_json::json!({
         "useCache": true,
         "outputFormat": "plain",
         "customField": "should_be_preserved_or_ignored"
     });
 
-    // This should either deserialize successfully or fail gracefully
     match serde_json::from_value::<ExtractionConfig>(config_json.clone()) {
         Ok(config) => {
-            // If it deserializes, verify core fields are present
             let roundtrip = serde_json::to_value(&config).expect("Should serialize config with custom fields");
             assert!(roundtrip.is_object(), "Serialized config should be object");
         }
         Err(_) => {
-            // Custom fields not supported - this is acceptable behavior
-            // But core fields should work
             let config_json_core = serde_json::json!({
                 "useCache": true,
                 "outputFormat": "plain"
@@ -452,14 +417,12 @@ fn test_config_null_fields_handling() {
         "outputFormat": "markdown"
     });
 
-    // Try to deserialize - null values should be handled
     match serde_json::from_value::<ExtractionConfig>(config_json) {
         Ok(config) => {
             let roundtrip = serde_json::to_value(&config).expect("Should serialize config with null fields");
             assert!(roundtrip.is_object());
         }
         Err(_) => {
-            // Null values might not be supported - test without nulls
             let config_json_non_null = serde_json::json!({
                 "useCache": true,
                 "outputFormat": "markdown"

@@ -128,7 +128,6 @@ mod tests {
 
     #[test]
     fn cosine_similarity_normalized() {
-        // For unit vectors, cosine similarity equals the dot product.
         let norm = (1.0_f32 * 1.0 + 2.0 * 2.0 + 3.0 * 3.0).sqrt();
         let a: Vec<f32> = vec![1.0 / norm, 2.0 / norm, 3.0 / norm];
 
@@ -153,18 +152,15 @@ mod tests {
 
     #[test]
     fn cosine_similarity_large_vectors() {
-        // 100-dimensional vectors — verify correctness at scale.
         let a: Vec<f32> = (0..100).map(|i| (i as f32).sin()).collect();
         let b: Vec<f32> = (0..100).map(|i| (i as f32).cos()).collect();
 
         let sim = cosine_similarity(&a, &b);
-        // Just verify it produces a valid result in [-1, 1].
         assert!(
             (-1.0..=1.0).contains(&sim),
             "similarity should be in [-1, 1], got {sim}"
         );
 
-        // Verify against manual computation.
         let dot: f32 = a.iter().zip(b.iter()).map(|(x, y)| x * y).sum();
         let na: f32 = a.iter().map(|x| x * x).sum::<f32>().sqrt();
         let nb: f32 = b.iter().map(|x| x * x).sum::<f32>().sqrt();
@@ -177,20 +173,15 @@ mod tests {
 
     #[test]
     fn cosine_similarity_very_small_values() {
-        // Values near zero — should not produce NaN or panic.
         let a = vec![1e-20_f32, 1e-20, 1e-20];
         let b = vec![1e-20_f32, 1e-20, 1e-20];
         let sim = cosine_similarity(&a, &b);
-        // Norms are ~1.7e-20 each, product ~3e-40 which is above f32::EPSILON (~1.2e-7)?
-        // Actually 3e-40 < f32::EPSILON, so we expect the guard to return 0.0.
-        // That's fine — the important thing is no NaN/panic.
         assert!(!sim.is_nan(), "should not be NaN for very small values");
     }
 
     #[test]
     #[should_panic(expected = "vectors must have equal length")]
     fn cosine_similarity_mismatched_lengths_panics() {
-        // In debug builds, mismatched vector lengths trigger a debug_assert.
         let a = vec![1.0, 2.0, 3.0];
         let b = vec![1.0, 2.0];
         cosine_similarity(&a, &b);
@@ -198,11 +189,9 @@ mod tests {
 
     #[test]
     fn cosine_similarity_topic_shift_simulation() {
-        // Simulate embeddings where segments 0-1 are similar (same topic)
-        // and segment 2 is different (topic shift).
         let seg0 = vec![1.0, 0.9, 0.1, 0.0];
         let seg1 = vec![0.95, 0.85, 0.15, 0.05];
-        let seg2 = vec![0.1, 0.0, 0.9, 1.0]; // different topic
+        let seg2 = vec![0.1, 0.0, 0.9, 1.0];
 
         let sim_same = cosine_similarity(&seg0, &seg1);
         let sim_shift = cosine_similarity(&seg1, &seg2);
@@ -216,7 +205,6 @@ mod tests {
             "topic-shift segments should have low similarity, got {sim_shift}"
         );
 
-        // With threshold 0.75, only the shift should trigger a boundary.
         let threshold = 0.75;
         assert!(sim_same >= threshold, "same-topic pair should be above threshold");
         assert!(sim_shift < threshold, "topic-shift pair should be below threshold");

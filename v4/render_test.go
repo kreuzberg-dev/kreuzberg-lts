@@ -10,7 +10,6 @@ import (
 )
 
 func TestRenderingFunctionsExist(_ *testing.T) {
-	// Compilation itself proves the functions exist
 	_ = RenderPdfPage
 	_ = NewPdfPageIterator
 }
@@ -68,15 +67,12 @@ func TestPdfPageIteratorClose(t *testing.T) {
 	}
 
 	iter.Close()
-	// Double-close should be safe
 	iter.Close()
 
-	// After close, PageCount returns 0
 	if pc := iter.PageCount(); pc != 0 {
 		t.Fatalf("expected PageCount 0 after close, got %d", pc)
 	}
 
-	// After close, Next returns ok=false
 	_, _, ok, err := iter.Next()
 	if err != nil {
 		t.Fatalf("Next after close returned error: %v", err)
@@ -113,7 +109,6 @@ func TestPdfPageIteratorEarlyTermination(t *testing.T) {
 	}
 	defer iter.Close()
 
-	// Read one page, then stop
 	pageIndex, png, ok, err := iter.Next()
 	if err != nil {
 		t.Fatalf("Next returned error: %v", err)
@@ -124,7 +119,6 @@ func TestPdfPageIteratorEarlyTermination(t *testing.T) {
 	if pageIndex != 0 {
 		t.Fatalf("expected page index 0, got %d", pageIndex)
 	}
-	// Verify it's valid PNG (starts with PNG magic bytes)
 	if len(png) < 8 {
 		t.Fatal("PNG data too short")
 	}
@@ -134,5 +128,4 @@ func TestPdfPageIteratorEarlyTermination(t *testing.T) {
 			t.Fatalf("invalid PNG magic byte at offset %d: got %x, want %x", i, png[i], b)
 		}
 	}
-	// Close without exhausting the iterator
 }

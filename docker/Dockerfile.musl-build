@@ -1,19 +1,4 @@
 # =============================================================================
-# Alpine-based builder for musl CLI binaries.
-#
-# Usage:
-#   docker build -f docker/Dockerfile.musl-build \
-#     --output type=local,dest=./dist \
-#     --build-arg TARGETARCH=x86_64 .
-#
-# Produces: dist/kreuzberg (binary) and dist/lib/ (runtime libraries)
-#
-# The binary uses dlopen for PDFium's bundled strategy (extracts embedded
-# libpdfium.so and dlopens it at runtime). Fully-static musl binaries cannot
-# dlopen because they don't export libc symbols needed by the .so.
-# Runtime libraries (musl libc, libstdc++, libgcc) are bundled alongside
-# the binary for portability across Linux distros.
-# =============================================================================
 FROM alpine:3.21 AS builder
 
 ARG RUST_TOOLCHAIN=nightly-2026-03-10
@@ -21,9 +6,6 @@ ARG PDFIUM_VERSION=7678
 
 WORKDIR /build
 
-# Install build dependencies — Alpine's g++ and libstdc++ are musl-native,
-# so tesseract C++ compilation works without glibc conflicts.
-# onnxruntime-dev from edge provides musl-native ORT for linking.
 RUN apk add --no-cache \
     curl gcc g++ musl-dev cmake make pkgconf \
     openssl-dev openssl-libs-static \
@@ -32,14 +14,12 @@ RUN apk add --no-cache \
     --repository=https://dl-cdn.alpinelinux.org/alpine/edge/community \
     --repository=https://dl-cdn.alpinelinux.org/alpine/edge/main
 
-# Install Rust via rustup (Alpine's packaged Rust may be too old / not nightly)
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs \
     | sh -s -- -y --default-toolchain "${RUST_TOOLCHAIN}" --component rust-src && \
     echo "Rust host: $(~/.cargo/bin/rustc -vV | grep host)" && \
     echo "Default target: $(~/.cargo/bin/rustc --print cfg | grep target)"
 ENV PATH="/root/.cargo/bin:${PATH}"
 
-# Download pdfium (musl build)
 RUN mkdir -p /build/pdfium && \
     ARCH=$(uname -m) && \
     if [ "$ARCH" = "aarch64" ]; then PDFIUM_ARCH="arm64"; else PDFIUM_ARCH="x64"; fi && \
@@ -50,16 +30,11 @@ RUN mkdir -p /build/pdfium && \
 
 ENV KREUZBERG_PDFIUM_PREBUILT=/build/pdfium
 
-# Disable crt-static so the binary can dlopen shared libraries at runtime.
-# musl's static dlopen doesn't export libc symbols to loaded .so files.
 ENV RUSTFLAGS="-C target-feature=-crt-static"
 
-# Point ort-sys to Alpine's system ORT library instead of downloading prebuilt binaries.
-# ort-sys checks ORT_LIB_LOCATION before attempting download (build/main.rs line 45).
 ENV ORT_LIB_LOCATION=/usr/lib
 ENV ORT_PREFER_DYNAMIC_LINK=1
 
-# Copy workspace manifests and crates
 COPY Cargo.toml Cargo.lock ./
 COPY crates/kreuzberg/ crates/kreuzberg/
 COPY crates/kreuzberg-cli/ crates/kreuzberg-cli/
@@ -67,48 +42,24 @@ COPY crates/kreuzberg-tesseract/ crates/kreuzberg-tesseract/
 COPY crates/kreuzberg-paddle-ocr/ crates/kreuzberg-paddle-ocr/
 COPY crates/kreuzberg-pdfium-render/ crates/kreuzberg-pdfium-render/
 
-# Remove workspace members that aren't included
 RUN sed -i '/kreuzberg-py/d; /kreuzberg_rb/d; /kreuzberg-node/d; /kreuzberg-ffi/d; /kreuzberg-php/d; /kreuzberg_rustler/d; /"crates\/kreuzberg-wasm"/d; /^\[profile\.release\.package\.kreuzberg-wasm\]$/,$d; /benchmark-harness/d; /e2e-generator/d; /snippet-runner/d; /e2e\/rust/d' Cargo.toml
 
 RUN cargo build --release --package kreuzberg-cli --features all && \
     cp target/release/kreuzberg /build/kreuzberg && \
     strip /build/kreuzberg
 
-# Set RPATH so the binary finds shared libs relative to itself
 RUN patchelf --set-rpath '$ORIGIN/lib' /build/kreuzberg
 
-# Collect runtime libraries.
-#
-# The launcher (below) invokes the musl loader with `--library-path lib/`,
-# which REPLACES the loader's search path. The bundle must therefore be
-# self-contained: every transitive dependency of every shipped .so has to
-# live in /build/lib/ too, otherwise the loader prints "Error loading shared
-# library X: No such file or directory" at startup (issue #991).
-#
-# Strategy:
-#   1. Copy the well-known runtime bits (musl loader, libstdc++, libgcc, ORT).
-#   2. Recursively `ldd`-walk every .so in the bundle and copy any host lib
-#      they resolve to that isn't already present.
-#   3. Smoke-test the loader against each shipped .so so the build FAILS if
-#      anything is still missing — better to break the image than to ship a
-#      tarball that crashes on first invocation.
 RUN set -eu; \
     mkdir -p /build/lib; \
     cp /usr/lib/libstdc++.so.6 /build/lib/; \
     cp /usr/lib/libgcc_s.so.1 /build/lib/; \
-    # Bundle ONNX Runtime for embeddings/layout-detection at runtime.
     cp /usr/lib/libonnxruntime.so* /build/lib/ 2>/dev/null || true; \
-    # Copy the musl dynamic linker/libc.
     cp /lib/ld-musl-*.so.1 /build/lib/ 2>/dev/null || true; \
-    # Recursively resolve transitive deps of everything in /build/lib via ldd
-    # (alpine's musl ldd resolves against system paths). Re-walk until no new
-    # libraries are pulled in to handle multi-level chains (libonnxruntime →
-    # libprotobuf-lite → libabsl_* → ...).
     LOADER="$(ls /build/lib/ld-musl-*.so.1 | head -n1)"; \
     while :; do \
         before=$(ls /build/lib | wc -l); \
         for so in /build/lib/*.so*; do \
-            # Skip the loader itself; ldd against it is meaningless.
             case "$so" in *ld-musl-*) continue ;; esac; \
             "$LOADER" --list "$so" 2>/dev/null \
                 | awk '/=>/ { print $3 }' \
@@ -123,7 +74,6 @@ RUN set -eu; \
         after=$(ls /build/lib | wc -l); \
         [ "$before" = "$after" ] && break; \
     done; \
-    # Verify nothing in the bundle has unresolved deps when constrained to lib/.
     for so in /build/lib/*.so*; do \
         case "$so" in *ld-musl-*) continue ;; esac; \
         if "$LOADER" --library-path /build/lib --list "$so" 2>&1 | grep -q 'not found'; then \
@@ -134,25 +84,18 @@ RUN set -eu; \
     done; \
     echo "OK: every bundled library resolves inside /build/lib/"
 
-# Rename the actual binary and create a wrapper script that invokes it
-# via the bundled musl interpreter. This makes the binary work on ANY
-# Linux distro (glibc or musl) without system dependencies.
 RUN mv /build/kreuzberg /build/kreuzberg.bin && \
     INTERP_NAME=$(basename /lib/ld-musl-*.so.1) && \
     printf '#!/bin/sh\nSCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"\nexec "$SCRIPT_DIR/lib/%s" --library-path "$SCRIPT_DIR/lib" "$SCRIPT_DIR/kreuzberg.bin" "$@"\n' \
         "$INTERP_NAME" > /build/kreuzberg && \
     chmod +x /build/kreuzberg
 
-# Verify the binary was built successfully
 RUN file /build/kreuzberg && \
     echo "=== Dynamic dependencies ===" && \
     readelf -d /build/kreuzberg 2>/dev/null | grep -E "NEEDED|RPATH|RUNPATH" || echo "No dependencies" && \
     echo "=== Bundled libraries ===" && \
     ls -la /build/lib/
 
-# =============================================================================
-# Output stage — binary + bundled runtime libraries
-# =============================================================================
 FROM scratch
 COPY --from=builder /build/kreuzberg /kreuzberg
 COPY --from=builder /build/kreuzberg.bin /kreuzberg.bin

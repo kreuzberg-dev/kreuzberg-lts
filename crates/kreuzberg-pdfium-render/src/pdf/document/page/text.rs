@@ -61,15 +61,12 @@ pub(super) fn filter_generated_spaces_direct(
     while i < end {
         let idx = i as std::os::raw::c_int;
 
-        // Check if generated (1 FFI call)
         if bindings.FPDFText_IsGenerated(text_page_handle, idx) != 0 {
             if let Some(prev_r) = prev_right_x {
-                // Find next non-generated char to measure gap
                 let mut j = i + 1;
                 while j < end {
                     let jdx = j as std::os::raw::c_int;
                     if bindings.FPDFText_IsGenerated(text_page_handle, jdx) == 0 {
-                        // Get left edge of next real char (1 FFI call)
                         let mut left = 0.0_f64;
                         let mut bottom = 0.0_f64;
                         let mut right = 0.0_f64;
@@ -97,14 +94,13 @@ pub(super) fn filter_generated_spaces_direct(
                     j += 1;
                 }
                 if j >= end {
-                    result.push(' '); // trailing generated space
+                    result.push(' ');
                 }
             }
             i += 1;
             continue;
         }
 
-        // Non-generated char: GetUnicode (1 FFI call)
         let unicode_val = bindings.FPDFText_GetUnicode(text_page_handle, idx);
         if let Some(uc) = char::from_u32(unicode_val) {
             if uc == '\r' {
@@ -118,7 +114,6 @@ pub(super) fn filter_generated_spaces_direct(
             }
         }
 
-        // GetCharBox for right_x tracking (1 FFI call)
         let mut left = 0.0_f64;
         let mut bottom = 0.0_f64;
         let mut right = 0.0_f64;
@@ -324,8 +319,8 @@ impl<'a> PdfPageText<'a> {
             tolerance_x.value as c_double,
             tolerance_y.value as c_double,
         ) {
-            -1 => None, // No character at position within tolerances
-            -3 => None, // An error occurred, but we'll eat it
+            -1 => None,
+            -3 => None,
             index => Some(index as PdfPageTextCharIndex),
         }
     }
@@ -362,15 +357,6 @@ impl<'a> PdfPageText<'a> {
     /// and the order in which they appear visually during rendering (and thus the order in
     /// which they are read by a user) may not necessarily match.
     pub fn inside_rect(&self, rect: PdfRect) -> String {
-        // Retrieving the bounded text from Pdfium is a two-step operation. First, we call
-        // FPDFText_GetBoundedText() with a null buffer; this will retrieve the length of
-        // the bounded text in _characters_ (not _bytes_!). If the length is zero, then there is
-        // no text within the given rectangle's boundaries.
-
-        // If the length is non-zero, then we reserve a buffer (sized in words rather than bytes,
-        // to allow for two bytes per character) and call FPDFText_GetBoundedText() again with a
-        // pointer to the buffer; this will write the bounded text to the buffer in UTF16-LE format.
-
         let left = rect.left().value as f64;
 
         let top = rect.top().value as f64;
@@ -384,8 +370,6 @@ impl<'a> PdfPageText<'a> {
                 .FPDFText_GetBoundedText(self.text_page_handle(), left, top, right, bottom, null_mut(), 0);
 
         if chars_count == 0 {
-            // No text lies within the given rectangle.
-
             return String::new();
         }
 
@@ -423,8 +407,6 @@ impl<'a> PdfPageText<'a> {
         if count == 0 {
             return String::new();
         }
-        // Use the first char's index as start for the direct FFI path.
-        // Rect-based chars are typically contiguous segments.
         let start = chars.first_char_index().unwrap_or(0) as i32;
         filter_generated_spaces_direct(self.text_page_handle(), start, count as i32, space_ratio, self.bindings)
     }
@@ -432,22 +414,11 @@ impl<'a> PdfPageText<'a> {
     /// Returns all characters assigned to the given [PdfPageTextObject] in this [PdfPageText] object,
     /// concatenated into a single string.
     pub fn for_object(&self, object: &PdfPageTextObject) -> String {
-        // Retrieving the string value from Pdfium is a two-step operation. First, we call
-        // FPDFTextObj_GetText() with a null buffer; this will retrieve the length of
-        // the text in bytes, assuming the page object exists. If the length is zero,
-        // then there is no text.
-
-        // If the length is non-zero, then we reserve a byte buffer of the given
-        // length and call FPDFTextObj_GetText() again with a pointer to the buffer;
-        // this will write the text for the page object into the buffer.
-
         let buffer_length =
             self.bindings()
                 .FPDFTextObj_GetText(object.object_handle(), self.text_page_handle(), null_mut(), 0);
 
         if buffer_length == 0 {
-            // There is no text.
-
             return String::new();
         }
 
@@ -551,13 +522,7 @@ mod tests {
 
     #[test]
     fn test_overlapping_chars_results() -> Result<(), PdfiumError> {
-        // Test to make sure the result of the .chars_for_object() function returns the
-        // correct results in the event of overlapping text objects.
-        // For more details, see: https://github.com/ajrcarey/pdfium-render/issues/98
-
         let pdfium = test_bind_to_pdfium();
-
-        // Create a new document with three overlapping text objects.
 
         let mut document = pdfium.create_new_pdf()?;
 
@@ -591,8 +556,6 @@ mod tests {
 
         let page_text = page.text()?;
 
-        // Check the results for all three objects are not affected by overlapping.
-
         assert!(test_one_overlapping_text_object_results(&txt1, &page_text, "AAAAAA")?);
         assert!(test_one_overlapping_text_object_results(&txt2, &page_text, "BBBBBB")?);
         assert!(test_one_overlapping_text_object_results(&txt3, &page_text, "CDCDCDE")?);
@@ -622,9 +585,6 @@ mod tests {
 
     #[test]
     fn test_text_chars_results_equality() -> Result<(), PdfiumError> {
-        // For all available test documents, check that the results of
-        // PdfPageObjectText::text() and PdfPageObjectText::chars() match.
-
         let pdfium = test_bind_to_pdfium();
 
         let fixture_dir = test_fixture_path("");

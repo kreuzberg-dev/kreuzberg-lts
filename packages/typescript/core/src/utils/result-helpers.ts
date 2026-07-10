@@ -29,17 +29,15 @@ import type { ExtractionResult } from "../types/results.js";
  * ```
  */
 export function resultGetPageCount(result: ExtractionResult): number | null {
-	// Check metadata.page_count (PDF/PPTX format)
-	if (result.metadata?.page_count !== undefined && result.metadata.page_count !== null) {
-		return result.metadata.page_count;
-	}
+  if (result.metadata?.page_count !== undefined && result.metadata.page_count !== null) {
+    return result.metadata.page_count;
+  }
 
-	// Check metadata.sheet_count (Excel format)
-	if (result.metadata?.sheet_count !== undefined && result.metadata.sheet_count !== null) {
-		return result.metadata.sheet_count;
-	}
+  if (result.metadata?.sheet_count !== undefined && result.metadata.sheet_count !== null) {
+    return result.metadata.sheet_count;
+  }
 
-	return null;
+  return null;
 }
 
 /**
@@ -65,10 +63,10 @@ export function resultGetPageCount(result: ExtractionResult): number | null {
  * ```
  */
 export function resultGetChunkCount(result: ExtractionResult): number | null {
-	if (result.chunks && Array.isArray(result.chunks)) {
-		return result.chunks.length;
-	}
-	return null;
+  if (result.chunks && Array.isArray(result.chunks)) {
+    return result.chunks.length;
+  }
+  return null;
 }
 
 /**
@@ -94,20 +92,18 @@ export function resultGetChunkCount(result: ExtractionResult): number | null {
  * ```
  */
 export function resultGetDetectedLanguage(result: ExtractionResult): string | null {
-	// Check detectedLanguages array first (primary detection method)
-	if (result.detectedLanguages && result.detectedLanguages.length > 0) {
-		const firstLang = result.detectedLanguages[0];
-		if (firstLang !== undefined) {
-			return firstLang;
-		}
-	}
+  if (result.detectedLanguages && result.detectedLanguages.length > 0) {
+    const firstLang = result.detectedLanguages[0];
+    if (firstLang !== undefined) {
+      return firstLang;
+    }
+  }
 
-	// Fall back to metadata.language
-	if (result.metadata?.language) {
-		return result.metadata.language;
-	}
+  if (result.metadata?.language) {
+    return result.metadata.language;
+  }
 
-	return null;
+  return null;
 }
 
 /**
@@ -146,22 +142,22 @@ export function resultGetDetectedLanguage(result: ExtractionResult): string | nu
  * ```
  */
 export function resultGetMetadataField(result: ExtractionResult, fieldName: string): unknown {
-	if (!result.metadata) {
-		return null;
-	}
+  if (!result.metadata) {
+    return null;
+  }
 
-	const parts = fieldName.split(".");
-	let current: unknown = result.metadata;
+  const parts = fieldName.split(".");
+  let current: unknown = result.metadata;
 
-	for (const part of parts) {
-		if (current === null || current === undefined) {
-			return null;
-		}
-		if (typeof current !== "object") {
-			return null;
-		}
-		current = (current as Record<string, unknown>)[part];
-	}
+  for (const part of parts) {
+    if (current === null || current === undefined) {
+      return null;
+    }
+    if (typeof current !== "object") {
+      return null;
+    }
+    current = (current as Record<string, unknown>)[part];
+  }
 
-	return current ?? null;
+  return current ?? null;
 }

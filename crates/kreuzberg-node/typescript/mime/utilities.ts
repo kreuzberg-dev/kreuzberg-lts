@@ -26,8 +26,8 @@ import { getBinding } from "../core/binding.js";
  * ```
  */
 export function detectMimeType(bytes: Buffer): string {
-	const binding = getBinding();
-	return binding.detectMimeTypeFromBytes(bytes);
+  const binding = getBinding();
+  return binding.detectMimeTypeFromBytes(bytes);
 }
 
 /**
@@ -57,8 +57,8 @@ export function detectMimeType(bytes: Buffer): string {
  * ```
  */
 export function detectMimeTypeFromPath(filePath: string, checkExists?: boolean): string {
-	const binding = getBinding();
-	return binding.detectMimeTypeFromPath(filePath, checkExists);
+  const binding = getBinding();
+  return binding.detectMimeTypeFromPath(filePath, checkExists);
 }
 
 /**
@@ -93,8 +93,8 @@ export function detectMimeTypeFromPath(filePath: string, checkExists?: boolean):
  * ```
  */
 export function validateMimeType(mimeType: string): string {
-	const binding = getBinding();
-	return binding.validateMimeType(mimeType);
+  const binding = getBinding();
+  return binding.validateMimeType(mimeType);
 }
 
 /**
@@ -122,8 +122,8 @@ export function validateMimeType(mimeType: string): string {
  * ```
  */
 export function getExtensionsForMime(mimeType: string): string[] {
-	const binding = getBinding();
-	return binding.getExtensionsForMime(mimeType);
+  const binding = getBinding();
+  return binding.getExtensionsForMime(mimeType);
 }
 
 /**
@@ -149,7 +149,7 @@ export function getExtensionsForMime(mimeType: string): string[] {
  * ```
  */
 export function detectMimeTypeSync(bytes: Buffer): string {
-	return detectMimeType(bytes);
+  return detectMimeType(bytes);
 }
 
 /**
@@ -165,7 +165,7 @@ export function detectMimeTypeSync(bytes: Buffer): string {
  * @deprecated Use detectMimeType() instead
  */
 export function getMimeTypeFromBytes(bytes: Buffer): string {
-	return detectMimeType(bytes);
+  return detectMimeType(bytes);
 }
 
 /**
@@ -179,5 +179,5 @@ export function getMimeTypeFromBytes(bytes: Buffer): string {
  * @deprecated Use detectMimeType() instead
  */
 export function getMimeTypeFromBytesSync(bytes: Buffer): string {
-	return detectMimeType(bytes);
+  return detectMimeType(bytes);
 }

@@ -39,27 +39,27 @@
  * const result = await wasm.extract_from_bytes(pdfBytes, config);
  */
 export function initializePdfiumWasm(pdfiumModule, wasmModule, debug = false) {
-	if (typeof wasmModule.initialize_pdfium_render === "function") {
-		try {
-			return wasmModule.initialize_pdfium_render(pdfiumModule, wasmModule, debug);
-		} catch (error) {
-			console.error("Failed to initialize PDFium:", error);
-			return false;
-		}
-	}
+  if (typeof wasmModule.initialize_pdfium_render === "function") {
+    try {
+      return wasmModule.initialize_pdfium_render(pdfiumModule, wasmModule, debug);
+    } catch (error) {
+      console.error("Failed to initialize PDFium:", error);
+      return false;
+    }
+  }
 
-	if (typeof initialize_pdfium_render === "function") {
-		try {
-			return initialize_pdfium_render(pdfiumModule, wasmModule, debug);
-		} catch (error) {
-			console.error("Failed to initialize PDFium (global):", error);
-			return false;
-		}
-	}
+  if (typeof initialize_pdfium_render === "function") {
+    try {
+      return initialize_pdfium_render(pdfiumModule, wasmModule, debug);
+    } catch (error) {
+      console.error("Failed to initialize PDFium (global):", error);
+      return false;
+    }
+  }
 
-	console.error("initialize_pdfium_render function not found. This may indicate a build issue.");
-	console.error("PDFium initialization requires pdfium-render WASM bindings to be present.");
-	return false;
+  console.error("initialize_pdfium_render function not found. This may indicate a build issue.");
+  console.error("PDFium initialization requires pdfium-render WASM bindings to be present.");
+  return false;
 }
 
 /**
@@ -69,9 +69,9 @@ export function initializePdfiumWasm(pdfiumModule, wasmModule, debug = false) {
  * @returns {Promise<Object>} Loaded PDFium module
  */
 export async function loadPdfiumModule(pdfiumJsUrl) {
-	const pdfiumLoader = await import(pdfiumJsUrl);
+  const pdfiumLoader = await import(pdfiumJsUrl);
 
-	const pdfiumModule = await pdfiumLoader.default();
+  const pdfiumModule = await pdfiumLoader.default();
 
-	return pdfiumModule;
+  return pdfiumModule;
 }

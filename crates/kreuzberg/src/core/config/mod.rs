@@ -21,7 +21,6 @@ pub mod processing;
 #[cfg(feature = "tree-sitter")]
 pub mod tree_sitter;
 
-// Re-export main types for backward compatibility
 pub use acceleration::{AccelerationConfig, ExecutionProviderType};
 pub use concurrency::ConcurrencyConfig;
 pub use content_filter::ContentFilterConfig;

@@ -10,17 +10,17 @@ package dev.kreuzberg;
  * @since 4.0.0
  */
 public final class ValidationException extends KreuzbergException {
-	/**
+    /**
 	 * Constructs a new validation exception with the specified message.
 	 *
 	 * @param message
 	 *            the detail message explaining why validation failed
 	 */
-	public ValidationException(String message) {
-		super(message);
-	}
+    public ValidationException(String message) {
+        super(message);
+    }
 
-	/**
+    /**
 	 * Constructs a new validation exception with the specified message and cause.
 	 *
 	 * @param message
@@ -28,7 +28,7 @@ public final class ValidationException extends KreuzbergException {
 	 * @param cause
 	 *            the cause of the validation failure
 	 */
-	public ValidationException(String message, Throwable cause) {
-		super(message, cause);
-	}
+    public ValidationException(String message, Throwable cause) {
+        super(message, cause);
+    }
 }

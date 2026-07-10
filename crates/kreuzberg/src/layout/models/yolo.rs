@@ -88,13 +88,11 @@ impl YoloModel {
         orig_height: u32,
     ) -> Result<Vec<LayoutDetection>, LayoutError> {
         let variant = self.variant;
-        // YOLOv10 models use square input; use width (== height) for preprocessing.
         let input_tensor = preprocessing::preprocess_rescale(img, self.input_width);
         let images_tensor = Tensor::from_array(input_tensor)?;
 
         let outputs = self.session.run(inputs![self.input_name.as_str() => images_tensor])?;
 
-        // Get the first output tensor.
         let (_, output_value) = outputs
             .iter()
             .next()
@@ -107,7 +105,6 @@ impl YoloModel {
         let shape = &view.0;
         let data = view.1;
 
-        // Expected shape: [1, num_dets, cols] where cols is 6 (decoded) or 4+num_classes (raw).
         let num_dets = if shape.len() == 3 {
             shape[1] as usize
         } else {
@@ -129,7 +126,6 @@ impl YoloModel {
         let mut detections = Vec::new();
 
         if cols == 6 {
-            // Decoded format: [x1, y1, x2, y2, score, class_id]
             for i in 0..num_dets {
                 let offset = i * 6;
                 let score = data[offset + 4];
@@ -150,7 +146,6 @@ impl YoloModel {
                 detections.push(LayoutDetection::new(class, score, bbox));
             }
         } else if cols > 4 {
-            // Raw format: [x_center, y_center, w, h, class_scores...]
             let num_classes = cols - 4;
             for i in 0..num_dets {
                 let offset = i * cols;
@@ -159,7 +154,6 @@ impl YoloModel {
                 let w = data[offset + 2];
                 let h = data[offset + 3];
 
-                // Find best class.
                 let mut best_score = 0.0f32;
                 let mut best_class_idx = 0i64;
                 for c in 0..num_classes {
@@ -185,7 +179,6 @@ impl YoloModel {
                 let y2 = (cy + h / 2.0) * scale_y;
                 detections.push(LayoutDetection::new(class, best_score, BBox::new(x1, y1, x2, y2)));
             }
-            // Raw format needs NMS.
             nms::greedy_nms(&mut detections, NMS_IOU_THRESHOLD);
         }
 
@@ -245,14 +238,10 @@ impl YoloModel {
         } else {
             shape[1] as usize
         };
-        let num_classes = cols - 5; // [cx, cy, w, h, objectness, class_scores...]
+        let num_classes = cols - 5;
 
-        // --- Grid decoding ---
-        // Build grid offsets for each stride level. YOLOX uses strides [8, 16, 32].
-        // For each stride, anchors are arranged in row-major order: (H/stride) rows x (W/stride) cols.
         let strides: &[u32] = &[8, 16, 32];
 
-        // Pre-compute all grid positions: (grid_x, grid_y, stride)
         let mut grids: Vec<(f32, f32, f32)> = Vec::with_capacity(num_anchors);
         for &stride in strides {
             let h_size = input_h / stride;
@@ -276,7 +265,6 @@ impl YoloModel {
         for (i, &(gx, gy, s)) in grids.iter().enumerate() {
             let offset = i * cols;
 
-            // Decode box: (raw + grid) * stride for xy, exp(raw) * stride for wh
             let cx = (data[offset] + gx) * s;
             let cy = (data[offset + 1] + gy) * s;
             let w = data[offset + 2].exp() * s;
@@ -284,7 +272,6 @@ impl YoloModel {
 
             let objectness = data[offset + 4];
 
-            // Find best class.
             let mut best_class_score = 0.0f32;
             let mut best_class_idx = 0i64;
             for c in 0..num_classes {
@@ -305,7 +292,6 @@ impl YoloModel {
                 None => continue,
             };
 
-            // Convert center-format to xyxy, then undo letterbox scaling.
             let x1 = (cx - w / 2.0) / scale;
             let y1 = (cy - h / 2.0) / scale;
             let x2 = (cx + w / 2.0) / scale;

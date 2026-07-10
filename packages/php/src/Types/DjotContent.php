@@ -38,8 +38,7 @@ readonly class DjotContent
         public array $links = [],
         public array $footnotes = [],
         public ?array $attributes = null,
-    ) {
-    }
+    ) {}
 
     /**
      * Create DjotContent from array returned by extension.
@@ -59,7 +58,7 @@ readonly class DjotContent
 
         $blocks = array_map(
             /** @param array<string, mixed> $block */
-            static fn (array $block): FormattedBlock => FormattedBlock::fromArray($block),
+            static fn(array $block): FormattedBlock => FormattedBlock::fromArray($block),
             $blocksData,
         );
 
@@ -68,7 +67,7 @@ readonly class DjotContent
 
         $tables = array_map(
             /** @param array<string, mixed> $table */
-            static fn (array $table): Table => Table::fromArray($table),
+            static fn(array $table): Table => Table::fromArray($table),
             $tablesData,
         );
 
@@ -78,7 +77,7 @@ readonly class DjotContent
             $imagesData = $data['images'];
             $images = array_map(
                 /** @param array<string, mixed> $image */
-                static fn (array $image): DjotImage => DjotImage::fromArray($image),
+                static fn(array $image): DjotImage => DjotImage::fromArray($image),
                 $imagesData,
             );
         }
@@ -89,7 +88,7 @@ readonly class DjotContent
             $linksData = $data['links'];
             $links = array_map(
                 /** @param array<string, mixed> $link */
-                static fn (array $link): DjotLink => DjotLink::fromArray($link),
+                static fn(array $link): DjotLink => DjotLink::fromArray($link),
                 $linksData,
             );
         }
@@ -100,7 +99,7 @@ readonly class DjotContent
             $footnotesData = $data['footnotes'];
             $footnotes = array_map(
                 /** @param array<string, mixed> $footnote */
-                static fn (array $footnote): Footnote => Footnote::fromArray($footnote),
+                static fn(array $footnote): Footnote => Footnote::fromArray($footnote),
                 $footnotesData,
             );
         }

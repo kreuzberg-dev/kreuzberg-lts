@@ -57,10 +57,6 @@ fn render_markdown(doc: kreuzberg::types::internal::InternalDocument) -> String 
     result.formatted_content.unwrap_or(result.content)
 }
 
-// ---------------------------------------------------------------------------
-// Document builders
-// ---------------------------------------------------------------------------
-
 /// A rich document with headings, paragraph, list, code block, and table.
 fn build_rich_document() -> kreuzberg::types::internal::InternalDocument {
     let mut b = InternalDocumentBuilder::new("test-rich");
@@ -135,10 +131,6 @@ fn build_minimal_document() -> kreuzberg::types::internal::InternalDocument {
     b.push_paragraph("A single paragraph of text.", vec![], None, None);
     b.build()
 }
-
-// ---------------------------------------------------------------------------
-// Tests
-// ---------------------------------------------------------------------------
 
 #[test]
 fn test_rich_document_markdown_passes_rumdl() {
@@ -227,10 +219,6 @@ fn test_file_extraction_markdown_passes_rumdl() {
         let result = extract_file_sync(&path, None, &config).expect("extraction should succeed");
         let md = result.formatted_content.as_deref().unwrap_or(&result.content);
 
-        // Disable rules that are inherent to source document structure or extractor conventions:
-        // MD041: first line must be h1 (extracted docs may start with metadata)
-        // MD025: single top-level heading (LaTeX/Typst docs often have multiple sections)
-        // MD049: emphasis style (* vs _) — Typst uses _ for italics, preserved as-is
         if let Err(msg) = run_rumdl_with_disabled(md, &["MD041", "MD025", "MD049"]) {
             panic!("File {rel_path} Markdown output failed rumdl lint:\n{msg}\n\nGenerated markdown:\n{md}");
         }

@@ -34,17 +34,8 @@ use {
     web_sys::{Blob, Response, window},
 };
 
-// The following dummy declaration is used only when running cargo doc.
-// It allows documentation of WASM-specific functionality to be included
-// in documentation generated on non-WASM targets.
-
 #[cfg(doc)]
 struct Blob;
-
-// The first instantiation of a Pdfium object will promote a concrete PdfiumLibraryBindings
-// trait implementation into a global static OnceCell. This allows for thread-safe,
-// lifetime-free access to that PdfiumLibraryBindings instance from any object that
-// implements the PdfiumLibraryBindingsAccessor trait.
 
 static BINDINGS: OnceCell<Box<dyn PdfiumLibraryBindings>> = OnceCell::new();
 
@@ -233,23 +224,18 @@ impl Pdfium {
     pub fn new_with_config(bindings: Box<dyn PdfiumLibraryBindings>, config: &PdfiumConfig) -> Self {
         assert!(BINDINGS.get().is_none());
 
-        // Fast path: if no config is provided, use simple FPDF_InitLibrary() to avoid
-        // potential font enumeration overhead in FPDF_InitLibraryWithConfig()
         let has_user_font_paths =
             config.user_font_paths.is_some() && !config.user_font_paths.as_ref().unwrap().is_empty();
         let has_font_provider = config.font_provider.is_some() && !config.font_provider.as_ref().unwrap().is_empty();
 
         if !has_user_font_paths && !has_font_provider {
-            // No configuration needed - use simple initialization
             bindings.FPDF_InitLibrary();
         } else {
-            // Configuration needed - build config structure
             let mut c_strings = Vec::new();
             let mut c_ptrs = Vec::new();
 
             if let Some(paths) = &config.user_font_paths {
                 for path in paths {
-                    // We ignore paths that contain null bytes, as they cannot be passed to C APIs.
                     if let Ok(c_str) = CString::new(path.as_str()) {
                         c_ptrs.push(c_str.as_ptr());
                         c_strings.push(c_str);
@@ -261,7 +247,6 @@ impl Pdfium {
             let font_paths_ptr = if c_ptrs.is_empty() {
                 std::ptr::null_mut()
             } else {
-                // Leak vectors to ensure font path pointers remain valid for library lifetime
                 Box::leak(c_strings.into_boxed_slice());
 
                 let leaked_ptrs = Box::leak(c_ptrs.into_boxed_slice());
@@ -280,23 +265,18 @@ impl Pdfium {
             bindings
                 .FPDF_InitLibraryWithConfig(&library_config as *const _ as *const crate::bindgen::FPDF_LIBRARY_CONFIG);
 
-            // Set up custom font provider if configured
             if let Some(font_descriptors) = &config.font_provider
                 && !font_descriptors.is_empty()
             {
                 use crate::font_provider::MemoryFontProvider;
 
-                // Create provider and box it immediately
                 let provider = MemoryFontProvider::new(font_descriptors.clone());
                 let mut boxed_provider = Box::new(provider);
 
-                // Get pointer from the boxed provider
                 let provider_ptr = boxed_provider.as_mut_ptr();
 
-                // Leak the provider to ensure static lifetime
                 let _leaked_provider = Box::leak(boxed_provider);
 
-                // Register with Pdfium
                 bindings.FPDF_SetSystemFontInfo(provider_ptr);
             }
         }
@@ -333,9 +313,6 @@ impl Pdfium {
             self.bindings(),
         )
         .map(|mut document| {
-            // Give the newly-created document ownership of the byte buffer, so that Pdfium can continue
-            // to read from it on an as-needed basis throughout the lifetime of the document.
-
             document.set_source_byte_buffer(bytes);
 
             document
@@ -410,9 +387,6 @@ impl Pdfium {
             self.bindings(),
         )
         .map(|mut document| {
-            // Give the newly-created document ownership of the reader, so that Pdfium can continue
-            // to read from it on an as-needed basis throughout the lifetime of the document.
-
             document.set_file_access_reader(reader);
 
             document
@@ -500,8 +474,6 @@ impl Pdfium {
         bindings: &dyn PdfiumLibraryBindings,
     ) -> Result<PdfDocument<'_>, PdfiumError> {
         if handle.is_null() {
-            // Retrieve the error code of the last error recorded by Pdfium.
-
             #[allow(clippy::unnecessary_cast)]
             if let Some(error) = match bindings.FPDF_GetLastError() as u32 {
                 crate::bindgen::FPDF_ERR_SUCCESS => None,
@@ -511,19 +483,10 @@ impl Pdfium {
                 crate::bindgen::FPDF_ERR_PASSWORD => Some(PdfiumInternalError::PasswordError),
                 crate::bindgen::FPDF_ERR_SECURITY => Some(PdfiumInternalError::SecurityError),
                 crate::bindgen::FPDF_ERR_PAGE => Some(PdfiumInternalError::PageError),
-                // The Pdfium documentation says "... if the previous SDK call succeeded, [then] the
-                // return value of this function is not defined". On Linux, at least, a return value
-                // of FPDF_ERR_SUCCESS seems to be consistently returned; on Windows, however, the
-                // return values are indeed unpredictable. See https://github.com/ajrcarey/pdfium-render/issues/24.
-                // Therefore, if the return value does not match one of the FPDF_ERR_* constants, we must
-                // assume success.
                 _ => None,
             } {
                 Err(PdfiumError::PdfiumLibraryInternalError(error))
             } else {
-                // This would be an unusual situation; a null handle indicating failure,
-                // yet Pdfium's error code indicates success.
-
                 Err(PdfiumError::PdfiumLibraryInternalError(PdfiumInternalError::Unknown))
             }
         } else {
@@ -553,23 +516,13 @@ impl Default for Pdfium {
     #[cfg(not(target_arch = "wasm32"))]
     #[inline]
     fn default() -> Self {
-        // Attempt to bind to a Pdfium library in the current working directory.
-
         match Pdfium::bind_to_library(Pdfium::pdfium_platform_library_name_at_path("./")) {
-            Ok(bindings) => Pdfium::new(bindings), // Create new bindings
-            Err(PdfiumError::PdfiumLibraryBindingsAlreadyInitialized) => Pdfium {}, // Re-use the existing bindings
-            Err(PdfiumError::LoadLibraryError(err)) => {
-                match err {
-                    libloading::Error::DlOpen { .. } => {
-                        // For DlOpen errors specifically, indicating the Pdfium library in the
-                        // current working directory does not exist or is corrupted, we attempt
-                        // to fall back to a system-provided library.
-
-                        Pdfium::new(Pdfium::bind_to_system_library().unwrap())
-                    }
-                    _ => panic!("Failed to load Pdfium library: {:?}", err),
-                }
-            }
+            Ok(bindings) => Pdfium::new(bindings),
+            Err(PdfiumError::PdfiumLibraryBindingsAlreadyInitialized) => Pdfium {},
+            Err(PdfiumError::LoadLibraryError(err)) => match err {
+                libloading::Error::DlOpen { .. } => Pdfium::new(Pdfium::bind_to_system_library().unwrap()),
+                _ => panic!("Failed to load Pdfium library: {:?}", err),
+            },
             Err(err) => panic!("Failed to initialize Pdfium: {:?}", err),
         }
     }

@@ -42,17 +42,11 @@ impl<'a> PdfPageUnsupportedObject<'a> {
         "this [PdfPageUnsupportedObject],"
     );
 
-    // The transform_impl() function required by the create_transform_setters!() macro
-    // is provided by the PdfPageObjectPrivate trait.
-
     create_transform_getters!(
         "this [PdfPageUnsupportedObject]",
         "this [PdfPageUnsupportedObject].",
         "this [PdfPageUnsupportedObject],"
     );
-
-    // The get_matrix_impl() function required by the create_transform_getters!() macro
-    // is provided by the PdfPageObjectPrivate trait.
 }
 
 impl<'a> PdfPageObjectPrivate<'a> for PdfPageUnsupportedObject<'a> {

@@ -106,8 +106,6 @@ impl DeferredResult {
         match &*guard {
             DeferredInner::Single(Some(result)) => match result {
                 Ok(r) => Ok(Some(ExtractionResult::from_rust_with_config(
-                    // Clone only the Arc pointer here; Arc::unwrap_or_clone moves the value
-                    // out if this is the last reference, otherwise clones the inner data.
                     Arc::unwrap_or_clone(Arc::clone(r)),
                     self.extract_tables,
                 )?)),
@@ -235,7 +233,6 @@ impl DeferredResult {
             let start = std::time::Instant::now();
             let wait_result = self.shared.ready.wait_for(&mut guard, remaining);
             let elapsed = start.elapsed();
-            // Saturating subtraction avoids underflow if elapsed > remaining.
             remaining = remaining.saturating_sub(elapsed);
             if wait_result.timed_out() {
                 return Ok(None);

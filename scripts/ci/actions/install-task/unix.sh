@@ -14,7 +14,6 @@ install_task() {
   while [[ $attempt -le $max_attempts ]]; do
     echo "Installing Task v${version} (attempt ${attempt}/${max_attempts})..."
 
-    # Download the install script with timeout and retries
     if curl --location \
       --connect-timeout 10 \
       --max-time 60 \
@@ -23,7 +22,6 @@ install_task() {
       --retry-all-errors \
       https://taskfile.dev/install.sh | sh -s -- -d -b "$task_bin_dir"; then
 
-      # Verify that the task binary exists and is executable
       if [[ -x "$task_bin_dir/task" ]]; then
         echo "Task installation successful"
         return 0
@@ -56,7 +54,6 @@ if ! command -v task >/dev/null 2>&1 || [[ "$(task --version 2>/dev/null || echo
   install_task
 fi
 
-# Final verification before adding to PATH
 if [[ ! -x "$task_bin_dir/task" ]]; then
   echo "Error: Task binary not found or not executable at $task_bin_dir/task" >&2
   exit 1

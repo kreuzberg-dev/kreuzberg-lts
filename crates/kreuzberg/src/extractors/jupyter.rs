@@ -71,10 +71,8 @@ impl JupyterExtractor {
             }
 
             if let Some(language_info) = notebook_metadata.get("language_info") {
-                // Store the full language_info object
                 metadata.insert(Cow::Borrowed("language_info"), language_info.clone());
 
-                // Extract individual fields for convenience
                 if let Some(obj) = language_info.as_object() {
                     if let Some(name) = obj.get("name") {
                         metadata.insert(Cow::Borrowed("language_name"), name.clone());
@@ -96,7 +94,6 @@ impl JupyterExtractor {
             metadata.insert(Cow::Borrowed("nbformat_minor"), nbformat_minor.clone());
         }
 
-        // Count cells by type
         if let Some(cells) = notebook.get("cells").and_then(|c| c.as_array()) {
             metadata.insert(Cow::Borrowed("cell_count"), json!(cells.len()));
         }
@@ -149,7 +146,6 @@ impl JupyterExtractor {
             _ => {}
         }
 
-        // Separate cells with a blank line
         if !content.ends_with('\n') {
             content.push('\n');
         }
@@ -255,7 +251,6 @@ impl JupyterExtractor {
         plain_mode: bool,
     ) -> Result<()> {
         if let Some(data) = output.get("data").and_then(|d| d.as_object()) {
-            // Prefer text/plain first - it has the most readable tokens for quality scoring
             if let Some(plain) = data.get("text/plain") {
                 let text = Self::extract_source(plain);
                 if !text.is_empty() {
@@ -266,9 +261,6 @@ impl JupyterExtractor {
                 }
             }
 
-            // Also include markdown/HTML content — these often contain richer
-            // semantic information than text/plain (e.g. descriptive fallback text).
-            // Skip these for plain text output mode.
             if !plain_mode {
                 for mime_type in &["text/markdown", "text/html"] {
                     if let Some(mime_content) = data.get(*mime_type) {
@@ -283,7 +275,6 @@ impl JupyterExtractor {
                 }
             }
 
-            // For raster image types, extract actual base64-encoded image data
             for mime_type in &["image/png", "image/jpeg", "image/gif", "image/webp"] {
                 if let Some(image_value) = data.get(*mime_type) {
                     let base64_str = Self::extract_source(image_value);
@@ -316,12 +307,10 @@ impl JupyterExtractor {
                 }
             }
 
-            // Handle SVG as text (not a raster image for OCR)
             if data.contains_key("image/svg+xml") {
                 content.push_str("[Image: image/svg+xml]\n");
             }
 
-            // Include JSON output as structured data
             if let Some(json_content) = data.get("application/json")
                 && let Ok(formatted) = serde_json::to_string_pretty(json_content)
             {
@@ -348,58 +337,58 @@ impl JupyterExtractor {
         let mut i = 0;
 
         while i < len {
-            if i + 1 < len && bytes[i] == b'*' && bytes[i + 1] == b'*' {
-                // Bold: **...**
-                if let Some(end) = Self::find_closing(bytes, i + 2, b"**") {
-                    let inner = &text[i + 2..end];
-                    let start = out.len() as u32;
-                    out.push_str(inner);
-                    let ann_end = out.len() as u32;
-                    annotations.push(TextAnnotation {
-                        start,
-                        end: ann_end,
-                        kind: AnnotationKind::Bold,
-                    });
-                    i = end + 2;
-                    continue;
-                }
+            if i + 1 < len
+                && bytes[i] == b'*'
+                && bytes[i + 1] == b'*'
+                && let Some(end) = Self::find_closing(bytes, i + 2, b"**")
+            {
+                let inner = &text[i + 2..end];
+                let start = out.len() as u32;
+                out.push_str(inner);
+                let ann_end = out.len() as u32;
+                annotations.push(TextAnnotation {
+                    start,
+                    end: ann_end,
+                    kind: AnnotationKind::Bold,
+                });
+                i = end + 2;
+                continue;
             }
 
-            if bytes[i] == b'*' && (i == 0 || bytes[i - 1] != b'*') {
-                // Italic: *...*  (but not **)
-                if i + 1 < len
-                    && bytes[i + 1] != b'*'
-                    && let Some(end) = Self::find_closing_single_star(bytes, i + 1)
-                {
-                    let inner = &text[i + 1..end];
-                    let start = out.len() as u32;
-                    out.push_str(inner);
-                    let ann_end = out.len() as u32;
-                    annotations.push(TextAnnotation {
-                        start,
-                        end: ann_end,
-                        kind: AnnotationKind::Italic,
-                    });
-                    i = end + 1;
-                    continue;
-                }
+            if bytes[i] == b'*'
+                && (i == 0 || bytes[i - 1] != b'*')
+                && i + 1 < len
+                && bytes[i + 1] != b'*'
+                && let Some(end) = Self::find_closing_single_star(bytes, i + 1)
+            {
+                let inner = &text[i + 1..end];
+                let start = out.len() as u32;
+                out.push_str(inner);
+                let ann_end = out.len() as u32;
+                annotations.push(TextAnnotation {
+                    start,
+                    end: ann_end,
+                    kind: AnnotationKind::Italic,
+                });
+                i = end + 1;
+                continue;
             }
 
-            if bytes[i] == b'`' && (i + 1 >= len || bytes[i + 1] != b'`') {
-                // Inline code: `...`
-                if let Some(end) = Self::find_closing_byte(bytes, i + 1, b'`') {
-                    let inner = &text[i + 1..end];
-                    let start = out.len() as u32;
-                    out.push_str(inner);
-                    let ann_end = out.len() as u32;
-                    annotations.push(TextAnnotation {
-                        start,
-                        end: ann_end,
-                        kind: AnnotationKind::Code,
-                    });
-                    i = end + 1;
-                    continue;
-                }
+            if bytes[i] == b'`'
+                && (i + 1 >= len || bytes[i + 1] != b'`')
+                && let Some(end) = Self::find_closing_byte(bytes, i + 1, b'`')
+            {
+                let inner = &text[i + 1..end];
+                let start = out.len() as u32;
+                out.push_str(inner);
+                let ann_end = out.len() as u32;
+                annotations.push(TextAnnotation {
+                    start,
+                    end: ann_end,
+                    kind: AnnotationKind::Code,
+                });
+                i = end + 1;
+                continue;
             }
 
             out.push(bytes[i] as char);
@@ -510,7 +499,6 @@ impl JupyterExtractor {
             return None;
         }
         let rest = &trimmed[hashes..];
-        // ATX heading requires a space (or end-of-line) after the hashes
         if !rest.is_empty() && !rest.starts_with(' ') {
             return None;
         }
@@ -579,18 +567,14 @@ impl JupyterExtractor {
 
             match cell_type {
                 "markdown" => {
-                    // Extract markdown links as URIs
                     let link_uris = Self::extract_markdown_links(trimmed);
                     for uri in link_uris {
                         builder.push_uri(uri);
                     }
 
-                    // Parse line-by-line: headings become push_heading, other
-                    // lines are accumulated and flushed as paragraphs.
                     let mut para_buf = String::new();
                     for line in trimmed.lines() {
                         if let Some((level, heading_text)) = Self::parse_heading_line(line) {
-                            // Flush accumulated paragraph text first
                             let flushed = para_buf.trim();
                             if !flushed.is_empty() {
                                 let (stripped, annotations) = Self::scan_markdown_inline(flushed);
@@ -608,7 +592,6 @@ impl JupyterExtractor {
                             para_buf.push_str(line);
                         }
                     }
-                    // Flush remaining paragraph text
                     let flushed = para_buf.trim();
                     if !flushed.is_empty() {
                         let (stripped, annotations) = Self::scan_markdown_inline(flushed);
@@ -617,7 +600,6 @@ impl JupyterExtractor {
                 }
                 "code" => {
                     let idx = builder.push_code(trimmed, kernel_lang, None, None);
-                    // Store execution_count and tags as element attributes
                     let mut attrs = AHashMap::new();
                     if let Some(exec_count) = cell.get("execution_count") {
                         match exec_count {
@@ -643,7 +625,6 @@ impl JupyterExtractor {
                         builder.set_attributes(idx, attrs);
                     }
 
-                    // Emit cell outputs as paragraphs
                     if let Some(outputs) = cell.get("outputs").and_then(|o| o.as_array()) {
                         for output in outputs {
                             let output_text = Self::collect_output_text(output);
@@ -746,7 +727,6 @@ impl DocumentExtractor for JupyterExtractor {
             Self::extract_notebook(content, plain)?;
 
         let mut metadata_additional = AHashMap::new();
-        // Extract language name for the standard Metadata.language field
         let meta_language = additional_metadata
             .get(&Cow::Borrowed("language_name"))
             .and_then(|v| v.as_str().map(|s| s.to_string()));
@@ -756,7 +736,6 @@ impl DocumentExtractor for JupyterExtractor {
 
         let images = extracted_images;
 
-        // Build InternalDocument from already-parsed notebook (no re-parse)
         let mut doc = Self::build_internal_document(&notebook_json)
             .unwrap_or_else(|| InternalDocumentBuilder::new("jupyter").build());
         doc.mime_type = Cow::Owned(mime_type.to_string());
@@ -815,7 +794,6 @@ mod tests {
 
         let (_, metadata, _, _) = JupyterExtractor::extract_notebook(notebook_json.as_bytes(), false).unwrap();
 
-        // Check cells array metadata
         let cells = metadata.get(&Cow::Borrowed("cells"));
         assert!(cells.is_some(), "Should have cells metadata array");
         let cells_arr = cells.unwrap().as_array().expect("cells should be an array");
@@ -826,10 +804,8 @@ mod tests {
         assert_eq!(cell0["execution_count"], json!(5));
         assert_eq!(cell0["tags"], json!(["test-tag", "important"]));
 
-        // Check cell_count
         assert_eq!(metadata.get(&Cow::Borrowed("cell_count")), Some(&json!(1)));
 
-        // Check language_info fields
         assert_eq!(metadata.get(&Cow::Borrowed("language_name")), Some(&json!("python")));
         assert_eq!(metadata.get(&Cow::Borrowed("language_version")), Some(&json!("3.10.0")));
         assert_eq!(
@@ -837,7 +813,6 @@ mod tests {
             Some(&json!("text/x-python"))
         );
 
-        // Check nbformat_minor
         assert_eq!(metadata.get(&Cow::Borrowed("nbformat_minor")), Some(&json!(5)));
     }
 

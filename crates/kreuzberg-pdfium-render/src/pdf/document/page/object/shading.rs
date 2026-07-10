@@ -41,17 +41,11 @@ impl<'a> PdfPageShadingObject<'a> {
         "this [PdfPageShadingObject],"
     );
 
-    // The transform_impl() function required by the create_transform_setters!() macro
-    // is provided by the PdfPageObjectPrivate trait.
-
     create_transform_getters!(
         "this [PdfPageShadingObject]",
         "this [PdfPageShadingObject].",
         "this [PdfPageShadingObject],"
     );
-
-    // The get_matrix_impl() function required by the create_transform_getters!() macro
-    // is provided by the PdfPageObjectPrivate trait.
 }
 
 impl<'a> PdfPageObjectPrivate<'a> for PdfPageShadingObject<'a> {

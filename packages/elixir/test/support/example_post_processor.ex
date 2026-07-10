@@ -43,13 +43,11 @@ defmodule Kreuzberg.Test.ExamplePostProcessor do
 
   @impl true
   def initialize do
-    # No special initialization needed for this processor
     :ok
   end
 
   @impl true
   def shutdown do
-    # No cleanup needed for this processor
     :ok
   end
 
@@ -62,17 +60,13 @@ defmodule Kreuzberg.Test.ExamplePostProcessor do
     |> add_processor_metadata(config)
   end
 
-  # Private helpers
 
   defp normalize_content(result, _config) do
     content =
-      result.content
-      # Convert to lowercase
-      |> String.downcase()
-      # Trim leading/trailing whitespace
-      |> String.trim()
-      # Replace multiple spaces with single space
-      |> normalize_whitespace()
+    result.content
+    |> String.downcase()
+    |> String.trim()
+    |> normalize_whitespace()
 
     %{result | content: content}
   end
@@ -84,9 +78,9 @@ defmodule Kreuzberg.Test.ExamplePostProcessor do
   defp add_processor_metadata(result, config) do
     if Map.get(config, "add_processor_info", false) do
       metadata =
-        (result.metadata || %{})
-        |> Map.put("processed_by", "text_normalizer")
-        |> Map.put("processing_stage", "middle")
+      (result.metadata || %{})
+      |> Map.put("processed_by", "text_normalizer")
+      |> Map.put("processing_stage", "middle")
 
       %{result | metadata: metadata}
     else

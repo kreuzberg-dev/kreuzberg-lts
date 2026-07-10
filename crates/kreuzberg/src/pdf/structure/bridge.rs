@@ -22,7 +22,6 @@ use pdfium_render::prelude::*;
 use super::text_repair::{apply_ligature_repairs, build_ligature_repair_map, normalize_text_encoding};
 use super::types::PdfParagraph;
 
-// Alias to distinguish from our local PdfParagraph type.
 use pdfium_render::prelude::PdfParagraph as PdfiumParagraph;
 
 /// Position and metadata of an image detected during object-based extraction.
@@ -49,14 +48,12 @@ pub(super) fn filter_sidebar_blocks(blocks: &[ExtractedBlock], page_width: f32) 
     let left_cutoff = page_width * 0.08;
     let right_cutoff = page_width * 0.92;
 
-    // Count short-text blocks in margins
     let sidebar_count = count_sidebar_blocks(blocks, left_cutoff, right_cutoff);
 
     if sidebar_count < 3 {
         return Cow::Borrowed(blocks);
     }
 
-    // Filter them out
     Cow::Owned(filter_blocks_recursive(blocks, left_cutoff, right_cutoff))
 }
 
@@ -80,7 +77,6 @@ fn is_sidebar_block(block: &ExtractedBlock, left_cutoff: f32, right_cutoff: f32)
     if let Some(bounds) = &block.bounds {
         let left = bounds.left().value;
         let right = bounds.right().value;
-        // Block is entirely within left or right margin
         right < left_cutoff || left > right_cutoff
     } else {
         false
@@ -142,11 +138,6 @@ pub(super) fn blocks_to_paragraphs(
 
     let gap_info = super::classify::precompute_gap_info(heading_map);
 
-    // Group consecutive lines into paragraphs. A new paragraph starts when:
-    // - Line's baseline_y crosses a segment gap position (from pdfium segment analysis)
-    // - Font size changes significantly (>1.5pt)
-    // - Bold changes
-    // - Line starts with a list marker
     let mut paragraphs: Vec<PdfParagraph> = Vec::new();
     let mut current_lines: Vec<&SegmentData> = Vec::new();
 
@@ -158,10 +149,7 @@ pub(super) fn blocks_to_paragraphs(
             let font_change = (line.font_size - prev.font_size).abs() > 1.5;
             let bold_change = line.is_bold != prev.is_bold;
             let is_list = looks_like_list_item(&line.text);
-            // Segment gap: a paragraph break exists between prev and current
-            // if a gap_y falls between their baselines.
             let crossed_gap = paragraph_gap_ys.iter().any(|&gap_y| {
-                // prev is above current in PDF coords (prev.baseline_y > line.baseline_y)
                 let (upper, lower) = if prev.baseline_y > line.baseline_y {
                     (prev.baseline_y, line.baseline_y)
                 } else {
@@ -181,7 +169,6 @@ pub(super) fn blocks_to_paragraphs(
         current_lines.push(line);
     }
 
-    // Finalize last paragraph.
     if !current_lines.is_empty()
         && let Some(para) = finalize_paragraph(&current_lines, heading_map, &gap_info)
     {
@@ -209,10 +196,8 @@ fn finalize_paragraph(
         return None;
     }
 
-    // Join line texts with newlines (preserving full_text content exactly).
     let text: String = lines.iter().map(|l| l.text.as_str()).collect::<Vec<_>>().join("\n");
 
-    // Convert embedded HTML to markdown if detected (e.g., PDFs with HTML in text layer).
     #[cfg(feature = "html")]
     let text = if crate::pdf::text::contains_html_markup(&text) {
         crate::pdf::text::convert_html_page_text(&text)
@@ -229,9 +214,6 @@ fn finalize_paragraph(
     let word_count = trimmed.split_whitespace().count();
     let is_bold = lines.iter().filter(|l| l.is_bold).count() > lines.len() / 2;
 
-    // When segments carry pre-assigned heading roles from the PDF structure tree,
-    // use those directly — the tree is the author's stated intent and overrides
-    // all heuristic detection. The majority role among lines wins.
     let structure_tree_role = {
         let role_counts: std::collections::HashMap<u8, usize> =
             lines
@@ -271,19 +253,11 @@ fn finalize_paragraph(
         });
     }
 
-    // Conservative heading detection.
-    // Pass 1: font-size-based — significantly larger font than body.
     let mut heading_level = super::classify::find_heading_level(first.font_size, heading_map, gap_info);
     if heading_level.is_some() && (word_count > 20 || super::layout_classify::is_separator_text(trimmed)) {
         heading_level = None;
     }
 
-    // Pass 2: bold-at-body-size → H2. Very conservative — only when we have
-    // strong evidence this is a heading, not just bold emphasis:
-    // - Must be bold + single line + short (≤8 words)
-    // - Must NOT end with period, colon, comma, semicolon (sentence fragments)
-    // - Must NOT contain common body-text signals (@, parentheses, commas)
-    // - Must start with uppercase letter or digit (section numbering)
     if heading_level.is_none()
         && is_bold
         && (1..=8).contains(&word_count)
@@ -305,13 +279,6 @@ fn finalize_paragraph(
         heading_level = Some(2);
     }
 
-    // Pass 3: font-size-above-body detection for short paragraphs.
-    // Catches section headings whose font size is meaningfully larger than body
-    // but was merged into the body cluster by k-means (e.g., 12pt headings vs
-    // 10pt body in LaTeX documents). Since we don't have bold confirmation,
-    // require stronger evidence: text must match a section heading pattern
-    // (starts with section number like "3.1 Methods" or is a known structural
-    // heading word like "References", "Appendix").
     if heading_level.is_none() {
         let body_font_size = heading_map
             .iter()
@@ -339,11 +306,6 @@ fn finalize_paragraph(
     let is_code_block =
         heading_level.is_none() && !is_list_item && lines.iter().all(|l| l.is_monospace) && lines.len() >= 2;
 
-    // Page furniture detection: mark standalone page numbers as furniture.
-    // These are short text fragments that match common page number patterns
-    // (e.g., "1", "Page 3 of 10", "- 5 -", Roman numerals). Cross-page
-    // repeating text detection (in classify.rs) handles running headers
-    // and footers; this catches page numbers which vary per page.
     let is_page_furniture = heading_level.is_none()
         && !is_list_item
         && !is_code_block
@@ -375,7 +337,6 @@ fn finalize_paragraph(
         layout_class: None,
         caption_for: None,
         block_bbox: Some({
-            // Union of all lines' bboxes for precise paragraph bounds.
             let left = lines.iter().map(|l| l.x).fold(f32::MAX, f32::min);
             let bottom = lines.iter().map(|l| l.baseline_y).fold(f32::MAX, f32::min);
             let right = lines.iter().map(|l| l.x + l.width).fold(f32::MIN, f32::max);
@@ -389,7 +350,6 @@ fn finalize_paragraph(
 fn looks_like_list_item(text: &str) -> bool {
     let t = text.trim_start();
 
-    // Bullet characters — high confidence markers
     if t.starts_with('•')
         || t.starts_with('·')
         || t.starts_with('◦')
@@ -400,16 +360,12 @@ fn looks_like_list_item(text: &str) -> bool {
         return true;
     }
 
-    // Hyphen-dash list: only if followed by space + alphabetic word.
-    // Rejects "- 1145/3620665..." (bibliography) and "- 1 PDF backends" (subsection).
     if let Some(rest) = t.strip_prefix("- ") {
         return rest.chars().next().is_some_and(|c| c.is_alphabetic());
     }
 
-    // Numbered / lettered patterns: "1.", "2)", "a.", "a)", "i.", "(1)", "(a)"
     let mut chars = t.chars().peekable();
 
-    // Parenthesized: "(1)" or "(a)" — require closing paren + space + word
     if chars.peek() == Some(&'(') {
         chars.next();
         if chars.peek().is_some_and(|c| c.is_alphanumeric()) {
@@ -419,7 +375,6 @@ fn looks_like_list_item(text: &str) -> bool {
             }
             if chars.peek() == Some(&')') {
                 chars.next();
-                // Must be followed by space then an alphabetic character
                 return chars.peek() == Some(&' ') && {
                     chars.next();
                     chars.peek().is_some_and(|c| c.is_alphabetic())
@@ -429,8 +384,6 @@ fn looks_like_list_item(text: &str) -> bool {
         return false;
     }
 
-    // "1." / "1)" / "a." / "a)" etc.
-    // Exclude section heading patterns: "I. INTRODUCTION", "II. BASICS" etc.
     if super::classify::is_section_pattern(t) {
         return false;
     }
@@ -489,16 +442,13 @@ fn is_page_number_pattern(text: &str) -> bool {
     if t.is_empty() {
         return false;
     }
-    // Standalone number: "1", "42", "103"
     if t.chars().all(|c| c.is_ascii_digit()) && t.len() <= 4 {
         return true;
     }
-    // "Page X" or "Page X of Y" (case-insensitive)
     let lower = t.to_lowercase();
     if lower.starts_with("page ") {
         return true;
     }
-    // "- X -" or "– X –" (centered page numbers with dashes)
     if (t.starts_with("- ") || t.starts_with("– ")) && (t.ends_with(" -") || t.ends_with(" –")) {
         let inner = t
             .trim_start_matches("- ")
@@ -510,7 +460,6 @@ fn is_page_number_pattern(text: &str) -> bool {
             return true;
         }
     }
-    // Roman numerals: "i", "ii", "iii", "iv", "v", "vi", "vii", "viii", "ix", "x", "xi", "xii"
     if t.len() <= 5 && t.chars().all(|c| matches!(c, 'i' | 'v' | 'x' | 'I' | 'V' | 'X')) {
         return true;
     }
@@ -534,14 +483,11 @@ pub(super) fn objects_to_page_data(
 ) -> (Vec<SegmentData>, Vec<ImagePosition>, Vec<f32>) {
     let objects: Vec<PdfPageObject> = page.objects().iter().collect();
 
-    // Image scan BEFORE text extraction.
     let mut images = Vec::new();
     let mut page_image_count = 0u32;
     for obj in &objects {
         if obj.as_image_object().is_some() {
             if max_images_per_page.is_some_and(|cap| page_image_count >= cap) {
-                // Still advance the global offset so indices stay consistent
-                // with what populate_images_from_pdfium will see.
                 *image_offset += 1;
                 page_image_count += 1;
                 continue;
@@ -566,13 +512,10 @@ pub(super) fn objects_to_page_data(
         );
     }
 
-    // Primary extraction: full-text blocks with char-indexed font metadata.
     if let Some((segments, _full_text, gap_ys)) = extract_page_blocks(page) {
         return (segments, images, gap_ys);
     }
 
-    // Last resort: page objects API with column detection.
-    // Used when page.text() fails entirely (rare edge case).
     let mut segments = Vec::new();
     let column_groups = super::columns::split_objects_into_columns(&objects);
     let column_vecs = partition_objects_by_columns(objects, &column_groups);
@@ -581,7 +524,6 @@ pub(super) fn objects_to_page_data(
         extract_paragraphs_to_segments(paragraphs, &mut segments);
     }
 
-    // Apply ligature repair for last-resort path.
     if let Some(repair_map) = build_ligature_repair_map(page) {
         for seg in &mut segments {
             if let Cow::Owned(s) = apply_ligature_repairs(&seg.text, &repair_map) {
@@ -592,8 +534,6 @@ pub(super) fn objects_to_page_data(
 
     (segments, images, Vec::new())
 }
-
-// ── Full-text block extraction ──
 
 /// Full-text block extraction from a PDF page.
 ///
@@ -618,7 +558,6 @@ struct CharFontInfo {
 fn extract_page_blocks(page: &PdfPage) -> Option<(Vec<SegmentData>, String, Vec<f32>)> {
     let text_api = page.text().ok()?;
     let full_text = text_api.all();
-    // Convert embedded HTML to markdown if detected (PDFs with HTML in text layer).
     #[cfg(feature = "html")]
     let full_text = if crate::pdf::text::contains_html_markup(&full_text) {
         crate::pdf::text::convert_html_page_text(&full_text)
@@ -629,9 +568,6 @@ fn extract_page_blocks(page: &PdfPage) -> Option<(Vec<SegmentData>, String, Vec<
         return None;
     }
 
-    // Collect segment bounding boxes (cheap: 1 FFI per segment, bounds cached).
-    // Compute paragraph gap y-positions: where consecutive segments have a large
-    // vertical gap (>1.5x average segment height), that's a paragraph boundary.
     let pdfium_segments = text_api.segments();
     let seg_count = pdfium_segments.len();
     let mut segment_bboxes: Vec<(f32, f32, f32, f32)> = Vec::with_capacity(seg_count);
@@ -642,10 +578,6 @@ fn extract_page_blocks(page: &PdfPage) -> Option<(Vec<SegmentData>, String, Vec<
         }
     }
 
-    // Find paragraph gap positions from segment boundaries.
-    // A gap between segment[i].bottom and segment[i+1].top that exceeds
-    // 1.5x the average segment height indicates a paragraph break.
-    // Store the y-coordinate of each gap midpoint.
     let avg_seg_height: f32 = if segment_bboxes.len() > 1 {
         segment_bboxes.iter().map(|(_, b, _, t)| (t - b).abs()).sum::<f32>() / segment_bboxes.len() as f32
     } else {
@@ -656,9 +588,8 @@ fn extract_page_blocks(page: &PdfPage) -> Option<(Vec<SegmentData>, String, Vec<
     for i in 1..segment_bboxes.len() {
         let prev_bottom = segment_bboxes[i - 1].1;
         let curr_top = segment_bboxes[i].3;
-        let gap = prev_bottom - curr_top; // PDF coords: prev is higher, so prev_bottom > curr_top
+        let gap = prev_bottom - curr_top;
         if gap > gap_threshold {
-            // Midpoint of the gap in PDF y-coordinates
             paragraph_gap_ys.push((prev_bottom + curr_top) / 2.0);
         }
     }
@@ -670,17 +601,11 @@ fn extract_page_blocks(page: &PdfPage) -> Option<(Vec<SegmentData>, String, Vec<
         "segment-based paragraph gap detection"
     );
 
-    // Build per-char font/position map from the char-indexed API.
-    // These are in pdfium's internal order (may differ from full_text reading order).
-    // We sort them into reading order to align 1:1 with full_text's non-ws chars.
     let all_chars = text_api.chars();
     if all_chars.is_empty() {
         return None;
     }
 
-    // Scan page objects for /Artifact content marks (PDF spec tagged content).
-    // Build a set of artifact marked-content-IDs (MCIDs) for O(1) char lookup.
-    // Watermark artifacts → exclude from text. Other artifacts → tag as furniture.
     let mut watermark_mcids: ahash::AHashSet<i32> = ahash::AHashSet::new();
     let mut artifact_mcids: ahash::AHashSet<i32> = ahash::AHashSet::new();
     for obj in page.objects().iter() {
@@ -697,14 +622,10 @@ fn extract_page_blocks(page: &PdfPage) -> Option<(Vec<SegmentData>, String, Vec<
             }
         }
     }
-    // For objects without MCIDs, fall back to per-char text_object check.
-    // This handles untagged PDFs where artifacts have marks but no MCID.
     let mut watermark_char_indices: ahash::AHashSet<usize> = ahash::AHashSet::new();
     let mut artifact_char_indices: ahash::AHashSet<usize> = ahash::AHashSet::new();
     let has_mcid_artifacts = !watermark_mcids.is_empty() || !artifact_mcids.is_empty();
     if !has_mcid_artifacts {
-        // No MCID-based artifacts found — try per-char text_object check.
-        // Cache: skip if previous char had same text_object (consecutive chars share objects).
         let mut prev_mcid: i32 = -999;
         let mut prev_is_watermark = false;
         let mut prev_is_artifact = false;
@@ -752,7 +673,6 @@ fn extract_page_blocks(page: &PdfPage) -> Option<(Vec<SegmentData>, String, Vec<
         if ch.unicode_char().is_none_or(|c| c.is_whitespace()) {
             continue;
         }
-        // Skip watermark characters — check MCID-based or char-index-based sets.
         if !watermark_char_indices.is_empty() && watermark_char_indices.contains(&char_idx) {
             continue;
         }
@@ -785,13 +705,8 @@ fn extract_page_blocks(page: &PdfPage) -> Option<(Vec<SegmentData>, String, Vec<
         });
     }
 
-    // Sort char_infos into reading order (top-to-bottom, left-to-right)
-    // using line bucketing to handle baseline variation within a line.
     sort_chars_reading_order(&mut char_infos);
 
-    // Walk full_text LINE BY LINE (\n-separated) and char_infos in parallel.
-    // Each non-ws char in full_text gets the next CharFontInfo (reading order aligned).
-    // One SegmentData per text line, with font properties from char API.
     let mut info_idx = 0usize;
     let mut segments: Vec<SegmentData> = Vec::new();
 
@@ -801,7 +716,6 @@ fn extract_page_blocks(page: &PdfPage) -> Option<(Vec<SegmentData>, String, Vec<
             continue;
         }
 
-        // Aggregate font properties for this line's non-ws chars.
         let mut font_sizes: Vec<f32> = Vec::new();
         let mut bold_count = 0usize;
         let mut italic_count = 0usize;
@@ -842,7 +756,6 @@ fn extract_page_blocks(page: &PdfPage) -> Option<(Vec<SegmentData>, String, Vec<
         let dominant_fs = most_frequent_font_size(&font_sizes);
         let half = char_count / 2;
 
-        // Find the segment bbox that best covers this line (by baseline_y overlap).
         let (seg_x, seg_w, seg_h) = segment_bboxes
             .iter()
             .find(|(_, bottom, _, top)| first_baseline_y >= *bottom && first_baseline_y <= *top)
@@ -887,8 +800,7 @@ fn sort_chars_reading_order(infos: &mut Vec<CharFontInfo>) {
         return;
     }
 
-    // Assign each char to a line bucket.
-    let mut line_y_sums: Vec<(f64, f64)> = Vec::new(); // (y_sum, count)
+    let mut line_y_sums: Vec<(f64, f64)> = Vec::new();
     let mut line_ids: Vec<usize> = vec![0; infos.len()];
 
     for (i, info) in infos.iter().enumerate() {
@@ -910,7 +822,6 @@ fn sort_chars_reading_order(infos: &mut Vec<CharFontInfo>) {
         }
     }
 
-    // Sort lines by average Y descending (PDF coords: higher Y = higher on page).
     let mut line_order: Vec<(usize, f32)> = line_y_sums
         .iter()
         .enumerate()
@@ -923,7 +834,6 @@ fn sort_chars_reading_order(infos: &mut Vec<CharFontInfo>) {
         line_rank[*old_id] = rank;
     }
 
-    // Build sort indices: by line rank, then by X within line.
     let mut indices: Vec<usize> = (0..infos.len()).collect();
     indices.sort_by(|&a, &b| {
         line_rank[line_ids[a]]
@@ -931,7 +841,6 @@ fn sort_chars_reading_order(infos: &mut Vec<CharFontInfo>) {
             .then_with(|| infos[a].x.partial_cmp(&infos[b].x).unwrap_or(std::cmp::Ordering::Equal))
     });
 
-    // Reorder in-place.
     let sorted: Vec<CharFontInfo> = indices
         .into_iter()
         .map(|i| CharFontInfo {
@@ -952,9 +861,9 @@ fn most_frequent_font_size(sizes: &[f32]) -> f32 {
     if sizes.is_empty() {
         return 12.0;
     }
-    let mut counts: Vec<(i32, usize)> = Vec::new(); // (quantized_key, count)
+    let mut counts: Vec<(i32, usize)> = Vec::new();
     for &s in sizes {
-        let key = (s * 2.0).round() as i32; // 0.5pt bins
+        let key = (s * 2.0).round() as i32;
         if let Some(entry) = counts.iter_mut().find(|(k, _)| *k == key) {
             entry.1 += 1;
         } else {
@@ -1073,7 +982,6 @@ mod tests {
 
     #[test]
     fn test_heading_block() {
-        // Heading must have meaningfully larger font than body for validation to pass
         let blocks = vec![
             make_block_with_font(ContentRole::Heading { level: 2 }, "Section Title", 18.0),
             make_block_with_font(ContentRole::Paragraph, "Body text line one", 12.0),
@@ -1087,8 +995,6 @@ mod tests {
 
     #[test]
     fn test_heading_trusted_from_structure_tree() {
-        // Structure tree heading tags are trusted (author-intent metadata),
-        // even when font size matches body text.
         let blocks = vec![
             make_block(ContentRole::Heading { level: 3 }, "Not really a heading"),
             make_block(ContentRole::Paragraph, "Body text"),
@@ -1096,7 +1002,7 @@ mod tests {
         ];
         let paragraphs = extracted_blocks_to_paragraphs(&blocks);
         assert_eq!(paragraphs.len(), 3);
-        assert_eq!(paragraphs[0].heading_level, Some(3)); // Trusted from structure tree
+        assert_eq!(paragraphs[0].heading_level, Some(3));
     }
 
     #[test]
@@ -1125,7 +1031,6 @@ mod tests {
         let paragraphs = extracted_blocks_to_paragraphs(&blocks);
         assert_eq!(paragraphs.len(), 1);
         assert!(paragraphs[0].is_list_item);
-        // Check that the label is prepended
         let first_seg_text = &paragraphs[0].lines[0].segments[0].text;
         assert_eq!(first_seg_text, "1.");
     }
@@ -1162,8 +1067,6 @@ mod tests {
         let paragraphs = extracted_blocks_to_paragraphs(&blocks);
         assert_eq!(paragraphs.len(), 2);
     }
-
-    // ── is_page_number_pattern tests ──
 
     #[test]
     fn test_page_number_standalone_digit() {
@@ -1204,8 +1107,6 @@ mod tests {
         assert!(!is_page_number_pattern(""));
     }
 
-    // ── is_structural_heading_word tests ──
-
     #[test]
     fn test_structural_heading_words() {
         assert!(is_structural_heading_word("Abstract"));
@@ -1221,11 +1122,8 @@ mod tests {
         assert!(!is_structural_heading_word(""));
     }
 
-    // ── blocks_to_paragraphs heading detection tests ──
-
     #[test]
     fn test_bold_heading_detection_pass2() {
-        // Bold short paragraph at body font size should become H2
         let heading_map = vec![(17.0, Some(1)), (10.0, None)];
         let lines = vec![
             SegmentData {
@@ -1267,7 +1165,6 @@ mod tests {
 
     #[test]
     fn test_font_size_above_body_heading_detection_pass3() {
-        // Non-bold paragraph at 12pt with section number, body at 10pt → H2
         let heading_map = vec![(17.0, Some(1)), (10.0, None)];
         let lines = vec![
             SegmentData {
@@ -1309,7 +1206,6 @@ mod tests {
 
     #[test]
     fn test_pass3_no_false_positive_without_section_pattern() {
-        // Non-bold paragraph at 12pt WITHOUT section number → not heading
         let heading_map = vec![(17.0, Some(1)), (10.0, None)];
         let lines = vec![
             SegmentData {
@@ -1345,7 +1241,6 @@ mod tests {
 
     #[test]
     fn test_page_furniture_standalone_number() {
-        // Standalone page number should be marked as furniture
         let heading_map = vec![(10.0, None)];
         let lines = vec![SegmentData {
             text: "42".to_string(),

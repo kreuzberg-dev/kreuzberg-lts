@@ -17,8 +17,6 @@ pub mod theme;
 use crate::error::Result;
 use crate::types::PageBoundary;
 
-// --- DOCX Constants ---
-
 /// Maximum uncompressed size per file in a DOCX archive (100 MB).
 pub const MAX_UNCOMPRESSED_FILE_SIZE: u64 = 100 * 1024 * 1024;
 /// Maximum number of entries in a DOCX ZIP archive.
@@ -60,7 +58,6 @@ pub fn extract_text(bytes: &[u8]) -> Result<String> {
 /// Performs two passes: one with docx-lite for text extraction and one for page break detection.
 pub fn extract_text_with_page_breaks(bytes: &[u8]) -> Result<(String, Option<Vec<PageBoundary>>)> {
     let doc = parser::parse_document(bytes)?;
-    // Default to markdown as requested by typical extraction config
     let (text, boundaries) = doc.extract_text_with_boundaries(true);
 
     if boundaries.is_empty() {
@@ -112,9 +109,6 @@ pub fn detect_table_page_numbers(bytes: &[u8]) -> Result<Vec<usize>> {
     Ok(doc.table_page_numbers())
 }
 
-// detect_page_breaks and map_page_breaks_to_boundaries are removed as their logic
-// is now integrated into the DocxParser and parser::Document struct.
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -162,10 +156,6 @@ mod tests {
 
     #[test]
     fn test_extract_text_with_page_breaks_accurate_boundaries() {
-        // Page 1: Very long text
-        // Page 2: Very short text
-        // The old heuristic split in half.
-        // The new logic should split exactly at the \f boundary.
         let body = r#"
 <w:p><w:r><w:t>This is page one. It has a lot of text to ensure we don't just split in half.</w:t></w:r></w:p>
 <w:p><w:r><w:br w:type="page"/></w:r></w:p>
@@ -186,7 +176,6 @@ mod tests {
         assert_eq!(p2_content.trim(), "Short");
         assert!(!p1_content.contains("Short"));
 
-        // Verify \f is at the expected position (between boundaries)
         assert_eq!(text.as_bytes()[boundaries[0].byte_end], b'\x0c');
     }
 
@@ -258,14 +247,12 @@ mod tests {
 <w:p><w:r><w:t>Still page 1</w:t></w:r></w:p>
 "#;
         let docx = build_test_docx(body);
-        // No page breaks should be detected since the break is inside a table cell
         let result = extract_text_with_page_breaks(&docx).unwrap();
         assert!(
             result.1.is_none(),
             "Page break inside table cell should not create page boundaries"
         );
 
-        // The table should be on page 1
         let table_pages = detect_table_page_numbers(&docx).unwrap();
         assert_eq!(table_pages, vec![1]);
     }

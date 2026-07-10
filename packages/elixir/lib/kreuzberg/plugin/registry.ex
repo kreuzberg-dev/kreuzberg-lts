@@ -32,7 +32,6 @@ defmodule Kreuzberg.Plugin.Registry do
   use GenServer
   require Logger
 
-  # Client API
 
   @doc """
   Start the registry GenServer.
@@ -49,7 +48,6 @@ defmodule Kreuzberg.Plugin.Registry do
     GenServer.start_link(__MODULE__, [], opts)
   end
 
-  # Post-Processor API
 
   @doc """
   Register a post-processor plugin.
@@ -72,48 +70,47 @@ defmodule Kreuzberg.Plugin.Registry do
       Kreuzberg.Plugin.Registry.register_post_processor(MyProcessor, %{enabled: true}, :pre)
   """
   @spec register_post_processor(
-          atom() | module(),
-          map() | module() | nil,
-          atom() | nil,
-          GenServer.server() | nil
-        ) ::
-          :ok | {:error, String.t()}
+  atom() | module(),
+  map() | module() | nil,
+  atom() | nil,
+  GenServer.server() | nil
+  ) ::
+  :ok | {:error, String.t()}
   def register_post_processor(
-        name_or_module,
-        config_or_module \\ nil,
-        stage \\ nil,
-        server \\ nil
-      ) do
+  name_or_module,
+  config_or_module \\ nil,
+  stage \\ nil,
+  server \\ nil
+  ) do
     server = server || __MODULE__
 
     {:ok, name, module, config, stage} =
-      parse_post_processor_params(name_or_module, config_or_module, stage)
+    parse_post_processor_params(name_or_module, config_or_module, stage)
 
     with :ok <- validate_module(module) do
-      # Extract metadata from module if available
       module_name =
-        if function_exported?(module, :name, 0),
-          do: module.name(),
-          else: module_to_name(module)
+      if function_exported?(module, :name, 0),
+      do: module.name(),
+      else: module_to_name(module)
 
       module_version =
-        if function_exported?(module, :version, 0), do: module.version(), else: "1.0.0"
+      if function_exported?(module, :version, 0), do: module.version(), else: "1.0.0"
 
       module_stage =
-        if function_exported?(module, :processing_stage, 0),
-          do: module.processing_stage(),
-          else: stage
+      if function_exported?(module, :processing_stage, 0),
+      do: module.processing_stage(),
+      else: stage
 
       GenServer.call(server, {
-        :register_post_processor,
-        name,
-        %{
-          module: module,
-          config: config,
-          stage: module_stage,
-          name: module_name,
-          version: module_version
-        }
+      :register_post_processor,
+      name,
+      %{
+      module: module,
+      config: config,
+      stage: module_stage,
+      name: module_name,
+      version: module_version
+      }
       })
     end
   end
@@ -228,13 +225,12 @@ defmodule Kreuzberg.Plugin.Registry do
       {:ok, metadata} = Kreuzberg.Plugin.Registry.get_post_processor(:my_processor)
   """
   @spec get_post_processor(atom() | String.t(), GenServer.server() | nil) ::
-          {:ok, map()} | {:error, String.t()}
+  {:ok, map()} | {:error, String.t()}
   def get_post_processor(name, server \\ nil) do
     server = server || __MODULE__
     GenServer.call(server, {:get_post_processor, normalize_name(name)})
   end
 
-  # Validator API
 
   @doc """
   Register a validator plugin.
@@ -257,28 +253,27 @@ defmodule Kreuzberg.Plugin.Registry do
       Kreuzberg.Plugin.Registry.register_validator(MyValidator, priority: 10)
   """
   @spec register_validator(module(), keyword() | nil, GenServer.server() | nil) ::
-          :ok | {:error, String.t()}
+  :ok | {:error, String.t()}
   def register_validator(module, opts \\ nil, server \\ nil) do
     server = server || __MODULE__
     opts = opts || []
 
     with :ok <- validate_module(module) do
-      # Extract metadata from module if available
       module_name =
-        if function_exported?(module, :name, 0), do: module.name(), else: module_to_name(module)
+      if function_exported?(module, :name, 0), do: module.name(), else: module_to_name(module)
 
       module_version =
-        if function_exported?(module, :version, 0), do: module.version(), else: "1.0.0"
+      if function_exported?(module, :version, 0), do: module.version(), else: "1.0.0"
 
       module_priority =
-        if function_exported?(module, :priority, 0),
-          do: module.priority(),
-          else: Keyword.get(opts, :priority, 0)
+      if function_exported?(module, :priority, 0),
+      do: module.priority(),
+      else: Keyword.get(opts, :priority, 0)
 
       GenServer.call(server, {
-        :register_validator,
-        module_name,
-        %{module: module, priority: module_priority, name: module_name, version: module_version}
+      :register_validator,
+      module_name,
+      %{module: module, priority: module_priority, name: module_name, version: module_version}
       })
     end
   end
@@ -397,13 +392,12 @@ defmodule Kreuzberg.Plugin.Registry do
       {:ok, metadata} = Kreuzberg.Plugin.Registry.get_validator(:my_validator)
   """
   @spec get_validator(atom() | String.t(), GenServer.server() | nil) ::
-          {:ok, map()} | {:error, String.t()}
+  {:ok, map()} | {:error, String.t()}
   def get_validator(name, server \\ nil) do
     server = server || __MODULE__
     GenServer.call(server, {:get_validator, normalize_name(name)})
   end
 
-  # OCR Backend API
 
   @doc """
   Register an OCR backend plugin.
@@ -426,28 +420,27 @@ defmodule Kreuzberg.Plugin.Registry do
       Kreuzberg.Plugin.Registry.register_ocr_backend(MyOCR, languages: ["en", "de", "fr"])
   """
   @spec register_ocr_backend(module(), keyword() | nil, GenServer.server() | nil) ::
-          :ok | {:error, String.t()}
+  :ok | {:error, String.t()}
   def register_ocr_backend(module, opts \\ nil, server \\ nil) do
     server = server || __MODULE__
     opts = opts || []
 
     with :ok <- validate_module(module) do
-      # Extract metadata from module if available
       module_name =
-        if function_exported?(module, :name, 0), do: module.name(), else: module_to_name(module)
+      if function_exported?(module, :name, 0), do: module.name(), else: module_to_name(module)
 
       module_version =
-        if function_exported?(module, :version, 0), do: module.version(), else: "1.0.0"
+      if function_exported?(module, :version, 0), do: module.version(), else: "1.0.0"
 
       module_languages =
-        if function_exported?(module, :supported_languages, 0),
-          do: module.supported_languages(),
-          else: Keyword.get(opts, :languages, [])
+      if function_exported?(module, :supported_languages, 0),
+      do: module.supported_languages(),
+      else: Keyword.get(opts, :languages, [])
 
       GenServer.call(server, {
-        :register_ocr_backend,
-        module_name,
-        %{module: module, languages: module_languages, name: module_name, version: module_version}
+      :register_ocr_backend,
+      module_name,
+      %{module: module, languages: module_languages, name: module_name, version: module_version}
       })
     end
   end
@@ -562,22 +555,21 @@ defmodule Kreuzberg.Plugin.Registry do
       {:ok, metadata} = Kreuzberg.Plugin.Registry.get_ocr_backend(:my_ocr)
   """
   @spec get_ocr_backend(atom() | String.t(), GenServer.server() | nil) ::
-          {:ok, map()} | {:error, String.t()}
+  {:ok, map()} | {:error, String.t()}
   def get_ocr_backend(name, server \\ nil) do
     server = server || __MODULE__
     GenServer.call(server, {:get_ocr_backend, normalize_name(name)})
   end
 
-  # GenServer Callbacks
 
   @doc false
   @impl GenServer
   def init(_opts) do
     state = %{
-      post_processors: %{},
-      validators: %{},
-      sorted_validators: [],
-      ocr_backends: %{}
+    post_processors: %{},
+    validators: %{},
+    sorted_validators: [],
+    ocr_backends: %{}
     }
 
     Logger.debug("Initialized Kreuzberg.Plugin.Registry with empty state")
@@ -587,10 +579,10 @@ defmodule Kreuzberg.Plugin.Registry do
   @doc false
   @impl GenServer
   def handle_call(
-        {:register_post_processor, name, metadata},
-        _from,
-        state
-      ) do
+  {:register_post_processor, name, metadata},
+  _from,
+  state
+  ) do
     if Map.has_key?(state.post_processors, name) do
       {:reply, {:error, "Post-processor '#{inspect(name)}' is already registered"}, state}
     else
@@ -601,10 +593,10 @@ defmodule Kreuzberg.Plugin.Registry do
   end
 
   def handle_call(
-        {:unregister_post_processor, name},
-        _from,
-        state
-      ) do
+  {:unregister_post_processor, name},
+  _from,
+  state
+  ) do
     new_state = update_in(state, [:post_processors], &Map.delete(&1, name))
     Logger.debug("Unregistered post-processor: #{inspect(name)}")
     {:reply, :ok, new_state}
@@ -621,15 +613,14 @@ defmodule Kreuzberg.Plugin.Registry do
   end
 
   def handle_call({:get_post_processors_by_stage, stage}, _from, state) do
-    # OPTIMIZATION 2: Single-pass reduce instead of filter+into (15-20% gain)
     processors =
-      Enum.reduce(state.post_processors, %{}, fn
-        {name, metadata}, acc when metadata.stage == stage ->
-          Map.put(acc, name, metadata)
+    Enum.reduce(state.post_processors, %{}, fn
+      {name, metadata}, acc when metadata.stage == stage ->
+      Map.put(acc, name, metadata)
 
-        _, acc ->
-          acc
-      end)
+      _, acc ->
+      acc
+    end)
 
     {:reply, processors, state}
   end
@@ -642,16 +633,15 @@ defmodule Kreuzberg.Plugin.Registry do
   end
 
   def handle_call(
-        {:register_validator, name, metadata},
-        _from,
-        state
-      ) do
+  {:register_validator, name, metadata},
+  _from,
+  state
+  ) do
     if Map.has_key?(state.validators, name) do
       {:reply, {:error, "Validator '#{inspect(name)}' is already registered"}, state}
     else
-      # OPTIMIZATION 1: Cache sorted validators on registration (30%+ gain if accessed frequently)
       new_validators = Map.put(state.validators, name, metadata)
-      sorted = Enum.sort_by(new_validators, fn {_n, m} -> m.priority end, :desc)
+    sorted = Enum.sort_by(new_validators, fn {_n, m} -> m.priority end, :desc)
       new_state = %{state | validators: new_validators, sorted_validators: sorted}
       Logger.debug("Registered validator: #{inspect(name)}")
       {:reply, :ok, new_state}
@@ -659,13 +649,12 @@ defmodule Kreuzberg.Plugin.Registry do
   end
 
   def handle_call(
-        {:unregister_validator, name},
-        _from,
-        state
-      ) do
-    # OPTIMIZATION 1: Update sorted cache on unregistration
+  {:unregister_validator, name},
+  _from,
+  state
+  ) do
     new_validators = Map.delete(state.validators, name)
-    sorted = Enum.sort_by(new_validators, fn {_n, m} -> m.priority end, :desc)
+  sorted = Enum.sort_by(new_validators, fn {_n, m} -> m.priority end, :desc)
     new_state = %{state | validators: new_validators, sorted_validators: sorted}
     Logger.debug("Unregistered validator: #{inspect(name)}")
     {:reply, :ok, new_state}
@@ -676,14 +665,12 @@ defmodule Kreuzberg.Plugin.Registry do
   end
 
   def handle_call(:clear_validators, _from, state) do
-    # OPTIMIZATION 1: Clear sorted cache as well
     new_state = %{state | validators: %{}, sorted_validators: []}
     Logger.debug("Cleared all validators")
     {:reply, :ok, new_state}
   end
 
   def handle_call(:get_validators_by_priority, _from, state) do
-    # OPTIMIZATION 1: Return pre-cached sorted list (30%+ gain)
     {:reply, state.sorted_validators, state}
   end
 
@@ -695,10 +682,10 @@ defmodule Kreuzberg.Plugin.Registry do
   end
 
   def handle_call(
-        {:register_ocr_backend, name, metadata},
-        _from,
-        state
-      ) do
+  {:register_ocr_backend, name, metadata},
+  _from,
+  state
+  ) do
     if Map.has_key?(state.ocr_backends, name) do
       {:reply, {:error, "OCR backend '#{inspect(name)}' is already registered"}, state}
     else
@@ -709,10 +696,10 @@ defmodule Kreuzberg.Plugin.Registry do
   end
 
   def handle_call(
-        {:unregister_ocr_backend, name},
-        _from,
-        state
-      ) do
+  {:unregister_ocr_backend, name},
+  _from,
+  state
+  ) do
     new_state = update_in(state, [:ocr_backends], &Map.delete(&1, name))
     Logger.debug("Unregistered OCR backend: #{inspect(name)}")
     {:reply, :ok, new_state}
@@ -729,15 +716,14 @@ defmodule Kreuzberg.Plugin.Registry do
   end
 
   def handle_call({:get_ocr_backends_by_language, language}, _from, state) do
-    # OPTIMIZATION 2: Single-pass reduce instead of filter+into (15-20% gain)
     backends =
-      Enum.reduce(state.ocr_backends, %{}, fn {name, metadata}, acc ->
-        if Enum.member?(metadata.languages, language) do
-          Map.put(acc, name, metadata)
-        else
-          acc
-        end
-      end)
+    Enum.reduce(state.ocr_backends, %{}, fn {name, metadata}, acc ->
+      if Enum.member?(metadata.languages, language) do
+        Map.put(acc, name, metadata)
+      else
+        acc
+      end
+    end)
 
     {:reply, backends, state}
   end
@@ -749,12 +735,10 @@ defmodule Kreuzberg.Plugin.Registry do
     end
   end
 
-  # Private Helpers
 
   @spec module_to_name(module()) :: String.t()
   @doc false
   def module_to_name(module) do
-    # Use the module's name() function if available, otherwise derive from module name
     if function_exported?(module, :name, 0) do
       module.name()
     else
@@ -772,17 +756,15 @@ defmodule Kreuzberg.Plugin.Registry do
   defp normalize_name(name), do: to_string(name)
 
   @spec parse_post_processor_params(
-          atom() | module(),
-          map() | module() | nil,
-          atom() | nil
-        ) :: {:ok, atom() | String.t(), atom(), map(), atom()} | {:error, String.t()}
+  atom() | module(),
+  map() | module() | nil,
+  atom() | nil
+  ) :: {:ok, atom() | String.t(), atom(), map(), atom()} | {:error, String.t()}
   defp parse_post_processor_params(name_or_module, config_or_module, stage) do
     if is_atom(name_or_module) and is_atom(config_or_module) and not is_nil(config_or_module) and
-         stage == nil do
-      # Called as: register_post_processor(name, module)
+    stage == nil do
       {:ok, name_or_module, config_or_module, %{}, :post}
     else
-      # Called as: register_post_processor(module, config, stage, ...)
       module = name_or_module
       config = config_or_module || %{}
       stage = stage || :post
