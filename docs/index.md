@@ -8,6 +8,12 @@ description: "Kreuzberg – Extract text, tables, and metadata from 91+ file for
 
 # Kreuzberg
 
+!!! info "Kreuzberg v4 LTS (legacy)"
+
+    This is the long-term-support line for Kreuzberg **v4**. Active development has moved to
+    **[Xberg](https://github.com/xberg-io/xberg)** (v5+). v4 receives LTS fixes until the end of 2026
+    (best effort). See **[v4 LTS & Migration](lts.md)**.
+
 Kreuzberg is a document intelligence platform with a high‑performance Rust core and native bindings for Python, TypeScript/Node.js, C#, Ruby, Go, Elixir, and Rust itself. You can use it as an SDK, CLI, Docker image, REST API server, or MCP tool to extract text, tables, and metadata from 91+ file formats (PDF, Office, images, HTML, XML, archives, email, and more) with optional OCR and post-processing pipelines.
 
 <div class="hero-badges" markdown>
@@ -83,7 +89,7 @@ Precompiled binaries for Linux (x86_64 & aarch64), macOS (Apple Silicon), and Wi
 | **TypeScript (Native)** | `npm install @kreuzberg/node` | [API Reference](reference/api-typescript.md) |
 | **TypeScript (WASM)** | `npm install @kreuzberg/wasm` | [API Reference](reference/api-wasm.md) |
 | **Rust** | `cargo add kreuzberg` | [API Reference](reference/api-rust.md) |
-| **Go** | `go get .../kreuzberg/packages/go/v4` | [API Reference](reference/api-go.md) |
+| **Go** | `go get .../kreuzberg/v4` | [API Reference](reference/api-go.md) |
 | **Java** | Maven Central `dev.kreuzberg:kreuzberg` | [API Reference](reference/api-java.md) |
 | **C#** | `dotnet add package Kreuzberg` | [API Reference](reference/api-csharp.md) |
 | **Ruby** | `gem install kreuzberg` | [API Reference](reference/api-ruby.md) |

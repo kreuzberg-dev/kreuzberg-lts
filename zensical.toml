@@ -12,6 +12,7 @@ extra_css = ["css/extra.css"]
 
 nav = [
     { "Home" = "index.md" },
+    { "v4 LTS & Migration" = "lts.md" },
     { "Live Demo" = "demo.html" },
     { "Installation" = "getting-started/installation.md" },
     { "Quick Start" = "getting-started/quickstart.md" },
