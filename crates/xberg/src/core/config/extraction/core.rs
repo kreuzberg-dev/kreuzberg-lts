@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 use super::super::acceleration::AccelerationConfig;
 use super::super::content_filter::ContentFilterConfig;
 use super::super::formats::{JupyterCellRendering, OutputFormat};
-use super::super::ocr::OcrConfig;
+use super::super::ocr::{OcrConfig, OcrStrategy};
 use super::super::page::PageConfig;
 use super::super::processing::{ChunkingConfig, PostProcessorConfig};
 use super::file_config::FileExtractionConfig;
@@ -48,6 +48,14 @@ pub struct ExtractionConfig {
     /// Force OCR even for searchable PDFs
     #[serde(default)]
     pub force_ocr: bool,
+
+    /// Which pages get OCR'd when neither `force_ocr` nor `force_ocr_pages` applies.
+    ///
+    /// Defaults to [`OcrStrategy::Auto`], which OCRs only pages whose native text
+    /// fails a quality check. Only applies to PDF documents. Cannot be
+    /// [`OcrStrategy::ScannedPages`] while `disable_ocr` is `true`.
+    #[serde(default, deserialize_with = "super::super::processing::deserialize_null_default")]
+    pub ocr_strategy: OcrStrategy,
 
     /// Force OCR on specific pages only (1-indexed page numbers, must be >= 1).
     ///
@@ -404,6 +412,7 @@ impl Default for ExtractionConfig {
             enable_quality_processing: true,
             ocr: None,
             force_ocr: false,
+            ocr_strategy: OcrStrategy::Auto,
             force_ocr_pages: None,
             disable_ocr: false,
             chunking: None,
@@ -483,6 +492,7 @@ impl ExtractionConfig {
             ref enable_quality_processing,
             ref ocr,
             ref force_ocr,
+            ref ocr_strategy,
             ref force_ocr_pages,
             ref disable_ocr,
             ref chunking,
@@ -531,6 +541,9 @@ impl ExtractionConfig {
         }
         if let Some(v) = force_ocr {
             config.force_ocr = *v;
+        }
+        if let Some(v) = ocr_strategy {
+            config.ocr_strategy = v.clone();
         }
         if let Some(v) = force_ocr_pages {
             config.force_ocr_pages = Some(v.clone());
@@ -742,6 +755,31 @@ fn default_extraction_timeout() -> Option<u64> {
 
 #[cfg(test)]
 mod tests {
+    /// Polyglot bindings serialize a zero-valued mirror struct with every field
+    /// present, so `ocr_strategy` arrives as an explicit `null`. `#[serde(default)]`
+    /// only covers a *missing* key; an internally-tagged enum rejects `null`.
+    /// Caught by the Go e2e suite: "invalid type: null, expected internally tagged
+    /// enum OcrStrategy".
+    #[test]
+    fn ocr_strategy_accepts_an_explicit_null() {
+        let config: ExtractionConfig =
+            serde_json::from_str(r#"{"ocr_strategy": null}"#).expect("null must deserialize");
+        assert_eq!(config.ocr_strategy, OcrStrategy::Auto);
+    }
+
+    #[test]
+    fn ocr_strategy_accepts_a_missing_key() {
+        let config: ExtractionConfig = serde_json::from_str("{}").expect("missing key must deserialize");
+        assert_eq!(config.ocr_strategy, OcrStrategy::Auto);
+    }
+
+    #[test]
+    fn ocr_strategy_round_trips_its_payload_variant() {
+        let json = r#"{"ocr_strategy": {"mode": "scanned_pages", "min_confidence": 0.7}}"#;
+        let config: ExtractionConfig = serde_json::from_str(json).expect("payload variant must deserialize");
+        assert_eq!(config.ocr_strategy, OcrStrategy::ScannedPages { min_confidence: 0.7 });
+    }
+
     use super::*;
     use crate::core::config::{
         CaptioningConfig, LlmConfig, NerConfig, OcrConfig, PageClassificationConfig, RedactionConfig,

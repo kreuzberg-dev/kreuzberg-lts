@@ -1430,6 +1430,7 @@ mod tests {
 
     #[cfg(feature = "auto-rotate")]
     #[test]
+    #[cfg(feature = "auto-rotate")]
     fn test_rotate_rgb_image_data_identity() {
         let data: Vec<u8> = (0..18).collect();
         let (out, w, h) = rotate_rgb_image_data(&data, 2, 3, 0);
@@ -1440,6 +1441,7 @@ mod tests {
 
     #[cfg(feature = "auto-rotate")]
     #[test]
+    #[cfg(feature = "auto-rotate")]
     fn test_rotate_rgb_image_data_180() {
         let data = vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
         let (out, w, h) = rotate_rgb_image_data(&data, 2, 2, 180);
@@ -1450,6 +1452,7 @@ mod tests {
 
     #[cfg(feature = "auto-rotate")]
     #[test]
+    #[cfg(feature = "auto-rotate")]
     fn test_rotate_rgb_image_data_90_swaps_dimensions() {
         let data: Vec<u8> = (0..18).collect();
         let (_, w, h) = rotate_rgb_image_data(&data, 2, 3, 90);
@@ -1459,6 +1462,7 @@ mod tests {
 
     #[cfg(feature = "auto-rotate")]
     #[test]
+    #[cfg(feature = "auto-rotate")]
     fn test_rotate_rgb_image_data_270_swaps_dimensions() {
         let data: Vec<u8> = (0..18).collect();
         let (_, w, h) = rotate_rgb_image_data(&data, 2, 3, 270);
@@ -1468,6 +1472,7 @@ mod tests {
 
     #[cfg(feature = "auto-rotate")]
     #[test]
+    #[cfg(feature = "auto-rotate")]
     fn test_rotate_rgb_image_data_90_then_270_is_identity() {
         let data: Vec<u8> = (0..18).collect();
         let (rotated_90, w1, h1) = rotate_rgb_image_data(&data, 2, 3, 90);
@@ -1479,6 +1484,7 @@ mod tests {
 
     #[cfg(feature = "auto-rotate")]
     #[test]
+    #[cfg(feature = "auto-rotate")]
     fn test_rotate_rgb_image_data_unsupported_angle() {
         let data: Vec<u8> = (0..12).collect();
         let (out, w, h) = rotate_rgb_image_data(&data, 2, 2, 45);
