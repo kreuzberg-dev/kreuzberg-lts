@@ -1294,8 +1294,6 @@ jobs:
       - name: Install system dependencies
         uses: ./.github/actions/install-system-deps
 
-      - name: Setup OpenSSL
-        uses: kreuzberg-dev/actions/setup-openssl@v1
 
       - name: Setup Tesseract cache
         id: tesseract-cache
@@ -1650,8 +1648,6 @@ jobs:
       - name: Install system dependencies
         uses: ./.github/actions/install-system-deps
 
-      - name: Setup OpenSSL
-        uses: kreuzberg-dev/actions/setup-openssl@v1
 
       - name: Setup Tesseract cache
         id: tesseract-cache
@@ -1799,8 +1795,6 @@ jobs:
       - name: Install system dependencies
         uses: ./.github/actions/install-system-deps
 
-      - name: Setup OpenSSL
-        uses: kreuzberg-dev/actions/setup-openssl@v1
 
       - name: Setup Rust
         uses: kreuzberg-dev/actions/setup-rust@v1
@@ -1918,8 +1912,6 @@ jobs:
       - name: Install system dependencies
         uses: ./.github/actions/install-system-deps
 
-      - name: Setup OpenSSL
-        uses: kreuzberg-dev/actions/setup-openssl@v1
 
       - name: Setup Tesseract cache
         id: tesseract-cache
@@ -2025,8 +2017,6 @@ jobs:
       - name: Install system dependencies
         uses: ./.github/actions/install-system-deps
 
-      - name: Setup OpenSSL
-        uses: kreuzberg-dev/actions/setup-openssl@v1
 
       - name: Setup Rust
         uses: kreuzberg-dev/actions/setup-rust@v1
@@ -2136,8 +2126,6 @@ jobs:
       - name: Install system dependencies
         uses: ./.github/actions/install-system-deps
 
-      - name: Setup OpenSSL
-        uses: kreuzberg-dev/actions/setup-openssl@v1
 
       - name: Setup Rust
         uses: kreuzberg-dev/actions/setup-rust@v1
@@ -2675,8 +2663,6 @@ jobs:
           ort-version: ${{ env.ORT_VERSION }}
           strategy: bundled
 
-      - name: Setup OpenSSL
-        uses: kreuzberg-dev/actions/setup-openssl@v1
 
       - name: Setup Tesseract cache
         id: tesseract-cache
@@ -3425,10 +3411,6 @@ jobs:
       - name: Install system dependencies
         if: ${{ needs.prepare.outputs.dry_run != 'true' && steps.maven_check.outputs.exists != 'true' }}
         uses: ./.github/actions/install-system-deps
-
-      - name: Setup OpenSSL
-        if: ${{ needs.prepare.outputs.dry_run != 'true' && steps.maven_check.outputs.exists != 'true' }}
-        uses: kreuzberg-dev/actions/setup-openssl@v1
 
       - name: Setup Rust
         if: ${{ needs.prepare.outputs.dry_run != 'true' && steps.maven_check.outputs.exists != 'true' }}
