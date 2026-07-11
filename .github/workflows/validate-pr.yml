@@ -6,4 +6,4 @@ on:
 
 jobs:
   validate:
-    uses: kreuzberg-dev/actions/.github/workflows/reusable-validate-pr.yml@main
+    uses: xberg-io/actions/.github/workflows/reusable-validate-pr.yml@main

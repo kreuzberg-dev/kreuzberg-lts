@@ -36,13 +36,13 @@ jobs:
       - uses: actions/checkout@v6
 
       - name: Free disk space before setup
-        uses: kreuzberg-dev/actions/free-disk-space-linux@v1
+        uses: xberg-io/actions/free-disk-space-linux@v1
         with:
           show-initial: "false"
           show-final: "true"
 
       - name: Setup Rust
-        uses: kreuzberg-dev/actions/setup-rust@v1
+        uses: xberg-io/actions/setup-rust@v1
         with:
           cache-key-prefix: validate-rust
           use-sccache: "true"
@@ -51,7 +51,7 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y pkg-config libssl-dev
 
       - name: Install Task
-        uses: kreuzberg-dev/actions/install-task@v1
+        uses: xberg-io/actions/install-task@v1
 
       - name: Install poly
         uses: Goldziher/poly@v0
@@ -107,7 +107,7 @@ jobs:
 
       - name: Free disk space before setup
         if: startsWith(matrix.os, 'ubuntu')
-        uses: kreuzberg-dev/actions/free-disk-space-linux@v1
+        uses: xberg-io/actions/free-disk-space-linux@v1
         with:
           show-initial: "true"
           show-final: "true"
@@ -116,7 +116,7 @@ jobs:
         uses: ./.github/actions/cache-hf-fastembed
 
       - name: Setup Rust
-        uses: kreuzberg-dev/actions/setup-rust@v1
+        uses: xberg-io/actions/setup-rust@v1
         with:
           cache-key-prefix: rust-tests-${{ matrix.os }}
           target: ${{ matrix.target }}
@@ -160,7 +160,7 @@ jobs:
         run: scripts/ci/rust/pre-build-diagnostics.sh
 
       - name: Install Task
-        uses: kreuzberg-dev/actions/install-task@v1
+        uses: xberg-io/actions/install-task@v1
 
       - name: Run unit tests
         run: task rust:test:ci
@@ -181,4 +181,4 @@ jobs:
 
       - name: Cleanup Rust cache
         if: always() && steps.checkout.outcome == 'success'
-        uses: kreuzberg-dev/actions/cleanup-rust-cache@v1
+        uses: xberg-io/actions/cleanup-rust-cache@v1

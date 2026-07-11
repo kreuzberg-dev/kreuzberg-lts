@@ -170,7 +170,7 @@ jobs:
     steps:
       - name: Check PyPI for existing version
         id: check
-        uses: kreuzberg-dev/actions/check-registry@af59fc0678157e0c3b6016914322d6c200cd5003
+        uses: xberg-io/actions/check-registry@v1
         with:
           registry: pypi
           package: kreuzberg
@@ -186,7 +186,7 @@ jobs:
     steps:
       - name: Check npm for existing version
         id: check
-        uses: kreuzberg-dev/actions/check-registry@af59fc0678157e0c3b6016914322d6c200cd5003
+        uses: xberg-io/actions/check-registry@v1
         with:
           registry: npm
           package: "@kreuzberg/node"
@@ -202,7 +202,7 @@ jobs:
     steps:
       - name: Check npm for existing WASM package
         id: check
-        uses: kreuzberg-dev/actions/check-registry@af59fc0678157e0c3b6016914322d6c200cd5003
+        uses: xberg-io/actions/check-registry@v1
         with:
           registry: npm
           package: "@kreuzberg/wasm"
@@ -218,7 +218,7 @@ jobs:
     steps:
       - name: Check RubyGems for existing version
         id: check
-        uses: kreuzberg-dev/actions/check-registry@af59fc0678157e0c3b6016914322d6c200cd5003
+        uses: xberg-io/actions/check-registry@v1
         with:
           registry: rubygems
           package: kreuzberg
@@ -234,7 +234,7 @@ jobs:
     steps:
       - name: Check Maven Central for existing version
         id: check
-        uses: kreuzberg-dev/actions/check-registry@af59fc0678157e0c3b6016914322d6c200cd5003
+        uses: xberg-io/actions/check-registry@v1
         with:
           registry: maven
           package: "dev.kreuzberg:kreuzberg"
@@ -250,7 +250,7 @@ jobs:
     steps:
       - name: Check NuGet for existing version
         id: check
-        uses: kreuzberg-dev/actions/check-registry@af59fc0678157e0c3b6016914322d6c200cd5003
+        uses: xberg-io/actions/check-registry@v1
         with:
           registry: nuget
           package: Kreuzberg
@@ -266,7 +266,7 @@ jobs:
     steps:
       - name: Check Packagist for existing version
         id: check
-        uses: kreuzberg-dev/actions/check-registry@af59fc0678157e0c3b6016914322d6c200cd5003
+        uses: xberg-io/actions/check-registry@v1
         with:
           registry: packagist
           package: kreuzberg/kreuzberg
@@ -373,7 +373,7 @@ jobs:
     steps:
       - name: Check release for existing Elixir artifacts
         id: check
-        uses: kreuzberg-dev/actions/check-registry@af59fc0678157e0c3b6016914322d6c200cd5003
+        uses: xberg-io/actions/check-registry@v1
         with:
           registry: github-release
           package: kreuzberg
@@ -395,7 +395,7 @@ jobs:
     steps:
       - name: Check crates.io for existing versions
         id: check
-        uses: kreuzberg-dev/actions/check-registry@af59fc0678157e0c3b6016914322d6c200cd5003
+        uses: xberg-io/actions/check-registry@v1
         with:
           registry: cratesio
           package: kreuzberg
@@ -427,7 +427,7 @@ jobs:
     steps:
       - name: Check Hex.pm for existing version
         id: check
-        uses: kreuzberg-dev/actions/check-registry@af59fc0678157e0c3b6016914322d6c200cd5003
+        uses: xberg-io/actions/check-registry@v1
         with:
           registry: hex
           package: kreuzberg
@@ -446,7 +446,7 @@ jobs:
     steps:
       - name: Check Homebrew tap for formula
         id: check
-        uses: kreuzberg-dev/actions/check-registry@af59fc0678157e0c3b6016914322d6c200cd5003
+        uses: xberg-io/actions/check-registry@v1
         with:
           registry: homebrew
           package: kreuzberg
@@ -587,7 +587,7 @@ jobs:
 
       - name: Setup Rust toolchain (native)
         if: runner.os != 'Linux'
-        uses: kreuzberg-dev/actions/setup-rust@v1
+        uses: xberg-io/actions/setup-rust@v1
         with:
           cache-key-prefix: python-wheels-${{ matrix.label }}
           target: ${{ matrix.rust_target }}
@@ -780,18 +780,18 @@ jobs:
         run: scripts/publish/ubuntu/free-disk-space.sh
 
       - name: Setup Python environment
-        uses: kreuzberg-dev/actions/setup-python-env@v1
+        uses: xberg-io/actions/setup-python-env@v1
         with:
           python-version: "3.13"
           cache-prefix: python-sdist
 
       - name: Setup Rust toolchain
-        uses: kreuzberg-dev/actions/setup-rust@v1
+        uses: xberg-io/actions/setup-rust@v1
         with:
           cache-key-prefix: publish-python-sdist
 
       - name: Install Task
-        uses: kreuzberg-dev/actions/install-task@v1
+        uses: xberg-io/actions/install-task@v1
 
       - name: Build sdist
         env:
@@ -863,7 +863,7 @@ jobs:
           package_json_file: package.json
 
       - name: Setup Rust toolchain
-        uses: kreuzberg-dev/actions/setup-rust@v1
+        uses: xberg-io/actions/setup-rust@v1
         with:
           cache-key-prefix: publish-node-${{ matrix.settings.target }}
           use-sccache: "false"
@@ -1004,7 +1004,7 @@ jobs:
         run: scripts/publish/ubuntu/free-disk-space.sh
 
       - name: Setup Rust toolchain
-        uses: kreuzberg-dev/actions/setup-rust@v1
+        uses: xberg-io/actions/setup-rust@v1
         with:
           target: ${{ matrix.target }}
           cache-key-prefix: publish-cli-${{ matrix.target }}
@@ -1153,7 +1153,7 @@ jobs:
         run: git checkout --progress --force ${{ needs.prepare.outputs.target_sha }}
 
       - name: Setup Rust toolchain
-        uses: kreuzberg-dev/actions/setup-rust@v1
+        uses: xberg-io/actions/setup-rust@v1
         with:
           cache-key-prefix: publish-homebrew-${{ matrix.bottle_tag }}
 
@@ -1302,7 +1302,7 @@ jobs:
           enable-cache: "true"
 
       - name: Setup Rust
-        uses: kreuzberg-dev/actions/setup-rust@v1
+        uses: xberg-io/actions/setup-rust@v1
         with:
           cache-key-prefix: publish-ruby-${{ matrix.label }}
           use-sccache: true
@@ -1350,7 +1350,7 @@ jobs:
         run: scripts/ci/ruby/install-ruby-deps.sh packages/ruby
 
       - name: Install Task
-        uses: kreuzberg-dev/actions/install-task@v1
+        uses: xberg-io/actions/install-task@v1
 
       - name: Build kreuzberg-ffi
         run: task rust:ffi:build
@@ -1507,7 +1507,7 @@ jobs:
         uses: ./.github/actions/install-system-deps
 
       - name: Setup Rust
-        uses: kreuzberg-dev/actions/setup-rust@v1
+        uses: xberg-io/actions/setup-rust@v1
         with:
           cache-key-prefix: ${{ matrix.settings.os == 'windows-latest' && 'publish-go-windows-gnu' || format('publish-go-{0}', matrix.settings.os) }}
           use-sccache: ${{ matrix.settings.os != 'windows-latest' }}
@@ -1563,7 +1563,7 @@ jobs:
         run: scripts/ci/go/setup-msys2-windows.ps1
 
       - name: Install Task
-        uses: kreuzberg-dev/actions/install-task@v1
+        uses: xberg-io/actions/install-task@v1
 
       - name: Build FFI library (Windows)
         if: matrix.settings.os == 'windows-latest'
@@ -1655,7 +1655,7 @@ jobs:
           enable-cache: "true"
 
       - name: Setup Rust
-        uses: kreuzberg-dev/actions/setup-rust@v1
+        uses: xberg-io/actions/setup-rust@v1
         with:
           cache-key-prefix: publish-java-natives-${{ matrix.settings.label }}
           use-sccache: ${{ runner.os != 'Windows' }}
@@ -1686,7 +1686,7 @@ jobs:
         uses: ./.github/actions/setup-layout-models
 
       - name: Install Task
-        uses: kreuzberg-dev/actions/install-task@v1
+        uses: xberg-io/actions/install-task@v1
 
       - name: Build FFI library
         shell: bash
@@ -1794,7 +1794,7 @@ jobs:
         uses: ./.github/actions/install-system-deps
 
       - name: Setup Rust
-        uses: kreuzberg-dev/actions/setup-rust@v1
+        uses: xberg-io/actions/setup-rust@v1
         with:
           cache-key-prefix: publish-java
 
@@ -1807,7 +1807,7 @@ jobs:
           cache: "maven"
 
       - name: Setup Maven 3.9.11
-        uses: kreuzberg-dev/actions/setup-maven@v1
+        uses: xberg-io/actions/setup-maven@v1
 
       - name: Cache PDFium
         uses: ./.github/actions/cache-pdfium
@@ -1834,7 +1834,7 @@ jobs:
         uses: ./.github/actions/setup-layout-models
 
       - name: Install Task
-        uses: kreuzberg-dev/actions/install-task@v1
+        uses: xberg-io/actions/install-task@v1
 
       - name: Download Java native artifacts
         uses: actions/download-artifact@v8
@@ -1917,7 +1917,7 @@ jobs:
           enable-cache: "true"
 
       - name: Setup Rust
-        uses: kreuzberg-dev/actions/setup-rust@v1
+        uses: xberg-io/actions/setup-rust@v1
         with:
           cache-key-prefix: publish-php-${{ matrix.settings.label }}
           use-sccache: ${{ runner.os != 'Windows' }}
@@ -1958,7 +1958,7 @@ jobs:
         uses: ./.github/actions/setup-layout-models
 
       - name: Install Task
-        uses: kreuzberg-dev/actions/install-task@v1
+        uses: xberg-io/actions/install-task@v1
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
@@ -2014,7 +2014,7 @@ jobs:
         uses: ./.github/actions/install-system-deps
 
       - name: Setup Rust
-        uses: kreuzberg-dev/actions/setup-rust@v1
+        uses: xberg-io/actions/setup-rust@v1
         with:
           cache-key-prefix: publish-csharp
 
@@ -2027,7 +2027,7 @@ jobs:
         run: scripts/publish/csharp/ensure-dotnet.sh
 
       - name: Install Task
-        uses: kreuzberg-dev/actions/install-task@v1
+        uses: xberg-io/actions/install-task@v1
 
       - name: Download native assets
         uses: actions/download-artifact@v8
@@ -2122,7 +2122,7 @@ jobs:
         uses: ./.github/actions/install-system-deps
 
       - name: Setup Rust
-        uses: kreuzberg-dev/actions/setup-rust@v1
+        uses: xberg-io/actions/setup-rust@v1
         with:
           cache-key-prefix: publish-csharp-native-${{ matrix.rid }}
 
@@ -2148,7 +2148,7 @@ jobs:
         run: rustup target add "${{ matrix.rust_target }}"
 
       - name: Install Task
-        uses: kreuzberg-dev/actions/install-task@v1
+        uses: xberg-io/actions/install-task@v1
 
       - name: Build FFI library
         shell: bash
@@ -2358,7 +2358,7 @@ jobs:
         uses: ./.github/actions/install-system-deps
 
       - name: Setup Rust
-        uses: kreuzberg-dev/actions/setup-rust@v1
+        uses: xberg-io/actions/setup-rust@v1
         with:
           cache-key-prefix: ${{ matrix.settings.os == 'windows-latest' && 'publish-c-ffi-windows-gnu' || format('publish-c-ffi-{0}', matrix.settings.os) }}
           use-sccache: ${{ matrix.settings.os != 'windows-latest' }}
@@ -2485,7 +2485,7 @@ jobs:
           ref: ${{ needs.prepare.outputs.ref }}
 
       - name: Setup Rust toolchain
-        uses: kreuzberg-dev/actions/setup-rust@v1
+        uses: xberg-io/actions/setup-rust@v1
         with:
           cache-key-prefix: publish-crates
 
@@ -2605,7 +2605,7 @@ jobs:
         uses: ./.github/actions/install-system-deps
 
       - name: Setup Rust
-        uses: kreuzberg-dev/actions/setup-rust@v1
+        uses: xberg-io/actions/setup-rust@v1
         with:
           target: ${{ matrix.settings.target }}
           cache-key-prefix: ${{ matrix.settings.os == 'windows-latest' && 'publish-elixir-windows-gnu' || format('publish-elixir-{0}', matrix.settings.os) }}
@@ -2665,7 +2665,7 @@ jobs:
           enable-cache: "true"
 
       - name: Restore Cargo cache
-        uses: kreuzberg-dev/actions/restore-cargo-cache@v1
+        uses: xberg-io/actions/restore-cargo-cache@v1
         with:
           shared-key: ${{ matrix.settings.os == 'windows-latest' && 'publish-elixir-windows-gnu' || format('publish-elixir-{0}', matrix.settings.os) }}
           prefix: elixir
@@ -2973,7 +2973,7 @@ jobs:
 
       - name: Re-check Hex.pm before publish
         id: recheck
-        uses: kreuzberg-dev/actions/check-registry@af59fc0678157e0c3b6016914322d6c200cd5003
+        uses: xberg-io/actions/check-registry@v1
         with:
           registry: hex
           package: kreuzberg
@@ -2981,7 +2981,7 @@ jobs:
 
       - name: Publish to Hex.pm
         if: ${{ needs.prepare.outputs.dry_run != 'true' && steps.recheck.outputs.exists != 'true' }}
-        uses: kreuzberg-dev/actions/publish-hex@v1
+        uses: xberg-io/actions/publish-hex@v1
         with:
           package-dir: packages/elixir
           dry-run: ${{ needs.prepare.outputs.dry_run }}
@@ -3034,7 +3034,7 @@ jobs:
 
       - name: Re-check PyPI before publish
         id: recheck
-        uses: kreuzberg-dev/actions/check-registry@af59fc0678157e0c3b6016914322d6c200cd5003
+        uses: xberg-io/actions/check-registry@v1
         with:
           registry: pypi
           package: kreuzberg
@@ -3131,7 +3131,7 @@ jobs:
 
       - name: Re-check RubyGems before publish
         id: recheck
-        uses: kreuzberg-dev/actions/check-registry@af59fc0678157e0c3b6016914322d6c200cd5003
+        uses: xberg-io/actions/check-registry@v1
         with:
           registry: rubygems
           package: kreuzberg
@@ -3143,7 +3143,7 @@ jobs:
 
       - name: Publish gems to RubyGems
         if: ${{ needs.prepare.outputs.dry_run != 'true' && steps.recheck.outputs.exists != 'true' }}
-        uses: kreuzberg-dev/actions/publish-rubygems@v1
+        uses: xberg-io/actions/publish-rubygems@v1
         with:
           gems-dir: dist
           dry-run: ${{ needs.prepare.outputs.dry_run }}
@@ -3220,7 +3220,7 @@ jobs:
 
       - name: Re-check npm before publish
         id: recheck
-        uses: kreuzberg-dev/actions/check-registry@af59fc0678157e0c3b6016914322d6c200cd5003
+        uses: xberg-io/actions/check-registry@v1
         with:
           registry: npm
           package: "@kreuzberg/node"
@@ -3228,7 +3228,7 @@ jobs:
 
       - name: Publish native binary packages
         if: ${{ needs.prepare.outputs.dry_run != 'true' && steps.recheck.outputs.exists != 'true' }}
-        uses: kreuzberg-dev/actions/publish-npm@v1
+        uses: xberg-io/actions/publish-npm@v1
         with:
           packages-dir: crates/kreuzberg-node/npm
           npm-tag: ${{ needs.prepare.outputs.npm_tag }}
@@ -3238,7 +3238,7 @@ jobs:
 
       - name: Wait for npm indexing (x64)
         if: ${{ needs.prepare.outputs.dry_run != 'true' && steps.recheck.outputs.exists != 'true' }}
-        uses: kreuzberg-dev/actions/wait-for-package@v1
+        uses: xberg-io/actions/wait-for-package@v1
         with:
           registry: npm
           package: "@kreuzberg/node-linux-x64-gnu"
@@ -3247,7 +3247,7 @@ jobs:
 
       - name: Wait for npm indexing (ARM64)
         if: ${{ needs.prepare.outputs.dry_run != 'true' && steps.recheck.outputs.exists != 'true' }}
-        uses: kreuzberg-dev/actions/wait-for-package@v1
+        uses: xberg-io/actions/wait-for-package@v1
         with:
           registry: npm
           package: "@kreuzberg/node-linux-arm64-gnu"
@@ -3260,7 +3260,7 @@ jobs:
 
       - name: Publish main Node package
         if: ${{ needs.prepare.outputs.dry_run != 'true' && steps.recheck.outputs.exists != 'true' }}
-        uses: kreuzberg-dev/actions/publish-npm@v1
+        uses: xberg-io/actions/publish-npm@v1
         with:
           package-dir: crates/kreuzberg-node
           npm-tag: ${{ needs.prepare.outputs.npm_tag }}
@@ -3310,7 +3310,7 @@ jobs:
         uses: ./.github/actions/install-system-deps
 
       - name: Install WASI SDK
-        uses: kreuzberg-dev/actions/install-wasi-sdk@v1
+        uses: xberg-io/actions/install-wasi-sdk@v1
 
       - name: Configure WASM C compiler
         shell: bash
@@ -3319,7 +3319,7 @@ jobs:
           echo "AR_wasm32_unknown_unknown=${WASI_SDK_PATH}/bin/ar" >> "$GITHUB_ENV"
 
       - name: Setup Rust toolchain
-        uses: kreuzberg-dev/actions/setup-rust@v1
+        uses: xberg-io/actions/setup-rust@v1
         with:
           cache-key-prefix: publish-wasm
           target: wasm32-unknown-unknown
@@ -3331,7 +3331,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Install Task
-        uses: kreuzberg-dev/actions/install-task@v1
+        uses: xberg-io/actions/install-task@v1
 
       - name: Build all WASM targets and TypeScript wrapper
         run: task wasm:build:all
@@ -3348,7 +3348,7 @@ jobs:
 
       - name: Publish to npm
         if: ${{ steps.npm_check.outputs.exists != 'true' }}
-        uses: kreuzberg-dev/actions/publish-npm@v1
+        uses: xberg-io/actions/publish-npm@v1
         with:
           package-dir: crates/kreuzberg-wasm
           npm-tag: ${{ needs.prepare.outputs.npm_tag }}
@@ -3358,7 +3358,7 @@ jobs:
 
       - name: Wait for npm indexing
         if: ${{ steps.npm_check.outputs.exists != 'true' }}
-        uses: kreuzberg-dev/actions/wait-for-package@v1
+        uses: xberg-io/actions/wait-for-package@v1
         with:
           registry: npm
           package: "@kreuzberg/wasm"
@@ -3395,7 +3395,7 @@ jobs:
       - name: Check Maven Central for existing release
         id: maven_check
         if: ${{ needs.prepare.outputs.dry_run != 'true' }}
-        uses: kreuzberg-dev/actions/check-registry@af59fc0678157e0c3b6016914322d6c200cd5003
+        uses: xberg-io/actions/check-registry@v1
         with:
           registry: maven
           package: "dev.kreuzberg:kreuzberg"
@@ -3407,7 +3407,7 @@ jobs:
 
       - name: Setup Rust
         if: ${{ needs.prepare.outputs.dry_run != 'true' && steps.maven_check.outputs.exists != 'true' }}
-        uses: kreuzberg-dev/actions/setup-rust@v1
+        uses: xberg-io/actions/setup-rust@v1
         with:
           cache-key-prefix: publish-maven
 
@@ -3435,7 +3435,7 @@ jobs:
 
       - name: Setup Maven 3.9.11
         if: ${{ needs.prepare.outputs.dry_run != 'true' && steps.maven_check.outputs.exists != 'true' }}
-        uses: kreuzberg-dev/actions/setup-maven@v1
+        uses: xberg-io/actions/setup-maven@v1
 
       - name: Cache PDFium
         if: ${{ needs.prepare.outputs.dry_run != 'true' && steps.maven_check.outputs.exists != 'true' }}
@@ -3496,7 +3496,7 @@ jobs:
 
       - name: Release Maven package
         if: ${{ needs.prepare.outputs.dry_run != 'true' && steps.maven_check.outputs.exists != 'true' }}
-        uses: kreuzberg-dev/actions/publish-maven@v1
+        uses: xberg-io/actions/publish-maven@v1
         with:
           pom-file: packages/java/pom.xml
           maven-profile: publish
@@ -3537,7 +3537,7 @@ jobs:
 
       - name: Re-check NuGet before publish
         id: recheck
-        uses: kreuzberg-dev/actions/check-registry@af59fc0678157e0c3b6016914322d6c200cd5003
+        uses: xberg-io/actions/check-registry@v1
         with:
           registry: nuget
           package: Kreuzberg
@@ -3545,7 +3545,7 @@ jobs:
 
       - name: Publish to NuGet
         if: ${{ steps.recheck.outputs.exists != 'true' }}
-        uses: kreuzberg-dev/actions/publish-nuget@v1
+        uses: xberg-io/actions/publish-nuget@v1
         with:
           packages-dir: dist
           dry-run: ${{ needs.prepare.outputs.dry_run }}
@@ -3585,7 +3585,7 @@ jobs:
 
       - name: Re-check Packagist before publish
         id: recheck
-        uses: kreuzberg-dev/actions/check-registry@af59fc0678157e0c3b6016914322d6c200cd5003
+        uses: xberg-io/actions/check-registry@v1
         with:
           registry: packagist
           package: kreuzberg/kreuzberg
@@ -3593,7 +3593,7 @@ jobs:
 
       - name: Trigger Packagist update
         if: ${{ steps.recheck.outputs.exists != 'true' }}
-        uses: kreuzberg-dev/actions/publish-packagist@v1
+        uses: xberg-io/actions/publish-packagist@v1
         with:
           packagist-username: Goldziher
           package-name: kreuzberg/kreuzberg
@@ -3673,7 +3673,7 @@ jobs:
 
       - name: Re-check Homebrew tap before publish
         id: recheck
-        uses: kreuzberg-dev/actions/check-registry@af59fc0678157e0c3b6016914322d6c200cd5003
+        uses: xberg-io/actions/check-registry@v1
         with:
           registry: homebrew
           package: kreuzberg
@@ -3692,7 +3692,13 @@ jobs:
 
       - name: Update Homebrew formula with bottles
         if: ${{ steps.recheck.outputs.exists != 'true' }}
-        uses: kreuzberg-dev/actions/publish-homebrew@v1
+        # DEFERRED: homebrew is excluded from the automatic "all" target set ~keep
+        # (see scripts/publish/validate-and-compute-release-metadata.sh) because no ~keep
+        # kreuzberg formula has been seeded in xberg-io/homebrew-tap yet, and the ~keep
+        # legacy all-in-one publish-homebrew action was removed org-wide. This whole ~keep
+        # job is skipped until the formula is seeded and the flow is rebuilt against ~keep
+        # xberg-io/actions' split homebrew actions. ~keep
+        uses: xberg-io/actions/publish-homebrew@v1
         with:
           bottles-dir: dist/homebrew
           formula-name: kreuzberg

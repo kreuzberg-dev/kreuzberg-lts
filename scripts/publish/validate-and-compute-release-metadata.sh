@@ -124,7 +124,11 @@ set_all_targets() {
   release_cli=true
   release_crates=true
   release_docker=true
-  release_homebrew=true
+  # Homebrew is intentionally excluded from the automatic "all" set: the ~keep
+  # kreuzberg formula has not yet been seeded in xberg-io/homebrew-tap, so the ~keep
+  # publish-homebrew flow cannot run. Request it explicitly (targets: homebrew) ~keep
+  # once the formula exists. ~keep
+  release_homebrew=false
   release_java=true
   release_csharp=true
   release_go=true
