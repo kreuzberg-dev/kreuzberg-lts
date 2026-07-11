@@ -1,5 +1,5 @@
 # =============================================================================
-FROM alpine:3.21 AS builder
+FROM alpine:edge AS builder
 
 ARG RUST_TOOLCHAIN=nightly-2026-03-10
 ARG PDFIUM_VERSION=7678
