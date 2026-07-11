@@ -101,6 +101,19 @@ jobs:
           echo "### Published" >> "$GITHUB_STEP_SUMMARY"
           echo "Chart pushed to \`oci://ghcr.io/kreuzberg-dev/charts/kreuzberg:${{ steps.meta.outputs.version }}\`" >> "$GITHUB_STEP_SUMMARY"
 
+      - name: Set up ORAS
+        if: ${{ steps.meta.outputs.dry_run != 'true' }}
+        uses: oras-project/setup-oras@v1
+
+      - name: Push Artifact Hub repository metadata
+        if: ${{ steps.meta.outputs.dry_run != 'true' }}
+        # Artifact Hub reads artifacthub-repo.yml for OCI repos from a metadata ~keep
+        # artifact tagged `artifacthub.io`; this grants the Verified Publisher badge. ~keep
+        run: |
+          oras push ghcr.io/kreuzberg-dev/charts/kreuzberg:artifacthub.io \
+            --config /dev/null:application/vnd.cncf.artifacthub.repository-metadata.config.v1+yaml \
+            charts/kreuzberg/artifacthub-repo.yml:application/vnd.cncf.artifacthub.repository-metadata.layer.v1.yaml
+
       - name: Dry-run summary
         if: ${{ steps.meta.outputs.dry_run == 'true' }}
         run: |
