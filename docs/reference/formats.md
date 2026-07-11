@@ -40,7 +40,7 @@ All formats support async/await and batch processing. Image formats and PDFs sup
 |--------|-----------|-----------|-------------------|-------------|------------------|
 | Plain Text | `.txt` | `text/plain` | Native Rust (streaming) | No | Line/word/character counting, memory-efficient streaming |
 | Markdown | `.md`, `.markdown` | `text/markdown`, `text/x-markdown` | Native Rust (streaming) | No | Header extraction, link detection, code block detection |
-| HTML | `.html`, `.htm` | `text/html`, `application/xhtml+xml` | Native Rust ([html-to-markdown-rs](https://docs.html-to-markdown.kreuzberg.dev)) | No | Converts to Markdown, metadata extraction |
+| HTML | `.html`, `.htm` | `text/html`, `application/xhtml+xml` | Native Rust ([html-to-markdown-rs](https://docs.html-to-markdown.xberg.io)) | No | Converts to Markdown, metadata extraction |
 | XML | `.xml` | `application/xml`, `text/xml` | Native Rust (quick-xml streaming) | No | Element counting, unique element tracking |
 | SVG | `.svg` | `image/svg+xml` | Native Rust (XML parser) | No | Treated as XML document |
 | reStructuredText | `.rst` | `text/x-rst` | Native (rst-parser) | No | Full reST syntax support |
@@ -96,7 +96,7 @@ All image formats support OCR when configured with `ocr` parameter in `Extractio
 | Format | Extensions | MIME Type | Extraction Method | OCR Support | Special Features |
 |--------|-----------|-----------|-------------------|-------------|------------------|
 | LaTeX | `.tex`, `.latex` | `application/x-latex`, `text/x-tex` | Native (manual parser) | No | Full LaTeX document support |
-| EPUB | `.epub` | `application/epub+zip` | Native (zip + roxmltree + [html-to-markdown-rs](https://docs.html-to-markdown.kreuzberg.dev)) | No | E-book format, metadata extraction |
+| EPUB | `.epub` | `application/epub+zip` | Native (zip + roxmltree + [html-to-markdown-rs](https://docs.html-to-markdown.xberg.io)) | No | E-book format, metadata extraction |
 | BibTeX | `.bib` | `application/x-bibtex`, `application/x-biblatex` | Native (biblatex) | No | Bibliography database support |
 | Typst | `.typst`, `.typ` | `application/x-typst` | Native (typst-syntax) | No | Modern typesetting format |
 | Jupyter Notebook | `.ipynb` | `application/x-ipynb+json` | Native (JSON parsing) | No | Code cells, markdown cells, output extraction |

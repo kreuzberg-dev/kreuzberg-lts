@@ -157,7 +157,7 @@ task python:lint        # ruff + mypy
 task node:lint          # eslint + typecheck
 ```
 
-The repo uses [poly](https://github.com/Goldziher/poly) for formatting and lint rules — run `poly fmt --check .` and `poly lint .` (or `task lint`) before committing. CI enforces the same checks plus conventional commit messages; if CI fails, the output tells you exactly what to fix.
+The repo uses [poly](https://github.com/xberg-io/poly) for formatting and lint rules — run `poly fmt --check .` and `poly lint .` (or `task lint`) before committing. CI enforces the same checks plus conventional commit messages; if CI fails, the output tells you exactly what to fix.
 
 ---
 
@@ -290,6 +290,6 @@ Kreuzberg's core is written in Rust, which enables zero-copy memory handling, SI
 
 ### Benchmarking Your Workload
 
-Measure with your actual files using the benchmark harness (see [Benchmarking](#benchmarking) section for full instructions). For detailed analysis and live benchmark results, visit <https://kreuzberg.dev/benchmarks>.
+Measure with your actual files using the benchmark harness (see [Benchmarking](#benchmarking) section for full instructions). For detailed analysis and live benchmark results, visit <https://docs.kreuzberg.dev/benchmarks>.
 
 ---

@@ -55,8 +55,6 @@
   </a>
 </div>
 
-<img width="1128" height="191" alt="Banner2" src="https://github.com/user-attachments/assets/419fc06c-8313-4324-b159-4b4d3cfce5c0" />
-
 <div align="center" style="margin-top: 20px;">
   <a href="https://discord.gg/xt9WY3GnKR">
       <img height="22" src="https://img.shields.io/badge/Discord-Join%20our%20community-7289da?logo=discord&logoColor=white" alt="Discord">
@@ -961,7 +959,7 @@ for (int i = 0; i < 10; i++) {
 - **Kreuzberg Core**: `../kreuzberg/`
 - **C FFI Standards**: <https://en.cppreference.com/w/c>
 - **cbindgen Documentation**: <https://rust-lang.github.io/cbindgen/>
-- **Project Homepage**: <https://kreuzberg.dev>
+- **Project Homepage**: <https://docs.kreuzberg.dev>
 - **GitHub Repository**: <https://github.com/kreuzberg-dev/kreuzberg-lts>
 
 ## Contributing

@@ -251,7 +251,7 @@ These snippets follow these conventions:
 
 ## Links
 
-- **Documentation**: https://kreuzberg.dev
+- **Documentation**: https://docs.kreuzberg.dev
 - **GitHub**: https://github.com/kreuzberg-dev/Kreuzberg
 - **Issues**: https://github.com/kreuzberg-dev/kreuzberg-lts/issues
 - **Package**: https://packagist.org/packages/kreuzberg/Kreuzberg

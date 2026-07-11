@@ -317,7 +317,7 @@ composer remove kreuzberg/kreuzberg
 
 ## Support
 
-- **Documentation**: <https://kreuzberg.dev>
+- **Documentation**: <https://docs.kreuzberg.dev>
 - **GitHub Issues**: <https://github.com/kreuzberg-dev/kreuzberg-lts/issues>
 - **Discord**: <https://discord.gg/xt9WY3GnKR>
 

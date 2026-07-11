@@ -1848,7 +1848,7 @@ For configuration details including API keys, model selection, and provider setu
 
 ## Code Intelligence
 
-Kreuzberg uses [tree-sitter-language-pack](https://docs.tree-sitter-language-pack.kreuzberg.dev) to parse and analyze source code files across 248 programming languages. When extracting code files, the result metadata includes structural analysis, imports, exports, symbols, diagnostics, and semantic code chunks.
+Kreuzberg uses [tree-sitter-language-pack](https://docs.tree-sitter-language-pack.xberg.io) to parse and analyze source code files across 248 programming languages. When extracting code files, the result metadata includes structural analysis, imports, exports, symbols, diagnostics, and semantic code chunks.
 
 Code intelligence data is available in `result.metadata["format"]` when `format_type` is `"code"`.
 

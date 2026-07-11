@@ -1,6 +1,6 @@
 {
   "name": "@kreuzberg/node-linux-arm-gnueabihf",
-  "version": "4.9.9",
+  "version": "4.10.0",
   "cpu": ["arm"],
   "main": "kreuzberg-node.linux-arm-gnueabihf.node",
   "files": ["kreuzberg-node.linux-arm-gnueabihf.node"],

@@ -2141,7 +2141,7 @@ type OcrMetadata struct {
 
 ### Code Metadata (ProcessResult)
 
-Complete code analysis result from [tree-sitter-language-pack](https://docs.tree-sitter-language-pack.kreuzberg.dev). Available when `format_type == "code"` (that is, when extracting source code files). Contains structural analysis, imports, exports, comments, docstrings, symbols, diagnostics, and semantic code chunks.
+Complete code analysis result from [tree-sitter-language-pack](https://docs.tree-sitter-language-pack.xberg.io). Available when `format_type == "code"` (that is, when extracting source code files). Contains structural analysis, imports, exports, comments, docstrings, symbols, diagnostics, and semantic code chunks.
 
 #### Rust
 

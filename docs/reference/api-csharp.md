@@ -8,7 +8,7 @@ Add the NuGet package to your `.csproj`:
 
 ```xml title=".csproj"
 <ItemGroup>
-    <PackageReference Include="Kreuzberg" Version="4.9.9" />
+    <PackageReference Include="Kreuzberg" Version="4.10.0" />
 </ItemGroup>
 ```
 

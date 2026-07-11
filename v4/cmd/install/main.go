@@ -30,7 +30,7 @@ import (
 )
 
 const (
-	DefaultVersion          = "4.9.9"
+	DefaultVersion          = "4.10.0"
 	BaseURL                 = "https://github.com/kreuzberg-dev/kreuzberg-lts/releases/download"
 	DefaultInstallDir       = ".kreuzberg"
 	dirPermissions          = 0o750

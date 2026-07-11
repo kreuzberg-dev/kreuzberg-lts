@@ -82,4 +82,4 @@ Downstream pipeline support.
 
 !!! Info "Benchmarks"
 
-    For extraction speed and quality comparisons between Kreuzberg and MinerU, see the [live benchmark dashboard](https://kreuzberg.dev/benchmarks).
+    For extraction speed and quality comparisons between Kreuzberg and MinerU, see the [live benchmark dashboard](https://docs.kreuzberg.dev/benchmarks).

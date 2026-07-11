@@ -78,4 +78,4 @@ How you integrate each tool into your stack.
 
 !!! Info "Benchmarks"
 
-    For extraction speed and quality comparisons between Kreuzberg and Docling, see the [live benchmark dashboard](https://kreuzberg.dev/benchmarks).
+    For extraction speed and quality comparisons between Kreuzberg and Docling, see the [live benchmark dashboard](https://docs.kreuzberg.dev/benchmarks).

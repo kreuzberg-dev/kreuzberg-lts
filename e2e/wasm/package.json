@@ -1,20 +1,20 @@
 {
-	"name": "@kreuzberg/e2e-wasm-tests",
-	"version": "4.9.9",
-	"type": "module",
-	"description": "End-to-end tests for Kreuzberg WASM bindings",
-	"scripts": {
-		"test": "vitest run",
-		"test:watch": "vitest",
-		"test:ui": "vitest --ui"
-	},
-	"dependencies": {
-		"@kreuzberg/wasm": "workspace:*"
-	},
-	"devDependencies": {
-		"@types/node": "^25.9.1",
-		"@vitest/ui": "^4.1.8",
-		"typescript": "^6.0.3",
-		"vitest": "^4.1.8"
-	}
+  "name": "@kreuzberg/e2e-wasm-tests",
+  "version": "4.10.0",
+  "type": "module",
+  "description": "End-to-end tests for Kreuzberg WASM bindings",
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:ui": "vitest --ui"
+  },
+  "dependencies": {
+    "@kreuzberg/wasm": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^25.9.1",
+    "@vitest/ui": "^4.1.8",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.8"
+  }
 }

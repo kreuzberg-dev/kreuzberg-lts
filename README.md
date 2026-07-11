@@ -22,7 +22,7 @@
     <img src="https://img.shields.io/maven-central/v/dev.kreuzberg/kreuzberg?label=Java&color=007ec6" alt="Java">
   </a>
   <a href="https://github.com/kreuzberg-dev/kreuzberg-lts/releases">
-    <img src="https://img.shields.io/github/v/tag/kreuzberg-dev/kreuzberg-lts?label=Go&color=007ec6&filter=v4.9.9" alt="Go">
+    <img src="https://img.shields.io/github/v/tag/kreuzberg-dev/kreuzberg-lts?label=Go&color=007ec6&filter=v4.10.0" alt="Go">
   </a>
   <a href="https://www.nuget.org/packages/Kreuzberg/">
     <img src="https://img.shields.io/nuget/v/Kreuzberg?label=C%23&color=007ec6" alt="C#">
@@ -61,32 +61,32 @@
   </a>
 </div>
 
-<img width="3384" height="573" alt="Linkedin- Banner" src="https://github.com/user-attachments/assets/1b6c6ad7-3b6d-4171-b1c9-f2026cc9deb8" />
-
 <div align="center" style="margin-top: 20px;">
   <a href="https://discord.gg/xt9WY3GnKR">
       <img height="22" src="https://img.shields.io/badge/Discord-Join%20our%20community-7289da?logo=discord&logoColor=white" alt="Discord">
   </a>
 </div>
 
-Extract text, metadata, and code intelligence from 97+ file formats and 305 programming languages at native speeds without needing a GPU.
+> [!NOTE]
+> **Kreuzberg v4 LTS** — the long-term-support line for Kreuzberg **v4**. Active development has moved to
+> **[Xberg](https://github.com/xberg-io/xberg)** (v5+). This repository receives critical bug and security
+> fixes until the **end of 2026, on a best-effort basis**. New features land in Xberg.
+> See the **[migration guide & LTS policy →](https://docs.kreuzberg.dev/lts/)**
+
+Extract text, metadata, and code intelligence from 97+ file formats and 300+ programming languages at native speeds without needing a GPU.
 
 ## Key Features
 
-- **Code intelligence** – Extract functions, classes, imports, symbols, and docstrings from [248 programming languages](https://docs.tree-sitter-language-pack.kreuzberg.dev) via tree-sitter. Results in `ExtractionResult.code_intelligence` with semantic chunking
-- **Extensible architecture** – Plugin system for custom OCR backends, validators, post-processors, document extractors, and renderers
+- **Code intelligence** – Functions, classes, imports, symbols, and docstrings from [248 programming languages](https://docs.tree-sitter-language-pack.xberg.io) via tree-sitter, with semantic chunking
+- **91+ file formats** – PDF, Office documents, images, HTML/XML, emails, archives, and academic formats across 8 categories
 - **Polyglot** – Native bindings for Rust, Python, TypeScript/Node.js, Ruby, Go, Java, C#, PHP, Elixir, R, and C
-- **91+ file formats** – PDF, Office documents, images, HTML, XML, emails, archives, academic formats across 8 categories
-- **LLM intelligence** – VLM OCR (GPT-4o, Claude, Gemini, Ollama), structured JSON extraction with schema constraints, and provider-hosted embeddings via 146 LLM providers (including local engines: Ollama, LM Studio, vLLM, llama.cpp) through [liter-llm](https://github.com/kreuzberg-dev/liter-llm)
-- **OCR support** – Tesseract (all bindings, including Tesseract-WASM for browsers), PaddleOCR (all native bindings), EasyOCR (Python), VLM OCR (146 vision model providers including local engines), extensible via plugin API
-- **High performance** – Rust core with native PDFium, SIMD optimizations and full parallelism
-- **Flexible deployment** – Use as library, CLI tool, REST API server, or MCP server
-- **TOON wire format** – Token-efficient serialization for LLM/RAG pipelines, ~30-50% fewer tokens than JSON
-- **GFM-quality output** – Comrak-based rendering with proper fenced code blocks, table nodes, bracket escaping, and cross-format parity (Markdown, HTML, Djot, Plain)
-- **HTML passthrough** – HTML-to-Markdown conversion uses html-to-markdown output directly, bypassing lossy intermediate round-trips
-- **Memory efficient** – Streaming parsers for multi-GB files
+- **LLM intelligence** – VLM OCR, schema-constrained JSON extraction, and provider-hosted embeddings across 146 LLM providers (including local engines) via [liter-llm](https://github.com/xberg-io/liter-llm)
+- **OCR support** – Tesseract (incl. WASM), PaddleOCR, EasyOCR (Python), and VLM OCR; extensible via plugin API
+- **High performance** – Rust core with native PDFium, SIMD, full parallelism, and streaming parsers for multi-GB files
+- **Flexible deployment** – Library, CLI, REST API server, or MCP server
+- **GFM-quality output** – Comrak rendering with cross-format parity (Markdown, HTML, Djot, Plain) plus token-efficient TOON serialization
 
-**[Complete Documentation](https://kreuzberg.dev/)** | **[Live Demo](https://docs.kreuzberg.dev/demo.html)** | **[Installation Guides](#installation)**
+**[Documentation](https://docs.kreuzberg.dev/)** | **[Live Demo](https://docs.kreuzberg.dev/demo.html)** | **[Installation](#installation)**
 
 ## Installation
 
@@ -151,126 +151,23 @@ Complete architecture coverage across all language bindings:
 
 ### Embeddings Support (Optional)
 
-To use embeddings functionality:
-
-1. **Install ONNX Runtime 1.24+**:
-   - Linux: Download from [ONNX Runtime releases](https://github.com/microsoft/onnxruntime/releases) (Debian packages may have older versions)
-   - MacOS: `brew install onnxruntime`
-   - Windows: Download from [ONNX Runtime releases](https://github.com/microsoft/onnxruntime/releases)
-
-2. Use embeddings in your code - see [Embeddings Guide](https://docs.kreuzberg.dev/features/#embeddings)
-
-**Note:** Kreuzberg requires ONNX Runtime version 1.24+ for embeddings. All other Kreuzberg features work without ONNX Runtime.
+Embeddings require **ONNX Runtime 1.24+** (`brew install onnxruntime`, or [download a release](https://github.com/microsoft/onnxruntime/releases)). All other features work without it. See the [Embeddings Guide](https://docs.kreuzberg.dev/features/#embeddings).
 
 ## Supported Formats
 
-91+ file formats across 8 major categories with intelligent format detection and comprehensive metadata extraction.
+91+ file formats across 8 categories with intelligent format detection and comprehensive metadata extraction:
 
-### Office Documents
-
-| Category | Formats | Capabilities |
-|----------|---------|--------------|
-| **Word Processing** | `.docx`, `.docm`, `.dotx`, `.dotm`, `.dot`, `.odt`, `.pages` | Full text, tables, lists, images, metadata, styles |
-| **Spreadsheets** | `.xlsx`, `.xlsm`, `.xlsb`, `.xls`, `.xla`, `.xlam`, `.xltm`, `.xltx`, `.xlt`, `.ods`, `.numbers` | Sheet data, formulas, cell metadata, charts |
-| **Presentations** | `.pptx`, `.pptm`, `.ppsx`, `.potx`, `.potm`, `.pot`, `.key` | Slides, speaker notes, images, metadata |
-| **PDF** | `.pdf` | Text, tables, images, metadata, OCR support |
-| **eBooks** | `.epub`, `.fb2` | Chapters, metadata, embedded resources |
-| **Database** | `.dbf` | Table data extraction, field type support |
-| **Hangul** | `.hwp`, `.hwpx` | Korean document format, text extraction |
-
-### Images (OCR-Enabled)
-
-| Category | Formats | Features |
-|----------|---------|----------|
-| **Raster** | `.png`, `.jpg`, `.jpeg`, `.gif`, `.webp`, `.bmp`, `.tiff`, `.tif` | OCR, table detection, EXIF metadata, dimensions, color space |
-| **Advanced** | `.jp2`, `.jpx`, `.jpm`, `.mj2`, `.jbig2`, `.jb2`, `.pnm`, `.pbm`, `.pgm`, `.ppm` | Pure Rust decoders (JPEG 2000, JBIG2), OCR, table detection |
-| **Vector** | `.svg` | DOM parsing, embedded text, graphics metadata |
-
-### Web & Data
-
-| Category | Formats | Features |
-|----------|---------|----------|
-| **Markup** | `.html`, `.htm`, `.xhtml`, `.xml`, `.svg` | DOM parsing, metadata (Open Graph, Twitter Card), link extraction |
-| **Structured Data** | `.json`, `.yaml`, `.yml`, `.toml`, `.csv`, `.tsv` | Schema detection, nested structures, validation |
-| **Text & Markdown** | `.txt`, `.md`, `.markdown`, `.djot`, `.mdx`, `.rst`, `.org`, `.rtf` | CommonMark, GFM, Djot, MDX, reStructuredText, Org Mode, Rich Text |
-
-### Email & Archives
-
-| Category | Formats | Features |
-|----------|---------|----------|
-| **Email** | `.eml`, `.msg` | Headers, body (HTML/plain), attachments, UTF-16 support |
-| **Archives** | `.zip`, `.tar`, `.tgz`, `.gz`, `.7z` | Recursive extraction, nested archives, metadata |
-
-### Academic & Scientific
-
-| Category | Formats | Features |
-|----------|---------|----------|
-| **Citations** | `.bib`, `.ris`, `.nbib`, `.enw`, `.csl` | BibTeX/BibLaTeX, RIS, PubMed/MEDLINE, EndNote XML, CSL JSON |
-| **Scientific** | `.tex`, `.latex`, `.typ`, `.typst`, `.jats`, `.ipynb` | LaTeX, Typst, JATS journal articles, Jupyter notebooks |
-| **Publishing** | `.fb2`, `.docbook`, `.dbk`, `.opml` | FictionBook, DocBook XML, OPML outlines |
-| **Documentation** | `.pod`, `.mdoc`, `.troff` | Perl POD, man pages, troff |
+- **Office** – Word (`.docx`/`.odt`/`.pages`), spreadsheets (`.xlsx`/`.ods`/`.numbers`), presentations (`.pptx`/`.key`), `.pdf`, eBooks (`.epub`/`.fb2`), `.dbf`, Hangul (`.hwp`/`.hwpx`)
+- **Images (OCR)** – `.png`/`.jpg`/`.gif`/`.webp`/`.bmp`/`.tiff`, advanced (`.jp2`/`.jbig2`/`.pnm` via pure-Rust decoders), and `.svg`
+- **Web & Data** – `.html`/`.xml`, structured data (`.json`/`.yaml`/`.toml`/`.csv`), and text/markup (`.md`/`.djot`/`.rst`/`.org`/`.rtf`)
+- **Email & Archives** – `.eml`/`.msg`, and `.zip`/`.tar`/`.gz`/`.7z` with recursive extraction
+- **Academic & Scientific** – citations (`.bib`/`.ris`/`.nbib`/`.csl`), `.tex`/`.typ`/`.jats`/`.ipynb`, and publishing/documentation formats (`.docbook`/`.opml`/`.pod`/`.troff`)
 
 **[Complete Format Reference →](https://docs.kreuzberg.dev/reference/formats/)**
 
 ### Code Intelligence (248 Languages)
 
-| Feature | Description |
-|---------|-------------|
-| **Structure Extraction** | Functions, classes, methods, structs, interfaces, enums |
-| **Import/Export Analysis** | Module dependencies, re-exports, wildcard imports |
-| **Symbol Extraction** | Variables, constants, type aliases, properties |
-| **Docstring Parsing** | Google, NumPy, Sphinx, JSDoc, RustDoc, and 10+ formats |
-| **Diagnostics** | Parse errors with line/column positions |
-| **Syntax-Aware Chunking** | Split code by semantic boundaries, not arbitrary byte offsets |
-
-Powered by [tree-sitter-language-pack](https://github.com/kreuzberg-dev/tree-sitter-language-pack) with dynamic grammar download. See [TSLP documentation](https://docs.tree-sitter-language-pack.kreuzberg.dev) for the full language list.
-
-## Key Features
-
-<details>
-<summary><strong>OCR with Table Extraction</strong></summary>
-
-Multiple OCR backends (Tesseract, EasyOCR, PaddleOCR) with intelligent table detection and reconstruction. Extract structured data from scanned documents and images with configurable accuracy thresholds.
-
-**[OCR Backend Documentation →](https://docs.kreuzberg.dev/guides/ocr/)**
-
-</details>
-
-<details>
-<summary><strong>Batch Processing</strong></summary>
-
-Process multiple documents concurrently with configurable parallelism. Optimize throughput for large-scale document processing workloads with automatic resource management.
-
-**[Batch Processing Guide →](https://docs.kreuzberg.dev/features/#batch-processing)**
-
-</details>
-
-<details>
-<summary><strong>Password-Protected PDFs</strong></summary>
-
-Handle encrypted PDFs with single or multiple password attempts. Supports both RC4 and AES encryption with automatic fallback strategies.
-
-**[PDF Configuration →](https://docs.kreuzberg.dev/guides/configuration/)**
-
-</details>
-
-<details>
-<summary><strong>Language Detection</strong></summary>
-
-Automatic language detection in extracted text using fast-langdetect. Configure confidence thresholds and access per-language statistics.
-
-**[Language Detection Guide →](https://docs.kreuzberg.dev/features/#language-detection)**
-
-</details>
-
-<details>
-<summary><strong>Metadata Extraction</strong></summary>
-
-Extract comprehensive metadata from all supported formats: authors, titles, creation dates, page counts, EXIF data, and format-specific properties.
-
-**[Metadata Guide →](https://docs.kreuzberg.dev/reference/types/#metadata)**
-
-</details>
+Extract structure (functions, classes, imports, symbols), parse docstrings (Google, NumPy, Sphinx, JSDoc, RustDoc, +10 more), and split code by semantic boundaries. Powered by [tree-sitter-language-pack](https://github.com/xberg-io/tree-sitter-language-pack) with dynamic grammar download — see the [TSLP documentation](https://docs.tree-sitter-language-pack.xberg.io) for the full language list.
 
 ## AI Coding Assistants
 
@@ -293,6 +190,18 @@ The skill is located at [`skills/kreuzberg/SKILL.md`](skills/kreuzberg/SKILL.md)
 - **[OCR Backends](https://docs.kreuzberg.dev/guides/ocr/)** – OCR engine setup
 - **[CLI Guide](https://docs.kreuzberg.dev/cli/usage/)** – Command-line usage
 - **[Migration Guides](https://docs.kreuzberg.dev/migration/from-unstructured/)** – Upgrading from other libraries
+
+## Part of Xberg.io
+
+Kreuzberg v4 LTS is the legacy line of the document-intelligence library now developed as **Xberg**. It is one of the open-source projects from Kreuzberg, Inc.:
+
+- [Xberg](https://github.com/xberg-io/xberg) — document intelligence: text, tables, metadata from 91+ formats with optional OCR (the active successor to Kreuzberg).
+- [Xberg Enterprise](https://github.com/xberg-io/xberg-enterprise) — managed extraction API with SDKs, dashboards, and observability.
+- [crawlberg](https://github.com/xberg-io/crawlberg) — web crawling and scraping with HTML→Markdown and headless-Chrome fallback.
+- [html-to-markdown](https://github.com/xberg-io/html-to-markdown) — fast, lossless HTML→Markdown engine.
+- [liter-llm](https://github.com/xberg-io/liter-llm) — universal LLM API client with native bindings for 14 languages and 143 providers.
+- [tree-sitter-language-pack](https://github.com/xberg-io/tree-sitter-language-pack) — tree-sitter grammars and code-intelligence primitives.
+- [alef](https://github.com/xberg-io/alef) — the polyglot binding generator that produces every per-language binding across the polyglot repos.
 
 ## Contributing
 

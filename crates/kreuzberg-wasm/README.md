@@ -22,7 +22,7 @@
     <img src="https://img.shields.io/maven-central/v/dev.kreuzberg/kreuzberg?label=Java&color=007ec6" alt="Java">
   </a>
   <a href="https://github.com/kreuzberg-dev/kreuzberg-lts/releases">
-    <img src="https://img.shields.io/github/v/tag/kreuzberg-dev/kreuzberg-lts?label=Go&color=007ec6&filter=v4.9.9" alt="Go">
+    <img src="https://img.shields.io/github/v/tag/kreuzberg-dev/kreuzberg-lts?label=Go&color=007ec6&filter=v4.*" alt="Go">
   </a>
   <a href="https://www.nuget.org/packages/Kreuzberg/">
     <img src="https://img.shields.io/nuget/v/Kreuzberg?label=C%23&color=007ec6" alt="C#">
@@ -58,7 +58,11 @@
   </a>
 </div>
 
-<img width="1128" height="191" alt="Banner2" src="https://github.com/user-attachments/assets/419fc06c-8313-4324-b159-4b4d3cfce5c0" />
+> [!NOTE]
+> **Kreuzberg v4 LTS** — the long-term-support line for Kreuzberg **v4**. Active development has moved to
+> **[Xberg](https://github.com/xberg-io/xberg)** (v5+), which receives all new features. This line receives
+> critical bug and security fixes until the **end of 2026, on a best-effort basis**.
+> See the **[migration guide & LTS policy →](https://docs.kreuzberg.dev/lts/)**
 
 <div align="center" style="margin-top: 20px;">
   <a href="https://discord.gg/xt9WY3GnKR">
@@ -186,7 +190,7 @@ extractWithOcr().catch(console.error);
 #### Table Extraction
 
 
-See [Table Extraction Guide](https://kreuzberg.dev/features/table-extraction/) for detailed examples.
+See [Table Extraction Guide](https://docs.kreuzberg.dev/features/table-extraction/) for detailed examples.
 
 
 
@@ -271,10 +275,10 @@ extractDocuments(fileBytes, mimes)
 
 ### Next Steps
 
-- **[Installation Guide](https://kreuzberg.dev/getting-started/installation/)** - Platform-specific setup
-- **[API Documentation](https://kreuzberg.dev/api/)** - Complete API reference
-- **[Examples & Guides](https://kreuzberg.dev/guides/)** - Full code examples and usage guides
-- **[Configuration Guide](https://kreuzberg.dev/guides/configuration/)** - Advanced configuration options
+- **[Installation Guide](https://docs.kreuzberg.dev/getting-started/installation/)** - Platform-specific setup
+- **[API Documentation](https://docs.kreuzberg.dev/api/)** - Complete API reference
+- **[Examples & Guides](https://docs.kreuzberg.dev/guides/)** - Full code examples and usage guides
+- **[Configuration Guide](https://docs.kreuzberg.dev/guides/configuration/)** - Advanced configuration options
 
 
 
@@ -338,9 +342,9 @@ extractDocuments(fileBytes, mimes)
 | **Diagnostics** | Parse errors with line/column positions |
 | **Syntax-Aware Chunking** | Split code by semantic boundaries, not arbitrary byte offsets |
 
-Powered by [tree-sitter-language-pack](https://github.com/kreuzberg-dev/tree-sitter-language-pack) — [documentation](https://docs.tree-sitter-language-pack.kreuzberg.dev).
+Powered by [tree-sitter-language-pack](https://github.com/xberg-io/tree-sitter-language-pack) — [documentation](https://docs.tree-sitter-language-pack.xberg.io).
 
-**[Complete Format Reference](https://kreuzberg.dev/reference/formats/)**
+**[Complete Format Reference](https://docs.kreuzberg.dev/reference/formats/)**
 
 ### Key Capabilities
 
@@ -360,7 +364,7 @@ Powered by [tree-sitter-language-pack](https://github.com/kreuzberg-dev/tree-sit
 - **Memory Efficient** - Stream large files without loading entirely into memory
 - **Language Detection** - Detect and support multiple languages in documents
 
-- **Code Intelligence** - Extract structure, imports, exports, symbols, and docstrings from [248 programming languages](https://docs.tree-sitter-language-pack.kreuzberg.dev) via tree-sitter
+- **Code Intelligence** - Extract structure, imports, exports, symbols, and docstrings from [248 programming languages](https://docs.tree-sitter-language-pack.xberg.io) via tree-sitter
 
 - **Configuration** - Fine-grained control over extraction behavior
 
@@ -457,7 +461,7 @@ extractDocuments(fileBytes, mimes)
 
 Kreuzberg supports extensible post-processing plugins for custom text transformation and filtering.
 
-For detailed plugin documentation, visit [Plugin System Guide](https://kreuzberg.dev/guides/plugins/).
+For detailed plugin documentation, visit [Plugin System Guide](https://docs.kreuzberg.dev/guides/plugins/).
 
 
 
@@ -511,13 +515,13 @@ async function _processBatch(documents: DocumentJob[], concurrency: number = 3) 
 
 For advanced configuration options including language detection, table extraction, OCR settings, and more:
 
-**[Configuration Guide](https://kreuzberg.dev/guides/configuration/)**
+**[Configuration Guide](https://docs.kreuzberg.dev/guides/configuration/)**
 
 ## Documentation
 
-- **[Official Documentation](https://kreuzberg.dev/)**
-- **[API Reference](https://kreuzberg.dev/reference/api-wasm/)**
-- **[Examples & Guides](https://kreuzberg.dev/guides/)**
+- **[Official Documentation](https://docs.kreuzberg.dev/)**
+- **[API Reference](https://docs.kreuzberg.dev/reference/api-wasm/)**
+- **[Examples & Guides](https://docs.kreuzberg.dev/guides/)**
 
 ## Contributing
 

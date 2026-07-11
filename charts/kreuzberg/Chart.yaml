@@ -5,8 +5,8 @@ description: >-
   a Rust core. Extract text, metadata, images, and structured information from
   PDFs, Office documents, images, and 91+ formats.
 type: application
-version: 4.9.9
-appVersion: "4.9.9"
+version: 4.10.0
+appVersion: "4.10.0"
 home: https://kreuzberg.dev
 sources:
   - https://github.com/kreuzberg-dev/kreuzberg-lts

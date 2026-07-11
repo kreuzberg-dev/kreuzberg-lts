@@ -47,7 +47,7 @@ echo "packages/python/pyproject.toml: $python_version"
   errors=$((errors + 1))
 }
 
-ruby_version="$(grep "VERSION =" packages/ruby/lib/kreuzberg/version.rb | cut -d"'" -f2)"
+ruby_version="$(grep "VERSION =" packages/ruby/lib/kreuzberg/version.rb | grep -oE '[0-9]+\.[0-9]+\.[0-9]+[^"'"'"']*')"
 echo "packages/ruby/lib/kreuzberg/version.rb: $ruby_version"
 [ "$ruby_version" = "$expected" ] || {
   echo "❌ Ruby version.rb mismatch"

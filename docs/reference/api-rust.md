@@ -439,7 +439,7 @@ pub struct ExtractionConfig {
 - `concurrency` (Option<ConcurrencyConfig>) <span class="version-badge">v4.5.0</span>: Concurrency configuration. Default: None
 - `enable_quality_processing` (bool): Enable quality post-processing. Default: true
 - `force_ocr` (bool): Force OCR even for text-based PDFs. Default: false
-- `html_options` (Option<[ConversionOptions](https://docs.html-to-markdown.kreuzberg.dev/reference/configuration/)>): HTML conversion options from [html-to-markdown](https://docs.html-to-markdown.kreuzberg.dev) (when feature `html`). Default: None
+- `html_options` (Option<[ConversionOptions](https://docs.html-to-markdown.xberg.io/reference/configuration/)>): HTML conversion options from [html-to-markdown](https://docs.html-to-markdown.xberg.io) (when feature `html`). Default: None
 - `images` (Option<ImageExtractionConfig>): Image extraction from documents. Default: None
 - `include_document_structure` (bool): Populate `document` field with hierarchical DocumentStructure. Default: false
 - `keywords` (Option<KeywordConfig>): Keyword extraction (requires `keywords-yake` or `keywords-rake`). Default: None
@@ -1879,7 +1879,7 @@ For configuration details including API keys, model selection, and provider setu
 
 ## Code Intelligence
 
-Kreuzberg uses [tree-sitter-language-pack](https://docs.tree-sitter-language-pack.kreuzberg.dev) to parse and analyze source code files across 248 programming languages. When extracting code files, the result metadata includes structural analysis, imports, exports, symbols, diagnostics, and semantic code chunks.
+Kreuzberg uses [tree-sitter-language-pack](https://docs.tree-sitter-language-pack.xberg.io) to parse and analyze source code files across 248 programming languages. When extracting code files, the result metadata includes structural analysis, imports, exports, symbols, diagnostics, and semantic code chunks.
 
 Code intelligence data is available via `FormatMetadata::Code` in the `metadata.format` field. Requires the `tree-sitter` feature flag.
 

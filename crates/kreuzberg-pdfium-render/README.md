@@ -4,7 +4,7 @@ A high-level idiomatic Rust wrapper around [Pdfium](https://pdfium.googlesource.
 the C++ PDF library used by the Google Chromium project.
 
 This is a fork of [pdfium-render](https://github.com/ajrcarey/pdfium-render) maintained as part
-of the [Kreuzberg](https://kreuzberg.dev) project.
+of the [Kreuzberg](https://docs.kreuzberg.dev) project.
 
 ## Upstream
 

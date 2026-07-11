@@ -41,7 +41,7 @@ The v4 packages keep their existing names and install paths:
 | npm | `npm install @kreuzberg/kreuzberg@^4` |
 | Go | `go get github.com/kreuzberg-dev/kreuzberg-lts/v4` |
 | Docker | `docker pull ghcr.io/kreuzberg-dev/kreuzberg:4` |
-| Helm | `helm install kreuzberg oci://ghcr.io/kreuzberg-dev/charts/kreuzberg --version 4.9.9` |
+| Helm | `helm install kreuzberg oci://ghcr.io/kreuzberg-dev/charts/kreuzberg --version 4.10.0` |
 
 ### A note for Go users
 

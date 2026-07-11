@@ -1080,7 +1080,7 @@ chunking:
 
 ## LlmConfig
 
-Configuration for LLM provider connections used by structured extraction, VLM-based OCR, and provider-hosted embeddings. Uses [liter-llm](https://github.com/kreuzberg-dev/liter-llm) for provider-agnostic model access.
+Configuration for LLM provider connections used by structured extraction, VLM-based OCR, and provider-hosted embeddings. Uses [liter-llm](https://github.com/xberg-io/liter-llm) for provider-agnostic model access.
 
 ### Fields
 

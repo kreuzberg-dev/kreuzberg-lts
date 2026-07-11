@@ -35,7 +35,7 @@ languages:
     package_manager: [pip]                          # Installation methods
     package_name: kreuzberg                         # Package identifier
     badge_url: https://img.shields.io/...          # Package badge
-    docs_url: https://kreuzberg.dev/               # Documentation link
+    docs_url: https://docs.kreuzberg.dev/               # Documentation link
     description: |                                  # Language-specific description
       High-performance document intelligence...
     features:                                       # Feature flags
@@ -239,7 +239,7 @@ languages:                          # Required: language definitions
     package_manager: [pip]
     package_name: kreuzberg
     badge_url: https://img.shields.io/pypi/v/kreuzberg?label=Python
-    docs_url: https://kreuzberg.dev/
+    docs_url: https://docs.kreuzberg.dev/
 
     # Multi-line description (preserve formatting with |)
     description: |
@@ -305,7 +305,7 @@ languages:
     package_manager: [gradle, maven]# Installation methods
     package_name: dev.kreuzberg:kreuzberg-kotlin
     badge_url: https://img.shields.io/maven-central/v/dev.kreuzberg/kreuzberg-kotlin?label=Kotlin
-    docs_url: https://kreuzberg.dev/
+    docs_url: https://docs.kreuzberg.dev/
     description: |
       High-performance document intelligence for Kotlin.
       Native performance on the JVM with idiomatic Kotlin APIs.

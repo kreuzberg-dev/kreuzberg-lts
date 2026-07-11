@@ -22,7 +22,7 @@
     <img src="https://img.shields.io/maven-central/v/dev.kreuzberg/kreuzberg?label=Java&color=007ec6" alt="Java">
   </a>
   <a href="https://github.com/kreuzberg-dev/kreuzberg-lts/releases">
-    <img src="https://img.shields.io/github/v/tag/kreuzberg-dev/kreuzberg-lts?label=Go&color=007ec6&filter=v4.9.9" alt="Go">
+    <img src="https://img.shields.io/github/v/tag/kreuzberg-dev/kreuzberg-lts?label=Go&color=007ec6&filter=v4.*" alt="Go">
   </a>
   <a href="https://www.nuget.org/packages/Kreuzberg/">
     <img src="https://img.shields.io/nuget/v/Kreuzberg?label=C%23&color=007ec6" alt="C#">
@@ -58,7 +58,11 @@
   </a>
 </div>
 
-<img width="1128" height="191" alt="Banner2" src="https://github.com/user-attachments/assets/419fc06c-8313-4324-b159-4b4d3cfce5c0" />
+> [!NOTE]
+> **Kreuzberg v4 LTS** — the long-term-support line for Kreuzberg **v4**. Active development has moved to
+> **[Xberg](https://github.com/xberg-io/xberg)** (v5+), which receives all new features. This line receives
+> critical bug and security fixes until the **end of 2026, on a best-effort basis**.
+> See the **[migration guide & LTS policy →](https://docs.kreuzberg.dev/lts/)**
 
 <div align="center" style="margin-top: 20px;">
   <a href="https://discord.gg/xt9WY3GnKR">
@@ -69,7 +73,7 @@
 
 High-performance document intelligence for Go backed by the Rust core that powers every Kreuzberg binding.
 
-> **Version 4.8.4**
+> **Version 4.10.0**
 > Report issues at [github.com/kreuzberg-dev/kreuzberg-lts](https://github.com/kreuzberg-dev/kreuzberg-lts/issues).
 
 ## Install
@@ -104,7 +108,7 @@ To use this package via `go get`:
 go get github.com/kreuzberg-dev/kreuzberg-lts/v4@latest
 
 # Or a specific version
-go get github.com/kreuzberg-dev/kreuzberg-lts/v4@v4.8.4
+go get github.com/kreuzberg-dev/kreuzberg-lts/v4@v4.10.0
 ```
 
 You'll need to provide the static library at build time. See [Building with Static Libraries](#building-with-static-libraries) below.
@@ -119,7 +123,7 @@ Download the static library for your platform from [GitHub Releases](https://git
 
 ```bash
 # Example: Linux x86_64
-curl -LO https://github.com/kreuzberg-dev/kreuzberg-lts/releases/download/v4.8.4/go-ffi-linux-x86_64.tar.gz
+curl -LO https://github.com/kreuzberg-dev/kreuzberg-lts/releases/download/v4.10.0/go-ffi-linux-x86_64.tar.gz
 tar -xzf go-ffi-linux-x86_64.tar.gz
 
 # Copy to a permanent location
@@ -298,7 +302,7 @@ func init() {
 ## API Reference
 
 - **GoDoc**: [pkg.go.dev/github.com/kreuzberg-dev/kreuzberg-lts/v4](https://pkg.go.dev/github.com/kreuzberg-dev/kreuzberg-lts/v4)
-- **Full documentation**: [kreuzberg.dev](https://kreuzberg.dev) (configuration, formats, OCR backends)
+- **Full documentation**: [kreuzberg.dev](https://docs.kreuzberg.dev) (configuration, formats, OCR backends)
 
 ## Troubleshooting
 

@@ -7,6 +7,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.10.0] - 2026-07-11
+
+First release of the standalone **Kreuzberg v4 LTS** line. This is the long-term-support home for
+Kreuzberg v4; active development continues as [Xberg](https://github.com/xberg-io/xberg) (v5+). No
+behavioural changes to extraction — this release is a security, licensing, and packaging refresh.
+
+### Security
+
+- Upgraded core dependencies to their latest patched releases (incompatible-version bumps, no
+  downgrades): `hf-hub` 1.0, `rmcp` 2.2, `lopdf` 0.44, `liter-llm` 1.9, `pyo3`/`pyo3-async-runtimes`
+  0.29, `comrak` 0.53, `calamine` 0.36, `quick-xml` 0.41, `text-splitter` 0.32, `tower-http` 0.7,
+  `jsonschema` 0.47, `biblib` 0.7, `biblatex` 0.12, `itertools` 0.15, and `time` 0.3.53. Source was
+  adapted to the new APIs where required.
+
+### Changed
+
+- **License is now MIT** (earlier v4 releases shipped under the Elastic License 2.0).
+- Repository is now the standalone **[`kreuzberg-dev/kreuzberg-lts`](https://github.com/kreuzberg-dev/kreuzberg-lts)**
+  LTS home. New v4 Go releases publish under `github.com/kreuzberg-dev/kreuzberg-lts/v4`; existing
+  `github.com/kreuzberg-dev/kreuzberg` pins keep resolving via the Go module proxy cache.
+- Migrated lint/format tooling to [poly](https://github.com/xberg-io/poly) and simplified CI to
+  mainline Rust plus the publish pipeline.
+- Repointed sibling-ecosystem links (liter-llm, tree-sitter-language-pack, html-to-markdown) to the
+  `xberg-io` org.
+
+### Added
+
+- LTS support policy and migration guide at [docs.kreuzberg.dev/lts](https://docs.kreuzberg.dev/lts/):
+  v4 receives critical bug and security fixes until the end of 2026 on a best-effort basis. The **R
+  binding remains exclusive to the v4 LTS line** (it is not part of Xberg v5).
+
 ## [4.9.9] - 2026-06-05
 
 LTS patch release with PDF/OCR robustness fixes and selected stability
@@ -558,7 +589,7 @@ restructured `pdf::structure`):
   - New `tree-sitter` and `tree-sitter-wasm` feature flags (included in `full` and `wasm-target`)
   - `TreeSitterConfig` and `TreeSitterProcessConfig` in `ExtractionConfig`
   - Re-exported TSLP types (`ProcessResult`, `StructureItem`, `FileMetrics`, etc.)
-  - [TSLP documentation](https://docs.tree-sitter-language-pack.kreuzberg.dev)
+  - [TSLP documentation](https://docs.tree-sitter-language-pack.xberg.io)
 
 ### Typed Metadata
 

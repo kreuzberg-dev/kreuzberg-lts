@@ -2,7 +2,7 @@
 
 Kreuzberg sits in a crowded space of document extraction tools. Some are general-purpose libraries that handle dozens of formats, others are laser-focused on PDFs. This page maps the landscape so you can find the right tool for your project.
 
-For performance and quality numbers across all of these tools, see the [live benchmarks](https://kreuzberg.dev/benchmarks).
+For performance and quality numbers across all of these tools, see the [live benchmarks](https://docs.kreuzberg.dev/benchmarks).
 
 ---
 
@@ -41,4 +41,4 @@ These focus on PDF extraction only. They're not direct competitors to Kreuzberg'
 
 !!! Info "Benchmarks"
 
-    Kreuzberg benchmarks against all of the libraries listed above. For extraction speed, quality scores, and format-by-format comparisons, see the [live benchmark dashboard](https://kreuzberg.dev/benchmarks).
+    Kreuzberg benchmarks against all of the libraries listed above. For extraction speed, quality scores, and format-by-format comparisons, see the [live benchmark dashboard](https://docs.kreuzberg.dev/benchmarks).

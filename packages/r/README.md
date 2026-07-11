@@ -49,7 +49,11 @@
   </a>
 </div>
 
-<img width="3384" height="573" alt="Linkedin- Banner" src="https://github.com/user-attachments/assets/1b6c6ad7-3b6d-4171-b1c9-f2026cc9deb8" />
+> [!NOTE]
+> **Kreuzberg v4 LTS** — the long-term-support line for Kreuzberg **v4**. Active development has moved to
+> **[Xberg](https://github.com/xberg-io/xberg)** (v5+). The **R binding is exclusive to this v4 LTS line**
+> (it is not part of Xberg v5). This line receives critical fixes until the **end of 2026, best effort**.
+> See the **[migration guide & LTS policy →](https://docs.kreuzberg.dev/lts/)**
 
 <div align="center" style="margin-top: 20px;">
   <a href="https://discord.gg/xt9WY3GnKR">
@@ -212,11 +216,11 @@ cat("Validators:", paste(list_validators(), collapse = ", "), "\n")
 
 ## Documentation
 
-- [Full Documentation](https://kreuzberg.dev)
-- [R API Reference](https://kreuzberg.dev/reference/api-r/)
-- [Configuration Guide](https://kreuzberg.dev/guides/configuration/)
-- [OCR Guide](https://kreuzberg.dev/guides/ocr/)
-- [Plugin Guide](https://kreuzberg.dev/guides/plugins/)
+- [Full Documentation](https://docs.kreuzberg.dev)
+- [R API Reference](https://docs.kreuzberg.dev/reference/api-r/)
+- [Configuration Guide](https://docs.kreuzberg.dev/guides/configuration/)
+- [OCR Guide](https://docs.kreuzberg.dev/guides/ocr/)
+- [Plugin Guide](https://docs.kreuzberg.dev/guides/plugins/)
 
 ## Contributing
 
@@ -228,6 +232,6 @@ MIT License - see [LICENSE](LICENSE) for details.
 
 ## Support
 
-- [Discord](https://discord.gg/kreuzberg)
+- [Discord](https://discord.gg/xt9WY3GnKR)
 - [GitHub Issues](https://github.com/kreuzberg-dev/kreuzberg-lts/issues)
 - [GitHub Discussions](https://github.com/kreuzberg-dev/kreuzberg-lts/discussions)

@@ -1,6 +1,6 @@
 # Code Intelligence
 
-Kreuzberg integrates [tree-sitter-language-pack](https://docs.tree-sitter-language-pack.kreuzberg.dev) (TSLP) to parse and analyze source code files. When you extract a source code file, Kreuzberg automatically detects the programming language and produces structured analysis alongside the raw text content.
+Kreuzberg integrates [tree-sitter-language-pack](https://docs.tree-sitter-language-pack.xberg.io) (TSLP) to parse and analyze source code files. When you extract a source code file, Kreuzberg automatically detects the programming language and produces structured analysis alongside the raw text content.
 
 ## What You Get
 
@@ -16,7 +16,7 @@ When extracting source code, the `metadata.format` field contains a `ProcessResu
 - **Chunks** -- semantically meaningful code chunks for RAG and embedding pipelines
 - **Metrics** -- file-level statistics (lines of code, comment lines, blank lines, node count)
 
-Language support covers **248 programming languages** via tree-sitter grammars. See the [TSLP documentation](https://docs.tree-sitter-language-pack.kreuzberg.dev) for the full language list.
+Language support covers **248 programming languages** via tree-sitter grammars. See the [TSLP documentation](https://docs.tree-sitter-language-pack.xberg.io) for the full language list.
 
 ## Getting Started
 
@@ -307,7 +307,7 @@ If neither method identifies the language, extraction returns an `UnsupportedFor
 
 ## Language Support
 
-Tree-sitter-language-pack supports 248 programming languages. For the full list, see the [TSLP language reference](https://docs.tree-sitter-language-pack.kreuzberg.dev).
+Tree-sitter-language-pack supports 248 programming languages. For the full list, see the [TSLP language reference](https://docs.tree-sitter-language-pack.xberg.io).
 
 Common languages with full structural analysis:
 
@@ -331,4 +331,4 @@ Common languages with full structural analysis:
 
 - [Configuration Reference](../reference/configuration.md#treesitterconfig) -- TreeSitterConfig and TreeSitterProcessConfig fields
 - [Types Reference](../reference/types.md#code-metadata-processresult) -- ProcessResult, StructureItem, CodeChunk, and related type definitions
-- [tree-sitter-language-pack documentation](https://docs.tree-sitter-language-pack.kreuzberg.dev) -- Full language support reference
+- [tree-sitter-language-pack documentation](https://docs.tree-sitter-language-pack.xberg.io) -- Full language support reference
