@@ -1,6 +1,8 @@
 # Kreuzberg
 
-> High-performance document intelligence library with a Rust core and bindings for 12 languages. Extract text, metadata, and structured data from 88+ file formats including PDF, DOCX, PPTX, XLSX, HTML, images (with OCR), email, archives, and more.
+> **Kreuzberg v4 LTS (legacy line).** This is the long-term-support home for Kreuzberg **v4**. Active development has moved to **Xberg** (https://github.com/xberg-io/xberg), v5 and later. The v4 line receives critical bug and security fixes through the end of 2026 on a best-effort basis; new features land in Xberg. Migration guide and LTS policy: https://docs.kreuzberg.dev/lts/
+
+> High-performance document intelligence library with a Rust core and bindings for 12 languages. Extract text, metadata, and structured data from 91+ file formats including PDF, DOCX, PPTX, XLSX, HTML, images (with OCR), email, archives, and more.
 
 Kreuzberg provides async/sync APIs, text chunking, language detection, keyword extraction, and an extensible plugin system. It is 10-50x faster than pure-Python alternatives thanks to its Rust core.
 
@@ -55,7 +57,7 @@ Kreuzberg provides async/sync APIs, text chunking, language detection, keyword e
 - [Configuration Reference](https://docs.kreuzberg.dev/reference/configuration/): Full configuration options
 - [Environment Variables](https://docs.kreuzberg.dev/reference/environment-variables/): KREUZBERG_* environment variable reference
 - [File Size Limits](https://docs.kreuzberg.dev/reference/file-size-limits/): Upload and processing size limits
-- [Format Support](https://docs.kreuzberg.dev/reference/formats/): Supported file formats (75+)
+- [Format Support](https://docs.kreuzberg.dev/reference/formats/): Supported file formats (91+)
 - [Types](https://docs.kreuzberg.dev/reference/types/): Type definitions
 - [Errors](https://docs.kreuzberg.dev/reference/errors/): Error types and handling
 
