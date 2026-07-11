@@ -1,0 +1,53 @@
+# AI-Rulez Configuration (migrated to V4 TOML format)
+# Documentation: https://github.com/Goldziher/ai-rulez
+
+version = '4.0'
+name = 'Kreuzberg'
+description = 'Rust document intelligence library with polyglot bindings (Python/TypeScript/Ruby/Java/Go/Elixir/C#/PHP)'
+gitignore = true
+presets = ['claude', 'copilot', 'cursor', 'antigravity', 'codex']
+builtins = ['rust', 'python', 'typescript', 'go', 'java', 'ruby', 'php', 'csharp', 'elixir', 'r', 'security', 'git-workflow', 'code-quality', 'testing', 'token-efficiency', 'default-commands']
+
+[[includes]]
+name = 'kreuzberg-core'
+source = 'https://github.com/kreuzberg-dev/ai-rulez.git'
+path = 'modules/core'
+merge_strategy = 'local-override'
+
+[[includes]]
+name = 'kreuzberg-languages'
+source = 'https://github.com/kreuzberg-dev/ai-rulez.git'
+path = 'modules/languages'
+merge_strategy = 'local-override'
+
+[[includes]]
+name = 'kreuzberg-cicd'
+source = 'https://github.com/kreuzberg-dev/ai-rulez.git'
+path = 'modules/cicd'
+merge_strategy = 'local-override'
+
+[[includes]]
+name = 'kreuzberg-infrastructure'
+source = 'https://github.com/kreuzberg-dev/ai-rulez.git'
+path = 'modules/infrastructure'
+merge_strategy = 'local-override'
+
+[[installed_skills]]
+name = 'alef'
+source = 'https://github.com/kreuzberg-dev/alef.git'
+
+[[mcp_servers]]
+name = 'playwright'
+description = 'Browser automation for testing and web interaction'
+command = 'npx'
+args = ['-y', '@playwright/mcp']
+transport = 'stdio'
+enabled = true
+
+[[mcp_servers]]
+name = 'ai-rulez'
+description = 'AI-Rulez MCP server for configuration management'
+command = 'ai-rulez'
+args = ['mcp']
+transport = 'stdio'
+enabled = true

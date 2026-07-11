@@ -214,6 +214,7 @@ GEMINI.md
 
 # BEGIN ai-rulez (DO NOT EDIT - managed by ai-rulez)
 .agents/
+.ai-rulez/.generated-manifest.json
 .cursor/
 .github/agents/
 .github/commands/
