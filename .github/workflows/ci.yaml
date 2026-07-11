@@ -48,7 +48,7 @@ jobs:
           use-sccache: "true"
 
       - name: Setup OpenSSL
-        uses: kreuzberg-dev/actions/setup-openssl@v1
+        run: sudo apt-get update && sudo apt-get install -y pkg-config libssl-dev
 
       - name: Install Task
         uses: kreuzberg-dev/actions/install-task@v1
@@ -111,9 +111,6 @@ jobs:
         with:
           show-initial: "true"
           show-final: "true"
-
-      - name: Setup OpenSSL
-        uses: kreuzberg-dev/actions/setup-openssl@v1
 
       - name: Cache Hugging Face models (fastembed)
         uses: ./.github/actions/cache-hf-fastembed
