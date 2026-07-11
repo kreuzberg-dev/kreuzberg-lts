@@ -86,7 +86,7 @@ Add to your `mix.exs` dependencies:
 ```elixir
 def deps do
   [
-    kreuzberg: "~> 4.0"
+    kreuzberg: "~> 4.10"
   ]
 end
 ```

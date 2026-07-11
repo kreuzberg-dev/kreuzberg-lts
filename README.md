@@ -22,7 +22,7 @@
     <img src="https://img.shields.io/maven-central/v/dev.kreuzberg/kreuzberg?label=Java&color=007ec6" alt="Java">
   </a>
   <a href="https://github.com/kreuzberg-dev/kreuzberg-lts/releases">
-    <img src="https://img.shields.io/github/v/tag/kreuzberg-dev/kreuzberg-lts?label=Go&color=007ec6&filter=v4.10.0" alt="Go">
+    <img src="https://img.shields.io/github/v/tag/kreuzberg-dev/kreuzberg-lts?label=Go&color=007ec6&filter=v4.10.1" alt="Go">
   </a>
   <a href="https://www.nuget.org/packages/Kreuzberg/">
     <img src="https://img.shields.io/nuget/v/Kreuzberg?label=C%23&color=007ec6" alt="C#">

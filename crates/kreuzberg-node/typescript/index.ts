@@ -159,6 +159,6 @@ export type { EmbeddingConfig, EmbeddingModelType } from "./types.js";
 export type { EmbeddingPreset } from "./embeddings/presets.js";
 export { embed, embedSync, getEmbeddingPreset, listEmbeddingPresets } from "./embeddings/presets.js";
 
-export const __version__ = "4.10.0";
+export const __version__ = "4.10.1";
 
 export { __resetBindingForTests, __setBindingForTests } from "./core/binding.js";

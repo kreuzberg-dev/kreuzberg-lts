@@ -229,7 +229,7 @@ infer = "0.19.0"
 jotdown = "0.10"
 kamadak-exif = { version = "0.6.1", optional = true }
 
-kreuzberg-tesseract = { path = "../kreuzberg-tesseract", version = "4.10.0", optional = true }
+kreuzberg-tesseract = { path = "../kreuzberg-tesseract", version = "4.10.1", optional = true }
 libc = { workspace = true }
 liter-llm = { workspace = true, optional = true }
 log = { workspace = true }
@@ -308,14 +308,14 @@ zip = { version = ">=7.0.0", optional = true, default-features = false, features
 [target.'cfg(all(not(target_os = "windows"), not(target_arch = "wasm32")))'.dependencies]
 hf-hub = { version = "1.0", default-features = false, features = ["blocking", "rustls-tls"], optional = true }
 # PaddleOCR via ONNX Runtime - not available on WASM (vendored from paddle-ocr-rs)
-kreuzberg-paddle-ocr = { path = "../kreuzberg-paddle-ocr", version = "4.10.0", optional = true }
+kreuzberg-paddle-ocr = { path = "../kreuzberg-paddle-ocr", version = "4.10.1", optional = true }
 pprof = { version = "0.15.0", features = ["flamegraph"], optional = true }
 ureq = { version = "3.3", default-features = false, features = ["rustls", "json"], optional = true }
 
 [target.'cfg(all(target_os = "windows", not(target_arch = "wasm32")))'.dependencies]
 hf-hub = { version = "1.0", default-features = false, features = ["blocking", "rustls-tls"], optional = true }
 # PaddleOCR via ONNX Runtime - not available on WASM (vendored from paddle-ocr-rs)
-kreuzberg-paddle-ocr = { path = "../kreuzberg-paddle-ocr", version = "4.10.0", optional = true }
+kreuzberg-paddle-ocr = { path = "../kreuzberg-paddle-ocr", version = "4.10.1", optional = true }
 ureq = { version = "3.3", default-features = false, features = ["native-tls", "json"], optional = true }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies.tree-sitter-language-pack]

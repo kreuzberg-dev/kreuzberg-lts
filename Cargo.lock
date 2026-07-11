@@ -1828,7 +1828,7 @@ checksum = "d0881ea181b1df73ff77ffaaf9c7544ecc11e82fba9b5f27b262a3c73a332555"
 
 [[package]]
 name = "e2e-rust"
-version = "4.10.0"
+version = "4.10.1"
 dependencies = [
  "kreuzberg",
  "serde_json",
@@ -3440,7 +3440,7 @@ checksum = "e037a2e1d8d5fdbd49b16a4ea09d5d6401c1f29eca5ff29d03d3824dba16256a"
 
 [[package]]
 name = "kreuzberg"
-version = "4.10.0"
+version = "4.10.1"
 dependencies = [
  "ahash 0.8.12",
  "anyhow",
@@ -3546,7 +3546,7 @@ dependencies = [
 
 [[package]]
 name = "kreuzberg-cli"
-version = "4.10.0"
+version = "4.10.1"
 dependencies = [
  "anstyle",
  "anyhow",
@@ -3566,7 +3566,7 @@ dependencies = [
 
 [[package]]
 name = "kreuzberg-ffi"
-version = "4.10.0"
+version = "4.10.1"
 dependencies = [
  "ahash 0.8.12",
  "async-trait",
@@ -3586,7 +3586,7 @@ dependencies = [
 
 [[package]]
 name = "kreuzberg-node"
-version = "4.10.0"
+version = "4.10.1"
 dependencies = [
  "ahash 0.8.12",
  "async-trait",
@@ -3609,7 +3609,7 @@ dependencies = [
 
 [[package]]
 name = "kreuzberg-paddle-ocr"
-version = "4.10.0"
+version = "4.10.1"
 dependencies = [
  "geo-clipper",
  "geo-types",
@@ -3623,7 +3623,7 @@ dependencies = [
 
 [[package]]
 name = "kreuzberg-pdfium-render"
-version = "4.10.0"
+version = "4.10.1"
 dependencies = [
  "bindgen",
  "bitflags 2.13.0",
@@ -3647,7 +3647,7 @@ dependencies = [
 
 [[package]]
 name = "kreuzberg-php"
-version = "4.10.0"
+version = "4.10.1"
 dependencies = [
  "ahash 0.8.12",
  "ctor",
@@ -3663,7 +3663,7 @@ dependencies = [
 
 [[package]]
 name = "kreuzberg-py"
-version = "4.10.0"
+version = "4.10.1"
 dependencies = [
  "ahash 0.8.12",
  "async-trait",
@@ -3680,7 +3680,7 @@ dependencies = [
 
 [[package]]
 name = "kreuzberg-tesseract"
-version = "4.10.0"
+version = "4.10.1"
 dependencies = [
  "cc",
  "cmake",
@@ -3719,7 +3719,7 @@ dependencies = [
 
 [[package]]
 name = "kreuzberg_rustler"
-version = "4.10.0"
+version = "4.10.1"
 dependencies = [
  "kreuzberg",
  "rustler",

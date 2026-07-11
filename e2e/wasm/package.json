@@ -1,6 +1,6 @@
 {
   "name": "@kreuzberg/e2e-wasm-tests",
-  "version": "4.10.0",
+  "version": "4.10.1",
   "type": "module",
   "description": "End-to-end tests for Kreuzberg WASM bindings",
   "scripts": {
