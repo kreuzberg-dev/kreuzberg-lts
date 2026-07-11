@@ -1,18 +1,7 @@
 
 [target.wasm32-unknown-unknown]
-# --allow-multiple-definition: kreuzberg-tesseract (Tesseract/Leptonica) and the
-# upstream tree-sitter crate each statically embed their own copy of the WASI
-# libc build artifacts (e.g. assert.o -> __assert_fail) into their rlib via
-# cc-rs when compiled for wasm32-unknown-unknown. Both copies are built from
-# the same WASI SDK sysroot, so they are functionally identical -- the
-# collision is a linker-visibility artifact, not a real ABI conflict. Neither
-# crate is ours to patch (tree-sitter is a third-party dependency), so we
-# tell wasm-ld to keep the first definition it sees instead of failing.
-rustflags = [
-    "--cfg",
-    "getrandom_backend=\"wasm_js\"",
-    "-C",
-    "link-arg=-zstack-size=16777216",
-    "-C",
-    "link-arg=--allow-multiple-definition",
-]
+# Link args (-zstack-size, --allow-multiple-definition) are emitted from build.rs
+# instead of here: CI sets RUSTFLAGS=-D warnings, which fully overrides config
+# rustflags, so config-based link args are silently dropped in CI. Only the
+# compile-time cfg remains here (build scripts cannot inject a dependency's cfg).
+rustflags = ["--cfg", "getrandom_backend=\"wasm_js\""]
