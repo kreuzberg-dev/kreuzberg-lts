@@ -94,10 +94,6 @@ jobs:
             target: x86_64-unknown-linux-gnu
           - os: ubuntu-24.04-arm
             target: aarch64-unknown-linux-gnu
-          - os: macos-latest
-            target: aarch64-apple-darwin
-          - os: windows-latest
-            target: x86_64-pc-windows-msvc
     steps:
       - uses: actions/checkout@v6
         id: checkout
@@ -137,11 +133,6 @@ jobs:
         uses: ./.github/actions/stage-pdfium-runtime
         with:
           destination: target/release
-
-      - name: Configure bindgen compatibility headers (Windows)
-        if: matrix.os == 'windows-latest'
-        shell: pwsh
-        run: scripts/ci/rust/configure-bindgen-windows.ps1
 
       - name: Setup ONNX Runtime
         uses: ./.github/actions/setup-onnx-runtime
