@@ -1294,7 +1294,6 @@ jobs:
       - name: Install system dependencies
         uses: ./.github/actions/install-system-deps
 
-
       - name: Setup Tesseract cache
         id: tesseract-cache
         uses: ./.github/actions/setup-tesseract-cache
@@ -1648,7 +1647,6 @@ jobs:
       - name: Install system dependencies
         uses: ./.github/actions/install-system-deps
 
-
       - name: Setup Tesseract cache
         id: tesseract-cache
         uses: ./.github/actions/setup-tesseract-cache
@@ -1795,7 +1793,6 @@ jobs:
       - name: Install system dependencies
         uses: ./.github/actions/install-system-deps
 
-
       - name: Setup Rust
         uses: kreuzberg-dev/actions/setup-rust@v1
         with:
@@ -1912,7 +1909,6 @@ jobs:
       - name: Install system dependencies
         uses: ./.github/actions/install-system-deps
 
-
       - name: Setup Tesseract cache
         id: tesseract-cache
         uses: ./.github/actions/setup-tesseract-cache
@@ -2016,7 +2012,6 @@ jobs:
 
       - name: Install system dependencies
         uses: ./.github/actions/install-system-deps
-
 
       - name: Setup Rust
         uses: kreuzberg-dev/actions/setup-rust@v1
@@ -2125,7 +2120,6 @@ jobs:
 
       - name: Install system dependencies
         uses: ./.github/actions/install-system-deps
-
 
       - name: Setup Rust
         uses: kreuzberg-dev/actions/setup-rust@v1
@@ -2662,7 +2656,6 @@ jobs:
         with:
           ort-version: ${{ env.ORT_VERSION }}
           strategy: bundled
-
 
       - name: Setup Tesseract cache
         id: tesseract-cache
