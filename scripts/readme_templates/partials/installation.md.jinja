@@ -50,14 +50,14 @@ Add to your `pom.xml`:
 <dependency>
     <groupId>dev.kreuzberg</groupId>
     <artifactId>kreuzberg</artifactId>
-    <version>4.0.0</version>
+    <version>{{ version }}</version>
 </dependency>
 ```
 
 Or use Gradle:
 
 ```gradle
-implementation 'dev.kreuzberg:kreuzberg:4.0.0'
+implementation 'dev.kreuzberg:kreuzberg:{{ version }}'
 ```
 
 {% elif pm == "rubygems" %}
@@ -151,14 +151,14 @@ go get {{ package_name }}
 <dependency>
     <groupId>dev.kreuzberg</groupId>
     <artifactId>kreuzberg</artifactId>
-    <version>4.0.0</version>
+    <version>{{ version }}</version>
 </dependency>
 ```
 
 {% elif pm == "gradle" %}
 **Gradle:**
 ```gradle
-implementation 'dev.kreuzberg:kreuzberg:4.0.0'
+implementation 'dev.kreuzberg:kreuzberg:{{ version }}'
 ```
 
 {% elif pm == "rubygems" %}
