@@ -47,8 +47,8 @@ jobs:
           cache-key-prefix: validate-rust
           use-sccache: "true"
 
-      - name: Setup OpenSSL
-        run: sudo apt-get update && sudo apt-get install -y pkg-config libssl-dev
+      - name: Install system dependencies
+        uses: ./.github/actions/install-system-deps
 
       - name: Install Task
         uses: xberg-io/actions/install-task@v1
