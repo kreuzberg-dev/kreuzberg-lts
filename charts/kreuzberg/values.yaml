@@ -1,9 +1,20 @@
-replicaCount: 2
+# -- Number of replicas.
+# WARNING: When cache.enabled=true and cache.accessModes=[ReadWriteOnce], only one
+# replica can mount the PVC at a time. Keep replicaCount: 1 with RWO storage, or
+# switch to ReadWriteMany storage before increasing replicas. With RWO + multiple
+# replicas the deployment strategy must be Recreate (not RollingUpdate).
+replicaCount: 1
+
+# -- Deployment strategy. When cache is enabled with ReadWriteOnce storage,
+# set to Recreate to avoid Multi-Attach errors during rolling updates.
+strategy:
+  type: Recreate
 
 image:
   registry: ghcr.io
   repository: kreuzberg-dev/kreuzberg-full
-  tag: "latest"
+  # -- Image tag. Defaults to Chart.AppVersion when empty.
+  tag: ""
   pullPolicy: IfNotPresent
 
 imagePullSecrets: []
@@ -57,7 +68,7 @@ resources:
 
 autoscaling:
   enabled: false
-  minReplicas: 2
+  minReplicas: 1
   maxReplicas: 10
   targetCPUUtilizationPercentage: 80
 
@@ -75,11 +86,25 @@ kreuzberg:
   ocrLanguage: "eng"
 
 cache:
+  # -- Enable a persistent cache (PVC) for embedding models and downloaded assets.
+  # When disabled, an ephemeral emptyDir is mounted at the cache directory instead,
+  # so the cache path stays writable under a read-only root filesystem (models are
+  # simply re-fetched per pod).
   enabled: true
   size: 2Gi
   storageClass: ""
   accessModes:
     - ReadWriteOnce
+  # -- Run an init container to chown the cache directory to UID 1000. Most
+  # block-backed storage classes honour fsGroup on mount and do not need it;
+  # set true for NFS or storage that does not.
+  initChown: true
+
+# -- Disable Kubernetes service-discovery environment variable injection.
+# A release named "kreuzberg" would inject KREUZBERG_PORT=tcp://<ip>:<port>,
+# which the binary parses as a u16 and panics on. CoreDNS makes these
+# variables unnecessary in all modern clusters.
+enableServiceLinks: false
 
 podDisruptionBudget:
   enabled: false
