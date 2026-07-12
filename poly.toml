@@ -523,3 +523,7 @@ commit = { stages = ["commit-msg"] }
 [hooks.pre-commit.commands.pyrefly]
 run = "pyrefly check packages/python"
 files = "packages/python/**/*.py"
+
+[hooks.pre-commit.commands.helm]
+run = "bash -c 'helm lint --strict charts/kreuzberg && helm template charts/kreuzberg | kubeconform -strict -summary -'"
+files = "charts/**"

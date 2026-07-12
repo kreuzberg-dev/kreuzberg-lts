@@ -20,6 +20,7 @@ keywords:
   - rust
 maintainers:
   - name: kreuzberg-dev
+    email: naaman@kreuzberg.dev
     url: https://github.com/kreuzberg-dev
 icon: https://raw.githubusercontent.com/kreuzberg-dev/kreuzberg-lts/main/docs/assets/logo.svg
 annotations:

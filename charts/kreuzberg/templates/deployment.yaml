@@ -8,6 +8,10 @@ spec:
   {{- if not .Values.autoscaling.enabled }}
   replicas: {{ .Values.replicaCount }}
   {{- end }}
+  {{- with .Values.strategy }}
+  strategy:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
   selector:
     matchLabels:
       {{- include "kreuzberg.selectorLabels" . | nindent 6 }}
@@ -25,15 +29,21 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       serviceAccountName: {{ include "kreuzberg.serviceAccountName" . }}
+      enableServiceLinks: {{ .Values.enableServiceLinks }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
-      {{- if .Values.cache.enabled }}
+      {{- if and .Values.cache.enabled .Values.cache.initChown }}
       initContainers:
         - name: init-cache
           image: busybox:1.37-glibc
           command: ['sh', '-c', 'mkdir -p /app/.kreuzberg && chown -R 1000:1000 /app/.kreuzberg']
           securityContext:
             runAsUser: 0
+            runAsNonRoot: false
+            allowPrivilegeEscalation: false
+            capabilities:
+              add: ["CHOWN"]
+              drop: ["ALL"]
           volumeMounts:
             - name: cache
               mountPath: /app/.kreuzberg
@@ -88,18 +98,21 @@ spec:
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
           volumeMounts:
-            {{- if .Values.cache.enabled }}
+            # The cache directory is always mounted from a writable volume (PVC
+            # when cache.enabled, ephemeral emptyDir otherwise) so HF_HOME and
+            # KREUZBERG_CACHE_DIR stay writable under a read-only root filesystem.
             - name: cache
               mountPath: /app/.kreuzberg
-            {{- end }}
             - name: tmp
               mountPath: /tmp
       volumes:
-        {{- if .Values.cache.enabled }}
         - name: cache
+          {{- if .Values.cache.enabled }}
           persistentVolumeClaim:
             claimName: {{ include "kreuzberg.fullname" . }}-cache
-        {{- end }}
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
         - name: tmp
           emptyDir: {}
       {{- with .Values.nodeSelector }}
