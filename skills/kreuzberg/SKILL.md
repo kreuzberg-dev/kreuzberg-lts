@@ -17,6 +17,8 @@ metadata:
 
 Kreuzberg is a high-performance document intelligence library with a Rust core and native bindings for Python, Node.js/TypeScript, Ruby, Go, Java, C#, PHP, and Elixir. It extracts text, tables, metadata, and images from 91+ file formats including PDF, Office documents, images (with OCR), HTML, email, archives, and academic formats.
 
+> **Version note:** This skill covers Kreuzberg **v4**, the legacy long-term-support line (critical bug and security fixes only, best-effort through the end of 2026). The current version is **[Xberg](https://github.com/xberg-io/xberg)** (v5+), the actively developed successor where all new features land. For new projects, prefer Xberg — repo <https://github.com/xberg-io/xberg>, docs <https://docs.xberg.io>. Use this skill when the project already targets Kreuzberg v4. Migration guide: <https://docs.kreuzberg.dev/lts/>.
+
 Use this skill when writing code that:
 
 - Extracts text or metadata from documents
