@@ -175,16 +175,36 @@ impl ExtractionConfig {
         Ok((*config_arc).clone())
     }
 
-    /// Discover configuration file in parent directories.
+    /// Discover a configuration file.
     ///
-    /// Searches for `kreuzberg.toml` in current directory and parent directories.
+    /// Resolution order:
+    /// 1. `kreuzberg.toml` in the current directory, then each parent up to the
+    ///    filesystem root (project-local config wins).
+    /// 2. The user-level config directory as a fallback, resolved
+    ///    platform-natively via [`dirs::config_dir`] (same approach as the cache
+    ///    dir): `$XDG_CONFIG_HOME/kreuzberg/kreuzberg.toml` or
+    ///    `~/.config/kreuzberg/kreuzberg.toml` on Linux,
+    ///    `~/Library/Application Support/kreuzberg/kreuzberg.toml` on macOS,
+    ///    `%APPDATA%\kreuzberg\kreuzberg.toml` on Windows.
     ///
     /// # Returns
     ///
     /// - `Some(config)` if found
     /// - `None` if no config file found
     pub fn discover() -> Result<Option<Self>> {
-        let mut current = std::env::current_dir().map_err(KreuzbergError::Io)?;
+        let cwd = std::env::current_dir().map_err(KreuzbergError::Io)?;
+        let global = dirs::config_dir().map(|dir| dir.join("kreuzberg").join("kreuzberg.toml"));
+        Self::discover_from(&cwd, global.as_deref())
+    }
+
+    /// Walk up from `start` looking for `kreuzberg.toml`, then fall back to the
+    /// user-level `global` config path if provided.
+    ///
+    /// Split out from [`discover`](Self::discover) so the resolution order is
+    /// unit-testable without mutating process-global state (the working
+    /// directory or `HOME`).
+    fn discover_from(start: &Path, global: Option<&Path>) -> Result<Option<Self>> {
+        let mut current = start.to_path_buf();
 
         loop {
             let kreuzberg_toml = current.join("kreuzberg.toml");
@@ -199,6 +219,59 @@ impl ExtractionConfig {
             }
         }
 
+        if let Some(global) = global
+            && global.exists()
+        {
+            return Ok(Some(Self::from_toml_file(global)?));
+        }
+
         Ok(None)
+    }
+}
+
+#[cfg(test)]
+mod discover_tests {
+    use super::*;
+    use std::fs;
+
+    const TOML: &str = "[ocr]\nenabled = true\n";
+
+    #[test]
+    fn project_config_takes_precedence_over_global() {
+        // Project config has an [ocr] section; the global fallback does not, so
+        // `ocr.is_some()` proves the project-local file was the one loaded.
+        let project = tempfile::tempdir().expect("tempdir");
+        fs::write(project.path().join("kreuzberg.toml"), TOML).expect("write project");
+        let global = tempfile::tempdir().expect("tempdir");
+        let global_file = global.path().join("kreuzberg.toml");
+        fs::write(&global_file, "output_format = \"markdown\"\n").expect("write global");
+
+        let found = ExtractionConfig::discover_from(project.path(), Some(&global_file))
+            .expect("discover")
+            .expect("some config");
+        assert!(
+            found.ocr.is_some(),
+            "project-local config must win over the global fallback"
+        );
+    }
+
+    #[test]
+    fn falls_back_to_global_when_no_project_config() {
+        let empty = tempfile::tempdir().expect("tempdir");
+        let global = tempfile::tempdir().expect("tempdir");
+        let global_file = global.path().join("kreuzberg.toml");
+        fs::write(&global_file, TOML).expect("write global");
+
+        let found = ExtractionConfig::discover_from(empty.path(), Some(&global_file)).expect("discover");
+        assert!(found.is_some(), "should fall back to the global config file");
+    }
+
+    #[test]
+    fn returns_none_when_no_config_anywhere() {
+        let empty = tempfile::tempdir().expect("tempdir");
+        let missing = empty.path().join("nope").join("kreuzberg.toml");
+
+        let found = ExtractionConfig::discover_from(empty.path(), Some(&missing)).expect("discover");
+        assert!(found.is_none(), "no project or global config should yield None");
     }
 }
