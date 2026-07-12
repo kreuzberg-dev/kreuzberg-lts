@@ -103,12 +103,12 @@ tasks:
       - uv run ruff format
 
   lint:check:
-    desc: Check Python code linting without modifications (ruff + mypy)
+    desc: Check Python code linting without modifications (ruff + pyrefly)
     dir: packages/python
     cmds:
       - uv run ruff check
       - uv run ruff format --check
-      - uv run mypy
+      - uv run pyrefly check
 
   format:
     desc: Format Python code with modifications (ruff format)
@@ -121,12 +121,6 @@ tasks:
     dir: packages/python
     cmds:
       - uv run ruff format --check
-
-  pyproject:format:
-    desc: Format pyproject.toml (pyproject-fmt)
-    dir: packages/python
-    cmds:
-      - uv run pyproject-fmt pyproject.toml
 
   pyproject:validate:
     desc: Validate pyproject.toml (validate-pyproject)

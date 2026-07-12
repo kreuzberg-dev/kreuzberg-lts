@@ -18,7 +18,7 @@ default-members = ["crates/kreuzberg", "crates/kreuzberg-cli"]
 resolver = "2"
 
 [workspace.package]
-version = "4.10.1"
+version = "4.10.2"
 edition = "2024"
 rust-version = "1.91"
 authors = ["Na'aman Hirschfeld <naaman@kreuzberg.dev>"]
@@ -36,7 +36,7 @@ bytes = { version = "1", features = ["serde"] }
 cfb = "0.14"
 chrono = "0.4"
 clap = { version = "4.6", features = ["derive", "color", "suggestions"] }
-comrak = { version = "0.53", default-features = false }
+comrak = { version = "0.54", default-features = false }
 console_error_panic_hook = "0.1"
 criterion = { version = "0.8", features = ["html_reports"] }
 ctor = "1.0"
@@ -48,8 +48,8 @@ html-to-markdown-rs = { version = "3.8.3", default-features = false }
 image = { version = "0.25.10", default-features = false }
 itertools = "0.15"
 js-sys = "0.3"
-kreuzberg = { path = "./crates/kreuzberg", version = "4.10.1", default-features = false }
-kreuzberg-ffi = { path = "./crates/kreuzberg-ffi", version = "4.10.1" }
+kreuzberg = { path = "./crates/kreuzberg", version = "4.10.2", default-features = false }
+kreuzberg-ffi = { path = "./crates/kreuzberg-ffi", version = "4.10.2" }
 lazy_static = "1.5.0"
 libc = "0.2.186"
 liter-llm = { version = "1.9", default-features = false, features = ["native-http", "tracing"] }

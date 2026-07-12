@@ -4,7 +4,7 @@ requires = ["maturin>=1,<2"]
 
 [project]
 name = "kreuzberg"
-version = "4.10.1"
+version = "4.10.2"
 description = """\
   High-performance document intelligence library for Python. Extract text, metadata, and structured data from PDFs, \
   Office documents, images, and 88+ formats. Powered by Rust core for 10-50x speed improvements.\
@@ -86,6 +86,31 @@ include = [
         "sdist",
     ] },
 ]
+
+[tool.pyrefly]
+python-version = "3.10"
+preset = "strict"
+project-includes = ["kreuzberg"]
+
+[tool.pyrefly.errors]
+# The compiled `_internal_bindings` Rust extension re-exports its types through
+# `__init__.py`; the static checker resolves them via the generated `.pyi` stub,
+# whose runtime re-exports and 3.11+ typing constructs (StrEnum, Self) trip these
+# categories even though pyo3 reconciles them at runtime. The Python e2e suite
+# exercises the real path. `missing-override-decorator` was not enforced by the
+# prior mypy config either.
+bad-dunder-all = false
+missing-module-attribute = false
+missing-override-decorator = false
+
+[[tool.pyrefly.sub-config]]
+# OCR backends import heavy optional deps (pdf2image, PyMuPDF/fitz) lazily inside
+# functions; they are not installed in the type-check environment, and PIL's
+# stubs are imprecise for `Image.frombytes`.
+matches = "**/ocr/*.py"
+[tool.pyrefly.sub-config.errors]
+missing-import = false
+bad-argument-type = false
 
 [tool.pytest]
 ini_options.addopts = "--doctest-modules"

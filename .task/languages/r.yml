@@ -15,7 +15,6 @@ tasks:
     cmds:
       - Rscript -e "if (!require('testthat', quietly = TRUE)) install.packages('testthat', repos = 'https://cran.r-project.org')"
       - Rscript -e "if (!require('jsonlite', quietly = TRUE)) install.packages('jsonlite', repos = 'https://cran.r-project.org')"
-      - Rscript -e "if (!require('withr', quietly = TRUE)) install.packages('withr', repos = 'https://cran.r-project.org')"
       - Rscript -e "if (!require('styler', quietly = TRUE)) install.packages('styler', repos = 'https://cran.r-project.org')"
       - Rscript -e "if (!require('lintr', quietly = TRUE)) install.packages('lintr', repos = 'https://cran.r-project.org')"
 

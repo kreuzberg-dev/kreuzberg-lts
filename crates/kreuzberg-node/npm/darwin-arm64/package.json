@@ -1,6 +1,6 @@
 {
   "name": "@kreuzberg/node-darwin-arm64",
-  "version": "4.10.1",
+  "version": "4.10.2",
   "cpu": ["arm64"],
   "main": "kreuzberg-node.darwin-arm64.node",
   "files": ["kreuzberg-node.darwin-arm64.node"],

@@ -39,8 +39,6 @@ includes:
   _lint_wf:
     taskfile: .task/workflows/lint.yml
     internal: true
-  benchmark:
-    taskfile: .task/workflows/benchmark.yml
   snippets:
     taskfile: .task/workflows/snippets.yml
 

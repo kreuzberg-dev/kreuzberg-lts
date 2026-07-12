@@ -70,36 +70,32 @@ tasks:
     cmds:
       - pnpm test
 
+  lint:
+    desc: Lint Node/TypeScript code with poly (auto-fix)
+    cmds:
+      - poly fmt --fix crates/kreuzberg-node/typescript
+      - poly lint --fix crates/kreuzberg-node/typescript
+
+  lint:check:
+    desc: Check Node/TypeScript linting without modifications
+    cmds:
+      - poly fmt --check crates/kreuzberg-node/typescript
+      - poly lint crates/kreuzberg-node/typescript
+
+  format:
+    desc: Format Node/TypeScript code with poly
+    cmds:
+      - poly fmt --fix crates/kreuzberg-node/typescript
+
+  format:check:
+    desc: Check Node/TypeScript formatting without modifications
+    cmds:
+      - poly fmt --check crates/kreuzberg-node/typescript
+
   clippy:
     desc: Run clippy on kreuzberg-node crate
     cmds:
       - cargo clippy -p kreuzberg-node -- -D warnings
-
-  lint:
-    desc: Auto-fix Node/TypeScript code linting (biome + oxlint)
-    dir: crates/kreuzberg-node
-    cmds:
-      - pnpm lint:fix
-      - pnpm exec oxlint --fix typescript
-
-  lint:check:
-    desc: Check Node/TypeScript code linting without modifications (biome + oxlint)
-    dir: crates/kreuzberg-node
-    cmds:
-      - pnpm lint
-      - pnpm exec oxlint typescript
-
-  format:
-    desc: Format Node/TypeScript code with modifications (biome)
-    dir: crates/kreuzberg-node
-    cmds:
-      - pnpm format
-
-  format:check:
-    desc: Check Node/TypeScript code formatting without modifications (biome)
-    dir: crates/kreuzberg-node
-    cmds:
-      - pnpm exec biome format typescript
 
   clean:
     desc: Clean Node/TypeScript build artifacts
@@ -127,10 +123,9 @@ tasks:
 
   e2e:lint:
     desc: Lint TypeScript E2E code
-    dir: e2e/typescript
     cmds:
-      - pnpm exec biome check .
-      - pnpm exec oxlint --fix .
+      - poly fmt --fix e2e/typescript
+      - poly lint e2e/typescript
 
   e2e:test:
     desc: Run TypeScript E2E tests

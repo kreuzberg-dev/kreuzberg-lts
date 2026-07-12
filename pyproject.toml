@@ -7,9 +7,7 @@ dev = [
     "covdefaults>=2.3.0",
     "httpx>=0.27.0",
     "maturin>=1.13.1",
-    "mypy>=1.19.0",
-    "prek>=0.3.9",
-    "pyproject-fmt>=2.11.1",
+    "pyrefly>=1.1.1",
     "pytest>=9.0.2",
     "pytest-asyncio>=1.3.0",
     "pytest-cov>=7.0.0",
@@ -21,7 +19,6 @@ dev = [
     "types-psutil>=7.1.3.20251202",
     "validate-pyproject>=0.24.1",
 ]
-doc = ["mkdocstrings>=1.0.3", "mkdocstrings-python>=2.0.3", "zensical"]
 
 [tool.uv]
 workspace.members = ["e2e/python", "packages/python"]
@@ -37,7 +34,7 @@ cache-keys = [
 target-version = "py310"
 line-length = 120
 src = ["packages/python/*"]
-extend-exclude = ["benchmarks", "crates", "docs/snippets", "scripts", "test_documents"]
+extend-exclude = ["crates", "docs/snippets", "scripts", "test_documents"]
 format.docstring-code-line-length = 120
 format.docstring-code-format = true
 lint.select = ["ALL"]
@@ -67,22 +64,6 @@ lint.ignore = [
     "TRY",
 ]
 lint.per-file-ignores."**/*.pyi" = ["PYI021"]
-lint.per-file-ignores."**/benchmarks/**/*.*" = [
-    "BLE001",
-    "C901",
-    "D101",
-    "D102",
-    "D103",
-    "D105",
-    "PERF203",
-    "PLC0415",
-    "PLR0912",
-    "PLR0913",
-    "PLR0915",
-    "S101",
-    "S110",
-    "SLF001",
-]
 lint.per-file-ignores."**/tests/**/*.*" = [
     "A005",
     "ANN",
@@ -138,49 +119,6 @@ lint.pylint.max-args = 10
 lint.pylint.max-branches = 15
 lint.pylint.max-returns = 10
 
-[tool.pyproject-fmt]
-keep_full_version = true
-max_supported_python = "3.14"
-
-[tool.mypy]
-packages = ["kreuzberg"]
-exclude = ["benchmarks", "crates", "e2e/smoke", "examples", "test_apps"]
-namespace_packages = true
-python_version = "3.10"
-disable_error_code = ["import-untyped", "untyped-decorator"]
-implicit_reexport = false
-strict = true
-show_error_codes = true
-
-[[tool.mypy.overrides]]
-module = [
-    "docling.*",
-    "easyocr",
-    "httpx",
-    "keybert",
-    "kreuzberg._internal_bindings",
-    "markitdown",
-    "torch",
-    "unstructured.*",
-]
-ignore_missing_imports = true
-follow_imports = "skip"
-ignore_errors = true
-
-[[tool.mypy.overrides]]
-module = ["numpy", "numpy.*"]
-ignore_missing_imports = true
-
-[[tool.mypy.overrides]]
-module = ["tests.test_apps.python.*"]
-follow_imports = "skip"
-ignore_errors = true
-
-[[tool.mypy.overrides]]
-module = ["examples.python.*"]
-follow_imports = "skip"
-ignore_errors = true
-
 [tool.pytest]
 ini_options.testpaths = ["packages/python/tests"]
 ini_options.norecursedirs = ["*.egg", "build", "dist"]
@@ -201,7 +139,7 @@ ini_options.timeout = 300
 
 [tool.coverage]
 run.branch = true
-run.omit = ["benchmarks/*", "packages/python/tests/*", "scripts/*"]
+run.omit = ["packages/python/tests/*", "scripts/*"]
 run.plugins = ["covdefaults"]
 run.source = ["packages/python/kreuzberg"]
 report.exclude_lines = [

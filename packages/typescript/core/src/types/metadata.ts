@@ -243,6 +243,6 @@ export interface Metadata {
   extraction_duration_ms?: number | null;
 
   /** @deprecated Use typed fields instead of dynamic access. This index signature may be removed in a future version. */
-  // biome-ignore lint/suspicious/noExplicitAny: Postprocessors can add arbitrary metadata fields
+  // oxlint-disable-next-line no-explicit-any -- Postprocessors can add arbitrary metadata fields
   [key: string]: any;
 }

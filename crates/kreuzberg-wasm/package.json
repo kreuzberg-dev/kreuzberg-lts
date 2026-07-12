@@ -1,6 +1,6 @@
 {
   "name": "@kreuzberg/wasm",
-  "version": "4.10.1",
+  "version": "4.10.2",
   "type": "module",
   "packageManager": "pnpm@10.17.0",
   "description": "Kreuzberg document intelligence - WebAssembly bindings",
@@ -93,9 +93,6 @@
     "build:ci": "npm run build:wasm:web && npm run fix:wasi && npm run build:ts:minify && npm run copy:pkg",
     "build:all": "npm run build:wasm:web && npm run build:wasm:bundler && npm run build:wasm:nodejs && npm run build:wasm:deno && npm run fix:wasi && npm run build:ts && npm run copy:pkg",
     "typecheck": "tsc --noEmit",
-    "lint": "biome check typescript && oxlint typescript",
-    "lint:fix": "biome check --write typescript",
-    "format": "biome format --write typescript",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
@@ -103,14 +100,13 @@
     "prepublishOnly": "npm run build"
   },
   "devDependencies": {
-    "@types/node": "^25.9.1",
-    "@vitest/coverage-v8": "^4.1.8",
-    "@vitest/ui": "^4.1.8",
+    "@types/node": "^26.1.1",
+    "@vitest/coverage-v8": "^4.1.10",
+    "@vitest/ui": "^4.1.10",
     "jsdom": "^29.1.1",
-    "oxlint": "^1.68.0",
     "tsup": "^8.5.1",
-    "typescript": "^6.0.3",
-    "vitest": "^4.1.8"
+    "typescript": "^7.0.2",
+    "vitest": "^4.1.10"
   },
   "optionalDependencies": {
     "tesseract-wasm": "^0.11.0"

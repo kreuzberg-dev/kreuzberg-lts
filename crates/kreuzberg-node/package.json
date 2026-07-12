@@ -1,6 +1,6 @@
 {
   "name": "@kreuzberg/node",
-  "version": "4.10.1",
+  "version": "4.10.2",
   "description": "Kreuzberg document intelligence - Node.js native bindings",
   "author": {
     "name": "Na'aman Hirschfeld",
@@ -88,27 +88,23 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage tests/binding/ tests/smoke/",
     "typecheck": "tsc --noEmit",
-    "lint": "biome check typescript && oxlint typescript",
-    "lint:fix": "biome check --write typescript",
-    "format": "biome format --write typescript",
     "prepublishOnly": "napi prepublish -t npm",
     "universal": "napi universal",
     "version": "napi version"
   },
   "devDependencies": {
-    "@napi-rs/cli": "^3.7.0",
-    "@types/archiver": "^7.0.0",
-    "@types/node": "^25.9.1",
+    "@napi-rs/cli": "^3.7.2",
+    "@types/archiver": "^8.0.0",
+    "@types/node": "^26.1.1",
     "@types/which": "^3.0.4",
-    "@vitest/coverage-v8": "^4.1.8",
+    "@vitest/coverage-v8": "^4.1.10",
     "archiver": "^8.0.0",
-    "oxlint": "^1.68.0",
     "tsup": "^8.5.1",
-    "typescript": "^6.0.3",
-    "vitest": "^4.1.8"
+    "typescript": "^7.0.2",
+    "vitest": "^4.1.10"
   },
   "dependencies": {
-    "@emnapi/runtime": "1.10.0",
+    "@emnapi/runtime": "1.11.2",
     "which": "^7.0.0"
   }
 }

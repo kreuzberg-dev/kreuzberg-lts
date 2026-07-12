@@ -14,5 +14,3 @@ tsup.config.ts
 .eslintrc.json
 .prettierignore
 .prettierrc
-biome.json
-oxlintrc.json

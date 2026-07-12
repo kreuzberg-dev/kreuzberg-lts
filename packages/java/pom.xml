@@ -8,7 +8,7 @@
 
   <groupId>dev.kreuzberg</groupId>
   <artifactId>kreuzberg</artifactId>
-  <version>4.10.1</version>
+  <version>4.10.2</version>
   <packaging>jar</packaging>
 
   <name>Kreuzberg Java</name>
@@ -52,14 +52,13 @@
     <maven-pmd-plugin.version>3.28.0</maven-pmd-plugin.version>
     <versions-maven-plugin.version>2.21.0</versions-maven-plugin.version>
     <exec-maven-plugin.version>3.6.3</exec-maven-plugin.version>
-    <build-helper-maven-plugin.version>3.6.1</build-helper-maven-plugin.version>
-    <checkstyle.version>13.5.0</checkstyle.version>
+    <checkstyle.version>13.8.0</checkstyle.version>
     <pmd.version>7.19.0</pmd.version>
     <maven-source-plugin.version>3.4.0</maven-source-plugin.version>
     <maven-javadoc-plugin.version>3.12.0</maven-javadoc-plugin.version>
     <maven-gpg-plugin.version>3.2.8</maven-gpg-plugin.version>
-    <jacoco-maven-plugin.version>0.8.14</jacoco-maven-plugin.version>
-    <spotless-maven-plugin.version>3.6.0</spotless-maven-plugin.version>
+    <jacoco-maven-plugin.version>0.8.15</jacoco-maven-plugin.version>
+    <spotless-maven-plugin.version>3.8.0</spotless-maven-plugin.version>
     <central-publishing-plugin.version>0.10.0</central-publishing-plugin.version>
     <gpg.skip>true</gpg.skip>
   </properties>
@@ -68,7 +67,7 @@
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-databind</artifactId>
-      <version>2.22.0</version>
+      <version>2.22.1</version>
     </dependency>
     <dependency>
       <groupId>org.jspecify</groupId>
@@ -78,7 +77,7 @@
     <dependency>
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter</artifactId>
-      <version>6.1.0</version>
+      <version>6.1.1</version>
       <scope>test</scope>
     </dependency>
     <dependency>
