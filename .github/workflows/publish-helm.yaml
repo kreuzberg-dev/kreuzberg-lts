@@ -1,6 +1,20 @@
 name: Publish Helm Chart
 
 on:
+  # Invoked by publish-docker.yaml after the images are pushed, so the chart ~keep
+  # (and its Artifact Hub metadata) is only published once the images it ~keep
+  # references exist — avoids the Artifact Hub image-scan race. ~keep
+  workflow_call:
+    inputs:
+      tag:
+        description: "Release tag to build (e.g., v4.3.6)"
+        required: true
+        type: string
+      dry_run:
+        description: "Prepare artifacts without publishing"
+        required: false
+        type: boolean
+        default: false
   workflow_dispatch:
     inputs:
       tag:
@@ -12,13 +26,11 @@ on:
         required: false
         type: boolean
         default: false
-  release:
-    types: [published]
   repository_dispatch:
     types: [publish-helm]
 
 concurrency:
-  group: ${{ github.workflow }}-${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.tag) || github.ref || github.run_id }}
+  group: ${{ github.workflow }}-helm-${{ inputs.tag || github.ref || github.run_id }}
   cancel-in-progress: false
 
 permissions:
@@ -27,7 +39,6 @@ permissions:
 jobs:
   publish-helm:
     name: Publish Helm chart to GHCR
-    if: ${{ github.event_name != 'release' || !github.event.release.prerelease }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -40,12 +51,17 @@ jobs:
       - name: Resolve version
         id: meta
         run: |
-          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+          # workflow_call and workflow_dispatch both populate inputs.tag;
+          # repository_dispatch carries it in the client payload. ~keep
+          if [[ -n "${{ inputs.tag }}" ]]; then
             TAG="${{ inputs.tag }}"
-          elif [[ "${{ github.event_name }}" == "release" ]]; then
-            TAG="${{ github.event.release.tag_name }}"
           elif [[ "${{ github.event_name }}" == "repository_dispatch" ]]; then
             TAG="${{ github.event.client_payload.tag }}"
+          fi
+
+          if [[ -z "${TAG}" ]]; then
+            echo "No release tag resolved" >&2
+            exit 1
           fi
 
           VERSION="${TAG#v}"

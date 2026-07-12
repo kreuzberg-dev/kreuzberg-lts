@@ -269,3 +269,23 @@ jobs:
       - name: Clean up local Docker images
         if: ${{ always() }}
         run: docker rmi kreuzberg-publish:${{ matrix.variant }}-test || true
+
+  publish-helm:
+    name: Publish Helm chart
+    # Gated on publish-docker so the chart — and the images its Artifact Hub ~keep
+    # metadata references (kreuzberg-{core,full,cli}:<version>) — are published ~keep
+    # in order. Prevents Artifact Hub from scanning an image that does not exist ~keep
+    # yet, which previously produced "image not found" scan errors. ~keep
+    needs:
+      - prepare
+      - publish-docker
+    if: ${{ needs.prepare.outputs.release_docker == 'true' }}
+    permissions:
+      contents: read
+      packages: write
+      id-token: write # keyless cosign signing via OIDC ~keep
+    uses: ./.github/workflows/publish-helm.yaml
+    with:
+      tag: ${{ needs.prepare.outputs.tag }}
+      dry_run: ${{ needs.prepare.outputs.dry_run == 'true' }}
+    secrets: inherit
