@@ -1,0 +1,1839 @@
+---
+title: Extraction Basics
+description: "The 8 core extraction functions — file vs bytes, single vs batch, sync vs async — plus per-file config, content filtering, and page tracking."
+---
+
+import { Tabs, TabItem } from '@astrojs/starlight/components';
+
+Kreuzberg provides 8 core extraction functions organized by input type (file path vs in-memory bytes), cardinality (single vs batch), and execution model (sync vs async). Pick the function that matches your situation — the extraction logic is identical across all variants.
+
+| Input | Single sync | Single async | Batch sync | Batch async |
+|-------|------------|-------------|------------|-------------|
+| **File path** | `extract_file_sync` | `extract_file` | `batch_extract_files_sync` | `batch_extract_files` |
+| **Bytes** | `extract_bytes_sync` | `extract_bytes` | `batch_extract_bytes_sync` | `batch_extract_bytes` |
+
+:::tip[Sync vs Async]
+Use async variants when you're already in an async context or processing multiple files concurrently. For scripts and simple pipelines, sync variants are simpler and just as fast for single files.
+:::
+
+## Extract from Files
+
+Pass a file path. Kreuzberg detects the MIME type from the extension and selects the right parser automatically.
+
+### Synchronous
+
+<Tabs>
+<TabItem label="Python">
+
+```python title="Python"
+from kreuzberg import extract_file_sync, ExtractionConfig
+
+config: ExtractionConfig = ExtractionConfig()
+result = extract_file_sync("document.pdf", config=config)
+
+content: str = result.content
+table_count: int = len(result.tables)
+metadata: dict = result.metadata
+
+print(f"Content length: {len(content)} characters")
+print(f"Tables: {table_count}")
+print(f"Metadata keys: {list(metadata.keys())}")
+```
+
+</TabItem>
+<TabItem label="TypeScript">
+
+```typescript title="TypeScript"
+import { extractFileSync } from '@kreuzberg/node';
+
+const result = extractFileSync('document.pdf');
+
+console.log(result.content);
+console.log(`Tables: ${result.tables.length}`);
+console.log(`Metadata: ${JSON.stringify(result.metadata)}`);
+```
+
+</TabItem>
+<TabItem label="Rust">
+
+```rust title="Rust"
+use kreuzberg::{extract_file_sync, ExtractionConfig};
+
+fn main() -> kreuzberg::Result<()> {
+    let result = extract_file_sync("document.pdf", None, &ExtractionConfig::default())?;
+
+    println!("{}", result.content);
+    println!("Tables: {}", result.tables.len());
+    println!("Metadata: {:?}", result.metadata);
+    Ok(())
+}
+```
+
+</TabItem>
+<TabItem label="Go">
+
+```go title="Go"
+package main
+
+import (
+	"fmt"
+	"log"
+
+	"github.com/kreuzberg-dev/kreuzberg-lts/v4"
+)
+
+func main() {
+	result, err := kreuzberg.ExtractFileSync("document.pdf", nil)
+	if err != nil {
+		log.Fatalf("extract failed: %v", err)
+	}
+
+	fmt.Println(result.Content)
+	fmt.Printf("Tables: %d\n", len(result.Tables))
+	fmt.Printf("Metadata: %+v\n", result.Metadata)
+}
+```
+
+</TabItem>
+<TabItem label="Java">
+
+```java title="Java"
+import dev.kreuzberg.Kreuzberg;
+import dev.kreuzberg.ExtractionResult;
+import dev.kreuzberg.KreuzbergException;
+import java.io.IOException;
+
+try {
+    ExtractionResult result = Kreuzberg.extractFile("document.pdf");
+
+    System.out.println(result.getContent());
+    System.out.println("Tables: " + result.getTables().size());
+    System.out.println("Metadata: " + result.getMetadata());
+} catch (IOException | KreuzbergException e) {
+    e.printStackTrace();
+}
+```
+
+</TabItem>
+<TabItem label="C#">
+
+```csharp title="C#"
+using Kreuzberg;
+
+var result = KreuzbergClient.ExtractFileSync("document.pdf", new ExtractionConfig());
+
+Console.WriteLine(result.Content);
+Console.WriteLine($"Tables: {result.Tables.Count}");
+Console.WriteLine($"Metadata: {result.Metadata.FormatType}");
+```
+
+</TabItem>
+<TabItem label="Ruby">
+
+```ruby title="Ruby"
+require 'kreuzberg'
+
+result = Kreuzberg.extract_file_sync('document.pdf')
+
+puts result.content
+puts "Tables: #{result.tables.length}"
+puts "Metadata: #{result.metadata}"
+```
+
+</TabItem>
+<TabItem label="R">
+
+```r title="R"
+library(kreuzberg)
+
+# Extract a file synchronously
+result <- extract_file_sync("path/to/document.pdf")
+
+# Access extraction results
+cat("Content length:", nchar(result$content), "\n")
+cat("Mime type:", result$mime_type, "\n")
+cat("Pages:", page_count(result), "\n")
+cat("Quality score:", result$quality_score, "\n")
+```
+
+</TabItem>
+<TabItem label="C">
+
+```c title="C"
+#include "kreuzberg.h"
+#include <stdio.h>
+
+int main(void) {
+    struct CExtractionResult *result = kreuzberg_extract_file_sync("document.pdf");
+    if (!result || !result->success) {
+        struct CErrorDetails err = kreuzberg_get_error_details();
+        fprintf(stderr, "Error: %s\n", err.message);
+        return 1;
+    }
+
+    printf("%s\n", result->content);
+    printf("MIME type: %s\n", result->mime_type);
+    kreuzberg_free_result(result);
+    return 0;
+}
+```
+
+</TabItem>
+<TabItem label="WASM">
+
+```typescript title="WASM"
+import { initWasm, extractFile } from '@kreuzberg/wasm';
+
+// Initialize WASM module once at app startup
+await initWasm();
+
+// Extract from file path (Node.js/Deno/Bun only)
+const result = await extractFile('document.pdf');
+
+console.log(result.content);
+console.log(`Tables: ${result.tables.length}`);
+console.log(`Metadata: ${JSON.stringify(result.metadata)}`);
+```
+
+</TabItem>
+</Tabs>
+
+### Asynchronous
+
+<Tabs>
+<TabItem label="Python">
+
+```python title="Python"
+import asyncio
+from kreuzberg import extract_file, ExtractionConfig
+
+async def main() -> None:
+    config: ExtractionConfig = ExtractionConfig()
+    result = await extract_file("document.pdf", config=config)
+
+    content: str = result.content
+    table_count: int = len(result.tables)
+
+    print(f"Content length: {len(content)} characters")
+    print(f"Tables: {table_count}")
+
+asyncio.run(main())
+```
+
+</TabItem>
+<TabItem label="TypeScript">
+
+```typescript title="TypeScript"
+import { extractFile } from '@kreuzberg/node';
+
+const result = await extractFile('document.pdf');
+console.log(result.content);
+```
+
+</TabItem>
+<TabItem label="Rust">
+
+```rust title="Rust"
+use kreuzberg::{extract_file, ExtractionConfig};
+
+#[tokio::main]
+async fn main() -> kreuzberg::Result<()> {
+    let result = extract_file("document.pdf", None, &ExtractionConfig::default()).await?;
+    println!("{}", result.content);
+    Ok(())
+}
+```
+
+</TabItem>
+<TabItem label="Go">
+
+```go title="Go"
+package main
+
+import (
+	"context"
+	"fmt"
+	"log"
+	"time"
+
+	"github.com/kreuzberg-dev/kreuzberg-lts/v4"
+)
+
+func main() {
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	result, err := kreuzberg.ExtractFile(ctx, "document.pdf", nil)
+	if err != nil {
+		log.Fatalf("extract failed: %v", err)
+	}
+
+	fmt.Println(result.Content)
+}
+```
+
+</TabItem>
+<TabItem label="Java">
+
+```java title="Java"
+import dev.kreuzberg.Kreuzberg;
+import dev.kreuzberg.ExtractionResult;
+import java.nio.file.Path;
+import java.util.concurrent.CompletableFuture;
+
+public class Example {
+    public static void main(String[] args) {
+        CompletableFuture<ExtractionResult> future =
+            Kreuzberg.extractFileAsync(Path.of("document.pdf"), null);
+
+        future.thenAccept(result -> {
+            System.out.println(result.getContent());
+            System.out.println("Tables: " + result.getTables().size());
+        }).join();
+    }
+}
+```
+
+</TabItem>
+<TabItem label="C#">
+
+```csharp title="C#"
+using Kreuzberg;
+
+var result = await KreuzbergClient.ExtractFileAsync("document.pdf");
+
+Console.WriteLine(result.Content);
+Console.WriteLine(result.MimeType);
+```
+
+</TabItem>
+<TabItem label="Ruby">
+
+```ruby title="Ruby"
+require 'kreuzberg'
+
+# Ruby uses blocking APIs; async variants call into Tokio internally.
+result = Kreuzberg.extract_file('document.pdf')
+puts result.content
+```
+
+</TabItem>
+<TabItem label="R">
+
+```r title="R"
+library(kreuzberg)
+
+# Note: extract_file() blocks in R despite being async
+result <- extract_file("path/to/document.docx")
+
+# Access extraction results
+cat("Extracted", length(result$elements), "elements\n")
+cat("Detected language:", result$detected_language, "\n")
+cat("Tables found:", length(result$tables), "\n")
+
+if (!is.null(result$keywords)) {
+  cat("Keywords:", paste(result$keywords, collapse = ", "), "\n")
+}
+```
+
+</TabItem>
+<TabItem label="C">
+
+:::note[Not Applicable]
+The C FFI provides synchronous extraction only. Use `kreuzberg_extract_file_sync`
+for file extraction. For concurrent extraction, use multiple threads with
+`kreuzberg_extract_file_sync` — the API is fully thread-safe.
+:::
+
+</TabItem>
+<TabItem label="WASM">
+
+```typescript title="WASM"
+import { initWasm, extractFile } from '@kreuzberg/wasm';
+
+await initWasm();
+
+// Extract from file path (async)
+const result = await extractFile('document.pdf');
+
+console.log(result.content);
+console.log(`Tables: ${result.tables.length}`);
+console.log(`Metadata: ${JSON.stringify(result.metadata)}`);
+```
+
+</TabItem>
+</Tabs>
+
+## Extract from Bytes
+
+When the file is already loaded in memory (for example, from an upload or network response), pass the byte array with its MIME type. Unlike file extraction, the MIME type is required since there's no file extension to infer it from.
+
+### Synchronous
+
+<Tabs>
+<TabItem label="Python">
+
+```python title="Python"
+from kreuzberg import extract_bytes_sync, ExtractionConfig
+
+with open("document.pdf", "rb") as f:
+    data = f.read()
+
+result = extract_bytes_sync(
+    data,
+    mime_type="application/pdf",
+    config=ExtractionConfig()
+)
+print(result.content)
+```
+
+</TabItem>
+<TabItem label="TypeScript">
+
+```typescript title="TypeScript"
+import { extractBytesSync } from '@kreuzberg/node';
+import { readFileSync } from 'fs';
+
+const data = readFileSync('document.pdf');
+const result = extractBytesSync(data, 'application/pdf');
+console.log(result.content);
+```
+
+</TabItem>
+<TabItem label="Rust">
+
+```rust title="Rust"
+use kreuzberg::{extract_bytes_sync, ExtractionConfig};
+use std::fs;
+
+fn main() -> kreuzberg::Result<()> {
+    let data = fs::read("document.pdf")?;
+
+    let result = extract_bytes_sync(
+        &data,
+        "application/pdf",
+        &ExtractionConfig::default()
+    )?;
+    println!("{}", result.content);
+    Ok(())
+}
+```
+
+</TabItem>
+<TabItem label="Go">
+
+```go title="Go"
+package main
+
+import (
+	"log"
+	"os"
+
+	"github.com/kreuzberg-dev/kreuzberg-lts/v4"
+)
+
+func main() {
+	data, err := os.ReadFile("document.pdf")
+	if err != nil {
+		log.Fatalf("read file: %v", err)
+	}
+
+	result, err := kreuzberg.ExtractBytesSync(data, "application/pdf", nil)
+	if err != nil {
+		log.Fatalf("extract failed: %v", err)
+	}
+
+	log.Println(result.Content)
+}
+```
+
+</TabItem>
+<TabItem label="Java">
+
+```java title="Java"
+import dev.kreuzberg.Kreuzberg;
+import dev.kreuzberg.ExtractionResult;
+import dev.kreuzberg.KreuzbergException;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+
+try {
+    byte[] data = Files.readAllBytes(Paths.get("document.pdf"));
+
+    ExtractionResult result = Kreuzberg.extractBytes(
+        data,
+        "application/pdf",
+        null
+    );
+    System.out.println(result.getContent());
+} catch (IOException | KreuzbergException e) {
+    e.printStackTrace();
+}
+```
+
+</TabItem>
+<TabItem label="C#">
+
+```csharp title="C#"
+using Kreuzberg;
+
+var data = await File.ReadAllBytesAsync("document.pdf");
+var result = KreuzbergClient.ExtractBytesSync(data, "application/pdf");
+
+Console.WriteLine(result.Content);
+Console.WriteLine(result.MimeType);
+```
+
+</TabItem>
+<TabItem label="Ruby">
+
+```ruby title="Ruby"
+require 'kreuzberg'
+
+data = File.binread('document.pdf')
+
+result = Kreuzberg.extract_bytes_sync(
+    data,
+    'application/pdf'
+)
+puts result.content
+```
+
+</TabItem>
+<TabItem label="R">
+
+```r title="R"
+library(kreuzberg)
+
+# Read file as binary data
+file_data <- readBin("path/to/document.pdf", what = "raw", n = file.size("path/to/document.pdf"))
+
+# Extract from bytes with explicit mime type
+result <- extract_bytes_sync(file_data, mime_type = "application/pdf")
+
+# Access extraction results
+cat("Content preview:", substr(result$content, 1, 100), "\n")
+cat("Mime type:", result$mime_type, "\n")
+cat("Pages:", page_count(result), "\n")
+```
+
+</TabItem>
+<TabItem label="C">
+
+```c title="C"
+#include "kreuzberg.h"
+#include <stdio.h>
+#include <string.h>
+
+int main(void) {
+    const char *html = "<html><body><h1>Hello</h1><p>World</p></body></html>";
+    size_t len = strlen(html);
+
+    struct CExtractionResult *result = kreuzberg_extract_bytes_sync(
+        (const uint8_t *)html, len, "text/html");
+    if (!result || !result->success) {
+        fprintf(stderr, "Error: %s\n", kreuzberg_get_error_details().message);
+        return 1;
+    }
+
+    printf("%s\n", result->content);
+    kreuzberg_free_result(result);
+    return 0;
+}
+```
+
+</TabItem>
+<TabItem label="WASM">
+
+```typescript title="WASM"
+import { initWasm, extractBytes } from '@kreuzberg/wasm';
+
+await initWasm();
+
+const bytes = new Uint8Array(buffer);
+const result = await extractBytes(bytes, 'application/pdf');
+
+console.log(result.content);
+console.log(`Tables: ${result.tables.length}`);
+console.log(`Metadata: ${JSON.stringify(result.metadata)}`);
+```
+
+</TabItem>
+</Tabs>
+
+### Asynchronous
+
+<Tabs>
+<TabItem label="Python">
+
+```python title="Python"
+import asyncio
+from kreuzberg import extract_bytes, ExtractionConfig
+
+async def main():
+    with open("document.pdf", "rb") as f:
+        data = f.read()
+
+    result = await extract_bytes(
+        data,
+        mime_type="application/pdf",
+        config=ExtractionConfig()
+    )
+    print(result.content)
+
+asyncio.run(main())
+```
+
+</TabItem>
+<TabItem label="TypeScript">
+
+```typescript title="TypeScript"
+import { extractBytes } from '@kreuzberg/node';
+import { readFile } from 'fs/promises';
+
+const data = await readFile('document.pdf');
+const result = await extractBytes(data, 'application/pdf');
+console.log(result.content);
+```
+
+</TabItem>
+<TabItem label="Rust">
+
+```rust title="Rust"
+use kreuzberg::{extract_bytes, ExtractionConfig};
+use tokio::fs;
+
+#[tokio::main]
+async fn main() -> kreuzberg::Result<()> {
+    let data = fs::read("document.pdf").await?;
+
+    let result = extract_bytes(
+        &data,
+        "application/pdf",
+        &ExtractionConfig::default()
+    ).await?;
+    println!("{}", result.content);
+    Ok(())
+}
+```
+
+</TabItem>
+<TabItem label="Go">
+
+```go title="Go"
+package main
+
+import (
+	"context"
+	"log"
+	"os"
+	"time"
+
+	"github.com/kreuzberg-dev/kreuzberg-lts/v4"
+)
+
+func main() {
+	data, err := os.ReadFile("document.pdf")
+	if err != nil {
+		log.Fatalf("read file: %v", err)
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	result, err := kreuzberg.ExtractBytes(ctx, data, "application/pdf", nil)
+	if err != nil {
+		log.Fatalf("extract failed: %v", err)
+	}
+	log.Println(result.Content)
+}
+```
+
+</TabItem>
+<TabItem label="Java">
+
+```java title="Java"
+import dev.kreuzberg.Kreuzberg;
+import dev.kreuzberg.ExtractionResult;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.concurrent.CompletableFuture;
+
+try {
+    byte[] data = Files.readAllBytes(Paths.get("document.pdf"));
+
+    CompletableFuture<ExtractionResult> future = Kreuzberg.extractBytesAsync(
+        data,
+        "application/pdf",
+        null
+    );
+
+    future.thenAccept(result -> System.out.println(result.getContent()))
+        .join();
+} catch (IOException e) {
+    e.printStackTrace();
+}
+```
+
+</TabItem>
+<TabItem label="C#">
+
+```csharp title="C#"
+using Kreuzberg;
+
+var data = await File.ReadAllBytesAsync("document.pdf");
+var result = await KreuzbergClient.ExtractBytesAsync(data, "application/pdf");
+
+Console.WriteLine(result.Content);
+Console.WriteLine(result.MimeType);
+```
+
+</TabItem>
+<TabItem label="Ruby">
+
+```ruby title="Ruby"
+require 'kreuzberg'
+
+data = File.binread('document.pdf')
+
+result = Kreuzberg.extract_bytes(
+  data,
+  'application/pdf'
+)
+puts result.content
+```
+
+</TabItem>
+<TabItem label="R">
+
+```r title="R"
+library(kreuzberg)
+
+# Read file as binary data
+file_data <- readBin("path/to/document.docx", what = "raw", n = file.size("path/to/document.docx"))
+
+# Note: extract_bytes() blocks in R despite being async
+result <- extract_bytes(file_data, mime_type = "application/vnd.openxmlformats-officedocument.wordprocessingml.document")
+
+# Access extraction results
+cat("Elements extracted:", length(result$elements), "\n")
+cat("Detected language:", result$detected_language, "\n")
+cat("Quality score:", result$quality_score, "\n")
+```
+
+</TabItem>
+<TabItem label="C">
+
+:::note[Not Applicable]
+The C FFI provides synchronous extraction only. Use `kreuzberg_extract_bytes_sync`
+for in-memory extraction. For concurrent extraction, use multiple threads with
+`kreuzberg_extract_bytes_sync` — the API is fully thread-safe.
+:::
+
+</TabItem>
+<TabItem label="WASM">
+
+```typescript title="WASM"
+import { initWasm, extractBytes } from '@kreuzberg/wasm';
+
+await initWasm();
+
+const bytes = new Uint8Array(buffer);
+const result = await extractBytes(bytes, 'application/pdf');
+
+console.log(result.content);
+console.log(`Tables: ${result.tables.length}`);
+console.log(`Metadata: ${JSON.stringify(result.metadata)}`);
+```
+
+</TabItem>
+</Tabs>
+
+## Batch Processing
+
+Batch functions accept an array of file paths (or byte arrays) and process them concurrently. This is typically 2-5x faster than looping over single-file functions because Kreuzberg parallelizes internally.
+
+### Batch Extract Files
+
+<Tabs>
+<TabItem label="Python">
+
+```python title="Python"
+from kreuzberg import batch_extract_files_sync, ExtractionConfig
+
+files: list[str] = ["doc1.pdf", "doc2.docx", "doc3.pptx"]
+config: ExtractionConfig = ExtractionConfig()
+
+results = batch_extract_files_sync(files, config=config)
+
+for i, result in enumerate(results):
+    char_count: int = len(result.content)
+    print(f"File {i + 1}: {char_count} characters")
+```
+
+</TabItem>
+<TabItem label="TypeScript">
+
+```typescript title="TypeScript"
+import { batchExtractFilesSync } from '@kreuzberg/node';
+
+const files = ['doc1.pdf', 'doc2.docx', 'doc3.pptx'];
+const results = batchExtractFilesSync(files);
+
+results.forEach((result, i) => {
+	console.log(`File ${i + 1}: ${result.content.length} characters`);
+});
+```
+
+</TabItem>
+<TabItem label="Rust">
+
+```rust title="Rust"
+use kreuzberg::{batch_extract_file_sync, ExtractionConfig};
+
+fn main() -> kreuzberg::Result<()> {
+    let files = vec!["doc1.pdf", "doc2.docx", "doc3.pptx"];
+    let config = ExtractionConfig::default();
+
+    let results = batch_extract_file_sync(files, &config)?;
+
+    for (i, result) in results.iter().enumerate() {
+        println!("File {}: {} characters", i + 1, result.content.len());
+    }
+    Ok(())
+}
+```
+
+</TabItem>
+<TabItem label="Go">
+
+```go title="Go"
+package main
+
+import (
+	"fmt"
+	"log"
+
+	"github.com/kreuzberg-dev/kreuzberg-lts/v4"
+)
+
+func main() {
+	files := []string{"doc1.pdf", "doc2.docx", "doc3.pptx"}
+
+	results, err := kreuzberg.BatchExtractFilesSync(files, nil)
+	if err != nil {
+		log.Fatalf("batch extract failed: %v", err)
+	}
+
+	for i, result := range results {
+		if result == nil {
+			continue
+		}
+		fmt.Printf("File %d: %d characters\n", i+1, len(result.Content))
+	}
+}
+```
+
+</TabItem>
+<TabItem label="Java">
+
+```java title="Java"
+import dev.kreuzberg.Kreuzberg;
+import dev.kreuzberg.ExtractionResult;
+import dev.kreuzberg.KreuzbergException;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
+
+try {
+    List<String> files = Arrays.asList("doc1.pdf", "doc2.docx", "doc3.pptx");
+
+    List<ExtractionResult> results = Kreuzberg.batchExtractFiles(files, null);
+
+    for (int i = 0; i < results.size(); i++) {
+        ExtractionResult result = results.get(i);
+        System.out.println("File " + (i + 1) + ": " + result.getContent().length() + " characters");
+    }
+} catch (IOException | KreuzbergException e) {
+    e.printStackTrace();
+}
+```
+
+</TabItem>
+<TabItem label="C#">
+
+```csharp title="C#"
+using Kreuzberg;
+
+var files = new[] { "doc1.pdf", "doc2.docx", "doc3.pptx" };
+var results = KreuzbergClient.BatchExtractFilesSync(files, new ExtractionConfig());
+
+foreach (var result in results)
+{
+    Console.WriteLine($"Content length: {result.Content.Length}");
+}
+```
+
+</TabItem>
+<TabItem label="Ruby">
+
+```ruby title="Ruby"
+require 'kreuzberg'
+
+files = ['doc1.pdf', 'doc2.docx', 'doc3.pptx']
+
+results = Kreuzberg.batch_extract_files_sync(files)
+
+results.each_with_index do |result, i|
+  puts "File #{i + 1}: #{result.content.length} characters"
+end
+```
+
+</TabItem>
+<TabItem label="R">
+
+```r title="R"
+library(kreuzberg)
+
+# Define file paths to extract
+file_paths <- c(
+  "documents/report.pdf",
+  "documents/summary.docx",
+  "documents/data.xlsx"
+)
+
+# Batch extract files
+results <- batch_extract_files_sync(file_paths)
+
+# Process results
+for (i in seq_along(results)) {
+  result <- results[[i]]
+  cat(sprintf("File %d: %s\n", i, file_paths[i]))
+  cat(sprintf("  Pages: %d\n", page_count(result)))
+  cat(sprintf("  Elements: %d\n", length(result$elements)))
+}
+```
+
+</TabItem>
+<TabItem label="C">
+
+```c title="C"
+#include "kreuzberg.h"
+#include <stdio.h>
+
+int main(void) {
+    const char *files[] = {"doc1.pdf", "doc2.docx", "doc3.txt"};
+    uintptr_t count = 3;
+
+    struct CBatchResult *batch = kreuzberg_batch_extract_files_sync(files, count, NULL);
+    if (!batch) {
+        fprintf(stderr, "Batch error: %s\n", kreuzberg_get_error_details().message);
+        return 1;
+    }
+
+    for (uintptr_t i = 0; i < batch->count; i++) {
+        struct CExtractionResult *r = batch->results[i];
+        if (r && r->success) {
+            printf("--- %s ---\n%s\n", files[i], r->content);
+        }
+    }
+
+    kreuzberg_free_batch_result(batch);
+    return 0;
+}
+```
+
+</TabItem>
+<TabItem label="WASM">
+
+```typescript title="WASM"
+import { initWasm, batchExtractFiles } from '@kreuzberg/wasm';
+
+await initWasm();
+
+const files = [
+  new File(['content1'], 'doc1.pdf', { type: 'application/pdf' }),
+  new File(['content2'], 'doc2.pdf', { type: 'application/pdf' })
+];
+
+const results = await batchExtractFiles(files);
+
+results.forEach((result, index) => {
+  console.log(`Document ${index + 1}: ${result.content.substring(0, 100)}...`);
+});
+```
+
+</TabItem>
+</Tabs>
+
+### Batch Extract Bytes
+
+<Tabs>
+<TabItem label="Python">
+
+```python title="Python"
+from kreuzberg import batch_extract_bytes_sync, ExtractionConfig
+
+files: list[str] = ["doc1.pdf", "doc2.docx"]
+data_list: list[bytes] = []
+mime_types: list[str] = []
+
+for file in files:
+    with open(file, "rb") as f:
+        data_list.append(f.read())
+    mime_type: str = "application/pdf" if file.endswith(".pdf") else "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    mime_types.append(mime_type)
+
+config: ExtractionConfig = ExtractionConfig()
+results = batch_extract_bytes_sync(data_list, mime_types, config=config)
+
+for i, result in enumerate(results):
+    char_count: int = len(result.content)
+    print(f"Document {i + 1}: {char_count} characters")
+```
+
+</TabItem>
+<TabItem label="TypeScript">
+
+```typescript title="TypeScript"
+import { batchExtractBytesSync } from '@kreuzberg/node';
+import { readFileSync } from 'fs';
+
+const files = ['doc1.pdf', 'doc2.docx'];
+const dataList = files.map(f => readFileSync(f));
+const mimeTypes = [
+	'application/pdf',
+	'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+];
+
+const results = batchExtractBytesSync(dataList, mimeTypes);
+
+results.forEach((result, i) => {
+	console.log(`Document ${i + 1}: ${result.content.length} characters`);
+});
+```
+
+</TabItem>
+<TabItem label="Rust">
+
+```rust title="Rust"
+use kreuzberg::{batch_extract_bytes_sync, ExtractionConfig};
+use std::fs;
+
+fn main() -> kreuzberg::Result<()> {
+    let files = vec!["doc1.pdf", "doc2.docx"];
+
+    let data_list: Vec<Vec<u8>> = files.iter()
+        .map(|f| fs::read(f).expect("read file"))
+        .collect();
+
+    let mime_types: Vec<&str> = files.iter()
+        .map(|f| if f.ends_with(".pdf") {
+            "application/pdf"
+        } else {
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        })
+        .collect();
+
+    let results = batch_extract_bytes_sync(
+        &data_list,
+        &mime_types,
+        &ExtractionConfig::default()
+    )?;
+
+    for (i, result) in results.iter().enumerate() {
+        println!("Document {}: {} characters", i + 1, result.content.len());
+    }
+    Ok(())
+}
+```
+
+</TabItem>
+<TabItem label="Go">
+
+```go title="Go"
+package main
+
+import (
+	"fmt"
+	"log"
+	"os"
+
+	"github.com/kreuzberg-dev/kreuzberg-lts/v4"
+)
+
+func main() {
+	files := []struct {
+		Path string
+		MIME string
+	}{
+		{"doc1.pdf", "application/pdf"},
+		{"doc2.docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"},
+	}
+
+	items := make([]kreuzberg.BytesWithMime, 0, len(files))
+	for _, file := range files {
+		data, err := os.ReadFile(file.Path)
+		if err != nil {
+			log.Fatalf("read %s: %v", file.Path, err)
+		}
+		items = append(items, kreuzberg.BytesWithMime{
+			Data:     data,
+			MimeType: file.MIME,
+		})
+	}
+
+	results, err := kreuzberg.BatchExtractBytesSync(items, nil)
+	if err != nil {
+		log.Fatalf("batch extract failed: %v", err)
+	}
+
+	for i, result := range results {
+		if result == nil {
+			continue
+		}
+		fmt.Printf("Document %d: %d characters\n", i+1, len(result.Content))
+	}
+}
+```
+
+</TabItem>
+<TabItem label="Java">
+
+```java title="Java"
+import dev.kreuzberg.Kreuzberg;
+import dev.kreuzberg.ExtractionResult;
+import dev.kreuzberg.BytesWithMime;
+import dev.kreuzberg.KreuzbergException;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
+try {
+    List<String> files = Arrays.asList("doc1.pdf", "doc2.docx");
+
+    List<BytesWithMime> dataList = new ArrayList<>();
+    for (String file : files) {
+        byte[] data = Files.readAllBytes(Paths.get(file));
+        String mimeType = file.endsWith(".pdf") ? "application/pdf" :
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+        dataList.add(new BytesWithMime(data, mimeType));
+    }
+
+    List<ExtractionResult> results = Kreuzberg.batchExtractBytes(dataList, null);
+
+    for (int i = 0; i < results.size(); i++) {
+        ExtractionResult result = results.get(i);
+        System.out.println("Document " + (i + 1) + ": " + result.getContent().length() + " characters");
+    }
+} catch (IOException | KreuzbergException e) {
+    e.printStackTrace();
+}
+```
+
+</TabItem>
+<TabItem label="C#">
+
+```csharp title="C#"
+using Kreuzberg;
+
+var documents = new[]
+{
+    new BytesWithMime(await File.ReadAllBytesAsync("doc1.pdf"), "application/pdf"),
+    new BytesWithMime(await File.ReadAllBytesAsync("doc2.docx"), "application/vnd.openxmlformats-officedocument.wordprocessingml.document"),
+};
+
+var results = KreuzbergClient.BatchExtractBytesSync(documents, new ExtractionConfig());
+
+Console.WriteLine($"Processed {results.Count} documents");
+```
+
+</TabItem>
+<TabItem label="Ruby">
+
+```ruby title="Ruby"
+require 'kreuzberg'
+
+files = ['doc1.pdf', 'doc2.docx']
+
+data_list = files.map { |f| File.binread(f) }
+mime_types = files.map do |f|
+  f.end_with?('.pdf') ? 'application/pdf' :
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+end
+
+results = Kreuzberg.batch_extract_bytes_sync(
+  data_list,
+  mime_types
+)
+
+results.each_with_index do |result, i|
+  puts "Document #{i + 1}: #{result.content.length} characters"
+end
+```
+
+</TabItem>
+<TabItem label="R">
+
+```r title="R"
+library(kreuzberg)
+
+# Read multiple files as binary data
+data1 <- readBin("document1.pdf", what = "raw", n = file.size("document1.pdf"))
+data2 <- readBin("document2.pdf", what = "raw", n = file.size("document2.pdf"))
+
+data_list <- list(data1, data2)
+mime_types <- c("application/pdf", "application/pdf")
+
+# Batch extract from bytes
+results <- batch_extract_bytes_sync(data_list, mime_types)
+
+# Process results
+for (i in seq_along(results)) {
+  cat(sprintf("Document %d: %d pages\n", i, page_count(results[[i]])))
+}
+```
+
+</TabItem>
+<TabItem label="C">
+
+```c title="C"
+#include "kreuzberg.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+int main(void) {
+    const char *html = "<html><body><p>Hello</p></body></html>";
+    const char *csv = "name,age\nAlice,30\nBob,25";
+
+    const uint8_t *data[] = {(const uint8_t *)html, (const uint8_t *)csv};
+    uintptr_t lengths[] = {strlen(html), strlen(csv)};
+    const char *mime_types[] = {"text/html", "text/csv"};
+    uintptr_t count = 2;
+
+    struct CBatchResult *batch = kreuzberg_batch_extract_bytes_sync(
+        data, lengths, mime_types, count, NULL);
+    if (!batch) {
+        fprintf(stderr, "Batch error: %s\n", kreuzberg_get_error_details().message);
+        return 1;
+    }
+
+    for (uintptr_t i = 0; i < batch->count; i++) {
+        struct CExtractionResult *r = batch->results[i];
+        if (r && r->success) {
+            printf("--- Document %zu ---\n%s\n", (size_t)(i + 1), r->content);
+        }
+    }
+
+    kreuzberg_free_batch_result(batch);
+    return 0;
+}
+```
+
+</TabItem>
+<TabItem label="WASM">
+
+```typescript title="WASM"
+import { initWasm, batchExtractBytes } from '@kreuzberg/wasm';
+
+await initWasm();
+
+const dataList = [
+  new Uint8Array(buffer1),
+  new Uint8Array(buffer2)
+];
+
+const mimeTypes = [
+  'application/pdf',
+  'application/pdf'
+];
+
+const results = await batchExtractBytes(dataList, mimeTypes);
+
+results.forEach((result, index) => {
+  console.log(`Document ${index + 1}: ${result.content.substring(0, 100)}...`);
+});
+```
+
+</TabItem>
+</Tabs>
+
+### Per-File Configuration <span class="version-badge">v4.5.0</span>
+
+When a batch contains a mix of document types that need different settings (for example, scanned images needing OCR alongside text-based PDFs), use `FileExtractionConfig` to override options per file while sharing a common batch config.
+
+<Tabs>
+<TabItem label="Python">
+
+```python title="mixed_batch.py"
+from kreuzberg import (
+    batch_extract_files_sync,
+    ExtractionConfig,
+    FileExtractionConfig,
+    OcrConfig,
+)
+
+config = ExtractionConfig(output_format="markdown")
+
+paths = ["report.pdf", "scan.tiff", "notes.html"]
+file_configs = [
+    None,
+    FileExtractionConfig(
+        force_ocr=True,
+        ocr=OcrConfig(backend="tesseract", language="deu"),
+    ),
+    FileExtractionConfig(output_format="plain"),
+]
+
+results = batch_extract_files_sync(paths, config, file_configs=file_configs)
+```
+
+</TabItem>
+<TabItem label="TypeScript">
+
+```typescript title="mixed_batch.ts"
+import { batchExtractFilesSync } from '@kreuzberg/node';
+
+const results = batchExtractFilesSync(
+  ['report.pdf', 'scan.tiff', 'notes.html'],
+  { outputFormat: 'markdown' },
+  [
+    null,
+    { forceOcr: true, ocr: { backend: 'tesseract', language: 'deu' } },
+    { outputFormat: 'plain' },
+  ],
+);
+```
+
+</TabItem>
+<TabItem label="Rust">
+
+```rust title="mixed_batch.rs"
+use kreuzberg::{
+    batch_extract_file, ExtractionConfig, FileExtractionConfig,
+    OcrConfig, OutputFormat,
+};
+use std::path::PathBuf;
+
+let config = ExtractionConfig {
+    output_format: OutputFormat::Markdown,
+    ..Default::default()
+};
+
+let paths = vec![
+    PathBuf::from("report.pdf"),
+    PathBuf::from("scan.tiff"),
+    PathBuf::from("notes.html"),
+];
+
+let file_configs = vec![
+    None,
+    Some(FileExtractionConfig {
+        force_ocr: Some(true),
+        ocr: Some(OcrConfig {
+            backend: "tesseract".to_string(),
+            language: "deu".to_string(),
+            ..Default::default()
+        }),
+        ..Default::default()
+    }),
+    Some(FileExtractionConfig {
+        output_format: Some(OutputFormat::Plain),
+        ..Default::default()
+    }),
+];
+
+let results = batch_extract_file(paths, &config, Some(&file_configs)).await?;
+```
+
+</TabItem>
+</Tabs>
+
+Fields set to `None` in `FileExtractionConfig` inherit the batch default. Batch-level concerns like `max_concurrent_extractions`, `use_cache`, and `security_limits` cannot be overridden per file. See the [Configuration Reference](/reference/configuration/#fileextractionconfig) for the full list of overridable fields.
+
+## Content Filtering <span class="version-badge">v4.8.0</span>
+
+Kreuzberg strips running headers, footers, watermarks, and cross-page repeating text by default so that downstream RAG and LLM pipelines see clean body content. `ContentFilterConfig` lets you opt back in to any of these when you need them, for example when extracting legal forms where the header carries the case number, or when running text analysis on a PDF whose brand name was being incorrectly removed by the repeating-text heuristic.
+
+The defaults match the field defaults documented in [ContentFilterConfig](/reference/configuration/#contentfilterconfig): `include_headers=False`, `include_footers=False`, `strip_repeating_text=True`, `include_watermarks=False`.
+
+<Tabs>
+<TabItem label="Python">
+
+```python title="keep_headers_footers.py"
+from kreuzberg import (
+    extract_file_sync,
+    ContentFilterConfig,
+    ExtractionConfig,
+)
+
+# Legal/forms work: keep header and footer text
+config = ExtractionConfig(
+    content_filter=ContentFilterConfig(
+        include_headers=True,
+        include_footers=True,
+    ),
+)
+
+result = extract_file_sync("contract.pdf", config=config)
+```
+
+</TabItem>
+<TabItem label="TypeScript">
+
+```typescript title="disable_repeating_text.ts"
+import { extract } from "@kreuzberg/node";
+
+// Disable cross-page deduplication so brand names aren't stripped
+const result = await extract("brochure.pdf", {
+  contentFilter: {
+    stripRepeatingText: false,
+  },
+});
+```
+
+</TabItem>
+<TabItem label="Rust">
+
+```rust title="content_filter.rs"
+use kreuzberg::{extract_file_sync, ContentFilterConfig, ExtractionConfig};
+
+let config = ExtractionConfig {
+    content_filter: Some(ContentFilterConfig {
+        include_headers: true,
+        include_footers: true,
+        strip_repeating_text: true,
+        include_watermarks: false,
+    }),
+    ..Default::default()
+};
+
+let result = extract_file_sync("contract.pdf", None, &config)?;
+```
+
+</TabItem>
+</Tabs>
+
+When a layout-detection model is active, it can independently classify regions as page headers or footers and strip them per page. Setting `include_headers=True` / `include_footers=True` also disables that per-page stripping. See the [reference page](/reference/configuration/#contentfilterconfig) for the full field semantics and per-format behavior.
+
+## Supported Formats
+
+Kreuzberg supports 75+ file formats across 8 categories:
+
+| Category | Extensions | Notes |
+|----------|-----------|-------|
+| **PDF** | `.pdf` | Native text + OCR for scanned pages |
+| **Images** | `.png`, `.jpg`, `.jpeg`, `.tiff`, `.bmp`, `.webp` | Requires OCR backend |
+| **Office** | `.docx`, `.pptx`, `.xlsx` | Modern formats via native parsers |
+| **Legacy Office** | `.doc`, `.ppt` | Native OLE/CFB parsing |
+| **Email** | `.eml`, `.msg` | Full support including attachments |
+| **Web** | `.html`, `.htm` | Converted to Markdown with metadata |
+| **Text** | `.md`, `.txt`, `.xml`, `.json`, `.yaml`, `.toml`, `.csv` | Direct extraction |
+| **Archives** | `.zip`, `.tar`, `.tar.gz`, `.tar.bz2` | Recursive extraction |
+
+## Page Tracking
+
+Kreuzberg can track page boundaries and extract per-page content. Page tracking availability depends on the format:
+
+- **PDF** — Full byte-accurate page tracking with O(1) lookup
+- **PPTX** — Slide boundary tracking (each slide = one page)
+- **DOCX** — Best-effort detection using explicit `<w:br type="page"/>` tags
+- **Other formats** — No page tracking
+
+Enable page extraction with `PageConfig`:
+
+```python title="page_tracking.py"
+config = ExtractionConfig(
+    pages=PageConfig(
+        insert_page_markers=True,
+        marker_format="\n\n<!-- PAGE {page_num} -->\n\n"
+    )
+)
+```
+
+Page markers like `<!-- PAGE 1 -->` are inserted at boundaries in the `content` field — useful for LLMs that need to understand document layout. When both page tracking and chunking are enabled, chunks automatically include `first_page` and `last_page` metadata.
+
+See [PageConfig Reference](/reference/configuration/#pageconfig) for all options and [Advanced Page Tracking](/guides/chunking-embeddings/#page-tracking-patterns) for chunk-to-page mapping examples.
+
+## Code File Extraction
+
+When extracting source code files (`.py`, `.rs`, `.ts`, `.go`, etc.), Kreuzberg uses tree-sitter to produce structured code intelligence. The result is available in `ExtractionResult.code_intelligence` as a `ProcessResult` containing:
+
+- **Structure** -- Functions, classes, methods, interfaces, and their nesting hierarchy
+- **Imports/Exports** -- Module dependencies and re-exports
+- **Symbols** -- Variables, constants, type aliases
+- **Docstrings** -- Parsed documentation in 10+ formats (Google, NumPy, JSDoc, RustDoc, etc.)
+- **Diagnostics** -- Parse errors with line/column positions
+- **Chunks** -- Semantic code chunks split at function/class boundaries
+
+Code files bypass the text-splitter chunking pipeline entirely. Instead, TSLP's `CodeChunks` (function/class-aware) map directly to Kreuzberg `Chunk`s with semantic `chunk_type` and heading context.
+
+Control the content mode with `TreeSitterProcessConfig.content_mode`:
+
+- `chunks` (default) -- Semantic TSLP chunks as the content output
+- `raw` -- Source code as-is, no transformation
+- `structure` -- Headings and docstrings only
+
+## PDF Page Rendering
+
+Render individual PDF pages as PNG images. Unlike the extraction pipeline (which parses text, tables, metadata), this API produces raw pixel data for thumbnails, vision model input, or custom OCR pipelines.
+
+### Two Approaches
+
+| API | When to use |
+|-----|-------------|
+| `render_pdf_page` | You know which page you need, or only need a few pages |
+| `PdfPageIterator` | Process every page sequentially without loading all images into memory |
+
+### DPI Configuration
+
+| DPI | Pixel size (US Letter) | Use case |
+|-----|----------------------|----------|
+| 72 | 612 x 792 | Thumbnails, quick previews |
+| 150 (default) | 1275 x 1650 | General-purpose, screen display |
+| 300 | 2550 x 3300 | OCR input, print quality |
+
+**Tip:** Use 300 DPI when rendering pages for OCR or vision models. The default 150 DPI may reduce recognition accuracy on small text.
+
+## MIME Type Detection
+
+When extracting from bytes, Kreuzberg requires an explicit MIME type since there's no file extension to infer it from. For file paths, auto-detection from the extension is automatic.
+
+### Example: Override MIME Type
+
+```python title="Python"
+from kreuzberg import extract_file
+
+# File without extension — provide MIME type explicitly
+result = extract_file("document_copy", mime_type="application/pdf", config=config)
+```
+
+## Error Handling
+
+All extraction functions raise typed exceptions on failure. Catch specific exceptions to handle different failure modes:
+
+<Tabs>
+<TabItem label="Python">
+
+```python title="Python"
+from kreuzberg import extract_file_sync, extract_bytes_sync, ExtractionConfig
+from kreuzberg import (
+    KreuzbergError,
+    ParsingError,
+    OCRError,
+    ValidationError,
+)
+
+try:
+    result = extract_file_sync("document.pdf")
+    print(f"Extracted {len(result.content)} characters")
+except FileNotFoundError as e:
+    print(f"File not found: {e}")
+except ParsingError as e:
+    print(f"Failed to parse document: {e}")
+except OCRError as e:
+    print(f"OCR processing failed: {e}")
+except KreuzbergError as e:
+    print(f"Extraction error: {e}")
+
+try:
+    config: ExtractionConfig = ExtractionConfig()
+    pdf_bytes: bytes = b"%PDF-1.4\n"
+    result = extract_bytes_sync(pdf_bytes, "application/pdf", config)
+    print(f"Extracted: {result.content[:100]}")
+except ValidationError as e:
+    print(f"Invalid configuration: {e}")
+except OCRError as e:
+    print(f"OCR failed: {e}")
+except KreuzbergError as e:
+    print(f"Extraction failed: {e}")
+```
+
+</TabItem>
+<TabItem label="TypeScript">
+
+```typescript title="TypeScript"
+import { extractFileSync, KreuzbergError } from '@kreuzberg/node';
+
+try {
+	const result = extractFileSync('document.pdf');
+	console.log(result.content);
+} catch (error) {
+	if (error instanceof KreuzbergError) {
+		console.error(`Extraction error: ${error.message}`);
+	} else {
+		throw error;
+	}
+}
+```
+
+</TabItem>
+<TabItem label="Rust">
+
+```rust title="Rust"
+use kreuzberg::{extract_file_sync, extract_bytes_sync, ExtractionConfig, KreuzbergError};
+
+fn main() -> kreuzberg::Result<()> {
+    match extract_file_sync("document.pdf", None, &ExtractionConfig::default()) {
+        Ok(result) => {
+            println!("Extracted {} characters", result.content.len());
+        }
+        Err(KreuzbergError::Parsing { message, .. }) => {
+            eprintln!("Failed to parse document: {}", message);
+        }
+        Err(KreuzbergError::Ocr { message, .. }) => {
+            eprintln!("OCR processing failed: {}", message);
+        }
+        Err(KreuzbergError::MissingDependency { message, .. }) => {
+            eprintln!("Missing dependency: {}", message);
+        }
+        Err(e) => {
+            eprintln!("Extraction failed: {}", e);
+        }
+    }
+
+    let pdf_bytes = b"%PDF-1.4\n...";
+    match extract_bytes_sync(pdf_bytes, "application/pdf", None, &ExtractionConfig::default()) {
+        Ok(result) => {
+            println!("Extracted: {}", &result.content[..100.min(result.content.len())]);
+            Ok(())
+        }
+        Err(KreuzbergError::Validation { message, .. }) => {
+            eprintln!("Invalid configuration: {}", message);
+            Err(KreuzbergError::Validation {
+                message: message.clone(),
+                source: None,
+            })
+        }
+        Err(KreuzbergError::Ocr { message, .. }) => {
+            eprintln!("OCR failed: {}", message);
+            Err(KreuzbergError::Ocr {
+                message: message.clone(),
+                source: None,
+            })
+        }
+        Err(e) => {
+            eprintln!("Extraction failed: {}", e);
+            Err(e)
+        }
+    }
+}
+```
+
+</TabItem>
+<TabItem label="Go">
+
+```go title="Go"
+package main
+
+import (
+	"errors"
+	"fmt"
+	"log"
+
+	"github.com/kreuzberg-dev/kreuzberg-lts/v4"
+)
+
+func main() {
+	result, err := kreuzberg.ExtractFileSync("document.pdf", nil)
+	if err != nil {
+		switch {
+		case errors.As(err, new(*kreuzberg.ValidationError)):
+			log.Fatalf("invalid configuration: %v", err)
+		case errors.As(err, new(*kreuzberg.ParsingError)):
+			log.Fatalf("failed to parse document: %v", err)
+		case errors.As(err, new(*kreuzberg.OCRError)):
+			log.Fatalf("OCR processing failed: %v", err)
+		case errors.As(err, new(*kreuzberg.MissingDependencyError)):
+			log.Fatalf("missing dependency: %v", err)
+		default:
+			log.Fatalf("extraction error: %v", err)
+		}
+	}
+
+	fmt.Println(result.Content)
+}
+```
+
+</TabItem>
+<TabItem label="Java">
+
+```java title="Java"
+import dev.kreuzberg.Kreuzberg;
+import dev.kreuzberg.ExtractionResult;
+import dev.kreuzberg.KreuzbergException;
+import java.io.IOException;
+
+try {
+    ExtractionResult result = Kreuzberg.extractFile("document.pdf");
+    System.out.println("Extracted: " + result.getContent()
+        .substring(0, Math.min(100, result.getContent().length())));
+} catch (IOException e) {
+    System.err.println("File not found: " + e.getMessage());
+} catch (KreuzbergException e) {
+    System.err.println("Extraction failed: " + e.getMessage());
+}
+
+try {
+    byte[] pdfBytes = new byte[] { };
+    ExtractionResult result = Kreuzberg.extractBytes(pdfBytes, "application/pdf", null);
+    System.out.println("Extracted " + result.getContent().length() + " characters");
+} catch (KreuzbergException e) {
+    System.err.println("Extraction failed: " + e.getMessage());
+}
+```
+
+</TabItem>
+<TabItem label="C#">
+
+```csharp title="C#"
+using Kreuzberg;
+
+try
+{
+    var result = KreuzbergClient.ExtractFileSync("missing.pdf");
+    Console.WriteLine(result.Content);
+}
+catch (KreuzbergValidationException ex)
+{
+    Console.Error.WriteLine($"Validation error: {ex.Message}");
+}
+catch (KreuzbergIOException ex)
+{
+    Console.Error.WriteLine($"IO error: {ex.Message}");
+    throw;
+}
+catch (KreuzbergException ex)
+{
+    Console.Error.WriteLine($"Extraction failed: {ex.Message}");
+    throw;
+}
+```
+
+</TabItem>
+<TabItem label="Ruby">
+
+```ruby title="Ruby"
+require 'kreuzberg'
+
+begin
+  result = Kreuzberg.extract_file_sync('document.pdf')
+  puts result.content
+rescue Kreuzberg::ValidationError => e
+  puts "Invalid configuration: #{e.message}"
+rescue Kreuzberg::ParsingError => e
+  puts "Failed to parse document: #{e.message}"
+rescue Kreuzberg::OCRError => e
+  puts "OCR processing failed: #{e.message}"
+rescue Kreuzberg::MissingDependencyError => e
+  puts "Missing dependency: #{e.message}"
+rescue Kreuzberg::Error => e
+  puts "Extraction error: #{e.message}"
+rescue StandardError => e
+  puts "System error: #{e.message}"
+end
+```
+
+</TabItem>
+<TabItem label="R">
+
+```r title="R"
+library(kreuzberg)
+
+# Handle extraction errors with typed conditions
+result <- tryCatch({
+  extract_file_sync("document.xyz")
+},
+  UnsupportedFileType = function(e) {
+    cat("Error: File type not supported\n")
+    cat("Message:", conditionMessage(e), "\n")
+    NULL
+  },
+  ValidationError = function(e) {
+    cat("Error: Validation failed\n")
+    cat("Message:", conditionMessage(e), "\n")
+    NULL
+  },
+  kreuzberg_error = function(e) {
+    cat("Error: Kreuzberg extraction failed\n")
+    cat("Message:", conditionMessage(e), "\n")
+    NULL
+  }
+)
+
+if (!is.null(result)) {
+  cat("Extraction successful\n")
+}
+```
+
+</TabItem>
+<TabItem label="C">
+
+```c title="C"
+#include "kreuzberg.h"
+#include <stdio.h>
+
+int main(void) {
+    struct CExtractionResult *result = kreuzberg_extract_file_sync("missing.pdf");
+    if (!result || !result->success) {
+        struct CErrorDetails err = kreuzberg_get_error_details();
+        fprintf(stderr, "Error [%s]: %s\n",
+                kreuzberg_error_code_name(err.error_code),
+                err.message);
+
+        if (err.error_code == kreuzberg_error_code_io()) {
+            fprintf(stderr, "File not found or unreadable\n");
+        } else if (err.error_code == kreuzberg_error_code_unsupported_format()) {
+            fprintf(stderr, "Unsupported file format\n");
+        }
+
+        if (result) kreuzberg_free_result(result);
+        return 1;
+    }
+
+    printf("%s\n", result->content);
+    kreuzberg_free_result(result);
+    return 0;
+}
+```
+
+</TabItem>
+<TabItem label="WASM">
+
+```typescript title="WASM"
+import { initWasm, extractBytes } from '@kreuzberg/wasm';
+
+try {
+	await initWasm();
+	const bytes = new Uint8Array(buffer);
+	const result = await extractBytes(bytes, 'application/pdf');
+	console.log(result.content);
+} catch (error) {
+	if (error instanceof Error) {
+		console.error(`Extraction error: ${error.message}`);
+	} else {
+		throw error;
+	}
+}
+```
+
+</TabItem>
+</Tabs>
+
+:::caution[System Errors]
+`OSError` (Python), `IOException` (Rust), and system-level errors always propagate through. These indicate real system problems (permissions, disk space, etc.) that your application should handle.
+:::
+
+## Next Steps
+
+- [Configuration](/guides/configuration/) — all configuration options and file formats
+- [OCR Guide](/guides/ocr/) — set up optical character recognition
+- [Advanced Features](/guides/chunking-embeddings/) — chunking, language detection, embeddings
+- [Element-Based Output](/guides/output-formats/#element-based-output) — structured element arrays for RAG
+- [Document Structure](/guides/output-formats/#document-structure) — hierarchical tree output

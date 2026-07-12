@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """Sync version from Cargo.toml workspace to all package manifests.
 
 This script reads the version from Cargo.toml [workspace.package] and updates:
@@ -565,17 +566,17 @@ def main():
             rf"\g<1>{version}\g<2>",
         ),
         (
-            repo_root / "docs/reference/api-csharp.md",
+            repo_root / "docs-site/src/content/docs/reference/api-csharp.md",
             r'(PackageReference Include="Kreuzberg" Version=")([^"]+)(")',
             rf"\g<1>{version}\g<3>",
         ),
         (
-            repo_root / "docs/reference/api-go.md",
+            repo_root / "docs-site/src/content/docs/reference/api-go.md",
             r"\d+\.\d+\.\d+(?:-[a-zA-Z0-9.]+)?",
             version,
         ),
         (
-            repo_root / "docs/reference/api-java.md",
+            repo_root / "docs-site/src/content/docs/reference/api-java.md",
             r"\d+\.\d+\.\d+(?:-[a-zA-Z0-9.]+)?",
             version,
         ),
@@ -655,27 +656,27 @@ def main():
             rf"\g<1>{version} Release\g<2>",
         ),
         (
-            repo_root / "docs/getting-started/installation.md",
+            repo_root / "docs-site/src/content/docs/getting-started/installation.mdx",
             r"(<version>)\d+\.\d+\.\d+(?:-[a-zA-Z0-9.]+)?(</version>)",
             rf"\g<1>{version}\g<2>",
         ),
         (
-            repo_root / "docs/getting-started/installation.md",
+            repo_root / "docs-site/src/content/docs/getting-started/installation.mdx",
             r"(implementation 'dev\.kreuzberg:kreuzberg:)\d+\.\d+\.\d+(?:-[a-zA-Z0-9.]+)?(')",
             rf"\g<1>{version}\g<2>",
         ),
         (
-            repo_root / "docs/reference/api-elixir.md",
+            repo_root / "docs-site/src/content/docs/reference/api-elixir.md",
             r'(\{:kreuzberg, "~> )\d+\.\d+\.\d+(?:-[a-zA-Z0-9.]+)?("\})',
             rf"\g<1>{version}\g<2>",
         ),
         (
-            repo_root / "docs/reference/environment-variables.md",
+            repo_root / "docs-site/src/content/docs/reference/environment-variables.md",
             r"(This document covers all KREUZBERG_\* environment variables for version )\d+\.\d+\.\d+(?:-[a-zA-Z0-9.]+)?(\.)$",
             rf"\g<1>{version}\g<2>",
         ),
         (
-            repo_root / "docs/guides/api-server.md",
+            repo_root / "docs-site/src/content/docs/guides/api-server.mdx",
             r'("version": ")\d+\.\d+\.\d+(?:-[a-zA-Z0-9.]+)?(")',
             rf"\g<1>{version}\g<2>",
         ),

@@ -34,7 +34,7 @@ exclude = [
     "e2e/**",
     "**/*.diff",
     "**/*.patch",
-    "docs/reference/**",
+    "docs-site/src/content/docs/**",
     "crates/kreuzberg-ffi/kreuzberg.h",
     "crates/kreuzberg-pdfium-render/src/bindgen/**",
     "crates/kreuzberg-pdfium-render/src/bindings.rs",
@@ -423,7 +423,7 @@ lint = { exclude = [
     "e2e/**",
     "**/*.diff",
     "**/*.patch",
-    "docs/reference/**",
+    "docs-site/src/content/docs/**",
     "crates/kreuzberg-ffi/kreuzberg.h",
     "crates/kreuzberg-pdfium-render/src/bindgen/**",
     "crates/kreuzberg-pdfium-render/src/bindings.rs",
@@ -466,7 +466,7 @@ fmt = { exclude = [
     "e2e/**",
     "**/*.diff",
     "**/*.patch",
-    "docs/reference/**",
+    "docs-site/src/content/docs/**",
     "crates/kreuzberg-ffi/kreuzberg.h",
     "crates/kreuzberg-pdfium-render/src/bindgen/**",
     "crates/kreuzberg-pdfium-render/src/bindings.rs",
@@ -509,7 +509,7 @@ file_safety = { exclude = [
     "e2e/**",
     "**/*.diff",
     "**/*.patch",
-    "docs/reference/**",
+    "docs-site/src/content/docs/**",
     "crates/kreuzberg-ffi/kreuzberg.h",
     "crates/kreuzberg-pdfium-render/src/bindgen/**",
     "crates/kreuzberg-pdfium-render/src/bindings.rs",
@@ -527,8 +527,3 @@ files = "packages/python/**/*.py"
 [hooks.pre-commit.commands.helm]
 run = "bash -c 'helm lint --strict charts/kreuzberg && helm template charts/kreuzberg | kubeconform -strict -summary -'"
 files = "charts/**"
-[[hooks.sources]]
-id = "ai-rulez"
-git = "https://github.com/Goldziher/ai-rulez.git"
-revision = "v4.9.3"
-hooks = ["ai-rulez-validate"]

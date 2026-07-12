@@ -1,0 +1,1035 @@
+---
+title: Output Formats
+description: "Choose an extraction output format — plain text for prompts, element arrays for RAG, or hierarchical document trees for knowledge graphs."
+---
+
+import { Tabs, TabItem } from '@astrojs/starlight/components';
+
+Kreuzberg supports multiple output formats to suit different use cases — from plain text for LLM prompts to structured element arrays for RAG systems to hierarchical document trees for knowledge graphs.
+
+Choose the format that best matches your downstream processing needs:
+
+- **Unified (default)** — Plain text/markdown output, ideal for LLM prompts and full-text search
+- **Element-Based** — Flat array of typed elements with metadata, suitable for RAG chunking and semantic search
+- **Document Structure** — Hierarchical tree with explicit parent-child references, best for knowledge graphs and structured applications
+- **PDF Hierarchy** — Font size classification into heading levels (H1–H6) for PDFs
+
+## Unified Output (Default)
+
+By default, Kreuzberg extracts plain text and markdown-formatted content. No configuration is required. The result contains:
+
+- `content` — Full document text with minimal formatting
+- `pages` — Per-page breakdown for PDFs, DOCX, and PPTX
+- `tables` — Extracted tables in structured format
+- `images` — Image metadata and paths
+
+This format is ideal for:
+
+- Feeding entire documents into LLMs without structured constraints
+- Full-text search and indexing
+- Simple text processing pipelines
+
+---
+
+## Element-Based Output <span class="version-badge">v4.1.0</span>
+
+Segments a document into a flat array of typed elements — titles, paragraphs, tables, list items, code blocks, images, and more. Each element carries a page number and, for text elements in PDFs when hierarchy extraction is enabled, bounding box coordinates.
+
+Use element-based output for RAG chunking, semantic search, or Unstructured.io-compatible pipelines. For hierarchical tree structure, use [document structure](#document-structure). For plain text, use the default unified output.
+
+### Enable
+
+<Tabs>
+<TabItem label="Python">
+
+```python title="Element-Based Output (Python)"
+from kreuzberg import extract_file_sync, ExtractionConfig
+
+# Configure element-based output
+config = ExtractionConfig(result_format="element_based")
+
+# Extract document
+result = extract_file_sync("document.pdf", config=config)
+
+# Access elements
+for element in result.elements:
+    print(f"Type: {element.element_type}")
+    print(f"Text: {element.text[:100]}")
+
+    if element.metadata.page_number:
+        print(f"Page: {element.metadata.page_number}")
+
+    if element.metadata.coordinates:
+        coords = element.metadata.coordinates
+        print(f"Coords: ({coords.left}, {coords.top}) - ({coords.right}, {coords.bottom})")
+
+    print("---")
+
+# Filter by element type
+titles = [e for e in result.elements if e.element_type == "title"]
+for title in titles:
+    level = title.metadata.additional.get("level", "unknown")
+    print(f"[{level}] {title.text}")
+```
+
+</TabItem>
+<TabItem label="TypeScript">
+
+```typescript title="Element-Based Output (TypeScript)"
+import { extractFileSync, ExtractionConfig } from '@kreuzberg/node';
+
+// Configure element-based output
+const config: ExtractionConfig = {
+  outputFormat: "element_based"
+};
+
+// Extract document
+const result = extractFileSync("document.pdf", null, config);
+
+// Access elements
+for (const element of result.elements) {
+  console.log(`Type: ${element.elementType}`);
+  console.log(`Text: ${element.text.slice(0, 100)}`);
+
+  if (element.metadata.pageNumber) {
+    console.log(`Page: ${element.metadata.pageNumber}`);
+  }
+
+  if (element.metadata.coordinates) {
+    const coords = element.metadata.coordinates;
+    console.log(`Coords: (${coords.left}, ${coords.top}) - (${coords.right}, ${coords.bottom})`);
+  }
+
+  console.log("---");
+}
+
+// Filter by element type
+const titles = result.elements.filter(e => e.elementType === "title");
+for (const title of titles) {
+  const level = title.metadata.additional?.level || "unknown";
+  console.log(`[${level}] ${title.text}`);
+}
+```
+
+</TabItem>
+<TabItem label="Rust">
+
+```rust title="Element-Based Output (Rust)"
+use kreuzberg::{extract_file_sync, ExtractionConfig};
+use kreuzberg::types::OutputFormat as ResultFormat;
+
+fn main() -> kreuzberg::Result<()> {
+    // Configure element-based output (result_format controls Unified vs ElementBased)
+    let config = ExtractionConfig {
+        result_format: ResultFormat::ElementBased,
+        ..Default::default()
+    };
+
+    // Extract document
+    let result = extract_file_sync("document.pdf", None, &config)?;
+
+    // Access elements
+    if let Some(elements) = result.elements {
+        for element in &elements {
+            println!("Type: {:?}", element.element_type);
+            println!("Text: {}", &element.text[..100.min(element.text.len())]);
+
+            if let Some(page) = element.metadata.page_number {
+                println!("Page: {}", page);
+            }
+
+            if let Some(coords) = &element.metadata.coordinates {
+                println!("Coords: ({}, {}) - ({}, {})",
+                    coords.x0, coords.y0, coords.x1, coords.y1);
+            }
+
+            println!("---");
+        }
+
+        // Filter by element type
+        let titles: Vec<_> = elements.iter()
+            .filter(|e| matches!(e.element_type, kreuzberg::types::ElementType::Title))
+            .collect();
+
+        for title in titles {
+            let level = title.metadata.additional.get("level")
+                .map(|v| v.as_ref())
+                .unwrap_or("unknown");
+            println!("[{}] {}", level, title.text);
+        }
+    }
+
+    Ok(())
+}
+```
+
+</TabItem>
+<TabItem label="Go">
+
+```go title="Element-Based Output (Go)"
+package main
+
+import (
+    "fmt"
+    "kreuzberg"
+)
+
+func main() {
+    // Configure element-based output
+    config := &kreuzberg.ExtractionConfig{
+        OutputFormat: "element_based",
+    }
+
+    // Extract document
+    result, err := kreuzberg.ExtractFileSync("document.pdf", config)
+    if err != nil {
+        panic(err)
+    }
+
+    // Access elements
+    for _, element := range result.Elements {
+        fmt.Printf("Type: %s\n", element.ElementType)
+
+        text := element.Text
+        if len(text) > 100 {
+            text = text[:100]
+        }
+        fmt.Printf("Text: %s\n", text)
+
+        if element.Metadata.PageNumber != nil {
+            fmt.Printf("Page: %d\n", *element.Metadata.PageNumber)
+        }
+
+        if element.Metadata.Coordinates != nil {
+            coords := element.Metadata.Coordinates
+            fmt.Printf("Coords: (%f, %f) - (%f, %f)\n",
+                coords.Left, coords.Top, coords.Right, coords.Bottom)
+        }
+
+        fmt.Println("---")
+    }
+
+    // Filter by element type
+    var titles []kreuzberg.Element
+    for _, element := range result.Elements {
+        if element.ElementType == "title" {
+            titles = append(titles, element)
+        }
+    }
+
+    for _, title := range titles {
+        level, ok := title.Metadata.Additional["level"].(string)
+        if !ok {
+            level = "unknown"
+        }
+        fmt.Printf("[%s] %s\n", level, title.Text)
+    }
+}
+```
+
+</TabItem>
+<TabItem label="Ruby">
+
+```ruby title="Element-Based Output (Ruby)"
+require 'kreuzberg'
+
+# Configure element-based output
+config = Kreuzberg::Config::Extraction.new(output_format: 'element_based')
+
+# Extract document
+result = Kreuzberg.extract_file_sync('document.pdf', config: config)
+
+# Access elements
+result.elements.each do |element|
+  puts "Type: #{element.element_type}"
+  puts "Text: #{element.text[0...100]}"
+
+  puts "Page: #{element.metadata.page_number}" if element.metadata.page_number
+
+  if element.metadata.coordinates
+    coords = element.metadata.coordinates
+    puts "Coords: (#{coords.left}, #{coords.top}) - (#{coords.right}, #{coords.bottom})"
+  end
+
+  puts "---"
+end
+
+# Filter by element type
+titles = result.elements.select { |e| e.element_type == 'title' }
+titles.each do |title|
+  level = title.metadata.additional['level'] || 'unknown'
+  puts "[#{level}] #{title.text}"
+end
+```
+
+</TabItem>
+<TabItem label="R">
+
+```r title="R"
+library(kreuzberg)
+
+config <- extraction_config(
+  result_format = "element_based",
+  output_format = "markdown"
+)
+
+file_path <- "document.pdf"
+result <- extract_file_sync(file_path, config = config)
+
+cat(sprintf("Total elements: %d\n\n", length(result$elements)))
+
+for (i in seq_along(result$elements)) {
+  element <- result$elements[[i]]
+  cat(sprintf("Element %d:\n", i))
+  cat(sprintf("  Type: %s\n", element$element_type))
+  cat(sprintf("  Content: %s\n\n", substr(element$content, 1, 100)))
+}
+```
+
+</TabItem>
+<TabItem label="PHP">
+
+```php title="Element-Based Output (PHP)"
+<?php
+use Kreuzberg\ExtractionConfig;
+use Kreuzberg\Kreuzberg;
+
+// Configure element-based output
+$config = new ExtractionConfig();
+$config->setOutputFormat('element_based');
+
+// Extract document
+$result = Kreuzberg::extractFileSync('document.pdf', $config);
+
+// Access elements
+foreach ($result->getElements() as $element) {
+    echo "Type: " . $element->getElementType() . "\n";
+    echo "Text: " . substr($element->getText(), 0, 100) . "\n";
+
+    if ($element->getMetadata()->getPageNumber()) {
+        echo "Page: " . $element->getMetadata()->getPageNumber() . "\n";
+    }
+
+    if ($element->getMetadata()->getCoordinates()) {
+        $coords = $element->getMetadata()->getCoordinates();
+        echo sprintf("Coords: (%s, %s) - (%s, %s)\n",
+            $coords->getLeft(), $coords->getTop(),
+            $coords->getRight(), $coords->getBottom());
+    }
+
+    echo "---\n";
+}
+
+// Filter by element type
+$titles = array_filter($result->getElements(), function($e) {
+    return $e->getElementType() === 'title';
+});
+
+foreach ($titles as $title) {
+    $level = $title->getMetadata()->getAdditional()['level'] ?? 'unknown';
+    echo "[{$level}] {$title->getText()}\n";
+}
+?>
+```
+
+</TabItem>
+</Tabs>
+
+Elements are in `result.elements`. Each element has `element_id`, `element_type`, `text`, and `metadata`.
+
+### Element Types
+
+| `element_type` | Description | Key `additional` fields |
+|----------------|-------------|------------------------|
+| `title` | Main title or top-level heading | `level` (h1–h6), `font_size`, `font_name` |
+| `heading` | Section/subsection heading | `level` (h1–h6) |
+| `narrative_text` | Body paragraph | — |
+| `list_item` | Bullet, numbered, or indented item | `list_type`, `list_marker`, `indent_level` |
+| `table` | Tabular data | `row_count`, `column_count`, `format` |
+| `image` | Embedded image | `format`, `width`, `height`, `alt_text` |
+| `code_block` | Code snippet | `language`, `line_count` |
+| `block_quote` | Quoted text | — |
+| `header` | Recurring page header | `position` |
+| `footer` | Recurring page footer | `position` |
+| `page_break` | Page boundary marker | `next_page` |
+
+### Metadata
+
+Every element's `metadata` contains:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `page_number` | `int \| None` | 1-indexed page number (PDF, DOCX, PPTX) |
+| `filename` | `str \| None` | Source filename |
+| `coordinates` | `BoundingBox \| None` | `x0`, `y0`, `x1`, `y1` in PDF points. Only populated for **text elements** when `pdf_options.hierarchy` is enabled with `include_bbox=True`. Table and image elements do not carry coordinates. |
+| `element_index` | `int` | Zero-based position in the elements array |
+| `additional` | `dict[str, str]` | Element-type-specific fields (see table above) |
+
+PDF coordinates use bottom-left origin in points (1/72 inch).
+
+### Example Output
+
+```json
+{
+  "element_id": "elem-a3f2b1c4",
+  "element_type": "title",
+  "text": "Introduction to Machine Learning",
+  "metadata": {
+    "page_number": 1,
+    "element_index": 0,
+    "coordinates": { "x0": 72.0, "y0": 700.0, "x1": 540.0, "y1": 730.0 },
+    "additional": { "level": "h1", "font_size": "24" }
+  }
+}
+```
+
+### Filtering Elements
+
+```python
+config = ExtractionConfig(result_format="element_based")
+result = extract_file_sync("document.pdf", config=config)
+
+titles = [e for e in result.elements if e.element_type == "title"]
+tables = [e for e in result.elements if e.element_type == "table"]
+
+for title in titles:
+    level = title.metadata.additional.get("level", "h1")
+    print(f"[{level}] {title.text}")
+```
+
+### Migrating from Unstructured.io
+
+If you're migrating from Unstructured.io, element-based output follows a similar structure with these key differences:
+
+| Aspect | Unstructured.io | Kreuzberg |
+|--------|----------------|-----------|
+| Type names | PascalCase (`Title`, `NarrativeText`) | snake_case (`title`, `narrative_text`) |
+| Element IDs | Not always present | Always present (deterministic hash) |
+| Metadata | Basic (`page_number`, `filename`) | Extended (coordinates, `additional` fields) |
+| Config key | — | `result_format="element_based"` |
+
+---
+
+## Document Structure
+
+Represents a document as a flat list of nodes with explicit parent-child index references — a traversable tree with heading levels, content layers, inline annotations, and structured table grids.
+
+Use document structure when you need hierarchical relationships between sections. For a flat list of semantic elements, use [element-based output](#element-based-output). For plain text, use the default unified output.
+
+### Comparison
+
+| Aspect | Unified (default) | Element-based | Document structure |
+|--------|------------------|---------------|--------------------|
+| Output shape | `content: string` | `elements: array` | `nodes: array` with index refs |
+| Hierarchy | None | Inferred from levels | Explicit parent/child indices |
+| Inline annotations | No | No | Bold, italic, links per node |
+| Tables | `result.tables` | Table elements | `TableGrid` with cell coords |
+| Content layers | Not classified | Not classified | body, header, footer, footnote |
+| Best for | LLM prompts, full-text | RAG chunking | Knowledge graphs, structured apps |
+
+### Enable
+
+<Tabs>
+<TabItem label="Python">
+
+```python title="Document Structure Config (Python)"
+from kreuzberg import extract_file_sync, ExtractionConfig
+
+# Enable document structure output
+config = ExtractionConfig(include_document_structure=True)
+
+result = extract_file_sync("document.pdf", config=config)
+
+# Access the document tree
+if result.document:
+    for node in result.document["nodes"]:
+        node_type = node["content"]["node_type"]
+        text = node["content"].get("text", "")
+        print(f"[{node_type}] {text[:80]}")
+```
+
+</TabItem>
+<TabItem label="TypeScript">
+
+```typescript title="Document Structure Config (TypeScript)"
+import { extractFileSync, ExtractionConfig } from '@kreuzberg/node';
+
+const config: ExtractionConfig = {
+  includeDocumentStructure: true,
+};
+
+const result = extractFileSync("document.pdf", undefined, config);
+
+if (result.document) {
+  for (const node of result.document.nodes) {
+    console.log(`[${node.content.nodeType}] ${node.content.text ?? ""}`);
+  }
+}
+```
+
+</TabItem>
+<TabItem label="Rust">
+
+```rust title="Document Structure Config (Rust)"
+use kreuzberg::{extract_file_sync, ExtractionConfig};
+
+let config = ExtractionConfig {
+    include_document_structure: true,
+    ..Default::default()
+};
+
+let result = extract_file_sync("document.pdf", None, &config)?;
+
+if let Some(document) = &result.document {
+    for node in &document.nodes {
+        let text = node.content.text().unwrap_or("");
+        println!("[{}] {}", node.content.node_type_str(), &text[..text.len().min(80)]);
+    }
+}
+```
+
+</TabItem>
+<TabItem label="Go">
+
+```go title="Document Structure Config (Go)"
+package main
+
+import (
+    "fmt"
+    kreuzberg "github.com/kreuzberg-dev/kreuzberg-lts/v4"
+)
+
+func main() {
+    config := kreuzberg.NewExtractionConfig(
+        kreuzberg.WithIncludeDocumentStructure(true),
+    )
+
+    result, err := kreuzberg.ExtractFileSync("document.pdf", config)
+    if err != nil {
+        panic(err)
+    }
+
+    if result.Document != nil {
+        for _, node := range result.Document.Nodes {
+            fmt.Printf("[%s]\n", node.Content.NodeType)
+        }
+    }
+}
+```
+
+</TabItem>
+<TabItem label="Java">
+
+```java title="Document Structure Config (Java)"
+import dev.kreuzberg.Kreuzberg;
+import dev.kreuzberg.ExtractionConfig;
+import dev.kreuzberg.ExtractionResult;
+
+ExtractionConfig config = ExtractionConfig.builder()
+    .includeDocumentStructure(true)
+    .build();
+
+ExtractionResult result = Kreuzberg.extractFileSync("document.pdf", config);
+
+if (result.getDocumentStructure().isPresent()) {
+    var document = result.getDocumentStructure().get();
+    for (var node : document.nodes()) {
+        System.out.println("[" + node.content().nodeType() + "]");
+    }
+}
+```
+
+</TabItem>
+<TabItem label="C#">
+
+```csharp title="Document Structure Config (C#)"
+using Kreuzberg;
+
+var config = new ExtractionConfig
+{
+    IncludeDocumentStructure = true
+};
+
+var result = KreuzbergClient.ExtractFileSync("document.pdf", config);
+
+if (result.Document is not null)
+{
+    foreach (var node in result.Document.Nodes)
+    {
+        Console.WriteLine($"[{node.Content.NodeType}]");
+    }
+}
+```
+
+</TabItem>
+<TabItem label="Ruby">
+
+```ruby title="Document Structure Config (Ruby)"
+require 'kreuzberg'
+
+config = Kreuzberg::Config::Extraction.new(include_document_structure: true)
+
+result = Kreuzberg.extract_file_sync('document.pdf', config: config)
+
+if result.document
+  result.document['nodes'].each do |node|
+    node_type = node['content']['node_type']
+    text = node['content']['text'] || ''
+    puts "[#{node_type}] #{text[0...80]}"
+  end
+end
+```
+
+</TabItem>
+<TabItem label="R">
+
+```r title="R"
+library(kreuzberg)
+
+config <- extraction_config(
+  include_document_structure = TRUE,
+  output_format = "markdown"
+)
+
+file_path <- "document.pdf"
+result <- extract_file_sync(file_path, config = config)
+
+cat(sprintf("Total pages: %d\n", length(result$pages)))
+cat(sprintf("MIME type: %s\n\n", result$mime_type))
+
+for (i in seq_along(result$pages)) {
+  page <- result$pages[[i]]
+  cat(sprintf("Page %d structure:\n", i))
+  cat(sprintf("  Content: %s\n", substr(page$content, 1, 100)))
+  cat("\n")
+}
+```
+
+</TabItem>
+</Tabs>
+
+### Node Shape
+
+Each node in `result.document.nodes`:
+
+```json
+{
+  "id": "node-a3f2b1c4",
+  "content": { "node_type": "heading", "level": 2, "text": "Supervised Learning" },
+  "parent": 0,
+  "children": [4, 5, 6],
+  "content_layer": "body",
+  "page": 5,
+  "page_end": null,
+  "bbox": { "x0": 72.0, "y0": 600.0, "x1": 400.0, "y1": 620.0 },
+  "annotations": []
+}
+```
+
+- `parent` and `children` are integer indices into the `nodes` array (`null` if absent)
+- `bbox` is present when bounding box data is available
+- `annotations` contains inline formatting spans
+
+### Node Types
+
+| `node_type` | Key fields | Notes |
+|-------------|-----------|-------|
+| `title` | `text` | Document title |
+| `heading` | `level` (1–6), `text` | Section heading |
+| `paragraph` | `text` | Body paragraph; may have `annotations` |
+| `list` | `ordered` (bool) | Container; children are `list_item` nodes |
+| `list_item` | `text` | Child of `list` |
+| `table` | `grid` ([TableGrid](#table-grid)) | Grid with cell-level data |
+| `image` | `description`, `image_index` | `image_index` references `result.images` |
+| `code` | `text`, `language` | Code block |
+| `quote` | _(container)_ | Children are typically paragraphs |
+| `formula` | `text` | Math formula (plain text, LaTeX, or MathML) |
+| `footnote` | `text` | Usually `content_layer: "footnote"` |
+| `group` | `label`, `heading_level`, `heading_text` | Section grouping container |
+| `page_break` | _(marker)_ | Page boundary |
+
+### Content Layers
+
+| Layer | Description |
+|-------|-------------|
+| `body` | Main document content |
+| `header` | Page header area (repeated chapter titles) |
+| `footer` | Page footer area (page numbers, copyright) |
+| `footnote` | Footnotes and endnotes |
+
+```python
+for node in result.document["nodes"]:
+    if node["content_layer"] == "body":
+        process_main_content(node)
+```
+
+### Text Annotations
+
+Paragraphs carry a list of `annotations` marking character spans:
+
+```json
+{ "start": 0, "end": 16, "kind": { "annotation_type": "bold" } }
+```
+
+| `annotation_type` | Extra fields |
+|-------------------|-------------|
+| `bold`, `italic`, `underline`, `strikethrough` | — |
+| `code`, `subscript`, `superscript` | — |
+| `link` | `url`, `title` (optional) |
+
+```python
+for node in result.document["nodes"]:
+    for ann in node.get("annotations", []):
+        text = node["content"].get("text", "")
+        span = text[ann["start"]:ann["end"]]
+        kind = ann["kind"]["annotation_type"]
+        if kind == "link":
+            print(f"Link: {span} -> {ann['kind']['url']}")
+        else:
+            print(f"{kind}: {span}")
+```
+
+### Table Grid
+
+Table nodes contain a `grid` with cell-level data:
+
+```json
+{
+  "rows": 3, "cols": 3,
+  "cells": [
+    { "content": "Algorithm", "row": 0, "col": 0, "row_span": 1, "col_span": 1, "is_header": true },
+    { "content": "Decision Tree", "row": 1, "col": 0, "row_span": 1, "col_span": 1, "is_header": false }
+  ]
+}
+```
+
+Each cell has `row`, `col`, `row_span`, `col_span`, `is_header`, and optionally `bbox`.
+
+```python
+for node in result.document["nodes"]:
+    if node["content"]["node_type"] == "table":
+        grid = node["content"]["grid"]
+        rows, cols = grid["rows"], grid["cols"]
+        table = [[None] * cols for _ in range(rows)]
+        for cell in grid["cells"]:
+            table[cell["row"]][cell["col"]] = cell["content"]
+        for row in table:
+            print(" | ".join(str(c or "") for c in row))
+```
+
+---
+
+## PDF Hierarchy Detection
+
+Classifies text blocks in a PDF into heading levels (H1–H6) and body text based on font size analysis. Uses K-means clustering to group font sizes, then assigns heading levels by rank — largest cluster becomes H1, second-largest becomes H2, and so on.
+
+### Quick Start
+
+<Tabs>
+<TabItem label="Python">
+
+```python title="Python"
+from kreuzberg import extract_file_sync, ExtractionConfig, PdfConfig, HierarchyConfig
+
+config: ExtractionConfig = ExtractionConfig(
+    pdf_options=PdfConfig(
+        extract_metadata=True,
+        hierarchy=HierarchyConfig(
+            enabled=True,
+            k_clusters=6,
+            include_bbox=True,
+            ocr_coverage_threshold=0.8
+        )
+    )
+)
+
+result = extract_file_sync("document.pdf", config=config)
+
+# Access hierarchy information
+for page in result.pages or []:
+    print(f"Page {page.page_number}:")
+    print(f"  Content: {page.content[:100]}...")
+```
+
+</TabItem>
+<TabItem label="TypeScript">
+
+```typescript title="TypeScript"
+import { extractFile } from '@kreuzberg/node';
+
+const config = {
+	pdfOptions: {
+		extractMetadata: true,
+		hierarchy: {
+			enabled: true,
+			kClusters: 6,
+			includeBbox: true,
+			ocrCoverageThreshold: 0.8,
+		},
+	},
+};
+
+const result = await extractFile('document.pdf', null, config);
+if (result.pages) {
+	result.pages.forEach((page) => {
+		console.log(`Page ${page.pageNumber}:`);
+		console.log(`  Content: ${page.content.substring(0, 100)}...`);
+	});
+}
+```
+
+</TabItem>
+<TabItem label="Rust">
+
+```rust title="Rust"
+use kreuzberg::{extract_file_sync, ExtractionConfig, PdfConfig, HierarchyConfig};
+
+fn main() -> kreuzberg::Result<()> {
+    let config = ExtractionConfig {
+        pdf_options: Some(PdfConfig {
+            hierarchy: Some(HierarchyConfig {
+                enabled: true,
+                detection_threshold: Some(0.75),
+                ocr_coverage_threshold: Some(0.8),
+                min_level: Some(1),
+                max_level: Some(5),
+            }),
+            ..Default::default()
+        }),
+        ..Default::default()
+    };
+
+    let result = extract_file_sync("document.pdf", None::<&str>, &config)?;
+    println!("Hierarchy levels: {}", result.hierarchy.len());
+    Ok(())
+}
+```
+
+</TabItem>
+<TabItem label="Go">
+
+```go title="Go"
+package main
+
+import "github.com/kreuzberg-dev/kreuzberg-lts/v4"
+
+func main() {
+	// Basic hierarchy configuration
+	config := &kreuzberg.ExtractionConfig{
+		PdfOptions: &kreuzberg.PdfConfig{
+			ExtractImages: true,
+			Hierarchy: &kreuzberg.HierarchyConfig{
+				Enabled:               kreuzberg.BoolPtr(true),
+				KClusters:             kreuzberg.IntPtr(6),
+				IncludeBbox:           kreuzberg.BoolPtr(true),
+				OcrCoverageThreshold:  kreuzberg.Float64Ptr(0.8),
+			},
+		},
+	}
+
+	// Advanced hierarchy configuration with more clusters
+	advancedConfig := &kreuzberg.ExtractionConfig{
+		PdfOptions: &kreuzberg.PdfConfig{
+			ExtractImages: true,
+			Hierarchy: &kreuzberg.HierarchyConfig{
+				Enabled:               kreuzberg.BoolPtr(true),
+				KClusters:             kreuzberg.IntPtr(12),
+				IncludeBbox:           kreuzberg.BoolPtr(true),
+				OcrCoverageThreshold:  kreuzberg.Float64Ptr(0.8),
+			},
+		},
+	}
+
+	_ = config
+	_ = advancedConfig
+}
+```
+
+</TabItem>
+<TabItem label="Java">
+
+```java title="Java"
+import dev.kreuzberg.config.ExtractionConfig;
+import dev.kreuzberg.config.PdfConfig;
+import dev.kreuzberg.config.HierarchyConfig;
+
+ExtractionConfig config = ExtractionConfig.builder()
+    .pdfOptions(PdfConfig.builder()
+        .hierarchyConfig(HierarchyConfig.builder()
+            .enabled(true)
+            .detectionThreshold(0.75)
+            .ocrCoverageThreshold(0.8)
+            .minLevel(1)
+            .maxLevel(5)
+            .build())
+        .build())
+    .build();
+```
+
+</TabItem>
+<TabItem label="C#">
+
+```csharp title="C#"
+using Kreuzberg;
+
+// Basic hierarchy configuration with properties
+var config = new ExtractionConfig
+{
+    PdfOptions = new PdfConfig
+    {
+        ExtractImages = true,
+        Hierarchy = new HierarchyConfig
+        {
+            Enabled = true,
+            KClusters = 6,
+            IncludeBbox = true,
+            OcrCoverageThreshold = 0.8f
+        }
+    }
+};
+
+var result = await KreuzbergClient.ExtractFileAsync("document.pdf", config);
+Console.WriteLine($"Content length: {result.Content.Length}");
+
+// Advanced hierarchy detection with custom parameters
+var advancedConfig = new ExtractionConfig
+{
+    PdfOptions = new PdfConfig
+    {
+        ExtractImages = true,
+        Hierarchy = new HierarchyConfig
+        {
+            Enabled = true,
+            KClusters = 12,           // More clusters for detailed hierarchy
+            IncludeBbox = true,       // Include bounding box coordinates
+            OcrCoverageThreshold = 0.7f  // Higher OCR threshold for stricter detection
+        }
+    }
+};
+
+var result = await KreuzbergClient.ExtractFileAsync("complex_document.pdf", advancedConfig);
+Console.WriteLine($"Advanced hierarchy detection completed: {result.Content.Length} chars");
+
+// Minimal configuration with only enabled flag
+var minimalConfig = new ExtractionConfig
+{
+    PdfOptions = new PdfConfig
+    {
+        Hierarchy = new HierarchyConfig
+        {
+            Enabled = true;
+            // Other properties use defaults:
+            // KClusters = 6
+            // IncludeBbox = true
+        }
+    }
+};
+
+var result = await KreuzbergClient.ExtractFileAsync("document.pdf", minimalConfig);
+Console.WriteLine("Extraction with default hierarchy settings complete");
+
+// Disabling hierarchy detection
+var noHierarchyConfig = new ExtractionConfig
+{
+    PdfOptions = new PdfConfig
+    {
+        Hierarchy = new HierarchyConfig
+        {
+            Enabled = false
+        }
+    }
+};
+
+var result = await KreuzbergClient.ExtractFileAsync("document.pdf", noHierarchyConfig);
+Console.WriteLine("Extraction without hierarchy detection complete");
+```
+
+</TabItem>
+<TabItem label="Ruby">
+
+```ruby title="Ruby"
+require 'kreuzberg'
+
+# Using keyword arguments with defaults
+config = Kreuzberg::Config::Extraction.new(
+  pdf_options: Kreuzberg::Config::PDF.new(
+    extract_images: true,
+    hierarchy: Kreuzberg::Config::Hierarchy.new(
+      enabled: true,
+      k_clusters: 6,
+      include_bbox: true,
+      ocr_coverage_threshold: 0.8
+    )
+  )
+)
+
+# Using hash syntax alternative
+config = Kreuzberg::Config::Extraction.new(
+  pdf_options: Kreuzberg::Config::PDF.new(
+    extract_images: true,
+    hierarchy: {
+      enabled: true,
+      k_clusters: 6,
+      include_bbox: true,
+      ocr_coverage_threshold: 0.8
+    }
+  )
+)
+```
+
+</TabItem>
+</Tabs>
+
+### Output
+
+Hierarchy data is in `result.pages[n].hierarchy`. Each page has a `blocks` list:
+
+```json
+{
+  "block_count": 4,
+  "blocks": [
+    { "text": "Chapter 1: Introduction", "level": "h1", "font_size": 24.0, "bbox": [50.0, 100.0, 400.0, 125.0] },
+    { "text": "Background", "level": "h2", "font_size": 18.0, "bbox": [50.0, 150.0, 300.0, 168.0] },
+    { "text": "This chapter provides...", "level": "body", "font_size": 12.0, "bbox": [50.0, 200.0, 550.0, 450.0] }
+  ]
+}
+```
+
+- `bbox`: `[left, top, right, bottom]` in PDF points (present when `include_bbox=True`). This is the only way to obtain bounding box coordinates for text elements — they are not included by default.
+- `level`: `"h1"` – `"h6"` or `"body"`
+
+### Configuration
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `enabled` | `bool` | `true` | Enable hierarchy extraction |
+| `k_clusters` | `int` | `6` | Font size clusters (2–10), maps to heading levels |
+| `include_bbox` | `bool` | `true` | Include bounding box coordinates |
+| `ocr_coverage_threshold` | `float \| None` | `None` | Trigger OCR if text coverage is below this fraction |
+
+#### Choosing k_clusters
+
+| `k_clusters` | Heading levels | Use when |
+|--------------|----------------|----------|
+| 2–3 | H1–H2 | Simple documents with 1–2 heading sizes |
+| 4–5 | H1–H4 | Standard documents |
+| 6 (default) | H1–H6 | Most documents |
+| 7–8 | H1–H6+ | Books, specs with deep nesting |
+
+#### Ocr_coverage_threshold
+
+| Threshold | Behavior |
+|-----------|----------|
+| `None` | OCR never triggered by coverage |
+| `0.3` | OCR if < 30% of page has text |
+| `0.5` | OCR if < 50% of page has text |
+
+Requires an OCR backend to be configured separately.
+
+### Troubleshooting
+
+- **`hierarchy` is `None`** — Check `hierarchy.enabled` is `True`. If the PDF is image-only, enable OCR. If fewer text blocks than `k_clusters`, reduce `k_clusters`.
+- **Most blocks classified as `body`** — Document may use uniform font sizes. Reduce `k_clusters` (try 3–4).
+- **Heading levels don't match visual inspection** — Levels are assigned by font size rank, not absolute size. Filter on `block.font_size` directly for absolute thresholds.
+
+See the [HierarchyConfig reference](/reference/configuration/#hierarchyconfig) for the full parameter list.

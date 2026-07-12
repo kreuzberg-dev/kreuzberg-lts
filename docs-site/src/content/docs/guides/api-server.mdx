@@ -1,0 +1,1707 @@
+---
+title: API Server
+description: "Run Kreuzberg as an HTTP REST API (`kreuzberg serve`) or MCP server (`kreuzberg mcp`) — endpoints, request/response shapes, and MCP tools for agent integration."
+---
+
+import { Tabs, TabItem } from '@astrojs/starlight/components';
+
+Kreuzberg runs as an HTTP REST API server (`kreuzberg serve`) or as an MCP server (`kreuzberg mcp`) for AI agent integration.
+
+## HTTP REST API
+
+### Start
+
+<Tabs>
+<TabItem label="CLI">
+
+```bash title="Bash"
+# Default: http://127.0.0.1:8000
+kreuzberg serve
+
+# Custom host and port
+kreuzberg serve -H 0.0.0.0 -p 3000
+
+# With configuration file
+kreuzberg serve --config kreuzberg.toml
+
+```
+
+</TabItem>
+<TabItem label="Docker">
+
+```bash title="Bash"
+# Run server on port 8000
+docker run -d \n  -p 8000:8000 \n  ghcr.io/kreuzberg-dev/kreuzberg-full:latest \n  serve -H 0.0.0.0 -p 8000
+
+# With environment variables
+docker run -d \n  -e KREUZBERG_CORS_ORIGINS="https://myapp.com" \n  -e KREUZBERG_MAX_MULTIPART_FIELD_BYTES=209715200 \n  -p 8000:8000 \n  ghcr.io/kreuzberg-dev/kreuzberg-full:latest \n  serve -H 0.0.0.0 -p 8000
+
+```
+
+</TabItem>
+<TabItem label="Python">
+
+```python title="Python"
+# Start server
+import subprocess
+subprocess.Popen(["python", "-m", "kreuzberg", "serve", "-H", "0.0.0.0", "-p", "8000"])
+
+```
+
+</TabItem>
+<TabItem label="Rust">
+
+```rust title="Rust"
+use kreuzberg::{ExtractionConfig, api::serve_with_config};
+
+#[tokio::main]
+async fn main() -> kreuzberg::Result<()> {
+    let config = ExtractionConfig::discover()?;
+    serve_with_config("0.0.0.0", 8000, config).await?;
+    Ok(())
+}
+
+```
+
+</TabItem>
+<TabItem label="Go">
+
+```go title="Go"
+package main
+
+import (
+    "log"
+    "os/exec"
+)
+
+func main() {
+    cmd := exec.Command("kreuzberg", "serve", "-H", "0.0.0.0", "-p", "8000")
+    cmd.Stdout = log.Writer()
+    cmd.Stderr = log.Writer()
+    if err := cmd.Run(); err != nil {
+        log.Fatalf("failed to start server: %v", err)
+    }
+}
+
+```
+
+</TabItem>
+<TabItem label="Java">
+
+```java title="Java"
+import java.io.IOException;
+
+public class ApiServer {
+    public static void main(String[] args) {
+        try {
+            ProcessBuilder pb = new ProcessBuilder(
+                "kreuzberg", "serve", "-H", "0.0.0.0", "-p", "8000"
+            );
+            pb.inheritIO();
+            Process process = pb.start();
+            process.waitFor();
+        } catch (IOException | InterruptedException e) {
+            System.err.println("Failed to start server: " + e.getMessage());
+        }
+    }
+}
+
+```
+
+</TabItem>
+<TabItem label="C#">
+
+```csharp title="C#"
+using System;
+using System.Diagnostics;
+
+class ApiServer
+{
+    static void Main()
+    {
+        var processInfo = new ProcessStartInfo
+        {
+            FileName = "kreuzberg",
+            Arguments = "serve -H 0.0.0.0 -p 8000",
+            UseShellExecute = false,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true
+        };
+
+        using (var process = Process.Start(processInfo))
+        {
+            process?.WaitForExit();
+        }
+    }
+}
+```
+
+</TabItem>
+</Tabs>
+
+### Endpoints
+
+#### POST /extract
+
+Extract text from uploaded files via multipart form data.
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| `files` | Yes (repeatable) | Files to extract |
+| `config` | No | JSON config overrides |
+| `output_format` | No | `plain` (default), `markdown`, `djot`, or `html` |
+
+```bash title="Terminal"
+# Single file
+curl -F "files=@document.pdf" http://localhost:8000/extract
+
+# Multiple files
+curl -F "files=@doc1.pdf" -F "files=@doc2.docx" http://localhost:8000/extract
+
+# With config overrides
+curl -F "files=@scanned.pdf" \
+     -F 'config={"ocr":{"language":"eng"},"force_ocr":true}' \
+     http://localhost:8000/extract
+```
+
+```json title="Response"
+[
+  {
+    "content": "Extracted text...",
+    "mime_type": "application/pdf",
+    "metadata": { "page_count": 10, "author": "John Doe" },
+    "tables": [],
+    "detected_languages": ["eng"],
+    "chunks": null,
+    "images": null
+  }
+]
+```
+
+#### POST /embed
+
+Generate vector embeddings. Requires the `embeddings` feature.
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| `texts` | Yes | Array of strings |
+| `config` | No | Embedding config overrides |
+
+```bash title="Terminal"
+curl -X POST http://localhost:8000/embed \
+  -H "Content-Type: application/json" \
+  -d '{"texts":["Hello world","Second text"]}'
+```
+
+| Preset | Dimensions | Model |
+|--------|-----------|-------|
+| `fast` | 384 | AllMiniLML6V2Q |
+| `balanced` (default) | 768 | BGEBaseENV15 |
+| `quality` | 1024 | BGELargeENV15 |
+| `multilingual` | 768 | MultilingualE5Base |
+
+#### POST /chunk
+
+Chunk text for RAG pipelines.
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| `text` | Yes | Text to chunk |
+| `chunker_type` | No | `"text"` (default), `"markdown"`, `"yaml"`, or `"semantic"` |
+| `config.max_characters` | No | Max chars per chunk (default: 2000) |
+| `config.overlap` | No | Overlap between chunks (default: 100) |
+
+```bash title="Terminal"
+curl -X POST http://localhost:8000/chunk \
+  -H "Content-Type: application/json" \
+  -d '{"text":"Long text...","chunker_type":"text","config":{"max_characters":1000,"overlap":50}}'
+```
+
+<Tabs>
+<TabItem label="Python">
+
+```python title="Python"
+import httpx
+
+# Basic chunking with defaults
+with httpx.Client() as client:
+    response = client.post(
+        "http://localhost:8000/chunk",
+        json={"text": "Your long text content here..."}
+    )
+    result = response.json()
+    for chunk in result["chunks"]:
+        print(f"Chunk {chunk['chunk_index']}: {chunk['content'][:50]}...")
+
+# Chunking with custom configuration
+with httpx.Client() as client:
+    response = client.post(
+        "http://localhost:8000/chunk",
+        json={
+            "text": "Your long text content here...",
+            "chunker_type": "text",
+            "config": {
+                "max_characters": 1000,
+                "overlap": 50,
+                "trim": True
+            }
+        }
+    )
+    result = response.json()
+    print(f"Created {result['chunk_count']} chunks")
+```
+
+</TabItem>
+<TabItem label="TypeScript">
+
+```typescript title="TypeScript"
+interface ChunkRequest {
+  text: string;
+  chunker_type?: "text" | "markdown" | "yaml" | "semantic";
+  config?: {
+    max_characters?: number;
+    overlap?: number;
+    trim?: boolean;
+  };
+}
+
+interface ChunkItem {
+  content: string;
+  byte_start: number;
+  byte_end: number;
+  chunk_index: number;
+  total_chunks: number;
+  first_page: number | null;
+  last_page: number | null;
+}
+
+interface ChunkResponse {
+  chunks: ChunkItem[];
+  chunk_count: number;
+  config: {
+    max_characters: number;
+    overlap: number;
+    trim: boolean;
+    chunker_type: string;
+  };
+  input_size_bytes: number;
+  chunker_type: string;
+}
+
+// Basic chunking
+const response = await fetch("http://localhost:8000/chunk", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ text: "Your long text content here..." }),
+});
+
+const result: ChunkResponse = await response.json();
+console.log(`Created ${result.chunk_count} chunks`);
+
+// Chunking with custom configuration
+const customResponse = await fetch("http://localhost:8000/chunk", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    text: "Your long text content here...",
+    chunker_type: "text",
+    config: {
+      max_characters: 1000,
+      overlap: 50,
+      trim: true,
+    },
+  } satisfies ChunkRequest),
+});
+
+const customResult: ChunkResponse = await customResponse.json();
+for (const chunk of customResult.chunks) {
+  console.log(`Chunk ${chunk.chunk_index}: ${chunk.content.slice(0, 50)}...`);
+}
+```
+
+</TabItem>
+<TabItem label="Rust">
+
+```rust title="Rust"
+use serde::{Deserialize, Serialize};
+
+#[derive(Serialize)]
+struct ChunkRequest {
+    text: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    chunker_type: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    config: Option<ChunkConfig>,
+}
+
+#[derive(Serialize)]
+struct ChunkConfig {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    max_characters: Option<usize>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    overlap: Option<usize>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    trim: Option<bool>,
+}
+
+#[derive(Deserialize, Debug)]
+struct ChunkResponse {
+    chunks: Vec<ChunkItem>,
+    chunk_count: usize,
+    input_size_bytes: usize,
+    chunker_type: String,
+}
+
+#[derive(Deserialize, Debug)]
+struct ChunkItem {
+    content: String,
+    byte_start: usize,
+    byte_end: usize,
+    chunk_index: usize,
+    total_chunks: usize,
+}
+
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let client = reqwest::Client::new();
+
+    let request = ChunkRequest {
+        text: "Your long text content here...".to_string(),
+        chunker_type: Some("text".to_string()),
+        config: Some(ChunkConfig {
+            max_characters: Some(1000),
+            overlap: Some(50),
+            trim: Some(true),
+        }),
+    };
+
+    let response = client
+        .post("http://localhost:8000/chunk")
+        .json(&request)
+        .send()
+        .await?;
+
+    let result: ChunkResponse = response.json().await?;
+
+    println!("Created {} chunks", result.chunk_count);
+    for chunk in &result.chunks {
+        let preview = &chunk.content[..chunk.content.len().min(50)];
+        println!("Chunk {}: {}...", chunk.chunk_index, preview);
+    }
+
+    Ok(())
+}
+```
+
+</TabItem>
+<TabItem label="Go">
+
+```go title="Go"
+package main
+
+import (
+	"bytes"
+	"encoding/json"
+	"fmt"
+	"io"
+	"log"
+	"net/http"
+)
+
+type ChunkRequest struct {
+	Text        string        `json:"text"`
+	ChunkerType string        `json:"chunker_type,omitempty"`
+	Config      *ChunkConfig  `json:"config,omitempty"`
+}
+
+type ChunkConfig struct {
+	MaxCharacters int  `json:"max_characters,omitempty"`
+	Overlap       int  `json:"overlap,omitempty"`
+	Trim          bool `json:"trim,omitempty"`
+}
+
+type ChunkResponse struct {
+	Chunks         []ChunkItem `json:"chunks"`
+	ChunkCount     int         `json:"chunk_count"`
+	InputSizeBytes int         `json:"input_size_bytes"`
+	ChunkerType    string      `json:"chunker_type"`
+}
+
+type ChunkItem struct {
+	Content    string `json:"content"`
+	ByteStart  int    `json:"byte_start"`
+	ByteEnd    int    `json:"byte_end"`
+	ChunkIndex int    `json:"chunk_index"`
+	TotalChunks int   `json:"total_chunks"`
+}
+
+func main() {
+	req := ChunkRequest{
+		Text:        "Your long text content here...",
+		ChunkerType: "text",
+		Config: &ChunkConfig{
+			MaxCharacters: 1000,
+			Overlap:       50,
+			Trim:          true,
+		},
+	}
+
+	body, err := json.Marshal(req)
+	if err != nil {
+		log.Fatalf("marshal request: %v", err)
+	}
+
+	resp, err := http.Post(
+		"http://localhost:8000/chunk",
+		"application/json",
+		bytes.NewReader(body),
+	)
+	if err != nil {
+		log.Fatalf("http post: %v", err)
+	}
+	defer resp.Body.Close()
+
+	respBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		log.Fatalf("read response: %v", err)
+	}
+
+	var result ChunkResponse
+	if err := json.Unmarshal(respBody, &result); err != nil {
+		log.Fatalf("unmarshal response: %v", err)
+	}
+
+	fmt.Printf("Created %d chunks\n", result.ChunkCount)
+	for _, chunk := range result.Chunks {
+		fmt.Printf("Chunk %d: %s...\n", chunk.ChunkIndex, chunk.Content[:min(50, len(chunk.Content))])
+	}
+}
+```
+
+</TabItem>
+<TabItem label="Java">
+
+```java title="Java"
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+public class ChunkTextExample {
+    public static void main(String[] args) throws Exception {
+        HttpClient client = HttpClient.newHttpClient();
+        ObjectMapper mapper = new ObjectMapper();
+
+        // Basic chunking request
+        String requestBody = """
+            {
+                "text": "Your long text content here...",
+                "chunker_type": "text",
+                "config": {
+                    "max_characters": 1000,
+                    "overlap": 50,
+                    "trim": true
+                }
+            }
+            """;
+
+        HttpRequest request = HttpRequest.newBuilder()
+            .uri(URI.create("http://localhost:8000/chunk"))
+            .header("Content-Type", "application/json")
+            .POST(HttpRequest.BodyPublishers.ofString(requestBody))
+            .build();
+
+        HttpResponse<String> response = client.send(
+            request, HttpResponse.BodyHandlers.ofString()
+        );
+
+        JsonNode result = mapper.readTree(response.body());
+        int chunkCount = result.get("chunk_count").asInt();
+        System.out.printf("Created %d chunks%n", chunkCount);
+
+        for (JsonNode chunk : result.get("chunks")) {
+            int index = chunk.get("chunk_index").asInt();
+            String content = chunk.get("content").asText();
+            String preview = content.substring(0, Math.min(50, content.length()));
+            System.out.printf("Chunk %d: %s...%n", index, preview);
+        }
+    }
+}
+```
+
+</TabItem>
+<TabItem label="C#">
+
+```csharp title="C#"
+using System.Net.Http.Json;
+using System.Text.Json;
+using System.Text.Json.Serialization;
+
+// Request models
+public record ChunkRequest(
+    [property: JsonPropertyName("text")] string Text,
+    [property: JsonPropertyName("chunker_type")] string? ChunkerType = null,
+    [property: JsonPropertyName("config")] ChunkConfig? Config = null
+);
+
+public record ChunkConfig(
+    [property: JsonPropertyName("max_characters")] int? MaxCharacters = null,
+    [property: JsonPropertyName("overlap")] int? Overlap = null,
+    [property: JsonPropertyName("trim")] bool? Trim = null
+);
+
+// Response models
+public record ChunkResponse(
+    [property: JsonPropertyName("chunks")] List<ChunkItem> Chunks,
+    [property: JsonPropertyName("chunk_count")] int ChunkCount,
+    [property: JsonPropertyName("input_size_bytes")] int InputSizeBytes,
+    [property: JsonPropertyName("chunker_type")] string ChunkerType
+);
+
+public record ChunkItem(
+    [property: JsonPropertyName("content")] string Content,
+    [property: JsonPropertyName("byte_start")] int ByteStart,
+    [property: JsonPropertyName("byte_end")] int ByteEnd,
+    [property: JsonPropertyName("chunk_index")] int ChunkIndex,
+    [property: JsonPropertyName("total_chunks")] int TotalChunks,
+    [property: JsonPropertyName("first_page")] int? FirstPage,
+    [property: JsonPropertyName("last_page")] int? LastPage
+);
+
+// Usage
+using var client = new HttpClient();
+
+var request = new ChunkRequest(
+    Text: "Your long text content here...",
+    ChunkerType: "text",
+    Config: new ChunkConfig(
+        MaxCharacters: 1000,
+        Overlap: 50,
+        Trim: true
+    )
+);
+
+var response = await client.PostAsJsonAsync(
+    "http://localhost:8000/chunk",
+    request
+);
+
+var result = await response.Content.ReadFromJsonAsync<ChunkResponse>();
+
+Console.WriteLine($"Created {result?.ChunkCount} chunks");
+foreach (var chunk in result?.Chunks ?? [])
+{
+    var preview = chunk.Content[..Math.Min(50, chunk.Content.Length)];
+    Console.WriteLine($"Chunk {chunk.ChunkIndex}: {preview}...");
+}
+```
+
+</TabItem>
+<TabItem label="Ruby">
+
+```ruby title="Ruby"
+require 'net/http'
+require 'json'
+require 'uri'
+
+uri = URI('http://localhost:8000/chunk')
+
+# Basic chunking with defaults
+http = Net::HTTP.new(uri.host, uri.port)
+request = Net::HTTP::Post.new(uri.path)
+request['Content-Type'] = 'application/json'
+request.body = { text: 'Your long text content here...' }.to_json
+
+response = http.request(request)
+result = JSON.parse(response.body)
+puts "Created #{result['chunk_count']} chunks"
+
+# Chunking with custom configuration
+request = Net::HTTP::Post.new(uri.path)
+request['Content-Type'] = 'application/json'
+request.body = {
+  text: 'Your long text content here...',
+  chunker_type: 'text',
+  config: {
+    max_characters: 1000,
+    overlap: 50,
+    trim: true
+  }
+}.to_json
+
+response = http.request(request)
+result = JSON.parse(response.body)
+
+result['chunks'].each do |chunk|
+  preview = chunk['content'][0, 50]
+  puts "Chunk #{chunk['chunk_index']}: #{preview}..."
+end
+```
+
+</TabItem>
+</Tabs>
+
+#### POST /extract-structured <span class="version-badge">v4.8.0</span>
+
+Extract typed JSON from a document by running an LLM against the extracted text with a JSON schema. Requires the server to be built with the `liter-llm` feature; otherwise the endpoint returns `501 Not Implemented`.
+
+The request is `multipart/form-data`.
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| `file` (or `files`) | Yes | The document to extract from |
+| `schema` | Yes | JSON Schema string describing the structured output |
+| `model` | Yes | LLM model identifier, for example `openai/gpt-4o` or `anthropic/claude-sonnet-4-20250514` |
+| `api_key` | No | LLM provider API key. Falls back to provider env vars (`OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, ...) |
+| `prompt` | No | Custom Jinja2 prompt template overriding the default |
+| `schema_name` | No | Schema identifier (default: `extraction`) |
+| `strict` | No | `"true"` / `"false"` — enable OpenAI strict mode for exact schema matching |
+| `config` | No | Extraction config overrides as a JSON string |
+
+```bash title="Terminal"
+curl -X POST http://localhost:8000/extract-structured \
+  -F "file=@invoice.pdf" \
+  -F 'schema={"type":"object","properties":{"invoice_number":{"type":"string"},"total":{"type":"number"}},"required":["invoice_number","total"]}' \
+  -F "model=openai/gpt-4o" \
+  -F "api_key=$OPENAI_API_KEY" \
+  -F "strict=true"
+```
+
+```json title="Response"
+{
+  "structured_output": {
+    "invoice_number": "INV-2026-0142",
+    "total": 1284.50
+  },
+  "content": "Invoice INV-2026-0142...",
+  "mime_type": "application/pdf"
+}
+```
+
+Errors follow the same shape as `/extract`. A `501` body indicates the server was built without the `liter-llm` feature; rebuild with `--features liter-llm` to enable structured extraction.
+
+#### Other Endpoints
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/health` | GET | `{"status":"healthy","version":"4.6.3"}` |
+| `/version` | GET | `{"version":"4.6.3"}` <span class="version-badge">v4.5.2</span> |
+| `/detect` | POST | MIME type detection (multipart) <span class="version-badge">v4.5.2</span> |
+| `/cache/stats` | GET | Cache statistics |
+| `/cache/warm` | POST | Pre-download models <span class="version-badge">v4.5.2</span> |
+| `/cache/manifest` | GET | Model manifest with checksums <span class="version-badge">v4.5.2</span> |
+| `/cache/clear` | DELETE | Clear all cached files |
+| `/info` | GET | `{"version":"...","rust_backend":true}` |
+| `/openapi.json` | GET | OpenAPI 3.0 schema |
+
+### Client Examples
+
+<Tabs>
+<TabItem label="Python">
+
+```python title="Python"
+import httpx
+
+with httpx.Client() as client:
+    with open("document.pdf", "rb") as f:
+        files: dict[str, object] = {"files": f}
+        response: httpx.Response = client.post(
+            "http://localhost:8000/extract", files=files
+        )
+        results: list[dict] = response.json()
+        print(results[0]["content"])
+```
+
+</TabItem>
+<TabItem label="TypeScript">
+
+```typescript title="TypeScript"
+// Using fetch API
+const formData = new FormData();
+formData.append("files", fileInput.files[0]);
+
+const response = await fetch("http://localhost:8000/extract", {
+  method: "POST",
+  body: formData,
+});
+
+const results = await response.json();
+console.log(results[0].content);
+```
+
+</TabItem>
+<TabItem label="Rust">
+
+```rust title="Rust"
+use reqwest::multipart;
+use std::fs::File;
+
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let file = File::open("document.pdf")?;
+    let form = multipart::Form::new()
+        .file("files", "document.pdf", file)?;
+
+    let client = reqwest::Client::new();
+    let response = client
+        .post("http://localhost:8000/extract")
+        .multipart(form)
+        .send()
+        .await?;
+
+    let results: serde_json::Value = response.json().await?;
+    println!("{:?}", results[0]["content"]);
+
+    Ok(())
+}
+```
+
+</TabItem>
+<TabItem label="Go">
+
+```go title="Go"
+package main
+
+import (
+	"bytes"
+	"fmt"
+	"io"
+	"log"
+	"mime/multipart"
+	"net/http"
+	"os"
+)
+
+func main() {
+	file, err := os.Open("document.pdf")
+	if err != nil {
+		log.Fatalf("open file: %v", err)
+	}
+	defer file.Close()
+
+	body := &bytes.Buffer{}
+	writer := multipart.NewWriter(body)
+	part, err := writer.CreateFormFile("files", "document.pdf")
+	if err != nil {
+		log.Fatalf("create form file: %v", err)
+	}
+
+	if _, err := io.Copy(part, file); err != nil {
+		log.Fatalf("copy file: %v", err)
+	}
+	writer.Close()
+
+	resp, err := http.Post("http://localhost:8000/extract",
+		writer.FormDataContentType(), body)
+	if err != nil {
+		log.Fatalf("http post: %v", err)
+	}
+	defer resp.Body.Close()
+
+	bodyBytes, err := io.ReadAll(resp.Body)
+	if err != nil {
+		log.Fatalf("read response: %v", err)
+	}
+
+	fmt.Println(string(bodyBytes))
+}
+```
+
+</TabItem>
+<TabItem label="Java">
+
+```java title="Java"
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.nio.file.Files;
+import java.nio.file.Path;
+
+public class ExtractClient {
+    public static void main(String[] args) throws Exception {
+        HttpClient client = HttpClient.newHttpClient();
+        String boundary = "----WebKitFormBoundary" + System.currentTimeMillis();
+
+        byte[] fileData = Files.readAllBytes(Path.of("document.pdf"));
+        String multipartBody = "--" + boundary + "\r\n"
+            + "Content-Disposition: form-data; name=\"files\"; filename=\"document.pdf\"\r\n"
+            + "Content-Type: application/pdf\r\n\r\n"
+            + new String(fileData, java.nio.charset.StandardCharsets.ISO_8859_1) + "\r\n"
+            + "--" + boundary + "--\r\n";
+
+        HttpRequest request = HttpRequest.newBuilder()
+            .uri(URI.create("http://localhost:8000/extract"))
+            .header("Content-Type", "multipart/form-data; boundary=" + boundary)
+            .POST(HttpRequest.BodyPublishers.ofString(multipartBody))
+            .build();
+
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        System.out.println(response.body());
+    }
+}
+```
+
+</TabItem>
+<TabItem label="C#">
+
+```csharp title="C#"
+using System;
+using System.IO;
+using System.Net.Http;
+
+var client = new HttpClient();
+
+using (var fileStream = File.OpenRead("document.pdf"))
+{
+    using (var content = new MultipartFormDataContent())
+    {
+        content.Add(new StreamContent(fileStream), "files", "document.pdf");
+
+        var response = await client.PostAsync("http://localhost:8000/extract", content);
+        var json = await response.Content.ReadAsStringAsync();
+
+        Console.WriteLine(json);
+    }
+}
+```
+
+</TabItem>
+<TabItem label="Ruby">
+
+```ruby title="Ruby"
+require 'net/http'
+require 'uri'
+require 'json'
+
+# Single file extraction
+uri = URI('http://localhost:8000/extract')
+request = Net::HTTP::Post.new(uri)
+form_data = [['files', File.open('document.pdf')]]
+request.set_form form_data, 'multipart/form-data'
+
+response = Net::HTTP.start(uri.hostname, uri.port) do |http|
+  http.request(request)
+end
+
+results = JSON.parse(response.body)
+puts results[0]['content']
+```
+
+</TabItem>
+</Tabs>
+
+### Error Handling
+
+```json title="Error response"
+{
+  "error_type": "ValidationError",
+  "message": "Invalid file format",
+  "status_code": 400
+}
+```
+
+| Status | Error type | Meaning |
+|--------|-----------|---------|
+| 400 | `ValidationError` | Invalid input |
+| 422 | `ParsingError`, `OcrError` | Processing failed |
+| 500 | Internal errors | Server errors |
+
+<Tabs>
+<TabItem label="Python">
+
+```python title="Python"
+import httpx
+
+try:
+    with httpx.Client() as client:
+        with open("document.pdf", "rb") as f:
+            files: dict = {"files": f}
+            response: httpx.Response = client.post(
+                "http://localhost:8000/extract", files=files
+            )
+            response.raise_for_status()
+            results: list = response.json()
+            print(f"Extracted {len(results)} documents")
+except httpx.HTTPStatusError as e:
+    error: dict = e.response.json()
+    error_type: str = error.get("error_type", "Unknown")
+    message: str = error.get("message", "No message")
+    print(f"Error: {error_type}: {message}")
+```
+
+</TabItem>
+<TabItem label="TypeScript">
+
+```typescript title="TypeScript"
+try {
+    const response = await fetch("http://localhost:8000/extract", {
+        method: "POST",
+        body: formData,
+    });
+
+    if (!response.ok) {
+        const error = await response.json();
+        console.error(`Error: ${error.error_type}: ${error.message}`);
+    } else {
+        const results = await response.json();
+        console.log(results);
+    }
+} catch (e) {
+    console.error("Request failed:", e);
+}
+```
+
+</TabItem>
+<TabItem label="Rust">
+
+```rust title="Rust"
+use reqwest::Client;
+
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let client = Client::new();
+    let response = client
+        .post("http://localhost:8000/extract")
+        .send()
+        .await?;
+
+    let status = response.status();
+    if status.is_client_error() || status.is_server_error() {
+        let error: serde_json::Value = response.json().await?;
+        eprintln!(
+            "Error: {}: {}",
+            error["error_type"], error["message"]
+        );
+    } else {
+        let results: serde_json::Value = response.json().await?;
+        println!("{:?}", results);
+    }
+
+    Ok(())
+}
+```
+
+</TabItem>
+<TabItem label="Go">
+
+```go title="Go"
+package main
+
+import (
+	"encoding/json"
+	"fmt"
+	"io"
+	"net/http"
+)
+
+func main() {
+	resp, err := http.Post("http://localhost:8000/extract", "application/json", nil)
+	if err != nil {
+		fmt.Println("Request failed:", err)
+		return
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode >= 400 {
+		var error map[string]interface{}
+		body, _ := io.ReadAll(resp.Body)
+		json.Unmarshal(body, &error)
+		fmt.Printf("Error: %v: %v\n", error["error_type"], error["message"])
+	} else {
+		var results []map[string]interface{}
+		body, _ := io.ReadAll(resp.Body)
+		json.Unmarshal(body, &results)
+		// Process results
+	}
+}
+```
+
+</TabItem>
+<TabItem label="Java">
+
+```java title="Java"
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.net.URI;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+try {
+    HttpClient client = HttpClient.newHttpClient();
+    HttpRequest request = HttpRequest.newBuilder()
+        .uri(URI.create("http://localhost:8000/extract"))
+        .POST(HttpRequest.BodyPublishers.ofString(multipartBody))
+        .build();
+
+    HttpResponse<String> response = client.send(request,
+        HttpResponse.BodyHandlers.ofString());
+
+    if (response.statusCode() >= 400) {
+        ObjectMapper mapper = new ObjectMapper();
+        Map<String, Object> error = mapper.readValue(response.body(), Map.class);
+        System.err.println("Error: " + error.get("error_type") +
+            ": " + error.get("message"));
+    } else {
+        ObjectMapper mapper = new ObjectMapper();
+        Map[] results = mapper.readValue(response.body(), Map[].class);
+        // Process results
+    }
+} catch (IOException | InterruptedException e) {
+    System.err.println("Request failed: " + e.getMessage());
+}
+```
+
+</TabItem>
+<TabItem label="C#">
+
+```csharp title="C#"
+using System;
+using System.IO;
+using System.Net.Http;
+using System.Text.Json;
+
+var client = new HttpClient();
+
+try
+{
+    using (var fileStream = File.OpenRead("document.pdf"))
+    {
+        using (var content = new MultipartFormDataContent())
+        {
+            content.Add(new StreamContent(fileStream), "files", "document.pdf");
+
+            var response = await client.PostAsync("http://localhost:8000/extract", content);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var errorJson = await response.Content.ReadAsStringAsync();
+                var errorDoc = JsonDocument.Parse(errorJson);
+                var errorType = errorDoc.RootElement.GetProperty("error_type").GetString();
+                var message = errorDoc.RootElement.GetProperty("message").GetString();
+
+                Console.WriteLine($"Error: {errorType}: {message}");
+                return;
+            }
+
+            var json = await response.Content.ReadAsStringAsync();
+            Console.WriteLine($"Success: {json}");
+        }
+    }
+}
+catch (HttpRequestException e)
+{
+    Console.WriteLine($"Request failed: {e.Message}");
+}
+```
+
+</TabItem>
+<TabItem label="Ruby">
+
+```ruby title="Ruby"
+require 'net/http'
+require 'uri'
+require 'json'
+
+begin
+  uri = URI('http://localhost:8000/extract')
+  request = Net::HTTP::Post.new(uri)
+
+  response = Net::HTTP.start(uri.hostname, uri.port) do |http|
+    http.request(request)
+  end
+
+  if response.code.to_i >= 400
+    error = JSON.parse(response.body)
+    puts "Error: #{error['error_type']}: #{error['message']}"
+  else
+    results = JSON.parse(response.body)
+    # Process results
+  end
+rescue => e
+  puts "Request failed: #{e.message}"
+end
+```
+
+</TabItem>
+</Tabs>
+
+### Configuration
+
+The server discovers `kreuzberg.toml` in the current and parent directories. Pass `--config path/to/file` to use a different file.
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `KREUZBERG_MAX_UPLOAD_SIZE_MB` | `100` | Max upload size in MB |
+| `KREUZBERG_CORS_ORIGINS` | `*` | Comma-separated allowed origins |
+
+:::caution
+Default CORS allows all origins. Set `KREUZBERG_CORS_ORIGINS` explicitly in production.
+:::
+
+See [Configuration Guide](/guides/configuration/) for all options.
+
+---
+
+## MCP Server
+
+### Start
+
+```bash title="Terminal"
+kreuzberg mcp
+kreuzberg mcp --config kreuzberg.toml
+```
+
+<Tabs>
+<TabItem label="Python">
+
+```python title="Python"
+import subprocess
+import time
+from typing import Optional
+
+mcp_process: subprocess.Popen = subprocess.Popen(
+    ["python", "-m", "kreuzberg", "mcp"],
+    stdout=subprocess.PIPE,
+    stderr=subprocess.PIPE,
+)
+
+pid: Optional[int] = mcp_process.pid
+print(f"MCP server started with PID: {pid}")
+
+time.sleep(1)
+print("Server is running, listening for connections")
+```
+
+</TabItem>
+<TabItem label="TypeScript">
+
+```typescript title="TypeScript"
+import { spawn } from 'child_process';
+
+const mcpProcess = spawn('kreuzberg', ['mcp']);
+
+mcpProcess.stdout.on('data', (data) => {
+  console.log(`MCP Server: ${data}`);
+});
+
+mcpProcess.stderr.on('data', (data) => {
+  console.error(`MCP Error: ${data}`);
+});
+
+mcpProcess.on('error', (err) => {
+  console.error(`Failed to start MCP server: ${err.message}`);
+});
+```
+
+</TabItem>
+<TabItem label="Rust">
+
+```rust title="Rust"
+use kreuzberg::{ExtractionConfig, mcp::start_mcp_server_with_config};
+
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    let config = ExtractionConfig::discover()?;
+    start_mcp_server_with_config(config).await?;
+    Ok(())
+}
+```
+
+</TabItem>
+<TabItem label="Go">
+
+```go title="Go"
+package main
+
+import (
+	"fmt"
+	"os"
+	"os/exec"
+)
+
+func main() {
+	cmd := exec.Command("kreuzberg", "mcp")
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	if err := cmd.Run(); err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to start MCP server: %v\n", err)
+	}
+}
+```
+
+</TabItem>
+<TabItem label="Java">
+
+```java title="Java"
+import java.io.IOException;
+
+public class McpServer {
+    public static void main(String[] args) {
+        try {
+            // Start MCP server using CLI
+            ProcessBuilder pb = new ProcessBuilder("kreuzberg", "mcp");
+            pb.inheritIO();
+            Process process = pb.start();
+            process.waitFor();
+        } catch (IOException | InterruptedException e) {
+            System.err.println("Failed to start MCP server: " + e.getMessage());
+        }
+    }
+}
+```
+
+</TabItem>
+<TabItem label="C#">
+
+```csharp title="C#"
+using System;
+using System.Diagnostics;
+using System.Threading.Tasks;
+
+var processInfo = new ProcessStartInfo
+{
+    FileName = "kreuzberg",
+    Arguments = "mcp",
+    UseShellExecute = false,
+    RedirectStandardOutput = true,
+    RedirectStandardError = true
+};
+
+var mcpProcess = Process.Start(processInfo);
+
+Console.WriteLine($"MCP server started with PID: {mcpProcess?.Id}");
+await Task.Delay(1000);
+Console.WriteLine("Server is running, listening for connections");
+
+mcpProcess?.WaitForExit();
+```
+
+</TabItem>
+<TabItem label="Ruby">
+
+```ruby title="Ruby"
+require 'open3'
+
+begin
+  Open3.popen3('kreuzberg', 'mcp') do |stdin, stdout, stderr, wait_thr|
+    puts stdout.read
+    wait_thr.join
+  end
+rescue => e
+  puts "Failed to start MCP server: #{e.message}"
+end
+```
+
+</TabItem>
+</Tabs>
+
+### Tools
+
+| Tool | Key parameters | Description |
+|------|----------------|-------------|
+| `extract_file` | `path` | Extract from file path |
+| `extract_bytes` | `data` (base64) | Extract from encoded bytes |
+| `batch_extract_files` | `paths` | Extract multiple files |
+| `detect_mime_type` | `path` | Detect file format |
+| `list_formats` | — | List supported formats <span class="version-badge">v4.5.2</span> |
+| `get_version` | — | Library version <span class="version-badge">v4.5.2</span> |
+| `cache_stats` | — | Cache usage |
+| `cache_clear` | — | Remove cached files |
+| `cache_manifest` | — | Model checksums <span class="version-badge">v4.5.2</span> |
+| `cache_warm` | — | Pre-download models <span class="version-badge">v4.5.2</span> |
+| `embed_text` | `texts` | Generate embeddings <span class="version-badge">v4.5.2</span> |
+| `chunk_text` | `text` | Split text <span class="version-badge">v4.5.2</span> |
+| `extract_structured` | `path`, `schema`, `model`; optional `schema_name` (default `"extraction"`), `schema_description`, `prompt`, `api_key`, `strict` (default `false`) | Extract structured JSON via LLM <span class="version-badge">v4.8.0</span> |
+
+All tools accept an optional `config` object. `extract_file` and `extract_bytes` also accept `pdf_password`. `extract_structured` requires the server to be built with the `liter-llm` feature; see the row above for optional fields and defaults.
+
+### AI Agent Integration
+
+<Tabs>
+<TabItem label="Claude Desktop">
+
+Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "kreuzberg": {
+      "command": "kreuzberg",
+      "args": ["mcp"]
+    }
+  }
+}
+```
+
+</TabItem>
+<TabItem label="Python">
+
+```python title="Python"
+import asyncio
+from mcp import ClientSession, StdioServerParameters
+from mcp.client.stdio import stdio_client
+
+async def main() -> None:
+    server_params: StdioServerParameters = StdioServerParameters(
+        command="kreuzberg", args=["mcp"]
+    )
+
+    async with stdio_client(server_params) as (read, write):
+        async with ClientSession(read, write) as session:
+            await session.initialize()
+            tools = await session.list_tools()
+            tool_names: list[str] = [t.name for t in tools.tools]
+            print(f"Available tools: {tool_names}")
+            result = await session.call_tool(
+                "extract_file", arguments={"path": "document.pdf", "async": True}
+            )
+            print(result)
+
+asyncio.run(main())
+```
+
+</TabItem>
+<TabItem label="LangChain">
+
+```python title="Python"
+from langchain.agents import initialize_agent, AgentType
+from langchain.tools import Tool
+from langchain_openai import ChatOpenAI
+import subprocess
+import json
+
+mcp_process = subprocess.Popen(
+    ["kreuzberg", "mcp"],
+    stdin=subprocess.PIPE,
+    stdout=subprocess.PIPE,
+    stderr=subprocess.PIPE,
+)
+
+def extract_file(path: str) -> str:
+    request: dict = {
+        "method": "tools/call",
+        "params": {
+            "name": "extract_file",
+            "arguments": {"path": path, "async": True},
+        },
+    }
+    mcp_process.stdin.write(json.dumps(request).encode() + b"\n")
+    mcp_process.stdin.flush()
+    response = mcp_process.stdout.readline()
+    return json.loads(response)["result"]["content"]
+
+tools: list[Tool] = [
+    Tool(name="extract_document", func=extract_file, description="Extract")
+]
+
+llm = ChatOpenAI(temperature=0)
+agent = initialize_agent(
+    tools, llm, agent=AgentType.ZERO_SHOT_REACT_DESCRIPTION
+)
+```
+
+</TabItem>
+<TabItem label="TypeScript">
+
+```typescript title="TypeScript"
+import { spawn } from 'child_process';
+import * as readline from 'readline';
+
+const mcpProcess = spawn('kreuzberg', ['mcp']);
+
+const rl = readline.createInterface({
+  input: mcpProcess.stdout,
+  output: mcpProcess.stdin,
+  terminal: false,
+});
+
+const request = {
+  method: 'tools/call',
+  params: {
+    name: 'extract_file',
+    arguments: {
+      path: 'document.pdf',
+      async: true,
+    },
+  },
+};
+
+mcpProcess.stdin.write(JSON.stringify(request) + '\n');
+
+rl.on('line', (line) => {
+  const response = JSON.parse(line);
+  console.log(response);
+  mcpProcess.kill();
+});
+
+mcpProcess.on('error', (err) => {
+  console.error('Failed to start MCP process:', err);
+});
+```
+
+</TabItem>
+<TabItem label="Rust">
+
+```rust title="Rust"
+use serde_json::json;
+use std::io::{BufRead, BufReader, Write};
+use std::process::{Command, Stdio};
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let mut child = Command::new("kreuzberg")
+        .arg("mcp")
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .spawn()?;
+
+    {
+        let stdin = child.stdin.as_mut().ok_or("Failed to open stdin")?;
+        let request = json!({
+            "method": "tools/call",
+            "params": {
+                "name": "extract_file",
+                "arguments": {
+                    "path": "document.pdf",
+                    "async": true
+                }
+            }
+        });
+        stdin.write_all(request.to_string().as_bytes())?;
+        stdin.write_all(b"\n")?;
+    }
+
+    let stdout = child.stdout.take().ok_or("Failed to open stdout")?;
+    let reader = BufReader::new(stdout);
+    for line in reader.lines() {
+        if let Ok(line) = line {
+            println!("{}", line);
+            break;
+        }
+    }
+
+    child.wait()?;
+    Ok(())
+}
+```
+
+</TabItem>
+<TabItem label="Go">
+
+```go title="Go"
+package main
+
+import (
+	"bufio"
+	"encoding/json"
+	"fmt"
+	"log"
+	"os/exec"
+)
+
+type MCPRequest struct {
+	Method string      `json:"method"`
+	Params MCPParams   `json:"params"`
+}
+
+type MCPParams struct {
+	Name      string                 `json:"name"`
+	Arguments map[string]interface{} `json:"arguments"`
+}
+
+func main() {
+	cmd := exec.Command("kreuzberg", "mcp")
+	stdin, err := cmd.StdinPipe()
+	if err != nil {
+		log.Fatalf("create stdin pipe: %v", err)
+	}
+	stdout, err := cmd.StdoutPipe()
+	if err != nil {
+		log.Fatalf("create stdout pipe: %v", err)
+	}
+
+	if err := cmd.Start(); err != nil {
+		log.Fatalf("start command: %v", err)
+	}
+
+	request := MCPRequest{
+		Method: "tools/call",
+		Params: MCPParams{
+			Name: "extract_file",
+			Arguments: map[string]interface{}{
+				"path":  "document.pdf",
+				"async": true,
+			},
+		},
+	}
+
+	data, err := json.Marshal(request)
+	if err != nil {
+		log.Fatalf("marshal request: %v", err)
+	}
+	fmt.Fprintf(stdin, "%s\n", string(data))
+
+	scanner := bufio.NewScanner(stdout)
+	if scanner.Scan() {
+		fmt.Println(scanner.Text())
+	}
+
+	if err := cmd.Wait(); err != nil {
+		log.Fatalf("wait for command: %v", err)
+	}
+}
+```
+
+</TabItem>
+<TabItem label="Java">
+
+```java title="Java"
+import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
+import java.util.Map;
+
+public class McpClient {
+    private final Process mcpProcess;
+    private final BufferedWriter stdin;
+    private final BufferedReader stdout;
+    private final ObjectMapper mapper = new ObjectMapper();
+
+    public McpClient() throws IOException {
+        ProcessBuilder pb = new ProcessBuilder("kreuzberg", "mcp");
+        mcpProcess = pb.start();
+        stdin = new BufferedWriter(new OutputStreamWriter(mcpProcess.getOutputStream()));
+        stdout = new BufferedReader(new InputStreamReader(mcpProcess.getInputStream()));
+    }
+
+    public String extractFile(String path) throws IOException {
+        Map<String, Object> request = Map.of(
+            "method", "tools/call",
+            "params", Map.of(
+                "name", "extract_file",
+                "arguments", Map.of("path", path, "async", true)
+            )
+        );
+
+        stdin.write(mapper.writeValueAsString(request));
+        stdin.newLine();
+        stdin.flush();
+
+        String response = stdout.readLine();
+        @SuppressWarnings("unchecked")
+        Map<String, Object> result = mapper.readValue(response, Map.class);
+        @SuppressWarnings("unchecked")
+        Map<String, Object> resultData = (Map<String, Object>) result.get("result");
+        return (String) resultData.get("content");
+    }
+
+    public void close() throws IOException {
+        stdin.close();
+        stdout.close();
+        mcpProcess.destroy();
+    }
+
+    public static void main(String[] args) {
+        try (McpClient client = new McpClient()) {
+            String content = client.extractFile("contract.pdf");
+            System.out.println("Extracted content: " + content);
+        } catch (IOException e) {
+            System.err.println("Error: " + e.getMessage());
+        }
+    }
+}
+```
+
+</TabItem>
+<TabItem label="C#">
+
+```csharp title="C#"
+using System;
+using System.Diagnostics;
+using System.IO;
+using System.Threading.Tasks;
+
+var processInfo = new ProcessStartInfo
+{
+    FileName = "kreuzberg",
+    Arguments = "mcp",
+    UseShellExecute = false,
+    RedirectStandardInput = true,
+    RedirectStandardOutput = true,
+    RedirectStandardError = true
+};
+
+var process = Process.Start(processInfo);
+
+var clientInput = process.StandardInput;
+var clientOutput = process.StandardOutput;
+
+// Initialize session by sending initialize request
+var initRequest = new
+{
+    jsonrpc = "2.0",
+    id = 1,
+    method = "initialize",
+    parameters = new { }
+};
+
+await clientInput.WriteLineAsync(System.Text.Json.JsonSerializer.Serialize(initRequest));
+await clientInput.FlushAsync();
+
+var initResponse = await clientOutput.ReadLineAsync();
+Console.WriteLine($"Init response: {initResponse}");
+
+// List available tools
+var listRequest = new
+{
+    jsonrpc = "2.0",
+    id = 2,
+    method = "tools/list"
+};
+
+await clientInput.WriteLineAsync(System.Text.Json.JsonSerializer.Serialize(listRequest));
+await clientInput.FlushAsync();
+
+var listResponse = await clientOutput.ReadLineAsync();
+Console.WriteLine($"Available tools: {listResponse}");
+
+process?.WaitForExit();
+```
+
+</TabItem>
+<TabItem label="Ruby">
+
+```ruby title="Ruby"
+require 'json'
+require 'open3'
+
+Open3.popen3('kreuzberg', 'mcp') do |stdin, stdout, stderr, wait_thr|
+  request = {
+    method: 'tools/call',
+    params: {
+      name: 'extract_file',
+      arguments: { path: 'document.pdf', async: true }
+    }
+  }
+
+  stdin.puts JSON.generate(request)
+  stdin.close_write
+
+  response = stdout.gets
+  result = JSON.parse(response)
+  puts JSON.pretty_generate(result)
+end
+```
+
+</TabItem>
+</Tabs>
+
+---
+
+For Docker and Kubernetes deployment, see [Docker Guide](/guides/docker/) and [Kubernetes Guide](/guides/kubernetes/).

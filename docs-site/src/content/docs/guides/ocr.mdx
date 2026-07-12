@@ -1,0 +1,1270 @@
+---
+title: OCR (Optical Character Recognition)
+description: "Extract text from images and scanned PDFs with Tesseract, PaddleOCR, EasyOCR, or a VLM backend — installation, configuration, and tuning."
+---
+
+import { Tabs, TabItem } from '@astrojs/starlight/components';
+
+Extract text from images and scanned PDFs. Kreuzberg automatically determines when OCR is needed — images always require it, scanned PDFs trigger it per-page, and hybrid PDFs only OCR the pages that lack a text layer. Set `force_ocr=True` to OCR all pages regardless.
+
+## Backend Comparison
+
+Kreuzberg supports four OCR backends. Pick based on your platform, accuracy needs, and language coverage.
+
+| | **Tesseract** | **PaddleOCR** | **EasyOCR** | **VLM** |
+|---|---|---|---|---|
+| **Speed** | Fast | Very fast | Moderate | Slow (API latency) |
+| **Accuracy** | Good | Excellent | Excellent | Highest |
+| **Languages** | 100+ | 80+ (11 script families) | 80+ | All (provider-dependent) |
+| **Installation** | System package | Built-in (native) or Python package | Python package only | API key only |
+| **Model size** | ~10 MB | Mobile ~8 MB, Server ~120 MB | ~100 MB | None (cloud-hosted) |
+| **GPU support** | No | Yes | Yes | N/A (server-side) |
+| **Platform** | All (including WASM) | All except WASM | Python only | All |
+| **Cost** | Free | Free | Free | Per-token API cost |
+
+**When to use which:**
+
+- **Tesseract** — Default choice. Works everywhere, low overhead, broadest platform support.
+- **PaddleOCR** — Best speed-to-accuracy ratio. Preferred for CJK languages. Mobile tier is fast; server tier maximizes accuracy with GPU.
+- **EasyOCR** — Highest accuracy with deep learning models. Python-only, heavier dependency.
+- **VLM** — Best for handwritten text, poor scans, Arabic/Farsi, and complex layouts. Requires an API key and incurs per-token costs. See [LLM Integration](/guides/llm-integration/) for full details.
+
+## Installation
+
+### Tesseract
+
+<Tabs>
+<TabItem label="macOS">
+
+```bash title="Terminal"
+brew install tesseract
+```
+
+</TabItem>
+<TabItem label="Ubuntu / Debian">
+
+```bash title="Terminal"
+sudo apt-get install tesseract-ocr
+```
+
+</TabItem>
+<TabItem label="RHEL / Fedora">
+
+```bash title="Terminal"
+sudo dnf install tesseract
+```
+
+</TabItem>
+<TabItem label="Windows">
+
+Download from [GitHub releases](https://github.com/UB-Mannheim/tesseract/wiki).
+
+</TabItem>
+</Tabs>
+
+**Additional language packs:**
+
+```bash title="Terminal"
+# macOS — all languages
+brew install tesseract-lang
+
+# Ubuntu/Debian — individual languages
+sudo apt-get install tesseract-ocr-deu  # German
+sudo apt-get install tesseract-ocr-fra  # French
+
+# Verify installed languages
+tesseract --list-langs
+```
+
+### PaddleOCR
+
+<Tabs>
+<TabItem label="Native bindings (Rust, Go, TypeScript, Java, C#, Ruby, PHP, Elixir)">
+
+Built in via the `paddle-ocr` feature flag. Models download automatically on first use — no extra installation needed.
+
+```toml title="Cargo.toml (Rust example)"
+[dependencies]
+kreuzberg = { version = "4.0", features = ["paddle-ocr"] }
+```
+
+</TabItem>
+<TabItem label="Python">
+
+PaddleOCR is bundled via the native Rust bindings and works out of the box since 4.8.5 — no extra installation is needed. Models are downloaded automatically on first use.
+
+</TabItem>
+</Tabs>
+
+### EasyOCR (Python only)
+
+```bash title="Terminal"
+pip install "kreuzberg[easyocr]"
+```
+
+:::note[Python 3.14]
+EasyOCR 1.7.3+ and PyTorch 2.9.1+ support Python 3.14. Install `kreuzberg[easyocr]` on any supported Python version (3.10–3.14).
+:::
+
+:::tip[Tesseract marker extra]
+`pip install "kreuzberg[tesseract]"` is available as a metadata-only marker to document a dependency on the Tesseract system package. It installs no Python packages — Tesseract itself must still be installed via your OS package manager (see above).
+:::
+
+## Configuration
+
+### Basic OCR
+
+<Tabs>
+<TabItem label="Python">
+
+```python title="Python"
+from kreuzberg import extract_file_sync, ExtractionConfig, OcrConfig
+
+config: ExtractionConfig = ExtractionConfig(
+    ocr=OcrConfig(backend="tesseract", language="eng")
+)
+
+result = extract_file_sync("scanned.pdf", config=config)
+
+content: str = result.content
+preview: str = content[:100]
+total_length: int = len(content)
+
+print(f"Extracted content (preview): {preview}")
+print(f"Total characters: {total_length}")
+```
+
+</TabItem>
+<TabItem label="TypeScript">
+
+```typescript title="TypeScript"
+import { extractFileSync } from '@kreuzberg/node';
+
+const config = {
+	ocr: {
+		backend: 'tesseract',
+		language: 'eng',
+	},
+};
+
+const result = extractFileSync('scanned.pdf', null, config);
+console.log(result.content);
+```
+
+</TabItem>
+<TabItem label="Rust">
+
+```rust title="Rust"
+use kreuzberg::{extract_file_sync, ExtractionConfig, OcrConfig};
+
+fn main() -> kreuzberg::Result<()> {
+    let config = ExtractionConfig {
+        ocr: Some(OcrConfig {
+            backend: "tesseract".to_string(),
+            language: "eng".to_string(),
+            ..Default::default()
+        }),
+        ..Default::default()
+    };
+
+    let result = extract_file_sync("scanned.pdf", None, &config)?;
+    println!("{}", result.content);
+    Ok(())
+}
+```
+
+</TabItem>
+<TabItem label="Go">
+
+```go title="Go"
+package main
+
+import (
+	"log"
+
+	"github.com/kreuzberg-dev/kreuzberg-lts/v4"
+)
+
+func main() {
+	lang := "eng"
+	cfg := &kreuzberg.ExtractionConfig{
+		OCR: &kreuzberg.OCRConfig{
+			Backend:  "tesseract",
+			Language: &lang,
+		},
+	}
+
+	result, err := kreuzberg.ExtractFileSync("scanned.pdf", cfg)
+	if err != nil {
+		log.Fatalf("extract failed: %v", err)
+	}
+	log.Println(len(result.Content))
+}
+```
+
+</TabItem>
+<TabItem label="Java">
+
+```java title="Java"
+import dev.kreuzberg.Kreuzberg;
+import dev.kreuzberg.ExtractionResult;
+import dev.kreuzberg.KreuzbergException;
+import dev.kreuzberg.config.ExtractionConfig;
+import dev.kreuzberg.config.OcrConfig;
+import java.io.IOException;
+
+public class Main {
+    public static void main(String[] args) {
+        try {
+            ExtractionConfig config = ExtractionConfig.builder()
+                .ocr(OcrConfig.builder()
+                    .backend("tesseract")
+                    .language("eng")
+                    .build())
+                .build();
+
+            ExtractionResult result = Kreuzberg.extractFile("scanned.pdf", config);
+            System.out.println(result.getContent());
+        } catch (IOException | KreuzbergException e) {
+            System.err.println("Extraction failed: " + e.getMessage());
+        }
+    }
+}
+```
+
+</TabItem>
+<TabItem label="Ruby">
+
+```ruby title="Ruby"
+require 'kreuzberg'
+
+ocr_config = Kreuzberg::Config::OCR.new(
+  backend: 'tesseract',
+  language: 'eng'
+)
+
+config = Kreuzberg::Config::Extraction.new(ocr: ocr_config)
+result = Kreuzberg.extract_file_sync('scanned.pdf', config: config)
+puts result.content
+```
+
+</TabItem>
+<TabItem label="R">
+
+```r title="R"
+library(kreuzberg)
+
+# Configure Tesseract OCR
+ocr <- ocr_config(backend = "tesseract", language = "eng", dpi = 300L)
+config <- extraction_config(force_ocr = TRUE, ocr = ocr)
+
+# Extract text from a scanned image
+result <- extract_file_sync("scan.png", config = config)
+
+cat(sprintf("Extracted %d characters\n", nchar(result$content)))
+cat(sprintf("Quality score: %s\n", result$quality_score))
+cat("Content preview:\n")
+cat(substr(result$content, 1, 200))
+```
+
+</TabItem>
+<TabItem label="WASM">
+
+```typescript title="WASM (Browser)"
+import { enableOcr, extractFromFile, initWasm } from '@kreuzberg/wasm';
+
+await initWasm();
+await enableOcr();
+
+const fileInput = document.getElementById('file') as HTMLInputElement;
+const file = fileInput.files?.[0];
+
+if (file) {
+	const result = await extractFromFile(file, file.type, {
+		ocr: {
+			backend: 'kreuzberg-tesseract',
+			language: 'eng',
+		},
+	});
+	console.log(result.content);
+}
+```
+
+```typescript title="WASM (Node.js / Deno / Bun)"
+import { enableOcr, extractFile, initWasm } from '@kreuzberg/wasm';
+
+await initWasm();
+await enableOcr(); // Uses native kreuzberg-tesseract backend
+
+const result = await extractFile('./scanned_document.png', 'image/png', {
+	ocr: {
+		backend: 'kreuzberg-tesseract',
+		language: 'eng',
+	},
+});
+console.log(result.content);
+```
+
+</TabItem>
+</Tabs>
+
+### Multiple Languages
+
+Specify multiple language codes separated by `+` (Tesseract) or as a list (EasyOCR/PaddleOCR):
+
+<Tabs>
+<TabItem label="Python">
+
+```python title="Python"
+from kreuzberg import extract_file_sync, ExtractionConfig, OcrConfig
+
+config: ExtractionConfig = ExtractionConfig(
+    ocr=OcrConfig(backend="tesseract", language="eng+deu+fra")
+)
+
+result = extract_file_sync("multilingual.pdf", config=config)
+
+content: str = result.content
+preview: str = content[:100]
+total_length: int = len(content)
+
+print(f"Extracted content (preview): {preview}")
+print(f"Total characters: {total_length}")
+```
+
+</TabItem>
+<TabItem label="TypeScript">
+
+```typescript title="TypeScript"
+import { extractFileSync } from '@kreuzberg/node';
+
+const config = {
+	ocr: {
+		backend: 'tesseract',
+		language: 'eng+deu+fra',
+	},
+};
+
+const result = extractFileSync('multilingual.pdf', null, config);
+console.log(result.content);
+```
+
+</TabItem>
+<TabItem label="Rust">
+
+```rust title="Rust"
+use kreuzberg::{extract_file_sync, ExtractionConfig, OcrConfig};
+
+fn main() -> kreuzberg::Result<()> {
+    let config = ExtractionConfig {
+        ocr: Some(OcrConfig {
+            backend: "tesseract".to_string(),
+            language: "eng+deu+fra".to_string(),
+            ..Default::default()
+        }),
+        ..Default::default()
+    };
+
+    let result = extract_file_sync("multilingual.pdf", None, &config)?;
+    println!("{}", result.content);
+    Ok(())
+}
+```
+
+</TabItem>
+<TabItem label="Go">
+
+```go title="Go"
+package main
+
+import (
+	"log"
+
+	"github.com/kreuzberg-dev/kreuzberg-lts/v4"
+)
+
+func main() {
+	lang := "eng+deu+fra"
+	result, err := kreuzberg.ExtractFileSync("multilingual.pdf", &kreuzberg.ExtractionConfig{
+		OCR: &kreuzberg.OCRConfig{
+			Backend:  "tesseract",
+			Language: &lang,
+		},
+	})
+	if err != nil {
+		log.Fatalf("extract failed: %v", err)
+	}
+
+	log.Println(result.Content)
+}
+```
+
+</TabItem>
+<TabItem label="Java">
+
+```java title="Java"
+import dev.kreuzberg.Kreuzberg;
+import dev.kreuzberg.ExtractionResult;
+import dev.kreuzberg.config.ExtractionConfig;
+import dev.kreuzberg.config.OcrConfig;
+
+ExtractionConfig config = ExtractionConfig.builder()
+    .ocr(OcrConfig.builder()
+        .backend("tesseract")
+        .language("eng+deu+fra")
+        .build())
+    .build();
+
+ExtractionResult result = Kreuzberg.extractFile("multilingual.pdf", config);
+System.out.println(result.getContent());
+```
+
+</TabItem>
+<TabItem label="Ruby">
+
+```ruby title="Ruby"
+require 'kreuzberg'
+
+config = Kreuzberg::Config::Extraction.new(
+  ocr: Kreuzberg::Config::OCR.new(
+    backend: 'tesseract',
+    language: 'eng+deu+fra'
+  )
+)
+
+result = Kreuzberg.extract_file_sync('multilingual.pdf', config: config)
+puts result.content
+```
+
+</TabItem>
+<TabItem label="R">
+
+```r title="R"
+library(kreuzberg)
+
+# Configure multi-language OCR (English, French, German)
+ocr <- ocr_config(backend = "tesseract", language = "eng+fra+deu")
+config <- extraction_config(force_ocr = TRUE, ocr = ocr)
+
+# Extract from a multilingual document
+result <- extract_file_sync("multilingual.png", config = config)
+
+cat(sprintf("Detected language: %s\n", detected_language(result)))
+cat(sprintf("Extracted %d characters\n", nchar(result$content)))
+cat("Content preview:\n")
+cat(substr(result$content, 1, 200))
+```
+
+</TabItem>
+<TabItem label="WASM">
+
+```typescript
+import { enableOcr, extractFromFile, initWasm } from '@kreuzberg/wasm';
+
+await initWasm();
+await enableOcr();
+
+const file = fileInput.files?.[0];
+if (file) {
+  const result = await extractFromFile(file, file.type, {
+    ocr: { backend: 'tesseract-wasm', language: 'eng+deu' },
+  });
+}
+```
+
+</TabItem>
+</Tabs>
+
+### Force OCR
+
+Process PDFs with OCR even when they have a text layer:
+
+<Tabs>
+<TabItem label="Python">
+
+```python title="Python"
+from kreuzberg import extract_file_sync, ExtractionConfig, OcrConfig
+
+config: ExtractionConfig = ExtractionConfig(
+    ocr=OcrConfig(backend="tesseract"),
+    force_ocr=True,
+)
+
+result = extract_file_sync("document.pdf", config=config)
+
+content: str = result.content
+preview: str = content[:100]
+total_length: int = len(content)
+
+print(f"Extracted content (preview): {preview}")
+print(f"Total characters: {total_length}")
+```
+
+</TabItem>
+<TabItem label="TypeScript">
+
+```typescript title="TypeScript"
+import { extractFileSync } from '@kreuzberg/node';
+
+const config = {
+	ocr: {
+		backend: 'tesseract',
+	},
+	forceOcr: true,
+};
+
+const result = extractFileSync('document.pdf', null, config);
+console.log(result.content);
+```
+
+</TabItem>
+<TabItem label="Rust">
+
+```rust title="Rust"
+use kreuzberg::{extract_file_sync, ExtractionConfig, OcrConfig};
+
+fn main() -> kreuzberg::Result<()> {
+    let config = ExtractionConfig {
+        ocr: Some(OcrConfig {
+            backend: "tesseract".to_string(),
+            ..Default::default()
+        }),
+        force_ocr: true,
+        ..Default::default()
+    };
+
+    let result = extract_file_sync("document.pdf", None, &config)?;
+    println!("{}", result.content);
+    Ok(())
+}
+```
+
+</TabItem>
+<TabItem label="Go">
+
+```go title="Go"
+package main
+
+import (
+	"fmt"
+	"log"
+
+	"github.com/kreuzberg-dev/kreuzberg-lts/v4"
+)
+
+func main() {
+	force := true
+	result, err := kreuzberg.ExtractFileSync("document.pdf", &kreuzberg.ExtractionConfig{
+		OCR: &kreuzberg.OCRConfig{
+			Backend: "tesseract",
+		},
+		ForceOCR: &force,
+	})
+	if err != nil {
+		log.Fatalf("extract failed: %v", err)
+	}
+
+	fmt.Println(result.Content)
+}
+```
+
+</TabItem>
+<TabItem label="Java">
+
+```java title="Java"
+import dev.kreuzberg.Kreuzberg;
+import dev.kreuzberg.ExtractionResult;
+import dev.kreuzberg.config.ExtractionConfig;
+import dev.kreuzberg.config.OcrConfig;
+
+ExtractionConfig config = ExtractionConfig.builder()
+    .ocr(OcrConfig.builder()
+        .backend("tesseract")
+        .build())
+    .forceOcr(true)
+    .build();
+
+ExtractionResult result = Kreuzberg.extractFile("document.pdf", config);
+System.out.println(result.getContent());
+```
+
+</TabItem>
+<TabItem label="Ruby">
+
+```ruby title="Ruby"
+require 'kreuzberg'
+
+config = Kreuzberg::Config::Extraction.new(
+  ocr: Kreuzberg::Config::OCR.new(backend: 'tesseract'),
+  force_ocr: true
+)
+
+result = Kreuzberg.extract_file_sync('document.pdf', config: config)
+puts result.content
+```
+
+</TabItem>
+<TabItem label="R">
+
+```r title="R"
+library(kreuzberg)
+
+config <- extraction_config(force_ocr = TRUE)
+
+result <- extract_file_sync("multipage_document.pdf", "application/pdf", config)
+
+cat(sprintf("Total pages: %d\n", result$pages))
+cat(sprintf("Content extracted via OCR: %d characters\n",
+            nchar(result$content)))
+cat(sprintf("Detected language: %s\n", result$detected_language))
+```
+
+</TabItem>
+</Tabs>
+
+### Using EasyOCR
+
+<Tabs>
+<TabItem label="Python">
+
+```python title="Python"
+from kreuzberg import extract_file_sync, ExtractionConfig, OcrConfig
+
+config: ExtractionConfig = ExtractionConfig(
+    ocr=OcrConfig(backend="easyocr", language="en")
+)
+
+# EasyOCR-specific options (use_gpu, beam_width, etc.) go in easyocr_kwargs,
+# not in OcrConfig — OcrConfig only accepts backend, language, and backend-specific configs.
+result = extract_file_sync("scanned.pdf", config=config, easyocr_kwargs={"use_gpu": True})
+
+content: str = result.content
+preview: str = content[:100]
+total_length: int = len(content)
+
+print(f"Extracted content (preview): {preview}")
+print(f"Total characters: {total_length}")
+```
+
+</TabItem>
+<TabItem label="TypeScript">
+
+EasyOCR is only available in Python.
+
+</TabItem>
+<TabItem label="Rust">
+
+```rust title="Rust"
+use kreuzberg::{extract_file, ExtractionConfig, OcrConfig};
+
+#[tokio::main]
+async fn main() -> kreuzberg::Result<()> {
+    let config = ExtractionConfig {
+        ocr: Some(OcrConfig {
+            backend: "easyocr".to_string(),
+            language: "en".to_string(),
+            ..Default::default()
+        }),
+        ..Default::default()
+    };
+
+    let result = extract_file("document.pdf", None, &config).await?;
+    println!("Extracted text: {}", result.content);
+    Ok(())
+}
+```
+
+</TabItem>
+</Tabs>
+
+### Disable OCR
+
+:::note[Added in v4.7.0]
+:::
+
+Skip OCR entirely, even for image files that would normally require it. When `disable_ocr` is set, image files return empty content instead of raising a `MissingDependencyError`:
+
+<Tabs>
+<TabItem label="Python">
+
+```python title="disable_ocr.py"
+from kreuzberg import ExtractionConfig, extract_file_sync
+
+config = ExtractionConfig(disable_ocr=True)
+result = extract_file_sync("scanned.png", config=config)
+# result.content will be empty — OCR was skipped
+```
+
+</TabItem>
+<TabItem label="TypeScript">
+
+```typescript title="disable_ocr.ts"
+import { extractFileSync } from '@kreuzberg/node';
+
+const result = extractFileSync('scanned.png', {
+  disableOcr: true,
+});
+// result.content will be empty — OCR was skipped
+```
+
+</TabItem>
+<TabItem label="Rust">
+
+```rust title="disable_ocr.rs"
+use kreuzberg::{ExtractionConfig, extract_file};
+
+let config = ExtractionConfig {
+    disable_ocr: true,
+    ..Default::default()
+};
+let result = extract_file("scanned.png", &config).await?;
+// result.content will be empty — OCR was skipped
+```
+
+</TabItem>
+</Tabs>
+
+### Using PaddleOCR
+
+<Tabs>
+<TabItem label="Python">
+
+```python title="Python"
+from kreuzberg import extract_file_sync, ExtractionConfig, OcrConfig
+
+config: ExtractionConfig = ExtractionConfig(
+    ocr=OcrConfig(backend="paddleocr", language="en")  # model_tier="server" for max accuracy
+)
+
+result = extract_file_sync("scanned.pdf", config=config)
+
+content: str = result.content
+preview: str = content[:100]
+total_length: int = len(content)
+
+print(f"Extracted content (preview): {preview}")
+print(f"Total characters: {total_length}")
+```
+
+</TabItem>
+<TabItem label="TypeScript">
+
+```typescript title="TypeScript"
+import { extractFileSync } from '@kreuzberg/node';
+
+const config = {
+	ocr: {
+		backend: 'paddle-ocr',
+		language: 'en',
+		// modelTier: 'server', // for max accuracy
+	},
+};
+
+const result = extractFileSync('scanned.pdf', null, config);
+console.log(result.content);
+```
+
+</TabItem>
+<TabItem label="Rust">
+
+```rust title="Rust"
+use kreuzberg::{extract_file, ExtractionConfig, OcrConfig};
+
+#[tokio::main]
+async fn main() -> kreuzberg::Result<()> {
+    let config = ExtractionConfig {
+        ocr: Some(OcrConfig {
+            backend: "paddleocr".to_string(),
+            language: "en".to_string(),
+            // paddle_ocr_config: Some(serde_json::json!({"model_tier": "server"})), // for max accuracy
+            ..Default::default()
+        }),
+        ..Default::default()
+    };
+
+    let result = extract_file("document.pdf", None, &config).await?;
+    println!("Extracted text: {}", result.content);
+    Ok(())
+}
+```
+
+</TabItem>
+<TabItem label="Go">
+
+```go title="Go"
+package main
+
+import (
+	"log"
+
+	"github.com/kreuzberg-dev/kreuzberg-lts/v4"
+)
+
+func main() {
+	lang := "en"
+	cfg := &kreuzberg.ExtractionConfig{
+		OCR: &kreuzberg.OCRConfig{
+			Backend:  "paddle-ocr",
+			Language: &lang,
+			// PaddleOcr: &kreuzberg.PaddleOcrConfig{ModelTier: "server"}, // for max accuracy
+		},
+	}
+
+	result, err := kreuzberg.ExtractFileSync("scanned.pdf", cfg)
+	if err != nil {
+		log.Fatalf("extract failed: %v", err)
+	}
+	log.Println(len(result.Content))
+}
+```
+
+</TabItem>
+<TabItem label="Java">
+
+```java title="Java"
+import dev.kreuzberg.Kreuzberg;
+import dev.kreuzberg.ExtractionResult;
+import dev.kreuzberg.KreuzbergException;
+import dev.kreuzberg.config.ExtractionConfig;
+import dev.kreuzberg.config.OcrConfig;
+import java.io.IOException;
+
+public class Main {
+    public static void main(String[] args) {
+        try {
+            ExtractionConfig config = ExtractionConfig.builder()
+                .ocr(OcrConfig.builder()
+                    .backend("paddle-ocr")
+                    .language("en")
+                    // .paddleOcrConfig(PaddleOcrConfig.builder().modelTier("server").build()) // for max accuracy
+                    .build())
+                .build();
+
+            ExtractionResult result = Kreuzberg.extractFile("scanned.pdf", config);
+            System.out.println(result.getContent());
+        } catch (IOException | KreuzbergException e) {
+            System.err.println("Extraction failed: " + e.getMessage());
+        }
+    }
+}
+```
+
+</TabItem>
+<TabItem label="Ruby">
+
+```ruby title="Ruby"
+require 'kreuzberg'
+
+config = Kreuzberg::Config::Extraction.new(
+  ocr: Kreuzberg::Config::OCR.new(
+    backend: 'paddleocr',
+    language: 'eng'
+    # model_tier: 'server' # for max accuracy
+  )
+)
+
+result = Kreuzberg.extract_file_sync('scanned.pdf', config: config)
+puts result.content[0..100]
+puts "Total length: #{result.content.length}"
+```
+
+</TabItem>
+<TabItem label="R">
+
+```r title="R"
+library(kreuzberg)
+
+# Configure PaddleOCR backend (defaults to mobile tier; use model_tier = "server" for max accuracy)
+ocr <- ocr_config(backend = "paddle-ocr", language = "en")
+config <- extraction_config(force_ocr = TRUE, ocr = ocr)
+
+# Extract text from an image using PaddleOCR
+result <- extract_file_sync("document.jpg", config = config)
+
+cat(sprintf("Extracted %d characters\n", nchar(result$content)))
+cat(sprintf("MIME type: %s\n", result$mime_type))
+cat("Content preview:\n")
+cat(substr(result$content, 1, 200))
+```
+
+</TabItem>
+</Tabs>
+
+### Using VLM OCR <span class="version-badge">v4.8.0</span>
+
+Use a vision-language model (for example, GPT-4o, Claude) as the OCR backend. Each page is rendered as an image and sent to the VLM for text extraction. Cloud providers require an API key; local engines like Ollama do not — just start the server and use the `ollama/` prefix (for example, `ollama/llama3.2-vision`). See [Local LLM Support](/guides/llm-integration/#local-llm-support) for setup details.
+
+<Tabs>
+<TabItem label="Python">
+
+```python title="Python"
+import asyncio
+from kreuzberg import extract_file, ExtractionConfig, OcrConfig, LlmConfig
+
+async def main() -> None:
+    config = ExtractionConfig(
+        force_ocr=True,
+        ocr=OcrConfig(
+            backend="vlm",
+            vlm_config=LlmConfig(model="openai/gpt-4o-mini"),
+        ),
+    )
+    result = await extract_file("scan.pdf", config=config)
+    print(result.content)
+
+asyncio.run(main())
+```
+
+</TabItem>
+<TabItem label="TypeScript">
+
+```typescript title="TypeScript"
+import { extractFileSync } from '@kreuzberg/node';
+
+const config = {
+	forceOcr: true,
+	ocr: {
+		backend: 'vlm',
+		vlmConfig: {
+			model: 'openai/gpt-4o-mini',
+		},
+	},
+};
+
+const result = extractFileSync('scan.pdf', null, config);
+console.log(result.content);
+```
+
+</TabItem>
+<TabItem label="Rust">
+
+```rust title="Rust"
+use kreuzberg::{extract_file, ExtractionConfig, OcrConfig, LlmConfig};
+
+let config = ExtractionConfig {
+    force_ocr: true,
+    ocr: Some(OcrConfig {
+        backend: "vlm".to_string(),
+        vlm_config: Some(LlmConfig {
+            model: "openai/gpt-4o-mini".to_string(),
+            ..Default::default()
+        }),
+        ..Default::default()
+    }),
+    ..Default::default()
+};
+let result = extract_file("scan.pdf", None, &config).await?;
+```
+
+</TabItem>
+<TabItem label="CLI">
+
+```bash title="Terminal"
+kreuzberg extract scan.pdf --force-ocr true --vlm-model openai/gpt-4o-mini
+```
+
+</TabItem>
+<TabItem label="TOML">
+
+```toml title="kreuzberg.toml"
+force_ocr = true
+
+[ocr]
+backend = "vlm"
+
+[ocr.vlm_config]
+model = "openai/gpt-4o-mini"
+```
+
+</TabItem>
+</Tabs>
+
+For more on VLM OCR, including custom prompts, supported providers, and API key configuration, see [LLM Integration](/guides/llm-integration/#vlm-ocr).
+
+:::tip[GPU Acceleration]
+EasyOCR and PaddleOCR support GPU acceleration. Set `use_gpu=True` in your OCR config. PaddleOCR's `model_tier="server"` gives the best accuracy with GPU.
+:::
+
+## DPI Configuration
+
+Image resolution affects both accuracy and speed. Higher DPI improves accuracy but increases processing time and memory usage.
+
+| DPI | Trade-off |
+|-----|-----------|
+| **150** | Fastest — lower accuracy, less memory |
+| **300** (default) | Balanced — good accuracy, reasonable speed |
+| **600** | Best accuracy — slower, more memory |
+
+<Tabs>
+<TabItem label="Python">
+
+```python title="Python"
+from kreuzberg import (
+    extract_file_sync,
+    ExtractionConfig,
+    OcrConfig,
+    TesseractConfig,
+    ImagePreprocessingConfig,
+)
+
+config: ExtractionConfig = ExtractionConfig(
+    ocr=OcrConfig(
+        backend="tesseract",
+        tesseract_config=TesseractConfig(
+            preprocessing=ImagePreprocessingConfig(target_dpi=300),
+        ),
+    ),
+)
+
+result = extract_file_sync("scanned.pdf", config=config)
+
+content_length: int = len(result.content)
+table_count: int = len(result.tables)
+
+print(f"Content length: {content_length} characters")
+print(f"Tables detected: {table_count}")
+```
+
+</TabItem>
+<TabItem label="TypeScript">
+
+```typescript title="TypeScript"
+import { extractFileSync } from '@kreuzberg/node';
+
+const config = {
+	ocr: {
+		backend: 'tesseract',
+	},
+	pdfOptions: {
+		extractImages: true,
+	},
+};
+
+const result = extractFileSync('scanned.pdf', null, config);
+console.log(result.content);
+```
+
+</TabItem>
+<TabItem label="Rust">
+
+```rust title="Rust"
+use kreuzberg::{extract_file_sync, ExtractionConfig, OcrConfig, PdfConfig};
+
+fn main() -> kreuzberg::Result<()> {
+    let config = ExtractionConfig {
+        ocr: Some(OcrConfig {
+            backend: "tesseract".to_string(),
+            ..Default::default()
+        }),
+        pdf_options: Some(PdfConfig {
+            dpi: Some(300),
+            ..Default::default()
+        }),
+        ..Default::default()
+    };
+
+    let result = extract_file_sync("scanned.pdf", None, &config)?;
+    Ok(())
+}
+```
+
+</TabItem>
+<TabItem label="Go">
+
+```go title="Go"
+package main
+
+import (
+	"log"
+
+	"github.com/kreuzberg-dev/kreuzberg-lts/v4"
+)
+
+func main() {
+	targetDPI := 300
+	result, err := kreuzberg.ExtractFileSync("scanned.pdf", &kreuzberg.ExtractionConfig{
+		OCR: &kreuzberg.OCRConfig{
+			Backend: "tesseract",
+			Tesseract: &kreuzberg.TesseractConfig{
+				Preprocessing: &kreuzberg.ImagePreprocessingConfig{
+					TargetDPI: &targetDPI,
+				},
+			},
+		},
+	})
+	if err != nil {
+		log.Fatalf("extract failed: %v", err)
+	}
+
+	log.Println("content length:", len(result.Content))
+}
+```
+
+</TabItem>
+<TabItem label="Java">
+
+```java title="Java"
+import dev.kreuzberg.Kreuzberg;
+import dev.kreuzberg.ExtractionResult;
+import dev.kreuzberg.config.ExtractionConfig;
+import dev.kreuzberg.config.OcrConfig;
+import dev.kreuzberg.config.ImagePreprocessingConfig;
+
+ExtractionConfig config = ExtractionConfig.builder()
+    .ocr(OcrConfig.builder()
+        .backend("tesseract")
+        .build())
+    .imagePreprocessing(ImagePreprocessingConfig.builder()
+        .targetDpi(300)
+        .build())
+    .build();
+
+ExtractionResult result = Kreuzberg.extractFile("scanned.pdf", config);
+```
+
+</TabItem>
+<TabItem label="Ruby">
+
+```ruby title="Ruby"
+require 'kreuzberg'
+
+config = Kreuzberg::Config::Extraction.new(
+  ocr: Kreuzberg::Config::OCR.new(backend: 'tesseract'),
+  pdf: Kreuzberg::Config::PDF.new(dpi: 300)
+)
+
+result = Kreuzberg.extract_file_sync('scanned.pdf', config: config)
+```
+
+</TabItem>
+<TabItem label="R">
+
+```r title="R"
+library(kreuzberg)
+
+dpi_values <- c(150L, 300L, 600L)
+results <- list()
+
+for (dpi in dpi_values) {
+  ocr_cfg <- ocr_config(backend = "tesseract", language = "eng", dpi = dpi)
+  config <- extraction_config(force_ocr = TRUE, ocr = ocr_cfg)
+  results[[as.character(dpi)]] <- extract_file_sync("document.pdf", "application/pdf", config)
+}
+
+for (dpi in dpi_values) {
+  content_len <- nchar(results[[as.character(dpi)]]$content)
+  cat(sprintf("DPI %d: %d characters extracted\n", dpi, content_len))
+}
+```
+
+</TabItem>
+</Tabs>
+
+## PaddleOCR Script Families
+
+PaddleOCR supports 80+ languages across 11 script families (PP-OCRv5). Recognition models are downloaded on demand from HuggingFace:
+
+| Family | Languages |
+|--------|-----------|
+| **English** | English, numbers, punctuation |
+| **Chinese** | Simplified/Traditional Chinese, Japanese |
+| **Latin** | French, German, Spanish, Portuguese, Italian, Polish, Dutch, Turkish, Vietnamese, and so on. |
+| **Korean** | Korean (Hangul) |
+| **Slavic** | Russian, Ukrainian, Belarusian, Bulgarian, Serbian, and so on. |
+| **Thai** | Thai script |
+| **Greek** | Greek script |
+| **Arabic** | Arabic, Persian, Urdu |
+| **Devanagari** | Hindi, Marathi, Sanskrit, Nepali |
+| **Tamil** | Tamil script |
+| **Telugu** | Telugu script |
+
+Models are cached locally after first download, so subsequent runs start immediately.
+
+## CLI Usage
+
+```bash title="Terminal"
+# Basic OCR extraction
+kreuzberg extract scanned.pdf --ocr true
+
+# Specific language
+kreuzberg extract french_doc.pdf --ocr true --ocr-language fra
+
+# Specific backend
+kreuzberg extract chinese_doc.pdf --ocr true --ocr-backend paddle-ocr --ocr-language ch
+
+# Force OCR on all pages
+kreuzberg extract document.pdf --force-ocr true
+
+# VLM OCR backend
+kreuzberg extract handwritten.pdf --force-ocr true --vlm-model openai/gpt-4o-mini
+
+# Use a config file
+kreuzberg extract scanned.pdf --config kreuzberg.toml --ocr true
+```
+
+| Flag | Description |
+|------|-------------|
+| `--ocr true` | Enable OCR processing |
+| `--ocr-language <code>` | Language code (`eng`, `deu`, `fra`, `ch`, `ja`, `ru`, etc.) |
+| `--ocr-backend <backend>` | Engine: `tesseract`, `paddle-ocr`, `easyocr`, or `vlm` |
+| `--force-ocr true` | OCR all pages regardless of text layer |
+| `--vlm-model <model>` | VLM model for OCR (for example, `openai/gpt-4o-mini`). Implies `--ocr-backend vlm` |
+
+## Troubleshooting
+
+:::note[Tesseract not found]
+Install Tesseract and verify it's on your PATH:
+
+```bash title="Terminal"
+# macOS
+brew install tesseract
+
+# Ubuntu/Debian
+sudo apt-get install tesseract-ocr
+
+# Verify
+tesseract --version
+```
+:::
+
+:::note[Language not found]
+Install the language data pack:
+
+```bash title="Terminal"
+# macOS — all languages
+brew install tesseract-lang
+
+# Ubuntu/Debian — individual language
+sudo apt-get install tesseract-ocr-deu
+
+# Verify
+tesseract --list-langs
+```
+:::
+
+:::note[Poor accuracy]
+- Increase DPI to 600 for better quality
+- Try a different backend — PaddleOCR and EasyOCR often outperform Tesseract on complex layouts
+- Specify the correct language code for your document
+- Use `force_ocr=True` if a PDF's embedded text layer is low quality
+- For handwritten text or very poor scans, try the VLM backend with a vision-capable model (see [LLM Integration](/guides/llm-integration/#vlm-ocr))
+:::
+
+:::note[Slow processing]
+- Reduce DPI to 150 for faster throughput
+- Enable GPU acceleration with EasyOCR or PaddleOCR (`use_gpu=True`)
+- Use batch extraction to process multiple files concurrently
+:::
+
+:::note[Out of memory on large PDFs]
+- Reduce DPI — lower resolution uses significantly less memory
+- Process pages in smaller batches
+- Use PaddleOCR's mobile tier (`model_tier="mobile"`) for a smaller memory footprint
+:::
+
+## Next Steps
+
+- [LLM Integration](/guides/llm-integration/) — VLM OCR, structured extraction, and LLM embeddings
+- [Configuration](/guides/configuration/) — all configuration options
+- [Extraction Basics](/guides/extraction/) — core extraction API and supported formats
+- [Advanced Features](/guides/chunking-embeddings/) — chunking, language detection, embeddings

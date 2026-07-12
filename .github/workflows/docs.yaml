@@ -4,8 +4,12 @@ on:
   push:
     branches: [main]
     paths:
-      - "docs/**"
-      - "zensical.toml"
+      - "docs-site/**"
+      - ".github/workflows/docs.yaml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "docs-site/**"
       - ".github/workflows/docs.yaml"
   workflow_dispatch:
 
@@ -15,35 +19,11 @@ permissions:
   id-token: write
 
 concurrency:
-  group: pages
-  cancel-in-progress: true
+  group: docs-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
-  build-deploy:
-    name: Build and deploy legacy docs
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deploy.outputs.page_url }}
-    steps:
-      - uses: actions/checkout@v6
-
-      - name: Setup uv
-        uses: astral-sh/setup-uv@v5
-        with:
-          python-version: "3.13"
-
-      - name: Build docs
-        run: uv run --group doc zensical build --clean
-
-      - name: Set custom domain
-        run: echo "docs.kreuzberg.dev" > site/CNAME
-
-      - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: site
-
-      - name: Deploy to GitHub Pages
-        id: deploy
-        uses: actions/deploy-pages@v4
+  docs:
+    uses: xberg-io/actions/.github/workflows/reusable-docs-deploy.yml@v1
+    with:
+      deploy: ${{ (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main' }}

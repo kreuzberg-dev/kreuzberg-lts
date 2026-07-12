@@ -1,0 +1,802 @@
+---
+title: Configuration Guide
+description: "Configure extraction with ExtractionConfig — OCR, chunking, embeddings, output format, and content filtering across every supported language."
+---
+
+import { Tabs, TabItem } from '@astrojs/starlight/components';
+
+For complete field documentation, see [Configuration Reference](/reference/configuration/).
+
+All extraction behavior is controlled through `ExtractionConfig`. Every field is optional with sensible defaults — configure only what you need. You can pass config objects directly in code, or load them from TOML/YAML/JSON files.
+
+## Quick Start
+
+<Tabs>
+<TabItem label="Python">
+
+```python title="Python"
+import asyncio
+from kreuzberg import extract_file, ExtractionConfig
+
+async def main() -> None:
+    config = ExtractionConfig(
+        use_cache=True,
+        enable_quality_processing=True
+    )
+    result = await extract_file("document.pdf", config=config)
+    print(result.content)
+
+asyncio.run(main())
+```
+
+</TabItem>
+<TabItem label="TypeScript">
+
+```typescript title="TypeScript"
+import { extractFile } from '@kreuzberg/node';
+
+const config = {
+	useCache: true,
+	enableQualityProcessing: true,
+};
+
+const result = await extractFile('document.pdf', null, config);
+console.log(result.content);
+```
+
+</TabItem>
+<TabItem label="Rust">
+
+```rust title="Rust"
+use kreuzberg::{extract_file, ExtractionConfig};
+
+#[tokio::main]
+async fn main() -> kreuzberg::Result<()> {
+    let config = ExtractionConfig {
+        use_cache: true,
+        enable_quality_processing: true,
+        ..Default::default()
+    };
+
+    let result = extract_file("document.pdf", None, &config).await?;
+    println!("{}", result.content);
+    Ok(())
+}
+```
+
+</TabItem>
+<TabItem label="Go">
+
+```go title="Go"
+package main
+
+import (
+	"log"
+
+	"github.com/kreuzberg-dev/kreuzberg-lts/v4"
+)
+
+func main() {
+	useCache := true
+	enableQP := true
+
+	result, err := kreuzberg.ExtractFileSync("document.pdf", &kreuzberg.ExtractionConfig{
+		UseCache:                &useCache,
+		EnableQualityProcessing: &enableQP,
+	})
+	if err != nil {
+		log.Fatalf("extract failed: %v", err)
+	}
+
+	log.Println("content length:", len(result.Content))
+}
+```
+
+</TabItem>
+<TabItem label="Java">
+
+```java title="Java"
+import dev.kreuzberg.Kreuzberg;
+import dev.kreuzberg.ExtractionResult;
+import dev.kreuzberg.config.ExtractionConfig;
+
+ExtractionConfig config = ExtractionConfig.builder()
+    .useCache(true)
+    .enableQualityProcessing(true)
+    .build();
+ExtractionResult result = Kreuzberg.extractFile("document.pdf", config);
+```
+
+</TabItem>
+<TabItem label="C#">
+
+```csharp title="C#"
+using Kreuzberg;
+
+var config = new ExtractionConfig
+{
+    UseCache = true,
+    EnableQualityProcessing = true
+};
+
+var result = await KreuzbergClient.ExtractFileAsync("document.pdf", config);
+Console.WriteLine(result.Content);
+```
+
+</TabItem>
+<TabItem label="Ruby">
+
+```ruby title="Ruby"
+require 'kreuzberg'
+
+config = Kreuzberg::Config::Extraction.new(
+  use_cache: true,
+  enable_quality_processing: true
+)
+
+result = Kreuzberg.extract_file_sync('document.pdf', config: config)
+```
+
+</TabItem>
+<TabItem label="R">
+
+```r title="R"
+library(kreuzberg)
+
+file_path <- "document.pdf"
+
+config <- extraction_config(
+  output_format = "markdown"
+)
+
+result <- extract_file_sync(file_path, config = config)
+
+cat(sprintf("MIME type: %s\n", result$mime_type))
+cat(sprintf("Content length: %d characters\n", nchar(result$content)))
+cat("Content preview:\n")
+cat(substr(result$content, 1, 200))
+```
+
+</TabItem>
+</Tabs>
+
+## Configuration Files
+
+Kreuzberg supports three file formats. TOML is recommended for readability.
+
+<Tabs>
+<TabItem label="TOML (Recommended)">
+
+```toml title="kreuzberg.toml"
+use_cache = true
+enable_quality_processing = true
+
+[ocr]
+backend = "tesseract"
+language = "eng"
+
+[ocr.tesseract_config]
+psm = 3
+```
+
+</TabItem>
+<TabItem label="YAML">
+
+```yaml title="kreuzberg.yaml"
+use_cache: true
+enable_quality_processing: true
+
+ocr:
+  backend: tesseract
+  language: eng
+  tesseract_config:
+    psm: 3
+```
+
+</TabItem>
+<TabItem label="JSON">
+
+```json title="kreuzberg.json"
+{
+  "use_cache": true,
+  "enable_quality_processing": true,
+  "ocr": {
+    "backend": "tesseract",
+    "language": "eng",
+    "tesseract_config": {
+      "psm": 3
+    }
+  }
+}
+```
+
+</TabItem>
+</Tabs>
+
+### Automatic Discovery
+
+Kreuzberg searches for configuration files in this order:
+
+1. **Current directory** — `./kreuzberg.{toml,yaml,yml,json}`
+2. **User config** — `~/.config/kreuzberg/config.{toml,yaml,yml,json}`
+3. **System config** — `/etc/kreuzberg/config.{toml,yaml,yml,json}`
+
+The first file found is merged with defaults. If no file exists, defaults are used.
+
+<Tabs>
+<TabItem label="Python">
+
+```python title="Python"
+import asyncio
+from kreuzberg import ExtractionConfig, extract_file
+
+async def main() -> None:
+    config: ExtractionConfig = ExtractionConfig()
+    result = await extract_file("document.pdf", config=config)
+
+    content: str = result.content
+    content_preview: str = content[:100]
+
+    print(f"Content preview: {content_preview}")
+    print(f"Total length: {len(content)}")
+
+asyncio.run(main())
+```
+
+</TabItem>
+<TabItem label="TypeScript">
+
+```typescript title="TypeScript"
+import { extractFile, ExtractionConfig } from '@kreuzberg/node';
+
+const config = ExtractionConfig.discover();
+if (config) {
+  const result = await extractFile('document.pdf', null, config);
+  console.log(result.content);
+} else {
+  console.log('No configuration file found');
+}
+```
+
+</TabItem>
+<TabItem label="Rust">
+
+```rust title="Rust"
+use kreuzberg::{extract_file, ExtractionConfig};
+
+#[tokio::main]
+async fn main() -> kreuzberg::Result<()> {
+    let config = ExtractionConfig::discover()?.unwrap_or_default();
+    let result = extract_file("document.pdf", None, &config).await?;
+    println!("{}", result.content);
+    Ok(())
+}
+```
+
+</TabItem>
+<TabItem label="Go">
+
+```go title="Go"
+package main
+
+import (
+	"log"
+
+	"github.com/kreuzberg-dev/kreuzberg-lts/v4"
+)
+
+func main() {
+	config, err := kreuzberg.LoadExtractionConfigFromFile("")
+	if err != nil {
+		log.Fatalf("discover config failed: %v", err)
+	}
+
+	result, err := kreuzberg.ExtractFileSync("document.pdf", config)
+	if err != nil {
+		log.Fatalf("extract failed: %v", err)
+	}
+
+	log.Printf("Content length: %d", len(result.Content))
+}
+```
+
+</TabItem>
+<TabItem label="Java">
+
+```java title="Java"
+import dev.kreuzberg.Kreuzberg;
+import dev.kreuzberg.ExtractionResult;
+import dev.kreuzberg.config.ExtractionConfig;
+
+ExtractionConfig config = Kreuzberg.discoverExtractionConfig();
+ExtractionResult result = Kreuzberg.extractFile("document.pdf", config);
+```
+
+</TabItem>
+<TabItem label="C#">
+
+```csharp title="C#"
+using Kreuzberg;
+
+var config = new ExtractionConfig();
+var result = await KreuzbergClient.ExtractFileAsync("document.pdf", config);
+
+Console.WriteLine(result.Content[..Math.Min(100, result.Content.Length)]);
+Console.WriteLine($"Total length: {result.Content.Length}");
+```
+
+</TabItem>
+<TabItem label="Ruby">
+
+```ruby title="Ruby"
+require 'kreuzberg'
+
+config = Kreuzberg::Config::Extraction.discover
+result = Kreuzberg.extract_file_sync('document.pdf', config: config)
+```
+
+</TabItem>
+<TabItem label="R">
+
+```r title="R"
+library(kreuzberg)
+
+# Discover kreuzberg.toml from current or parent directories
+config <- discover()
+
+if (!is.null(config)) {
+  cat("Found kreuzberg.toml configuration\n")
+  result <- extract_file_sync("document.pdf", config = config)
+  cat(sprintf("Extracted %d characters\n", nchar(result$content)))
+}
+
+# Or load config from a specific file
+config <- from_file("config.yaml")
+
+if (!is.null(config)) {
+  cat("Loaded configuration from config.yaml\n")
+  result <- extract_file_sync("document.pdf", config = config)
+  cat(sprintf("Extracted %d characters\n", nchar(result$content)))
+}
+```
+
+</TabItem>
+<TabItem label="WASM">
+
+```typescript title="WASM"
+import { initWasm, extractBytes } from '@kreuzberg/wasm';
+
+await initWasm();
+
+const config = {
+  use_cache: true,
+  enable_quality_processing: true,
+  ocr: {
+    backend: 'tesseract-wasm',
+    language: 'eng'
+  }
+};
+
+const bytes = new Uint8Array(buffer);
+const result = await extractBytes(bytes, 'application/pdf', config);
+console.log(result.content);
+```
+
+</TabItem>
+</Tabs>
+
+## Common Use Cases
+
+### Setting Up OCR
+
+Enable OCR for scanned documents and images:
+
+<Tabs>
+<TabItem label="Python">
+
+```python title="Python"
+import asyncio
+from kreuzberg import ExtractionConfig, OcrConfig, TesseractConfig, extract_file
+
+async def main() -> None:
+    config: ExtractionConfig = ExtractionConfig(
+        ocr=OcrConfig(
+            backend="tesseract", language="eng+fra",
+            tesseract_config=TesseractConfig(psm=3)
+        )
+    )
+    result = await extract_file("document.pdf", config=config)
+    print(result.content)
+
+asyncio.run(main())
+```
+
+</TabItem>
+<TabItem label="TypeScript">
+
+```typescript title="TypeScript"
+import { extractFile } from '@kreuzberg/node';
+
+const config = {
+	ocr: {
+		backend: 'tesseract',
+		language: 'eng+fra',
+		tesseractConfig: {
+			psm: 3,
+		},
+	},
+};
+
+const result = await extractFile('document.pdf', null, config);
+console.log(result.content);
+```
+
+</TabItem>
+<TabItem label="Rust">
+
+```rust title="Rust"
+use kreuzberg::{ExtractionConfig, OcrConfig, TesseractConfig};
+
+fn main() {
+    let config = ExtractionConfig {
+        ocr: Some(OcrConfig {
+            backend: "tesseract".to_string(),
+            language: "eng+fra".to_string(),
+            tesseract_config: Some(TesseractConfig {
+                psm: 3,
+                ..Default::default()
+            }),
+            ..Default::default()
+        }),
+        ..Default::default()
+    };
+}
+```
+
+</TabItem>
+<TabItem label="Go">
+
+```go title="Go"
+package main
+
+import "github.com/kreuzberg-dev/kreuzberg-lts/v4"
+
+func main() {
+	language := "eng+fra"
+	psm := 3
+
+	_ = &kreuzberg.ExtractionConfig{
+		OCR: &kreuzberg.OCRConfig{
+			Backend:  "tesseract",
+			Language: &language,
+			Tesseract: &kreuzberg.TesseractConfig{
+				PSM: &psm,
+			},
+		},
+	}
+}
+```
+
+</TabItem>
+<TabItem label="Java">
+
+```java title="Java"
+import dev.kreuzberg.config.ExtractionConfig;
+import dev.kreuzberg.config.OcrConfig;
+import dev.kreuzberg.config.TesseractConfig;
+
+ExtractionConfig config = ExtractionConfig.builder()
+    .ocr(OcrConfig.builder()
+        .backend("tesseract")
+        .language("eng+fra")
+        .tesseractConfig(TesseractConfig.builder()
+            .psm(3)
+            .build())
+        .build())
+    .build();
+```
+
+</TabItem>
+<TabItem label="C#">
+
+```csharp title="C#"
+using Kreuzberg;
+
+var config = new ExtractionConfig
+{
+    Ocr = new OcrConfig
+    {
+        Backend = "tesseract",
+        Language = "eng+fra",
+        TesseractConfig = new TesseractConfig { Psm = 3 }
+    }
+};
+
+var result = await KreuzbergClient.ExtractFileAsync("document.pdf", config);
+Console.WriteLine(result.Content);
+```
+
+</TabItem>
+<TabItem label="Ruby">
+
+```ruby title="Ruby"
+require 'kreuzberg'
+
+config = Kreuzberg::Config::Extraction.new(
+  ocr: Kreuzberg::Config::OCR.new(
+    backend: 'tesseract',
+    language: 'eng+fra',
+    tesseract_config: Kreuzberg::Config::Tesseract.new(psm: 3)
+  )
+)
+```
+
+</TabItem>
+<TabItem label="R">
+
+```r title="R"
+library(kreuzberg)
+
+ocr_cfg <- ocr_config(backend = "tesseract", language = "eng", dpi = 300L)
+config <- extraction_config(force_ocr = TRUE, ocr = ocr_cfg)
+
+result <- extract_file_sync("document.pdf", "application/pdf", config)
+cat(sprintf("Extracted content length: %d\n", nchar(result$content)))
+cat(sprintf("Detected language: %s\n", result$detected_language))
+```
+
+</TabItem>
+</Tabs>
+
+For backend selection and language packs, see [OCR Guide](/guides/ocr/). For fine-grained Tesseract tuning, see [TesseractConfig Reference](/reference/configuration/#tesseractconfig).
+
+### Chunking for RAG
+
+Split extracted text into overlapping chunks for vector database ingestion:
+
+<Tabs>
+<TabItem label="Python">
+
+```python title="Python"
+from kreuzberg import (
+    ExtractionConfig,
+    ChunkingConfig,
+    EmbeddingConfig,
+    EmbeddingModelType,
+)
+
+config: ExtractionConfig = ExtractionConfig(
+    chunking=ChunkingConfig(
+        max_chars=1500,
+        max_overlap=200,
+        embedding=EmbeddingConfig(
+            model=EmbeddingModelType.preset("all-minilm-l6-v2")
+        ),
+    )
+)
+```
+
+</TabItem>
+<TabItem label="TypeScript">
+
+```typescript title="TypeScript"
+import { extractFile } from '@kreuzberg/node';
+
+const config = {
+	chunking: {
+		maxChars: 1500,
+		maxOverlap: 200,
+		embedding: {
+			preset: 'quality',
+		},
+	},
+};
+
+const result = await extractFile('document.pdf', null, config);
+console.log(`Chunks created: ${result.chunks?.length ?? 0}`);
+```
+
+</TabItem>
+<TabItem label="Rust">
+
+```rust title="Rust"
+use kreuzberg::{ChunkingConfig, EmbeddingConfig, EmbeddingModelType, ExtractionConfig};
+
+fn main() {
+    let config = ExtractionConfig {
+        chunking: Some(ChunkingConfig {
+            max_characters: 1500,
+            overlap: 200,
+            embedding: Some(EmbeddingConfig {
+                model: EmbeddingModelType::Preset {
+                    name: "text-embedding-all-minilm-l6-v2".to_string(),
+                },
+                ..Default::default()
+            }),
+            ..Default::default()
+        }),
+        ..Default::default()
+    };
+    println!("{:?}", config.chunking);
+}
+```
+
+</TabItem>
+<TabItem label="Go">
+
+```go title="Go"
+package main
+
+import (
+	"fmt"
+	"log"
+
+	"github.com/kreuzberg-dev/kreuzberg-lts/v4"
+)
+
+func main() {
+	maxChars := 1000
+	maxOverlap := 200
+	config := &kreuzberg.ExtractionConfig{
+		Chunking: &kreuzberg.ChunkingConfig{
+			MaxChars:   &maxChars,
+			MaxOverlap: &maxOverlap,
+		},
+	}
+
+	result, err := kreuzberg.ExtractFileSync("document.pdf", config)
+	if err != nil {
+		log.Fatalf("extract failed: %v", err)
+	}
+
+	for i, chunk := range result.Chunks {
+		fmt.Printf("Chunk %d/%d (%d-%d)\n", i+1, chunk.Metadata.TotalChunks, chunk.Metadata.CharStart, chunk.Metadata.CharEnd)
+		fmt.Printf("%s...\n", chunk.Content[:min(len(chunk.Content), 100)])
+	}
+}
+
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
+}
+```
+
+</TabItem>
+<TabItem label="Java">
+
+```java title="Java"
+import dev.kreuzberg.config.ChunkingConfig;
+import dev.kreuzberg.config.EmbeddingConfig;
+import dev.kreuzberg.config.EmbeddingModelType;
+import dev.kreuzberg.config.ExtractionConfig;
+
+ExtractionConfig config = ExtractionConfig.builder()
+    .chunking(ChunkingConfig.builder()
+        .maxChars(1500)
+        .maxOverlap(200)
+        .embedding(EmbeddingConfig.builder()
+            .model(EmbeddingModelType.builder()
+                .type("preset")
+                .name("text-embedding-all-minilm-l6-v2")
+                .build())
+            .build())
+        .build())
+    .build();
+```
+
+</TabItem>
+<TabItem label="C#">
+
+```csharp title="C#"
+using Kreuzberg;
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+
+var config = new ExtractionConfig
+{
+    Chunking = new ChunkingConfig
+    {
+        MaxChars = 512,
+        MaxOverlap = 50,
+        Embedding = new EmbeddingConfig
+        {
+            Model = EmbeddingModelType.Preset("balanced"),
+            Normalize = true,
+            BatchSize = 32,
+            ShowDownloadProgress = false
+        }
+    }
+};
+
+var result = await Kreuzberg.ExtractFileAsync("document.pdf", config);
+
+var chunks = result.Chunks ?? new List<Chunk>();
+foreach (var (index, chunk) in chunks.WithIndex())
+{
+    var chunkId = $"doc_chunk_{index}";
+    Console.WriteLine($"Chunk {chunkId}: {chunk.Content[..Math.Min(50, chunk.Content.Length)]}");
+
+    if (chunk.Embedding != null)
+    {
+        Console.WriteLine($"  Embedding dimensions: {chunk.Embedding.Length}");
+    }
+}
+
+internal static class EnumerableExtensions
+{
+    public static IEnumerable<(int Index, T Item)> WithIndex<T>(
+        this IEnumerable<T> items)
+    {
+        var index = 0;
+        foreach (var item in items)
+        {
+            yield return (index++, item);
+        }
+    }
+}
+```
+
+</TabItem>
+<TabItem label="Ruby">
+
+```ruby title="Ruby"
+require 'kreuzberg'
+
+config = Kreuzberg::Config::Extraction.new(
+  chunking: Kreuzberg::Config::Chunking.new(
+    max_characters: 1500,
+    overlap: 200,
+    embedding: Kreuzberg::Config::Embedding.new(
+      model: Kreuzberg::EmbeddingModelType.new(
+        type: 'preset',
+        name: 'text-embedding-all-minilm-l6-v2'
+      )
+    )
+  )
+)
+```
+
+</TabItem>
+<TabItem label="R">
+
+```r title="R"
+library(kreuzberg)
+
+chunking_cfg <- chunking_config(max_characters = 1000L, overlap = 200L)
+config <- extraction_config(chunking = chunking_cfg)
+
+result <- extract_file_sync("document.pdf", "application/pdf", config)
+
+cat(sprintf("Total chunks: %d\n", length(result$chunks)))
+for (i in seq_len(min(5L, length(result$chunks)))) {
+  cat(sprintf("Chunk %d: %d characters\n", i, nchar(result$chunks[[i]])))
+}
+```
+
+</TabItem>
+</Tabs>
+
+## All Configuration Categories
+
+Kreuzberg's configuration covers extraction behavior, OCR, formatting, chunking, and hardware acceleration:
+
+- [ExtractionConfig](/reference/configuration/#extractionconfig) — top-level options (cache, quality processing, output format, security limits)
+- [OcrConfig](/reference/configuration/#ocrconfig) — OCR backend, language, GPU acceleration
+- [TesseractConfig](/reference/configuration/#tesseractconfig) — Tesseract PSM mode, confidence, table detection
+- [ChunkingConfig](/reference/configuration/#chunkingconfig) — chunk size, overlap, strategy for RAG
+- [TokenReductionConfig](/reference/configuration/#tokenreductionconfig) — token count optimization for LLM prompts
+- [ContentFilterConfig](/reference/configuration/#contentfilterconfig) — header/footer/watermark filtering
+- [PageConfig](/reference/configuration/#pageconfig) — page tracking and markers
+- [AccelerationConfig](/reference/configuration/#accelerationconfig) — hardware acceleration (GPU, ONNX Runtime)
+
+See [Configuration Reference](/reference/configuration/) for the complete field documentation.
+
+## Next Steps
+
+- [Extraction Basics](/guides/extraction/) — core extraction API and supported formats
+- [OCR Guide](/guides/ocr/) — backend installation and language setup
+- [Advanced Features](/guides/chunking-embeddings/) — embeddings, language detection, page tracking
+- [Plugins Guide](/guides/plugins/) — custom post-processors and validators

@@ -160,7 +160,8 @@ profiling-results-*/
 docs/_build/
 docs/build/
 docs/benchmarks/charts/
-site/
+docs-site/dist/
+docs-site/.astro/
 
 # Tests
 test_report.json
@@ -221,4 +222,5 @@ GEMINI.md
 .github/copilot-instructions.md
 .github/skills/
 # END ai-rulez
+.basemind/
 poly.local.toml

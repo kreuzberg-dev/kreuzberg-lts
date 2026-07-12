@@ -1,0 +1,160 @@
+---
+title: Kreuzberg
+description: "Kreuzberg v4 LTS — document intelligence: extract text, tables, and metadata from 97+ formats with a Rust core and native bindings for 12 languages. The maintenance line; the successor is Xberg (v5+)."
+template: splash
+hero:
+  tagline: >-
+    Document intelligence with a high-performance Rust core. Extract text, tables, and metadata from
+    97+ file formats — with optional OCR — from Python, TypeScript, Rust, Go, Java, C#, and more.
+  image:
+    dark: ../../assets/hero-logo.svg
+    light: ../../assets/hero-logo-light.svg
+  actions:
+    - text: Quick Start
+      link: /getting-started/quickstart/
+      icon: right-arrow
+      variant: primary
+    - text: Installation
+      link: /getting-started/installation/
+      icon: download
+      variant: minimal
+    - text: Live Demo
+      link: /demo.html
+      icon: external
+      variant: minimal
+    - text: View on GitHub
+      link: https://github.com/kreuzberg-dev/kreuzberg-lts
+      icon: external
+      variant: minimal
+---
+
+import { Card, CardGrid, LinkCard, Tabs, TabItem } from "@astrojs/starlight/components";
+
+:::note[Kreuzberg v4 LTS (legacy)]
+This is the long-term-support line for Kreuzberg **v4**. Active development has moved to
+**[Xberg](https://github.com/xberg-io/xberg)** (v5+). v4 receives LTS fixes until the end of 2026
+(best effort). See **[v4 LTS & Migration](/lts/)**.
+:::
+
+## Why Kreuzberg
+
+<CardGrid>
+	<Card title="High performance" icon="rocket">
+		Rust core with native PDFium, SIMD optimizations, and full parallelism. Process thousands of
+		documents per minute without a GPU.
+	</Card>
+	<Card title="97+ file formats" icon="document">
+		PDF, DOCX, XLSX, PPTX, images, HTML, XML, emails, archives, and academic formats — one API
+		handles them all.
+	</Card>
+	<Card title="Multi-engine OCR" icon="magnifier">
+		Tesseract and PaddleOCR work across all language bindings. EasyOCR is available for Python.
+	</Card>
+	<Card title="12 language bindings" icon="translate">
+		Native bindings for Python, TypeScript, Rust, Go, Java, C#, Ruby, PHP, Elixir, R, C, and
+		WebAssembly.
+	</Card>
+	<Card title="Code intelligence" icon="setting">
+		Extract functions, classes, imports, symbols, and docstrings from 248 programming languages,
+		with semantic chunking.
+	</Card>
+	<Card title="Flexible deployment" icon="laptop">
+		Use as a library, CLI tool, REST API server, MCP server, or Docker container. Pick what fits
+		your stack.
+	</Card>
+</CardGrid>
+
+[See all features →](/features/)
+
+## Language support
+
+Precompiled binaries for Linux (x86_64 & aarch64), macOS (Apple Silicon), and Windows (x64).
+
+| Language                | Package                                       | Docs                                        |
+| :---------------------- | :-------------------------------------------- | :------------------------------------------ |
+| **Python**              | `pip install kreuzberg`                       | [API Reference](/reference/api-python/)     |
+| **TypeScript (Native)** | `npm install @kreuzberg/node`                 | [API Reference](/reference/api-typescript/) |
+| **TypeScript (WASM)**   | `npm install @kreuzberg/wasm`                 | [API Reference](/reference/api-wasm/)       |
+| **Rust**                | `cargo add kreuzberg`                         | [API Reference](/reference/api-rust/)       |
+| **Go**                  | `go get .../kreuzberg-lts/v4`                 | [API Reference](/reference/api-go/)         |
+| **Java**                | Maven Central `dev.kreuzberg:kreuzberg`       | [API Reference](/reference/api-java/)       |
+| **C#**                  | `dotnet add package Kreuzberg`                | [API Reference](/reference/api-csharp/)     |
+| **Ruby**                | `gem install kreuzberg`                       | [API Reference](/reference/api-ruby/)       |
+| **PHP**                 | `composer require kreuzberg/kreuzberg`        | [API Reference](/reference/api-php/)        |
+| **Elixir**              | `{:kreuzberg, "~> 4.0"}`                       | [API Reference](/reference/api-elixir/)     |
+| **R**                   | r-universe `kreuzberg`                        | [API Reference](/reference/api-r/)          |
+| **C (FFI)**             | Shared library + header                       | [API Reference](/reference/api-c/)          |
+| **CLI**                 | `brew install kreuzberg-dev/tap/kreuzberg`    | [CLI Guide](/cli/usage/)                     |
+| **Docker**              | `ghcr.io/kreuzberg-dev/kreuzberg-full`        | [Docker Guide](/guides/docker/)             |
+
+:::tip[Choosing between TypeScript packages]
+**`@kreuzberg/node`** — Use for Node.js servers and CLI tools. Native performance (100% speed).
+
+**`@kreuzberg/wasm`** — Use for browsers, Cloudflare Workers, Deno, Bun, and serverless environments
+(60–80% speed, cross-platform).
+:::
+
+## Quick example
+
+<Tabs syncKey="lang">
+<TabItem label="Python">
+
+```python title="main.py"
+from kreuzberg import extract_file_sync
+
+result = extract_file_sync("document.pdf")
+print(result.content)
+```
+
+</TabItem>
+<TabItem label="TypeScript">
+
+```typescript title="index.ts"
+import { extractFileSync } from "@kreuzberg/node";
+
+const result = extractFileSync("document.pdf");
+console.log(result.content);
+```
+
+</TabItem>
+<TabItem label="Rust">
+
+```rust title="src/main.rs"
+use kreuzberg::{extract_file_sync, ExtractionConfig};
+
+let config = ExtractionConfig::default();
+let result = extract_file_sync("document.pdf", None, &config)?;
+println!("{}", result.content);
+```
+
+</TabItem>
+</Tabs>
+
+## Part of Xberg.io
+
+<CardGrid>
+	<LinkCard title="Xberg" href="https://github.com/xberg-io/xberg" description="Document intelligence: text, tables, metadata from 91+ formats with optional OCR." />
+	<LinkCard title="Xberg Enterprise" href="https://github.com/xberg-io/xberg-enterprise" description="Managed extraction API with SDKs, dashboards, and observability." />
+	<LinkCard title="crawlberg" href="https://github.com/xberg-io/crawlberg" description="Web crawling and scraping with HTML→Markdown and headless-Chrome fallback." />
+	<LinkCard title="html-to-markdown" href="https://github.com/xberg-io/html-to-markdown" description="Fast, lossless HTML→Markdown engine." />
+	<LinkCard title="liter-llm" href="https://github.com/xberg-io/liter-llm" description="Universal LLM API client with native bindings for 14 languages and 143 providers." />
+	<LinkCard title="tree-sitter-language-pack" href="https://github.com/xberg-io/tree-sitter-language-pack" description="Tree-sitter grammars and code-intelligence primitives." />
+	<LinkCard title="alef" href="https://github.com/xberg-io/alef" description="The polyglot binding generator that produces every per-language binding across the 5 polyglot repos." />
+</CardGrid>
+
+## Explore the docs
+
+<CardGrid>
+	<LinkCard title="Get Started" href="/getting-started/quickstart/" description="Install Kreuzberg and extract your first document in minutes." />
+	<LinkCard title="Guides" href="/guides/extraction/" description="Configuration, OCR setup, Docker deployment, plugins, and more." />
+	<LinkCard title="Concepts" href="/concepts/architecture/" description="Architecture, the extraction pipeline, MIME detection, and the plugin system." />
+	<LinkCard title="Reference" href="/reference/api-python/" description="Per-language API docs, the configuration schema, type catalogue, and error matrix." />
+	<LinkCard title="CLI & Servers" href="/cli/usage/" description="The Kreuzberg CLI, REST API server, and MCP server for AI agents." />
+	<LinkCard title="v4 LTS & Migration" href="/lts/" description="The v4 support policy and how to migrate to Xberg (v5+)." />
+</CardGrid>
+
+## Getting help
+
+- **Bugs & feature requests** — [Open an issue on GitHub](https://github.com/kreuzberg-dev/kreuzberg-lts/issues)
+- **Community chat** — [Join the Discord](https://discord.gg/xt9WY3GnKR)
+- **Contributing** — [Read the contributor guide](/contributing/)

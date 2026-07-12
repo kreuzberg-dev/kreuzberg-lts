@@ -1,0 +1,2517 @@
+---
+title: Quick Start
+description: "Extract text, handle errors, run OCR, read metadata, and process batches with Kreuzberg's core API across every language binding."
+---
+
+import { Tabs, TabItem } from '@astrojs/starlight/components';
+
+This guide walks you through Kreuzberg's core API — extracting text, handling errors,
+running OCR, and working with metadata. Install your binding first if you haven't:
+[Installation](/getting-started/installation/).
+
+:::note[Node.js or Browser?]
+Kreuzberg provides **two TypeScript packages** for different runtimes:
+
+- **`@kreuzberg/node`** – Use for Node.js servers and CLI tools (native performance, 100% speed)
+- **`@kreuzberg/wasm`** – Use for browsers, Cloudflare Workers, Deno, Bun, and serverless (60-80% speed, cross-platform)
+
+The examples below show both. Pick the one matching your runtime. See [Platform Overview](/#language-support) for detailed guidance.
+:::
+
+## Your First Extraction
+
+Pass a file path to get its text content. Kreuzberg detects the format automatically:
+
+<Tabs>
+<TabItem label="C">
+
+```c title="C"
+#include "kreuzberg.h"
+#include <stdio.h>
+
+int main(void) {
+    struct CExtractionResult *result = kreuzberg_extract_file_sync("document.pdf");
+    if (!result || !result->success) {
+        struct CErrorDetails err = kreuzberg_get_error_details();
+        fprintf(stderr, "Error: %s\n", err.message);
+        return 1;
+    }
+
+    printf("%s\n", result->content);
+    printf("MIME type: %s\n", result->mime_type);
+    kreuzberg_free_result(result);
+    return 0;
+}
+```
+
+</TabItem>
+<TabItem label="C#">
+
+```csharp title="C#"
+using Kreuzberg;
+
+var result = KreuzbergClient.ExtractFileSync("document.pdf", new ExtractionConfig());
+
+Console.WriteLine(result.Content);
+Console.WriteLine($"Tables: {result.Tables.Count}");
+Console.WriteLine($"Metadata: {result.Metadata.FormatType}");
+```
+
+</TabItem>
+<TabItem label="Go">
+
+```go title="Go"
+package main
+
+import (
+	"fmt"
+	"log"
+
+	"github.com/kreuzberg-dev/kreuzberg-lts/v4"
+)
+
+func main() {
+	result, err := kreuzberg.ExtractFileSync("document.pdf", nil)
+	if err != nil {
+		log.Fatalf("extract failed: %v", err)
+	}
+
+	fmt.Println(result.Content)
+	fmt.Printf("Tables: %d\n", len(result.Tables))
+	fmt.Printf("Metadata: %+v\n", result.Metadata)
+}
+```
+
+</TabItem>
+<TabItem label="Java">
+
+```java title="Java"
+import dev.kreuzberg.Kreuzberg;
+import dev.kreuzberg.ExtractionResult;
+import dev.kreuzberg.KreuzbergException;
+import java.io.IOException;
+
+try {
+    ExtractionResult result = Kreuzberg.extractFile("document.pdf");
+
+    System.out.println(result.getContent());
+    System.out.println("Tables: " + result.getTables().size());
+    System.out.println("Metadata: " + result.getMetadata());
+} catch (IOException | KreuzbergException e) {
+    e.printStackTrace();
+}
+```
+
+</TabItem>
+<TabItem label="Python">
+
+```python title="Python"
+from kreuzberg import extract_file_sync, ExtractionConfig
+
+config: ExtractionConfig = ExtractionConfig()
+result = extract_file_sync("document.pdf", config=config)
+
+content: str = result.content
+table_count: int = len(result.tables)
+metadata: dict = result.metadata
+
+print(f"Content length: {len(content)} characters")
+print(f"Tables: {table_count}")
+print(f"Metadata keys: {list(metadata.keys())}")
+```
+
+</TabItem>
+<TabItem label="Ruby">
+
+```ruby title="Ruby"
+require 'kreuzberg'
+
+result = Kreuzberg.extract_file_sync('document.pdf')
+
+puts result.content
+puts "Tables: #{result.tables.length}"
+puts "Metadata: #{result.metadata}"
+```
+
+</TabItem>
+<TabItem label="R">
+
+```r title="R"
+library(kreuzberg)
+
+# Extract a file synchronously
+result <- extract_file_sync("path/to/document.pdf")
+
+# Access extraction results
+cat("Content length:", nchar(result$content), "\n")
+cat("Mime type:", result$mime_type, "\n")
+cat("Pages:", page_count(result), "\n")
+cat("Quality score:", result$quality_score, "\n")
+```
+
+</TabItem>
+<TabItem label="Rust">
+
+```rust title="Rust"
+use kreuzberg::{extract_file_sync, ExtractionConfig};
+
+fn main() -> kreuzberg::Result<()> {
+    let result = extract_file_sync("document.pdf", None, &ExtractionConfig::default())?;
+
+    println!("{}", result.content);
+    println!("Tables: {}", result.tables.len());
+    println!("Metadata: {:?}", result.metadata);
+    Ok(())
+}
+```
+
+</TabItem>
+<TabItem label="Elixir">
+
+```elixir title="Elixir"
+{:ok, result} = Kreuzberg.extract_file("document.pdf")
+
+content = result.content
+table_count = length(result.tables)
+metadata = result.metadata
+
+IO.puts("Content length: #{byte_size(content)} characters")
+IO.puts("Tables: #{table_count}")
+IO.puts("Metadata keys: #{inspect(Map.keys(metadata))}")
+```
+
+</TabItem>
+<TabItem label="TypeScript">
+
+```typescript title="TypeScript"
+import { extractFileSync } from '@kreuzberg/node';
+
+const result = extractFileSync('document.pdf');
+
+console.log(result.content);
+console.log(`Tables: ${result.tables.length}`);
+console.log(`Metadata: ${JSON.stringify(result.metadata)}`);
+```
+
+</TabItem>
+<TabItem label="WASM">
+
+```typescript title="WASM"
+import { extractFromFile, initWasm } from '@kreuzberg/wasm';
+
+await initWasm();
+
+const fileInput = document.getElementById('file') as HTMLInputElement;
+const file = fileInput.files?.[0];
+
+if (file) {
+	const result = await extractFromFile(file);
+	console.log(result.content);
+	console.log(`Tables: ${result.tables.length}`);
+	console.log(`Metadata: ${JSON.stringify(result.metadata)}`);
+}
+```
+
+</TabItem>
+<TabItem label="CLI">
+
+```bash title="Bash"
+# Extract to stdout
+kreuzberg extract document.pdf
+
+# Save to file using shell redirection
+kreuzberg extract document.pdf > output.txt
+
+# Extract with JSON format (includes metadata)
+kreuzberg extract document.pdf --format json
+```
+
+</TabItem>
+</Tabs>
+
+## Handle Errors
+
+Wrap extractions in error handling before going further. Kreuzberg raises specific
+exceptions for missing files, parse failures, and OCR problems:
+
+<Tabs>
+<TabItem label="C">
+
+```c title="C"
+#include "kreuzberg.h"
+#include <stdio.h>
+
+int main(void) {
+    struct CExtractionResult *result = kreuzberg_extract_file_sync("missing.pdf");
+    if (!result || !result->success) {
+        struct CErrorDetails err = kreuzberg_get_error_details();
+        fprintf(stderr, "Error [%s]: %s\n",
+                kreuzberg_error_code_name(err.error_code),
+                err.message);
+
+        if (err.error_code == kreuzberg_error_code_io()) {
+            fprintf(stderr, "File not found or unreadable\n");
+        } else if (err.error_code == kreuzberg_error_code_unsupported_format()) {
+            fprintf(stderr, "Unsupported file format\n");
+        }
+
+        if (result) kreuzberg_free_result(result);
+        return 1;
+    }
+
+    printf("%s\n", result->content);
+    kreuzberg_free_result(result);
+    return 0;
+}
+```
+
+</TabItem>
+<TabItem label="C#">
+
+```csharp title="C#"
+using Kreuzberg;
+
+try
+{
+    var result = KreuzbergClient.ExtractFileSync("missing.pdf");
+    Console.WriteLine(result.Content);
+}
+catch (KreuzbergValidationException ex)
+{
+    Console.Error.WriteLine($"Validation error: {ex.Message}");
+}
+catch (KreuzbergIOException ex)
+{
+    Console.Error.WriteLine($"IO error: {ex.Message}");
+    throw;
+}
+catch (KreuzbergException ex)
+{
+    Console.Error.WriteLine($"Extraction failed: {ex.Message}");
+    throw;
+}
+```
+
+</TabItem>
+<TabItem label="Go">
+
+```go title="Go"
+package main
+
+import (
+	"errors"
+	"fmt"
+	"log"
+
+	"github.com/kreuzberg-dev/kreuzberg-lts/v4"
+)
+
+func main() {
+	result, err := kreuzberg.ExtractFileSync("document.pdf", nil)
+	if err != nil {
+		switch {
+		case errors.As(err, new(*kreuzberg.ValidationError)):
+			log.Fatalf("invalid configuration: %v", err)
+		case errors.As(err, new(*kreuzberg.ParsingError)):
+			log.Fatalf("failed to parse document: %v", err)
+		case errors.As(err, new(*kreuzberg.OCRError)):
+			log.Fatalf("OCR processing failed: %v", err)
+		case errors.As(err, new(*kreuzberg.MissingDependencyError)):
+			log.Fatalf("missing dependency: %v", err)
+		default:
+			log.Fatalf("extraction error: %v", err)
+		}
+	}
+
+	fmt.Println(result.Content)
+}
+```
+
+</TabItem>
+<TabItem label="Java">
+
+```java title="Java"
+import dev.kreuzberg.Kreuzberg;
+import dev.kreuzberg.ExtractionResult;
+import dev.kreuzberg.KreuzbergException;
+import java.io.IOException;
+
+try {
+    ExtractionResult result = Kreuzberg.extractFile("document.pdf");
+    System.out.println("Extracted: " + result.getContent()
+        .substring(0, Math.min(100, result.getContent().length())));
+} catch (IOException e) {
+    System.err.println("File not found: " + e.getMessage());
+} catch (KreuzbergException e) {
+    System.err.println("Extraction failed: " + e.getMessage());
+}
+
+try {
+    byte[] pdfBytes = new byte[] { };
+    ExtractionResult result = Kreuzberg.extractBytes(pdfBytes, "application/pdf", null);
+    System.out.println("Extracted " + result.getContent().length() + " characters");
+} catch (KreuzbergException e) {
+    System.err.println("Extraction failed: " + e.getMessage());
+}
+```
+
+</TabItem>
+<TabItem label="Python">
+
+```python title="Python"
+from kreuzberg import extract_file_sync, extract_bytes_sync, ExtractionConfig
+from kreuzberg import (
+    KreuzbergError,
+    ParsingError,
+    OCRError,
+    ValidationError,
+)
+
+try:
+    result = extract_file_sync("document.pdf")
+    print(f"Extracted {len(result.content)} characters")
+except FileNotFoundError as e:
+    print(f"File not found: {e}")
+except ParsingError as e:
+    print(f"Failed to parse document: {e}")
+except OCRError as e:
+    print(f"OCR processing failed: {e}")
+except KreuzbergError as e:
+    print(f"Extraction error: {e}")
+
+try:
+    config: ExtractionConfig = ExtractionConfig()
+    pdf_bytes: bytes = b"%PDF-1.4\n"
+    result = extract_bytes_sync(pdf_bytes, "application/pdf", config)
+    print(f"Extracted: {result.content[:100]}")
+except ValidationError as e:
+    print(f"Invalid configuration: {e}")
+except OCRError as e:
+    print(f"OCR failed: {e}")
+except KreuzbergError as e:
+    print(f"Extraction failed: {e}")
+```
+
+</TabItem>
+<TabItem label="Ruby">
+
+```ruby title="Ruby"
+require 'kreuzberg'
+
+begin
+  result = Kreuzberg.extract_file_sync('document.pdf')
+  puts result.content
+rescue Kreuzberg::ValidationError => e
+  puts "Invalid configuration: #{e.message}"
+rescue Kreuzberg::ParsingError => e
+  puts "Failed to parse document: #{e.message}"
+rescue Kreuzberg::OCRError => e
+  puts "OCR processing failed: #{e.message}"
+rescue Kreuzberg::MissingDependencyError => e
+  puts "Missing dependency: #{e.message}"
+rescue Kreuzberg::Error => e
+  puts "Extraction error: #{e.message}"
+rescue StandardError => e
+  puts "System error: #{e.message}"
+end
+```
+
+</TabItem>
+<TabItem label="R">
+
+```r title="R"
+library(kreuzberg)
+
+# Handle extraction errors with typed conditions
+result <- tryCatch({
+  extract_file_sync("document.xyz")
+},
+  UnsupportedFileType = function(e) {
+    cat("Error: File type not supported\n")
+    cat("Message:", conditionMessage(e), "\n")
+    NULL
+  },
+  ValidationError = function(e) {
+    cat("Error: Validation failed\n")
+    cat("Message:", conditionMessage(e), "\n")
+    NULL
+  },
+  kreuzberg_error = function(e) {
+    cat("Error: Kreuzberg extraction failed\n")
+    cat("Message:", conditionMessage(e), "\n")
+    NULL
+  }
+)
+
+if (!is.null(result)) {
+  cat("Extraction successful\n")
+}
+```
+
+</TabItem>
+<TabItem label="Rust">
+
+```rust title="Rust"
+use kreuzberg::{extract_file_sync, extract_bytes_sync, ExtractionConfig, KreuzbergError};
+
+fn main() -> kreuzberg::Result<()> {
+    match extract_file_sync("document.pdf", None, &ExtractionConfig::default()) {
+        Ok(result) => {
+            println!("Extracted {} characters", result.content.len());
+        }
+        Err(KreuzbergError::Parsing { message, .. }) => {
+            eprintln!("Failed to parse document: {}", message);
+        }
+        Err(KreuzbergError::Ocr { message, .. }) => {
+            eprintln!("OCR processing failed: {}", message);
+        }
+        Err(KreuzbergError::MissingDependency { message, .. }) => {
+            eprintln!("Missing dependency: {}", message);
+        }
+        Err(e) => {
+            eprintln!("Extraction failed: {}", e);
+        }
+    }
+
+    let pdf_bytes = b"%PDF-1.4\n...";
+    match extract_bytes_sync(pdf_bytes, "application/pdf", None, &ExtractionConfig::default()) {
+        Ok(result) => {
+            println!("Extracted: {}", &result.content[..100.min(result.content.len())]);
+            Ok(())
+        }
+        Err(KreuzbergError::Validation { message, .. }) => {
+            eprintln!("Invalid configuration: {}", message);
+            Err(KreuzbergError::Validation {
+                message: message.clone(),
+                source: None,
+            })
+        }
+        Err(KreuzbergError::Ocr { message, .. }) => {
+            eprintln!("OCR failed: {}", message);
+            Err(KreuzbergError::Ocr {
+                message: message.clone(),
+                source: None,
+            })
+        }
+        Err(e) => {
+            eprintln!("Extraction failed: {}", e);
+            Err(e)
+        }
+    }
+}
+```
+
+</TabItem>
+<TabItem label="Elixir">
+
+```elixir title="Elixir"
+# Example: Handling extraction errors
+case Kreuzberg.extract_file("document.pdf") do
+  {:ok, result} ->
+    IO.puts("Successfully extracted content")
+    IO.puts("Content length: #{byte_size(result.content)} characters")
+
+  {:error, reason} ->
+    IO.puts("Extraction failed: #{reason}")
+end
+
+# Example: Handling with custom error message
+result = Kreuzberg.extract_file("nonexistent.pdf")
+
+case result do
+  {:ok, data} ->
+    IO.puts("File processed successfully")
+  {:error, error} ->
+    IO.puts("Error details: #{inspect(error)}")
+end
+
+# Example: Extract with pattern matching
+case Kreuzberg.extract(<<>>, "application/pdf") do
+  {:ok, result} ->
+    IO.puts("Content: #{result.content}")
+  {:error, msg} when is_binary(msg) ->
+    IO.puts("Validation error: #{msg}")
+  {:error, reason} ->
+    IO.puts("Unknown error: #{inspect(reason)}")
+end
+```
+
+</TabItem>
+<TabItem label="TypeScript">
+
+```typescript title="TypeScript"
+import { extractFileSync, KreuzbergError } from '@kreuzberg/node';
+
+try {
+	const result = extractFileSync('document.pdf');
+	console.log(result.content);
+} catch (error) {
+	if (error instanceof KreuzbergError) {
+		console.error(`Extraction error: ${error.message}`);
+	} else {
+		throw error;
+	}
+}
+```
+
+</TabItem>
+<TabItem label="WASM">
+
+```typescript title="WASM"
+import { extractFromFile, initWasm } from '@kreuzberg/wasm';
+
+await initWasm();
+
+const fileInput = document.getElementById('file') as HTMLInputElement;
+const file = fileInput.files?.[0];
+
+if (file) {
+	try {
+		const result = await extractFromFile(file);
+		console.log(result.content);
+	} catch (error) {
+		if (error instanceof Error) {
+			console.error(`Extraction error: ${error.message}`);
+		} else {
+			throw error;
+		}
+	}
+}
+```
+
+</TabItem>
+</Tabs>
+
+## OCR for Scanned Documents
+
+Kreuzberg runs OCR automatically when it detects an image or scanned PDF.
+You can also force OCR on any document:
+
+<Tabs>
+<TabItem label="C">
+
+```c title="C"
+#include "kreuzberg.h"
+#include <stdio.h>
+
+int main(void) {
+    struct ConfigBuilder *builder = kreuzberg_config_builder_new();
+    kreuzberg_config_builder_set_ocr(builder,
+        "{\"tesseract\":{\"language\":\"eng\"}}");
+    ExtractionConfig *config = kreuzberg_config_builder_build(builder);
+
+    char *config_json = kreuzberg_config_to_json(config);
+    struct CExtractionResult *result =
+        kreuzberg_extract_file_sync_with_config("scanned.png", config_json);
+
+    if (result && result->success) {
+        printf("OCR text: %s\n", result->content);
+    } else {
+        fprintf(stderr, "OCR error: %s\n", kreuzberg_get_error_details().message);
+    }
+
+    kreuzberg_free_result(result);
+    kreuzberg_free_string(config_json);
+    kreuzberg_config_free(config);
+    return 0;
+}
+```
+
+</TabItem>
+<TabItem label="C#">
+
+```csharp title="C#"
+using Kreuzberg;
+
+var config = new ExtractionConfig
+{
+    ForceOcr = true,
+    Ocr = new OcrConfig
+    {
+        Backend = "tesseract",
+        Language = "eng",
+    },
+};
+
+var result = KreuzbergClient.ExtractFileSync("scanned.pdf", config);
+Console.WriteLine(result.Content);
+Console.WriteLine(result.DetectedLanguages);
+```
+
+</TabItem>
+<TabItem label="Go">
+
+```go title="Go"
+package main
+
+import (
+	"log"
+
+	"github.com/kreuzberg-dev/kreuzberg-lts/v4"
+)
+
+func main() {
+	lang := "eng"
+	cfg := &kreuzberg.ExtractionConfig{
+		OCR: &kreuzberg.OCRConfig{
+			Backend:  "tesseract",
+			Language: &lang,
+		},
+	}
+
+	result, err := kreuzberg.ExtractFileSync("scanned.pdf", cfg)
+	if err != nil {
+		log.Fatalf("extract failed: %v", err)
+	}
+	log.Println(len(result.Content))
+}
+```
+
+</TabItem>
+<TabItem label="Java">
+
+```java title="Java"
+import dev.kreuzberg.Kreuzberg;
+import dev.kreuzberg.ExtractionResult;
+import dev.kreuzberg.KreuzbergException;
+import dev.kreuzberg.config.ExtractionConfig;
+import dev.kreuzberg.config.OcrConfig;
+import java.io.IOException;
+
+public class Main {
+    public static void main(String[] args) {
+        try {
+            ExtractionConfig config = ExtractionConfig.builder()
+                .ocr(OcrConfig.builder()
+                    .backend("tesseract")
+                    .language("eng")
+                    .build())
+                .build();
+
+            ExtractionResult result = Kreuzberg.extractFile("scanned.pdf", config);
+            System.out.println(result.getContent());
+        } catch (IOException | KreuzbergException e) {
+            System.err.println("Extraction failed: " + e.getMessage());
+        }
+    }
+}
+```
+
+</TabItem>
+<TabItem label="Python">
+
+```python title="Python"
+from kreuzberg import extract_file_sync, ExtractionConfig, OcrConfig
+
+config: ExtractionConfig = ExtractionConfig(
+    ocr=OcrConfig(backend="tesseract", language="eng")
+)
+
+result = extract_file_sync("scanned.pdf", config=config)
+
+content: str = result.content
+preview: str = content[:100]
+total_length: int = len(content)
+
+print(f"Extracted content (preview): {preview}")
+print(f"Total characters: {total_length}")
+```
+
+</TabItem>
+<TabItem label="Ruby">
+
+```ruby title="Ruby"
+require 'kreuzberg'
+
+ocr_config = Kreuzberg::Config::OCR.new(
+  backend: 'tesseract',
+  language: 'eng'
+)
+
+config = Kreuzberg::Config::Extraction.new(ocr: ocr_config)
+result = Kreuzberg.extract_file_sync('scanned.pdf', config: config)
+puts result.content
+```
+
+</TabItem>
+<TabItem label="R">
+
+```r title="R"
+library(kreuzberg)
+
+# Configure Tesseract OCR
+ocr <- ocr_config(backend = "tesseract", language = "eng", dpi = 300L)
+config <- extraction_config(force_ocr = TRUE, ocr = ocr)
+
+# Extract text from a scanned image
+result <- extract_file_sync("scan.png", config = config)
+
+cat(sprintf("Extracted %d characters\n", nchar(result$content)))
+cat(sprintf("Quality score: %s\n", result$quality_score))
+cat("Content preview:\n")
+cat(substr(result$content, 1, 200))
+```
+
+</TabItem>
+<TabItem label="Rust">
+
+```rust title="Rust"
+use kreuzberg::{extract_file_sync, ExtractionConfig, OcrConfig};
+
+fn main() -> kreuzberg::Result<()> {
+    let config = ExtractionConfig {
+        ocr: Some(OcrConfig {
+            backend: "tesseract".to_string(),
+            language: "eng".to_string(),
+            ..Default::default()
+        }),
+        ..Default::default()
+    };
+
+    let result = extract_file_sync("scanned.pdf", None, &config)?;
+    println!("{}", result.content);
+    Ok(())
+}
+```
+
+</TabItem>
+<TabItem label="Elixir">
+
+```elixir title="Elixir"
+alias Kreuzberg.ExtractionConfig
+
+config = %ExtractionConfig{
+  ocr: %{"enabled" => true, "backend" => "tesseract"}
+}
+
+{:ok, result} = Kreuzberg.extract_file("scanned_document.pdf", nil, config)
+
+content = result.content
+IO.puts("OCR Extracted content:")
+IO.puts(content)
+IO.puts("Metadata: #{inspect(result.metadata)}")
+```
+
+</TabItem>
+<TabItem label="TypeScript">
+
+```typescript title="TypeScript"
+import { extractFileSync } from '@kreuzberg/node';
+
+const config = {
+	ocr: {
+		backend: 'tesseract',
+		language: 'eng',
+	},
+};
+
+const result = extractFileSync('scanned.pdf', null, config);
+console.log(result.content);
+```
+
+</TabItem>
+<TabItem label="WASM">
+
+```typescript title="WASM (Browser)"
+import { enableOcr, extractFromFile, initWasm } from '@kreuzberg/wasm';
+
+await initWasm();
+await enableOcr();
+
+const fileInput = document.getElementById('file') as HTMLInputElement;
+const file = fileInput.files?.[0];
+
+if (file) {
+	const result = await extractFromFile(file, file.type, {
+		ocr: {
+			backend: 'kreuzberg-tesseract',
+			language: 'eng',
+		},
+	});
+	console.log(result.content);
+}
+```
+
+```typescript title="WASM (Node.js / Deno / Bun)"
+import { enableOcr, extractFile, initWasm } from '@kreuzberg/wasm';
+
+await initWasm();
+await enableOcr(); // Uses native kreuzberg-tesseract backend
+
+const result = await extractFile('./scanned_document.png', 'image/png', {
+	ocr: {
+		backend: 'kreuzberg-tesseract',
+		language: 'eng',
+	},
+});
+console.log(result.content);
+```
+
+</TabItem>
+<TabItem label="CLI">
+
+```bash title="Bash"
+kreuzberg extract scanned.pdf --ocr true
+```
+
+</TabItem>
+</Tabs>
+
+## Process Multiple Files
+
+Pass a list of paths to extract them in parallel:
+
+<Tabs>
+<TabItem label="C">
+
+```c title="C"
+#include "kreuzberg.h"
+#include <stdio.h>
+
+int main(void) {
+    const char *files[] = {"doc1.pdf", "doc2.docx", "doc3.txt"};
+    uintptr_t count = 3;
+
+    struct CBatchResult *batch = kreuzberg_batch_extract_files_sync(files, count, NULL);
+    if (!batch) {
+        fprintf(stderr, "Batch error: %s\n", kreuzberg_get_error_details().message);
+        return 1;
+    }
+
+    for (uintptr_t i = 0; i < batch->count; i++) {
+        struct CExtractionResult *r = batch->results[i];
+        if (r && r->success) {
+            printf("--- %s ---\n%s\n", files[i], r->content);
+        }
+    }
+
+    kreuzberg_free_batch_result(batch);
+    return 0;
+}
+```
+
+</TabItem>
+<TabItem label="C#">
+
+```csharp title="C#"
+using Kreuzberg;
+
+var files = new[] { "doc1.pdf", "doc2.docx", "doc3.pptx" };
+var results = KreuzbergClient.BatchExtractFilesSync(files, new ExtractionConfig());
+
+foreach (var result in results)
+{
+    Console.WriteLine($"Content length: {result.Content.Length}");
+}
+```
+
+</TabItem>
+<TabItem label="Go">
+
+```go title="Go"
+package main
+
+import (
+	"fmt"
+	"log"
+
+	"github.com/kreuzberg-dev/kreuzberg-lts/v4"
+)
+
+func main() {
+	files := []string{"doc1.pdf", "doc2.docx", "doc3.pptx"}
+
+	results, err := kreuzberg.BatchExtractFilesSync(files, nil)
+	if err != nil {
+		log.Fatalf("batch extract failed: %v", err)
+	}
+
+	for i, result := range results {
+		if result == nil {
+			continue
+		}
+		fmt.Printf("File %d: %d characters\n", i+1, len(result.Content))
+	}
+}
+```
+
+</TabItem>
+<TabItem label="Java">
+
+```java title="Java"
+import dev.kreuzberg.Kreuzberg;
+import dev.kreuzberg.ExtractionResult;
+import dev.kreuzberg.KreuzbergException;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
+
+try {
+    List<String> files = Arrays.asList("doc1.pdf", "doc2.docx", "doc3.pptx");
+
+    List<ExtractionResult> results = Kreuzberg.batchExtractFiles(files, null);
+
+    for (int i = 0; i < results.size(); i++) {
+        ExtractionResult result = results.get(i);
+        System.out.println("File " + (i + 1) + ": " + result.getContent().length() + " characters");
+    }
+} catch (IOException | KreuzbergException e) {
+    e.printStackTrace();
+}
+```
+
+</TabItem>
+<TabItem label="Python">
+
+```python title="Python"
+from kreuzberg import batch_extract_files_sync, ExtractionConfig
+
+files: list[str] = ["doc1.pdf", "doc2.docx", "doc3.pptx"]
+config: ExtractionConfig = ExtractionConfig()
+
+results = batch_extract_files_sync(files, config=config)
+
+for i, result in enumerate(results):
+    char_count: int = len(result.content)
+    print(f"File {i + 1}: {char_count} characters")
+```
+
+</TabItem>
+<TabItem label="Ruby">
+
+```ruby title="Ruby"
+require 'kreuzberg'
+
+files = ['doc1.pdf', 'doc2.docx', 'doc3.pptx']
+
+results = Kreuzberg.batch_extract_files_sync(files)
+
+results.each_with_index do |result, i|
+  puts "File #{i + 1}: #{result.content.length} characters"
+end
+```
+
+</TabItem>
+<TabItem label="R">
+
+```r title="R"
+library(kreuzberg)
+
+# Define file paths to extract
+file_paths <- c(
+  "documents/report.pdf",
+  "documents/summary.docx",
+  "documents/data.xlsx"
+)
+
+# Batch extract files
+results <- batch_extract_files_sync(file_paths)
+
+# Process results
+for (i in seq_along(results)) {
+  result <- results[[i]]
+  cat(sprintf("File %d: %s\n", i, file_paths[i]))
+  cat(sprintf("  Pages: %d\n", page_count(result)))
+  cat(sprintf("  Elements: %d\n", length(result$elements)))
+}
+```
+
+</TabItem>
+<TabItem label="Rust">
+
+```rust title="Rust"
+use kreuzberg::{batch_extract_file_sync, ExtractionConfig};
+
+fn main() -> kreuzberg::Result<()> {
+    let files = vec!["doc1.pdf", "doc2.docx", "doc3.pptx"];
+    let config = ExtractionConfig::default();
+
+    let results = batch_extract_file_sync(files, &config)?;
+
+    for (i, result) in results.iter().enumerate() {
+        println!("File {}: {} characters", i + 1, result.content.len());
+    }
+    Ok(())
+}
+```
+
+</TabItem>
+<TabItem label="Elixir">
+
+```elixir title="Elixir"
+file_paths = ["document1.pdf", "document2.pdf", "document3.pdf"]
+
+{:ok, results} = Kreuzberg.batch_extract_files(file_paths)
+
+Enum.each(results, fn result ->
+  IO.puts("File: #{result.mime_type}")
+  IO.puts("Content length: #{byte_size(result.content)} characters")
+  IO.puts("Tables: #{length(result.tables)}")
+  IO.puts("---")
+end)
+
+IO.puts("Total files processed: #{length(results)}")
+```
+
+</TabItem>
+<TabItem label="TypeScript">
+
+```typescript title="TypeScript"
+import { batchExtractFilesSync } from '@kreuzberg/node';
+
+const files = ['doc1.pdf', 'doc2.docx', 'doc3.pptx'];
+const results = batchExtractFilesSync(files);
+
+results.forEach((result, i) => {
+	console.log(`File ${i + 1}: ${result.content.length} characters`);
+});
+```
+
+</TabItem>
+<TabItem label="WASM">
+
+```typescript title="WASM"
+import { extractFromFile, initWasm } from '@kreuzberg/wasm';
+
+await initWasm();
+
+const fileInputs = document.getElementById('files') as HTMLInputElement;
+const files = Array.from(fileInputs.files || []);
+
+const results = await Promise.all(
+	files.map((file) => extractFromFile(file))
+);
+
+results.forEach((result, i) => {
+	console.log(`File ${i + 1}: ${result.content.length} characters`);
+});
+```
+
+</TabItem>
+<TabItem label="CLI">
+
+```bash title="Bash"
+# Process multiple files
+kreuzberg extract doc1.pdf doc2.docx doc3.pptx
+
+# Use glob patterns
+kreuzberg extract documents/**/*.pdf
+```
+
+</TabItem>
+</Tabs>
+
+## Read Document Metadata
+
+Every extraction result includes format-specific metadata — page count for PDFs,
+sheet names for Excel, dimensions for images:
+
+<Tabs>
+<TabItem label="C">
+
+```c title="C"
+#include "kreuzberg.h"
+#include <stdio.h>
+
+int main(void) {
+    struct CExtractionResult *result = kreuzberg_extract_file_sync("document.pdf");
+    if (!result || !result->success) {
+        fprintf(stderr, "Error: %s\n", kreuzberg_get_error_details().message);
+        return 1;
+    }
+
+    printf("Content: %s\n", result->content);
+    printf("MIME: %s\n", result->mime_type);
+
+    if (result->language)
+        printf("Language: %s\n", result->language);
+    if (result->date)
+        printf("Date: %s\n", result->date);
+    if (result->subject)
+        printf("Subject: %s\n", result->subject);
+    if (result->metadata_json)
+        printf("Metadata: %s\n", result->metadata_json);
+
+    kreuzberg_free_result(result);
+    return 0;
+}
+```
+
+</TabItem>
+<TabItem label="C#">
+
+```csharp title="C#"
+using Kreuzberg;
+
+var config = new ExtractionConfig
+{
+    PdfOptions = new PdfConfig { ExtractMetadata = true }
+};
+
+var result = KreuzbergClient.ExtractFileSync("document.pdf", config);
+
+if (result.Metadata?.Format.Pdf != null)
+{
+    var pdfMeta = result.Metadata.Format.Pdf;
+    Console.WriteLine($"Pages: {pdfMeta.PageCount}");
+    Console.WriteLine($"Author: {pdfMeta.Author}");
+    Console.WriteLine($"Title: {pdfMeta.Title}");
+}
+
+var htmlResult = KreuzbergClient.ExtractFileSync("page.html", config);
+if (htmlResult.Metadata?.Format.Html != null)
+{
+    var htmlMeta = htmlResult.Metadata.Format.Html;
+    Console.WriteLine($"Title: {htmlMeta.Title}");
+    Console.WriteLine($"Description: {htmlMeta.Description}");
+
+    // Access keywords as array
+    if (htmlMeta.Keywords != null && htmlMeta.Keywords.Count > 0)
+    {
+        Console.WriteLine($"Keywords: {string.Join(", ", htmlMeta.Keywords)}");
+    }
+
+    // Access canonical URL (renamed from canonical)
+    if (htmlMeta.CanonicalUrl != null)
+    {
+        Console.WriteLine($"Canonical URL: {htmlMeta.CanonicalUrl}");
+    }
+
+    // Access Open Graph fields from dictionary
+    if (htmlMeta.OpenGraph != null && htmlMeta.OpenGraph.Count > 0)
+    {
+        if (htmlMeta.OpenGraph.ContainsKey("image"))
+            Console.WriteLine($"Open Graph Image: {htmlMeta.OpenGraph["image"]}");
+        if (htmlMeta.OpenGraph.ContainsKey("title"))
+            Console.WriteLine($"Open Graph Title: {htmlMeta.OpenGraph["title"]}");
+        if (htmlMeta.OpenGraph.ContainsKey("type"))
+            Console.WriteLine($"Open Graph Type: {htmlMeta.OpenGraph["type"]}");
+    }
+
+    // Access Twitter Card fields from dictionary
+    if (htmlMeta.TwitterCard != null && htmlMeta.TwitterCard.Count > 0)
+    {
+        if (htmlMeta.TwitterCard.ContainsKey("card"))
+            Console.WriteLine($"Twitter Card Type: {htmlMeta.TwitterCard["card"]}");
+        if (htmlMeta.TwitterCard.ContainsKey("creator"))
+            Console.WriteLine($"Twitter Creator: {htmlMeta.TwitterCard["creator"]}");
+    }
+
+    // Access new fields
+    if (htmlMeta.Language != null)
+        Console.WriteLine($"Language: {htmlMeta.Language}");
+
+    if (htmlMeta.TextDirection != null)
+        Console.WriteLine($"Text Direction: {htmlMeta.TextDirection}");
+
+    // Access headers
+    if (htmlMeta.Headers != null && htmlMeta.Headers.Count > 0)
+        Console.WriteLine($"Headers: {string.Join(", ", htmlMeta.Headers.Select(h => h.Text))}");
+
+    // Access links
+    if (htmlMeta.Links != null && htmlMeta.Links.Count > 0)
+    {
+        foreach (var link in htmlMeta.Links)
+            Console.WriteLine($"Link: {link.Href} ({link.Text})");
+    }
+
+    // Access images
+    if (htmlMeta.Images != null && htmlMeta.Images.Count > 0)
+        Console.WriteLine($"Images: {string.Join(", ", htmlMeta.Images.Select(i => i.Src))}");
+
+    // Access structured data
+    if (htmlMeta.StructuredData != null && htmlMeta.StructuredData.Count > 0)
+        Console.WriteLine($"Structured Data items: {htmlMeta.StructuredData.Count}");
+}
+```
+
+</TabItem>
+<TabItem label="Go">
+
+```go title="Go"
+package main
+
+import (
+	"fmt"
+	"log"
+	"strings"
+
+	"github.com/kreuzberg-dev/kreuzberg-lts/v4"
+)
+
+func main() {
+	result, err := kreuzberg.ExtractFileSync("document.pdf", nil)
+	if err != nil {
+		log.Fatalf("extract pdf: %v", err)
+	}
+
+	// Access PDF metadata
+	if pdf, ok := result.Metadata.PdfMetadata(); ok {
+		if pdf.PageCount != nil {
+			fmt.Printf("Pages: %d\n", *pdf.PageCount)
+		}
+		if pdf.Author != nil {
+			fmt.Printf("Author: %s\n", *pdf.Author)
+		}
+		if pdf.Title != nil {
+			fmt.Printf("Title: %s\n", *pdf.Title)
+		}
+	}
+
+	// Access HTML metadata
+	htmlResult, err := kreuzberg.ExtractFileSync("page.html", nil)
+	if err != nil {
+		log.Fatalf("extract html: %v", err)
+	}
+	if html, ok := htmlResult.Metadata.HTMLMetadata(); ok {
+		if html.Title != nil {
+			fmt.Printf("Title: %s\n", *html.Title)
+		}
+		if html.Description != nil {
+			fmt.Printf("Description: %s\n", *html.Description)
+		}
+
+		// Access keywords as array
+		if len(html.Keywords) > 0 {
+			fmt.Printf("Keywords: %s\n", strings.Join(html.Keywords, ", "))
+		}
+
+		// Access canonical URL (renamed from canonical)
+		if html.CanonicalURL != nil {
+			fmt.Printf("Canonical URL: %s\n", *html.CanonicalURL)
+		}
+
+		// Access Open Graph fields from map
+		if len(html.OpenGraph) > 0 {
+			if image, ok := html.OpenGraph["image"]; ok {
+				fmt.Printf("Open Graph Image: %s\n", image)
+			}
+			if ogTitle, ok := html.OpenGraph["title"]; ok {
+				fmt.Printf("Open Graph Title: %s\n", ogTitle)
+			}
+			if ogType, ok := html.OpenGraph["type"]; ok {
+				fmt.Printf("Open Graph Type: %s\n", ogType)
+			}
+		}
+
+		// Access Twitter Card fields from map
+		if len(html.TwitterCard) > 0 {
+			if card, ok := html.TwitterCard["card"]; ok {
+				fmt.Printf("Twitter Card Type: %s\n", card)
+			}
+			if creator, ok := html.TwitterCard["creator"]; ok {
+				fmt.Printf("Twitter Creator: %s\n", creator)
+			}
+		}
+
+		// Access new fields
+		if html.Language != nil {
+			fmt.Printf("Language: %s\n", *html.Language)
+		}
+
+		if html.TextDirection != nil {
+			fmt.Printf("Text Direction: %s\n", *html.TextDirection)
+		}
+
+		// Access headers
+		if len(html.Headers) > 0 {
+			headers := make([]string, len(html.Headers))
+			for i, h := range html.Headers {
+				headers[i] = h.Text
+			}
+			fmt.Printf("Headers: %s\n", strings.Join(headers, ", "))
+		}
+
+		// Access links
+		if len(html.Links) > 0 {
+			for _, link := range html.Links {
+				fmt.Printf("Link: %s (%s)\n", link.Href, link.Text)
+			}
+		}
+
+		// Access images
+		if len(html.Images) > 0 {
+			for _, image := range html.Images {
+				fmt.Printf("Image: %s\n", image.Src)
+			}
+		}
+
+		// Access structured data
+		if len(html.StructuredData) > 0 {
+			fmt.Printf("Structured data items: %d\n", len(html.StructuredData))
+		}
+	}
+}
+```
+
+</TabItem>
+<TabItem label="Java">
+
+```java title="Java"
+import dev.kreuzberg.Kreuzberg;
+import dev.kreuzberg.ExtractionResult;
+import dev.kreuzberg.Metadata;
+import dev.kreuzberg.KreuzbergException;
+import java.io.IOException;
+import java.util.Map;
+import java.util.List;
+
+public class Main {
+    public static void main(String[] args) {
+        try {
+            ExtractionResult result = Kreuzberg.extractFileSync("document.pdf");
+
+            // Metadata is flat — format-specific fields are at the top level
+            Metadata metadata = result.getMetadata();
+            metadata.getTitle().ifPresent(t -> System.out.println("Title: " + t));
+            metadata.getAuthors().ifPresent(a -> System.out.println("Authors: " + String.join(", ", a)));
+
+            // Format-specific fields are in the additional map
+            Map<String, Object> extra = metadata.getAdditional();
+            if (extra.get("page_count") != null) {
+                System.out.println("Pages: " + extra.get("page_count"));
+            }
+
+            // Access HTML metadata
+            ExtractionResult htmlResult = Kreuzberg.extractFileSync("page.html");
+            Metadata htmlMeta = htmlResult.getMetadata();
+            htmlMeta.getTitle().ifPresent(t -> System.out.println("Title: " + t));
+
+            Map<String, Object> htmlExtra = htmlMeta.getAdditional();
+            String description = (String) htmlExtra.get("description");
+            if (description != null) {
+                System.out.println("Description: " + description);
+            }
+
+            // Access keywords as array
+            htmlMeta.getKeywords().ifPresent(keywords ->
+                System.out.println("Keywords: " + keywords));
+
+            // Access canonical URL (renamed from canonical)
+            String canonicalUrl = (String) htmlExtra.get("canonical_url");
+            if (canonicalUrl != null) {
+                System.out.println("Canonical URL: " + canonicalUrl);
+            }
+
+            // Access Open Graph fields from map
+            @SuppressWarnings("unchecked")
+            Map<String, String> openGraph = (Map<String, String>) htmlExtra.get("open_graph");
+            if (openGraph != null) {
+                System.out.println("Open Graph Image: " + openGraph.get("image"));
+                System.out.println("Open Graph Title: " + openGraph.get("title"));
+                System.out.println("Open Graph Type: " + openGraph.get("type"));
+            }
+
+            // Access Twitter Card fields from map
+            @SuppressWarnings("unchecked")
+            Map<String, String> twitterCard = (Map<String, String>) htmlExtra.get("twitter_card");
+            if (twitterCard != null) {
+                System.out.println("Twitter Card Type: " + twitterCard.get("card"));
+                System.out.println("Twitter Creator: " + twitterCard.get("creator"));
+            }
+
+            // Access new fields
+            htmlMeta.getLanguage().ifPresent(l -> System.out.println("Language: " + l));
+
+            String textDirection = (String) htmlExtra.get("text_direction");
+            if (textDirection != null) {
+                System.out.println("Text Direction: " + textDirection);
+            }
+
+            // Access headers
+            @SuppressWarnings("unchecked")
+            List<Map<String, Object>> headers = (List<Map<String, Object>>) htmlExtra.get("headers");
+            if (headers != null) {
+                headers.stream()
+                    .map(h -> h.get("text"))
+                    .forEach(text -> System.out.print(text + ", "));
+                System.out.println();
+            }
+
+            // Access links
+            @SuppressWarnings("unchecked")
+            List<Map<String, Object>> links = (List<Map<String, Object>>) htmlExtra.get("links");
+            if (links != null) {
+                for (Map<String, Object> link : links) {
+                    System.out.println("Link: " + link.get("href") + " (" + link.get("text") + ")");
+                }
+            }
+
+            // Access images
+            @SuppressWarnings("unchecked")
+            List<Map<String, Object>> images = (List<Map<String, Object>>) htmlExtra.get("images");
+            if (images != null) {
+                for (Map<String, Object> image : images) {
+                    System.out.println("Image: " + image.get("src"));
+                }
+            }
+
+            // Access structured data
+            @SuppressWarnings("unchecked")
+            List<Map<String, Object>> structuredData = (List<Map<String, Object>>) htmlExtra.get("structured_data");
+            if (structuredData != null) {
+                System.out.println("Structured data items: " + structuredData.size());
+            }
+        } catch (IOException | KreuzbergException e) {
+            System.err.println("Extraction failed: " + e.getMessage());
+        }
+    }
+}
+```
+
+</TabItem>
+<TabItem label="Python">
+
+```python title="Python"
+from kreuzberg import extract_file_sync, ExtractionConfig
+
+result = extract_file_sync("document.pdf", config=ExtractionConfig())
+
+# Metadata is flat — format-specific fields are at the top level
+metadata = result.metadata
+if metadata.get("page_count"):
+    print(f"Pages: {metadata['page_count']}")
+if metadata.get("title"):
+    print(f"Title: {metadata['title']}")
+if metadata.get("authors"):
+    print(f"Authors: {', '.join(metadata['authors'])}")
+
+result = extract_file_sync("page.html", config=ExtractionConfig())
+metadata = result.metadata
+if metadata.get("title"):
+    print(f"Title: {metadata['title']}")
+if metadata.get("description"):
+    print(f"Description: {metadata['description']}")
+
+# Access keywords as array
+keywords = metadata.get('keywords', [])
+if keywords:
+    print(f"Keywords: {', '.join(keywords)}")
+
+# Access canonical URL (renamed from canonical)
+canonical_url = metadata.get('canonical_url')
+if canonical_url:
+    print(f"Canonical URL: {canonical_url}")
+
+# Access Open Graph fields from map
+open_graph = metadata.get('open_graph', {})
+if open_graph:
+    if 'image' in open_graph:
+        print(f"Open Graph Image: {open_graph['image']}")
+    if 'title' in open_graph:
+        print(f"Open Graph Title: {open_graph['title']}")
+    if 'type' in open_graph:
+        print(f"Open Graph Type: {open_graph['type']}")
+
+# Access Twitter Card fields from map
+twitter_card = metadata.get('twitter_card', {})
+if twitter_card:
+    if 'card' in twitter_card:
+        print(f"Twitter Card Type: {twitter_card['card']}")
+    if 'creator' in twitter_card:
+        print(f"Twitter Creator: {twitter_card['creator']}")
+
+# Access new fields
+language = metadata.get('language')
+if language:
+    print(f"Language: {language}")
+
+text_direction = metadata.get('text_direction')
+if text_direction:
+    print(f"Text Direction: {text_direction}")
+
+# Access headers
+headers = metadata.get('headers', [])
+if headers:
+    print(f"Headers: {', '.join([h['text'] for h in headers])}")
+
+# Access links
+links = metadata.get('links', [])
+if links:
+    for link in links:
+        print(f"Link: {link.get('href')} ({link.get('text')})")
+
+# Access images
+images = metadata.get('images', [])
+if images:
+    for image in images:
+        print(f"Image: {image.get('src')}")
+
+# Access structured data
+structured_data = metadata.get('structured_data', [])
+if structured_data:
+    print(f"Structured data items: {len(structured_data)}")
+```
+
+</TabItem>
+<TabItem label="Ruby">
+
+```ruby title="Ruby"
+require 'kreuzberg'
+
+result = Kreuzberg.extract_file_sync('document.pdf')
+
+# Metadata is flat — format-specific fields are at the top level
+metadata = result.metadata
+if metadata['page_count']
+  puts "Pages: #{metadata['page_count']}"
+end
+if metadata['title']
+  puts "Title: #{metadata['title']}"
+end
+if metadata['authors']
+  puts "Authors: #{metadata['authors'].join(', ')}"
+end
+
+# Access HTML metadata
+html_result = Kreuzberg.extract_file_sync('page.html')
+metadata = html_result.metadata
+if metadata['title']
+  puts "Title: #{metadata['title']}"
+end
+if metadata['description']
+  puts "Description: #{metadata['description']}"
+end
+
+# Access keywords as array
+if metadata['keywords']
+  puts "Keywords: #{metadata['keywords'].join(', ')}"
+end
+
+# Access canonical URL (renamed from canonical)
+puts "Canonical URL: #{metadata['canonical_url']}" if metadata['canonical_url']
+
+# Access Open Graph fields from map
+open_graph = metadata['open_graph'] || {}
+puts "Open Graph Image: #{open_graph['image']}" if open_graph['image']
+puts "Open Graph Title: #{open_graph['title']}" if open_graph['title']
+puts "Open Graph Type: #{open_graph['type']}" if open_graph['type']
+
+# Access Twitter Card fields from map
+twitter_card = metadata['twitter_card'] || {}
+puts "Twitter Card Type: #{twitter_card['card']}" if twitter_card['card']
+puts "Twitter Creator: #{twitter_card['creator']}" if twitter_card['creator']
+
+# Access new fields
+puts "Language: #{metadata['language']}" if metadata['language']
+puts "Text Direction: #{metadata['text_direction']}" if metadata['text_direction']
+
+# Access headers
+if metadata['headers']
+  puts "Headers: #{metadata['headers'].map { |h| h['text'] }.join(', ')}"
+end
+
+# Access links
+if metadata['links']
+  metadata['links'].each do |link|
+    puts "Link: #{link['href']} (#{link['text']})"
+  end
+end
+
+# Access images
+if metadata['images']
+  metadata['images'].each do |image|
+    puts "Image: #{image['src']}"
+  end
+end
+
+# Access structured data
+if metadata['structured_data']
+  puts "Structured data items: #{metadata['structured_data'].length}"
+end
+```
+
+</TabItem>
+<TabItem label="R">
+
+```r title="R"
+library(kreuzberg)
+
+result <- extract_file_sync("document.pdf")
+
+cat("Detected Language:", result$detected_language, "\n")
+cat("Quality Score:", result$quality_score, "\n")
+cat("Keywords:", paste(result$keywords, collapse=", "), "\n\n")
+
+cat("Metadata fields:\n")
+authors <- metadata_field(result, "authors")
+if (!is.null(authors)) {
+  cat("Authors:", paste(authors, collapse=", "), "\n")
+}
+
+created <- metadata_field(result, "created_date")
+if (!is.null(created)) {
+  cat("Created Date:", created, "\n")
+}
+
+pages_meta <- metadata_field(result, "page_count")
+if (!is.null(pages_meta)) {
+  cat("Pages:", pages_meta, "\n")
+}
+```
+
+</TabItem>
+<TabItem label="Rust">
+
+```rust title="Rust"
+use kreuzberg::{extract_file_sync, ExtractionConfig};
+
+fn main() -> kreuzberg::Result<()> {
+    let result = extract_file_sync("document.pdf", None, &ExtractionConfig::default())?;
+
+    if let Some(pdf_meta) = result.metadata.pdf {
+        if let Some(pages) = pdf_meta.page_count {
+            println!("Pages: {}", pages);
+        }
+        if let Some(author) = pdf_meta.author {
+            println!("Author: {}", author);
+        }
+        if let Some(title) = pdf_meta.title {
+            println!("Title: {}", title);
+        }
+    }
+
+    let html_result = extract_file_sync("page.html", None, &ExtractionConfig::default())?;
+    if let Some(html_meta) = html_result.metadata.html {
+        if let Some(title) = html_meta.title {
+            println!("Title: {}", title);
+        }
+        if let Some(desc) = html_meta.description {
+            println!("Description: {}", desc);
+        }
+
+        // Access keywords array
+        println!("Keywords: {:?}", html_meta.keywords);
+
+        // Access canonical URL (renamed from canonical)
+        if let Some(canonical) = html_meta.canonical_url {
+            println!("Canonical URL: {}", canonical);
+        }
+
+        // Access Open Graph fields as a map
+        if let Some(og_image) = html_meta.open_graph.get("image") {
+            println!("Open Graph Image: {}", og_image);
+        }
+        if let Some(og_title) = html_meta.open_graph.get("title") {
+            println!("Open Graph Title: {}", og_title);
+        }
+
+        // Access Twitter Card fields as a map
+        if let Some(twitter_card) = html_meta.twitter_card.get("card") {
+            println!("Twitter Card Type: {}", twitter_card);
+        }
+
+        // Access new fields
+        if let Some(lang) = html_meta.language {
+            println!("Language: {}", lang);
+        }
+
+        // Access headers
+        if !html_meta.headers.is_empty() {
+            for header in &html_meta.headers {
+                println!("Header (level {}): {}", header.level, header.text);
+            }
+        }
+
+        // Access links
+        if !html_meta.links.is_empty() {
+            for link in &html_meta.links {
+                println!("Link: {} ({})", link.href, link.text);
+            }
+        }
+
+        // Access images
+        if !html_meta.images.is_empty() {
+            for image in &html_meta.images {
+                println!("Image: {}", image.src);
+            }
+        }
+
+        // Access structured data
+        if !html_meta.structured_data.is_empty() {
+            println!("Structured data items: {}", html_meta.structured_data.len());
+        }
+    }
+    Ok(())
+}
+```
+
+</TabItem>
+<TabItem label="Elixir">
+
+```elixir title="Elixir"
+{:ok, result} = Kreuzberg.extract_file("document.pdf")
+
+# Metadata is flat — format-specific fields are at the top level
+metadata = result.metadata
+IO.puts("MIME type: #{result.mime_type}")
+IO.puts("All metadata keys: #{inspect(Map.keys(metadata))}")
+
+# Access PDF metadata directly from the flat map
+page_count = metadata["page_count"]
+if page_count, do: IO.puts("Page count: #{page_count}")
+
+authors = metadata["authors"] || []
+if authors != [], do: IO.puts("Authors: #{Enum.join(authors, ", ")}")
+
+title = metadata["title"]
+if title, do: IO.puts("Title: #{title}")
+
+# Access HTML metadata directly from the flat map
+{:ok, html_result} = Kreuzberg.extract_file("page.html")
+html_meta = html_result.metadata
+
+keywords = html_meta["keywords"] || []
+if keywords != [], do: IO.puts("Keywords: #{Enum.join(keywords, ", ")}")
+
+description = html_meta["description"]
+if description, do: IO.puts("Description: #{description}")
+```
+
+</TabItem>
+<TabItem label="TypeScript">
+
+```typescript title="TypeScript"
+import { extractFileSync } from '@kreuzberg/node';
+
+const result = extractFileSync('document.pdf');
+console.log(`Metadata: ${JSON.stringify(result.metadata)}`);
+if (result.metadata.pageCount) {
+	console.log(`Pages: ${result.metadata.pageCount}`);
+}
+
+const htmlResult = extractFileSync('page.html');
+console.log(`HTML Metadata: ${JSON.stringify(htmlResult.metadata)}`);
+
+const htmlMeta = htmlResult.metadata;
+if (htmlMeta.title) {
+	console.log(`Title: ${htmlMeta.title}`);
+}
+
+// Access keywords as array
+if (htmlMeta.keywords && htmlMeta.keywords.length > 0) {
+	console.log(`Keywords: ${htmlMeta.keywords.join(', ')}`);
+}
+
+// Access canonical URL (renamed from canonical)
+if (htmlMeta.canonicalUrl) {
+	console.log(`Canonical URL: ${htmlMeta.canonicalUrl}`);
+}
+
+// Access Open Graph fields from map
+if (htmlMeta.openGraph) {
+	if (htmlMeta.openGraph['image']) {
+		console.log(`Open Graph Image: ${htmlMeta.openGraph['image']}`);
+	}
+	if (htmlMeta.openGraph['title']) {
+		console.log(`Open Graph Title: ${htmlMeta.openGraph['title']}`);
+	}
+	if (htmlMeta.openGraph['type']) {
+		console.log(`Open Graph Type: ${htmlMeta.openGraph['type']}`);
+	}
+}
+
+// Access Twitter Card fields from map
+if (htmlMeta.twitterCard) {
+	if (htmlMeta.twitterCard['card']) {
+		console.log(`Twitter Card Type: ${htmlMeta.twitterCard['card']}`);
+	}
+	if (htmlMeta.twitterCard['creator']) {
+		console.log(`Twitter Creator: ${htmlMeta.twitterCard['creator']}`);
+	}
+}
+
+// Access new fields
+if (htmlMeta.language) {
+	console.log(`Language: ${htmlMeta.language}`);
+}
+
+if (htmlMeta.textDirection) {
+	console.log(`Text Direction: ${htmlMeta.textDirection}`);
+}
+
+// Access headers
+if (htmlMeta.headers && htmlMeta.headers.length > 0) {
+	console.log(`Headers: ${htmlMeta.headers.map(h => h.text).join(', ')}`);
+}
+
+// Access links
+if (htmlMeta.links && htmlMeta.links.length > 0) {
+	htmlMeta.links.forEach((link) => {
+		console.log(`Link: ${link.href} (${link.text})`);
+	});
+}
+
+// Access images
+if (htmlMeta.images && htmlMeta.images.length > 0) {
+	htmlMeta.images.forEach((image) => {
+		console.log(`Image: ${image.src}`);
+	});
+}
+
+// Access structured data
+if (htmlMeta.structuredData && htmlMeta.structuredData.length > 0) {
+	console.log(`Structured data items: ${htmlMeta.structuredData.length}`);
+}
+```
+
+</TabItem>
+<TabItem label="WASM">
+
+```typescript title="WASM"
+import { extractFromFile, initWasm } from '@kreuzberg/wasm';
+
+await initWasm();
+
+const fileInput = document.getElementById('file') as HTMLInputElement;
+const file = fileInput.files?.[0];
+
+if (file) {
+	const result = await extractFromFile(file);
+	console.log(`Metadata: ${JSON.stringify(result.metadata)}`);
+
+	// Access common metadata fields
+	if (result.metadata.title) {
+		console.log(`Title: ${result.metadata.title}`);
+	}
+
+	// Access format-specific metadata
+	const metadata = result.metadata;
+
+	// For HTML files
+	if (metadata.html) {
+		const htmlMeta = metadata.html;
+		console.log(`HTML Title: ${htmlMeta.title}`);
+		console.log(`Description: ${htmlMeta.description}`);
+
+		// Access keywords as array
+		if (htmlMeta.keywords && htmlMeta.keywords.length > 0) {
+			console.log(`Keywords: ${htmlMeta.keywords.join(', ')}`);
+		}
+
+		// Access canonical URL
+		if (htmlMeta.canonical_url) {
+			console.log(`Canonical URL: ${htmlMeta.canonical_url}`);
+		}
+
+		// Access Open Graph fields
+		if (htmlMeta.open_graph) {
+			if (htmlMeta.open_graph['title']) {
+				console.log(`OG Title: ${htmlMeta.open_graph['title']}`);
+			}
+			if (htmlMeta.open_graph['image']) {
+				console.log(`OG Image: ${htmlMeta.open_graph['image']}`);
+			}
+		}
+
+		// Access Twitter Card fields
+		if (htmlMeta.twitter_card && htmlMeta.twitter_card['card']) {
+			console.log(`Twitter Card Type: ${htmlMeta.twitter_card['card']}`);
+		}
+
+		// Access headers
+		if (htmlMeta.headers && htmlMeta.headers.length > 0) {
+			console.log(`Headers: ${htmlMeta.headers.map((h: any) => h.text).join(', ')}`);
+		}
+
+		// Access links
+		if (htmlMeta.links && htmlMeta.links.length > 0) {
+			htmlMeta.links.forEach((link: any) => {
+				console.log(`Link: ${link.href} (${link.text})`);
+			});
+		}
+
+		// Access images
+		if (htmlMeta.images && htmlMeta.images.length > 0) {
+			htmlMeta.images.forEach((image: any) => {
+				console.log(`Image: ${image.src}`);
+			});
+		}
+
+		// Access structured data
+		if (htmlMeta.structured_data && htmlMeta.structured_data.length > 0) {
+			console.log(`Structured data items: ${htmlMeta.structured_data.length}`);
+		}
+	}
+
+	// PDF-specific fields are at the top level of metadata
+	if (metadata.pageCount) {
+		console.log(`Pages: ${metadata.pageCount}`);
+	}
+	if (metadata.authors && metadata.authors.length > 0) {
+		console.log(`Authors: ${metadata.authors.join(', ')}`);
+	}
+}
+```
+
+</TabItem>
+<TabItem label="CLI">
+
+Extract and parse metadata using JSON output:
+
+```bash title="Terminal"
+# Extract with metadata (JSON format includes metadata automatically)
+kreuzberg extract document.pdf --format json
+
+# Save to file and parse metadata
+kreuzberg extract document.pdf --format json > result.json
+
+# Print all metadata fields
+cat result.json | jq '.metadata'
+
+# Extract HTML metadata
+kreuzberg extract page.html --format json | jq '.metadata'
+
+# Get specific fields
+kreuzberg extract document.pdf --format json | \
+  jq '.metadata | {page_count, authors, title}'
+
+# Process multiple files
+kreuzberg batch documents/*.pdf --format json > all_metadata.json
+```
+
+**JSON Output Structure:**
+
+```json title="JSON"
+{
+  "content": "Extracted text...",
+  "mime_type": "application/pdf",
+  "metadata": {
+    "title": "Document Title",
+    "authors": ["John Doe"],
+    "created_by": "LaTeX with hyperref package",
+    "format_type": "pdf",
+    "page_count": 10
+  },
+  "tables": []
+}
+```
+
+</TabItem>
+</Tabs>
+
+Kreuzberg extracts format-specific metadata for:
+
+- **PDF**: page count, title, authors (list), creation date, modification date
+- **HTML**: SEO tags, Open Graph, Twitter Card, structured data, headers, links, images
+- **Excel**: sheet count, sheet names
+- **Email**: from, to, CC, BCC, message ID, attachments
+- **PowerPoint**: title, author, description, fonts
+- **Images**: dimensions, format, EXIF data
+- **Archives**: format, file count, file list, sizes
+- **XML**: element count, unique elements
+- **Text/Markdown**: word count, line count, headers, links
+
+See [Types Reference](/reference/types/) for complete metadata reference.
+
+## Extract Tables
+
+Tables come back as both structured cells and Markdown. Kreuzberg extracts them
+from PDFs, spreadsheets, and HTML:
+
+<Tabs>
+<TabItem label="C">
+
+```c title="C"
+#include "kreuzberg.h"
+#include <stdio.h>
+
+int main(void) {
+    struct CExtractionResult *result = kreuzberg_extract_file_sync("spreadsheet.xlsx");
+    if (!result || !result->success) {
+        fprintf(stderr, "Error: %s\n", kreuzberg_get_error_details().message);
+        return 1;
+    }
+
+    if (result->tables_json) {
+        printf("Tables (JSON): %s\n", result->tables_json);
+    } else {
+        printf("No tables found\n");
+    }
+
+    kreuzberg_free_result(result);
+    return 0;
+}
+```
+
+</TabItem>
+<TabItem label="C#">
+
+```csharp title="C#"
+using Kreuzberg;
+
+var result = KreuzbergClient.ExtractFileSync("document.pdf", new ExtractionConfig());
+
+foreach (var table in result.Tables)
+{
+    Console.WriteLine($"Table with {table.Cells.Count} rows");
+    Console.WriteLine(table.Markdown);
+
+    foreach (var row in table.Cells)
+    {
+        Console.WriteLine(string.Join(" | ", row));
+    }
+}
+```
+
+</TabItem>
+<TabItem label="Go">
+
+```go title="Go"
+package main
+
+import (
+	"fmt"
+	"log"
+
+	"github.com/kreuzberg-dev/kreuzberg-lts/v4"
+)
+
+func main() {
+	result, err := kreuzberg.ExtractFileSync("document.pdf", nil)
+	if err != nil {
+		log.Fatalf("extract failed: %v", err)
+	}
+
+	// Iterate over tables
+	for _, table := range result.Tables {
+		fmt.Printf("Table with %d rows\n", len(table.Cells))
+		fmt.Println(table.Markdown) // Markdown representation
+
+		// Access cells
+		for _, row := range table.Cells {
+			fmt.Println(row)
+		}
+	}
+}
+```
+
+</TabItem>
+<TabItem label="Java">
+
+```java title="Java"
+import dev.kreuzberg.Kreuzberg;
+import dev.kreuzberg.ExtractionResult;
+import dev.kreuzberg.KreuzbergException;
+import dev.kreuzberg.Table;
+import java.io.IOException;
+import java.util.List;
+
+public class Main {
+    public static void main(String[] args) {
+        try {
+            ExtractionResult result = Kreuzberg.extractFile("document.pdf");
+
+            for (Table table : result.getTables()) {
+                System.out.println("Table with " + table.cells().size() + " rows");
+                System.out.println(table.markdown());
+
+                for (List<String> row : table.cells()) {
+                    System.out.println(row);
+                }
+            }
+        } catch (IOException | KreuzbergException e) {
+            System.err.println("Extraction failed: " + e.getMessage());
+        }
+    }
+}
+```
+
+</TabItem>
+<TabItem label="Python">
+
+```python title="Python"
+from kreuzberg import extract_file_sync, ExtractionConfig, ExtractedTable
+
+result = extract_file_sync("document.pdf", config=ExtractionConfig())
+
+for table in result.tables:
+    row_count: int = len(table.cells)
+    print(f"Table with {row_count} rows")
+    print(table.markdown)
+    for row in table.cells:
+        print(row)
+```
+
+</TabItem>
+<TabItem label="Ruby">
+
+```ruby title="Ruby"
+require 'kreuzberg'
+
+result = Kreuzberg.extract_file_sync('document.pdf')
+
+# Iterate over tables
+result.tables.each do |table|
+  puts "Table with #{table['cells'].length} rows"
+  puts table['markdown']  # Markdown representation
+
+  # Access cells
+  table['cells'].each do |row|
+    puts row
+  end
+end
+```
+
+</TabItem>
+<TabItem label="R">
+
+```r title="R"
+library(kreuzberg)
+
+result <- extract_file_sync("spreadsheet.xlsx")
+
+cat("Tables extracted:", length(result$tables), "\n\n")
+
+for (i in seq_along(result$tables)) {
+  table <- result$tables[[i]]
+  cat(sprintf("Table %d:\n", i))
+  cat("  Rows:", nrow(table), "\n")
+  cat("  Columns:", ncol(table), "\n")
+  cat("  Column names:", paste(colnames(table), collapse=", "), "\n")
+  cat("\n")
+
+  if (nrow(table) > 0L) {
+    cat("  Preview (first 3 rows):\n")
+    print(head(table, 3L))
+    cat("\n")
+  }
+}
+```
+
+</TabItem>
+<TabItem label="Rust">
+
+```rust title="Rust"
+use kreuzberg::{extract_file_sync, ExtractionConfig};
+
+fn main() -> kreuzberg::Result<()> {
+    let result = extract_file_sync("document.pdf", None, &ExtractionConfig::default())?;
+
+    for table in &result.tables {
+        println!("Table with {} rows", table.cells.len());
+        println!("{}", table.markdown);
+
+        for row in &table.cells {
+            println!("{:?}", row);
+        }
+    }
+    Ok(())
+}
+```
+
+</TabItem>
+<TabItem label="Elixir">
+
+```elixir title="Elixir"
+{:ok, result} = Kreuzberg.extract_file("document.pdf")
+
+tables = result.tables
+IO.puts("Total tables found: #{length(tables)}")
+
+Enum.with_index(tables, 1) |> Enum.each(fn {table, index} ->
+  IO.puts("\n--- Table #{index} ---")
+
+  # Access table cells
+  cells = table["cells"] || []
+  IO.puts("Rows: #{length(cells)}")
+
+  # Access table markdown representation
+  markdown = table["markdown"]
+  IO.puts("Markdown representation:")
+  IO.puts(markdown)
+end)
+```
+
+</TabItem>
+<TabItem label="TypeScript">
+
+```typescript title="TypeScript"
+import { extractFileSync } from '@kreuzberg/node';
+
+const result = extractFileSync('document.pdf');
+
+for (const table of result.tables) {
+	console.log(`Table with ${table.cells.length} rows`);
+	console.log(`Page: ${table.pageNumber}`);
+	console.log(table.markdown);
+}
+```
+
+</TabItem>
+<TabItem label="WASM">
+
+```typescript title="WASM"
+import { extractFromFile, initWasm } from '@kreuzberg/wasm';
+
+await initWasm();
+
+const fileInput = document.getElementById('file') as HTMLInputElement;
+const file = fileInput.files?.[0];
+
+if (file) {
+	const result = await extractFromFile(file);
+
+	for (const table of result.tables) {
+		console.log(`Table with ${table.cells.length} rows`);
+		console.log(`Page: ${table.pageNumber}`);
+		console.log(table.markdown);
+	}
+}
+```
+
+</TabItem>
+<TabItem label="CLI">
+
+Extract and process tables from documents:
+
+```bash title="Terminal"
+# Extract with JSON format (includes tables when detected)
+kreuzberg extract document.pdf --format json
+
+# Save tables to JSON
+kreuzberg extract spreadsheet.xlsx --format json > tables.json
+
+# Extract and parse table markdown
+kreuzberg extract document.pdf --format json | \
+  jq '.tables[]? | .markdown'
+
+# Get table cells
+kreuzberg extract document.pdf --format json | \
+  jq '.tables[]? | .cells'
+
+# Batch extract tables from multiple files
+kreuzberg batch documents/**/*.pdf --format json > all_tables.json
+```
+
+**JSON Table Structure:**
+
+```json title="JSON"
+{
+  "content": "...",
+  "tables": [
+    {
+      "cells": [
+        ["Name", "Age", "City"],
+        ["Alice", "30", "New York"],
+        ["Bob", "25", "Los Angeles"]
+      ],
+      "markdown": "| Name | Age | City |\n|------|-----|--------|\n| Alice | 30 | New York |\n| Bob | 25 | Los Angeles |"
+    }
+  ]
+}
+```
+
+</TabItem>
+</Tabs>
+
+## Going Async
+
+Use async extraction in web servers, background workers, or anywhere you need
+non-blocking I/O:
+
+<Tabs>
+<TabItem label="C">
+
+:::note[Not Applicable]
+The C FFI provides synchronous extraction only. Use `kreuzberg_extract_file_sync`
+for file extraction. For concurrent extraction, use multiple threads with
+`kreuzberg_extract_file_sync` — the API is fully thread-safe.
+:::
+
+</TabItem>
+<TabItem label="C#">
+
+```csharp title="C#"
+using Kreuzberg;
+
+var result = await KreuzbergClient.ExtractFileAsync("document.pdf");
+
+Console.WriteLine(result.Content);
+Console.WriteLine(result.MimeType);
+```
+
+</TabItem>
+<TabItem label="Go">
+
+```go title="Go"
+package main
+
+import (
+	"context"
+	"fmt"
+	"log"
+	"time"
+
+	"github.com/kreuzberg-dev/kreuzberg-lts/v4"
+)
+
+func main() {
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	result, err := kreuzberg.ExtractFile(ctx, "document.pdf", nil)
+	if err != nil {
+		log.Fatalf("extract failed: %v", err)
+	}
+
+	fmt.Println(result.Content)
+}
+```
+
+</TabItem>
+<TabItem label="Java">
+
+```java title="Java"
+import dev.kreuzberg.Kreuzberg;
+import dev.kreuzberg.ExtractionResult;
+import java.nio.file.Path;
+import java.util.concurrent.CompletableFuture;
+
+public class Example {
+    public static void main(String[] args) {
+        CompletableFuture<ExtractionResult> future =
+            Kreuzberg.extractFileAsync(Path.of("document.pdf"), null);
+
+        future.thenAccept(result -> {
+            System.out.println(result.getContent());
+            System.out.println("Tables: " + result.getTables().size());
+        }).join();
+    }
+}
+```
+
+</TabItem>
+<TabItem label="Python">
+
+```python title="Python"
+import asyncio
+from kreuzberg import extract_file, ExtractionConfig
+
+async def main() -> None:
+    config: ExtractionConfig = ExtractionConfig()
+    result = await extract_file("document.pdf", config=config)
+
+    content: str = result.content
+    table_count: int = len(result.tables)
+
+    print(f"Content length: {len(content)} characters")
+    print(f"Tables: {table_count}")
+
+asyncio.run(main())
+```
+
+</TabItem>
+<TabItem label="Ruby">
+
+```ruby title="Ruby"
+require 'kreuzberg'
+
+# Ruby uses blocking APIs; async variants call into Tokio internally.
+result = Kreuzberg.extract_file('document.pdf')
+puts result.content
+```
+
+</TabItem>
+<TabItem label="R">
+
+```r title="R"
+library(kreuzberg)
+
+# Note: extract_file() blocks in R despite being async
+result <- extract_file("path/to/document.docx")
+
+# Access extraction results
+cat("Extracted", length(result$elements), "elements\n")
+cat("Detected language:", result$detected_language, "\n")
+cat("Tables found:", length(result$tables), "\n")
+
+if (!is.null(result$keywords)) {
+  cat("Keywords:", paste(result$keywords, collapse = ", "), "\n")
+}
+```
+
+</TabItem>
+<TabItem label="Rust">
+
+```rust title="Rust"
+use kreuzberg::{extract_file, ExtractionConfig};
+
+#[tokio::main]
+async fn main() -> kreuzberg::Result<()> {
+    let result = extract_file("document.pdf", None, &ExtractionConfig::default()).await?;
+    println!("{}", result.content);
+    Ok(())
+}
+```
+
+</TabItem>
+<TabItem label="Elixir">
+
+```elixir title="Elixir"
+task = Kreuzberg.extract_file_async("document.pdf")
+{:ok, result} = Task.await(task)
+
+content = result.content
+table_count = length(result.tables)
+metadata = result.metadata
+
+IO.puts("Content length: #{byte_size(content)} characters")
+IO.puts("Tables: #{table_count}")
+IO.puts("Metadata keys: #{inspect(Map.keys(metadata))}")
+```
+
+</TabItem>
+<TabItem label="TypeScript">
+
+```typescript title="TypeScript"
+import { extractFile } from '@kreuzberg/node';
+
+const result = await extractFile('document.pdf');
+console.log(result.content);
+```
+
+</TabItem>
+<TabItem label="WASM">
+
+```typescript title="WASM"
+import { extractFromFile, initWasm } from '@kreuzberg/wasm';
+
+await initWasm();
+
+const fileInput = document.getElementById('file') as HTMLInputElement;
+const file = fileInput.files?.[0];
+
+if (file) {
+	const result = await extractFromFile(file);
+	const content = result.content;
+	const tableCount = result.tables.length;
+
+	console.log(`Content length: ${content.length} characters`);
+	console.log(`Tables: ${tableCount}`);
+}
+```
+
+</TabItem>
+<TabItem label="CLI">
+
+```bash
+:::note[Not Applicable]
+Async extraction is an API-level feature. The CLI operates synchronously.
+Use language-specific bindings (Python, TypeScript, Rust, WASM) for async operations.
+:::
+```
+
+</TabItem>
+</Tabs>
+
+## Next Steps
+
+You've covered the core API. Go deeper:
+
+- **[Configuration Guide](/guides/configuration/)** — OCR backends, chunking, language detection, config files
+- **[Extract from Bytes](/reference/api-python/#extract_bytes_sync)** — Process in-memory data without writing to disk
+- **[OCR Setup](/guides/ocr/)** — Tesseract, PaddleOCR, EasyOCR backends
+- **[Types Reference](/reference/types/)** — Full metadata fields for every format
+- **[Docker Deployment](/guides/docker/)** — Run Kreuzberg in containers
+- **[API Reference](/reference/api-python/)** — Complete API documentation

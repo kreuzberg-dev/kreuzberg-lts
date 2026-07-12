@@ -1,0 +1,41 @@
+exclude = [
+    "localhost",
+    "127\\.0\\.0\\.1",
+    "0\\.0\\.0\\.0",
+
+    "example\\.com",
+    "example\\.org",
+
+    "\\$\\{",
+    "\\{\\{",
+
+    "github\\.com/.*/edit/",
+    "github\\.com/.*/raw/",
+
+    "kreuzberg\\.dev",
+
+    "pypi\\.org/project/",
+    "crates\\.io/crates/",
+    "npmjs\\.com/package/",
+    "rubygems\\.org/gems/",
+    "hex\\.pm/packages/",
+    "packagist\\.org/packages/",
+    "nuget\\.org/packages/",
+    "central\\.sonatype\\.com/",
+    "r-universe\\.dev/",
+    "artifacthub\\.io/",
+]
+
+accept = [200, 204, 301, 302, 429]
+
+timeout = 30
+
+max_retries = 3
+
+max_concurrency = 10
+
+include_mail = false
+
+require_https = false
+
+cache = true

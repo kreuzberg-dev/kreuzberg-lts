@@ -1,0 +1,3745 @@
+---
+title: Chunking & Embeddings
+description: "Split extracted text into chunks and generate embeddings for RAG — chunking strategies, embedding models, token reduction, and related post-extraction processing."
+---
+
+import { Tabs, TabItem } from '@astrojs/starlight/components';
+
+Prepare extracted text for retrieval-augmented generation and vector search. This guide covers text chunking, embedding generation, and the surrounding post-extraction processing steps — language detection, token reduction, keyword extraction, and quality processing.
+
+## Text Chunking
+
+Split extracted text into chunks for RAG systems, vector databases, or LLM context windows. Four strategies: **Text** (splits on whitespace/punctuation boundaries), **Markdown** (structure-aware, preserves headings, lists, code blocks), **Yaml** (section-aware, preserves YAML document structure), and **Semantic** (topic-aware, splits at natural document boundaries).
+
+### Semantic
+
+The semantic chunker produces topic-coherent chunks by splitting at natural document boundaries. It requires either an embedding model for topic detection or uses structural heuristics as fallback.
+
+Set `chunker_type` to `"semantic"`:
+
+```python
+config = ExtractionConfig(
+    chunking=ChunkingConfig(chunker_type="semantic")
+)
+```
+
+**Behavior:**
+
+- **Without embeddings** — Uses structural heuristics: detects headers (ALL CAPS, numbered sections) and paragraph boundaries
+- **With embeddings** — Compares consecutive paragraphs via embeddings to detect topic shifts, merging paragraphs below the `topic_threshold` (default: 0.5)
+
+Use `topic_threshold` to control sensitivity: higher values (0.7–0.9) preserve more fine-grained topics, lower values (0.1–0.3) merge aggressive. Only applies when an embedding model is configured.
+
+### Configuration
+
+<Tabs>
+<TabItem label="Python">
+
+```python title="Python"
+import asyncio
+from kreuzberg import ExtractionConfig, ChunkingConfig, extract_file
+
+async def main() -> None:
+    config: ExtractionConfig = ExtractionConfig(
+        chunking=ChunkingConfig(
+            max_chars=1000,
+            max_overlap=200,
+        )
+    )
+    result = await extract_file("document.pdf", config=config)
+    print(f"Chunks: {len(result.chunks or [])}")
+    for chunk in result.chunks or []:
+        print(f"Length: {len(chunk.content)}")
+
+asyncio.run(main())
+```
+
+```python title="Python - Markdown with Heading Context"
+import asyncio
+from kreuzberg import ExtractionConfig, ChunkingConfig, extract_file
+
+async def main() -> None:
+    config: ExtractionConfig = ExtractionConfig(
+        chunking=ChunkingConfig(
+            chunker_type="markdown",
+            max_chars=500,
+            max_overlap=50,
+            sizing_type="tokenizer",
+            sizing_model="Xenova/gpt-4o",
+        )
+    )
+    result = await extract_file("document.md", config=config)
+    for chunk in result.chunks or []:
+        heading_context = chunk.metadata.get("heading_context")
+        if heading_context:
+            headings = heading_context.get("headings", [])
+            for h in headings:
+                print(f"Heading L{h['level']}: {h['text']}")
+        print(f"Content: {chunk.content[:100]}...")
+
+asyncio.run(main())
+```
+
+```python title="Python - Semantic"
+import asyncio
+from kreuzberg import ExtractionConfig, ChunkingConfig, extract_file
+
+async def main() -> None:
+    config: ExtractionConfig = ExtractionConfig(
+        chunking=ChunkingConfig(chunker_type="semantic")
+    )
+    result = await extract_file("document.pdf", config=config)
+    for chunk in result.chunks or []:
+        print(f"Content: {chunk.content[:100]}...")
+
+asyncio.run(main())
+```
+
+```python title="Python - Prepend Heading Context"
+import asyncio
+from kreuzberg import ExtractionConfig, ChunkingConfig, extract_file
+
+async def main() -> None:
+    config: ExtractionConfig = ExtractionConfig(
+        chunking=ChunkingConfig(
+            chunker_type="markdown",
+            max_chars=500,
+            max_overlap=50,
+            prepend_heading_context=True,
+        )
+    )
+    result = await extract_file("document.md", config=config)
+    for chunk in result.chunks or []:
+        # Each chunk's content is prefixed with its heading breadcrumb
+        print(f"Content: {chunk.content[:100]}...")
+
+asyncio.run(main())
+```
+
+</TabItem>
+<TabItem label="TypeScript">
+
+```typescript title="TypeScript"
+import { extractFile } from '@kreuzberg/node';
+
+const config = {
+	chunking: {
+		maxChars: 1000,
+		maxOverlap: 200,
+	},
+};
+
+const result = await extractFile('document.pdf', null, config);
+console.log(`Total chunks: ${result.chunks?.length ?? 0}`);
+```
+
+```typescript title="TypeScript - Markdown with Heading Context"
+import { extractFile } from '@kreuzberg/node';
+
+const config = {
+	chunking: {
+		chunkerType: 'markdown',
+		maxChars: 500,
+		maxOverlap: 50,
+		sizingType: 'tokenizer',
+		sizingModel: 'Xenova/gpt-4o',
+	},
+};
+
+const result = await extractFile('document.md', null, config);
+for (const chunk of result.chunks ?? []) {
+	const headings = chunk.metadata?.headingContext?.headings ?? [];
+	for (const heading of headings) {
+		console.log(`Heading L${heading.level}: ${heading.text}`);
+	}
+	console.log(`Content: ${chunk.content.slice(0, 100)}...`);
+}
+```
+
+```typescript title="TypeScript - Semantic"
+import { extractFile } from '@kreuzberg/node';
+
+const config = {
+	chunking: {
+		chunkerType: 'semantic',
+	},
+};
+
+const result = await extractFile('document.pdf', null, config);
+for (const chunk of result.chunks ?? []) {
+	console.log(`Content: ${chunk.content.slice(0, 100)}...`);
+}
+```
+
+```typescript title="TypeScript - Prepend Heading Context"
+import { extractFile } from '@kreuzberg/node';
+
+const config = {
+	chunking: {
+		chunkerType: 'markdown',
+		maxChars: 500,
+		maxOverlap: 50,
+		prependHeadingContext: true,
+	},
+};
+
+const result = await extractFile('document.md', null, config);
+for (const chunk of result.chunks ?? []) {
+	// Each chunk's content is prefixed with its heading breadcrumb
+	console.log(`Content: ${chunk.content.slice(0, 100)}...`);
+}
+```
+
+</TabItem>
+<TabItem label="Rust">
+
+```rust title="Rust"
+use kreuzberg::{ExtractionConfig, ChunkingConfig};
+
+let config = ExtractionConfig {
+    chunking: Some(ChunkingConfig {
+        max_characters: 1000,
+        overlap: 200,
+        embedding: None,
+    }),
+    ..Default::default()
+};
+```
+
+```rust title="Rust - Semantic"
+use kreuzberg::{ExtractionConfig, ChunkingConfig, ChunkerType};
+
+let config = ExtractionConfig {
+    chunking: Some(ChunkingConfig {
+        chunker_type: ChunkerType::Semantic,
+        ..Default::default()
+    }),
+    ..Default::default()
+};
+```
+
+```rust title="Rust - Prepend Heading Context"
+use kreuzberg::{ExtractionConfig, ChunkingConfig, ChunkerType};
+
+let config = ExtractionConfig {
+    chunking: Some(ChunkingConfig {
+        max_characters: 500,
+        overlap: 50,
+        chunker_type: ChunkerType::Markdown,
+        prepend_heading_context: true,
+        ..Default::default()
+    }),
+    ..Default::default()
+};
+```
+
+</TabItem>
+<TabItem label="Go">
+
+```go title="Go"
+package main
+
+import (
+	"fmt"
+
+	"github.com/kreuzberg-dev/kreuzberg-lts/v4"
+)
+
+func main() {
+	maxChars := 1000
+	maxOverlap := 200
+	config := &kreuzberg.ExtractionConfig{
+		Chunking: &kreuzberg.ChunkingConfig{
+			MaxChars:   &maxChars,
+			MaxOverlap: &maxOverlap,
+		},
+	}
+
+	fmt.Printf("Config: MaxChars=%d, MaxOverlap=%d\n", *config.Chunking.MaxChars, *config.Chunking.MaxOverlap)
+}
+```
+
+```go title="Go - Markdown with Heading Context"
+package main
+
+import (
+	"fmt"
+
+	"github.com/kreuzberg-dev/kreuzberg-lts/v4"
+)
+
+func main() {
+	maxChars := 500
+	maxOverlap := 50
+
+	config := &kreuzberg.ExtractionConfig{
+		Chunking: &kreuzberg.ChunkingConfig{
+			MaxChars:   &maxChars,
+			MaxOverlap: &maxOverlap,
+			Sizing: &kreuzberg.ChunkSizingConfig{
+				Type:  "tokenizer",
+				Model: "Xenova/gpt-4o",
+			},
+		},
+	}
+
+	result, err := kreuzberg.ExtractFile("document.md", nil, config)
+	if err != nil {
+		panic(err)
+	}
+
+	for _, chunk := range result.Chunks {
+		if chunk.Metadata != nil && chunk.Metadata.HeadingContext != nil {
+			for _, heading := range chunk.Metadata.HeadingContext.Headings {
+				fmt.Printf("Heading L%d: %s\n", heading.Level, heading.Text)
+			}
+		}
+		fmt.Printf("Content: %.100s...\n", chunk.Content)
+	}
+}
+```
+
+```go title="Go - Prepend Heading Context"
+package main
+
+import (
+	"fmt"
+
+	"github.com/kreuzberg-dev/kreuzberg-lts/v4"
+)
+
+func boolPtr(b bool) *bool { return &b }
+
+func main() {
+	maxChars := 500
+	maxOverlap := 50
+
+	config := &kreuzberg.ExtractionConfig{
+		Chunking: &kreuzberg.ChunkingConfig{
+			MaxChars:              &maxChars,
+			MaxOverlap:            &maxOverlap,
+			PrependHeadingContext: boolPtr(true),
+		},
+	}
+
+	result, err := kreuzberg.ExtractFile("document.md", nil, config)
+	if err != nil {
+		panic(err)
+	}
+
+	for _, chunk := range result.Chunks {
+		// Each chunk's content is prefixed with its heading breadcrumb
+		fmt.Printf("Content: %.100s...\n", chunk.Content)
+	}
+}
+```
+
+</TabItem>
+<TabItem label="Java">
+
+```java title="Java"
+import dev.kreuzberg.config.ExtractionConfig;
+import dev.kreuzberg.config.ChunkingConfig;
+
+ExtractionConfig config = ExtractionConfig.builder()
+    .chunking(ChunkingConfig.builder()
+        .maxChars(1000)
+        .maxOverlap(200)
+        .build())
+    .build();
+```
+
+```java title="Java - Markdown with Heading Context"
+import dev.kreuzberg.config.ExtractionConfig;
+import dev.kreuzberg.config.ChunkingConfig;
+import dev.kreuzberg.HeadingContext;
+import dev.kreuzberg.HeadingLevel;
+
+ExtractionConfig config = ExtractionConfig.builder()
+    .chunking(ChunkingConfig.builder()
+        .chunkerType("markdown")
+        .maxChars(500)
+        .maxOverlap(50)
+        .sizingTokenizer("Xenova/gpt-4o")
+        .build())
+    .build();
+
+ExtractionResult result = KreuzbergClient.extractFile("document.md", config);
+
+result.getChunks().forEach(chunk -> {
+    var headingContext = chunk.getMetadata().getHeadingContext();
+    if (headingContext.isPresent()) {
+        System.out.println("Headings:");
+        headingContext.get().getHeadings().forEach(heading ->
+            System.out.println("  Level " + heading.getLevel() + ": " + heading.getText())
+        );
+    }
+});
+```
+
+```java title="Java - Prepend Heading Context"
+import dev.kreuzberg.config.ExtractionConfig;
+import dev.kreuzberg.config.ChunkingConfig;
+
+ExtractionConfig config = ExtractionConfig.builder()
+    .chunking(ChunkingConfig.builder()
+        .chunkerType("markdown")
+        .maxChars(500)
+        .maxOverlap(50)
+        .prependHeadingContext(true)
+        .build())
+    .build();
+
+ExtractionResult result = KreuzbergClient.extractFile("document.md", config);
+
+result.getChunks().forEach(chunk -> {
+    // Each chunk's content is prefixed with its heading breadcrumb
+    System.out.println(chunk.getContent().substring(0, Math.min(100, chunk.getContent().length())));
+});
+```
+
+</TabItem>
+<TabItem label="C#">
+
+```csharp title="C#"
+using Kreuzberg;
+
+class Program
+{
+    static async Task Main()
+    {
+        var config = new ExtractionConfig
+        {
+            Chunking = new ChunkingConfig
+            {
+                MaxChars = 1000,
+                MaxOverlap = 200,
+                Embedding = new EmbeddingConfig
+                {
+                    Model = EmbeddingModelType.Preset("all-minilm-l6-v2"),
+                    Normalize = true,
+                    BatchSize = 32
+                }
+            }
+        };
+
+        try
+        {
+            var result = await KreuzbergClient.ExtractFileAsync(
+                "document.pdf",
+                config
+            ).ConfigureAwait(false);
+
+            Console.WriteLine($"Chunks: {result.Chunks.Count}");
+            foreach (var chunk in result.Chunks)
+            {
+                Console.WriteLine($"Content length: {chunk.Content.Length}");
+                if (chunk.Embedding != null)
+                {
+                    Console.WriteLine($"Embedding dimensions: {chunk.Embedding.Length}");
+                }
+            }
+        }
+        catch (KreuzbergException ex)
+        {
+            Console.WriteLine($"Error: {ex.Message}");
+        }
+    }
+}
+```
+
+```csharp title="C# - Markdown with Heading Context"
+using Kreuzberg;
+
+class Program
+{
+    static async Task Main()
+    {
+        var config = new ExtractionConfig
+        {
+            Chunking = new ChunkingConfig
+            {
+                MaxChars = 500,
+                MaxOverlap = 50,
+                Sizing = new ChunkSizingConfig
+                {
+                    Type = "tokenizer",
+                    Model = "Xenova/gpt-4o"
+                }
+            }
+        };
+
+        try
+        {
+            var result = await KreuzbergClient.ExtractFileAsync(
+                "document.md",
+                config
+            ).ConfigureAwait(false);
+
+            foreach (var chunk in result.Chunks)
+            {
+                if (chunk.HeadingContext?.Headings != null)
+                {
+                    Console.WriteLine("Headings:");
+                    foreach (var heading in chunk.HeadingContext.Headings)
+                    {
+                        Console.WriteLine($"  Level {heading.Level}: {heading.Text}");
+                    }
+                }
+            }
+        }
+        catch (KreuzbergException ex)
+        {
+            Console.WriteLine($"Error: {ex.Message}");
+        }
+    }
+}
+```
+
+```csharp title="C# - Prepend Heading Context"
+using Kreuzberg;
+
+class Program
+{
+    static async Task Main()
+    {
+        var config = new ExtractionConfig
+        {
+            Chunking = new ChunkingConfig
+            {
+                MaxChars = 500,
+                MaxOverlap = 50,
+                PrependHeadingContext = true
+            }
+        };
+
+        try
+        {
+            var result = await KreuzbergClient.ExtractFileAsync(
+                "document.md",
+                config
+            ).ConfigureAwait(false);
+
+            foreach (var chunk in result.Chunks)
+            {
+                // Each chunk's content is prefixed with its heading breadcrumb
+                Console.WriteLine(chunk.Content[..Math.Min(100, chunk.Content.Length)]);
+            }
+        }
+        catch (KreuzbergException ex)
+        {
+            Console.WriteLine($"Error: {ex.Message}");
+        }
+    }
+}
+```
+
+</TabItem>
+<TabItem label="Ruby">
+
+```ruby title="Ruby"
+require 'kreuzberg'
+
+config = Kreuzberg::Config::Extraction.new(
+  chunking: Kreuzberg::Config::Chunking.new(
+    max_characters: 1000,
+    overlap: 200
+  )
+)
+```
+
+```ruby title="Ruby - Markdown with Heading Context"
+require 'kreuzberg'
+
+config = Kreuzberg::Config::Extraction.new(
+  chunking: Kreuzberg::Config::Chunking.new(
+    chunker_type: "markdown",
+    max_characters: 500,
+    overlap: 50,
+    sizing_type: "tokenizer",
+    sizing_model: "Xenova/gpt-4o"
+  )
+)
+
+result = Kreuzberg.extract_file("document.md", config)
+
+result.chunks.each do |chunk|
+  if chunk.metadata.heading_context
+    puts "Headings:"
+    chunk.metadata.heading_context.headings.each do |heading|
+      puts "  #{' ' * (heading.level - 1) * 2}Level #{heading.level}: #{heading.text}"
+    end
+  end
+end
+```
+
+```ruby title="Ruby - Prepend Heading Context"
+require 'kreuzberg'
+
+config = Kreuzberg::Config::Extraction.new(
+  chunking: Kreuzberg::Config::Chunking.new(
+    chunker_type: "markdown",
+    max_characters: 500,
+    overlap: 50,
+    prepend_heading_context: true
+  )
+)
+
+result = Kreuzberg.extract_file("document.md", config)
+
+result.chunks.each do |chunk|
+  # Each chunk's content is prefixed with its heading breadcrumb
+  puts chunk.content[0, 100]
+end
+```
+
+</TabItem>
+<TabItem label="R">
+
+```r title="R"
+library(kreuzberg)
+
+# Example 1: Basic character-based chunking
+chunking_cfg <- chunking_config(max_characters = 1000L, overlap = 200L)
+config <- extraction_config(chunking = chunking_cfg)
+
+result <- extract_file_sync("document.pdf", "application/pdf", config)
+num_chunks <- length(result$chunks)
+cat(sprintf("Document split into %d chunks\n", num_chunks))
+for (i in seq_len(min(3L, num_chunks))) {
+  cat(sprintf("Chunk %d: %d characters\n", i, nchar(result$chunks[[i]])))
+}
+
+# Example 2: Markdown chunker with token-based sizing and heading context
+chunking_cfg2 <- chunking_config(
+  chunker_type = "markdown",
+  sizing = list(
+    type = "tokenizer",
+    model = "Xenova/gpt-4o"
+  )
+)
+config2 <- extraction_config(chunking = chunking_cfg2)
+
+result2 <- extract_file_sync("document.md", "text/markdown", config2)
+num_chunks2 <- length(result2$chunks)
+cat(sprintf("\nMarkdown document split into %d chunks\n", num_chunks2))
+
+for (i in seq_len(min(3L, num_chunks2))) {
+  chunk <- result2$chunks[[i]]
+  cat(sprintf("\nChunk %d:\n", i))
+  cat(sprintf("  Preview: %s...\n", substr(chunk$text, 1, 60)))
+
+  # Access heading context
+  if (!is.null(chunk$metadata$heading_context)) {
+    headings <- chunk$metadata$heading_context$headings
+    if (length(headings) > 0) {
+      cat("  Headings in context:\n")
+      for (h in headings) {
+        cat(sprintf("    - Level %d: %s\n", h$level, h$text))
+      }
+    }
+  }
+}
+
+# Example 3: Prepend heading context to chunk content
+chunking_cfg3 <- chunking_config(
+  chunker_type = "markdown",
+  prepend_heading_context = TRUE
+)
+config3 <- extraction_config(chunking = chunking_cfg3)
+
+result3 <- extract_file_sync("document.md", "text/markdown", config3)
+num_chunks3 <- length(result3$chunks)
+cat(sprintf("\nDocument split into %d chunks with prepended headings\n", num_chunks3))
+
+for (i in seq_len(min(3L, num_chunks3))) {
+  chunk <- result3$chunks[[i]]
+  # Each chunk's content is prefixed with its heading breadcrumb
+  cat(sprintf("Chunk %d: %s...\n", i, substr(chunk$content, 1, 80)))
+}
+```
+
+</TabItem>
+<TabItem label="WASM">
+
+```typescript title="WASM"
+import { initWasm, extractBytes } from '@kreuzberg/wasm';
+
+await initWasm();
+
+const config = {
+  chunking: {
+    maxChars: 1000,
+    chunkOverlap: 100
+  }
+};
+
+const bytes = new Uint8Array(buffer);
+const result = await extractBytes(bytes, 'application/pdf', config);
+
+result.chunks?.forEach((chunk, idx) => {
+  console.log(`Chunk ${idx}: ${chunk.content.substring(0, 50)}...`);
+  console.log(`Tokens: ${chunk.metadata?.token_count}`);
+});
+```
+
+```typescript title="WASM - Markdown with Heading Context"
+import { initWasm, extractBytes } from '@kreuzberg/wasm';
+
+await initWasm();
+
+const config = {
+  chunking: {
+    chunkerType: 'markdown',
+    maxChars: 2000
+    // Note: Token-based sizing is not available in WASM builds.
+    // Use character-based sizing instead.
+  }
+};
+
+const bytes = new Uint8Array(buffer);
+const result = await extractBytes(bytes, 'text/markdown', config);
+
+result.chunks?.forEach((chunk, idx) => {
+  console.log(`Chunk ${idx}: ${chunk.content.substring(0, 50)}...`);
+
+  if (chunk.metadata?.headingContext?.headings) {
+    console.log('Headings:');
+    chunk.metadata.headingContext.headings.forEach(h => {
+      console.log(`  Level ${h.level}: ${h.text}`);
+    });
+  }
+});
+```
+
+```typescript title="WASM - Prepend Heading Context"
+import { initWasm, extractBytes } from '@kreuzberg/wasm';
+
+await initWasm();
+
+const config = {
+  chunking: {
+    chunkerType: 'markdown',
+    maxChars: 2000,
+    prependHeadingContext: true,
+  }
+};
+
+const bytes = new Uint8Array(buffer);
+const result = await extractBytes(bytes, 'text/markdown', config);
+
+result.chunks?.forEach((chunk, idx) => {
+  // Each chunk's content is prefixed with its heading breadcrumb
+  console.log(`Chunk ${idx}: ${chunk.content.substring(0, 80)}...`);
+});
+```
+
+</TabItem>
+</Tabs>
+
+### Chunk Output
+
+Each chunk in `result.chunks` contains:
+
+| Field | Description |
+|-------|-------------|
+| `content` | Chunk text |
+| `metadata.byte_start` / `byte_end` | Byte offsets in the original text |
+| `metadata.chunk_index` / `total_chunks` | Position in sequence |
+| `metadata.token_count` | Token count (when embeddings enabled) |
+| `metadata.heading_context` | Active heading hierarchy (Markdown chunker only) |
+| `embedding` | Embedding vector (when configured) |
+
+Chunks can be sized by token count instead of characters — enable the `chunking-tokenizers` feature and set `sizing` to `token`.
+
+### RAG Pipeline Example
+
+<Tabs>
+<TabItem label="Python">
+
+```python title="Python"
+import asyncio
+from kreuzberg import (
+    extract_file,
+    ExtractionConfig,
+    ChunkingConfig,
+    EmbeddingConfig,
+    EmbeddingModelType,
+)
+
+async def main() -> None:
+    config: ExtractionConfig = ExtractionConfig(
+        chunking=ChunkingConfig(
+            max_chars=500,
+            max_overlap=50,
+            embedding=EmbeddingConfig(
+                model=EmbeddingModelType.preset("balanced"),
+                normalize=True,
+                batch_size=16
+            )
+        )
+    )
+    result = await extract_file("research_paper.pdf", config=config)
+
+    chunks_with_embeddings: list = []
+    for chunk in result.chunks or []:
+        if chunk.embedding:
+            chunks_with_embeddings.append({
+                "content": chunk.content[:100],
+                "embedding_dims": len(chunk.embedding)
+            })
+
+    print(f"Chunks with embeddings: {len(chunks_with_embeddings)}")
+
+asyncio.run(main())
+```
+
+</TabItem>
+<TabItem label="TypeScript">
+
+```typescript title="TypeScript"
+import { extractFile } from '@kreuzberg/node';
+
+const config = {
+	chunking: {
+		maxChars: 500,
+		maxOverlap: 50,
+		embedding: {
+			preset: 'balanced',
+		},
+	},
+};
+
+const result = await extractFile('research_paper.pdf', null, config);
+
+if (result.chunks) {
+	for (const chunk of result.chunks) {
+		console.log(`Chunk ${chunk.metadata.chunkIndex + 1}/${chunk.metadata.totalChunks}`);
+		console.log(`Position: ${chunk.metadata.charStart}-${chunk.metadata.charEnd}`);
+		console.log(`Content: ${chunk.content.slice(0, 100)}...`);
+		if (chunk.embedding) {
+			console.log(`Embedding: ${chunk.embedding.length} dimensions`);
+		}
+	}
+}
+```
+
+</TabItem>
+<TabItem label="Rust">
+
+```rust title="Rust"
+use kreuzberg::{extract_file, ExtractionConfig, ChunkingConfig, EmbeddingConfig};
+
+let config = ExtractionConfig {
+    chunking: Some(ChunkingConfig {
+        max_characters: 500,
+        overlap: 50,
+        embedding: Some(EmbeddingConfig {
+            model: "balanced".to_string(),
+            normalize: true,
+            ..Default::default()
+        }),
+        ..Default::default()
+    }),
+    ..Default::default()
+};
+
+let result = extract_file("research_paper.pdf", None, &config).await?;
+
+if let Some(chunks) = result.chunks {
+    for chunk in chunks {
+        println!("Chunk {}/{}",
+            chunk.metadata.chunk_index + 1,
+            chunk.metadata.total_chunks
+        );
+        println!("Position: {}-{}",
+            chunk.metadata.byte_start,
+            chunk.metadata.byte_end
+        );
+        println!("Content: {}...", &chunk.content[..100.min(chunk.content.len())]);
+        if let Some(embedding) = chunk.embedding {
+            println!("Embedding: {} dimensions", embedding.len());
+        }
+    }
+}
+```
+
+</TabItem>
+<TabItem label="Go">
+
+```go title="Go"
+package main
+
+import (
+	"fmt"
+	"log"
+
+	"github.com/kreuzberg-dev/kreuzberg-lts/v4"
+)
+
+maxChars := 500
+maxOverlap := 50
+normalize := true
+batchSize := int32(16)
+
+config := &kreuzberg.ExtractionConfig{
+	Chunking: &kreuzberg.ChunkingConfig{
+		MaxChars:   &maxChars,
+		MaxOverlap: &maxOverlap,
+		Embedding: &kreuzberg.EmbeddingConfig{
+			Model:      kreuzberg.EmbeddingModelType_Preset("all-mpnet-base-v2"),
+			Normalize:  &normalize,
+			BatchSize:  &batchSize,
+		},
+	},
+}
+
+result, err := kreuzberg.ExtractFileSync("research_paper.pdf", config)
+if err != nil {
+	log.Fatalf("RAG extraction failed: %v", err)
+}
+
+chunks := result.Chunks
+fmt.Printf("Found %d chunks for RAG pipeline\n", len(chunks))
+
+for i := 0; i < len(chunks) && i < 3; i++ {
+	chunk := chunks[i]
+	content := chunk.Content
+	if len(content) > 80 {
+		content = content[:80]
+	}
+	fmt.Printf("Chunk %d: %s...\n", i, content)
+}
+```
+
+</TabItem>
+<TabItem label="Java">
+
+```java title="Java"
+import dev.kreuzberg.Kreuzberg;
+import dev.kreuzberg.ExtractionResult;
+import dev.kreuzberg.config.ExtractionConfig;
+import dev.kreuzberg.config.ChunkingConfig;
+import dev.kreuzberg.config.EmbeddingConfig;
+import dev.kreuzberg.config.EmbeddingModelType;
+import java.util.List;
+
+ExtractionConfig config = ExtractionConfig.builder()
+    .chunking(ChunkingConfig.builder()
+        .maxChars(500)
+        .maxOverlap(50)
+        .embedding(EmbeddingConfig.builder()
+            .model(EmbeddingModelType.preset("all-mpnet-base-v2"))
+            .normalize(true)
+            .batchSize(16)
+            .build())
+        .build())
+    .build();
+
+try {
+    ExtractionResult result = Kreuzberg.extractFile("research_paper.pdf", config);
+
+    List<Object> chunks = result.getChunks() != null ? result.getChunks() : List.of();
+    System.out.println("Found " + chunks.size() + " chunks for RAG pipeline");
+
+    for (int i = 0; i < Math.min(3, chunks.size()); i++) {
+        Object chunk = chunks.get(i);
+        System.out.println("Chunk " + i + ": " + chunk.toString().substring(0, Math.min(80, chunk.toString().length())) + "...");
+    }
+} catch (Exception ex) {
+    System.err.println("RAG extraction failed: " + ex.getMessage());
+}
+```
+
+</TabItem>
+<TabItem label="C#">
+
+```csharp title="C#"
+using Kreuzberg;
+using System.Collections.Generic;
+using System.Linq;
+
+class RagPipelineExample
+{
+    static async Task Main()
+    {
+        var config = new ExtractionConfig
+        {
+            Chunking = new ChunkingConfig
+            {
+                MaxChars = 500,
+                MaxOverlap = 50,
+                Embedding = new EmbeddingConfig
+                {
+                    Model = EmbeddingModelType.Preset("all-mpnet-base-v2"),
+                    Normalize = true,
+                    BatchSize = 16
+                }
+            }
+        };
+
+        try
+        {
+            var result = await KreuzbergClient.ExtractFileAsync(
+                "research_paper.pdf",
+                config
+            ).ConfigureAwait(false);
+
+            var vectorStore = await BuildVectorStoreAsync(result.Chunks)
+                .ConfigureAwait(false);
+
+            var query = "machine learning optimization";
+            var relevantChunks = await SearchAsync(vectorStore, query)
+                .ConfigureAwait(false);
+
+            Console.WriteLine($"Found {relevantChunks.Count} relevant chunks");
+            foreach (var chunk in relevantChunks.Take(3))
+            {
+                Console.WriteLine($"Content: {chunk.Content[..80]}...");
+                Console.WriteLine($"Similarity: {chunk.Similarity:F3}\n");
+            }
+        }
+        catch (KreuzbergException ex)
+        {
+            Console.WriteLine($"Error: {ex.Message}");
+        }
+    }
+
+    static async Task<List<VectorEntry>> BuildVectorStoreAsync(
+        IEnumerable<Chunk> chunks)
+    {
+        return await Task.Run(() =>
+        {
+            return chunks.Select(c => new VectorEntry
+            {
+                Content = c.Content,
+                Embedding = c.Embedding?.ToArray() ?? Array.Empty<float>(),
+                Similarity = 0f
+            }).ToList();
+        }).ConfigureAwait(false);
+    }
+
+    static async Task<List<VectorEntry>> SearchAsync(
+        List<VectorEntry> store,
+        string query)
+    {
+        return await Task.Run(() =>
+        {
+            return store
+                .OrderByDescending(e => e.Similarity)
+                .ToList();
+        }).ConfigureAwait(false);
+    }
+
+    class VectorEntry
+    {
+        public string Content { get; set; } = string.Empty;
+        public float[] Embedding { get; set; } = Array.Empty<float>();
+        public float Similarity { get; set; }
+    }
+}
+```
+
+</TabItem>
+<TabItem label="Ruby">
+
+```ruby title="Ruby"
+require 'kreuzberg'
+
+config = Kreuzberg::Config::Extraction.new(
+  chunking: Kreuzberg::Config::Chunking.new(
+    max_characters: 500,
+    overlap: 50,
+    embedding: Kreuzberg::Config::Embedding.new(
+      model: Kreuzberg::EmbeddingModelType.new(
+        type: 'preset',
+        name: 'all-mpnet-base-v2'
+      ),
+      normalize: true,
+      batch_size: 16
+    )
+  )
+)
+
+result = Kreuzberg.extract_file_sync('research_paper.pdf', config: config)
+
+vector_store = build_vector_store(result.chunks)
+query = 'machine learning optimization'
+relevant_chunks = search_vector_store(vector_store, query)
+
+puts "Found #{relevant_chunks.length} relevant chunks"
+relevant_chunks.take(3).each do |chunk|
+  puts "Content: #{chunk[:content][0..80]}..."
+  puts "Similarity: #{chunk[:similarity]&.round(3)}\n"
+end
+
+def build_vector_store(chunks)
+  chunks.map.with_index do |chunk, idx|
+    {
+      id: idx,
+      content: chunk.content,
+      embedding: chunk.embedding,
+      similarity: 0.0
+    }
+  end
+end
+
+def search_vector_store(store, query)
+  store.sort_by { |entry| entry[:similarity] }.reverse
+end
+```
+
+</TabItem>
+<TabItem label="R">
+
+```r title="R"
+library(kreuzberg)
+
+chunking_cfg <- chunking_config(max_characters = 800L, overlap = 150L)
+config <- extraction_config(chunking = chunking_cfg)
+
+result <- extract_file_sync("document.pdf", "application/pdf", config)
+
+cat(sprintf("Total chunks: %d\n", length(result$chunks)))
+cat(sprintf("Processing chunks for RAG pipeline:\n"))
+
+for (i in seq_len(min(3L, length(result$chunks)))) {
+  chunk <- result$chunks[[i]]
+  cat(sprintf("Chunk %d: %d characters\n", i, nchar(chunk)))
+}
+```
+
+</TabItem>
+</Tabs>
+
+## Language Detection
+
+Detect languages in extracted text using [`whatlang`](https://crates.io/crates/whatlang). Supports 60+ languages with ISO 639-3 codes.
+
+By default, only the primary language is returned. Set `detect_multiple: true` to detect all languages in a document: the text is chunked into 200-character segments and language frequencies are aggregated, returning all detected languages sorted by prevalence.
+
+### Configuration
+
+<Tabs>
+<TabItem label="Python">
+
+```python title="Python"
+import asyncio
+from kreuzberg import ExtractionConfig, LanguageDetectionConfig, extract_file
+
+async def main() -> None:
+    config: ExtractionConfig = ExtractionConfig(
+        language_detection=LanguageDetectionConfig(
+            enabled=True,
+            min_confidence=0.85,
+            detect_multiple=False
+        )
+    )
+    result = await extract_file("document.pdf", config=config)
+    if result.detected_languages:
+        print(f"Primary language: {result.detected_languages[0]}")
+    print(f"Content length: {len(result.content)} chars")
+
+asyncio.run(main())
+```
+
+</TabItem>
+<TabItem label="TypeScript">
+
+```typescript title="TypeScript"
+import { extractFile } from '@kreuzberg/node';
+
+const config = {
+	languageDetection: {
+		enabled: true,
+		minConfidence: 0.8,
+		detectMultiple: false,
+	},
+};
+
+const result = await extractFile('document.pdf', null, config);
+if (result.detectedLanguages) {
+	console.log(`Detected languages: ${result.detectedLanguages.join(', ')}`);
+}
+```
+
+</TabItem>
+<TabItem label="Rust">
+
+```rust title="Rust"
+use kreuzberg::{ExtractionConfig, LanguageDetectionConfig};
+
+let config = ExtractionConfig {
+    language_detection: Some(LanguageDetectionConfig {
+        enabled: true,
+        min_confidence: 0.8,
+        detect_multiple: false,
+    }),
+    ..Default::default()
+};
+```
+
+</TabItem>
+<TabItem label="Go">
+
+```go title="Go"
+package main
+
+import (
+	"fmt"
+
+	"github.com/kreuzberg-dev/kreuzberg-lts/v4"
+)
+
+func main() {
+	minConfidence := 0.8
+	config := &kreuzberg.ExtractionConfig{
+		LanguageDetection: &kreuzberg.LanguageDetectionConfig{
+			Enabled:        true,
+			MinConfidence:  &minConfidence,
+			DetectMultiple: false,
+		},
+	}
+
+	fmt.Printf("Language detection enabled: %v\n", config.LanguageDetection.Enabled)
+	fmt.Printf("Min confidence: %f\n", *config.LanguageDetection.MinConfidence)
+}
+```
+
+</TabItem>
+<TabItem label="Java">
+
+```java title="Java"
+import dev.kreuzberg.config.ExtractionConfig;
+import dev.kreuzberg.config.LanguageDetectionConfig;
+
+ExtractionConfig config = ExtractionConfig.builder()
+    .languageDetection(LanguageDetectionConfig.builder()
+        .enabled(true)
+        .minConfidence(0.8)
+        .build())
+    .build();
+```
+
+</TabItem>
+<TabItem label="C#">
+
+```csharp title="C#"
+using Kreuzberg;
+
+class Program
+{
+    static async Task Main()
+    {
+        var config = new ExtractionConfig
+        {
+            LanguageDetection = new LanguageDetectionConfig
+            {
+                Enabled = true,
+                MinConfidence = 0.8m,
+                DetectMultiple = false
+            }
+        };
+
+        try
+        {
+            var result = await KreuzbergClient.ExtractFileAsync("document.pdf", config);
+
+            if (result.DetectedLanguages?.Count > 0)
+            {
+                Console.WriteLine($"Detected Language: {result.DetectedLanguages[0]}");
+            }
+            else
+            {
+                Console.WriteLine("No language detected");
+            }
+
+            Console.WriteLine($"Content length: {result.Content.Length} characters");
+        }
+        catch (KreuzbergException ex)
+        {
+            Console.WriteLine($"Extraction failed: {ex.Message}");
+        }
+    }
+}
+```
+
+</TabItem>
+<TabItem label="Ruby">
+
+```ruby title="Ruby"
+require 'kreuzberg'
+
+config = Kreuzberg::Config::Extraction.new(
+  language_detection: Kreuzberg::Config::LanguageDetection.new(
+    enabled: true,
+    min_confidence: 0.8,
+    detect_multiple: false
+  )
+)
+```
+
+</TabItem>
+<TabItem label="R">
+
+```r title="R"
+library(kreuzberg)
+
+config <- extraction_config(
+  language_detection = list(enabled = TRUE)
+)
+
+result <- extract_file_sync("document.pdf", "application/pdf", config)
+
+cat(sprintf("Detected language: %s\n", result$detected_language))
+cat(sprintf("Content preview: %.60s...\n", result$content))
+```
+
+</TabItem>
+</Tabs>
+
+### Multilingual Example
+
+<Tabs>
+<TabItem label="Python">
+
+```python title="Python"
+import asyncio
+from kreuzberg import extract_file, ExtractionConfig, LanguageDetectionConfig
+
+async def main() -> None:
+    config: ExtractionConfig = ExtractionConfig(
+        language_detection=LanguageDetectionConfig(
+            enabled=True,
+            min_confidence=0.7,
+            detect_multiple=True
+        )
+    )
+    result = await extract_file("multilingual_document.pdf", config=config)
+    languages: list[str] = result.detected_languages or []
+    print(f"Detected {len(languages)} languages: {languages}")
+
+asyncio.run(main())
+```
+
+</TabItem>
+<TabItem label="TypeScript">
+
+```typescript title="TypeScript"
+import { extractFile } from '@kreuzberg/node';
+
+const config = {
+	languageDetection: {
+		enabled: true,
+		minConfidence: 0.8,
+		detectMultiple: true,
+	},
+};
+
+const result = await extractFile('multilingual_document.pdf', null, config);
+if (result.detectedLanguages) {
+	console.log(`Detected languages: ${result.detectedLanguages.join(', ')}`);
+}
+```
+
+</TabItem>
+<TabItem label="Rust">
+
+```rust title="Rust"
+use kreuzberg::{extract_file, ExtractionConfig, LanguageDetectionConfig};
+
+let config = ExtractionConfig {
+    language_detection: Some(LanguageDetectionConfig {
+        enabled: true,
+        min_confidence: 0.8,
+        detect_multiple: true,
+    }),
+    ..Default::default()
+};
+
+let result = extract_file("multilingual_document.pdf", None, &config).await?;
+
+println!("Detected languages: {:?}", result.detected_languages);
+```
+
+</TabItem>
+<TabItem label="Go">
+
+```go title="Go"
+package main
+
+import (
+	"fmt"
+	"log"
+	"strings"
+
+	"github.com/kreuzberg-dev/kreuzberg-lts/v4"
+)
+
+enabled := true
+detectMultiple := true
+minConfidence := 0.8
+
+config := &kreuzberg.ExtractionConfig{
+	LanguageDetection: &kreuzberg.LanguageDetectionConfig{
+		Enabled:         &enabled,
+		MinConfidence:   &minConfidence,
+		DetectMultiple:  &detectMultiple,
+	},
+}
+
+result, err := kreuzberg.ExtractFileSync("multilingual_document.pdf", config)
+if err != nil {
+	log.Fatalf("Processing failed: %v", err)
+}
+
+languages := result.DetectedLanguages
+if len(languages) > 0 {
+	fmt.Printf("Detected %d language(s): %s\n", len(languages), strings.Join(languages, ", "))
+} else {
+	fmt.Println("No languages detected")
+}
+
+fmt.Printf("Total content: %d characters\n", len(result.Content))
+fmt.Printf("MIME type: %s\n", result.MimeType)
+```
+
+</TabItem>
+<TabItem label="Java">
+
+```java title="Java"
+import dev.kreuzberg.Kreuzberg;
+import dev.kreuzberg.ExtractionResult;
+import dev.kreuzberg.config.ExtractionConfig;
+import dev.kreuzberg.config.LanguageDetectionConfig;
+import java.math.BigDecimal;
+import java.util.List;
+
+ExtractionConfig config = ExtractionConfig.builder()
+    .languageDetection(LanguageDetectionConfig.builder()
+        .enabled(true)
+        .minConfidence(new BigDecimal("0.8"))
+        .detectMultiple(true)
+        .build())
+    .build();
+
+try {
+    ExtractionResult result = Kreuzberg.extractFile("multilingual_document.pdf", config);
+
+    List<String> languages = result.getDetectedLanguages() != null
+        ? result.getDetectedLanguages()
+        : List.of();
+
+    if (!languages.isEmpty()) {
+        System.out.println("Detected " + languages.size() + " language(s): " + String.join(", ", languages));
+    } else {
+        System.out.println("No languages detected");
+    }
+
+    System.out.println("Total content: " + result.getContent().length() + " characters");
+    System.out.println("MIME type: " + result.getMimeType());
+} catch (Exception ex) {
+    System.err.println("Processing failed: " + ex.getMessage());
+}
+```
+
+</TabItem>
+<TabItem label="C#">
+
+```csharp title="C#"
+using Kreuzberg;
+
+class Program
+{
+    static async Task Main()
+    {
+        var config = new ExtractionConfig
+        {
+            LanguageDetection = new LanguageDetectionConfig
+            {
+                Enabled = true,
+                MinConfidence = 0.8m,
+                DetectMultiple = true
+            }
+        };
+
+        try
+        {
+            var result = await KreuzbergClient.ExtractFileAsync("multilingual_document.pdf", config);
+
+            var languages = result.DetectedLanguages ?? new List<string>();
+
+            if (languages.Count > 0)
+            {
+                Console.WriteLine($"Detected {languages.Count} language(s): {string.Join(", ", languages)}");
+            }
+            else
+            {
+                Console.WriteLine("No languages detected");
+            }
+
+            Console.WriteLine($"Total content: {result.Content.Length} characters");
+            Console.WriteLine($"MIME type: {result.MimeType}");
+        }
+        catch (KreuzbergException ex)
+        {
+            Console.WriteLine($"Processing failed: {ex.Message}");
+        }
+    }
+}
+```
+
+</TabItem>
+<TabItem label="Ruby">
+
+```ruby title="Ruby"
+require 'kreuzberg'
+
+config = Kreuzberg::Config::Extraction.new(
+  language_detection: Kreuzberg::Config::LanguageDetection.new(
+    enabled: true,
+    min_confidence: 0.8,
+    detect_multiple: true
+  )
+)
+
+result = Kreuzberg.extract_file_sync('multilingual_document.pdf', config: config)
+
+languages = result.detected_languages || []
+
+if languages.any?
+  puts "Detected #{languages.length} language(s): #{languages.join(', ')}"
+else
+  puts "No languages detected"
+end
+
+puts "Total content: #{result.content.length} characters"
+puts "MIME type: #{result.mime_type}"
+```
+
+</TabItem>
+<TabItem label="R">
+
+```r title="R"
+library(kreuzberg)
+
+files <- c("english.pdf", "spanish.pdf", "french.pdf")
+config <- extraction_config(language_detection = list(enabled = TRUE))
+
+for (file in files) {
+  result <- extract_file_sync(file, "application/pdf", config)
+  cat(sprintf("%s: detected language = %s\n",
+              file, result$detected_language))
+}
+```
+
+</TabItem>
+</Tabs>
+
+## Embedding Generation
+
+Generate embeddings for semantic search and RAG using local ONNX models. Requires the `embeddings` feature. Embeddings are generated in-process with no external API calls.
+
+| Preset | Model | Dimensions | Max Tokens | Use Case |
+|--------|-------|-----------|------------|----------|
+| `fast` | all-MiniLM-L6-v2 (quantized) | 384 | 512 | Quick prototyping, development, resource-constrained |
+| `balanced` | BGE-base-en-v1.5 | 768 | 1024 | General-purpose RAG, production deployments, English |
+| `quality` | BGE-large-en-v1.5 | 1024 | 2000 | Complex documents, maximum accuracy, sufficient compute |
+| `multilingual` | multilingual-e5-base | 768 | 1024 | International documents, mixed-language content |
+
+### Configuration
+
+<Tabs>
+<TabItem label="Python">
+
+```python title="Python"
+from kreuzberg import (
+    ExtractionConfig,
+    ChunkingConfig,
+    EmbeddingConfig,
+    EmbeddingModelType,
+)
+
+config: ExtractionConfig = ExtractionConfig(
+    chunking=ChunkingConfig(
+        max_chars=1024,
+        max_overlap=100,
+        embedding=EmbeddingConfig(
+            model=EmbeddingModelType.preset("balanced"),
+            normalize=True,
+            batch_size=32,
+            show_download_progress=False,
+        ),
+    )
+)
+```
+
+</TabItem>
+<TabItem label="TypeScript">
+
+```typescript title="TypeScript"
+import { extractFile } from '@kreuzberg/node';
+
+const config = {
+	chunking: {
+		maxChars: 1024,
+		maxOverlap: 100,
+		embedding: {
+			preset: 'balanced',
+		},
+	},
+};
+
+const result = await extractFile('document.pdf', null, config);
+console.log(`Chunks: ${result.chunks?.length ?? 0}`);
+```
+
+</TabItem>
+<TabItem label="Rust">
+
+```rust title="Rust"
+use kreuzberg::{ExtractionConfig, ChunkingConfig, EmbeddingConfig};
+
+let config = ExtractionConfig {
+    chunking: Some(ChunkingConfig {
+        max_characters: 1024,
+        overlap: 100,
+        embedding: Some(EmbeddingConfig {
+            model: "balanced".to_string(),
+            normalize: true,
+            batch_size: 32,
+            show_download_progress: false,
+            ..Default::default()
+        }),
+        ..Default::default()
+    }),
+    ..Default::default()
+};
+```
+
+</TabItem>
+<TabItem label="Go">
+
+```go title="Go"
+package main
+
+import (
+	"fmt"
+
+	"github.com/kreuzberg-dev/kreuzberg-lts/v4"
+)
+
+maxChars := 512
+maxOverlap := 50
+normalize := true
+batchSize := int32(32)
+showProgress := false
+
+config := &kreuzberg.ExtractionConfig{
+	Chunking: &kreuzberg.ChunkingConfig{
+		MaxChars:   &maxChars,
+		MaxOverlap: &maxOverlap,
+		Embedding: &kreuzberg.EmbeddingConfig{
+			Model:                 kreuzberg.EmbeddingModelType_Preset("balanced"),
+			Normalize:             &normalize,
+			BatchSize:             &batchSize,
+			ShowDownloadProgress:  &showProgress,
+		},
+	},
+}
+
+result, err := kreuzberg.ExtractFileSync("document.pdf", config)
+if err != nil {
+	fmt.Printf("Error: %v\n", err)
+	return
+}
+
+for index, chunk := range result.Chunks {
+	chunkID := fmt.Sprintf("doc_chunk_%d", index)
+	content := chunk.Content
+	if len(content) > 50 {
+		content = content[:50]
+	}
+	fmt.Printf("Chunk %s: %s\n", chunkID, content)
+
+	if chunk.Embedding != nil && len(chunk.Embedding) > 0 {
+		fmt.Printf("  Embedding dimensions: %d\n", len(chunk.Embedding))
+	}
+}
+```
+
+</TabItem>
+<TabItem label="Java">
+
+```java title="Java"
+import dev.kreuzberg.Kreuzberg;
+import dev.kreuzberg.ExtractionResult;
+import dev.kreuzberg.config.ExtractionConfig;
+import dev.kreuzberg.config.ChunkingConfig;
+import dev.kreuzberg.config.EmbeddingConfig;
+import dev.kreuzberg.config.EmbeddingModelType;
+import java.util.List;
+
+ExtractionConfig config = ExtractionConfig.builder()
+    .chunking(ChunkingConfig.builder()
+        .maxChars(512)
+        .maxOverlap(50)
+        .embedding(EmbeddingConfig.builder()
+            .model(EmbeddingModelType.preset("balanced"))
+            .normalize(true)
+            .batchSize(32)
+            .showDownloadProgress(false)
+            .build())
+        .build())
+    .build();
+
+ExtractionResult result = Kreuzberg.extractFile("document.pdf", config);
+
+List<Object> chunks = result.getChunks() != null ? result.getChunks() : List.of();
+for (int index = 0; index < chunks.size(); index++) {
+    Object chunk = chunks.get(index);
+    String chunkId = "doc_chunk_" + index;
+    System.out.println("Chunk " + chunkId + ": " + chunk.toString().substring(0, Math.min(50, chunk.toString().length())));
+
+    if (chunk instanceof java.util.Map) {
+        Object embedding = ((java.util.Map<String, Object>) chunk).get("embedding");
+        if (embedding != null) {
+            System.out.println("  Embedding dimensions: " + ((float[]) embedding).length);
+        }
+    }
+}
+```
+
+</TabItem>
+<TabItem label="C#">
+
+```csharp title="C#"
+using Kreuzberg;
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+
+var config = new ExtractionConfig
+{
+    Chunking = new ChunkingConfig
+    {
+        MaxChars = 512,
+        MaxOverlap = 50,
+        Embedding = new EmbeddingConfig
+        {
+            Model = EmbeddingModelType.Preset("balanced"),
+            Normalize = true,
+            BatchSize = 32,
+            ShowDownloadProgress = false
+        }
+    }
+};
+
+var result = await Kreuzberg.ExtractFileAsync("document.pdf", config);
+
+var chunks = result.Chunks ?? new List<Chunk>();
+foreach (var (index, chunk) in chunks.WithIndex())
+{
+    var chunkId = $"doc_chunk_{index}";
+    Console.WriteLine($"Chunk {chunkId}: {chunk.Content[..Math.Min(50, chunk.Content.Length)]}");
+
+    if (chunk.Embedding != null)
+    {
+        Console.WriteLine($"  Embedding dimensions: {chunk.Embedding.Length}");
+    }
+}
+
+internal static class EnumerableExtensions
+{
+    public static IEnumerable<(int Index, T Item)> WithIndex<T>(
+        this IEnumerable<T> items)
+    {
+        var index = 0;
+        foreach (var item in items)
+        {
+            yield return (index++, item);
+        }
+    }
+}
+```
+
+</TabItem>
+<TabItem label="Ruby">
+
+```ruby title="Ruby"
+require 'kreuzberg'
+
+config = Kreuzberg::Config::Extraction.new(
+  chunking: Kreuzberg::Config::Chunking.new(
+    max_characters: 512,
+    overlap: 50,
+    embedding: Kreuzberg::Config::Embedding.new(
+      model: Kreuzberg::EmbeddingModelType.new(
+        type: 'preset',
+        name: 'balanced'
+      ),
+      normalize: true,
+      batch_size: 32,
+      show_download_progress: false
+    )
+  )
+)
+
+result = Kreuzberg.extract_file_sync('document.pdf', config: config)
+
+chunks = result.chunks || []
+chunks.each_with_index do |chunk, idx|
+  chunk_id = "doc_chunk_#{idx}"
+  puts "Chunk #{chunk_id}: #{chunk.content[0...50]}"
+
+  if chunk.embedding
+    puts "  Embedding dimensions: #{chunk.embedding.length}"
+  end
+end
+```
+
+</TabItem>
+<TabItem label="R">
+
+```r title="R"
+library(kreuzberg)
+
+chunking_cfg <- chunking_config(max_characters = 1000L, overlap = 200L)
+config <- extraction_config(chunking = chunking_cfg)
+
+result <- extract_file_sync("document.pdf", "application/pdf", config)
+
+cat(sprintf("Preparing %d chunks for embedding:\n", length(result$chunks)))
+
+embeddings_data <- list()
+for (i in seq_len(length(result$chunks))) {
+  embeddings_data[[i]] <- list(
+    chunk_id = i,
+    text = result$chunks[[i]],
+    length = nchar(result$chunks[[i]])
+  )
+}
+
+cat(sprintf("Ready to embed %d chunks\n", length(embeddings_data)))
+```
+
+</TabItem>
+</Tabs>
+
+### Vector Database Integration
+
+<Tabs>
+<TabItem label="Python">
+
+```python title="Python"
+import asyncio
+from kreuzberg import (
+    extract_file,
+    ExtractionConfig,
+    ChunkingConfig,
+    EmbeddingConfig,
+    EmbeddingModelType,
+)
+
+async def main() -> None:
+    config: ExtractionConfig = ExtractionConfig(
+        chunking=ChunkingConfig(
+            max_chars=512,
+            max_overlap=50,
+            embedding=EmbeddingConfig(
+                model=EmbeddingModelType.preset("balanced"), normalize=True
+            ),
+        )
+    )
+    result = await extract_file("document.pdf", config=config)
+    chunks = result.chunks or []
+    for i, chunk in enumerate(chunks):
+        chunk_id: str = f"doc_chunk_{i}"
+        print(f"Chunk {chunk_id}: {chunk.content[:50]}")
+
+asyncio.run(main())
+```
+
+</TabItem>
+<TabItem label="TypeScript">
+
+```typescript title="TypeScript"
+import { extractFile } from '@kreuzberg/node';
+
+const config = {
+	chunking: {
+		maxChars: 512,
+		maxOverlap: 50,
+		embedding: {
+			preset: 'balanced',
+		},
+	},
+};
+
+const result = await extractFile('document.pdf', null, config);
+
+if (result.chunks) {
+	for (const chunk of result.chunks) {
+		console.log(`Chunk: ${chunk.content.slice(0, 100)}...`);
+		if (chunk.embedding) {
+			console.log(`Embedding dims: ${chunk.embedding.length}`);
+		}
+	}
+}
+```
+
+</TabItem>
+<TabItem label="Rust">
+
+```rust title="Rust"
+use kreuzberg::{extract_file, ExtractionConfig, ChunkingConfig, EmbeddingConfig};
+
+struct VectorRecord {
+    id: String,
+    content: String,
+    embedding: Vec<f32>,
+    metadata: std::collections::HashMap<String, String>,
+}
+
+async fn extract_and_vectorize(
+    document_path: &str,
+    document_id: &str,
+) -> Result<Vec<VectorRecord>, Box<dyn std::error::Error>> {
+    let config = ExtractionConfig {
+        chunking: Some(ChunkingConfig {
+            max_characters: 512,
+            overlap: 50,
+            embedding: Some(EmbeddingConfig {
+                model: kreuzberg::EmbeddingModelType::Preset {
+                    name: "balanced".to_string(),
+                },
+                normalize: true,
+                batch_size: 32,
+                ..Default::default()
+            }),
+            ..Default::default()
+        }),
+        ..Default::default()
+    };
+
+    let result = extract_file(document_path, None, &config).await?;
+
+    let mut records = Vec::new();
+    if let Some(chunks) = result.chunks {
+        for (index, chunk) in chunks.iter().enumerate() {
+            if let Some(embedding) = &chunk.embedding {
+                let mut metadata = std::collections::HashMap::new();
+                metadata.insert("document_id".to_string(), document_id.to_string());
+                metadata.insert("chunk_index".to_string(), index.to_string());
+                metadata.insert("content_length".to_string(), chunk.content.len().to_string());
+
+                records.push(VectorRecord {
+                    id: format!("{}_chunk_{}", document_id, index),
+                    content: chunk.content.clone(),
+                    embedding: embedding.clone(),
+                    metadata,
+                });
+            }
+        }
+    }
+
+    Ok(records)
+}
+```
+
+</TabItem>
+<TabItem label="Go">
+
+```go title="Go"
+package main
+
+import (
+	"fmt"
+
+	"github.com/kreuzberg-dev/kreuzberg-lts/v4"
+)
+
+type VectorRecord struct {
+	ID        string
+	Embedding []float32
+	Content   string
+	Metadata  map[string]string
+}
+
+func extractAndVectorize(documentPath string, documentID string) ([]VectorRecord, error) {
+	maxChars := 512
+	maxOverlap := 50
+	normalize := true
+	batchSize := int32(32)
+
+	config := &kreuzberg.ExtractionConfig{
+		Chunking: &kreuzberg.ChunkingConfig{
+			MaxChars:   &maxChars,
+			MaxOverlap: &maxOverlap,
+			Embedding: &kreuzberg.EmbeddingConfig{
+				Model:     kreuzberg.EmbeddingModelType_Preset("balanced"),
+				Normalize: &normalize,
+				BatchSize: &batchSize,
+			},
+		},
+	}
+
+	result, err := kreuzberg.ExtractFileSync(documentPath, config)
+	if err != nil {
+		return nil, err
+	}
+
+	var vectorRecords []VectorRecord
+	for index, chunk := range result.Chunks {
+		record := VectorRecord{
+			ID:        fmt.Sprintf("%s_chunk_%d", documentID, index),
+			Content:   chunk.Content,
+			Embedding: chunk.Embedding,
+			Metadata: map[string]string{
+				"document_id":  documentID,
+				"chunk_index":  fmt.Sprintf("%d", index),
+				"content_length": fmt.Sprintf("%d", len(chunk.Content)),
+			},
+		}
+		vectorRecords = append(vectorRecords, record)
+	}
+
+	storeInVectorDatabase(vectorRecords)
+	return vectorRecords, nil
+}
+
+func storeInVectorDatabase(records []VectorRecord) {
+	for _, record := range records {
+		if len(record.Embedding) > 0 {
+			fmt.Printf("Storing %s: %d chars, %d dims\n",
+				record.ID, len(record.Content), len(record.Embedding))
+		}
+	}
+}
+```
+
+</TabItem>
+<TabItem label="Java">
+
+```java title="Java"
+import dev.kreuzberg.Kreuzberg;
+import dev.kreuzberg.ExtractionResult;
+import dev.kreuzberg.config.ExtractionConfig;
+import dev.kreuzberg.config.ChunkingConfig;
+import dev.kreuzberg.config.EmbeddingConfig;
+import dev.kreuzberg.config.EmbeddingModelType;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+public class VectorDatabaseIntegration {
+    public static class VectorRecord {
+        public String id;
+        public float[] embedding;
+        public String content;
+        public Map<String, String> metadata;
+    }
+
+    public static List<VectorRecord> extractAndVectorize(String documentPath, String documentId) throws Exception {
+        ExtractionConfig config = ExtractionConfig.builder()
+            .chunking(ChunkingConfig.builder()
+                .maxChars(512)
+                .maxOverlap(50)
+                .embedding(EmbeddingConfig.builder()
+                    .model(EmbeddingModelType.preset("balanced"))
+                    .normalize(true)
+                    .batchSize(32)
+                    .build())
+                .build())
+            .build();
+
+        ExtractionResult result = Kreuzberg.extractFile(documentPath, config);
+        List<Object> chunks = result.getChunks() != null ? result.getChunks() : List.of();
+
+        List<VectorRecord> vectorRecords = new java.util.ArrayList<>();
+        for (int index = 0; index < chunks.size(); index++) {
+            VectorRecord record = new VectorRecord();
+            record.id = documentId + "_chunk_" + index;
+            record.metadata = new HashMap<>();
+            record.metadata.put("document_id", documentId);
+            record.metadata.put("chunk_index", String.valueOf(index));
+
+            if (chunk instanceof java.util.Map) {
+                Map<String, Object> chunkMap = (Map<String, Object>) chunks.get(index);
+                record.content = (String) chunkMap.get("content");
+                record.embedding = (float[]) chunkMap.get("embedding");
+                record.metadata.put("content_length", String.valueOf(record.content.length()));
+            }
+
+            vectorRecords.add(record);
+        }
+
+        storeInVectorDatabase(vectorRecords);
+        return vectorRecords;
+    }
+
+    private static void storeInVectorDatabase(List<VectorRecord> records) {
+        for (VectorRecord record : records) {
+            if (record.embedding != null && record.embedding.length > 0) {
+                System.out.println("Storing " + record.id + ": " + record.content.length()
+                    + " chars, " + record.embedding.length + " dims");
+            }
+        }
+    }
+}
+```
+
+</TabItem>
+<TabItem label="C#">
+
+```csharp title="C#"
+using Kreuzberg;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+
+public class VectorDatabaseIntegration
+{
+    public class VectorRecord
+    {
+        public string Id { get; set; }
+        public float[] Embedding { get; set; }
+        public string Content { get; set; }
+        public Dictionary<string, string> Metadata { get; set; }
+    }
+
+    public async Task<List<VectorRecord>> ExtractAndVectorize(
+        string documentPath,
+        string documentId)
+    {
+        var config = new ExtractionConfig
+        {
+            Chunking = new ChunkingConfig
+            {
+                MaxChars = 512,
+                MaxOverlap = 50,
+                Embedding = new EmbeddingConfig
+                {
+                    Model = EmbeddingModelType.Preset("balanced"),
+                    Normalize = true,
+                    BatchSize = 32
+                }
+            }
+        };
+
+        var result = await Kreuzberg.ExtractFileAsync(documentPath, config);
+        var chunks = result.Chunks ?? new List<Chunk>();
+
+        var vectorRecords = chunks
+            .Select((chunk, index) => new VectorRecord
+            {
+                Id = $"{documentId}_chunk_{index}",
+                Content = chunk.Content,
+                Embedding = chunk.Embedding,
+                Metadata = new Dictionary<string, string>
+                {
+                    { "document_id", documentId },
+                    { "chunk_index", index.ToString() },
+                    { "content_length", chunk.Content.Length.ToString() }
+                }
+            })
+            .ToList();
+
+        await StoreInVectorDatabase(vectorRecords);
+        return vectorRecords;
+    }
+
+    private async Task StoreInVectorDatabase(List<VectorRecord> records)
+    {
+        foreach (var record in records)
+        {
+            if (record.Embedding != null && record.Embedding.Length > 0)
+            {
+                Console.WriteLine(
+                    $"Storing {record.Id}: {record.Content.Length} chars, " +
+                    $"{record.Embedding.Length} dims");
+            }
+        }
+
+        await Task.CompletedTask;
+    }
+}
+```
+
+</TabItem>
+<TabItem label="Ruby">
+
+```ruby title="Ruby"
+require 'kreuzberg'
+
+class VectorDatabaseIntegration
+  VectorRecord = Struct.new(:id, :embedding, :content, :metadata, keyword_init: true)
+
+  def extract_and_vectorize(document_path, document_id)
+    config = Kreuzberg::Config::Extraction.new(
+      chunking: Kreuzberg::Config::Chunking.new(
+        max_characters: 512,
+        overlap: 50,
+        embedding: Kreuzberg::Config::Embedding.new(
+          model: Kreuzberg::EmbeddingModelType.new(
+            type: 'preset',
+            name: 'balanced'
+          ),
+          normalize: true,
+          batch_size: 32
+        )
+      )
+    )
+
+    result = Kreuzberg.extract_file_sync(document_path, config: config)
+    chunks = result.chunks || []
+
+    vector_records = chunks.map.with_index do |chunk, idx|
+      VectorRecord.new(
+        id: "#{document_id}_chunk_#{idx}",
+        content: chunk.content,
+        embedding: chunk.embedding,
+        metadata: {
+          document_id: document_id,
+          chunk_index: idx,
+          content_length: chunk.content.length
+        }
+      )
+    end
+
+    store_in_vector_database(vector_records)
+    vector_records
+  end
+
+  private
+
+  def store_in_vector_database(records)
+    records.each do |record|
+      if record.embedding&.any?
+        puts "Storing #{record.id}: #{record.content.length} chars, #{record.embedding.length} dims"
+      end
+    end
+  end
+end
+```
+
+</TabItem>
+<TabItem label="R">
+
+```r title="R"
+library(kreuzberg)
+
+chunking_cfg <- chunking_config(max_characters = 1000L, overlap = 200L)
+config <- extraction_config(chunking = chunking_cfg)
+
+result <- extract_file_sync("document.pdf", "application/pdf", config)
+
+for (i in seq_len(min(3L, length(result$chunks)))) {
+  chunk <- result$chunks[[i]]
+  vector_doc <- list(
+    id = sprintf("doc_%d", i),
+    text = chunk,
+    metadata = list(
+      source = "document.pdf",
+      chunk_index = i,
+      length = nchar(chunk)
+    )
+  )
+  cat(sprintf("Vector DB entry %d: %d chars\n", i, nchar(chunk)))
+}
+```
+
+</TabItem>
+</Tabs>
+
+## Token Reduction
+
+Reduce token count while preserving meaning for LLM pipelines.
+
+| Level | Reduction | Effect |
+|-------|-----------|--------|
+| `off` | 0% | Pass-through |
+| `moderate` | 15–25% | Stopwords + redundancy removal |
+| `aggressive` | 30–50% | Semantic clustering + importance scoring |
+
+### Configuration
+
+<Tabs>
+<TabItem label="Python">
+
+```python title="Python"
+from kreuzberg import ExtractionConfig, TokenReductionConfig
+
+config: ExtractionConfig = ExtractionConfig(
+    token_reduction=TokenReductionConfig(
+        mode="moderate",
+        preserve_important_words=True,
+    )
+)
+```
+
+</TabItem>
+<TabItem label="TypeScript">
+
+```typescript title="TypeScript"
+import { extractFile } from '@kreuzberg/node';
+
+const config = {
+	tokenReduction: {
+		mode: 'moderate',
+		preserveImportantWords: true,
+	},
+};
+
+const result = await extractFile('document.pdf', null, config);
+console.log(result.content);
+```
+
+</TabItem>
+<TabItem label="Rust">
+
+```rust title="Rust"
+use kreuzberg::{ExtractionConfig, TokenReductionConfig};
+
+let config = ExtractionConfig {
+    token_reduction: Some(TokenReductionConfig {
+        mode: "moderate".to_string(),
+        preserve_markdown: true,
+        preserve_code: true,
+        language_hint: Some("eng".to_string()),
+        ..Default::default()
+    }),
+    ..Default::default()
+};
+```
+
+</TabItem>
+<TabItem label="Go">
+
+```go title="Go"
+package main
+
+import (
+	"fmt"
+
+	"github.com/kreuzberg-dev/kreuzberg-lts/v4"
+)
+
+func main() {
+	config := &kreuzberg.ExtractionConfig{
+		TokenReduction: &kreuzberg.TokenReductionConfig{
+			Mode:                   "moderate",
+			PreserveImportantWords: kreuzberg.BoolPtr(true),
+		},
+	}
+
+	fmt.Printf("Mode: %s, Preserve Important Words: %v\n",
+		config.TokenReduction.Mode,
+		*config.TokenReduction.PreserveImportantWords)
+}
+```
+
+</TabItem>
+<TabItem label="Java">
+
+```java title="Java"
+import dev.kreuzberg.config.ExtractionConfig;
+import dev.kreuzberg.config.TokenReductionConfig;
+
+ExtractionConfig config = ExtractionConfig.builder()
+    .tokenReduction(TokenReductionConfig.builder()
+        .mode("moderate")
+        .preserveImportantWords(true)
+        .build())
+    .build();
+```
+
+</TabItem>
+<TabItem label="C#">
+
+```csharp title="C#"
+using Kreuzberg;
+
+var config = new ExtractionConfig
+{
+    TokenReduction = new TokenReductionConfig
+    {
+        Mode = "moderate",              // "off", "moderate", or "aggressive"
+        PreserveMarkdown = true,
+        PreserveCode = true,
+        LanguageHint = "eng"
+    }
+};
+```
+
+</TabItem>
+<TabItem label="Ruby">
+
+```ruby title="Ruby"
+require 'kreuzberg'
+
+config = Kreuzberg::Config::Extraction.new(
+  token_reduction: Kreuzberg::Config::TokenReduction.new(
+    mode: 'moderate',
+    preserve_markdown: true,
+    preserve_code: true,
+    language_hint: 'eng'
+  )
+)
+```
+
+</TabItem>
+<TabItem label="R">
+
+```r title="R"
+library(kreuzberg)
+
+config <- extraction_config(
+  token_reduction = list(enabled = TRUE)
+)
+
+result <- extract_file_sync("document.pdf", "application/pdf", config)
+
+cat(sprintf("Original content length: %d characters\n", nchar(result$content)))
+cat(sprintf("Content preview: %.60s...\n", result$content))
+```
+
+</TabItem>
+</Tabs>
+
+### Example
+
+<Tabs>
+<TabItem label="Python">
+
+```python title="Python"
+import asyncio
+from kreuzberg import extract_file, ExtractionConfig, TokenReductionConfig
+
+async def main() -> None:
+    config: ExtractionConfig = ExtractionConfig(
+        token_reduction=TokenReductionConfig(
+            mode="moderate", preserve_important_words=True
+        )
+    )
+    result = await extract_file("verbose_document.pdf", config=config)
+    original: int = result.metadata.get("original_token_count", 0)
+    reduced: int = result.metadata.get("token_count", 0)
+    ratio: float = result.metadata.get("token_reduction_ratio", 0.0)
+    print(f"Reduced from {original} to {reduced} tokens")
+    print(f"Reduction: {ratio * 100:.1f}%")
+
+asyncio.run(main())
+```
+
+</TabItem>
+<TabItem label="TypeScript">
+
+```typescript title="TypeScript"
+import { extractFile } from '@kreuzberg/node';
+
+const config = {
+	tokenReduction: {
+		mode: 'moderate',
+		preserveImportantWords: true,
+	},
+};
+
+const result = await extractFile('verbose_document.pdf', null, config);
+console.log(`Content length: ${result.content.length}`);
+console.log(`Metadata: ${JSON.stringify(result.metadata)}`);
+```
+
+</TabItem>
+<TabItem label="Rust">
+
+```rust title="Rust"
+use kreuzberg::{extract_file, ExtractionConfig, TokenReductionConfig};
+
+let config = ExtractionConfig {
+    token_reduction: Some(TokenReductionConfig {
+        mode: "moderate".to_string(),
+        preserve_markdown: true,
+        ..Default::default()
+    }),
+    ..Default::default()
+};
+
+let result = extract_file("verbose_document.pdf", None, &config).await?;
+
+if let Some(original) = result.original_token_count {
+    println!("Original tokens: {}", original);
+}
+if let Some(reduced) = result.reduced_token_count {
+    println!("Reduced tokens: {}", reduced);
+}
+```
+
+</TabItem>
+<TabItem label="Go">
+
+```go title="Go"
+package main
+
+import (
+	"fmt"
+	"log"
+
+	"github.com/kreuzberg-dev/kreuzberg-lts/v4"
+)
+
+preserveMarkdown := true
+mode := "moderate"
+
+config := &kreuzberg.ExtractionConfig{
+	TokenReduction: &kreuzberg.TokenReductionConfig{
+		Mode:             &mode,
+		PreserveMarkdown: &preserveMarkdown,
+	},
+}
+
+result, err := kreuzberg.ExtractFileSync("verbose_document.pdf", config)
+if err != nil {
+	log.Fatalf("extraction failed: %v", err)
+}
+
+original := 0
+reduced := 0
+ratio := 0.0
+
+if val, ok := result.Metadata["original_token_count"]; ok {
+	original = val.(int)
+}
+
+if val, ok := result.Metadata["token_count"]; ok {
+	reduced = val.(int)
+}
+
+if val, ok := result.Metadata["token_reduction_ratio"]; ok {
+	ratio = val.(float64)
+}
+
+fmt.Printf("Reduced from %d to %d tokens\n", original, reduced)
+fmt.Printf("Reduction: %.1f%%\n", ratio*100)
+```
+
+</TabItem>
+<TabItem label="Java">
+
+```java title="Java"
+import dev.kreuzberg.Kreuzberg;
+import dev.kreuzberg.ExtractionResult;
+import dev.kreuzberg.config.ExtractionConfig;
+import dev.kreuzberg.config.TokenReductionConfig;
+import java.util.Map;
+
+ExtractionConfig config = ExtractionConfig.builder()
+    .tokenReduction(TokenReductionConfig.builder()
+        .mode("moderate")
+        .preserveMarkdown(true)
+        .build())
+    .build();
+
+ExtractionResult result = Kreuzberg.extractFile("verbose_document.pdf", config);
+
+Map<String, Object> metadata = result.getMetadata() != null ? result.getMetadata() : Map.of();
+
+int original = metadata.containsKey("original_token_count")
+    ? ((Number) metadata.get("original_token_count")).intValue()
+    : 0;
+
+int reduced = metadata.containsKey("token_count")
+    ? ((Number) metadata.get("token_count")).intValue()
+    : 0;
+
+double ratio = metadata.containsKey("token_reduction_ratio")
+    ? ((Number) metadata.get("token_reduction_ratio")).doubleValue()
+    : 0.0;
+
+System.out.println("Reduced from " + original + " to " + reduced + " tokens");
+System.out.println(String.format("Reduction: %.1f%%", ratio * 100));
+```
+
+</TabItem>
+<TabItem label="C#">
+
+```csharp title="C#"
+using Kreuzberg;
+
+var config = new ExtractionConfig
+{
+    TokenReduction = new TokenReductionConfig
+    {
+        Mode = "moderate",
+        PreserveMarkdown = true
+    }
+};
+
+var result = await KreuzbergClient.ExtractFileAsync(
+    "verbose_document.pdf",
+    config
+);
+
+var original = result.Metadata.ContainsKey("original_token_count")
+    ? (int)result.Metadata["original_token_count"]
+    : 0;
+
+var reduced = result.Metadata.ContainsKey("token_count")
+    ? (int)result.Metadata["token_count"]
+    : 0;
+
+var ratio = result.Metadata.ContainsKey("token_reduction_ratio")
+    ? (double)result.Metadata["token_reduction_ratio"]
+    : 0.0;
+
+Console.WriteLine($"Reduced from {original} to {reduced} tokens");
+Console.WriteLine($"Reduction: {ratio * 100:F1}%");
+```
+
+</TabItem>
+<TabItem label="Ruby">
+
+```ruby title="Ruby"
+require 'kreuzberg'
+
+config = Kreuzberg::Config::Extraction.new(
+  token_reduction: Kreuzberg::Config::TokenReduction.new(
+    mode: 'moderate',
+    preserve_markdown: true
+  )
+)
+
+result = Kreuzberg.extract_file_sync('verbose_document.pdf', config: config)
+
+original_tokens = result.metadata&.dig('original_token_count') || 0
+reduced_tokens = result.metadata&.dig('token_count') || 0
+reduction_ratio = result.metadata&.dig('token_reduction_ratio') || 0.0
+
+puts "Reduced from #{original_tokens} to #{reduced_tokens} tokens"
+puts "Reduction: #{(reduction_ratio * 100).round(1)}%"
+```
+
+</TabItem>
+<TabItem label="R">
+
+```r title="R"
+library(kreuzberg)
+
+config <- extraction_config(
+  token_reduction = list(enabled = TRUE)
+)
+
+result <- extract_file_sync("document.pdf", "application/pdf", config)
+
+cat(sprintf("Token-reduced content:\n"))
+cat(sprintf("Length: %d characters\n", nchar(result$content)))
+cat(sprintf("Preview: %.60s...\n", result$content))
+```
+
+</TabItem>
+</Tabs>
+
+## Keyword Extraction
+
+Extract keywords using YAKE or RAKE algorithms. Requires the `keywords` feature flag.
+
+### Configuration
+
+<Tabs>
+<TabItem label="Python">
+
+```python title="Python"
+import asyncio
+from kreuzberg import (
+    ExtractionConfig,
+    KeywordConfig,
+    KeywordAlgorithm,
+    extract_file,
+)
+
+async def main() -> None:
+    config: ExtractionConfig = ExtractionConfig(
+        keywords=KeywordConfig(
+            algorithm=KeywordAlgorithm.YAKE,
+            max_keywords=10,
+            min_score=0.3,
+            ngram_range=(1, 3),
+            language="en"
+        )
+    )
+    result = await extract_file("document.pdf", config=config)
+    print(f"Content extracted: {len(result.content)} chars")
+
+asyncio.run(main())
+```
+
+</TabItem>
+<TabItem label="TypeScript">
+
+```typescript title="TypeScript"
+import { extractFile } from '@kreuzberg/node';
+
+const config = {
+	keywords: {
+		algorithm: 'yake',
+		maxKeywords: 10,
+		minScore: 0.3,
+		ngramRange: [1, 3],
+		language: 'en',
+	},
+};
+
+const result = await extractFile('document.pdf', null, config);
+console.log(`Content: ${result.content}`);
+```
+
+</TabItem>
+<TabItem label="Rust">
+
+```rust title="Rust"
+use kreuzberg::{ExtractionConfig, KeywordConfig, KeywordAlgorithm};
+
+let config = ExtractionConfig {
+    keywords: Some(KeywordConfig {
+        algorithm: KeywordAlgorithm::Yake,
+        max_keywords: 10,
+        min_score: 0.3,
+        ngram_range: (1, 3),
+        language: Some("en".to_string()),
+        ..Default::default()
+    }),
+    ..Default::default()
+};
+```
+
+</TabItem>
+<TabItem label="Go">
+
+```go title="Go"
+package main
+
+import (
+	"fmt"
+
+	"github.com/kreuzberg-dev/kreuzberg-lts/v4"
+)
+
+func main() {
+	config := &kreuzberg.ExtractionConfig{
+		Keywords: &kreuzberg.KeywordConfig{
+			Algorithm:  "YAKE",
+			MaxKeywords: 10,
+			MinScore:   0.3,
+			NgramRange: "1,3",
+			Language:   "en",
+		},
+	}
+
+	fmt.Printf("Keywords config: Algorithm=%s, MaxKeywords=%d, MinScore=%f\n",
+		config.Keywords.Algorithm,
+		config.Keywords.MaxKeywords,
+		config.Keywords.MinScore)
+}
+```
+
+</TabItem>
+<TabItem label="Java">
+
+```java title="Java"
+// Note: Keyword extraction is not yet available in Java bindings
+// This feature requires the 'keywords' feature flag and is planned for a future release
+```
+
+</TabItem>
+<TabItem label="C#">
+
+```csharp title="C#"
+using Kreuzberg;
+
+var config = new ExtractionConfig
+{
+    Keywords = new KeywordConfig
+    {
+        Algorithm = KeywordAlgorithm.Yake,
+        MaxKeywords = 10,
+        MinScore = 0.3,
+        NgramRange = (1, 3),
+        Language = "en"
+    }
+};
+```
+
+</TabItem>
+<TabItem label="Ruby">
+
+```ruby title="Ruby"
+require 'kreuzberg'
+
+config = Kreuzberg::Config::Extraction.new(
+  keywords: Kreuzberg::Config::Keywords.new(
+    algorithm: Kreuzberg::KeywordAlgorithm::YAKE,
+    max_keywords: 10,
+    min_score: 0.3,
+    ngram_range: [1, 3],
+    language: 'en'
+  )
+)
+```
+
+</TabItem>
+<TabItem label="R">
+
+```r title="R"
+library(kreuzberg)
+
+config <- extraction_config(
+  keywords = list(enabled = TRUE)
+)
+
+result <- extract_file_sync("document.pdf", "application/pdf", config)
+
+cat(sprintf("Extracted %d keywords\n", length(result$keywords)))
+if (length(result$keywords) > 0) {
+  for (i in seq_len(min(5L, length(result$keywords)))) {
+    cat(sprintf("  - %s\n", result$keywords[[i]]))
+  }
+}
+```
+
+</TabItem>
+</Tabs>
+
+### Example
+
+<Tabs>
+<TabItem label="Python">
+
+```python title="Python"
+import asyncio
+from kreuzberg import extract_file, ExtractionConfig, KeywordConfig, KeywordAlgorithm
+
+async def main() -> None:
+    config: ExtractionConfig = ExtractionConfig(
+        keywords=KeywordConfig(
+            algorithm=KeywordAlgorithm.YAKE,
+            max_keywords=10,
+            min_score=0.3
+        )
+    )
+    result = await extract_file("research_paper.pdf", config=config)
+
+    keywords: list = result.extracted_keywords or []
+    for kw in keywords:
+        score: float = kw.score or 0.0
+        text: str = kw.text or ""
+        print(f"{text}: {score:.3f}")
+
+asyncio.run(main())
+```
+
+</TabItem>
+<TabItem label="TypeScript">
+
+```typescript title="TypeScript"
+import { extractFile } from '@kreuzberg/node';
+
+const config = {
+	keywords: {
+		algorithm: 'yake',
+		maxKeywords: 10,
+		minScore: 0.3,
+	},
+};
+
+const result = await extractFile('research_paper.pdf', null, config);
+console.log(`Content length: ${result.content.length}`);
+console.log(`Metadata: ${JSON.stringify(result.metadata)}`);
+```
+
+</TabItem>
+<TabItem label="Rust">
+
+```rust title="Rust"
+use kreuzberg::{extract_file, ExtractionConfig, KeywordConfig, KeywordAlgorithm};
+
+let config = ExtractionConfig {
+    keywords: Some(KeywordConfig {
+        algorithm: KeywordAlgorithm::Yake,
+        max_keywords: 10,
+        min_score: 0.3,
+        ..Default::default()
+    }),
+    ..Default::default()
+};
+
+let result = extract_file("research_paper.pdf", None, &config).await?;
+
+if let Some(keywords) = &result.extracted_keywords {
+    println!("Keywords: {:?}", keywords);
+}
+```
+
+</TabItem>
+<TabItem label="Go">
+
+```go title="Go"
+package main
+
+import (
+	"fmt"
+	"log"
+
+	"github.com/kreuzberg-dev/kreuzberg-lts/v4"
+)
+
+maxKeywords := int32(10)
+minScore := 0.3
+
+config := &kreuzberg.ExtractionConfig{
+	Keywords: &kreuzberg.KeywordConfig{
+		Algorithm:   kreuzberg.KeywordAlgorithm_YAKE,
+		MaxKeywords: &maxKeywords,
+		MinScore:    &minScore,
+	},
+}
+
+result, err := kreuzberg.ExtractFileSync("research_paper.pdf", config)
+if err != nil {
+	log.Fatalf("extraction failed: %v", err)
+}
+
+if keywords, ok := result.Metadata["keywords"]; ok {
+	keywordList := keywords.([]map[string]interface{})
+	for _, kw := range keywordList {
+		text := kw["text"].(string)
+		score := kw["score"].(float64)
+		fmt.Printf("%s: %.3f\n", text, score)
+	}
+}
+```
+
+</TabItem>
+<TabItem label="Java">
+
+```java title="Java"
+import dev.kreuzberg.Kreuzberg;
+import dev.kreuzberg.ExtractionResult;
+import dev.kreuzberg.config.ExtractionConfig;
+import dev.kreuzberg.config.KeywordConfig;
+import dev.kreuzberg.config.KeywordAlgorithm;
+import java.util.List;
+import java.util.Map;
+
+ExtractionConfig config = ExtractionConfig.builder()
+    .keywords(KeywordConfig.builder()
+        .algorithm(KeywordAlgorithm.YAKE)
+        .maxKeywords(10)
+        .minScore(0.3)
+        .build())
+    .build();
+
+ExtractionResult result = Kreuzberg.extractFile("research_paper.pdf", config);
+
+Map<String, Object> metadata = result.getMetadata() != null ? result.getMetadata() : Map.of();
+
+if (metadata.containsKey("keywords")) {
+    List<Map<String, Object>> keywords = (List<Map<String, Object>>) metadata.get("keywords");
+    for (Map<String, Object> kw : keywords) {
+        String text = (String) kw.get("text");
+        Double score = ((Number) kw.get("score")).doubleValue();
+        System.out.println(text + ": " + String.format("%.3f", score));
+    }
+}
+```
+
+</TabItem>
+<TabItem label="C#">
+
+```csharp title="C#"
+using Kreuzberg;
+using System.Collections.Generic;
+
+var config = new ExtractionConfig
+{
+    Keywords = new KeywordConfig
+    {
+        Algorithm = KeywordAlgorithm.Yake,
+        MaxKeywords = 10,
+        MinScore = 0.3
+    }
+};
+
+var result = await KreuzbergClient.ExtractFileAsync(
+    "research_paper.pdf",
+    config
+);
+
+if (result.Metadata.ContainsKey("keywords"))
+{
+    var keywords = (List<Dictionary<string, object>>)result.Metadata["keywords"];
+    foreach (var kw in keywords)
+    {
+        var text = (string)kw["text"];
+        var score = (double)kw["score"];
+        Console.WriteLine($"{text}: {score:F3}");
+    }
+}
+```
+
+</TabItem>
+<TabItem label="Ruby">
+
+```ruby title="Ruby"
+require 'kreuzberg'
+
+config = Kreuzberg::Config::Extraction.new(
+  keywords: Kreuzberg::Config::Keywords.new(
+    algorithm: Kreuzberg::KeywordAlgorithm::YAKE,
+    max_keywords: 10,
+    min_score: 0.3
+  )
+)
+
+result = Kreuzberg.extract_file_sync('research_paper.pdf', config: config)
+
+keywords = result.metadata&.dig('keywords') || []
+keywords.each do |kw|
+  text = kw['text']
+  score = kw['score']
+  puts "#{text}: #{score.round(3)}"
+end
+```
+
+</TabItem>
+<TabItem label="R">
+
+```r title="R"
+library(kreuzberg)
+
+config <- extraction_config(
+  keywords = list(enabled = TRUE)
+)
+
+result <- extract_file_sync("document.pdf", "application/pdf", config)
+
+cat(sprintf("Keywords extracted: %d\n", length(result$keywords)))
+
+if (length(result$keywords) > 0) {
+  cat("Top keywords:\n")
+  for (i in seq_len(min(10L, length(result$keywords)))) {
+    cat(sprintf("  %d. %s\n", i, result$keywords[[i]]))
+  }
+}
+```
+
+</TabItem>
+</Tabs>
+
+## Quality Processing
+
+Score extracted text for quality issues (0.0–1.0, where 1.0 is highest quality). Detects OCR artifacts, script content, navigation elements, and structural issues.
+
+| Factor | Weight | Detects |
+|--------|--------|---------|
+| OCR Artifacts | 30% | Scattered chars, repeated punctuation, malformed words |
+| Script Content | 20% | JavaScript, CSS, HTML tags |
+| Navigation Elements | 10% | Breadcrumbs, pagination, skip links |
+| Document Structure | 20% | Sentence/paragraph length, punctuation distribution |
+| Metadata Quality | 10% | Presence of title, author, subject |
+
+Score ranges: `0.0–0.3` very low, `0.3–0.6` low, `0.6–0.8` moderate, `0.8–1.0` high.
+
+### Configuration
+
+<Tabs>
+<TabItem label="Python">
+
+```python title="Python"
+import asyncio
+from kreuzberg import ExtractionConfig, extract_file
+
+async def main() -> None:
+    config: ExtractionConfig = ExtractionConfig(
+        enable_quality_processing=True
+    )
+    result = await extract_file("document.pdf", config=config)
+
+    quality_score: float = result.quality_score or 0.0
+    print(f"Quality score: {quality_score:.2f}")
+
+asyncio.run(main())
+```
+
+</TabItem>
+<TabItem label="TypeScript">
+
+```typescript title="TypeScript"
+import { extractFile } from '@kreuzberg/node';
+
+const config = {
+	enableQualityProcessing: true,
+};
+
+const result = await extractFile('document.pdf', null, config);
+console.log(result.content);
+```
+
+</TabItem>
+<TabItem label="Rust">
+
+```rust title="Rust"
+use kreuzberg::ExtractionConfig;
+
+let config = ExtractionConfig {
+    enable_quality_processing: true,
+    ..Default::default()
+};
+```
+
+</TabItem>
+<TabItem label="Go">
+
+```go title="Go"
+package main
+
+import (
+	"fmt"
+
+	"github.com/kreuzberg-dev/kreuzberg-lts/v4"
+)
+
+func main() {
+	config := &kreuzberg.ExtractionConfig{
+		EnableQualityProcessing: true,  // Default
+	}
+
+	fmt.Printf("Quality processing enabled: %v\n", config.EnableQualityProcessing)
+}
+```
+
+</TabItem>
+<TabItem label="Java">
+
+```java title="Java"
+import dev.kreuzberg.config.ExtractionConfig;
+
+ExtractionConfig config = ExtractionConfig.builder()
+    .enableQualityProcessing(true)  // Default
+    .build();
+```
+
+</TabItem>
+<TabItem label="C#">
+
+```csharp title="C#"
+using Kreuzberg;
+
+var config = new ExtractionConfig
+{
+    EnableQualityProcessing = true
+};
+
+var result = await KreuzbergClient.ExtractFileAsync(
+    "document.pdf",
+    config
+);
+
+var qualityScore = result.QualityScore;
+
+Console.WriteLine($"Quality score: {qualityScore:F2}");
+```
+
+</TabItem>
+<TabItem label="Ruby">
+
+```ruby title="Ruby"
+require 'kreuzberg'
+
+config = Kreuzberg::Config::Extraction.new(
+  enable_quality_processing: true
+)
+```
+
+</TabItem>
+<TabItem label="R">
+
+```r title="R"
+library(kreuzberg)
+
+config <- extraction_config(enable_quality_processing = TRUE)
+
+result <- extract_file_sync("document.pdf", "application/pdf", config)
+
+cat(sprintf("Quality score: %.2f\n", result$quality_score))
+cat(sprintf("Content length: %d characters\n", nchar(result$content)))
+```
+
+</TabItem>
+</Tabs>
+
+### Example
+
+<Tabs>
+<TabItem label="Python">
+
+```python title="Python"
+from kreuzberg import extract_file, ExtractionConfig
+
+config = ExtractionConfig(enable_quality_processing=True)
+result = extract_file("scanned_document.pdf", config=config)
+
+quality_score = result.quality_score or 0.0
+
+if quality_score < 0.5:
+    print(f"Warning: Low quality extraction ({quality_score:.2f})")
+    print("Consider re-scanning with higher DPI or adjusting OCR settings")
+else:
+    print(f"Quality score: {quality_score:.2f}")
+```
+
+</TabItem>
+<TabItem label="TypeScript">
+
+```typescript title="TypeScript"
+import { extractFile } from '@kreuzberg/node';
+
+const config = {
+	enableQualityProcessing: true,
+};
+
+const result = await extractFile('scanned_document.pdf', null, config);
+console.log(`Content length: ${result.content.length} characters`);
+console.log(`Metadata: ${JSON.stringify(result.metadata)}`);
+```
+
+</TabItem>
+<TabItem label="Rust">
+
+```rust title="Rust"
+use kreuzberg::{extract_file, ExtractionConfig};
+
+let config = ExtractionConfig {
+    enable_quality_processing: true,
+    ..Default::default()
+};
+let result = extract_file("scanned_document.pdf", None, &config).await?;
+
+if let Some(score) = result.quality_score {
+    if score < 0.5 {
+        println!("Warning: Low quality extraction ({:.2})", score);
+    } else {
+        println!("Quality score: {:.2}", score);
+    }
+}
+```
+
+</TabItem>
+<TabItem label="Go">
+
+```go title="Go"
+package main
+
+import (
+	"fmt"
+	"log"
+
+	"github.com/kreuzberg-dev/kreuzberg-lts/v4"
+)
+
+enableQualityProcessing := true
+
+config := &kreuzberg.ExtractionConfig{
+	EnableQualityProcessing: &enableQualityProcessing,
+}
+
+result, err := kreuzberg.ExtractFileSync("scanned_document.pdf", config)
+if err != nil {
+	log.Fatalf("extraction failed: %v", err)
+}
+
+qualityScore := 0.0
+if result.QualityScore != nil {
+	qualityScore = *result.QualityScore
+}
+
+if qualityScore < 0.5 {
+	fmt.Printf("Warning: Low quality extraction (%.2f)\n", qualityScore)
+	fmt.Println("Consider re-scanning with higher DPI or adjusting OCR settings")
+} else {
+	fmt.Printf("Quality score: %.2f\n", qualityScore)
+}
+```
+
+</TabItem>
+<TabItem label="Java">
+
+```java title="Java"
+import dev.kreuzberg.Kreuzberg;
+import dev.kreuzberg.ExtractionResult;
+import dev.kreuzberg.config.ExtractionConfig;
+import java.util.Map;
+
+ExtractionConfig config = ExtractionConfig.builder()
+    .enableQualityProcessing(true)
+    .build();
+
+ExtractionResult result = Kreuzberg.extractFile("scanned_document.pdf", config);
+
+double qualityScore = result.getQualityScore() != null ? result.getQualityScore() : 0.0;
+
+if (qualityScore < 0.5) {
+    System.out.println(String.format("Warning: Low quality extraction (%.2f)", qualityScore));
+    System.out.println("Consider re-scanning with higher DPI or adjusting OCR settings");
+} else {
+    System.out.println(String.format("Quality score: %.2f", qualityScore));
+}
+```
+
+</TabItem>
+<TabItem label="C#">
+
+```csharp title="C#"
+using Kreuzberg;
+
+var config = new ExtractionConfig
+{
+    EnableQualityProcessing = true
+};
+
+var result = KreuzbergClient.ExtractFile(
+    "scanned_document.pdf",
+    config
+);
+
+var qualityScore = result.QualityScore;
+
+if (qualityScore < 0.5)
+{
+    Console.WriteLine(
+        $"Warning: Low quality extraction ({qualityScore:F2})"
+    );
+    Console.WriteLine(
+        "Consider re-scanning with higher DPI or adjusting OCR settings"
+    );
+}
+else
+{
+    Console.WriteLine($"Quality score: {qualityScore:F2}");
+}
+```
+
+</TabItem>
+<TabItem label="Ruby">
+
+```ruby title="Ruby"
+require 'kreuzberg'
+
+config = Kreuzberg::Config::Extraction.new(
+  enable_quality_processing: true
+)
+
+result = Kreuzberg.extract_file_sync('scanned_document.pdf', config: config)
+
+quality_score = result.quality_score || 0.0
+
+if quality_score < 0.5
+  puts "Warning: Low quality extraction (#{quality_score.round(2)})"
+  puts "Consider re-scanning with higher DPI or adjusting OCR settings"
+else
+  puts "Quality score: #{quality_score.round(2)}"
+end
+```
+
+</TabItem>
+<TabItem label="R">
+
+```r title="R"
+library(kreuzberg)
+
+config <- extraction_config(enable_quality_processing = TRUE)
+
+result <- extract_file_sync("document.pdf", "application/pdf", config)
+
+cat(sprintf("Quality Metrics:\n"))
+cat(sprintf("Quality Score: %.2f\n", result$quality_score))
+cat(sprintf("Content Length: %d characters\n", nchar(result$content)))
+cat(sprintf("Pages: %d\n", result$pages))
+```
+
+</TabItem>
+</Tabs>
+
+## Combining Features
+
+<Tabs>
+<TabItem label="Python">
+
+```python title="Python"
+import asyncio
+from kreuzberg import (
+    extract_file,
+    ExtractionConfig,
+    ChunkingConfig,
+    EmbeddingConfig,
+    EmbeddingModelType,
+    LanguageDetectionConfig,
+    TokenReductionConfig,
+)
+
+async def main() -> None:
+    config: ExtractionConfig = ExtractionConfig(
+        enable_quality_processing=True,
+        language_detection=LanguageDetectionConfig(enabled=True),
+        token_reduction=TokenReductionConfig(mode="moderate"),
+        chunking=ChunkingConfig(
+            max_chars=512,
+            max_overlap=50,
+            embedding=EmbeddingConfig(
+                model=EmbeddingModelType.preset("balanced"), normalize=True
+            ),
+        ),
+    )
+    result = await extract_file("document.pdf", config=config)
+    quality = result.quality_score or 0
+    print(f"Quality: {quality:.2f}")
+    print(f"Languages: {result.detected_languages}")
+    if result.chunks:
+        print(f"Chunks: {len(result.chunks)}")
+
+asyncio.run(main())
+```
+
+</TabItem>
+<TabItem label="TypeScript">
+
+```typescript title="TypeScript"
+import { extractFile } from '@kreuzberg/node';
+
+const config = {
+	enableQualityProcessing: true,
+	languageDetection: {
+		enabled: true,
+		detectMultiple: true,
+	},
+	tokenReduction: {
+		mode: 'moderate',
+		preserveImportantWords: true,
+	},
+	chunking: {
+		maxChars: 512,
+		maxOverlap: 50,
+		embedding: {
+			preset: 'balanced',
+		},
+	},
+	keywords: {
+		algorithm: 'yake',
+		maxKeywords: 10,
+	},
+};
+
+const result = await extractFile('document.pdf', null, config);
+
+console.log(`Content length: ${result.content.length}`);
+if (result.detectedLanguages) {
+	console.log(`Languages: ${result.detectedLanguages.join(', ')}`);
+}
+if (result.chunks && result.chunks.length > 0) {
+	console.log(`Chunks: ${result.chunks.length}`);
+}
+```
+
+</TabItem>
+<TabItem label="Rust">
+
+```rust title="Rust"
+use kreuzberg::{
+    extract_file, ExtractionConfig, ChunkingConfig, EmbeddingConfig,
+    LanguageDetectionConfig, TokenReductionConfig,
+    KeywordConfig, KeywordAlgorithm
+};
+
+let config = ExtractionConfig {
+    enable_quality_processing: true,
+
+    language_detection: Some(LanguageDetectionConfig {
+        enabled: true,
+        detect_multiple: true,
+        ..Default::default()
+    }),
+
+    token_reduction: Some(TokenReductionConfig {
+        mode: "moderate".to_string(),
+        preserve_markdown: true,
+        ..Default::default()
+    }),
+
+    chunking: Some(ChunkingConfig {
+        max_characters: 512,
+        overlap: 50,
+        embedding: Some(EmbeddingConfig {
+            model: kreuzberg::EmbeddingModelType::Preset { name: "balanced".to_string() },
+            normalize: true,
+            ..Default::default()
+        }),
+        ..Default::default()
+    }),
+
+    keywords: Some(KeywordConfig {
+        algorithm: KeywordAlgorithm::Yake,
+        max_keywords: 10,
+        ..Default::default()
+    }),
+
+    ..Default::default()
+};
+
+let result = extract_file("document.pdf", None, &config).await?;
+
+if let Some(quality) = result.quality_score {
+    println!("Quality: {:.2}", quality);
+}
+println!("Languages: {:?}", result.detected_languages);
+if let Some(keywords) = &result.extracted_keywords {
+    println!("Keywords: {:?}", keywords);
+}
+if let Some(chunks) = result.chunks {
+    if let Some(first_chunk) = chunks.first() {
+        if let Some(embedding) = &first_chunk.embedding {
+            println!("Chunks: {} with {} dimensions", chunks.len(), embedding.len());
+        }
+    }
+}
+```
+
+</TabItem>
+<TabItem label="Go">
+
+```go title="Go"
+package main
+
+import (
+	"fmt"
+	"log"
+
+	"github.com/kreuzberg-dev/kreuzberg-lts/v4"
+)
+
+func main() {
+	maxChars := 512
+	maxOverlap := 50
+	minConfidence := 0.8
+	config := &kreuzberg.ExtractionConfig{
+		EnableQualityProcessing: true,
+
+		LanguageDetection: &kreuzberg.LanguageDetectionConfig{
+			Enabled:        true,
+			MinConfidence:  &minConfidence,
+			DetectMultiple: true,
+		},
+
+		TokenReduction: &kreuzberg.TokenReductionConfig{
+			Mode:             "moderate",
+			PreserveMarkdown: true,
+		},
+
+		Chunking: &kreuzberg.ChunkingConfig{
+			MaxChars:   &maxChars,
+			MaxOverlap: &maxOverlap,
+			Embedding: &kreuzberg.EmbeddingConfig{
+				Model:     "balanced",
+				Normalize: true,
+			},
+		},
+
+		Keywords: &kreuzberg.KeywordConfig{
+			Algorithm:   "YAKE",
+			MaxKeywords: 10,
+		},
+	}
+
+	result, err := kreuzberg.ExtractFileSync("document.pdf", config)
+	if err != nil {
+		log.Fatalf("extract failed: %v", err)
+	}
+
+	if result.QualityScore != nil {
+		fmt.Printf("Quality: %.2f\n", *result.QualityScore)
+	}
+	fmt.Printf("Languages: %v\n", result.DetectedLanguages)
+	fmt.Printf("Keywords: %v\n", result.ExtractedKeywords)
+	if result.Chunks != nil && len(result.Chunks) > 0 && result.Chunks[0].Embedding != nil {
+		fmt.Printf("Chunks: %d with %d dimensions\n", len(result.Chunks), len(result.Chunks[0].Embedding))
+	}
+}
+```
+
+</TabItem>
+<TabItem label="Java">
+
+```java title="Java"
+import dev.kreuzberg.Kreuzberg;
+import dev.kreuzberg.ExtractionResult;
+import dev.kreuzberg.config.ExtractionConfig;
+import dev.kreuzberg.config.ChunkingConfig;
+import dev.kreuzberg.config.LanguageDetectionConfig;
+import dev.kreuzberg.config.TokenReductionConfig;
+
+ExtractionConfig config = ExtractionConfig.builder()
+    .enableQualityProcessing(true)
+    .languageDetection(LanguageDetectionConfig.builder()
+        .enabled(true)
+        .minConfidence(0.8)
+        .build())
+    .tokenReduction(TokenReductionConfig.builder()
+        .mode("moderate")
+        .preserveImportantWords(true)
+        .build())
+    .chunking(ChunkingConfig.builder()
+        .maxChars(512)
+        .maxOverlap(50)
+        .embedding("balanced")
+        .build())
+    .build();
+
+ExtractionResult result = Kreuzberg.extractFile("document.pdf", config);
+
+System.out.printf("Quality: %.2f%n", result.getQualityScore());
+System.out.println("Languages: " + result.getDetectedLanguages());
+System.out.println("Content length: " + result.getContent().length() + " characters");
+```
+
+</TabItem>
+<TabItem label="C#">
+
+```csharp title="C#"
+using System;
+using System.Threading.Tasks;
+using Kreuzberg;
+
+async Task RunRagPipeline()
+{
+    var config = new ExtractionConfig
+    {
+        EnableQualityProcessing = true,
+
+        LanguageDetection = new LanguageDetectionConfig
+        {
+            Enabled = true,
+            DetectMultiple = true,
+            MinConfidence = 0.8,
+        },
+
+        TokenReduction = new TokenReductionConfig
+        {
+            Mode = "moderate",
+            PreserveImportantWords = true,
+        },
+
+        Chunking = new ChunkingConfig
+        {
+            MaxChars = 512,
+            MaxOverlap = 50,
+            Embedding = new Dictionary<string, object?>
+            {
+                { "preset", "balanced" },
+            },
+            Enabled = true,
+        },
+
+        Keywords = new KeywordConfig
+        {
+            Algorithm = "yake",
+            MaxKeywords = 10,
+        },
+    };
+
+    var result = await KreuzbergClient.ExtractFileAsync("document.pdf", config);
+
+    Console.WriteLine($"Content length: {result.Content.Length} characters");
+
+    if (result.DetectedLanguages?.Count > 0)
+    {
+        Console.WriteLine($"Languages: {string.Join(", ", result.DetectedLanguages)}");
+    }
+
+    if (result.Chunks?.Count > 0)
+    {
+        Console.WriteLine($"Total chunks: {result.Chunks.Count}");
+        var firstChunk = result.Chunks[0];
+        Console.WriteLine($"First chunk tokens: {firstChunk.Metadata.TokenCount}");
+        if (firstChunk.Embedding?.Length > 0)
+        {
+            Console.WriteLine($"Embedding dimensions: {firstChunk.Embedding.Length}");
+        }
+    }
+
+    Console.WriteLine($"Quality score: {result.QualityScore}");
+
+    if (result.ExtractedKeywords?.Count > 0)
+    {
+        Console.WriteLine($"Keywords: {string.Join(", ", result.ExtractedKeywords)}");
+    }
+}
+
+await RunRagPipeline();
+```
+
+</TabItem>
+<TabItem label="Ruby">
+
+```ruby title="Ruby"
+require 'kreuzberg'
+
+config = Kreuzberg::Config::Extraction.new(
+  enable_quality_processing: true,
+  language_detection: Kreuzberg::Config::LanguageDetection.new(
+    enabled: true,
+    detect_multiple: true
+  ),
+  token_reduction: Kreuzberg::Config::TokenReduction.new(mode: 'moderate'),
+  chunking: Kreuzberg::Config::Chunking.new(
+    max_characters: 512,
+    overlap: 50,
+    embedding: { normalize: true }
+  ),
+  keywords: Kreuzberg::Config::Keywords.new(
+    algorithm: 'yake',
+    max_keywords: 10
+  )
+)
+
+result = Kreuzberg.extract_file_sync('document.pdf', config: config)
+puts "Languages: #{result.detected_languages.inspect}"
+puts "Chunks: #{result.chunks&.length || 0}"
+```
+
+</TabItem>
+<TabItem label="R">
+
+```r title="R"
+library(kreuzberg)
+
+ocr_cfg <- ocr_config(backend = "tesseract", language = "eng", dpi = 300L)
+chunking_cfg <- chunking_config(max_characters = 1200L, overlap = 250L)
+
+config <- extraction_config(
+  ocr = ocr_cfg,
+  force_ocr = TRUE,
+  chunking = chunking_cfg,
+  language_detection = list(enabled = TRUE),
+  keywords = list(enabled = TRUE),
+  enable_quality_processing = TRUE,
+  output_format = "markdown"
+)
+
+result <- extract_file_sync("document.pdf", "application/pdf", config)
+
+cat(sprintf("Language: %s | Quality: %.2f | Chunks: %d | Keywords: %d\n",
+            result$detected_language, result$quality_score,
+            length(result$chunks), length(result$keywords)))
+```
+
+</TabItem>
+</Tabs>
