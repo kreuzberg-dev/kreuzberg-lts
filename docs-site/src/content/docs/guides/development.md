@@ -156,8 +156,8 @@ Language-specific:
 
 ```bash title="Terminal"
 task rust:lint          # clippy + rustfmt
-task python:lint        # ruff + mypy
-task node:lint          # eslint + typecheck
+task python:lint        # ruff + pyrefly
+task node:lint          # poly (oxc) lint + format
 ```
 
 The repo uses [poly](https://github.com/xberg-io/poly) for formatting and lint rules — run `poly fmt --check .` and `poly lint .` (or `task lint`) before committing. CI enforces the same checks plus conventional commit messages; if CI fails, the output tells you exactly what to fix.
@@ -169,9 +169,8 @@ The repo uses [poly](https://github.com/xberg-io/poly) for formatting and lint r
 ### Building Locally
 
 ```bash title="Terminal"
-uv sync --group doc
-zensical build --clean
-zensical serve
+task docs:build
+task docs:serve
 ```
 
 ### How Snippets Work
@@ -264,9 +263,7 @@ task test:all:ci        # Everything
 | Workflow | When it runs | What it does |
 |----------|-------------|-------------|
 | `ci.yaml` | Every push/PR to `main` | The main pipeline |
-| `docs.yaml` | Changes to `docs/` or `zensical.toml` | Builds and validates documentation |
-| `benchmarks.yaml` | Manual trigger | Runs the full benchmark suite |
-| `profiling.yaml` | Manual trigger | Generates flamegraphs |
+| `docs.yaml` | Changes to `docs-site/**` | Builds and deploys documentation |
 | `publish.yaml` | Release events | Publishes packages to registries |
 | `publish-docker.yaml` | Tags and releases | Builds and pushes Docker images |
 
@@ -290,9 +287,5 @@ Kreuzberg's core is written in Rust, which enables zero-copy memory handling, SI
 - **Caching:** 85%+ hit rates for repeated files (SQLite-backed, automatic invalidation)
 - **Streaming:** Large files processed in 4KB chunks, constant memory regardless of file size
 - **Lazy initialization:** Expensive subsystems (Tokio, plugins) initialized on first use only
-
-### Benchmarking Your Workload
-
-Measure with your actual files using the benchmark harness (see [Benchmarking](#benchmarking) section for full instructions). For detailed analysis and live benchmark results, visit <https://docs.kreuzberg.dev/benchmarks>.
 
 ---

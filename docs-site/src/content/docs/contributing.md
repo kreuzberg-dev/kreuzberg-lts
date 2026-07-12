@@ -193,16 +193,14 @@ Don't worry about failing CI on your first PR. Maintainers will help you resolve
 
 ## CI/CD
 
-Kreuzberg ships six GitHub Actions workflows under `.github/workflows/`. The first two run automatically on contributor PRs; the rest are manual or release-driven and contributors do not need to invoke them.
+Kreuzberg ships four GitHub Actions workflows under `.github/workflows/`. The first two run automatically on contributor PRs; the rest are manual or release-driven and contributors do not need to invoke them.
 
 | Workflow | Trigger | What it does |
 |----------|---------|--------------|
 | `ci.yaml` | Push to `main`, every PR | Clippy, fmt, unit + integration tests, type checks for the Python and TypeScript bindings. Runs on `ubuntu-24.04-arm`. This is the canonical "PR is mergeable" check. |
-| `docs.yaml` | Push/PR touching `docs/**`, manual dispatch | Builds the docs site in strict mode, validates snippet includes, runs prose linting, and deploys to GitHub Pages from `main`. |
-| `publish.yaml` | Manual dispatch, GitHub release event | Publishes to PyPI, npm, crates.io, Docker Hub, Homebrew, and other registries. Not run on PRs. |
+| `docs.yaml` | Push/PR touching `docs-site/**`, manual dispatch | Builds the docs site in strict mode, validates snippet includes, runs prose linting, and deploys to GitHub Pages from `main`. |
+| `publish.yaml` | Manual dispatch, GitHub release event | Publishes to PyPI, npm, crates.io, Homebrew, and other registries. Not run on PRs. |
 | `publish-docker.yaml` | Manual dispatch, GitHub release event | Builds and publishes the Kreuzberg Docker images. |
-| `benchmarks.yaml` | Manual dispatch only | Three-iteration performance run with quality metrics on `ubuntu-24.04-arm`. Used to compare proposed changes against `main`. |
-| `profiling.yaml` | Manual dispatch only | Generates flamegraphs for six fixture types (small/medium PDFs, simple DOCX, and others) for performance investigations. |
 
 ### Reading workflow failures
 
@@ -219,7 +217,7 @@ If a check is reporting "expected check missing" rather than failing outright, t
 ## Coding standards
 
 - **Rust:** Edition 2024, no `unwrap()` in production paths, document all public items, `SAFETY` comments for `unsafe` blocks
-- **Python:** `frozen=True` / `slots=True` dataclasses, function-based pytest, follow Ruff and Mypy rules
+- **Python:** `frozen=True` / `slots=True` dataclasses, function-based pytest, follow Ruff and pyrefly rules
 - **TypeScript:** Strict types, no `any`, bindings in `packages/typescript/src`
 - **Ruby:** No global state outside `Kreuzberg` module, panic-free native bridge, follow RuboCop
 - **Go / Java / C#:** Follow standard language conventions and project linters
