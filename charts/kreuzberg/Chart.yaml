@@ -22,7 +22,7 @@ maintainers:
   - name: kreuzberg-dev
     email: naaman@kreuzberg.dev
     url: https://github.com/kreuzberg-dev
-icon: https://raw.githubusercontent.com/kreuzberg-dev/kreuzberg-lts/main/docs/assets/logo.svg
+icon: https://cdn.jsdelivr.net/gh/xberg-io/assets@v1/favicon/android-chrome-512x512.png
 annotations:
   artifacthub.io/license: MIT
   artifacthub.io/links: |

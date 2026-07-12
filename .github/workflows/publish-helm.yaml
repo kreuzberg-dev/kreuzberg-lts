@@ -32,6 +32,7 @@ jobs:
     permissions:
       contents: read
       packages: write
+      id-token: write # keyless cosign signing via OIDC ~keep
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -95,11 +96,34 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Push chart to GHCR
+        id: push
         if: ${{ steps.meta.outputs.dry_run != 'true' }}
         run: |
-          helm push .helm-packages/kreuzberg-${{ steps.meta.outputs.version }}.tgz oci://ghcr.io/kreuzberg-dev/charts
+          helm push .helm-packages/kreuzberg-${{ steps.meta.outputs.version }}.tgz oci://ghcr.io/kreuzberg-dev/charts 2>&1 | tee push.log
+          DIGEST="$(grep -oE 'sha256:[0-9a-f]{64}' push.log | head -n1)"
+          if [[ -z "${DIGEST}" ]]; then
+            echo "Failed to resolve pushed chart digest" >&2
+            exit 1
+          fi
+          echo "digest=${DIGEST}" >> "$GITHUB_OUTPUT"
           echo "### Published" >> "$GITHUB_STEP_SUMMARY"
-          echo "Chart pushed to \`oci://ghcr.io/kreuzberg-dev/charts/kreuzberg:${{ steps.meta.outputs.version }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "Chart pushed to \`oci://ghcr.io/kreuzberg-dev/charts/kreuzberg:${{ steps.meta.outputs.version }}\` (\`${DIGEST}\`)" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Install cosign
+        if: ${{ steps.meta.outputs.dry_run != 'true' }}
+        uses: sigstore/cosign-installer@v3
+
+      - name: Sign chart with cosign (keyless)
+        if: ${{ steps.meta.outputs.dry_run != 'true' }}
+        # Keyless OIDC signature. Artifact Hub auto-detects the cosign signature ~keep
+        # tag on the OCI chart and shows the "Signed" badge. Verify with cosign ~keep
+        # verify using certificate-identity-regexp against the repo and the ~keep
+        # GitHub Actions OIDC issuer token.actions.githubusercontent.com. ~keep
+        run: |
+          cosign sign --yes \
+            "ghcr.io/kreuzberg-dev/charts/kreuzberg@${{ steps.push.outputs.digest }}"
+          echo "### Signed" >> "$GITHUB_STEP_SUMMARY"
+          echo "Chart signed with cosign (keyless) at \`${{ steps.push.outputs.digest }}\`" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Set up ORAS
         if: ${{ steps.meta.outputs.dry_run != 'true' }}
