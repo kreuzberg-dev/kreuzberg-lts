@@ -48,7 +48,7 @@ The fastest way to try Kreuzberg - no SDK, no code, just your terminal.
 === "Docker (full image)"
 
     ```bash
-    docker pull ghcr.io/kreuzberg-dev/kreuzberg:latest
+    docker pull ghcr.io/kreuzberg-dev/kreuzberg-full:latest
     ```
 
 [CLI Usage](../cli/usage.md){ .install-btn .install-btn--ghost }

@@ -113,7 +113,7 @@ spec:
     spec:
       containers:
       - name: kreuzberg
-        image: ghcr.io/kreuzberg-dev/kreuzberg:latest
+        image: ghcr.io/kreuzberg-dev/kreuzberg-full:latest
         ports:
         - containerPort: 8000
           name: http
@@ -357,7 +357,7 @@ spec:
           mountPath: /app/.kreuzberg
       containers:
       - name: kreuzberg
-        image: ghcr.io/kreuzberg-dev/kreuzberg:latest
+        image: ghcr.io/kreuzberg-dev/kreuzberg-full:latest
         ports:
         - containerPort: 8000
           name: http

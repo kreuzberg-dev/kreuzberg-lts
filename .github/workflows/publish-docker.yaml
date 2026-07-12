@@ -139,14 +139,14 @@ jobs:
       - name: Check core image tag
         id: core
         env:
-          DOCKER_TAG: ghcr.io/kreuzberg-dev/kreuzberg:${{ needs.prepare.outputs.version }}-core
+          DOCKER_TAG: ghcr.io/kreuzberg-dev/kreuzberg-core:${{ needs.prepare.outputs.version }}
           SUMMARY_LABEL: core
         run: scripts/publish/check-docker-tag.sh
 
       - name: Check full image tag
         id: full
         env:
-          DOCKER_TAG: ghcr.io/kreuzberg-dev/kreuzberg:${{ needs.prepare.outputs.version }}
+          DOCKER_TAG: ghcr.io/kreuzberg-dev/kreuzberg-full:${{ needs.prepare.outputs.version }}
           SUMMARY_LABEL: full
         run: scripts/publish/check-docker-tag.sh
 
@@ -173,12 +173,12 @@ jobs:
         include:
           - variant: core
             dockerfile: docker/Dockerfile.core
-            image: ghcr.io/kreuzberg-dev/kreuzberg
-            tag_suffix: "-core"
-            extra_tag: "core"
+            image: ghcr.io/kreuzberg-dev/kreuzberg-core
+            tag_suffix: ""
+            extra_tag: "latest"
           - variant: full
             dockerfile: docker/Dockerfile.full
-            image: ghcr.io/kreuzberg-dev/kreuzberg
+            image: ghcr.io/kreuzberg-dev/kreuzberg-full
             tag_suffix: ""
             extra_tag: "latest"
           - variant: cli

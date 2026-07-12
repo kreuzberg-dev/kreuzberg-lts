@@ -2,7 +2,7 @@ replicaCount: 2
 
 image:
   registry: ghcr.io
-  repository: kreuzberg-dev/kreuzberg
+  repository: kreuzberg-dev/kreuzberg-full
   tag: "latest"
   pullPolicy: IfNotPresent
 

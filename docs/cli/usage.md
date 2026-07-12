@@ -678,7 +678,7 @@ kreuzberg detect document.pdf
 
 ## Docker Usage
 
-Use the CLI image `ghcr.io/kreuzberg-dev/kreuzberg-cli:latest` for command-line usage. The full image `ghcr.io/kreuzberg-dev/kreuzberg:latest` also includes the CLI.
+Use the CLI image `ghcr.io/kreuzberg-dev/kreuzberg-cli:latest` for command-line usage. The full image `ghcr.io/kreuzberg-dev/kreuzberg-full:latest` also includes the CLI.
 
 ### Basic Docker
 

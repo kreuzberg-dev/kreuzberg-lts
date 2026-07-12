@@ -179,25 +179,25 @@ See the [WASM binding documentation](https://github.com/kreuzberg-dev/kreuzberg-
 Pull the official image from GitHub Container Registry:
 
 ```bash
-docker pull ghcr.io/kreuzberg-dev/kreuzberg
+docker pull ghcr.io/kreuzberg-dev/kreuzberg-full
 ```
 
 **API Server Mode:**
 
 ```bash
-docker run -p 8000:8000 ghcr.io/kreuzberg-dev/kreuzberg serve --host 0.0.0.0
+docker run -p 8000:8000 ghcr.io/kreuzberg-dev/kreuzberg-full serve --host 0.0.0.0
 ```
 
 **CLI Mode:**
 
 ```bash
-docker run -v $(pwd):/data ghcr.io/kreuzberg-dev/kreuzberg extract /data/document.pdf
+docker run -v $(pwd):/data ghcr.io/kreuzberg-dev/kreuzberg-full extract /data/document.pdf
 ```
 
 **MCP Server Mode:**
 
 ```bash
-docker run -i ghcr.io/kreuzberg-dev/kreuzberg mcp
+docker run -i ghcr.io/kreuzberg-dev/kreuzberg-full mcp
 ```
 
 Image sizes:

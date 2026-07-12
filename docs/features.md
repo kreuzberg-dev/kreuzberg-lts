@@ -332,7 +332,7 @@ For the architecture overview, see [Plugin System](concepts/plugin-system.md). F
 | **CLI** | One-off extractions, scripting, CI pipelines | `kreuzberg extract document.pdf --format json` -- see [CLI Usage](cli/usage.md) |
 | **REST API** | Multi-service architectures, language-agnostic access | `kreuzberg serve --port 8000` -- see [API Server Guide](guides/api-server.md) |
 | **MCP Server** | AI agent integration (Claude Desktop, Continue.dev) | `kreuzberg mcp` -- stdio transport with JSON-RPC 2.0 |
-| **Docker** | Reproducible deployments with all dependencies bundled | `ghcr.io/kreuzberg-dev/kreuzberg:latest` -- see [Docker Guide](guides/docker.md) |
+| **Docker** | Reproducible deployments with all dependencies bundled | `ghcr.io/kreuzberg-dev/kreuzberg-full:latest` -- see [Docker Guide](guides/docker.md) |
 
 ---
 

@@ -115,10 +115,10 @@ IMAGE_NAME=kreuzberg:full ./scripts/test_docker.sh
 
 The `.github/workflows/publish-docker.yaml` workflow builds and publishes both variants to GitHub Container Registry:
 
-- `ghcr.io/kreuzberg-dev/kreuzberg:VERSION-core` - Core image (minimal runtime)
-- `ghcr.io/kreuzberg-dev/kreuzberg:core` - Latest core image
-- `ghcr.io/kreuzberg-dev/kreuzberg:VERSION` - Full image (all optional dependencies)
-- `ghcr.io/kreuzberg-dev/kreuzberg:latest` - Latest full image
+- `ghcr.io/kreuzberg-dev/kreuzberg-core:VERSION` - Core image (minimal runtime)
+- `ghcr.io/kreuzberg-dev/kreuzberg-core:latest` - Latest core image
+- `ghcr.io/kreuzberg-dev/kreuzberg-full:VERSION` - Full image (all optional dependencies)
+- `ghcr.io/kreuzberg-dev/kreuzberg-full:latest` - Latest full image
 
 For local development, use the local tags shown in the build commands above.
 

@@ -98,7 +98,7 @@ Precompiled binaries for Linux (x86_64 & aarch64), macOS (Apple Silicon), and Wi
 | **R** | r-universe `kreuzberg` | [API Reference](reference/api-r.md) |
 | **C (FFI)** | Shared library + header | [API Reference](reference/api-c.md) |
 | **CLI** | `brew install kreuzberg-dev/tap/kreuzberg` | [CLI Guide](cli/usage.md) |
-| **Docker** | `ghcr.io/kreuzberg-dev/kreuzberg` | [Docker Guide](guides/docker.md) |
+| **Docker** | `ghcr.io/kreuzberg-dev/kreuzberg-full` | [Docker Guide](guides/docker.md) |
 
 !!! Tip "Choosing Between TypeScript Packages"
 
