@@ -527,3 +527,8 @@ files = "packages/python/**/*.py"
 [hooks.pre-commit.commands.helm]
 run = "bash -c 'helm lint --strict charts/kreuzberg && helm template charts/kreuzberg | kubeconform -strict -summary -'"
 files = "charts/**"
+[[hooks.sources]]
+id = "ai-rulez"
+git = "https://github.com/Goldziher/ai-rulez.git"
+revision = "v4.9.1"
+hooks = ["ai-rulez-validate"]
