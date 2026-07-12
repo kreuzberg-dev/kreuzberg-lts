@@ -8,7 +8,6 @@ export default defineConfig({
     compilerOptions: {
       skipLibCheck: true,
       skipDefaultLibCheck: true,
-      ignoreDeprecations: "6.0",
     },
   },
   splitting: false,
