@@ -213,6 +213,9 @@ visualizations/
 .gemini/
 GEMINI.md
 
+.basemind/
+poly.local.toml
+
 # BEGIN ai-rulez (DO NOT EDIT - managed by ai-rulez)
 .agents/
 .ai-rulez/.generated-manifest.json
@@ -222,5 +225,3 @@ GEMINI.md
 .github/copilot-instructions.md
 .github/skills/
 # END ai-rulez
-.basemind/
-poly.local.toml
