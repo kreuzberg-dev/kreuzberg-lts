@@ -45,11 +45,11 @@ ExtractionResult = "ExtractionResult"
 
 [export]
 include = [
-    "kreuzberg_extract_file_sync",
-    "kreuzberg_free_string",
-    "kreuzberg_free_result",
-    "kreuzberg_last_error",
-    "kreuzberg_version",
+  "kreuzberg_extract_file_sync",
+  "kreuzberg_free_string",
+  "kreuzberg_free_result",
+  "kreuzberg_last_error",
+  "kreuzberg_version",
 ]
 
 [parse]

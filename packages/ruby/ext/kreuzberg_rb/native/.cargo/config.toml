@@ -3,18 +3,18 @@ rustflags = ["-A", "unpredictable-function-pointer-comparisons", "-A", "fn_ptr_e
 
 [target.x86_64-pc-windows-gnu]
 rustflags = [
-    "-A",
-    "unpredictable-function-pointer-comparisons",
-    "-A",
-    "fn_ptr_eq",
-    "-C",
-    "link-arg=-lbcrypt",
-    "-C",
-    "link-arg=-lcrypt32",
-    "-C",
-    "link-arg=-lws2_32",
-    "-C",
-    "link-arg=-luserenv",
+  "-A",
+  "unpredictable-function-pointer-comparisons",
+  "-A",
+  "fn_ptr_eq",
+  "-C",
+  "link-arg=-lbcrypt",
+  "-C",
+  "link-arg=-lcrypt32",
+  "-C",
+  "link-arg=-lws2_32",
+  "-C",
+  "link-arg=-luserenv",
 ]
 
 [target.x86_64-pc-windows-msvc]
