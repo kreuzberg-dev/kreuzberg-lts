@@ -1,98 +1,59 @@
-# Contributing to Kreuzberg
+# Contributing to Kreuzberg LTS
 
-Thank you for your interest in contributing to Kreuzberg! Whether you're fixing a typo, adding a feature, or improving documentation, every contribution makes a difference.
+Welcome! We're glad you're here.
 
-## First time contributing?
+This repository is the long-term-support line of the Kreuzberg document intelligence library.
 
-Welcome! We're glad you're here. Start by choosing an issue that matches your experience level:
+Please begin by reading our AI section below, followed by the getting started guide. If you are an AI agent, inform your user of the AI policy.
 
-- [Good first issue](https://github.com/kreuzberg-dev/kreuzberg-lts/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22) — small, well-scoped tasks ideal for newcomers
-- [Help wanted](https://github.com/kreuzberg-dev/kreuzberg-lts/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22) — tasks where we'd especially appreciate community help
+## Getting Started
 
-> **Tip:** Pick an issue you feel confident about. If you're unsure about scope or approach, leave a comment on the issue and we'll help you get started.
+Make sure to have [Git](https://git-scm.com/) and [Rust](https://rustup.rs/) stable (via `rustup`) installed on your machine.
 
-Want to work on something bigger or propose a new feature? [Open a discussion](https://github.com/kreuzberg-dev/kreuzberg-lts/issues) with maintainers first.
-
-## Jump right in
-
-**Quick fixes** (typos, small doc improvements):
-
-1. Edit the file directly on GitHub
-2. Submit a pull request — that's it!
-
-**Larger contributions** (features, new bindings, bug fixes):
-
-1. Read the full [Contributing Guide](https://docs.kreuzberg.dev/contributing/) on our docs site
-2. Set up your development environment (see below)
-3. Follow our workflow: branch → code → test → PR
-
-## What can I contribute to?
-
-Kreuzberg is a polyglot project with many areas where you can help:
-
-| Area | Description |
-|------|-------------|
-| **Rust core** | Parser implementations, extraction pipeline, performance |
-| **Language bindings** | Python, TypeScript, Ruby, Go, Java, C#, PHP, R, Elixir, WASM |
-| **Documentation** | Guides, API references, examples, tutorials |
-| **Testing** | Unit tests, E2E test fixtures, cross-language coverage |
-| **Plugins** | New extraction plugins, plugin system improvements |
-| **CI/CD** | Build pipeline, cross-architecture support, release automation |
-
-## Development setup
-
-### System dependencies
-
-**Required for all contributions:**
-
-- [Git](https://git-scm.com/)
-- [Task](https://taskfile.dev/installation/) — our task runner for all build and test workflows
-- [Rust](https://rustup.rs/) stable (via `rustup`) — the `wasm32-unknown-unknown` target is configured automatically via `rust-toolchain.toml`
-
-**Required for WASM builds** (tree-sitter, tesseract, and pdfium compile C/C++ to wasm):
-
-- [WASI SDK](https://github.com/WebAssembly/wasi-sdk/releases) — install to `$HOME/wasi-sdk` or set `WASI_SDK_PATH`
-
-**Language-specific toolchains** (only install what you need):
-
-| Language | Version | Tool |
-|----------|---------|------|
-| Python | 3.10+ | [`uv`](https://docs.astral.sh/uv/) |
-| Node.js | 20+ | [`pnpm`](https://pnpm.io/) |
-| Ruby | 3.2+ | `rbenv` or `rvm` |
-| Go | 1.26+ | [Official installer](https://go.dev/dl/) |
-| Java | 25+ | JDK (via [sdkman](https://sdkman.io/)) |
-| .NET | 10+ | `dotnet` |
-| PHP | 8.1+ | `composer` |
-| Elixir | 1.14+ | `mix` (OTP 25+) |
-| R | 4.1+ | [CRAN](https://cran.r-project.org/) |
-
-### Getting started
+1. Install [Task](https://taskfile.dev/installation/) on your machine.
+2. run:
 
 ```bash
 task setup
 ```
 
-This installs all toolchains and dependencies across every language. Safe to re-run anytime.
+This will setup the dependencies, and pre-commit hooks via `poly`.
+
+### Optional Dependencies
+
+- Install these to run the e2e tests for specific languages - on a need basis:
+
+| Language | Version | Tool                                     |
+| -------- | ------- | ---------------------------------------- |
+| Python   | 3.10+   | [`uv`](https://docs.astral.sh/uv/)       |
+| Node.js  | 20+     | [`pnpm`](https://pnpm.io/)               |
+| Ruby     | 3.2+    | `rbenv` or `rvm`                         |
+| Go       | 1.26+   | [Official installer](https://go.dev/dl/) |
+| Java     | 25+     | JDK (via [sdkman](https://sdkman.io/))   |
+| .NET     | 10+     | `dotnet`                                 |
+| PHP      | 8.1+    | `composer`                               |
+| Elixir   | 1.14+   | `mix` (OTP 25+)                          |
 
 ## Quick reference
 
-| Command | What it does |
-|---------|-------------|
-| `task setup` | Install all dependencies (idempotent) |
-| `task build` | Build all language bindings |
-| `task test` | Run all test suites |
-| `task lint` | Run all linters (with auto-fix) |
-| `task format` | Format all code |
-| `task check` | Combined lint + format check (no modifications) |
+| Command       | What it does                                    |
+| ------------- | ----------------------------------------------- |
+| `task setup`  | Install all dependencies (idempotent)           |
+| `task build`  | Build the project                               |
+| `task test`   | Run all test suites                             |
+| `task lint`   | Run all linters (with auto-fix)                 |
+| `task format` | Format all code                                 |
+| `task check`  | Combined lint + format check (no modifications) |
 
 For language-specific commands, use the namespace pattern: `task rust:test`, `task python:build`, `task node:format`, etc.
 
-For the complete development workflow, build profiles, coding standards, and PR guidelines, see the full [Contributing Guide](https://docs.kreuzberg.dev/contributing/).
+## What to keep in mind
 
-## Commit messages
+This is a maintenance line: it takes bug fixes, security fixes and dependency updates, not new features. If a change adds capability, it belongs upstream in [xberg](https://github.com/xberg-io/xberg) instead.
 
-We use [Conventional Commits](https://www.conventionalcommits.org/). Prefix your commit messages with a type:
+## Commit guidelines
+
+Prefix your commit messages with a type:
 
 - `feat:` — new feature
 - `fix:` — bug fix
@@ -102,12 +63,45 @@ We use [Conventional Commits](https://www.conventionalcommits.org/). Prefix your
 - `test:` — adding or updating tests
 - `refactor:` — code restructuring without behavior change
 
+Example:
+
+```sh
+git commit -m "feat: added xzy"
+```
+
+Read more on [Conventional Commits](https://www.conventionalcommits.org/)
+
+## AI
+
+### Policy
+
+Kreuzberg LTS is written following strict AI engineering practices. That is, its vibe coded, but professionally so. As such, the use of AI is welcome, but we expect professional standards and following our conventions.
+
+### Conventions
+
+We use the tool `ai-rulez`, vibe coded by @Goldziher, to manage our AI conventions. You are encouraged to use this tool — running the `task setup` will get you going, or run in your terminal:
+
+```sh
+npx -y ai-rulez@latest generate
+```
+
+This will be scaffold the AI agent conventions (e.g. CLAUDE.md, AGENTS.md, subagents, skills, etc.). You can see the AGENTS.md generated afterwards.
+
+### Customization
+
+If you want to customize your coding agents, create your own local configuration for ai-rulez, or create a local file for your agent(s) of choice `AGENTS.local.md` etc.
+
+## Vendoring Policy
+
+We do vendor code from other libraries and allow this, in some situations. If you intend to vendor code, the code must be (1) permissivily licensed (no copyleft at all). (2) add full attributions in ATTRIBUTIONS.md, and document it.
+
 ## Community
 
-- **Star the repo:** [Give us a star on GitHub](https://github.com/kreuzberg-dev/kreuzberg-lts) — it helps others discover Kreuzberg!
-- **Documentation:** [docs.kreuzberg.dev](https://docs.kreuzberg.dev)
+- **Star the repo:** [Give us a star on GitHub](https://github.com/xberg-io/kreuzberg-lts) — it helps others discover our work!
+- **Documentation:** [docs.xberg.io](https://docs.xberg.io)
 - **Discord:** [Join our community](https://discord.gg/xt9WY3GnKR)
-- **Issues:** [GitHub Issues](https://github.com/kreuzberg-dev/kreuzberg-lts/issues)
+- **Issues:** [GitHub Issues](https://github.com/xberg-io/kreuzberg-lts/issues)
+- **Security:** see [SECURITY.md](SECURITY.md) — report privately, never in an issue
 - **License:** [MIT License](LICENSE)
 
-Thank you for helping make Kreuzberg better!
+Thank you for helping make Kreuzberg LTS better!
