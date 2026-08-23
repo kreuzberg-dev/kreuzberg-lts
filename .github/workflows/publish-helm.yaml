@@ -46,7 +46,7 @@ jobs:
       id-token: write # keyless cosign signing via OIDC ~keep
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Resolve version
         id: meta
@@ -143,7 +143,7 @@ jobs:
 
       - name: Set up ORAS
         if: ${{ steps.meta.outputs.dry_run != 'true' }}
-        uses: oras-project/setup-oras@v1
+        uses: oras-project/setup-oras@v2
 
       - name: Push Artifact Hub repository metadata
         if: ${{ steps.meta.outputs.dry_run != 'true' }}

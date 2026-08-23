@@ -59,7 +59,7 @@ jobs:
       release_docker: ${{ steps.meta.outputs.release_docker }}
     steps:
       - name: Checkout code (default)
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Validate tag and compute version
         id: meta
@@ -80,7 +80,7 @@ jobs:
 
       - name: Re-checkout at target ref
         if: ${{ steps.meta.outputs.checkout_ref != '' }}
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           ref: ${{ steps.meta.outputs.checkout_ref }}
           fetch-depth: 0
@@ -125,7 +125,7 @@ jobs:
       cli_exists: ${{ steps.cli.outputs.exists }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           ref: ${{ needs.prepare.outputs.tag }}
 
@@ -189,7 +189,7 @@ jobs:
     if: ${{ needs.prepare.outputs.release_docker == 'true' }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           ref: ${{ needs.prepare.outputs.checkout_ref }}
           fetch-depth: 0
