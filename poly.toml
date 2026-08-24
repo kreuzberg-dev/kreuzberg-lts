@@ -46,8 +46,11 @@ exclude = [
 [lint.markdown.rumdl]
 disable = ["MD012", "MD013", "MD024", "MD033", "MD036", "MD041", "MD046", "MD051", "MD076"]
 
+# MD025 stays enabled for lint but disabled for fmt: rumdl's autofix for a second
+# level-1 heading demotes every heading that follows it, which silently reparents a
+# whole CHANGELOG under [Unreleased] and breaks release-note extraction. ~keep
 [fmt.markdown.rumdl]
-disable = ["MD012", "MD013", "MD024", "MD033", "MD036", "MD041", "MD046", "MD051", "MD076"]
+disable = ["MD012", "MD013", "MD024", "MD033", "MD036", "MD041", "MD046", "MD051", "MD076", "MD025"]
 
 [lint.uncomment]
 enabled = true
