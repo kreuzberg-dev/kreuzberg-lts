@@ -61,7 +61,7 @@ const createInitialResult = (data: Uint8Array | Buffer, mimeType: string | null)
   images: null,
 });
 
-const waitForPromise = <T,>(promise: Promise<T>): T => {
+const waitForPromise = <T>(promise: Promise<T>): T => {
   const sab = new SharedArrayBuffer(4);
   const view = new Int32Array(sab);
   let value: T | undefined;

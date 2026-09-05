@@ -196,9 +196,7 @@ export function loadNativeBinding(): NativeBinding {
   const loadedModule = localRequire("../index.js") as unknown;
 
   if (typeof loadedModule !== "object" || loadedModule === null) {
-    throw new Error(
-      "Native binding is not a valid object. Ensure the native module is properly built and compatible.",
-    );
+    throw new Error("Native binding is not a valid object. Ensure the native module is properly built and compatible.");
   }
 
   const module = loadedModule as Record<string, unknown>;

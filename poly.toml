@@ -243,7 +243,12 @@ traineddata = "traineddata"
 "crates/kreuzberg-node/src/config/types.rs" = ["cyclomatic-complexity", "file-too-long", "function-too-long"]
 "crates/kreuzberg-node/src/error_handling.rs" = ["cyclomatic-complexity", "function-too-long"]
 "crates/kreuzberg-node/src/plugins/ocr_backend.rs" = ["function-too-long"]
-"crates/kreuzberg-node/src/result.rs" = ["cyclomatic-complexity", "file-too-long", "function-too-long", "nesting-too-deep"]
+"crates/kreuzberg-node/src/result.rs" = [
+  "cyclomatic-complexity",
+  "file-too-long",
+  "function-too-long",
+  "nesting-too-deep",
+]
 "crates/kreuzberg-node/tests/binding/embeddings.spec.ts" = ["file-too-long"]
 "crates/kreuzberg-node/tests/binding/helpers/mock-binding.ts" = ["function-too-long"]
 "crates/kreuzberg-node/typescript/core/type-converters.ts" = ["function-too-long"]
@@ -272,7 +277,12 @@ traineddata = "traineddata"
 "crates/kreuzberg-pdfium-render/src/pdf/quad_points.rs" = ["too-many-parameters"]
 "crates/kreuzberg-php/src/error.rs" = ["cyclomatic-complexity", "function-too-long"]
 "crates/kreuzberg-php/src/extraction.rs" = ["nesting-too-deep"]
-"crates/kreuzberg-php/src/types.rs" = ["cyclomatic-complexity", "file-too-long", "function-too-long", "nesting-too-deep"]
+"crates/kreuzberg-php/src/types.rs" = [
+  "cyclomatic-complexity",
+  "file-too-long",
+  "function-too-long",
+  "nesting-too-deep",
+]
 "crates/kreuzberg-py/build.rs" = ["nesting-too-deep"]
 "crates/kreuzberg-py/src/config/types.rs" = ["file-too-long", "function-too-long", "too-many-parameters"]
 "crates/kreuzberg-py/src/html_options.rs" = ["cyclomatic-complexity", "function-too-long"]
@@ -280,7 +290,12 @@ traineddata = "traineddata"
 "crates/kreuzberg-py/src/lib.rs" = ["function-too-long"]
 "crates/kreuzberg-py/src/plugins/ocr_bridge.rs" = ["function-too-long"]
 "crates/kreuzberg-py/src/types.rs" = ["cyclomatic-complexity", "file-too-long", "function-too-long"]
-"crates/kreuzberg-tesseract/build.rs" = ["cyclomatic-complexity", "file-too-long", "function-too-long", "nesting-too-deep"]
+"crates/kreuzberg-tesseract/build.rs" = [
+  "cyclomatic-complexity",
+  "file-too-long",
+  "function-too-long",
+  "nesting-too-deep",
+]
 "crates/kreuzberg-tesseract/src/api.rs" = ["file-too-long"]
 "crates/kreuzberg-tesseract/src/result_iterator.rs" = ["function-too-long"]
 "crates/kreuzberg-wasm/src/ocr.rs" = ["too-many-parameters"]
@@ -304,12 +319,28 @@ traineddata = "traineddata"
 "crates/kreuzberg/src/extraction/doc/mod.rs" = ["function-too-long", "nesting-too-deep"]
 "crates/kreuzberg/src/extraction/docx/drawing.rs" = ["function-too-long", "nesting-too-deep"]
 "crates/kreuzberg/src/extraction/docx/math.rs" = ["cyclomatic-complexity", "file-too-long", "function-too-long"]
-"crates/kreuzberg/src/extraction/docx/parser.rs" = ["cyclomatic-complexity", "file-too-long", "function-too-long", "nesting-too-deep"]
+"crates/kreuzberg/src/extraction/docx/parser.rs" = [
+  "cyclomatic-complexity",
+  "file-too-long",
+  "function-too-long",
+  "nesting-too-deep",
+]
 "crates/kreuzberg/src/extraction/docx/styles.rs" = ["cyclomatic-complexity", "file-too-long"]
 "crates/kreuzberg/src/extraction/docx/table.rs" = ["file-too-long", "function-too-long"]
-"crates/kreuzberg/src/extraction/email.rs" = ["cyclomatic-complexity", "file-too-long", "function-too-long", "nesting-too-deep", "too-many-parameters"]
+"crates/kreuzberg/src/extraction/email.rs" = [
+  "cyclomatic-complexity",
+  "file-too-long",
+  "function-too-long",
+  "nesting-too-deep",
+  "too-many-parameters",
+]
 "crates/kreuzberg/src/extraction/excel.rs" = ["cyclomatic-complexity", "file-too-long", "function-too-long"]
-"crates/kreuzberg/src/extraction/html/structure.rs" = ["cyclomatic-complexity", "file-too-long", "function-too-long", "nesting-too-deep"]
+"crates/kreuzberg/src/extraction/html/structure.rs" = [
+  "cyclomatic-complexity",
+  "file-too-long",
+  "function-too-long",
+  "nesting-too-deep",
+]
 "crates/kreuzberg/src/extraction/image.rs" = ["function-too-long"]
 "crates/kreuzberg/src/extraction/image_ocr.rs" = ["function-too-long"]
 "crates/kreuzberg/src/extraction/ooxml_embedded.rs" = ["function-too-long"]
@@ -326,47 +357,121 @@ traineddata = "traineddata"
 "crates/kreuzberg/src/extractors/archive.rs" = ["too-many-parameters"]
 "crates/kreuzberg/src/extractors/bibtex.rs" = ["cyclomatic-complexity", "function-too-long", "nesting-too-deep"]
 "crates/kreuzberg/src/extractors/citation.rs" = ["cyclomatic-complexity", "function-too-long"]
-"crates/kreuzberg/src/extractors/djot_format/extractor.rs" = ["cyclomatic-complexity", "function-too-long", "nesting-too-deep"]
+"crates/kreuzberg/src/extractors/djot_format/extractor.rs" = [
+  "cyclomatic-complexity",
+  "function-too-long",
+  "nesting-too-deep",
+]
 "crates/kreuzberg/src/extractors/djot_format/parsing/block_handlers.rs" = ["function-too-long"]
-"crates/kreuzberg/src/extractors/djot_format/parsing/content_extraction.rs" = ["function-too-long", "too-many-parameters"]
+"crates/kreuzberg/src/extractors/djot_format/parsing/content_extraction.rs" = [
+  "function-too-long",
+  "too-many-parameters",
+]
 "crates/kreuzberg/src/extractors/djot_format/parsing/inline_handlers.rs" = ["function-too-long"]
 "crates/kreuzberg/src/extractors/djot_format/rendering.rs" = ["cyclomatic-complexity", "function-too-long"]
 "crates/kreuzberg/src/extractors/doc.rs" = ["function-too-long"]
-"crates/kreuzberg/src/extractors/docbook.rs" = ["cyclomatic-complexity", "file-too-long", "function-too-long", "nesting-too-deep"]
-"crates/kreuzberg/src/extractors/docx.rs" = ["cyclomatic-complexity", "file-too-long", "function-too-long", "nesting-too-deep"]
+"crates/kreuzberg/src/extractors/docbook.rs" = [
+  "cyclomatic-complexity",
+  "file-too-long",
+  "function-too-long",
+  "nesting-too-deep",
+]
+"crates/kreuzberg/src/extractors/docx.rs" = [
+  "cyclomatic-complexity",
+  "file-too-long",
+  "function-too-long",
+  "nesting-too-deep",
+]
 "crates/kreuzberg/src/extractors/email.rs" = ["nesting-too-deep"]
 "crates/kreuzberg/src/extractors/epub/content.rs" = ["function-too-long"]
 "crates/kreuzberg/src/extractors/epub/metadata.rs" = ["cyclomatic-complexity", "function-too-long", "nesting-too-deep"]
 "crates/kreuzberg/src/extractors/epub/mod.rs" = ["cyclomatic-complexity", "function-too-long", "nesting-too-deep"]
-"crates/kreuzberg/src/extractors/fictionbook.rs" = ["cyclomatic-complexity", "file-too-long", "function-too-long", "nesting-too-deep"]
+"crates/kreuzberg/src/extractors/fictionbook.rs" = [
+  "cyclomatic-complexity",
+  "file-too-long",
+  "function-too-long",
+  "nesting-too-deep",
+]
 "crates/kreuzberg/src/extractors/html.rs" = ["file-too-long", "function-too-long", "nesting-too-deep"]
 "crates/kreuzberg/src/extractors/image.rs" = ["function-too-long"]
 "crates/kreuzberg/src/extractors/iwork/mod.rs" = ["nesting-too-deep"]
 "crates/kreuzberg/src/extractors/jats/elements.rs" = ["cyclomatic-complexity", "function-too-long", "nesting-too-deep"]
-"crates/kreuzberg/src/extractors/jats/mod.rs" = ["cyclomatic-complexity", "file-too-long", "function-too-long", "nesting-too-deep"]
+"crates/kreuzberg/src/extractors/jats/mod.rs" = [
+  "cyclomatic-complexity",
+  "file-too-long",
+  "function-too-long",
+  "nesting-too-deep",
+]
 "crates/kreuzberg/src/extractors/jats/parser.rs" = ["cyclomatic-complexity", "function-too-long", "nesting-too-deep"]
 "crates/kreuzberg/src/extractors/jupyter.rs" = ["function-too-long", "nesting-too-deep"]
 "crates/kreuzberg/src/extractors/latex/commands.rs" = ["cyclomatic-complexity", "function-too-long", "nesting-too-deep"]
-"crates/kreuzberg/src/extractors/latex/mod.rs" = ["cyclomatic-complexity", "file-too-long", "function-too-long", "nesting-too-deep"]
-"crates/kreuzberg/src/extractors/markdown.rs" = ["cyclomatic-complexity", "file-too-long", "function-too-long", "nesting-too-deep"]
+"crates/kreuzberg/src/extractors/latex/mod.rs" = [
+  "cyclomatic-complexity",
+  "file-too-long",
+  "function-too-long",
+  "nesting-too-deep",
+]
+"crates/kreuzberg/src/extractors/markdown.rs" = [
+  "cyclomatic-complexity",
+  "file-too-long",
+  "function-too-long",
+  "nesting-too-deep",
+]
 "crates/kreuzberg/src/extractors/markdown_utils.rs" = ["function-too-long"]
-"crates/kreuzberg/src/extractors/mdx.rs" = ["cyclomatic-complexity", "file-too-long", "function-too-long", "nesting-too-deep"]
+"crates/kreuzberg/src/extractors/mdx.rs" = [
+  "cyclomatic-complexity",
+  "file-too-long",
+  "function-too-long",
+  "nesting-too-deep",
+]
 "crates/kreuzberg/src/extractors/mod.rs" = ["function-too-long"]
-"crates/kreuzberg/src/extractors/odt.rs" = ["cyclomatic-complexity", "file-too-long", "function-too-long", "nesting-too-deep"]
-"crates/kreuzberg/src/extractors/orgmode.rs" = ["cyclomatic-complexity", "file-too-long", "function-too-long", "nesting-too-deep"]
+"crates/kreuzberg/src/extractors/odt.rs" = [
+  "cyclomatic-complexity",
+  "file-too-long",
+  "function-too-long",
+  "nesting-too-deep",
+]
+"crates/kreuzberg/src/extractors/orgmode.rs" = [
+  "cyclomatic-complexity",
+  "file-too-long",
+  "function-too-long",
+  "nesting-too-deep",
+]
 "crates/kreuzberg/src/extractors/pdf/extraction.rs" = ["function-too-long", "too-many-parameters"]
 "crates/kreuzberg/src/extractors/pdf/mod.rs" = ["cyclomatic-complexity", "file-too-long", "function-too-long"]
-"crates/kreuzberg/src/extractors/pdf/ocr.rs" = ["cyclomatic-complexity", "file-too-long", "function-too-long", "nesting-too-deep", "too-many-parameters"]
+"crates/kreuzberg/src/extractors/pdf/ocr.rs" = [
+  "cyclomatic-complexity",
+  "file-too-long",
+  "function-too-long",
+  "nesting-too-deep",
+  "too-many-parameters",
+]
 "crates/kreuzberg/src/extractors/ppt.rs" = ["function-too-long", "nesting-too-deep"]
 "crates/kreuzberg/src/extractors/pptx.rs" = ["function-too-long"]
-"crates/kreuzberg/src/extractors/rst.rs" = ["cyclomatic-complexity", "file-too-long", "function-too-long", "nesting-too-deep"]
+"crates/kreuzberg/src/extractors/rst.rs" = [
+  "cyclomatic-complexity",
+  "file-too-long",
+  "function-too-long",
+  "nesting-too-deep",
+]
 "crates/kreuzberg/src/extractors/rtf/formatting.rs" = ["cyclomatic-complexity", "function-too-long"]
 "crates/kreuzberg/src/extractors/rtf/images.rs" = ["function-too-long", "nesting-too-deep"]
 "crates/kreuzberg/src/extractors/rtf/metadata.rs" = ["cyclomatic-complexity", "function-too-long"]
 "crates/kreuzberg/src/extractors/rtf/mod.rs" = ["cyclomatic-complexity", "function-too-long", "nesting-too-deep"]
-"crates/kreuzberg/src/extractors/rtf/parser.rs" = ["cyclomatic-complexity", "file-too-long", "function-too-long", "nesting-too-deep", "too-many-parameters"]
+"crates/kreuzberg/src/extractors/rtf/parser.rs" = [
+  "cyclomatic-complexity",
+  "file-too-long",
+  "function-too-long",
+  "nesting-too-deep",
+  "too-many-parameters",
+]
 "crates/kreuzberg/src/extractors/structured.rs" = ["nesting-too-deep"]
-"crates/kreuzberg/src/extractors/typst.rs" = ["cyclomatic-complexity", "file-too-long", "function-too-long", "nesting-too-deep"]
+"crates/kreuzberg/src/extractors/typst.rs" = [
+  "cyclomatic-complexity",
+  "file-too-long",
+  "function-too-long",
+  "nesting-too-deep",
+]
 "crates/kreuzberg/src/extractors/xml.rs" = ["function-too-long"]
 "crates/kreuzberg/src/image/preprocessing.rs" = ["too-many-parameters"]
 "crates/kreuzberg/src/keywords/yake/mod.rs" = ["nesting-too-deep"]
@@ -380,9 +485,19 @@ traineddata = "traineddata"
 "crates/kreuzberg/src/mcp/server.rs" = ["file-too-long", "function-too-long"]
 "crates/kreuzberg/src/ocr/backends/easyocr.rs" = ["function-too-long"]
 "crates/kreuzberg/src/ocr/backends/tesseract.rs" = ["function-too-long"]
-"crates/kreuzberg/src/ocr/hocr_parser.rs" = ["cyclomatic-complexity", "file-too-long", "function-too-long", "nesting-too-deep"]
+"crates/kreuzberg/src/ocr/hocr_parser.rs" = [
+  "cyclomatic-complexity",
+  "file-too-long",
+  "function-too-long",
+  "nesting-too-deep",
+]
 "crates/kreuzberg/src/ocr/layout_assembly.rs" = ["file-too-long", "function-too-long"]
-"crates/kreuzberg/src/ocr/processor/execution.rs" = ["cyclomatic-complexity", "file-too-long", "function-too-long", "nesting-too-deep"]
+"crates/kreuzberg/src/ocr/processor/execution.rs" = [
+  "cyclomatic-complexity",
+  "file-too-long",
+  "function-too-long",
+  "nesting-too-deep",
+]
 "crates/kreuzberg/src/ocr/tesseract_backend.rs" = ["function-too-long"]
 "crates/kreuzberg/src/ort_discovery.rs" = ["function-too-long"]
 "crates/kreuzberg/src/paddle_ocr/backend.rs" = ["function-too-long"]
@@ -395,12 +510,28 @@ traineddata = "traineddata"
 "crates/kreuzberg/src/pdf/layout_runner.rs" = ["function-too-long"]
 "crates/kreuzberg/src/pdf/structure/adapters.rs" = ["function-too-long"]
 "crates/kreuzberg/src/pdf/structure/assembly.rs" = ["function-too-long"]
-"crates/kreuzberg/src/pdf/structure/bridge.rs" = ["cyclomatic-complexity", "file-too-long", "function-too-long", "nesting-too-deep"]
-"crates/kreuzberg/src/pdf/structure/classify.rs" = ["cyclomatic-complexity", "file-too-long", "function-too-long", "nesting-too-deep"]
+"crates/kreuzberg/src/pdf/structure/bridge.rs" = [
+  "cyclomatic-complexity",
+  "file-too-long",
+  "function-too-long",
+  "nesting-too-deep",
+]
+"crates/kreuzberg/src/pdf/structure/classify.rs" = [
+  "cyclomatic-complexity",
+  "file-too-long",
+  "function-too-long",
+  "nesting-too-deep",
+]
 "crates/kreuzberg/src/pdf/structure/content_convert.rs" = ["cyclomatic-complexity", "function-too-long"]
 "crates/kreuzberg/src/pdf/structure/layout_classify.rs" = ["cyclomatic-complexity", "function-too-long"]
 "crates/kreuzberg/src/pdf/structure/paragraphs.rs" = ["cyclomatic-complexity"]
-"crates/kreuzberg/src/pdf/structure/pipeline.rs" = ["cyclomatic-complexity", "file-too-long", "function-too-long", "nesting-too-deep", "too-many-parameters"]
+"crates/kreuzberg/src/pdf/structure/pipeline.rs" = [
+  "cyclomatic-complexity",
+  "file-too-long",
+  "function-too-long",
+  "nesting-too-deep",
+  "too-many-parameters",
+]
 "crates/kreuzberg/src/pdf/structure/regions/layout_validation.rs" = ["too-many-parameters"]
 "crates/kreuzberg/src/pdf/structure/regions/table_recognition.rs" = ["function-too-long", "too-many-parameters"]
 "crates/kreuzberg/src/pdf/structure/regions/tables.rs" = ["function-too-long"]
@@ -408,7 +539,12 @@ traineddata = "traineddata"
 "crates/kreuzberg/src/pdf/table_reconstruct.rs" = ["cyclomatic-complexity", "file-too-long", "function-too-long"]
 "crates/kreuzberg/src/pdf/text.rs" = ["function-too-long"]
 "crates/kreuzberg/src/plugins/registry/extractor.rs" = ["nesting-too-deep"]
-"crates/kreuzberg/src/rendering/comrak_bridge.rs" = ["cyclomatic-complexity", "file-too-long", "function-too-long", "nesting-too-deep"]
+"crates/kreuzberg/src/rendering/comrak_bridge.rs" = [
+  "cyclomatic-complexity",
+  "file-too-long",
+  "function-too-long",
+  "nesting-too-deep",
+]
 "crates/kreuzberg/src/rendering/djot.rs" = ["cyclomatic-complexity", "function-too-long"]
 "crates/kreuzberg/src/rendering/html_styled.rs" = ["function-too-long"]
 "crates/kreuzberg/src/rendering/json.rs" = ["function-too-long"]
@@ -423,7 +559,12 @@ traineddata = "traineddata"
 "crates/kreuzberg/src/utils/string_pool/mime_pool.rs" = ["function-too-long"]
 "crates/kreuzberg/src/utils/string_utils.rs" = ["function-too-long"]
 "crates/kreuzberg/tests/api_tests.rs" = ["file-too-long"]
-"crates/kreuzberg/tests/cross_format_parity.rs" = ["cyclomatic-complexity", "file-too-long", "function-too-long", "nesting-too-deep"]
+"crates/kreuzberg/tests/cross_format_parity.rs" = [
+  "cyclomatic-complexity",
+  "file-too-long",
+  "function-too-long",
+  "nesting-too-deep",
+]
 "crates/kreuzberg/tests/paddle_ocr_multilang.rs" = ["function-too-long"]
 "crates/kreuzberg/tests/pdf_hierarchy_detection.rs" = ["function-too-long"]
 "crates/kreuzberg/tests/pdf_hierarchy_quality.rs" = ["function-too-long"]
@@ -436,10 +577,22 @@ traineddata = "traineddata"
 "crates/kreuzberg/tests/typst_behavioral_tests.rs" = ["file-too-long"]
 "packages/csharp/Benchmark/Program.cs" = ["nesting-too-deep"]
 "packages/csharp/Kreuzberg.Tests/ImmutabilityTests.cs" = ["type-too-long"]
-"packages/csharp/Kreuzberg/KreuzbergClient.cs" = ["cyclomatic-complexity", "file-too-long", "function-too-long", "nesting-too-deep", "type-too-long"]
+"packages/csharp/Kreuzberg/KreuzbergClient.cs" = [
+  "cyclomatic-complexity",
+  "file-too-long",
+  "function-too-long",
+  "nesting-too-deep",
+  "type-too-long",
+]
 "packages/csharp/Kreuzberg/Models.cs" = ["file-too-long"]
 "packages/csharp/Kreuzberg/NativeMethods.cs" = ["type-too-long"]
-"packages/csharp/Kreuzberg/Serialization.cs" = ["cyclomatic-complexity", "file-too-long", "function-too-long", "nesting-too-deep", "type-too-long"]
+"packages/csharp/Kreuzberg/Serialization.cs" = [
+  "cyclomatic-complexity",
+  "file-too-long",
+  "function-too-long",
+  "nesting-too-deep",
+  "type-too-long",
+]
 "packages/elixir/lib/kreuzberg/config.ex" = ["file-too-long"]
 "packages/elixir/native/kreuzberg_rustler/src/batch.rs" = ["function-too-long"]
 "packages/elixir/native/kreuzberg_rustler/src/config.rs" = ["function-too-long"]
@@ -450,9 +603,18 @@ traineddata = "traineddata"
 "packages/java/src/main/java/dev/kreuzberg/Kreuzberg.java" = ["file-too-long", "type-too-long"]
 "packages/java/src/main/java/dev/kreuzberg/KreuzbergFFI.java" = ["file-too-long", "function-too-long", "type-too-long"]
 "packages/java/src/main/java/dev/kreuzberg/Metadata.java" = ["cyclomatic-complexity", "type-too-long"]
-"packages/java/src/main/java/dev/kreuzberg/ResultParser.java" = ["cyclomatic-complexity", "too-many-parameters", "type-too-long"]
+"packages/java/src/main/java/dev/kreuzberg/ResultParser.java" = [
+  "cyclomatic-complexity",
+  "too-many-parameters",
+  "type-too-long",
+]
 "packages/java/src/main/java/dev/kreuzberg/config/EmbeddingConfig.java" = ["type-too-long"]
-"packages/java/src/main/java/dev/kreuzberg/config/ExtractionConfig.java" = ["cyclomatic-complexity", "file-too-long", "function-too-long", "type-too-long"]
+"packages/java/src/main/java/dev/kreuzberg/config/ExtractionConfig.java" = [
+  "cyclomatic-complexity",
+  "file-too-long",
+  "function-too-long",
+  "type-too-long",
+]
 "packages/java/src/main/java/dev/kreuzberg/config/FileExtractionConfig.java" = ["type-too-long"]
 "packages/java/src/main/java/dev/kreuzberg/config/TreeSitterProcessConfig.java" = ["type-too-long"]
 "packages/java/src/test/java/dev/kreuzberg/ConfigurationTest.java" = ["type-too-long"]
@@ -479,12 +641,20 @@ traineddata = "traineddata"
 "packages/python/kreuzberg/ocr/easyocr.py" = ["type-too-long"]
 "packages/r/R/config.R" = ["too-many-parameters"]
 "packages/r/tools/vendor-kreuzberg-core.py" = ["function-too-long"]
-"packages/ruby/ext/kreuzberg_rb/native/src/config/types.rs" = ["cyclomatic-complexity", "file-too-long", "function-too-long"]
+"packages/ruby/ext/kreuzberg_rb/native/src/config/types.rs" = [
+  "cyclomatic-complexity",
+  "file-too-long",
+  "function-too-long",
+]
 "packages/ruby/ext/kreuzberg_rb/native/src/error_handling.rs" = ["function-too-long"]
 "packages/ruby/ext/kreuzberg_rb/native/src/lib.rs" = ["function-too-long", "nesting-too-deep"]
 "packages/ruby/ext/kreuzberg_rb/native/src/plugins/post_processor.rs" = ["function-too-long"]
 "packages/ruby/ext/kreuzberg_rb/native/src/plugins/validator.rs" = ["function-too-long"]
-"packages/ruby/ext/kreuzberg_rb/native/src/result.rs" = ["cyclomatic-complexity", "function-too-long", "nesting-too-deep"]
+"packages/ruby/ext/kreuzberg_rb/native/src/result.rs" = [
+  "cyclomatic-complexity",
+  "function-too-long",
+  "nesting-too-deep",
+]
 "packages/ruby/lib/kreuzberg/config.rb" = ["file-too-long", "too-many-parameters", "type-too-long"]
 "packages/ruby/lib/kreuzberg/djot_content.rb" = ["too-many-parameters"]
 "packages/ruby/lib/kreuzberg/result.rb" = ["too-many-parameters", "type-too-long"]

@@ -479,9 +479,7 @@ function parseOptionalResultFields(result: Record<string, unknown>): OptionalRes
   return {
     extractedKeywords: (result.extractedKeywords ?? result.extracted_keywords ?? null) as ExtractedKeyword[] | null,
     qualityScore: typeof qualityScoreRaw === "number" ? qualityScoreRaw : null,
-    processingWarnings: (result.processingWarnings ?? result.processing_warnings ?? null) as
-      | ProcessingWarning[]
-      | null,
+    processingWarnings: (result.processingWarnings ?? result.processing_warnings ?? null) as ProcessingWarning[] | null,
     elements: (result.elements ?? null) as Element[] | null,
     ocrElements: (result.ocrElements ?? result.ocr_elements ?? null) as OcrElement[] | null,
     document: (result.document ?? null) as DocumentStructure | null,

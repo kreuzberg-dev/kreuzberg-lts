@@ -85,11 +85,7 @@ class MockBatchExtractor {
   /**
    * Extract multiple documents concurrently
    */
-  batchExtractConcurrent(
-    filePaths: string[],
-    config?: ExtractionConfig,
-    concurrency = 3,
-  ): Promise<ExtractionResult[]> {
+  batchExtractConcurrent(filePaths: string[], config?: ExtractionConfig, concurrency = 3): Promise<ExtractionResult[]> {
     const results = Array.from<ExtractionResult>({ length: filePaths.length });
     let activeCount = 0;
     let index = 0;
