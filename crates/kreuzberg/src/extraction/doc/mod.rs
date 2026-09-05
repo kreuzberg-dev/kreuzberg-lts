@@ -8,6 +8,12 @@
 use crate::error::{KreuzbergError, Result};
 use std::io::Cursor;
 
+/// Zero-based pair index of fcClx/lcbClx in FibRgFcLcb97.
+///
+/// See [MS-DOC] section 2.5.6:
+/// <https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-doc/0c9df81f-98d0-454e-ad84-b612cd05b1a4>
+const CLX_PAIR_INDEX: usize = 33;
+
 /// Result of DOC text extraction.
 pub struct DocExtractionResult {
     /// Extracted text content.
@@ -116,10 +122,14 @@ fn extract_text_word97(word_doc: &[u8], table_stream: &[u8]) -> Result<String> {
         return Err(KreuzbergError::parsing("FIB too short for cbRgFcLcb"));
     }
 
-    let _ = u16::from_le_bytes([word_doc[cbrgfclcb_offset], word_doc[cbrgfclcb_offset + 1]]) as usize;
+    let cb_rg_fc_lcb = u16::from_le_bytes([word_doc[cbrgfclcb_offset], word_doc[cbrgfclcb_offset + 1]]) as usize;
     let rg_fc_lcb_offset = cbrgfclcb_offset + 2;
 
-    let fc_clx_offset = rg_fc_lcb_offset + 66 * 8;
+    if cb_rg_fc_lcb <= CLX_PAIR_INDEX {
+        return extract_text_contiguous(word_doc, ccp_text);
+    }
+
+    let fc_clx_offset = rg_fc_lcb_offset + CLX_PAIR_INDEX * 8;
     let lcb_clx_offset = fc_clx_offset + 4;
 
     if word_doc.len() < lcb_clx_offset + 4 {
@@ -672,5 +682,34 @@ mod tests {
     fn test_extract_doc_invalid_magic() {
         let result = extract_doc_text(b"not a doc file");
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_extract_word97_reads_clx_from_fib_rg_fc_lcb97_pair_33() {
+        let mut word_doc = vec![0_u8; 900];
+        word_doc[32..34].copy_from_slice(&14_u16.to_le_bytes());
+        word_doc[62..64].copy_from_slice(&22_u16.to_le_bytes());
+        word_doc[76..80].copy_from_slice(&1_u32.to_le_bytes());
+
+        let rg_fc_lcb_offset = 154;
+        word_doc[152..154].copy_from_slice(&34_u16.to_le_bytes());
+        let clx_pair_offset = rg_fc_lcb_offset + 33 * 8;
+        word_doc[clx_pair_offset..clx_pair_offset + 4].copy_from_slice(&8_u32.to_le_bytes());
+        word_doc[clx_pair_offset + 4..clx_pair_offset + 8].copy_from_slice(&21_u32.to_le_bytes());
+
+        let text_offset = 800_usize;
+        word_doc[text_offset] = 0xE9;
+
+        let mut table_stream = vec![0_u8; 29];
+        table_stream[8] = 0x02;
+        table_stream[9..13].copy_from_slice(&16_u32.to_le_bytes());
+        table_stream[13..17].copy_from_slice(&0_u32.to_le_bytes());
+        table_stream[17..21].copy_from_slice(&1_u32.to_le_bytes());
+        let compressed_fc = 0x4000_0000_u32 | (text_offset as u32 * 2);
+        table_stream[23..27].copy_from_slice(&compressed_fc.to_le_bytes());
+
+        let text = extract_text_word97(&word_doc, &table_stream).expect("failed to read synthetic Word 97 text");
+
+        assert_eq!(text, "é");
     }
 }

@@ -10,6 +10,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [Unreleased]
+
+### Fixed
+
+- **Legacy DOC piece-table lookup** now reads `fcClx`/`lcbClx` from the correct FIB pair, preventing compressed Windows-1252 text from falling back to UTF-16LE contiguous decoding.
+
 ## [4.10.0] - 2026-07-11
 
 First release of the standalone **Kreuzberg v4 LTS** line. This is the long-term-support home for
