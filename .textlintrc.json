@@ -59,7 +59,8 @@
       ]
     },
     "en-capitalization": {
-      "severity": "warning"
+      "severity": "warning",
+      "allowWords": ["v4", "stdio"]
     }
   }
 }
