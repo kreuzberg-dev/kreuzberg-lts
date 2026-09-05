@@ -6,6 +6,11 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 
+// TODO(quality-debt): 9 cyclomatic-complexity and 27 size/complexity findings
+// in this file, currently excluded via the quality-debt baseline in poly.toml. Splitting
+// these needs compiler-in-the-loop verification, not a mechanical pass. Delete this
+// note and the file's baseline entry together once it goes green. Help wanted.
+
 [assembly: InternalsVisibleTo("Kreuzberg.E2E")]
 [assembly: InternalsVisibleTo("Kreuzberg.Tests")]
 

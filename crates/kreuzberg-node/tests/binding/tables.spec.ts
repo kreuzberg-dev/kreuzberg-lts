@@ -536,17 +536,15 @@ describe("Table Extraction Quality (Node.js Bindings)", () => {
 
       const result = extractFileSync(tinyPdfPath, config);
 
-      if (result.tables && result.tables.length > 0) {
-        for (const table of result.tables) {
-          for (const row of table.cells) {
-            for (const cell of row) {
-              expect(typeof cell).toBe("string");
+      for (const table of result.tables ?? []) {
+        for (const row of table.cells) {
+          for (const cell of row) {
+            expect(typeof cell).toBe("string");
 
-              const parsed = parseFloat(cell);
-              if (Number.isNaN(parsed)) continue;
+            const parsed = parseFloat(cell);
+            if (Number.isNaN(parsed)) continue;
 
-              expect(Number.isFinite(parsed)).toBe(true);
-            }
+            expect(Number.isFinite(parsed)).toBe(true);
           }
         }
       }
