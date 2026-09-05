@@ -9,7 +9,7 @@
 //! - Removed file-path based APIs (we only need bytes/reader)
 //! - Added markdown rendering and formatting support (fixes #376)
 
-// TODO(quality-debt): 4 cyclomatic-complexity and 46 size/complexity findings
+// TODO(kreuzberg-dev/kreuzberg-lts#4): 4 cyclomatic-complexity and 46 size/complexity findings
 // in this file, currently excluded via the quality-debt baseline in poly.toml. Splitting
 // these needs compiler-in-the-loop verification, not a mechanical pass. Delete this
 // note and the file's baseline entry together once it goes green. Help wanted.
