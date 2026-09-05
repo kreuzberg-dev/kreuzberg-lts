@@ -36,4 +36,4 @@ tokio = { workspace = true, features = ["time"] }
 mimalloc-rust = "0.2"
 
 [build-dependencies]
-napi-build = "2.3"
+napi-build = "2.4"

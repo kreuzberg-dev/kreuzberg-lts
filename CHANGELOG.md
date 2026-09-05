@@ -7,11 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [Unreleased]
+## [4.10.3] - 2026-09-05
 
 ### Fixed
 
-- **Legacy DOC piece-table lookup** now reads `fcClx`/`lcbClx` from the correct FIB pair, preventing compressed Windows-1252 text from falling back to UTF-16LE contiguous decoding.
+- **Legacy DOC piece-table lookup** now reads `fcClx`/`lcbClx` from the correct FIB pair, preventing compressed Windows-1252 text from falling back to UTF-16LE contiguous decoding. Thanks to [@NiekNijland](https://github.com/NiekNijland).
+- **The crate builds again from a fresh dependency resolution.** `ort` 2.0.0-rc.13 and `quick-xml` 0.42 were published after 4.10.2, and both are reachable through the caret requirements 4.10.2 shipped with. rc.13 moved the execution-provider re-exports behind per-provider cargo features, and quick-xml 0.42 changed its names API from bytes to `&str`; either one fails to compile against 4.10.2's source. Both are now pinned exactly (`=2.0.0-rc.12`, `=0.41.0`), so a fresh `cargo add kreuzberg` resolves to a combination that builds.
+- **`tree-sitter-language-pack` 1.16 compatibility.** `ProcessConfig` gained `max_source_bytes` and `parse_timeout_ms`; both are left unset, preserving the previous unbounded, untimed behaviour.
+
+### Changed
+
+- Dependency refresh across every language package, including `liter-llm` 1.9 to 1.19, `html-to-markdown-rs` 3.8.3 to 3.12.0, `rmcp` 2.2 to 3.2, `base64` 0.22 to 0.23, and `tree-sitter-language-pack` 1.12.5 to 1.16.1.
+- `liter-llm`'s `tracing` feature is no longer requested: as of 1.19 tracing is a mandatory dependency of that crate, so the feature no longer exists. Tracing output is unaffected.
 
 ## [4.10.0] - 2026-07-11
 

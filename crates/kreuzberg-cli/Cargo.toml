@@ -76,4 +76,4 @@ tree-sitter-language-pack = { workspace = true, features = ["dynamic-loading", "
 
 [dev-dependencies]
 tempfile = { workspace = true }
-ureq = { version = "3.3", features = ["json"] }
+ureq = { version = "3.4", features = ["json"] }

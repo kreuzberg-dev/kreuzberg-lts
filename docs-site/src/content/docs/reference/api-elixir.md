@@ -12,7 +12,7 @@ Add to your `mix.exs`:
 ```elixir title="mix.exs"
 def deps do
   [
-    {:kreuzberg, "~> 4.10.2"}
+    {:kreuzberg, "~> 4.10.3"}
   ]
 end
 ```

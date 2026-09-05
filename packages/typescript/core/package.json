@@ -1,7 +1,7 @@
 {
   "name": "@kreuzberg/core",
-  "version": "4.10.2",
-  "description": "Kreuzberg document intelligence library — core types and utilities for text extraction from 88+ formats",
+  "version": "4.10.3",
+  "description": "Kreuzberg document intelligence library \u2014 core types and utilities for text extraction from 88+ formats",
   "keywords": [
     "document-extraction",
     "document-intelligence",
@@ -69,9 +69,9 @@
     "@kreuzberg/node": "workspace:*"
   },
   "devDependencies": {
-    "@types/node": "^26.1.1",
+    "@types/node": "^26.4.1",
     "tsup": "^8.5.1",
-    "typescript": "^5.9.3",
-    "vitest": "^4.1.10"
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.0"
   }
 }

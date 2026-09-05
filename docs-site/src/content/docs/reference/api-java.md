@@ -13,7 +13,7 @@ Add the dependency to your Maven `pom.xml`:
 <dependency>
     <groupId>dev.kreuzberg</groupId>
     <artifactId>kreuzberg</artifactId>
-    <version>4.10.2</version>
+    <version>4.10.3</version>
 </dependency>
 ```
 
@@ -21,7 +21,7 @@ Or with Gradle:
 
 ```groovy title="build.gradle"
 dependencies {
-    implementation 'dev.kreuzberg:kreuzberg:4.10.2'
+    implementation 'dev.kreuzberg:kreuzberg:4.10.3'
 }
 ```
 
@@ -236,7 +236,7 @@ public static CompletableFuture<List<ExtractionResult>> batchExtractFilesAsync(
 
 ---
 
-### BatchExtractFilesWithConfigs() <span class="version-badge">v4.10.2</span>
+### BatchExtractFilesWithConfigs() <span class="version-badge">v4.10.3</span>
 
 Extract multiple files in parallel with per-file configuration overrides (synchronous).
 
@@ -256,7 +256,7 @@ public static List<ExtractionResult> batchExtractFilesWithConfigs(
 
 ---
 
-### BatchExtractBytesWithConfigs() <span class="version-badge">v4.10.2</span>
+### BatchExtractBytesWithConfigs() <span class="version-badge">v4.10.3</span>
 
 Extract multiple byte arrays in parallel with per-file configuration overrides (synchronous).
 
@@ -271,7 +271,7 @@ public static List<ExtractionResult> batchExtractBytesWithConfigs(
 
 ---
 
-### FileExtractionConfig <span class="version-badge">v4.10.2</span>
+### FileExtractionConfig <span class="version-badge">v4.10.3</span>
 
 Per-file extraction configuration overrides for batch operations. All fields are `Optional<T>` — empty means "use the batch-level default."
 
@@ -670,7 +670,7 @@ OcrConfig ocr = OcrConfig.builder()
     .build();
 ```
 
-**PaddleOcrConfig Fields:** <span class="version-badge">v4.10.2</span>
+**PaddleOcrConfig Fields:** <span class="version-badge">v4.10.3</span>
 
 - `modelTier` (String): Model tier: "mobile" (lightweight, ~21MB total, fast) or "server" (high accuracy, ~172MB, best with GPU). Default: "mobile"
 - `padding` (Integer): Padding in pixels (0-100) added around the image before detection. Default: 10
@@ -791,7 +791,7 @@ PDF-specific extraction options.
 ```java title="PdfConfiguration.java"
 // Configure PDF-specific extraction options
 PdfConfig pdf = PdfConfig.builder()
-    .allowSingleColumnTables(false) // <span class="version-badge">v4.10.2</span> Allow extraction of single-column tables
+    .allowSingleColumnTables(false) // <span class="version-badge">v4.10.3</span> Allow extraction of single-column tables
     .extractImages(true)         // Extract images from PDF
     .extractMetadata(true)       // Extract PDF metadata
     .renderImages(false)         // Render pages as images for processing
@@ -835,7 +835,7 @@ ImagePreprocessingConfig preproc = ImagePreprocessingConfig.builder()
 
 ---
 
-### ConcurrencyConfig <span class="version-badge">v4.10.2</span>
+### ConcurrencyConfig <span class="version-badge">v4.10.3</span>
 
 Concurrency configuration for controlling parallel extraction.
 
@@ -1720,7 +1720,7 @@ for (String preset : presets) {
 
 ## PDF Rendering
 
-:::note[Added in v4.10.2]
+:::note[Added in v4.10.3]
 :::
 
 ### Kreuzberg.renderPdfPage()
@@ -2161,7 +2161,7 @@ brew install tesseract
 
 ---
 
-### LayoutDetectionConfig <span class="version-badge">v4.10.2</span>
+### LayoutDetectionConfig <span class="version-badge">v4.10.3</span>
 
 Configuration for ONNX-based document layout detection.
 

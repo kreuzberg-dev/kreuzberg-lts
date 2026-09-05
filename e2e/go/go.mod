@@ -2,6 +2,6 @@ module github.com/kreuzberg-dev/kreuzberg-lts/e2e/go
 
 go 1.26
 
-require github.com/kreuzberg-dev/kreuzberg-lts/v4 v4.10.2
+require github.com/kreuzberg-dev/kreuzberg-lts/v4 v4.10.3
 
 replace github.com/kreuzberg-dev/kreuzberg-lts/v4 => ../../v4

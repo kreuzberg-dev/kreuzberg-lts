@@ -156,6 +156,7 @@ impl From<&TreeSitterProcessConfig> for tree_sitter_language_pack::ProcessConfig
             diagnostics: p.diagnostics,
             chunk_max_size: p.chunk_max_size,
             data_extraction: false,
+            ..Default::default()
         }
     }
 }
