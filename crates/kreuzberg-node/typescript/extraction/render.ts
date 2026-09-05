@@ -28,7 +28,7 @@ export function renderPdfPageSync(filePath: string, pageIndex: number, options?:
  * @param options.dpi - DPI for rendering (default 150)
  * @returns Promise resolving to a Buffer containing PNG image data
  */
-export async function renderPdfPage(filePath: string, pageIndex: number, options?: { dpi?: number }): Promise<Buffer> {
+export function renderPdfPage(filePath: string, pageIndex: number, options?: { dpi?: number }): Promise<Buffer> {
   return getBinding().renderPdfPage(filePath, pageIndex, options?.dpi ?? null);
 }
 
@@ -58,7 +58,7 @@ export function iteratePdfPagesSync(filePath: string, options?: { dpi?: number }
  * @param options.dpi - DPI for rendering (default 150)
  * @returns Promise resolving to an array of PdfPageResult objects
  */
-export async function iteratePdfPages(filePath: string, options?: { dpi?: number }): Promise<PdfPageResult[]> {
+export function iteratePdfPages(filePath: string, options?: { dpi?: number }): Promise<PdfPageResult[]> {
   return getBinding().iteratePdfPages(filePath, options?.dpi ?? null);
 }
 

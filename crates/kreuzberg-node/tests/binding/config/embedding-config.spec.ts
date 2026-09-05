@@ -224,7 +224,7 @@ describe("EmbeddingConfig", () => {
 
     it("should handle null apiKey", () => {
       const config: EmbeddingConfig = {
-        apiKey: null as any,
+        apiKey: null as unknown as string,
       };
 
       expect(config.apiKey).toBeNull();

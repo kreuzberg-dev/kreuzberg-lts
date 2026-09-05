@@ -23,9 +23,7 @@ beforeAll(async () => {
   const pdfPath = join(process.cwd(), "../../test_documents/pdf/embedded_images_tables.pdf");
   try {
     samplePdfBytes = new Uint8Array(readFileSync(pdfPath));
-  } catch {
-    console.warn("Test PDF file not found or PDF support not available in WASM");
-  }
+  } catch {}
 });
 
 describe.skipIf(!samplePdfBytes)("Pages Extraction (WASM Bindings)", () => {

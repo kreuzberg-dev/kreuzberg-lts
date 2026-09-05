@@ -13,7 +13,7 @@ describe("WASM Adapter", () => {
     it("should handle successful file conversion", async () => {
       const mockFile = {
         size: 5,
-        arrayBuffer: async () => new ArrayBuffer(5),
+        arrayBuffer: () => new ArrayBuffer(5),
       };
 
       const result = await fileToUint8Array(mockFile as unknown as Blob);
@@ -24,7 +24,7 @@ describe("WASM Adapter", () => {
     it("should throw if file exceeds max size", async () => {
       const largeBlob = {
         size: 512 * 1024 * 1024 + 1,
-        arrayBuffer: async () => new ArrayBuffer(0),
+        arrayBuffer: () => new ArrayBuffer(0),
       };
 
       await expect(fileToUint8Array(largeBlob as unknown as Blob)).rejects.toThrow("exceeds maximum");
@@ -33,7 +33,7 @@ describe("WASM Adapter", () => {
     it("should validate file size before reading", async () => {
       const mockFile = {
         size: 1024 * 1024,
-        arrayBuffer: async () => new ArrayBuffer(1024 * 1024),
+        arrayBuffer: () => new ArrayBuffer(1024 * 1024),
       };
 
       const result = await fileToUint8Array(mockFile as unknown as Blob);
@@ -44,7 +44,7 @@ describe("WASM Adapter", () => {
     it("should handle error during arrayBuffer read", async () => {
       const mockFile = {
         size: 100,
-        arrayBuffer: async () => {
+        arrayBuffer: () => {
           throw new Error("Read failed");
         },
       };

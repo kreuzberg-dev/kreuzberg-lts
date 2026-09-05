@@ -851,6 +851,8 @@ async fn test_typst_empty_heading_edge_case() {
                 "Should extract regular content even if some headings are empty."
             );
         }
+        // An error here still proves the no-panic guarantee this test exists to check; the
+        // error value itself is not part of the assertion. ~keep
         Err(_) => {}
     }
 }

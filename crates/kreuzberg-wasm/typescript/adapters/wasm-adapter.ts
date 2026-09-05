@@ -104,7 +104,9 @@ export async function fileToUint8Array(file: File | Blob): Promise<Uint8Array> {
     const arrayBuffer = await file.arrayBuffer();
     return new Uint8Array(arrayBuffer);
   } catch (error) {
-    throw new Error(`Failed to read file: ${error instanceof Error ? error.message : String(error)}`);
+    throw new Error(`Failed to read file: ${error instanceof Error ? error.message : String(error)}`, {
+      cause: error,
+    });
   }
 }
 
@@ -139,7 +141,7 @@ export function configToJS(config: ExtractionConfig | null): Record<string, unkn
     }
     if (typeof value === "object") {
       if (Array.isArray(value)) {
-        return value.map(normalizeValue);
+        return value.map((item) => normalizeValue(item));
       }
       const obj = value as Record<string, unknown>;
       const normalized: Record<string, unknown> = {};
@@ -163,6 +165,329 @@ export function configToJS(config: ExtractionConfig | null): Record<string, unkn
   }
 
   return normalized;
+}
+
+/**
+ * Parse a single raw table entry into a {@link Table}, or null if malformed.
+ *
+ * @internal
+ */
+function parseTableEntry(table: unknown): Table | null {
+  if (!table || typeof table !== "object") {
+    return null;
+  }
+  const t = table as Record<string, unknown>;
+  const pageNumber =
+    typeof t.pageNumber === "number" ? t.pageNumber : typeof t.page_number === "number" ? t.page_number : 0;
+  const cellsValid =
+    Array.isArray(t.cells) &&
+    t.cells.every((row) => Array.isArray(row) && row.every((cell) => typeof cell === "string"));
+  if (!cellsValid || typeof t.markdown !== "string") {
+    return null;
+  }
+  return {
+    cells: t.cells as string[][],
+    markdown: t.markdown,
+    pageNumber,
+  };
+}
+
+/**
+ * Parse the raw `tables` field of a WASM result into {@link Table} entries.
+ *
+ * @internal
+ */
+function parseTables(rawTables: unknown): Table[] {
+  if (!Array.isArray(rawTables)) {
+    return [];
+  }
+  const tables: Table[] = [];
+  for (const table of rawTables) {
+    const parsed = parseTableEntry(table);
+    if (parsed) {
+      tables.push(parsed);
+    }
+  }
+  return tables;
+}
+
+/**
+ * Coerce a chunk metadata value to a required number, throwing on invalid input.
+ *
+ * @internal
+ */
+function coerceToNumber(value: unknown, fieldName: string): number {
+  if (typeof value === "number") {
+    return value;
+  }
+  if (typeof value === "bigint") {
+    return Number(value);
+  }
+  if (typeof value === "string") {
+    const parsed = parseInt(value, 10);
+    if (Number.isNaN(parsed)) {
+      throw new Error(`Invalid chunk metadata: ${fieldName} must be a valid number, got "${value}"`);
+    }
+    return parsed;
+  }
+  throw new Error(`Invalid chunk metadata: ${fieldName} must be a number, got ${typeof value}`);
+}
+
+/**
+ * Coerce a chunk metadata value to an optional number, returning null when absent.
+ *
+ * @internal
+ */
+function coerceOptionalNumber(value: unknown, fieldName: string): number | null {
+  if (value === null || value === undefined) {
+    return null;
+  }
+  return coerceToNumber(value, fieldName);
+}
+
+/**
+ * Parse a chunk's embedding array, validating that every entry is a number.
+ *
+ * @internal
+ */
+function parseChunkEmbedding(raw: unknown): number[] | null {
+  if (!Array.isArray(raw)) {
+    return null;
+  }
+  if (!raw.every((item) => typeof item === "number")) {
+    throw new Error("Invalid chunk: embedding must contain only numbers");
+  }
+  return raw as number[];
+}
+
+/**
+ * Parse a single heading entry within a chunk's heading context.
+ *
+ * @internal
+ */
+function parseHeadingEntry(raw: unknown): { level: number; text: string } {
+  const heading = raw as Record<string, unknown>;
+  return {
+    level: (heading["level"] as number) ?? 0,
+    text: (heading["text"] as string) ?? "",
+  };
+}
+
+/**
+ * Parse a chunk's heading context, or null when absent or malformed.
+ *
+ * @internal
+ */
+function parseHeadingContext(metadata: Record<string, unknown>): import("../types.js").HeadingContext | null {
+  const rawHc = (metadata["heading_context"] ?? metadata["headingContext"]) as
+    | Record<string, unknown>
+    | null
+    | undefined;
+  if (!rawHc || typeof rawHc !== "object") {
+    return null;
+  }
+  const rawHeadings = rawHc["headings"];
+  if (!Array.isArray(rawHeadings)) {
+    return null;
+  }
+  return { headings: rawHeadings.map((h) => parseHeadingEntry(h)) };
+}
+
+/**
+ * Parse a single raw chunk entry into a {@link Chunk}.
+ *
+ * @internal
+ */
+function parseChunkEntry(chunk: unknown): Chunk {
+  if (!chunk || typeof chunk !== "object") {
+    throw new Error("Invalid chunk structure");
+  }
+  const c = chunk as Record<string, unknown>;
+  if (typeof c.content !== "string") {
+    throw new Error("Invalid chunk: missing content");
+  }
+  if (!c.metadata || typeof c.metadata !== "object") {
+    throw new Error("Invalid chunk: missing metadata");
+  }
+  const metadata = c.metadata as Record<string, unknown>;
+  const embedding = parseChunkEmbedding(c.embedding);
+
+  const charStart = coerceToNumber(
+    metadata.charStart ?? metadata.char_start ?? metadata.byteStart ?? metadata.byte_start,
+    "charStart",
+  );
+  const charEnd = coerceToNumber(
+    metadata.charEnd ?? metadata.char_end ?? metadata.byteEnd ?? metadata.byte_end,
+    "charEnd",
+  );
+  const chunkIndex = coerceToNumber(metadata.chunkIndex ?? metadata.chunk_index, "chunkIndex");
+  const totalChunks = coerceToNumber(metadata.totalChunks ?? metadata.total_chunks, "totalChunks");
+  const tokenCount = coerceOptionalNumber(metadata.tokenCount ?? metadata.token_count, "tokenCount");
+  const firstPage = coerceOptionalNumber(metadata.firstPage ?? metadata.first_page, "firstPage");
+  const lastPage = coerceOptionalNumber(metadata.lastPage ?? metadata.last_page, "lastPage");
+  const headingContext = parseHeadingContext(metadata);
+
+  return {
+    content: c.content,
+    embedding,
+    metadata: {
+      byteStart: charStart,
+      byteEnd: charEnd,
+      charStart,
+      charEnd,
+      tokenCount,
+      chunkIndex,
+      totalChunks,
+      firstPage,
+      lastPage,
+      headingContext,
+    },
+  };
+}
+
+/**
+ * Coerce a raw image's `data` field to a Uint8Array.
+ *
+ * @internal
+ */
+function coerceImageData(raw: unknown): Uint8Array {
+  if (raw instanceof Uint8Array) {
+    return raw;
+  }
+  if (Array.isArray(raw)) {
+    return new Uint8Array(raw as number[]);
+  }
+  throw new Error("Invalid image: data must be Uint8Array or array");
+}
+
+/**
+ * Validate the scalar fields of a raw image entry, throwing on the first violation.
+ *
+ * @internal
+ */
+function validateImageFields(
+  img: Record<string, unknown>,
+  imageIndex: unknown,
+  pageNumber: unknown,
+  bitsPerComponent: unknown,
+  isMask: unknown,
+): void {
+  if (typeof imageIndex !== "number") {
+    throw new Error("Invalid image: imageIndex must be a number");
+  }
+  if (!isNumberOrNull(pageNumber)) {
+    throw new Error("Invalid image: pageNumber must be a number or null");
+  }
+  if (!isNumberOrNull(img.width)) {
+    throw new Error("Invalid image: width must be a number or null");
+  }
+  if (!isNumberOrNull(img.height)) {
+    throw new Error("Invalid image: height must be a number or null");
+  }
+  if (!isNumberOrNull(bitsPerComponent)) {
+    throw new Error("Invalid image: bitsPerComponent must be a number or null");
+  }
+  if (!isBoolean(isMask)) {
+    throw new Error("Invalid image: isMask must be a boolean");
+  }
+  if (!isStringOrNull(img.colorspace)) {
+    throw new Error("Invalid image: colorspace must be a string or null");
+  }
+  if (!isStringOrNull(img.description)) {
+    throw new Error("Invalid image: description must be a string or null");
+  }
+}
+
+/**
+ * Parse a single raw image entry into an {@link ExtractedImage}.
+ *
+ * @internal
+ */
+function parseImageEntry(image: unknown): ExtractedImage {
+  if (!image || typeof image !== "object") {
+    throw new Error("Invalid image structure");
+  }
+  const img = image as Record<string, unknown>;
+  const imageData = coerceImageData(img.data);
+  if (typeof img.format !== "string") {
+    throw new Error("Invalid image: missing format");
+  }
+
+  const imageIndex = img.imageIndex ?? img.image_index;
+  const pageNumber = img.pageNumber ?? img.page_number;
+  const bitsPerComponent = img.bitsPerComponent ?? img.bits_per_component;
+  const isMask = img.isMask ?? img.is_mask;
+  const ocrResult = img.ocrResult ?? img.ocr_result;
+
+  validateImageFields(img, imageIndex, pageNumber, bitsPerComponent, isMask);
+
+  return {
+    data: imageData,
+    format: img.format,
+    imageIndex: imageIndex as number,
+    pageNumber: (pageNumber as number | null) ?? null,
+    width: (img.width as number) ?? null,
+    height: (img.height as number) ?? null,
+    colorspace: (img.colorspace as string) ?? null,
+    bitsPerComponent: (bitsPerComponent as number | null) ?? null,
+    isMask: (isMask as boolean) ?? false,
+    description: (img.description as string) ?? null,
+    ocrResult: ocrResult ? jsToExtractionResult(ocrResult) : null,
+  };
+}
+
+/**
+ * Parse the raw `detectedLanguages`/`detected_languages` field.
+ *
+ * @internal
+ */
+function parseDetectedLanguages(result: Record<string, unknown>): string[] | null {
+  const raw = Array.isArray(result.detectedLanguages) ? result.detectedLanguages : result.detected_languages;
+  if (!Array.isArray(raw)) {
+    return null;
+  }
+  if (!raw.every((lang) => typeof lang === "string")) {
+    throw new Error("Invalid result: detectedLanguages must contain only strings");
+  }
+  return raw as string[];
+}
+
+/**
+ * The remaining optional fields of an {@link ExtractionResult}, gathered from either
+ * their camelCase or snake_case WASM representation.
+ *
+ * @internal
+ */
+interface OptionalResultFields {
+  extractedKeywords: ExtractedKeyword[] | null;
+  qualityScore: number | null;
+  processingWarnings: ProcessingWarning[] | null;
+  elements: Element[] | null;
+  ocrElements: OcrElement[] | null;
+  document: DocumentStructure | null;
+  pages: PageContent[] | null;
+  annotations: PdfAnnotation[] | null;
+}
+
+/**
+ * Parse the remaining optional fields of a raw extraction result.
+ *
+ * @internal
+ */
+function parseOptionalResultFields(result: Record<string, unknown>): OptionalResultFields {
+  const qualityScoreRaw = result.qualityScore ?? result.quality_score;
+  return {
+    extractedKeywords: (result.extractedKeywords ?? result.extracted_keywords ?? null) as ExtractedKeyword[] | null,
+    qualityScore: typeof qualityScoreRaw === "number" ? qualityScoreRaw : null,
+    processingWarnings: (result.processingWarnings ?? result.processing_warnings ?? null) as
+      | ProcessingWarning[]
+      | null,
+    elements: (result.elements ?? null) as Element[] | null,
+    ocrElements: (result.ocrElements ?? result.ocr_elements ?? null) as OcrElement[] | null,
+    document: (result.document ?? null) as DocumentStructure | null,
+    pages: (result.pages ?? null) as PageContent[] | null,
+    annotations: (result.annotations ?? null) as PdfAnnotation[] | null,
+  };
 }
 
 /**
@@ -205,228 +530,11 @@ export function jsToExtractionResult(jsValue: unknown): ExtractionResult {
     throw new Error("Invalid extraction result: missing or invalid metadata");
   }
 
-  const tables: Table[] = [];
-  if (Array.isArray(result.tables)) {
-    for (const table of result.tables) {
-      if (table && typeof table === "object") {
-        const t = table as Record<string, unknown>;
-        const pageNumber =
-          typeof t.pageNumber === "number" ? t.pageNumber : typeof t.page_number === "number" ? t.page_number : 0;
-        if (
-          Array.isArray(t.cells) &&
-          t.cells.every((row) => Array.isArray(row) && row.every((cell) => typeof cell === "string")) &&
-          typeof t.markdown === "string"
-        ) {
-          tables.push({
-            cells: t.cells as string[][],
-            markdown: t.markdown,
-            pageNumber,
-          });
-        }
-      }
-    }
-  }
-
-  const chunks: Chunk[] | null = Array.isArray(result.chunks)
-    ? result.chunks.map((chunk) => {
-        if (!chunk || typeof chunk !== "object") {
-          throw new Error("Invalid chunk structure");
-        }
-        const c = chunk as Record<string, unknown>;
-        if (typeof c.content !== "string") {
-          throw new Error("Invalid chunk: missing content");
-        }
-        if (!c.metadata || typeof c.metadata !== "object") {
-          throw new Error("Invalid chunk: missing metadata");
-        }
-        const metadata = c.metadata as Record<string, unknown>;
-
-        let embedding: number[] | null = null;
-        if (Array.isArray(c.embedding)) {
-          if (!c.embedding.every((item) => typeof item === "number")) {
-            throw new Error("Invalid chunk: embedding must contain only numbers");
-          }
-          embedding = c.embedding;
-        }
-
-        const coerceToNumber = (value: unknown, fieldName: string): number => {
-          if (typeof value === "number") {
-            return value;
-          }
-          if (typeof value === "bigint") {
-            return Number(value);
-          }
-          if (typeof value === "string") {
-            const parsed = parseInt(value, 10);
-            if (Number.isNaN(parsed)) {
-              throw new Error(`Invalid chunk metadata: ${fieldName} must be a valid number, got "${value}"`);
-            }
-            return parsed;
-          }
-          throw new Error(`Invalid chunk metadata: ${fieldName} must be a number, got ${typeof value}`);
-        };
-
-        const charStart = coerceToNumber(
-          metadata.charStart ?? metadata.char_start ?? metadata.byteStart ?? metadata.byte_start,
-          "charStart",
-        );
-        const charEnd = coerceToNumber(
-          metadata.charEnd ?? metadata.char_end ?? metadata.byteEnd ?? metadata.byte_end,
-          "charEnd",
-        );
-        const chunkIndex = coerceToNumber(metadata.chunkIndex ?? metadata.chunk_index, "chunkIndex");
-        const totalChunks = coerceToNumber(metadata.totalChunks ?? metadata.total_chunks, "totalChunks");
-
-        let tokenCount: number | null = null;
-        const tokenCountValue = metadata.tokenCount ?? metadata.token_count;
-        if (tokenCountValue !== null && tokenCountValue !== undefined) {
-          tokenCount = coerceToNumber(tokenCountValue, "tokenCount");
-        }
-
-        let firstPage: number | null = null;
-        const firstPageValue = metadata.firstPage ?? metadata.first_page;
-        if (firstPageValue !== null && firstPageValue !== undefined) {
-          firstPage = coerceToNumber(firstPageValue, "firstPage");
-        }
-
-        let lastPage: number | null = null;
-        const lastPageValue = metadata.lastPage ?? metadata.last_page;
-        if (lastPageValue !== null && lastPageValue !== undefined) {
-          lastPage = coerceToNumber(lastPageValue, "lastPage");
-        }
-
-        const rawHc = (metadata["heading_context"] ?? metadata["headingContext"]) as
-          | Record<string, unknown>
-          | null
-          | undefined;
-        let headingContext: import("../types.js").HeadingContext | null = null;
-        if (rawHc && typeof rawHc === "object") {
-          const rawHeadings = rawHc["headings"];
-          if (Array.isArray(rawHeadings)) {
-            headingContext = {
-              headings: rawHeadings.map((h: unknown) => {
-                const heading = h as Record<string, unknown>;
-                return {
-                  level: (heading["level"] as number) ?? 0,
-                  text: (heading["text"] as string) ?? "",
-                };
-              }),
-            };
-          }
-        }
-
-        return {
-          content: c.content,
-          embedding,
-          metadata: {
-            byteStart: charStart,
-            byteEnd: charEnd,
-            charStart,
-            charEnd,
-            tokenCount,
-            chunkIndex,
-            totalChunks,
-            firstPage,
-            lastPage,
-            headingContext,
-          },
-        };
-      })
-    : null;
-
-  const images: ExtractedImage[] | null = Array.isArray(result.images)
-    ? result.images.map((image) => {
-        if (!image || typeof image !== "object") {
-          throw new Error("Invalid image structure");
-        }
-        const img = image as Record<string, unknown>;
-        let imageData: Uint8Array;
-        if (img.data instanceof Uint8Array) {
-          imageData = img.data;
-        } else if (Array.isArray(img.data)) {
-          imageData = new Uint8Array(img.data as number[]);
-        } else {
-          throw new Error("Invalid image: data must be Uint8Array or array");
-        }
-        if (typeof img.format !== "string") {
-          throw new Error("Invalid image: missing format");
-        }
-
-        const imageIndex = img.imageIndex ?? img.image_index;
-        const pageNumber = img.pageNumber ?? img.page_number;
-        const bitsPerComponent = img.bitsPerComponent ?? img.bits_per_component;
-        const isMask = img.isMask ?? img.is_mask;
-        const ocrResult = img.ocrResult ?? img.ocr_result;
-
-        if (typeof imageIndex !== "number") {
-          throw new Error("Invalid image: imageIndex must be a number");
-        }
-        if (!isNumberOrNull(pageNumber)) {
-          throw new Error("Invalid image: pageNumber must be a number or null");
-        }
-        if (!isNumberOrNull(img.width)) {
-          throw new Error("Invalid image: width must be a number or null");
-        }
-        if (!isNumberOrNull(img.height)) {
-          throw new Error("Invalid image: height must be a number or null");
-        }
-        if (!isNumberOrNull(bitsPerComponent)) {
-          throw new Error("Invalid image: bitsPerComponent must be a number or null");
-        }
-
-        if (!isBoolean(isMask)) {
-          throw new Error("Invalid image: isMask must be a boolean");
-        }
-
-        if (!isStringOrNull(img.colorspace)) {
-          throw new Error("Invalid image: colorspace must be a string or null");
-        }
-        if (!isStringOrNull(img.description)) {
-          throw new Error("Invalid image: description must be a string or null");
-        }
-
-        return {
-          data: imageData,
-          format: img.format,
-          imageIndex: imageIndex,
-          pageNumber: pageNumber ?? null,
-          width: (img.width as number) ?? null,
-          height: (img.height as number) ?? null,
-          colorspace: (img.colorspace as string) ?? null,
-          bitsPerComponent: bitsPerComponent ?? null,
-          isMask: isMask ?? false,
-          description: (img.description as string) ?? null,
-          ocrResult: ocrResult ? jsToExtractionResult(ocrResult) : null,
-        };
-      })
-    : null;
-
-  let detectedLanguages: string[] | null = null;
-  const detectedLanguagesRaw = Array.isArray(result.detectedLanguages)
-    ? result.detectedLanguages
-    : result.detected_languages;
-  if (Array.isArray(detectedLanguagesRaw)) {
-    if (!detectedLanguagesRaw.every((lang) => typeof lang === "string")) {
-      throw new Error("Invalid result: detectedLanguages must contain only strings");
-    }
-    detectedLanguages = detectedLanguagesRaw;
-  }
-
-  const extractedKeywords = (result.extractedKeywords ?? result.extracted_keywords ?? null) as
-    | ExtractedKeyword[]
-    | null;
-  const qualityScore =
-    typeof (result.qualityScore ?? result.quality_score) === "number"
-      ? ((result.qualityScore ?? result.quality_score) as number)
-      : null;
-  const processingWarnings = (result.processingWarnings ?? result.processing_warnings ?? null) as
-    | ProcessingWarning[]
-    | null;
-  const elements = (result.elements ?? null) as Element[] | null;
-  const ocrElements = (result.ocrElements ?? result.ocr_elements ?? null) as OcrElement[] | null;
-  const document = (result.document ?? null) as DocumentStructure | null;
-  const pages = (result.pages ?? null) as PageContent[] | null;
-  const annotations = (result.annotations ?? null) as PdfAnnotation[] | null;
+  const tables = parseTables(result.tables);
+  const chunks = Array.isArray(result.chunks) ? result.chunks.map((chunk) => parseChunkEntry(chunk)) : null;
+  const images = Array.isArray(result.images) ? result.images.map((image) => parseImageEntry(image)) : null;
+  const detectedLanguages = parseDetectedLanguages(result);
+  const optionalFields = parseOptionalResultFields(result);
 
   return {
     content: result.content,
@@ -436,14 +544,14 @@ export function jsToExtractionResult(jsValue: unknown): ExtractionResult {
     detectedLanguages,
     chunks,
     images,
-    pages,
-    extractedKeywords,
-    qualityScore,
-    processingWarnings,
-    elements,
-    ocrElements,
-    document,
-    annotations,
+    pages: optionalFields.pages,
+    extractedKeywords: optionalFields.extractedKeywords,
+    qualityScore: optionalFields.qualityScore,
+    processingWarnings: optionalFields.processingWarnings,
+    elements: optionalFields.elements,
+    ocrElements: optionalFields.ocrElements,
+    document: optionalFields.document,
+    annotations: optionalFields.annotations,
   };
 }
 

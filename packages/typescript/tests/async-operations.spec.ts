@@ -31,7 +31,9 @@ class MockAsyncExtractor {
     if (this.isInitialized) {
       throw new Error("Extractor already initialized");
     }
-    await new Promise((resolve) => setTimeout(resolve, 10));
+    await new Promise((resolve) => {
+      setTimeout(resolve, 10);
+    });
     this.isInitialized = true;
   }
 
@@ -39,6 +41,9 @@ class MockAsyncExtractor {
    * Extract text from document asynchronously
    */
   async extract(data: Uint8Array, config: ExtractionConfig = {}, delayMs = 50): Promise<ExtractionResult> {
+    // Real await, not just an `async` marker, so a not-initialized throw surfaces as a
+    // promise rejection for every caller here (several never `await` this call directly). ~keep
+    await Promise.resolve();
     if (!this.isInitialized) {
       throw new Error("Extractor not initialized");
     }
@@ -64,19 +69,19 @@ class MockAsyncExtractor {
   /**
    * Extract with timeout enforcement
    */
-  async extractWithTimeout(data: Uint8Array, config: ExtractionConfig, timeoutMs: number): Promise<ExtractionResult> {
+  extractWithTimeout(data: Uint8Array, config: ExtractionConfig, timeoutMs: number): Promise<ExtractionResult> {
     return Promise.race([
       this.extract(data, config, 100),
-      new Promise<ExtractionResult>((_, reject) =>
-        setTimeout(() => reject(new Error(`Extraction timeout after ${timeoutMs}ms`)), timeoutMs),
-      ),
+      new Promise<ExtractionResult>((_, reject) => {
+        setTimeout(() => reject(new Error(`Extraction timeout after ${timeoutMs}ms`)), timeoutMs);
+      }),
     ]);
   }
 
   /**
    * Extract with AbortSignal support
    */
-  async extractWithAbort(data: Uint8Array, config: ExtractionConfig, signal?: AbortSignal): Promise<ExtractionResult> {
+  extractWithAbort(data: Uint8Array, config: ExtractionConfig, signal?: AbortSignal): Promise<ExtractionResult> {
     if (signal?.aborted) {
       throw new Error("Operation aborted");
     }
@@ -108,7 +113,7 @@ class MockAsyncExtractor {
   /**
    * Batch extract multiple documents concurrently
    */
-  async batchExtract(documents: Array<{ data: Uint8Array; config?: ExtractionConfig }>): Promise<ExtractionResult[]> {
+  batchExtract(documents: Array<{ data: Uint8Array; config?: ExtractionConfig }>): Promise<ExtractionResult[]> {
     const operations = documents.map((doc) => this.extract(doc.data, doc.config, 50));
 
     return Promise.all(operations);
@@ -205,7 +210,7 @@ describe("async: Async/Await Patterns", () => {
   });
 
   it("should support async function returning Promise", async () => {
-    const asyncFunc = async () => {
+    const asyncFunc = () => {
       const data = new Uint8Array([1, 2, 3]);
       return extractor.extract(data);
     };
@@ -289,7 +294,7 @@ describe("async: Error Handling in Async Context", () => {
   it("should preserve error context in nested async", async () => {
     const uninitializedExtractor = new MockAsyncExtractor();
 
-    const asyncOp = async () => {
+    const asyncOp = () => {
       const data = new Uint8Array([1, 2, 3]);
       return uninitializedExtractor.extract(data);
     };
@@ -351,7 +356,7 @@ describe("async: Cancellation with AbortSignal", () => {
     await extractor.initialize();
   });
 
-  it("should support AbortSignal from AbortController", async () => {
+  it("should support AbortSignal from AbortController", () => {
     const controller = new AbortController();
     const data = new Uint8Array([1, 2, 3]);
 
@@ -532,7 +537,9 @@ describe("async: Resource Cleanup", () => {
     const data = new Uint8Array([1, 2, 3]);
     await extractor.extract(data);
 
-    await new Promise((resolve) => setTimeout(resolve, 100));
+    await new Promise((resolve) => {
+      setTimeout(resolve, 100);
+    });
 
     expect(extractor.getPendingCount()).toBe(0);
   });
@@ -553,7 +560,9 @@ describe("async: Resource Cleanup", () => {
 
     await extractor.batchExtract(documents);
 
-    await new Promise((resolve) => setTimeout(resolve, 100));
+    await new Promise((resolve) => {
+      setTimeout(resolve, 100);
+    });
 
     expect(extractor.getPendingCount()).toBe(0);
   });

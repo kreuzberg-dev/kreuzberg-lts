@@ -22,6 +22,7 @@ import {
   batchExtractFilesSync,
   clearPostProcessors,
   type ExtractionConfig,
+  type ExtractionResult,
   extractBytes,
   extractBytesSync,
   extractFile,
@@ -404,7 +405,7 @@ endobj`,
       }
     });
 
-    it("should include descriptive error messages", async () => {
+    it("should include descriptive error messages", () => {
       try {
         extractBytesSync(Buffer.from("test"), "", null);
       } catch (error) {
@@ -414,7 +415,7 @@ endobj`,
       }
     });
 
-    it("should maintain error context in nested operations", async () => {
+    it("should maintain error context in nested operations", () => {
       const config: ExtractionConfig = {
         chunking: {
           maxChars: -1,
@@ -500,7 +501,7 @@ endobj`,
     it("should allow registering postprocessor", () => {
       const processor = {
         name: () => `test_processor_${Math.random()}`,
-        process: (result: any) => result,
+        process: (result: ExtractionResult) => result,
         processingStage: () => "middle" as const,
       };
 
@@ -512,7 +513,7 @@ endobj`,
     it("should allow unregistering postprocessor", () => {
       const processor = {
         name: () => "test_processor_to_unregister",
-        process: (result: any) => result,
+        process: (result: ExtractionResult) => result,
         processingStage: () => "middle" as const,
       };
 
@@ -533,12 +534,13 @@ endobj`,
       const backend = {
         name: () => "test_ocr",
         supportedLanguages: () => ["eng", "spa"],
-        processImage: async () => ({
-          content: "test",
-          mime_type: "text/plain",
-          metadata: {},
-          tables: [],
-        }),
+        processImage: () =>
+          Promise.resolve({
+            content: "test",
+            mime_type: "text/plain",
+            metadata: {},
+            tables: [],
+          }),
       };
 
       const mockBinding = {

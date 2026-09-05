@@ -199,9 +199,9 @@ export function getVersion(): string {
  * }
  * ```
  */
-export async function initWasm(options?: InitWasmOptions): Promise<void> {
+export function initWasm(options?: InitWasmOptions): Promise<void> {
   if (isInitialized()) {
-    return;
+    return Promise.resolve();
   }
 
   let currentPromise = getInitializationPromise();

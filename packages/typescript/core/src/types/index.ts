@@ -57,6 +57,7 @@ export type {
   EmailMetadata,
   ErrorMetadata,
   ExcelMetadata,
+  HtmlImageMetadata,
   HtmlMetadata,
   ImageMetadata,
   ImagePreprocessingMetadata,

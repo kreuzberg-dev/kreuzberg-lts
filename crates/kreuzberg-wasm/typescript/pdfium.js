@@ -3,6 +3,6 @@
  * This provides a fallback for browser environments where PDFium is optional
  */
 
-export default async function initPdfium() {
+export default function initPdfium() {
   return {};
 }

@@ -160,7 +160,7 @@ describe("FontConfig", () => {
 
     it("should handle null families array", () => {
       const config: FontConfig = {
-        families: null as any,
+        families: null as unknown as string[],
       };
 
       expect(config.families).toBeNull();
@@ -230,9 +230,10 @@ describe("FontConfig", () => {
         families: ["Arial", "Helvetica"],
       };
 
+      if (!original.families) throw new Error("expected original.families to be defined");
       const updated: FontConfig = {
         ...original,
-        families: [...original.families!, "Verdana"],
+        families: [...original.families, "Verdana"],
       };
 
       expect(original.families).toHaveLength(2);

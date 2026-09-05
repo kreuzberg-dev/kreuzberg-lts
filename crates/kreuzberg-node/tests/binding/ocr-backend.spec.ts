@@ -14,12 +14,13 @@ describe("OCR Backend Registration", () => {
     const mockBackend: OcrBackendProtocol = {
       name: () => "test-ocr",
       supportedLanguages: () => ["en", "de"],
-      processImage: async (imageBytes: Uint8Array, language: string) => ({
-        content: "test content",
-        mime_type: "text/plain",
-        metadata: { language },
-        tables: [],
-      }),
+      processImage: (imageBytes: Uint8Array, language: string) =>
+        Promise.resolve({
+          content: "test content",
+          mime_type: "text/plain",
+          metadata: { language },
+          tables: [],
+        }),
     };
 
     expect(() => registerOcrBackend(mockBackend)).not.toThrow();
@@ -29,12 +30,13 @@ describe("OCR Backend Registration", () => {
     const invalidBackend: OcrBackendProtocol = {
       name: () => "",
       supportedLanguages: () => ["en"],
-      processImage: async () => ({
-        content: "test",
-        mime_type: "text/plain",
-        metadata: {},
-        tables: [],
-      }),
+      processImage: () =>
+        Promise.resolve({
+          content: "test",
+          mime_type: "text/plain",
+          metadata: {},
+          tables: [],
+        }),
     };
 
     expect(() => registerOcrBackend(invalidBackend)).toThrow(/name cannot be empty/i);
@@ -44,12 +46,13 @@ describe("OCR Backend Registration", () => {
     const invalidBackend: OcrBackendProtocol = {
       name: () => "test-ocr",
       supportedLanguages: () => [],
-      processImage: async () => ({
-        content: "test",
-        mime_type: "text/plain",
-        metadata: {},
-        tables: [],
-      }),
+      processImage: () =>
+        Promise.resolve({
+          content: "test",
+          mime_type: "text/plain",
+          metadata: {},
+          tables: [],
+        }),
     };
 
     expect(() => registerOcrBackend(invalidBackend)).toThrow(/must support at least one language/i);
@@ -59,12 +62,13 @@ describe("OCR Backend Registration", () => {
     const backendWithOptionals: OcrBackendProtocol = {
       name: () => "test-ocr-2",
       supportedLanguages: () => ["en"],
-      processImage: async () => ({
-        content: "test",
-        mime_type: "text/plain",
-        metadata: {},
-        tables: [],
-      }),
+      processImage: () =>
+        Promise.resolve({
+          content: "test",
+          mime_type: "text/plain",
+          metadata: {},
+          tables: [],
+        }),
       initialize: async () => {},
       shutdown: async () => {},
     };
@@ -72,23 +76,23 @@ describe("OCR Backend Registration", () => {
     expect(() => registerOcrBackend(backendWithOptionals)).not.toThrow();
   });
 
-  it("should correctly wrap processImage for NAPI bridge", async () => {
+  it("should correctly wrap processImage for NAPI bridge", () => {
     const testContent = "extracted text from image";
     const testMetadata = { confidence: 0.95, language: "en" };
 
     const mockBackend: OcrBackendProtocol = {
       name: () => "mock-ocr",
       supportedLanguages: () => ["en"],
-      processImage: async (imageBytes: Uint8Array, language: string) => {
+      processImage: (imageBytes: Uint8Array, language: string) => {
         expect(imageBytes).toBeInstanceOf(Uint8Array);
         expect(language).toBe("en");
 
-        return {
+        return Promise.resolve({
           content: testContent,
           mime_type: "text/plain",
           metadata: testMetadata,
           tables: [],
-        };
+        });
       },
     };
 
@@ -101,8 +105,8 @@ describe("OCR Backend Protocol Interface", () => {
     const backend: OcrBackendProtocol = {
       name: () => "type-test",
       supportedLanguages: () => ["en", "de", "fr"],
-      processImage: async (imageBytes: Uint8Array, language: string) => {
-        return {
+      processImage: (imageBytes: Uint8Array, language: string) => {
+        return Promise.resolve({
           content: "extracted text",
           mime_type: "text/plain",
           metadata: {
@@ -112,7 +116,7 @@ describe("OCR Backend Protocol Interface", () => {
             height: 600,
           },
           tables: [],
-        };
+        });
       },
     };
 
@@ -129,8 +133,8 @@ describe("OCR Backend Protocol Interface", () => {
     const backend: OcrBackendProtocol = {
       name: () => "table-ocr",
       supportedLanguages: () => ["en"],
-      processImage: async () => {
-        return {
+      processImage: () => {
+        return Promise.resolve({
           content: "text with tables",
           mime_type: "text/plain",
           metadata: {},
@@ -144,7 +148,7 @@ describe("OCR Backend Protocol Interface", () => {
               page_number: 1,
             },
           ],
-        };
+        });
       },
     };
 

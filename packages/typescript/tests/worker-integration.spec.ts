@@ -47,7 +47,7 @@ class MockWorker {
     this.id = id;
   }
 
-  async init(): Promise<void> {
+  init(): void {
     this.active = true;
     this.lastActivity = Date.now();
   }
@@ -63,7 +63,9 @@ class MockWorker {
     const dataSize = message.data instanceof ArrayBuffer ? message.data.byteLength : message.data.length;
 
     const processingTime = Math.min(dataSize / (1024 * 100), 100);
-    await new Promise((resolve) => setTimeout(resolve, processingTime));
+    await new Promise((resolve) => {
+      setTimeout(resolve, processingTime);
+    });
 
     const endTime = Date.now();
     const duration = endTime - startTime;
@@ -149,7 +151,7 @@ class WorkerPool {
     }
   }
 
-  async terminate(): Promise<void> {
+  terminate(): void {
     for (const worker of this.workers.values()) {
       worker.terminate();
     }
@@ -222,7 +224,7 @@ describe("WASM: Worker Integration", () => {
       await testPool.terminate();
     });
 
-    it("should track worker initialization status", async () => {
+    it("should track worker initialization status", () => {
       const stats = pool.getStats();
 
       expect(stats.activeWorkers).toBe(stats.poolSize);

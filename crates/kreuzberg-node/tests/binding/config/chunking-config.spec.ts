@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { ChunkingConfig, ExtractionConfig } from "../../src/types.js";
+import type { ChunkingConfig, EmbeddingConfig, ExtractionConfig } from "../../src/types.js";
 
 describe("ChunkingConfig", () => {
   describe("construction", () => {
@@ -209,7 +209,7 @@ describe("ChunkingConfig", () => {
 
     it("should handle null embedding", () => {
       const config: ChunkingConfig = {
-        embedding: null as any,
+        embedding: null as unknown as EmbeddingConfig,
       };
 
       expect(config.embedding).toBeNull();

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { ExtractionConfig, PdfConfig } from "../../src/types.js";
+import type { ExtractionConfig, HierarchyConfig, PdfConfig } from "../../src/types.js";
 
 describe("PdfConfig", () => {
   describe("construction", () => {
@@ -242,7 +242,7 @@ describe("PdfConfig", () => {
 
     it("should handle null hierarchy", () => {
       const config: PdfConfig = {
-        hierarchy: null as any,
+        hierarchy: null as unknown as HierarchyConfig,
       };
 
       expect(config.hierarchy).toBeNull();
@@ -343,9 +343,10 @@ describe("PdfConfig", () => {
         passwords: ["pass1", "pass2"],
       };
 
+      if (!original.passwords) throw new Error("expected original.passwords to be defined");
       const updated: PdfConfig = {
         ...original,
-        passwords: [...original.passwords!, "pass3"],
+        passwords: [...original.passwords, "pass3"],
       };
 
       expect(original.passwords).toHaveLength(2);
@@ -367,9 +368,10 @@ describe("PdfConfig", () => {
         passwords: ["oldpassword", "newpassword"],
       };
 
+      if (!config.passwords) throw new Error("expected config.passwords to be defined");
       expect(config.passwords).toHaveLength(2);
-      expect(config.passwords![0]).toBe("oldpassword");
-      expect(config.passwords![1]).toBe("newpassword");
+      expect(config.passwords[0]).toBe("oldpassword");
+      expect(config.passwords[1]).toBe("newpassword");
     });
 
     it("should handle empty password", () => {
@@ -451,7 +453,8 @@ describe("PdfConfig", () => {
         passwords: [longPassword],
       };
 
-      expect(config.passwords![0].length).toBe(10000);
+      if (!config.passwords) throw new Error("expected config.passwords to be defined");
+      expect(config.passwords[0].length).toBe(10000);
     });
 
     it("should handle zero kClusters", () => {

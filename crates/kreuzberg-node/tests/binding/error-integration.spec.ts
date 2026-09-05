@@ -14,15 +14,12 @@ describe("Error Integration", () => {
         await extractFile("/nonexistent/file.pdf");
         expect.fail("Should have thrown an error");
       } catch (error) {
-        if (error instanceof CacheError) {
-          console.log("Cache error - continuing without cache");
-        } else if (error instanceof ImageProcessingError) {
-          console.log("Image processing error - skipping images");
-        } else if (error instanceof PluginError) {
-          console.log(`Plugin error in ${error.pluginName}`);
-        } else if (error instanceof KreuzbergError) {
-          console.log("Kreuzberg error:", error.message);
-        }
+        expect(
+          error instanceof CacheError ||
+            error instanceof ImageProcessingError ||
+            error instanceof PluginError ||
+            error instanceof KreuzbergError,
+        ).toBe(true);
 
         expect(error instanceof Error).toBe(true);
       }
@@ -52,9 +49,7 @@ describe("Error Integration", () => {
     });
 
     it("should preserve error information across async boundaries", async () => {
-      const testError = async () => {
-        throw new CacheError("async cache error");
-      };
+      const testError = () => Promise.reject(new CacheError("async cache error"));
 
       try {
         await testError();
@@ -99,7 +94,6 @@ describe("Error Integration", () => {
           return await extractFile(filePath);
         } catch (error) {
           if (error instanceof CacheError) {
-            console.warn("Cache unavailable, continuing without cache");
             return await extractFile(filePath, null, { useCache: false });
           }
           throw error;
@@ -124,7 +118,6 @@ describe("Error Integration", () => {
             return await extractFile(filePath);
           } catch (error) {
             if (error instanceof ImageProcessingError && attempts < maxAttempts) {
-              console.log(`Image processing failed, retrying (${attempts}/${maxAttempts})`);
               continue;
             }
             throw error;

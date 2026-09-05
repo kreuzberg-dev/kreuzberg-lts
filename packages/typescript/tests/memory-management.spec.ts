@@ -358,7 +358,10 @@ describe("WASM: Memory Management", () => {
       const buffer = pool.allocate(1024);
 
       expect(buffer).not.toBeNull();
-      expect(buffer!.byteLength).toBe(1024);
+      if (!buffer) {
+        throw new Error("Expected buffer to be allocated");
+      }
+      expect(buffer.byteLength).toBe(1024);
     });
 
     it("should track used memory in pool", () => {
@@ -378,9 +381,12 @@ describe("WASM: Memory Management", () => {
       const pool = new WasmMemoryPool(10 * 1024 * 1024);
 
       const buffer = pool.allocate(1024);
+      if (!buffer) {
+        throw new Error("Expected buffer to be allocated");
+      }
       expect(pool.getUsedMemory()).toBeGreaterThan(0);
 
-      const success = pool.deallocate(buffer!);
+      const success = pool.deallocate(buffer);
 
       expect(success).toBe(true);
       expect(pool.getUsedMemory()).toBe(0);
@@ -409,11 +415,14 @@ describe("WASM: Memory Management", () => {
       const buf1 = pool.allocate(64 * 1024);
       const buf2 = pool.allocate(64 * 1024);
       const buf3 = pool.allocate(64 * 1024);
+      if (!buf2) {
+        throw new Error("Expected buf2 to be allocated");
+      }
 
       let fragmentation = pool.getFragmentation();
       expect(fragmentation).toBeGreaterThanOrEqual(0);
 
-      pool.deallocate(buf2!);
+      pool.deallocate(buf2);
 
       fragmentation = pool.getFragmentation();
       expect(fragmentation).toBeGreaterThanOrEqual(0);
@@ -490,7 +499,10 @@ describe("WASM: Memory Management", () => {
       for (let i = 0; i < iterations; i++) {
         const buffer = pool.allocate(1024);
         expect(buffer).not.toBeNull();
-        pool.deallocate(buffer!);
+        if (!buffer) {
+          throw new Error("Expected buffer to be allocated");
+        }
+        pool.deallocate(buffer);
       }
 
       const used = pool.getUsedMemory();
@@ -500,10 +512,12 @@ describe("WASM: Memory Management", () => {
     it("should minimize fragmentation with pooling", () => {
       const pool = new WasmMemoryPool(10 * 1024 * 1024);
 
-      const buffers: Uint8Array[] = [];
-      buffers.push(pool.allocate(1024)!);
-      buffers.push(pool.allocate(2048)!);
-      buffers.push(pool.allocate(512)!);
+      const buffers: Uint8Array[] = [pool.allocate(1024), pool.allocate(2048), pool.allocate(512)].map((buf) => {
+        if (!buf) {
+          throw new Error("Expected buffer to be allocated");
+        }
+        return buf;
+      });
 
       const fragBefore = pool.getFragmentation();
 

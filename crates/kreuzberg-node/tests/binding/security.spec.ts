@@ -48,8 +48,7 @@ describe("Security Validation Tests", () => {
 
     it("should handle deeply nested directories", async () => {
       const deepPath = Array.from({ length: 100 }, (_, i) => `dir${i}`).join("/");
-      const files: Record<string, string> = {};
-      files[`${deepPath}/file.txt`] = "deep content";
+      const files: Record<string, string> = { [`${deepPath}/file.txt`]: "deep content" };
 
       const zipBytes = await createZip(files);
 

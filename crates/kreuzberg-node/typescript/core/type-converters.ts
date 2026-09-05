@@ -10,10 +10,12 @@
 import type {
   BoundingBox,
   Chunk,
+  ChunkMetadata,
   Element,
   ElementType,
   ExtractedImage,
   ExtractionResult,
+  HeadingContext,
   PageContent,
   Table,
 } from "../types.js";
@@ -60,6 +62,54 @@ function ensureUint8Array(value: unknown): Uint8Array {
 }
 
 /**
+ * Convert a raw heading-context object from native binding to its typed form.
+ *
+ * @param metadata - Raw chunk metadata record
+ * @returns Typed heading context, or null when absent/malformed
+ * @internal
+ */
+function convertHeadingContext(metadata: Record<string, unknown>): HeadingContext | null {
+  const rawHeadingContext = (metadata["heading_context"] ?? metadata["headingContext"]) as
+    | Record<string, unknown>
+    | null
+    | undefined;
+  if (!rawHeadingContext) return null;
+
+  const headings = rawHeadingContext["headings"];
+  if (!Array.isArray(headings)) return null;
+
+  return {
+    headings: headings.map((h: unknown) => {
+      const heading = h as Record<string, unknown>;
+      return {
+        level: (heading["level"] as number) ?? 0,
+        text: (heading["text"] as string) ?? "",
+      };
+    }),
+  };
+}
+
+/**
+ * Convert a raw chunk metadata object from native binding to its typed form.
+ *
+ * @param metadata - Raw chunk metadata record
+ * @returns Typed chunk metadata
+ * @internal
+ */
+function convertChunkMetadata(metadata: Record<string, unknown>): ChunkMetadata {
+  return {
+    byteStart: ((metadata["byte_start"] ?? metadata["charStart"]) as number) ?? 0,
+    byteEnd: ((metadata["byte_end"] ?? metadata["charEnd"]) as number) ?? 0,
+    tokenCount: ((metadata["token_count"] ?? metadata["tokenCount"]) as number | null) ?? null,
+    chunkIndex: ((metadata["chunk_index"] ?? metadata["chunkIndex"]) as number) ?? 0,
+    totalChunks: ((metadata["total_chunks"] ?? metadata["totalChunks"]) as number) ?? 0,
+    firstPage: ((metadata["first_page"] ?? metadata["firstPage"]) as number | null) ?? null,
+    lastPage: ((metadata["last_page"] ?? metadata["lastPage"]) as number | null) ?? null,
+    headingContext: convertHeadingContext(metadata),
+  };
+}
+
+/**
  * Convert raw chunk object from native binding to typed Chunk.
  *
  * @param rawChunk - Raw chunk object from native binding
@@ -88,33 +138,7 @@ function convertChunk(rawChunk: unknown): Chunk {
     content: (chunk["content"] as string) ?? "",
     chunkType: ((chunk["chunk_type"] ?? chunk["chunkType"]) as string | null) ?? null,
     embedding: (chunk["embedding"] as number[] | null) ?? null,
-    metadata: {
-      byteStart: ((metadata["byte_start"] ?? metadata["charStart"]) as number) ?? 0,
-      byteEnd: ((metadata["byte_end"] ?? metadata["charEnd"]) as number) ?? 0,
-      tokenCount: ((metadata["token_count"] ?? metadata["tokenCount"]) as number | null) ?? null,
-      chunkIndex: ((metadata["chunk_index"] ?? metadata["chunkIndex"]) as number) ?? 0,
-      totalChunks: ((metadata["total_chunks"] ?? metadata["totalChunks"]) as number) ?? 0,
-      firstPage: ((metadata["first_page"] ?? metadata["firstPage"]) as number | null) ?? null,
-      lastPage: ((metadata["last_page"] ?? metadata["lastPage"]) as number | null) ?? null,
-      headingContext: (() => {
-        const hc = (metadata["heading_context"] ?? metadata["headingContext"]) as
-          | Record<string, unknown>
-          | null
-          | undefined;
-        if (!hc) return null;
-        const headings = hc["headings"];
-        if (!Array.isArray(headings)) return null;
-        return {
-          headings: headings.map((h: unknown) => {
-            const heading = h as Record<string, unknown>;
-            return {
-              level: (heading["level"] as number) ?? 0,
-              text: (heading["text"] as string) ?? "",
-            };
-          }),
-        };
-      })(),
-    },
+    metadata: convertChunkMetadata(metadata),
   };
 }
 

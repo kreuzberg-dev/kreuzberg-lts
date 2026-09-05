@@ -9,6 +9,7 @@ import {
   unregisterPostProcessor,
   unregisterValidator,
 } from "./plugin-registry.js";
+import type { PostProcessor, Validator } from "./plugin-registry.js";
 import type { ExtractionResult } from "./types.js";
 
 /** Mock PostProcessor for testing */
@@ -44,15 +45,17 @@ describe("Plugin Registration System", () => {
       name: () => name,
       stage: () => stage,
       process: processAsync
-        ? vi.fn(async (result) => ({
-            ...result,
-            content: `[${name}] ${result.content}`,
-          }))
+        ? vi.fn((result) =>
+            Promise.resolve({
+              ...result,
+              content: `[${name}] ${result.content}`,
+            }),
+          )
         : vi.fn((result) => ({
             ...result,
             content: `[${name}] ${result.content}`,
           })),
-      shutdown: vi.fn(async () => undefined),
+      shutdown: vi.fn(() => Promise.resolve(undefined)),
     };
   };
 
@@ -67,65 +70,75 @@ describe("Plugin Registration System", () => {
       name: () => name,
       priority: () => priority,
       validate: validateAsync
-        ? vi.fn(async () => ({ valid: true, errors: [] }))
+        ? vi.fn(() => Promise.resolve({ valid: true, errors: [] }))
         : vi.fn(() => ({ valid: true, errors: [] })),
-      shutdown: vi.fn(async () => undefined),
+      shutdown: vi.fn(() => Promise.resolve(undefined)),
     };
   };
 
   describe("Post-Processor Registration", () => {
     it("should register a valid post-processor", () => {
       const processor = createMockPostProcessor("test-processor");
-      expect(() => registerPostProcessor(processor as any)).not.toThrow();
+      expect(() => registerPostProcessor(processor)).not.toThrow();
 
       const registered = listPostProcessors();
       expect(registered).toContain("test-processor");
     });
 
     it("should throw if post-processor is null", () => {
-      expect(() => registerPostProcessor(null as any)).toThrow("Post-processor cannot be null or undefined");
+      expect(() => registerPostProcessor(null as unknown as PostProcessor)).toThrow(
+        "Post-processor cannot be null or undefined",
+      );
     });
 
     it("should throw if post-processor is undefined", () => {
-      expect(() => registerPostProcessor(undefined as any)).toThrow("Post-processor cannot be null or undefined");
+      expect(() => registerPostProcessor(undefined as unknown as PostProcessor)).toThrow(
+        "Post-processor cannot be null or undefined",
+      );
     });
 
     it("should throw if post-processor missing name method", () => {
       const invalid = {
-        process: async () => ({}),
+        process: () => ({}),
       };
-      expect(() => registerPostProcessor(invalid as any)).toThrow("must implement name() method");
+      expect(() => registerPostProcessor(invalid as unknown as PostProcessor)).toThrow("must implement name() method");
     });
 
     it("should throw if post-processor missing process method", () => {
       const invalid = {
         name: () => "test",
       };
-      expect(() => registerPostProcessor(invalid as any)).toThrow("must implement process() method");
+      expect(() => registerPostProcessor(invalid as unknown as PostProcessor)).toThrow(
+        "must implement process() method",
+      );
     });
 
     it("should throw if post-processor name is empty string", () => {
       const processor = {
         name: () => "",
-        process: async () => ({}),
+        process: () => ({}),
       };
-      expect(() => registerPostProcessor(processor as any)).toThrow("Post-processor name must be a non-empty string");
+      expect(() => registerPostProcessor(processor as unknown as PostProcessor)).toThrow(
+        "Post-processor name must be a non-empty string",
+      );
     });
 
     it("should throw if post-processor name is not a string", () => {
       const processor = {
         name: () => 123,
-        process: async () => ({}),
+        process: () => ({}),
       };
-      expect(() => registerPostProcessor(processor as any)).toThrow("Post-processor name must be a non-empty string");
+      expect(() => registerPostProcessor(processor as unknown as PostProcessor)).toThrow(
+        "Post-processor name must be a non-empty string",
+      );
     });
 
     it("should allow overwriting existing post-processor", () => {
       const processor1 = createMockPostProcessor("test");
       const processor2 = createMockPostProcessor("test");
 
-      registerPostProcessor(processor1 as any);
-      expect(() => registerPostProcessor(processor2 as any)).not.toThrow();
+      registerPostProcessor(processor1);
+      expect(() => registerPostProcessor(processor2)).not.toThrow();
 
       const registered = listPostProcessors();
       expect(registered).toContain("test");
@@ -136,8 +149,8 @@ describe("Plugin Registration System", () => {
       const processor1 = createMockPostProcessor("test");
       const processor2 = createMockPostProcessor("test");
 
-      registerPostProcessor(processor1 as any);
-      registerPostProcessor(processor2 as any);
+      registerPostProcessor(processor1);
+      registerPostProcessor(processor2);
 
       expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining("already registered"));
 
@@ -148,8 +161,8 @@ describe("Plugin Registration System", () => {
       const processor1 = createMockPostProcessor("processor1");
       const processor2 = createMockPostProcessor("processor2");
 
-      registerPostProcessor(processor1 as any);
-      registerPostProcessor(processor2 as any);
+      registerPostProcessor(processor1);
+      registerPostProcessor(processor2);
 
       const registered = listPostProcessors();
       expect(registered).toContain("processor1");
@@ -159,7 +172,7 @@ describe("Plugin Registration System", () => {
 
     it("should support synchronous post-processors", () => {
       const processor = createMockPostProcessor("sync-processor", { processAsync: false });
-      expect(() => registerPostProcessor(processor as any)).not.toThrow();
+      expect(() => registerPostProcessor(processor)).not.toThrow();
 
       const registered = listPostProcessors();
       expect(registered).toContain("sync-processor");
@@ -167,7 +180,7 @@ describe("Plugin Registration System", () => {
 
     it("should support asynchronous post-processors", () => {
       const processor = createMockPostProcessor("async-processor", { processAsync: true });
-      expect(() => registerPostProcessor(processor as any)).not.toThrow();
+      expect(() => registerPostProcessor(processor)).not.toThrow();
 
       const registered = listPostProcessors();
       expect(registered).toContain("async-processor");
@@ -177,7 +190,7 @@ describe("Plugin Registration System", () => {
   describe("Post-Processor Unregistration", () => {
     it("should unregister a registered post-processor", async () => {
       const processor = createMockPostProcessor("test");
-      registerPostProcessor(processor as any);
+      registerPostProcessor(processor);
 
       expect(listPostProcessors()).toContain("test");
 
@@ -196,19 +209,19 @@ describe("Plugin Registration System", () => {
       const processor = createMockPostProcessor("test");
       const shutdownSpy = vi.spyOn(processor, "shutdown");
 
-      registerPostProcessor(processor as any);
+      registerPostProcessor(processor);
       await unregisterPostProcessor("test");
 
       expect(shutdownSpy).toHaveBeenCalled();
     });
 
-    it("should not throw if shutdown fails", async () => {
+    it("should not throw if shutdown fails", () => {
       const processor = createMockPostProcessor("test");
-      processor.shutdown = vi.fn(async () => {
+      processor.shutdown = vi.fn(() => {
         throw new Error("Shutdown failed");
       });
 
-      registerPostProcessor(processor as any);
+      registerPostProcessor(processor);
 
       expect(async () => {
         await unregisterPostProcessor("test");
@@ -217,11 +230,11 @@ describe("Plugin Registration System", () => {
 
     it("should remove post-processor even if shutdown fails", async () => {
       const processor = createMockPostProcessor("test");
-      processor.shutdown = vi.fn(async () => {
+      processor.shutdown = vi.fn(() => {
         throw new Error("Shutdown error");
       });
 
-      registerPostProcessor(processor as any);
+      registerPostProcessor(processor);
       await unregisterPostProcessor("test");
 
       expect(listPostProcessors()).not.toContain("test");
@@ -229,7 +242,7 @@ describe("Plugin Registration System", () => {
 
     it("should be case-sensitive", async () => {
       const processor = createMockPostProcessor("Test");
-      registerPostProcessor(processor as any);
+      registerPostProcessor(processor);
 
       await expect(unregisterPostProcessor("test")).rejects.toThrow("is not registered");
 
@@ -245,7 +258,7 @@ describe("Plugin Registration System", () => {
 
     it("should return post-processor names as array", () => {
       const processor = createMockPostProcessor("test");
-      registerPostProcessor(processor as any);
+      registerPostProcessor(processor);
 
       const processors = listPostProcessors();
       expect(Array.isArray(processors)).toBe(true);
@@ -257,9 +270,9 @@ describe("Plugin Registration System", () => {
       const processor2 = createMockPostProcessor("processor2");
       const processor3 = createMockPostProcessor("processor3");
 
-      registerPostProcessor(processor1 as any);
-      registerPostProcessor(processor2 as any);
-      registerPostProcessor(processor3 as any);
+      registerPostProcessor(processor1);
+      registerPostProcessor(processor2);
+      registerPostProcessor(processor3);
 
       const processors = listPostProcessors();
       expect(processors).toHaveLength(3);
@@ -272,8 +285,8 @@ describe("Plugin Registration System", () => {
       const processor1 = createMockPostProcessor("processor1");
       const processor2 = createMockPostProcessor("processor2");
 
-      registerPostProcessor(processor1 as any);
-      registerPostProcessor(processor2 as any);
+      registerPostProcessor(processor1);
+      registerPostProcessor(processor2);
 
       expect(listPostProcessors()).toHaveLength(2);
 
@@ -289,8 +302,8 @@ describe("Plugin Registration System", () => {
       const shutdown1 = vi.spyOn(processor1, "shutdown");
       const shutdown2 = vi.spyOn(processor2, "shutdown");
 
-      registerPostProcessor(processor1 as any);
-      registerPostProcessor(processor2 as any);
+      registerPostProcessor(processor1);
+      registerPostProcessor(processor2);
 
       await clearPostProcessors();
 
@@ -298,13 +311,13 @@ describe("Plugin Registration System", () => {
       expect(shutdown2).toHaveBeenCalled();
     });
 
-    it("should not throw if shutdown fails during clear", async () => {
+    it("should not throw if shutdown fails during clear", () => {
       const processor = createMockPostProcessor("test");
-      processor.shutdown = vi.fn(async () => {
+      processor.shutdown = vi.fn(() => {
         throw new Error("Shutdown error");
       });
 
-      registerPostProcessor(processor as any);
+      registerPostProcessor(processor);
 
       expect(async () => {
         await clearPostProcessors();
@@ -315,15 +328,15 @@ describe("Plugin Registration System", () => {
       const processor1 = createMockPostProcessor("processor1");
       const processor2 = createMockPostProcessor("processor2");
 
-      processor1.shutdown = vi.fn(async () => {
+      processor1.shutdown = vi.fn(() => {
         throw new Error("Error 1");
       });
-      processor2.shutdown = vi.fn(async () => {
+      processor2.shutdown = vi.fn(() => {
         throw new Error("Error 2");
       });
 
-      registerPostProcessor(processor1 as any);
-      registerPostProcessor(processor2 as any);
+      registerPostProcessor(processor1);
+      registerPostProcessor(processor2);
 
       await clearPostProcessors();
 
@@ -334,56 +347,60 @@ describe("Plugin Registration System", () => {
   describe("Validator Registration", () => {
     it("should register a valid validator", () => {
       const validator = createMockValidator("test-validator");
-      expect(() => registerValidator(validator as any)).not.toThrow();
+      expect(() => registerValidator(validator)).not.toThrow();
 
       const registered = listValidators();
       expect(registered).toContain("test-validator");
     });
 
     it("should throw if validator is null", () => {
-      expect(() => registerValidator(null as any)).toThrow("Validator cannot be null or undefined");
+      expect(() => registerValidator(null as unknown as Validator)).toThrow("Validator cannot be null or undefined");
     });
 
     it("should throw if validator is undefined", () => {
-      expect(() => registerValidator(undefined as any)).toThrow("Validator cannot be null or undefined");
+      expect(() => registerValidator(undefined as unknown as Validator)).toThrow(
+        "Validator cannot be null or undefined",
+      );
     });
 
     it("should throw if validator missing name method", () => {
       const invalid = {
-        validate: async () => ({ valid: true, errors: [] }),
+        validate: () => ({ valid: true, errors: [] }),
       };
-      expect(() => registerValidator(invalid as any)).toThrow("must implement name() method");
+      expect(() => registerValidator(invalid as unknown as Validator)).toThrow("must implement name() method");
     });
 
     it("should throw if validator missing validate method", () => {
       const invalid = {
         name: () => "test",
       };
-      expect(() => registerValidator(invalid as any)).toThrow("must implement validate() method");
+      expect(() => registerValidator(invalid as unknown as Validator)).toThrow("must implement validate() method");
     });
 
     it("should throw if validator name is empty string", () => {
       const validator = {
         name: () => "",
-        validate: async () => ({ valid: true, errors: [] }),
+        validate: () => ({ valid: true, errors: [] }),
       };
-      expect(() => registerValidator(validator as any)).toThrow("Validator name must be a non-empty string");
+      expect(() => registerValidator(validator)).toThrow("Validator name must be a non-empty string");
     });
 
     it("should throw if validator name is not a string", () => {
       const validator = {
         name: () => 123,
-        validate: async () => ({ valid: true, errors: [] }),
+        validate: () => ({ valid: true, errors: [] }),
       };
-      expect(() => registerValidator(validator as any)).toThrow("Validator name must be a non-empty string");
+      expect(() => registerValidator(validator as unknown as Validator)).toThrow(
+        "Validator name must be a non-empty string",
+      );
     });
 
     it("should allow overwriting existing validator", () => {
       const validator1 = createMockValidator("test");
       const validator2 = createMockValidator("test");
 
-      registerValidator(validator1 as any);
-      expect(() => registerValidator(validator2 as any)).not.toThrow();
+      registerValidator(validator1);
+      expect(() => registerValidator(validator2)).not.toThrow();
 
       const registered = listValidators();
       expect(registered).toContain("test");
@@ -394,8 +411,8 @@ describe("Plugin Registration System", () => {
       const validator1 = createMockValidator("test");
       const validator2 = createMockValidator("test");
 
-      registerValidator(validator1 as any);
-      registerValidator(validator2 as any);
+      registerValidator(validator1);
+      registerValidator(validator2);
 
       expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining("already registered"));
 
@@ -406,8 +423,8 @@ describe("Plugin Registration System", () => {
       const validator1 = createMockValidator("validator1");
       const validator2 = createMockValidator("validator2");
 
-      registerValidator(validator1 as any);
-      registerValidator(validator2 as any);
+      registerValidator(validator1);
+      registerValidator(validator2);
 
       const registered = listValidators();
       expect(registered).toContain("validator1");
@@ -417,7 +434,7 @@ describe("Plugin Registration System", () => {
 
     it("should support synchronous validators", () => {
       const validator = createMockValidator("sync-validator", { validateAsync: false });
-      expect(() => registerValidator(validator as any)).not.toThrow();
+      expect(() => registerValidator(validator)).not.toThrow();
 
       const registered = listValidators();
       expect(registered).toContain("sync-validator");
@@ -425,7 +442,7 @@ describe("Plugin Registration System", () => {
 
     it("should support asynchronous validators", () => {
       const validator = createMockValidator("async-validator", { validateAsync: true });
-      expect(() => registerValidator(validator as any)).not.toThrow();
+      expect(() => registerValidator(validator)).not.toThrow();
 
       const registered = listValidators();
       expect(registered).toContain("async-validator");
@@ -435,7 +452,7 @@ describe("Plugin Registration System", () => {
   describe("Validator Unregistration", () => {
     it("should unregister a registered validator", async () => {
       const validator = createMockValidator("test");
-      registerValidator(validator as any);
+      registerValidator(validator);
 
       expect(listValidators()).toContain("test");
 
@@ -452,19 +469,19 @@ describe("Plugin Registration System", () => {
       const validator = createMockValidator("test");
       const shutdownSpy = vi.spyOn(validator, "shutdown");
 
-      registerValidator(validator as any);
+      registerValidator(validator);
       await unregisterValidator("test");
 
       expect(shutdownSpy).toHaveBeenCalled();
     });
 
-    it("should not throw if shutdown fails", async () => {
+    it("should not throw if shutdown fails", () => {
       const validator = createMockValidator("test");
-      validator.shutdown = vi.fn(async () => {
+      validator.shutdown = vi.fn(() => {
         throw new Error("Shutdown failed");
       });
 
-      registerValidator(validator as any);
+      registerValidator(validator);
 
       expect(async () => {
         await unregisterValidator("test");
@@ -473,11 +490,11 @@ describe("Plugin Registration System", () => {
 
     it("should remove validator even if shutdown fails", async () => {
       const validator = createMockValidator("test");
-      validator.shutdown = vi.fn(async () => {
+      validator.shutdown = vi.fn(() => {
         throw new Error("Shutdown error");
       });
 
-      registerValidator(validator as any);
+      registerValidator(validator);
       await unregisterValidator("test");
 
       expect(listValidators()).not.toContain("test");
@@ -485,7 +502,7 @@ describe("Plugin Registration System", () => {
 
     it("should be case-sensitive", async () => {
       const validator = createMockValidator("Test");
-      registerValidator(validator as any);
+      registerValidator(validator);
 
       await expect(unregisterValidator("test")).rejects.toThrow("is not registered");
 
@@ -501,7 +518,7 @@ describe("Plugin Registration System", () => {
 
     it("should return validator names as array", () => {
       const validator = createMockValidator("test");
-      registerValidator(validator as any);
+      registerValidator(validator);
 
       const validators = listValidators();
       expect(Array.isArray(validators)).toBe(true);
@@ -513,9 +530,9 @@ describe("Plugin Registration System", () => {
       const validator2 = createMockValidator("validator2");
       const validator3 = createMockValidator("validator3");
 
-      registerValidator(validator1 as any);
-      registerValidator(validator2 as any);
-      registerValidator(validator3 as any);
+      registerValidator(validator1);
+      registerValidator(validator2);
+      registerValidator(validator3);
 
       const validators = listValidators();
       expect(validators).toHaveLength(3);
@@ -528,8 +545,8 @@ describe("Plugin Registration System", () => {
       const validator1 = createMockValidator("validator1");
       const validator2 = createMockValidator("validator2");
 
-      registerValidator(validator1 as any);
-      registerValidator(validator2 as any);
+      registerValidator(validator1);
+      registerValidator(validator2);
 
       expect(listValidators()).toHaveLength(2);
 
@@ -545,8 +562,8 @@ describe("Plugin Registration System", () => {
       const shutdown1 = vi.spyOn(validator1, "shutdown");
       const shutdown2 = vi.spyOn(validator2, "shutdown");
 
-      registerValidator(validator1 as any);
-      registerValidator(validator2 as any);
+      registerValidator(validator1);
+      registerValidator(validator2);
 
       await clearValidators();
 
@@ -554,13 +571,13 @@ describe("Plugin Registration System", () => {
       expect(shutdown2).toHaveBeenCalled();
     });
 
-    it("should not throw if shutdown fails during clear", async () => {
+    it("should not throw if shutdown fails during clear", () => {
       const validator = createMockValidator("test");
-      validator.shutdown = vi.fn(async () => {
+      validator.shutdown = vi.fn(() => {
         throw new Error("Shutdown error");
       });
 
-      registerValidator(validator as any);
+      registerValidator(validator);
 
       expect(async () => {
         await clearValidators();
@@ -571,15 +588,15 @@ describe("Plugin Registration System", () => {
       const validator1 = createMockValidator("validator1");
       const validator2 = createMockValidator("validator2");
 
-      validator1.shutdown = vi.fn(async () => {
+      validator1.shutdown = vi.fn(() => {
         throw new Error("Error 1");
       });
-      validator2.shutdown = vi.fn(async () => {
+      validator2.shutdown = vi.fn(() => {
         throw new Error("Error 2");
       });
 
-      registerValidator(validator1 as any);
-      registerValidator(validator2 as any);
+      registerValidator(validator1);
+      registerValidator(validator2);
 
       await clearValidators();
 
@@ -590,7 +607,7 @@ describe("Plugin Registration System", () => {
   describe("Processing Stage Support", () => {
     it("should handle early processing stage", () => {
       const processor = createMockPostProcessor("early-processor", { stage: "early" });
-      expect(() => registerPostProcessor(processor as any)).not.toThrow();
+      expect(() => registerPostProcessor(processor)).not.toThrow();
 
       const registered = listPostProcessors();
       expect(registered).toContain("early-processor");
@@ -598,7 +615,7 @@ describe("Plugin Registration System", () => {
 
     it("should handle middle processing stage", () => {
       const processor = createMockPostProcessor("middle-processor", { stage: "middle" });
-      expect(() => registerPostProcessor(processor as any)).not.toThrow();
+      expect(() => registerPostProcessor(processor)).not.toThrow();
 
       const registered = listPostProcessors();
       expect(registered).toContain("middle-processor");
@@ -606,7 +623,7 @@ describe("Plugin Registration System", () => {
 
     it("should handle late processing stage", () => {
       const processor = createMockPostProcessor("late-processor", { stage: "late" });
-      expect(() => registerPostProcessor(processor as any)).not.toThrow();
+      expect(() => registerPostProcessor(processor)).not.toThrow();
 
       const registered = listPostProcessors();
       expect(registered).toContain("late-processor");
@@ -617,9 +634,9 @@ describe("Plugin Registration System", () => {
       const middleProcessor = createMockPostProcessor("middle", { stage: "middle" });
       const lateProcessor = createMockPostProcessor("late", { stage: "late" });
 
-      registerPostProcessor(earlyProcessor as any);
-      registerPostProcessor(middleProcessor as any);
-      registerPostProcessor(lateProcessor as any);
+      registerPostProcessor(earlyProcessor);
+      registerPostProcessor(middleProcessor);
+      registerPostProcessor(lateProcessor);
 
       const registered = listPostProcessors();
       expect(registered).toContain("early");
@@ -632,7 +649,7 @@ describe("Plugin Registration System", () => {
   describe("Validator Priority Support", () => {
     it("should register validator with default priority", () => {
       const validator = createMockValidator("test");
-      expect(() => registerValidator(validator as any)).not.toThrow();
+      expect(() => registerValidator(validator)).not.toThrow();
 
       const registered = listValidators();
       expect(registered).toContain("test");
@@ -640,7 +657,7 @@ describe("Plugin Registration System", () => {
 
     it("should register validator with custom priority", () => {
       const validator = createMockValidator("high-priority", { priority: 100 });
-      expect(() => registerValidator(validator as any)).not.toThrow();
+      expect(() => registerValidator(validator)).not.toThrow();
 
       const registered = listValidators();
       expect(registered).toContain("high-priority");
@@ -651,9 +668,9 @@ describe("Plugin Registration System", () => {
       const validator2 = createMockValidator("validator2", { priority: 50 });
       const validator3 = createMockValidator("validator3", { priority: 100 });
 
-      registerValidator(validator1 as any);
-      registerValidator(validator2 as any);
-      registerValidator(validator3 as any);
+      registerValidator(validator1);
+      registerValidator(validator2);
+      registerValidator(validator3);
 
       const registered = listValidators();
       expect(registered).toHaveLength(3);
@@ -664,12 +681,12 @@ describe("Plugin Registration System", () => {
   });
 
   describe("Integration Scenarios", () => {
-    it("should support registering and executing multiple post-processors", async () => {
+    it("should support registering and executing multiple post-processors", () => {
       const processor1 = createMockPostProcessor("processor1");
       const processor2 = createMockPostProcessor("processor2");
 
-      registerPostProcessor(processor1 as any);
-      registerPostProcessor(processor2 as any);
+      registerPostProcessor(processor1);
+      registerPostProcessor(processor2);
 
       const processors = listPostProcessors();
       expect(processors).toHaveLength(2);
@@ -677,12 +694,12 @@ describe("Plugin Registration System", () => {
       expect(processors).toContain("processor2");
     });
 
-    it("should support registering and executing multiple validators", async () => {
+    it("should support registering and executing multiple validators", () => {
       const validator1 = createMockValidator("validator1");
       const validator2 = createMockValidator("validator2");
 
-      registerValidator(validator1 as any);
-      registerValidator(validator2 as any);
+      registerValidator(validator1);
+      registerValidator(validator2);
 
       const validators = listValidators();
       expect(validators).toHaveLength(2);
@@ -694,14 +711,14 @@ describe("Plugin Registration System", () => {
       const processor1 = createMockPostProcessor("processor1");
       const processor2 = createMockPostProcessor("processor2");
 
-      registerPostProcessor(processor1 as any);
-      registerPostProcessor(processor2 as any);
+      registerPostProcessor(processor1);
+      registerPostProcessor(processor2);
 
       await clearPostProcessors();
       expect(listPostProcessors()).toEqual([]);
 
       const processor3 = createMockPostProcessor("processor3");
-      registerPostProcessor(processor3 as any);
+      registerPostProcessor(processor3);
 
       expect(listPostProcessors()).toEqual(["processor3"]);
     });
@@ -710,14 +727,14 @@ describe("Plugin Registration System", () => {
       const validator1 = createMockValidator("validator1");
       const validator2 = createMockValidator("validator2");
 
-      registerValidator(validator1 as any);
-      registerValidator(validator2 as any);
+      registerValidator(validator1);
+      registerValidator(validator2);
 
       await clearValidators();
       expect(listValidators()).toEqual([]);
 
       const validator3 = createMockValidator("validator3");
-      registerValidator(validator3 as any);
+      registerValidator(validator3);
 
       expect(listValidators()).toEqual(["validator3"]);
     });
@@ -726,8 +743,8 @@ describe("Plugin Registration System", () => {
       const processor = createMockPostProcessor("processor");
       const validator = createMockValidator("validator");
 
-      registerPostProcessor(processor as any);
-      registerValidator(validator as any);
+      registerPostProcessor(processor);
+      registerValidator(validator);
 
       const processors = listPostProcessors();
       const validators = listValidators();
@@ -742,11 +759,11 @@ describe("Plugin Registration System", () => {
     it("should support re-registering after unregister", async () => {
       const processor = createMockPostProcessor("test");
 
-      registerPostProcessor(processor as any);
+      registerPostProcessor(processor);
       await unregisterPostProcessor("test");
       expect(listPostProcessors()).not.toContain("test");
 
-      registerPostProcessor(processor as any);
+      registerPostProcessor(processor);
       expect(listPostProcessors()).toContain("test");
     });
 
@@ -754,8 +771,8 @@ describe("Plugin Registration System", () => {
       const processor = createMockPostProcessor("processor");
       const validator = createMockValidator("validator");
 
-      registerPostProcessor(processor as any);
-      registerValidator(validator as any);
+      registerPostProcessor(processor);
+      registerValidator(validator);
 
       await unregisterPostProcessor("processor");
 
@@ -767,7 +784,7 @@ describe("Plugin Registration System", () => {
   describe("Error Handling and Edge Cases", () => {
     it("should provide helpful error when unregistering non-existent post-processor", async () => {
       const processor = createMockPostProcessor("existing");
-      registerPostProcessor(processor as any);
+      registerPostProcessor(processor);
 
       try {
         await unregisterPostProcessor("nonexistent");
@@ -782,7 +799,7 @@ describe("Plugin Registration System", () => {
 
     it("should provide helpful error when unregistering non-existent validator", async () => {
       const validator = createMockValidator("existing");
-      registerValidator(validator as any);
+      registerValidator(validator);
 
       try {
         await unregisterValidator("nonexistent");
@@ -795,7 +812,7 @@ describe("Plugin Registration System", () => {
       }
     });
 
-    it("should work with empty registry operations", async () => {
+    it("should work with empty registry operations", () => {
       expect(() => {
         listPostProcessors();
         listValidators();
@@ -810,14 +827,14 @@ describe("Plugin Registration System", () => {
     it("should handle rapid register/unregister cycles", async () => {
       for (let i = 0; i < 5; i++) {
         const processor = createMockPostProcessor(`processor-${i}`);
-        registerPostProcessor(processor as any);
+        registerPostProcessor(processor);
         await unregisterPostProcessor(`processor-${i}`);
       }
 
       expect(listPostProcessors()).toEqual([]);
     });
 
-    it("should not throw when clearing empty registries", async () => {
+    it("should not throw when clearing empty registries", () => {
       expect(async () => {
         await clearPostProcessors();
         await clearValidators();

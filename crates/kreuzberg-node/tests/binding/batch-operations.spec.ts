@@ -436,7 +436,7 @@ describe("Batch Bytes Extraction (Node.js Bindings)", () => {
 
   describe("batch bytes extraction error handling", () => {
     it("should reject non-Uint8Array data", () => {
-      const invalidData = ["not bytes" as any];
+      const invalidData = ["not bytes"] as unknown as Uint8Array[];
       const mimeTypes = ["text/plain"];
 
       expect(() => {

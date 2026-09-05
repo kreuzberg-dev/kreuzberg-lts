@@ -1,4 +1,4 @@
-export const extractBytes = async () => ({
+export const extractBytes = () => ({
   content: "test content",
   mimeType: "application/pdf",
   metadata: { pageCount: 1 },
@@ -14,7 +14,7 @@ export const extractBytesSync = () => ({
   detectedLanguages: ["en"],
 });
 
-export const batchExtractBytes = async () => [
+export const batchExtractBytes = () => [
   {
     content: "test content 1",
     mimeType: "application/pdf",
@@ -50,4 +50,4 @@ export const normalizeMimeType = (mime: string) => mime;
 
 export const version = () => "4.0.0";
 
-export default async () => undefined;
+export default () => undefined;

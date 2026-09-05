@@ -11,7 +11,7 @@
 
 import { readFileSync, realpathSync } from "node:fs";
 import { beforeAll, describe, expect, it } from "vitest";
-import { extractBytesSync, extractFileSync } from "../../dist/index.js";
+import { extractBytes, extractBytesSync, extractFileSync } from "../../dist/index.js";
 import type { ExtractionConfig, PageContent } from "../../src/types";
 import { getTestDocumentPath } from "../helpers/index.js";
 
@@ -47,7 +47,7 @@ describe("Pages Extraction (Node.js Bindings)", () => {
         },
       };
 
-      const result = extractBytesSync(samplePdfBytes, "application/pdf", config);
+      const result = await extractBytes(samplePdfBytes, "application/pdf", config);
 
       expect(result).toBeDefined();
       expect(result.pages).toBeDefined();

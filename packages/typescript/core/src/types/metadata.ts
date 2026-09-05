@@ -69,7 +69,7 @@ export interface LinkMetadata {
   attributes: Record<string, string>;
 }
 
-export interface ImageMetadata {
+export interface HtmlImageMetadata {
   src: string;
   alt?: string | null;
   title?: string | null;
@@ -98,7 +98,7 @@ export interface HtmlMetadata {
   metaTags: Record<string, string>;
   htmlHeaders: HeaderMetadata[];
   htmlLinks: LinkMetadata[];
-  htmlImages: ImageMetadata[];
+  htmlImages: HtmlImageMetadata[];
   structuredData: StructuredData[];
 }
 
@@ -220,7 +220,7 @@ export interface Metadata {
   text_direction?: "ltr" | "rtl" | "auto" | null;
   html_headers?: HeaderMetadata[];
   html_links?: LinkMetadata[];
-  html_images?: ImageMetadata[];
+  html_images?: HtmlImageMetadata[];
   structured_data?: StructuredData[];
 
   psm?: number;

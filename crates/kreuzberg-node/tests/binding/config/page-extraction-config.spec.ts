@@ -191,7 +191,7 @@ describe("PageExtractionConfig", () => {
 
     it("should handle null markerFormat", () => {
       const config: PageExtractionConfig = {
-        markerFormat: null as any,
+        markerFormat: null as unknown as string,
       };
 
       expect(config.markerFormat).toBeNull();

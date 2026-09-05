@@ -208,7 +208,7 @@ describe("PostProcessorConfig", () => {
 
     it("should handle null enabledProcessors", () => {
       const config: PostProcessorConfig = {
-        enabledProcessors: null as any,
+        enabledProcessors: null as unknown as string[],
       };
 
       expect(config.enabledProcessors).toBeNull();
@@ -216,7 +216,7 @@ describe("PostProcessorConfig", () => {
 
     it("should handle null disabledProcessors", () => {
       const config: PostProcessorConfig = {
-        disabledProcessors: null as any,
+        disabledProcessors: null as unknown as string[],
       };
 
       expect(config.disabledProcessors).toBeNull();
@@ -298,9 +298,10 @@ describe("PostProcessorConfig", () => {
         enabledProcessors: ["proc1", "proc2"],
       };
 
+      if (!original.enabledProcessors) throw new Error("expected original.enabledProcessors to be defined");
       const updated: PostProcessorConfig = {
         ...original,
-        enabledProcessors: [...original.enabledProcessors!, "proc3"],
+        enabledProcessors: [...original.enabledProcessors, "proc3"],
       };
 
       expect(original.enabledProcessors).toHaveLength(2);
@@ -386,7 +387,8 @@ describe("PostProcessorConfig", () => {
         enabledProcessors: [longName],
       };
 
-      expect(config.enabledProcessors![0].length).toBeGreaterThan(1000);
+      if (!config.enabledProcessors) throw new Error("expected config.enabledProcessors to be defined");
+      expect(config.enabledProcessors[0].length).toBeGreaterThan(1000);
     });
 
     it("should handle many processors", () => {
@@ -403,8 +405,9 @@ describe("PostProcessorConfig", () => {
         enabledProcessors: ["", "proc1", ""],
       };
 
+      if (!config.enabledProcessors) throw new Error("expected config.enabledProcessors to be defined");
       expect(config.enabledProcessors).toHaveLength(3);
-      expect(config.enabledProcessors![0]).toBe("");
+      expect(config.enabledProcessors[0]).toBe("");
     });
 
     it("should handle processors with unicode names", () => {

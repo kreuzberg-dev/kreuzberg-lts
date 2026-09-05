@@ -16,8 +16,8 @@ describe("OCR Registry", () => {
   const createMockBackend = (name: string): OcrBackendProtocol => ({
     name: () => name,
     supportedLanguages: () => ["eng", "deu", "fra"],
-    processImage: vi.fn(async () => ({ text: "test" })),
-    shutdown: vi.fn(async () => undefined),
+    processImage: vi.fn(() => ({ text: "test" })),
+    shutdown: vi.fn(() => undefined),
   });
 
   describe("registerOcrBackend", () => {
@@ -30,29 +30,37 @@ describe("OCR Registry", () => {
     });
 
     it("should throw if backend is null", () => {
-      expect(() => registerOcrBackend(null as any)).toThrow("Backend cannot be null or undefined");
+      expect(() => registerOcrBackend(null as unknown as OcrBackendProtocol)).toThrow(
+        "Backend cannot be null or undefined",
+      );
     });
 
     it("should throw if backend is undefined", () => {
-      expect(() => registerOcrBackend(undefined as any)).toThrow("Backend cannot be null or undefined");
+      expect(() => registerOcrBackend(undefined as unknown as OcrBackendProtocol)).toThrow(
+        "Backend cannot be null or undefined",
+      );
     });
 
     it("should throw if backend missing name method", () => {
       const invalid = {
         supportedLanguages: () => [],
-        processImage: async () => ({}),
+        processImage: () => ({}),
       };
 
-      expect(() => registerOcrBackend(invalid as any)).toThrow("must implement name() method");
+      expect(() => registerOcrBackend(invalid as unknown as OcrBackendProtocol)).toThrow(
+        "must implement name() method",
+      );
     });
 
     it("should throw if backend missing supportedLanguages method", () => {
       const invalid = {
         name: () => "test",
-        processImage: async () => ({}),
+        processImage: () => ({}),
       };
 
-      expect(() => registerOcrBackend(invalid as any)).toThrow("must implement supportedLanguages() method");
+      expect(() => registerOcrBackend(invalid as unknown as OcrBackendProtocol)).toThrow(
+        "must implement supportedLanguages() method",
+      );
     });
 
     it("should throw if backend missing processImage method", () => {
@@ -61,27 +69,33 @@ describe("OCR Registry", () => {
         supportedLanguages: () => [],
       };
 
-      expect(() => registerOcrBackend(invalid as any)).toThrow("must implement processImage() method");
+      expect(() => registerOcrBackend(invalid as unknown as OcrBackendProtocol)).toThrow(
+        "must implement processImage() method",
+      );
     });
 
     it("should throw if backend name is empty string", () => {
       const backend = {
         name: () => "",
         supportedLanguages: () => [],
-        processImage: async () => ({}),
+        processImage: () => ({}),
       };
 
-      expect(() => registerOcrBackend(backend as any)).toThrow("Backend name must be a non-empty string");
+      expect(() => registerOcrBackend(backend as unknown as OcrBackendProtocol)).toThrow(
+        "Backend name must be a non-empty string",
+      );
     });
 
     it("should throw if backend name is not a string", () => {
       const backend = {
         name: () => 123,
         supportedLanguages: () => [],
-        processImage: async () => ({}),
+        processImage: () => ({}),
       };
 
-      expect(() => registerOcrBackend(backend as any)).toThrow("Backend name must be a non-empty string");
+      expect(() => registerOcrBackend(backend as unknown as OcrBackendProtocol)).toThrow(
+        "Backend name must be a non-empty string",
+      );
     });
 
     it("should allow overwriting existing backend", () => {
@@ -231,20 +245,18 @@ describe("OCR Registry", () => {
 
     it("should not throw if shutdown fails", async () => {
       const backend = createMockBackend("test");
-      backend.shutdown = vi.fn(async () => {
+      backend.shutdown = vi.fn(() => {
         throw new Error("Shutdown failed");
       });
 
       registerOcrBackend(backend);
 
-      expect(async () => {
-        await unregisterOcrBackend("test");
-      }).not.toThrow();
+      await expect(unregisterOcrBackend("test")).resolves.toBeUndefined();
     });
 
     it("should remove backend even if shutdown fails", async () => {
       const backend = createMockBackend("test");
-      backend.shutdown = vi.fn(async () => {
+      backend.shutdown = vi.fn(() => {
         throw new Error("Shutdown error");
       });
 
@@ -308,24 +320,22 @@ describe("OCR Registry", () => {
       const backend1 = createMockBackend("backend1");
       const backend2 = createMockBackend("backend2");
 
-      backend1.shutdown = vi.fn(async () => {
+      backend1.shutdown = vi.fn(() => {
         throw new Error("Error 1");
       });
-      backend2.shutdown = vi.fn(async () => {
+      backend2.shutdown = vi.fn(() => {
         throw new Error("Error 2");
       });
 
       registerOcrBackend(backend1);
       registerOcrBackend(backend2);
 
-      expect(async () => {
-        await clearOcrBackends();
-      }).not.toThrow();
+      await expect(clearOcrBackends()).resolves.toBeUndefined();
     });
 
     it("should clear even if shutdowns fail", async () => {
       const backend = createMockBackend("test");
-      backend.shutdown = vi.fn(async () => {
+      backend.shutdown = vi.fn(() => {
         throw new Error("Shutdown error");
       });
 
@@ -336,9 +346,7 @@ describe("OCR Registry", () => {
     });
 
     it("should work when no backends registered", async () => {
-      expect(async () => {
-        await clearOcrBackends();
-      }).not.toThrow();
+      await expect(clearOcrBackends()).resolves.toBeUndefined();
 
       expect(listOcrBackends()).toEqual([]);
     });

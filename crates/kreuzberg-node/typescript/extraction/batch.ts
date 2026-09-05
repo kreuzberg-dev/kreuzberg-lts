@@ -55,7 +55,7 @@ import type { ExtractionConfig, ExtractionResult } from "../types.js";
 export function batchExtractFilesSync(paths: string[], config: ExtractionConfig | null = null): ExtractionResult[] {
   const normalizedConfig = normalizeExtractionConfig(config);
   const rawResults = getBinding().batchExtractFilesSync(paths, normalizedConfig);
-  return rawResults.map(convertResult);
+  return rawResults.map((rawResult) => convertResult(rawResult));
 }
 
 /**
@@ -99,7 +99,7 @@ export async function batchExtractFiles(
 ): Promise<ExtractionResult[]> {
   const normalizedConfig = normalizeExtractionConfig(config);
   const rawResults = await getBinding().batchExtractFiles(paths, normalizedConfig);
-  return rawResults.map(convertResult);
+  return rawResults.map((rawResult) => convertResult(rawResult));
 }
 
 /**
@@ -152,7 +152,7 @@ export function batchExtractBytesSync(
 
   const normalizedConfig = normalizeExtractionConfig(config);
   const rawResults = getBinding().batchExtractBytesSync(buffers, mimeTypes, normalizedConfig);
-  return rawResults.map(convertResult);
+  return rawResults.map((rawResult) => convertResult(rawResult));
 }
 
 /**
@@ -209,5 +209,5 @@ export async function batchExtractBytes(
 
   const normalizedConfig = normalizeExtractionConfig(config);
   const rawResults = await getBinding().batchExtractBytes(buffers, mimeTypes, normalizedConfig);
-  return rawResults.map(convertResult);
+  return rawResults.map((rawResult) => convertResult(rawResult));
 }

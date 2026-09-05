@@ -223,7 +223,7 @@ describe("ImagePreprocessingConfig", () => {
 
     it("should handle null compression", () => {
       const config: ImagePreprocessingConfig = {
-        compression: null as any,
+        compression: null as unknown as string,
       };
 
       expect(config.compression).toBeNull();
@@ -333,8 +333,10 @@ describe("ImagePreprocessingConfig", () => {
         targetDpi: 150,
       };
 
-      expect(config.minDpi).toBeLessThanOrEqual(config.targetDpi!);
-      expect(config.targetDpi).toBeLessThanOrEqual(config.maxDpi!);
+      if (config.targetDpi == null) throw new Error("expected config.targetDpi to be defined");
+      if (config.maxDpi == null) throw new Error("expected config.maxDpi to be defined");
+      expect(config.minDpi).toBeLessThanOrEqual(config.targetDpi);
+      expect(config.targetDpi).toBeLessThanOrEqual(config.maxDpi);
     });
   });
 
@@ -488,7 +490,8 @@ describe("ImagePreprocessingConfig", () => {
         maxDpi: 72,
       };
 
-      expect(config.minDpi).toBeGreaterThan(config.maxDpi!);
+      if (config.maxDpi == null) throw new Error("expected config.maxDpi to be defined");
+      expect(config.minDpi).toBeGreaterThan(config.maxDpi);
     });
   });
 });

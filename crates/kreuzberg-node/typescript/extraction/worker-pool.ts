@@ -183,7 +183,7 @@ export async function batchExtractFilesInWorker(
     paths,
     normalizedConfig,
   );
-  return rawResults.map(convertResult);
+  return rawResults.map((rawResult) => convertResult(rawResult));
 }
 
 /**

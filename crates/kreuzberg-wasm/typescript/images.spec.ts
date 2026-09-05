@@ -136,7 +136,7 @@ describe("Image Extraction Configuration (WASM Bindings)", () => {
 
     it("should allow null images config", () => {
       const config: ExtractionConfig = {
-        images: null as any,
+        images: null as unknown as ExtractionConfig["images"],
       };
 
       expect(config.images).toBeDefined();
@@ -531,7 +531,7 @@ describe("Image Extraction Configuration (WASM Bindings)", () => {
 
     it("should support null image config handling", () => {
       const config: ExtractionConfig = {
-        images: null as any,
+        images: null as unknown as ExtractionConfig["images"],
       };
 
       expect(config).toBeDefined();

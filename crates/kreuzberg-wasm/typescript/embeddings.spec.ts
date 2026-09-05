@@ -14,13 +14,39 @@
 
 import { beforeAll, describe, expect, it } from "vitest";
 import { extractBytes, extractBytesSync, initWasm } from "./index.js";
-import type { ExtractionConfig } from "./types.js";
+import type { ExtractionConfig, ExtractionResult } from "./types.js";
 
 /**
  * Calculate Euclidean norm (L2 magnitude) of a vector.
  */
 function calculateVectorNorm(vector: number[]): number {
   return Math.sqrt(vector.reduce((sum, val) => sum + val * val, 0));
+}
+
+/**
+ * Verify that every embedding in `chunks` shares the same dimension as `embeddingDimension`
+ * (once one has been observed), returning the (possibly newly observed) dimension.
+ */
+function assertConsistentEmbeddingDimension(
+  chunks: ExtractionResult["chunks"],
+  embeddingDimension: number | null,
+): number | null {
+  if (!chunks) {
+    return embeddingDimension;
+  }
+
+  let dimension = embeddingDimension;
+  for (const chunk of chunks) {
+    if (!chunk.embedding) {
+      continue;
+    }
+    if (dimension === null) {
+      dimension = chunk.embedding.length;
+    } else {
+      expect(chunk.embedding.length).toBe(dimension);
+    }
+  }
+  return dimension;
 }
 
 /**
@@ -422,19 +448,7 @@ describe("Embedding Generation (WASM Bindings)", () => {
       let embeddingDimension: number | null = null;
 
       for (const result of results) {
-        if (result.chunks && result.chunks.length > 0) {
-          for (const chunk of result.chunks) {
-            if (chunk.embedding) {
-              const dimension = chunk.embedding.length;
-
-              if (embeddingDimension === null) {
-                embeddingDimension = dimension;
-              } else {
-                expect(dimension).toBe(embeddingDimension);
-              }
-            }
-          }
-        }
+        embeddingDimension = assertConsistentEmbeddingDimension(result.chunks, embeddingDimension);
       }
     });
 

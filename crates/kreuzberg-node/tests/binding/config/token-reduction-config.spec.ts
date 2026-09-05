@@ -154,7 +154,7 @@ describe("TokenReductionConfig", () => {
 
     it("should handle null mode", () => {
       const config: TokenReductionConfig = {
-        mode: null as any,
+        mode: null as unknown as string,
       };
 
       expect(config.mode).toBeNull();
@@ -162,7 +162,7 @@ describe("TokenReductionConfig", () => {
 
     it("should handle null preserveImportantWords", () => {
       const config: TokenReductionConfig = {
-        preserveImportantWords: null as any,
+        preserveImportantWords: null as unknown as boolean,
       };
 
       expect(config.preserveImportantWords).toBeNull();
@@ -288,7 +288,7 @@ describe("TokenReductionConfig", () => {
 
     it("should handle mode with mixed case", () => {
       const config: TokenReductionConfig = {
-        mode: "AgGrEsSiVe" as any,
+        mode: "AgGrEsSiVe",
       };
 
       expect(config.mode).toBe("AgGrEsSiVe");
@@ -296,7 +296,7 @@ describe("TokenReductionConfig", () => {
 
     it("should handle mode with special characters", () => {
       const config: TokenReductionConfig = {
-        mode: "aggressive-v2" as any,
+        mode: "aggressive-v2",
       };
 
       expect(config.mode).toBe("aggressive-v2");

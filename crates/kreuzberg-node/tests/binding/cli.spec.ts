@@ -1,4 +1,4 @@
-import { spawnSync } from "node:child_process";
+import { type SpawnSyncReturns, spawnSync } from "node:child_process";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import which from "which";
 
@@ -216,7 +216,7 @@ describe("CLI", () => {
         stderr: Buffer.from("Command not found"),
         signal: null,
         error: new Error("spawn ENOENT"),
-      } as any);
+      } as SpawnSyncReturns<Buffer>);
 
       const result = spawnSync("/usr/local/bin/kreuzberg-cli", ["test"], {
         stdio: "inherit",

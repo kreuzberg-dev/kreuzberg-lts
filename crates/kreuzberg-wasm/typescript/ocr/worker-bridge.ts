@@ -146,7 +146,7 @@ async function createNodeWorker(wasmGluePath: string, wasmBinary: Uint8Array | u
   };
 }
 
-async function createBrowserWorker(wasmGluePath: string, wasmBinary: Uint8Array | undefined): Promise<void> {
+function createBrowserWorker(wasmGluePath: string, wasmBinary: Uint8Array | undefined): void {
   const workerUrl = new URL("./ocr-worker.js", import.meta.url);
   const worker = new Worker(workerUrl, { type: "module" });
 

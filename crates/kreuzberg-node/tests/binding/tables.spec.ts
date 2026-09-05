@@ -542,10 +542,10 @@ describe("Table Extraction Quality (Node.js Bindings)", () => {
             for (const cell of row) {
               expect(typeof cell).toBe("string");
 
-              if (!Number.isNaN(parseFloat(cell))) {
-                const parsed = parseFloat(cell);
-                expect(Number.isFinite(parsed)).toBe(true);
-              }
+              const parsed = parseFloat(cell);
+              if (Number.isNaN(parsed)) continue;
+
+              expect(Number.isFinite(parsed)).toBe(true);
             }
           }
         }

@@ -191,7 +191,7 @@ describe("TesseractConfig", () => {
 
     it("should handle null enableTableDetection", () => {
       const config: TesseractConfig = {
-        enableTableDetection: null as any,
+        enableTableDetection: null as unknown as boolean,
       };
 
       expect(config.enableTableDetection).toBeNull();

@@ -18,6 +18,9 @@ import { beforeAll, describe, expect, it } from "vitest";
 import { batchExtractBytes, batchExtractBytesSync, batchExtractFiles, initWasm } from "./index.js";
 import type { ExtractionConfig, ExtractionResult } from "./types.js";
 
+/** Input shape accepted by {@link batchExtractBytes} / {@link batchExtractBytesSync}. */
+type BatchBytesInput = Array<{ data: Uint8Array; mimeType: string }>;
+
 let samplePdfBytes: Uint8Array;
 let sampleTxtBytes: Uint8Array;
 
@@ -27,16 +30,12 @@ beforeAll(async () => {
   const pdfPath = new URL("../../../test_documents/test_fixtures/documents/pdf/simple.pdf", import.meta.url).pathname;
   try {
     samplePdfBytes = new Uint8Array(readFileSync(pdfPath));
-  } catch {
-    console.warn("Test PDF file not found");
-  }
+  } catch {}
 
   const txtPath = new URL("../../../test_documents/test_fixtures/documents/text/sample.txt", import.meta.url).pathname;
   try {
     sampleTxtBytes = new Uint8Array(readFileSync(txtPath));
-  } catch {
-    console.warn("Test text file not found");
-  }
+  } catch {}
 });
 
 describe("Batch Bytes Extraction (WASM Bindings)", () => {
@@ -134,7 +133,7 @@ describe("Batch Bytes Extraction (WASM Bindings)", () => {
 
     it("should require data property in file objects", () => {
       expect(() => {
-        batchExtractBytesSync([{ data: undefined, mimeType: "application/pdf" } as any]);
+        batchExtractBytesSync([{ data: undefined, mimeType: "application/pdf" }] as unknown as BatchBytesInput);
       }).toThrow();
     });
 
@@ -145,7 +144,7 @@ describe("Batch Bytes Extraction (WASM Bindings)", () => {
       }
 
       expect(() => {
-        batchExtractBytesSync([{ data: samplePdfBytes, mimeType: undefined } as any]);
+        batchExtractBytesSync([{ data: samplePdfBytes, mimeType: undefined }] as unknown as BatchBytesInput);
       }).toThrow();
     });
   });
@@ -233,7 +232,7 @@ describe("Batch Bytes Extraction (WASM Bindings)", () => {
 
       const files = [{ data: samplePdfBytes, mimeType: "application/pdf" }];
 
-      const largeBatch = Array(5).fill(files).flat();
+      const largeBatch = Array.from({ length: 5 }, () => [...files]).flat();
 
       const results = await batchExtractBytes(largeBatch);
 
@@ -275,7 +274,7 @@ describe("Batch Bytes Extraction (WASM Bindings)", () => {
 
     it("should reject invalid file objects async", async () => {
       await expect(async () => {
-        await batchExtractBytes([{ data: "not bytes", mimeType: "application/pdf" } as any]);
+        await batchExtractBytes([{ data: "not bytes", mimeType: "application/pdf" }] as unknown as BatchBytesInput);
       }).rejects.toThrow();
     });
   });
@@ -296,20 +295,20 @@ describe("Batch Bytes Extraction (WASM Bindings)", () => {
       expect(() => {
         batchExtractBytesSync([
           { data: samplePdfBytes, mimeType: "application/pdf" },
-          { data: "not uint8array" as any, mimeType: "text/plain" },
-        ]);
+          { data: "not uint8array", mimeType: "text/plain" },
+        ] as unknown as BatchBytesInput);
       }).toThrow();
     });
 
     it("should handle null files array", () => {
       expect(() => {
-        batchExtractBytesSync(null as any);
+        batchExtractBytesSync(null as unknown as BatchBytesInput);
       }).toThrow();
     });
 
     it("should handle invalid file object structure", () => {
       expect(() => {
-        batchExtractBytesSync([{ notData: new Uint8Array(), notMimeType: "pdf" } as any]);
+        batchExtractBytesSync([{ notData: new Uint8Array(), notMimeType: "pdf" }] as unknown as BatchBytesInput);
       }).toThrow();
     });
   });
@@ -446,13 +445,13 @@ describe("Batch File Extraction (WASM Bindings)", () => {
   describe("batch file extraction error handling", () => {
     it("should reject non-File objects", async () => {
       await expect(async () => {
-        await batchExtractFiles([{ name: "fake" } as any]);
+        await batchExtractFiles([{ name: "fake" }] as unknown as File[]);
       }).rejects.toThrow();
     });
 
     it("should handle null files array", async () => {
       await expect(async () => {
-        await batchExtractFiles(null as any);
+        await batchExtractFiles(null as unknown as File[]);
       }).rejects.toThrow();
     });
   });
@@ -483,7 +482,7 @@ describe("Batch Operations - Sync vs Async Consistency", () => {
     }
   });
 
-  it("should maintain result structure consistency across batches", async () => {
+  it("should maintain result structure consistency across batches", () => {
     if (!samplePdfBytes) {
       expect(true).toBe(true);
       return;

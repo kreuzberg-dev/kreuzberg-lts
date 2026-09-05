@@ -49,7 +49,6 @@ describe("Configuration Options", () => {
       } catch (e) {
         const errorMessage = e instanceof Error ? e.message : String(e);
         if (errorMessage.includes("Tesseract") && errorMessage.includes("Failed to initialize")) {
-          console.log("Skipping test: Tesseract OCR not available on this platform");
           return;
         }
         throw e;
@@ -74,7 +73,6 @@ describe("Configuration Options", () => {
       } catch (e) {
         const errorMessage = e instanceof Error ? e.message : String(e);
         if (errorMessage.includes("Tesseract") && errorMessage.includes("Failed to initialize")) {
-          console.log("Skipping test: Tesseract OCR not available on this platform");
           return;
         }
         throw e;
@@ -95,7 +93,6 @@ describe("Configuration Options", () => {
       } catch (e) {
         const errorMessage = e instanceof Error ? e.message : String(e);
         if (errorMessage.includes("Tesseract") && errorMessage.includes("Failed to initialize")) {
-          console.log("Skipping test: Tesseract OCR not available on this platform");
           return;
         }
         throw e;
@@ -374,7 +371,6 @@ describe("Configuration Options", () => {
       } catch (e) {
         const errorMessage = e instanceof Error ? e.message : String(e);
         if (errorMessage.includes("Tesseract") && errorMessage.includes("Failed to initialize")) {
-          console.log("Skipping test: Tesseract OCR not available on this platform");
           return;
         }
         throw e;
@@ -398,6 +394,83 @@ describe("Configuration Options", () => {
   describe("Config file loading", () => {
     const fixturesDir = join(process.cwd(), "tests", "fixtures");
 
+    function expectOcrSection(
+      config: ExtractionConfigType,
+      expected: { backend: string; language: string; psm: number; enableTableDetection: boolean; whitelist: string },
+    ) {
+      expect(config.ocr).toBeDefined();
+      expect(config.ocr?.backend).toBe(expected.backend);
+      expect(config.ocr?.language).toBe(expected.language);
+      expect(config.ocr?.tesseractConfig?.psm).toBe(expected.psm);
+      expect(config.ocr?.tesseractConfig?.enableTableDetection).toBe(expected.enableTableDetection);
+      expect(config.ocr?.tesseractConfig?.tesseditCharWhitelist).toBe(expected.whitelist);
+    }
+
+    function expectChunkingSection(config: ExtractionConfigType, expected: { maxChars: number; maxOverlap: number }) {
+      expect(config.chunking).toBeDefined();
+      expect(config.chunking?.maxChars).toBe(expected.maxChars);
+      expect(config.chunking?.maxOverlap).toBe(expected.maxOverlap);
+    }
+
+    function expectImagesSection(
+      config: ExtractionConfigType,
+      expected: {
+        extractImages: boolean;
+        targetDpi: number;
+        maxImageDimension: number;
+        autoAdjustDpi: boolean;
+        minDpi: number;
+        maxDpi: number;
+      },
+    ) {
+      expect(config.images).toBeDefined();
+      expect(config.images?.extractImages).toBe(expected.extractImages);
+      expect(config.images?.targetDpi).toBe(expected.targetDpi);
+      expect(config.images?.maxImageDimension).toBe(expected.maxImageDimension);
+      expect(config.images?.autoAdjustDpi).toBe(expected.autoAdjustDpi);
+      expect(config.images?.minDpi).toBe(expected.minDpi);
+      expect(config.images?.maxDpi).toBe(expected.maxDpi);
+    }
+
+    function expectPdfOptionsSection(
+      config: ExtractionConfigType,
+      expected: { extractImages: boolean; extractMetadata: boolean; passwords: string[] },
+    ) {
+      expect(config.pdfOptions).toBeDefined();
+      expect(config.pdfOptions?.extractImages).toBe(expected.extractImages);
+      expect(config.pdfOptions?.extractMetadata).toBe(expected.extractMetadata);
+      expect(config.pdfOptions?.passwords).toEqual(expected.passwords);
+    }
+
+    function expectTokenReductionSection(
+      config: ExtractionConfigType,
+      expected: { mode: string; preserveImportantWords: boolean },
+    ) {
+      expect(config.tokenReduction).toBeDefined();
+      expect(config.tokenReduction?.mode).toBe(expected.mode);
+      expect(config.tokenReduction?.preserveImportantWords).toBe(expected.preserveImportantWords);
+    }
+
+    function expectLanguageDetectionSection(
+      config: ExtractionConfigType,
+      expected: { enabled: boolean; minConfidence: number; detectMultiple: boolean },
+    ) {
+      expect(config.languageDetection).toBeDefined();
+      expect(config.languageDetection?.enabled).toBe(expected.enabled);
+      expect(config.languageDetection?.minConfidence).toBe(expected.minConfidence);
+      expect(config.languageDetection?.detectMultiple).toBe(expected.detectMultiple);
+    }
+
+    function expectPostprocessorSection(
+      config: ExtractionConfigType,
+      expected: { enabled: boolean; enabledProcessors: string[]; disabledProcessors: string[] },
+    ) {
+      expect(config.postprocessor).toBeDefined();
+      expect(config.postprocessor?.enabled).toBe(expected.enabled);
+      expect(config.postprocessor?.enabledProcessors).toEqual(expected.enabledProcessors);
+      expect(config.postprocessor?.disabledProcessors).toEqual(expected.disabledProcessors);
+    }
+
     it("should load config from TOML file", () => {
       const configPath = join(fixturesDir, "config.toml");
       const config = ExtractionConfig.fromFile(configPath);
@@ -408,43 +481,34 @@ describe("Configuration Options", () => {
       expect(config.forceOcr).toBe(false);
       expect(config.maxConcurrentExtractions).toBe(4);
 
-      expect(config.ocr).toBeDefined();
-      expect(config.ocr?.backend).toBe("tesseract");
-      expect(config.ocr?.language).toBe("eng");
-      expect(config.ocr?.tesseractConfig?.psm).toBe(6);
-      expect(config.ocr?.tesseractConfig?.enableTableDetection).toBe(true);
-      expect(config.ocr?.tesseractConfig?.tesseditCharWhitelist).toBe("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ");
-
-      expect(config.chunking).toBeDefined();
-      expect(config.chunking?.maxChars).toBe(1000);
-      expect(config.chunking?.maxOverlap).toBe(200);
-
-      expect(config.images).toBeDefined();
-      expect(config.images?.extractImages).toBe(true);
-      expect(config.images?.targetDpi).toBe(300);
-      expect(config.images?.maxImageDimension).toBe(4096);
-      expect(config.images?.autoAdjustDpi).toBe(true);
-      expect(config.images?.minDpi).toBe(72);
-      expect(config.images?.maxDpi).toBe(600);
-
-      expect(config.pdfOptions).toBeDefined();
-      expect(config.pdfOptions?.extractImages).toBe(true);
-      expect(config.pdfOptions?.extractMetadata).toBe(true);
-      expect(config.pdfOptions?.passwords).toEqual(["password1", "password2"]);
-
-      expect(config.tokenReduction).toBeDefined();
-      expect(config.tokenReduction?.mode).toBe("moderate");
-      expect(config.tokenReduction?.preserveImportantWords).toBe(true);
-
-      expect(config.languageDetection).toBeDefined();
-      expect(config.languageDetection?.enabled).toBe(true);
-      expect(config.languageDetection?.minConfidence).toBe(0.85);
-      expect(config.languageDetection?.detectMultiple).toBe(false);
-
-      expect(config.postprocessor).toBeDefined();
-      expect(config.postprocessor?.enabled).toBe(true);
-      expect(config.postprocessor?.enabledProcessors).toEqual(["processor1", "processor2"]);
-      expect(config.postprocessor?.disabledProcessors).toEqual(["processor3"]);
+      expectOcrSection(config, {
+        backend: "tesseract",
+        language: "eng",
+        psm: 6,
+        enableTableDetection: true,
+        whitelist: "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ",
+      });
+      expectChunkingSection(config, { maxChars: 1000, maxOverlap: 200 });
+      expectImagesSection(config, {
+        extractImages: true,
+        targetDpi: 300,
+        maxImageDimension: 4096,
+        autoAdjustDpi: true,
+        minDpi: 72,
+        maxDpi: 600,
+      });
+      expectPdfOptionsSection(config, {
+        extractImages: true,
+        extractMetadata: true,
+        passwords: ["password1", "password2"],
+      });
+      expectTokenReductionSection(config, { mode: "moderate", preserveImportantWords: true });
+      expectLanguageDetectionSection(config, { enabled: true, minConfidence: 0.85, detectMultiple: false });
+      expectPostprocessorSection(config, {
+        enabled: true,
+        enabledProcessors: ["processor1", "processor2"],
+        disabledProcessors: ["processor3"],
+      });
     });
 
     it("should load config from YAML file", () => {
@@ -457,43 +521,34 @@ describe("Configuration Options", () => {
       expect(config.forceOcr).toBe(true);
       expect(config.maxConcurrentExtractions).toBe(8);
 
-      expect(config.ocr).toBeDefined();
-      expect(config.ocr?.backend).toBe("tesseract");
-      expect(config.ocr?.language).toBe("deu");
-      expect(config.ocr?.tesseractConfig?.psm).toBe(3);
-      expect(config.ocr?.tesseractConfig?.enableTableDetection).toBe(false);
-      expect(config.ocr?.tesseractConfig?.tesseditCharWhitelist).toBe("0123456789");
-
-      expect(config.chunking).toBeDefined();
-      expect(config.chunking?.maxChars).toBe(500);
-      expect(config.chunking?.maxOverlap).toBe(100);
-
-      expect(config.images).toBeDefined();
-      expect(config.images?.extractImages).toBe(false);
-      expect(config.images?.targetDpi).toBe(150);
-      expect(config.images?.maxImageDimension).toBe(2048);
-      expect(config.images?.autoAdjustDpi).toBe(false);
-      expect(config.images?.minDpi).toBe(100);
-      expect(config.images?.maxDpi).toBe(300);
-
-      expect(config.pdfOptions).toBeDefined();
-      expect(config.pdfOptions?.extractImages).toBe(false);
-      expect(config.pdfOptions?.extractMetadata).toBe(false);
-      expect(config.pdfOptions?.passwords).toEqual(["test123", "secret456"]);
-
-      expect(config.tokenReduction).toBeDefined();
-      expect(config.tokenReduction?.mode).toBe("aggressive");
-      expect(config.tokenReduction?.preserveImportantWords).toBe(false);
-
-      expect(config.languageDetection).toBeDefined();
-      expect(config.languageDetection?.enabled).toBe(false);
-      expect(config.languageDetection?.minConfidence).toBe(0.7);
-      expect(config.languageDetection?.detectMultiple).toBe(true);
-
-      expect(config.postprocessor).toBeDefined();
-      expect(config.postprocessor?.enabled).toBe(false);
-      expect(config.postprocessor?.enabledProcessors).toEqual([]);
-      expect(config.postprocessor?.disabledProcessors).toEqual(["processor1", "processor2"]);
+      expectOcrSection(config, {
+        backend: "tesseract",
+        language: "deu",
+        psm: 3,
+        enableTableDetection: false,
+        whitelist: "0123456789",
+      });
+      expectChunkingSection(config, { maxChars: 500, maxOverlap: 100 });
+      expectImagesSection(config, {
+        extractImages: false,
+        targetDpi: 150,
+        maxImageDimension: 2048,
+        autoAdjustDpi: false,
+        minDpi: 100,
+        maxDpi: 300,
+      });
+      expectPdfOptionsSection(config, {
+        extractImages: false,
+        extractMetadata: false,
+        passwords: ["test123", "secret456"],
+      });
+      expectTokenReductionSection(config, { mode: "aggressive", preserveImportantWords: false });
+      expectLanguageDetectionSection(config, { enabled: false, minConfidence: 0.7, detectMultiple: true });
+      expectPostprocessorSection(config, {
+        enabled: false,
+        enabledProcessors: [],
+        disabledProcessors: ["processor1", "processor2"],
+      });
     });
 
     it("should use loaded config for extraction", () => {

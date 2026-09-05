@@ -138,5 +138,7 @@ export function createTempFile(
  * Sleep for specified milliseconds (useful for async tests).
  */
 export function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
 }

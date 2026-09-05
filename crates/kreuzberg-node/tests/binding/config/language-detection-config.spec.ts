@@ -180,7 +180,7 @@ describe("LanguageDetectionConfig", () => {
 
     it("should handle null minConfidence", () => {
       const config: LanguageDetectionConfig = {
-        minConfidence: null as any,
+        minConfidence: null as unknown as number,
       };
 
       expect(config.minConfidence).toBeNull();

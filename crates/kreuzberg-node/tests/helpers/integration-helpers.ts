@@ -169,13 +169,13 @@ export function assertImageMetadata(metadata: Metadata): void {
     return;
   }
 
-  expect(typeof (metadata as any).width).toBe("number");
-  expect(typeof (metadata as any).height).toBe("number");
-  expect((metadata as any).width).toBeGreaterThan(0);
-  expect((metadata as any).height).toBeGreaterThan(0);
+  expect(typeof metadata.width).toBe("number");
+  expect(typeof metadata.height).toBe("number");
+  expect(metadata.width).toBeGreaterThan(0);
+  expect(metadata.height).toBeGreaterThan(0);
 
-  if ((metadata as any).format) {
-    expect(typeof (metadata as any).format).toBe("string");
+  if (metadata.format) {
+    expect(typeof metadata.format).toBe("string");
   }
 }
 
@@ -196,13 +196,13 @@ export function assertOcrResult(result: ExtractionResult, expectedWords: string[
   expect(foundWords.length).toBeGreaterThan(0);
 
   if (result.metadata.ocr) {
-    const metadata: any = result.metadata;
-    if (metadata.confidence !== undefined) {
-      expect(metadata.confidence).toBeGreaterThanOrEqual(0.0);
-      expect(metadata.confidence).toBeLessThanOrEqual(1.0);
+    const confidence = (result.metadata as unknown as Record<string, unknown>)["confidence"];
+    if (typeof confidence === "number") {
+      expect(confidence).toBeGreaterThanOrEqual(0.0);
+      expect(confidence).toBeLessThanOrEqual(1.0);
 
       if (foundWords.length > 0) {
-        expect(metadata.confidence).toBeGreaterThanOrEqual(minConfidence);
+        expect(confidence).toBeGreaterThanOrEqual(minConfidence);
       }
     }
   }
@@ -262,7 +262,7 @@ export function assertMarkdownConversion(result: ExtractionResult): void {
  * @param files - Map of file paths to file contents (string or Buffer)
  * @returns Promise resolving to ZIP archive as Uint8Array
  */
-export async function createZip(files: Record<string, string | Buffer | Uint8Array>): Promise<Uint8Array> {
+export function createZip(files: Record<string, string | Buffer | Uint8Array>): Promise<Uint8Array> {
   return new Promise<Uint8Array>((resolve, reject) => {
     const archive = archiver("zip", { zlib: { level: 9 } });
     const chunks: Buffer[] = [];
@@ -297,7 +297,7 @@ export async function createZip(files: Record<string, string | Buffer | Uint8Arr
  * @param files - Map of file paths to file contents (string or Buffer)
  * @returns Promise resolving to TAR archive as Uint8Array
  */
-export async function createTar(files: Record<string, string | Buffer | Uint8Array>): Promise<Uint8Array> {
+export function createTar(files: Record<string, string | Buffer | Uint8Array>): Promise<Uint8Array> {
   return new Promise<Uint8Array>((resolve, reject) => {
     const archive = archiver("tar", {});
     const chunks: Buffer[] = [];

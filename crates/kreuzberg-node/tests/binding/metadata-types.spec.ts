@@ -696,9 +696,10 @@ describe("Metadata Types - Type Compatibility Tests", () => {
         structuredData: [],
       };
 
-      expect((htmlMetadata as any).ogTitle).toBeUndefined();
-      expect((htmlMetadata as any).ogDescription).toBeUndefined();
-      expect((htmlMetadata as any).twitterTitle).toBeUndefined();
+      const untypedMetadata = htmlMetadata as unknown as Record<string, unknown>;
+      expect(untypedMetadata.ogTitle).toBeUndefined();
+      expect(untypedMetadata.ogDescription).toBeUndefined();
+      expect(untypedMetadata.twitterTitle).toBeUndefined();
 
       const keys = Object.keys(htmlMetadata);
       expect(keys).not.toContain("ogTitle");

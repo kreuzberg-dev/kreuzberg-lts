@@ -50,7 +50,12 @@ class WorkerSimulator {
     }
 
     this.processing = true;
-    const { data } = this.messageQueue.shift()!;
+    const next = this.messageQueue.shift();
+    if (!next) {
+      this.processing = false;
+      return;
+    }
+    const { data } = next;
 
     setTimeout(() => {
       if (!this.terminated) {
@@ -206,17 +211,13 @@ describe("Worker Threading", () => {
     });
 
     it("should handle rapid worker spawning without race conditions", async () => {
-      const spawnPromises: Promise<WorkerSimulator>[] = [];
-
-      for (let i = 0; i < 10; i++) {
-        spawnPromises.push(
-          Promise.resolve().then(() => {
-            const worker = new WorkerSimulator();
-            workers.push(worker);
-            return worker;
-          }),
-        );
-      }
+      const spawnPromises: Promise<WorkerSimulator>[] = Array.from({ length: 10 }, () =>
+        Promise.resolve().then(() => {
+          const worker = new WorkerSimulator();
+          workers.push(worker);
+          return worker;
+        }),
+      );
 
       const spawnedWorkers = await Promise.all(spawnPromises);
       expect(spawnedWorkers).toHaveLength(10);
@@ -352,7 +353,9 @@ describe("Worker Threading", () => {
 
       worker.terminate();
 
-      await new Promise((resolve) => setTimeout(resolve, 50));
+      await new Promise((resolve) => {
+        setTimeout(resolve, 50);
+      });
 
       expect(messageProcessed).toBe(false);
     });
@@ -475,7 +478,7 @@ describe("Worker Threading", () => {
       expect(new Set(results).size).toBe(4);
     });
 
-    it("should handle worker capacity overflow gracefully during concurrent load", async () => {
+    it("should handle worker capacity overflow gracefully during concurrent load", () => {
       const worker = new WorkerSimulator(10, 3);
       workers.push(worker);
 

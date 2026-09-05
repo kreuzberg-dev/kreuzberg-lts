@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { ExtractionConfig, OcrConfig } from "../../src/types.js";
+import type { ExtractionConfig, OcrConfig, TesseractConfig } from "../../src/types.js";
 
 describe("OcrConfig", () => {
   describe("construction", () => {
@@ -177,7 +177,7 @@ describe("OcrConfig", () => {
     it("should handle null tesseractConfig", () => {
       const config: OcrConfig = {
         backend: "tesseract",
-        tesseractConfig: null as any,
+        tesseractConfig: null as unknown as TesseractConfig,
       };
 
       expect(config.tesseractConfig).toBeNull();

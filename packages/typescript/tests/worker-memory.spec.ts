@@ -10,6 +10,16 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 /**
+ * Narrows a possibly-undefined worker lookup to a defined worker or throws.
+ */
+function requireWorker<T>(worker: T | undefined, id: string): T {
+  if (!worker) {
+    throw new Error(`Worker not found: ${id}`);
+  }
+  return worker;
+}
+
+/**
  * Memory statistics for a worker
  */
 interface MemoryStats {
@@ -280,7 +290,7 @@ describe("Worker Memory Management", () => {
 
   describe("Memory Allocation", () => {
     it("should allocate buffers in workers", () => {
-      const worker = poolManager.getWorker(workerIds[0])!;
+      const worker = requireWorker(poolManager.getWorker(workerIds[0]), workerIds[0]);
 
       const buffer = worker.allocateBuffer(1024);
 
@@ -289,7 +299,7 @@ describe("Worker Memory Management", () => {
     });
 
     it("should track allocation count", () => {
-      const worker = poolManager.getWorker(workerIds[0])!;
+      const worker = requireWorker(poolManager.getWorker(workerIds[0]), workerIds[0]);
 
       worker.allocateBuffer(512);
       worker.allocateBuffer(1024);
@@ -300,7 +310,7 @@ describe("Worker Memory Management", () => {
     });
 
     it("should calculate total memory usage", () => {
-      const worker = poolManager.getWorker(workerIds[0])!;
+      const worker = requireWorker(poolManager.getWorker(workerIds[0]), workerIds[0]);
 
       worker.allocateBuffer(1024);
       worker.allocateBuffer(512);
@@ -310,7 +320,7 @@ describe("Worker Memory Management", () => {
     });
 
     it("should prevent allocation on terminated worker", () => {
-      const worker = poolManager.getWorker(workerIds[0])!;
+      const worker = requireWorker(poolManager.getWorker(workerIds[0]), workerIds[0]);
 
       worker.terminate();
 
@@ -320,7 +330,7 @@ describe("Worker Memory Management", () => {
     });
 
     it("should track buffer count", () => {
-      const worker = poolManager.getWorker(workerIds[0])!;
+      const worker = requireWorker(poolManager.getWorker(workerIds[0]), workerIds[0]);
 
       worker.allocateBuffer(512);
       worker.allocateBuffer(1024);
@@ -329,7 +339,7 @@ describe("Worker Memory Management", () => {
     });
 
     it("should handle large buffer allocation", () => {
-      const worker = poolManager.getWorker(workerIds[0])!;
+      const worker = requireWorker(poolManager.getWorker(workerIds[0]), workerIds[0]);
       const largeSize = 10 * 1024 * 1024;
 
       const buffer = worker.allocateBuffer(largeSize);
@@ -341,7 +351,7 @@ describe("Worker Memory Management", () => {
 
   describe("Memory Deallocation", () => {
     it("should deallocate buffers correctly", () => {
-      const worker = poolManager.getWorker(workerIds[0])!;
+      const worker = requireWorker(poolManager.getWorker(workerIds[0]), workerIds[0]);
 
       const buffer = worker.allocateBuffer(1024);
       expect(worker.getBufferCount()).toBe(1);
@@ -354,7 +364,7 @@ describe("Worker Memory Management", () => {
     });
 
     it("should track deallocation count accurately", () => {
-      const worker = poolManager.getWorker(workerIds[0])!;
+      const worker = requireWorker(poolManager.getWorker(workerIds[0]), workerIds[0]);
 
       const buf1 = worker.allocateBuffer(512);
       const buf2 = worker.allocateBuffer(512);
@@ -369,7 +379,7 @@ describe("Worker Memory Management", () => {
     });
 
     it("should reduce memory usage on deallocation", () => {
-      const worker = poolManager.getWorker(workerIds[0])!;
+      const worker = requireWorker(poolManager.getWorker(workerIds[0]), workerIds[0]);
 
       const buf1 = worker.allocateBuffer(1024);
       const buf2 = worker.allocateBuffer(512);
@@ -383,7 +393,7 @@ describe("Worker Memory Management", () => {
     });
 
     it("should handle deallocation of non-existent buffers safely", () => {
-      const worker = poolManager.getWorker(workerIds[0])!;
+      const worker = requireWorker(poolManager.getWorker(workerIds[0]), workerIds[0]);
 
       const buf1 = worker.allocateBuffer(512);
       const unknownBuffer = new ArrayBuffer(512);
@@ -398,7 +408,7 @@ describe("Worker Memory Management", () => {
     });
 
     it("should detect memory leaks by tracking allocated vs deallocated", () => {
-      const worker = poolManager.getWorker(workerIds[0])!;
+      const worker = requireWorker(poolManager.getWorker(workerIds[0]), workerIds[0]);
 
       const buf1 = worker.allocateBuffer(512);
       const buf2 = worker.allocateBuffer(512);
@@ -420,12 +430,12 @@ describe("Worker Memory Management", () => {
       poolManager.createSharedBuffer("shared-data", 4096);
 
       for (const id of workerIds) {
-        const worker = poolManager.getWorker(id)!;
+        const worker = requireWorker(poolManager.getWorker(id), id);
         expect(worker.getSharedBufferCount()).toBe(1);
       }
 
       for (const id of workerIds) {
-        const worker = poolManager.getWorker(id)!;
+        const worker = requireWorker(poolManager.getWorker(id), id);
         expect(() => {
           worker.accessSharedBuffer("shared-data", "read");
         }).not.toThrow();
@@ -435,9 +445,9 @@ describe("Worker Memory Management", () => {
     it("should support multiple workers accessing same shared buffer concurrently", () => {
       poolManager.createSharedBuffer("shared-data", 1024);
 
-      const worker1 = poolManager.getWorker(workerIds[0])!;
-      const worker2 = poolManager.getWorker(workerIds[1])!;
-      const worker3 = poolManager.getWorker(workerIds[2])!;
+      const worker1 = requireWorker(poolManager.getWorker(workerIds[0]), workerIds[0]);
+      const worker2 = requireWorker(poolManager.getWorker(workerIds[1]), workerIds[1]);
+      const worker3 = requireWorker(poolManager.getWorker(workerIds[2]), workerIds[2]);
 
       expect(() => {
         worker1.accessSharedBuffer("shared-data", "read");
@@ -448,7 +458,7 @@ describe("Worker Memory Management", () => {
 
     it("should create typed views with correct data types", () => {
       poolManager.createSharedBuffer("shared-data", 1024);
-      const worker = poolManager.getWorker(workerIds[0])!;
+      const worker = requireWorker(poolManager.getWorker(workerIds[0]), workerIds[0]);
 
       const uint8View = worker.createView("shared-data", "uint8", 0, 64);
       const int32View = worker.createView("shared-data", "int32", 64, 32);
@@ -465,8 +475,8 @@ describe("Worker Memory Management", () => {
     it("should track access patterns to identify contention", () => {
       poolManager.createSharedBuffer("shared-data", 1024);
 
-      const worker1 = poolManager.getWorker(workerIds[0])!;
-      const worker2 = poolManager.getWorker(workerIds[1])!;
+      const worker1 = requireWorker(poolManager.getWorker(workerIds[0]), workerIds[0]);
+      const worker2 = requireWorker(poolManager.getWorker(workerIds[1]), workerIds[1]);
 
       worker1.accessSharedBuffer("shared-data", "write");
       worker2.accessSharedBuffer("shared-data", "read");
@@ -484,8 +494,8 @@ describe("Worker Memory Management", () => {
     it("should maintain chronological access order", () => {
       poolManager.createSharedBuffer("data", 1024);
 
-      const worker1 = poolManager.getWorker(workerIds[0])!;
-      const worker2 = poolManager.getWorker(workerIds[1])!;
+      const worker1 = requireWorker(poolManager.getWorker(workerIds[0]), workerIds[0]);
+      const worker2 = requireWorker(poolManager.getWorker(workerIds[1]), workerIds[1]);
 
       worker1.accessSharedBuffer("data", "write");
       worker2.accessSharedBuffer("data", "read");
@@ -510,7 +520,7 @@ describe("Worker Memory Management", () => {
       poolManager.createSharedBuffer("buffer-b", 1024);
       poolManager.createSharedBuffer("buffer-c", 2048);
 
-      const worker = poolManager.getWorker(workerIds[0])!;
+      const worker = requireWorker(poolManager.getWorker(workerIds[0]), workerIds[0]);
 
       expect(worker.getSharedBufferCount()).toBe(3);
 
@@ -524,8 +534,8 @@ describe("Worker Memory Management", () => {
 
   describe("Memory Pooling Behavior", () => {
     it("should track pool-wide memory usage", () => {
-      const worker1 = poolManager.getWorker(workerIds[0])!;
-      const worker2 = poolManager.getWorker(workerIds[1])!;
+      const worker1 = requireWorker(poolManager.getWorker(workerIds[0]), workerIds[0]);
+      const worker2 = requireWorker(poolManager.getWorker(workerIds[1]), workerIds[1]);
 
       worker1.allocateBuffer(1024);
       worker2.allocateBuffer(2048);
@@ -535,8 +545,8 @@ describe("Worker Memory Management", () => {
     });
 
     it("should provide pool memory statistics", () => {
-      const worker1 = poolManager.getWorker(workerIds[0])!;
-      const worker2 = poolManager.getWorker(workerIds[1])!;
+      const worker1 = requireWorker(poolManager.getWorker(workerIds[0]), workerIds[0]);
+      const worker2 = requireWorker(poolManager.getWorker(workerIds[1]), workerIds[1]);
 
       worker1.allocateBuffer(512);
       worker1.allocateBuffer(512);
@@ -550,8 +560,8 @@ describe("Worker Memory Management", () => {
     });
 
     it("should calculate pool-wide leak detection", () => {
-      const worker1 = poolManager.getWorker(workerIds[0])!;
-      const worker2 = poolManager.getWorker(workerIds[1])!;
+      const worker1 = requireWorker(poolManager.getWorker(workerIds[0]), workerIds[0]);
+      const worker2 = requireWorker(poolManager.getWorker(workerIds[1]), workerIds[1]);
 
       const buf1 = worker1.allocateBuffer(512);
       const buf2 = worker1.allocateBuffer(512);
@@ -564,9 +574,9 @@ describe("Worker Memory Management", () => {
     });
 
     it("should track buffer distribution across pool", () => {
-      const worker1 = poolManager.getWorker(workerIds[0])!;
-      const worker2 = poolManager.getWorker(workerIds[1])!;
-      const worker3 = poolManager.getWorker(workerIds[2])!;
+      const worker1 = requireWorker(poolManager.getWorker(workerIds[0]), workerIds[0]);
+      const worker2 = requireWorker(poolManager.getWorker(workerIds[1]), workerIds[1]);
+      const worker3 = requireWorker(poolManager.getWorker(workerIds[2]), workerIds[2]);
 
       worker1.allocateBuffer(512);
       worker1.allocateBuffer(512);
@@ -581,8 +591,8 @@ describe("Worker Memory Management", () => {
 
   describe("Memory Isolation", () => {
     it("should keep worker buffers completely isolated", () => {
-      const worker1 = poolManager.getWorker(workerIds[0])!;
-      const worker2 = poolManager.getWorker(workerIds[1])!;
+      const worker1 = requireWorker(poolManager.getWorker(workerIds[0]), workerIds[0]);
+      const worker2 = requireWorker(poolManager.getWorker(workerIds[1]), workerIds[1]);
 
       const buf1 = worker1.allocateBuffer(1024);
       const buf2 = worker2.allocateBuffer(1024);
@@ -595,8 +605,8 @@ describe("Worker Memory Management", () => {
     });
 
     it("should prevent cross-worker buffer manipulation", () => {
-      const worker1 = poolManager.getWorker(workerIds[0])!;
-      const worker2 = poolManager.getWorker(workerIds[1])!;
+      const worker1 = requireWorker(poolManager.getWorker(workerIds[0]), workerIds[0]);
+      const worker2 = requireWorker(poolManager.getWorker(workerIds[1]), workerIds[1]);
 
       const buffer = worker1.allocateBuffer(512);
       expect(worker1.getBufferCount()).toBe(1);
@@ -613,8 +623,8 @@ describe("Worker Memory Management", () => {
     });
 
     it("should maintain independent allocation/deallocation stats per worker", () => {
-      const worker1 = poolManager.getWorker(workerIds[0])!;
-      const worker2 = poolManager.getWorker(workerIds[1])!;
+      const worker1 = requireWorker(poolManager.getWorker(workerIds[0]), workerIds[0]);
+      const worker2 = requireWorker(poolManager.getWorker(workerIds[1]), workerIds[1]);
 
       worker1.allocateBuffer(1024);
       worker2.allocateBuffer(2048);
@@ -633,8 +643,8 @@ describe("Worker Memory Management", () => {
     });
 
     it("should not allow one worker to affect another's memory statistics", () => {
-      const worker1 = poolManager.getWorker(workerIds[0])!;
-      const worker2 = poolManager.getWorker(workerIds[1])!;
+      const worker1 = requireWorker(poolManager.getWorker(workerIds[0]), workerIds[0]);
+      const worker2 = requireWorker(poolManager.getWorker(workerIds[1]), workerIds[1]);
 
       const buf1a = worker1.allocateBuffer(256);
       const buf1b = worker1.allocateBuffer(256);
@@ -660,7 +670,7 @@ describe("Worker Memory Management", () => {
 
   describe("Cleanup and Termination", () => {
     it("should clear buffers on worker termination", () => {
-      const worker = poolManager.getWorker(workerIds[0])!;
+      const worker = requireWorker(poolManager.getWorker(workerIds[0]), workerIds[0]);
 
       worker.allocateBuffer(512);
       worker.allocateBuffer(1024);
@@ -674,7 +684,7 @@ describe("Worker Memory Management", () => {
     it("should clear shared memory on pool termination", () => {
       poolManager.createSharedBuffer("shared", 1024);
 
-      const worker = poolManager.getWorker(workerIds[0])!;
+      const worker = requireWorker(poolManager.getWorker(workerIds[0]), workerIds[0]);
       expect(worker.getSharedBufferCount()).toBe(1);
 
       poolManager.terminatePool();
@@ -683,8 +693,8 @@ describe("Worker Memory Management", () => {
     });
 
     it("should reflect termination in pool stats", () => {
-      const worker1 = poolManager.getWorker(workerIds[0])!;
-      const worker2 = poolManager.getWorker(workerIds[1])!;
+      const worker1 = requireWorker(poolManager.getWorker(workerIds[0]), workerIds[0]);
+      const worker2 = requireWorker(poolManager.getWorker(workerIds[1]), workerIds[1]);
 
       worker1.allocateBuffer(1024);
       worker2.allocateBuffer(1024);

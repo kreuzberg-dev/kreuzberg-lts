@@ -324,18 +324,18 @@ describe("batchExtractBytes - comprehensive async tests", () => {
 describe("Extraction function argument validation", () => {
   it("extractBytesSync should validate Uint8Array argument", () => {
     expect(() => {
-      extractBytesSync("not a uint8array" as any, "application/pdf");
+      extractBytesSync("not a uint8array", "application/pdf");
     }).toThrow();
   });
 
   it("batchExtractBytesSync should validate Uint8Array array", () => {
     expect(() => {
-      batchExtractBytesSync(["not uint8array"] as any, ["application/pdf"]);
+      batchExtractBytesSync(["not uint8array"] as unknown as Uint8Array[], ["application/pdf"]);
     }).toThrow();
   });
 
   it("extractBytes should validate Uint8Array argument", async () => {
-    await expect(extractBytes("not a uint8array" as any, "application/pdf")).rejects.toThrow();
+    await expect(extractBytes("not a uint8array", "application/pdf")).rejects.toThrow();
   });
 
   it("batchExtractBytes should validate Uint8Array array length", async () => {

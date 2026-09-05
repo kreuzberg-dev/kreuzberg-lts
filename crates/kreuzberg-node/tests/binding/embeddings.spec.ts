@@ -25,6 +25,22 @@ function calculateVectorNorm(vector: number[]): number {
 }
 
 /**
+ * Helper function to assert a chunk embedding vector has a valid shape, dimension, and values.
+ */
+function expectValidEmbeddingVector(embedding: number[]): void {
+  expect(Array.isArray(embedding)).toBe(true);
+  expect(embedding.length).toBeGreaterThan(0);
+
+  const validDimensions = [384, 512, 768, 1024, 256, 1536];
+  expect(validDimensions).toContain(embedding.length);
+
+  for (const value of embedding) {
+    expect(typeof value).toBe("number");
+    expect(Number.isFinite(value)).toBe(true);
+  }
+}
+
+/**
  * Helper function to calculate cosine similarity between two vectors.
  */
 function cosineSimilarity(vec1: number[], vec2: number[]): number {
@@ -78,22 +94,13 @@ describe("Embedding Vector Generation (Node.js Bindings)", () => {
 
       if (result.chunks && result.chunks.length > 0) {
         for (const chunk of result.chunks) {
-          if (chunk.embeddings) {
-            expect(Array.isArray(chunk.embeddings)).toBe(true);
-            expect(chunk.embeddings.length).toBeGreaterThan(0);
+          if (!chunk.embeddings) continue;
 
-            for (const embedding of chunk.embeddings) {
-              expect(Array.isArray(embedding)).toBe(true);
-              expect(embedding.length).toBeGreaterThan(0);
+          expect(Array.isArray(chunk.embeddings)).toBe(true);
+          expect(chunk.embeddings.length).toBeGreaterThan(0);
 
-              const validDimensions = [384, 512, 768, 1024, 256, 1536];
-              expect(validDimensions).toContain(embedding.length);
-
-              for (const value of embedding) {
-                expect(typeof value).toBe("number");
-                expect(Number.isFinite(value)).toBe(true);
-              }
-            }
+          for (const embedding of chunk.embeddings) {
+            expectValidEmbeddingVector(embedding);
           }
         }
       }
@@ -404,17 +411,17 @@ describe("Embedding Vector Generation (Node.js Bindings)", () => {
       let embeddingDimension: number | null = null;
 
       for (const result of results) {
-        if (result.chunks && result.chunks.length > 0) {
-          for (const chunk of result.chunks) {
-            if (chunk.embeddings && chunk.embeddings.length > 0) {
-              const dimension = chunk.embeddings[0].length;
+        if (!result.chunks || result.chunks.length === 0) continue;
 
-              if (embeddingDimension === null) {
-                embeddingDimension = dimension;
-              } else {
-                expect(dimension).toBe(embeddingDimension);
-              }
-            }
+        for (const chunk of result.chunks) {
+          if (!chunk.embeddings || chunk.embeddings.length === 0) continue;
+
+          const dimension = chunk.embeddings[0].length;
+
+          if (embeddingDimension === null) {
+            embeddingDimension = dimension;
+          } else {
+            expect(dimension).toBe(embeddingDimension);
           }
         }
       }

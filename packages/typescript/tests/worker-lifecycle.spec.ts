@@ -11,6 +11,16 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 /**
+ * Narrows a possibly-undefined worker lookup to a defined worker or throws.
+ */
+function requireWorker<T>(worker: T | undefined, id: string): T {
+  if (!worker) {
+    throw new Error(`Worker not found: ${id}`);
+  }
+  return worker;
+}
+
+/**
  * Represents worker state throughout its lifecycle
  */
 interface WorkerState {
@@ -82,10 +92,12 @@ class LifecycleWorker {
   }
 
   on(event: string, callback: (...args: unknown[]) => unknown): void {
-    if (!this.eventListeners.has(event)) {
-      this.eventListeners.set(event, new Set());
+    let listeners = this.eventListeners.get(event);
+    if (!listeners) {
+      listeners = new Set();
+      this.eventListeners.set(event, listeners);
     }
-    this.eventListeners.get(event)!.add(callback);
+    listeners.add(callback);
   }
 
   off(event: string, callback: (...args: unknown[]) => unknown): void {
@@ -101,8 +113,8 @@ class LifecycleWorker {
       for (const listener of listeners) {
         try {
           listener(data);
-        } catch (error) {
-          console.error(`Error in ${event} listener:`, error);
+        } catch {
+          // Swallow listener errors so one failing listener doesn't block the rest. ~keep
         }
       }
     }
@@ -205,7 +217,7 @@ describe("Worker Lifecycle", () => {
       const [id] = pool.spawn(1);
       workerIds.push(id);
 
-      const worker = pool.getWorker(id)!;
+      const worker = requireWorker(pool.getWorker(id), id);
       const state = worker.getState();
 
       expect(state.initialized).toBe(true);
@@ -220,7 +232,7 @@ describe("Worker Lifecycle", () => {
       workerIds.push(id);
       const afterCreation = Date.now();
 
-      const worker = pool.getWorker(id)!;
+      const worker = requireWorker(pool.getWorker(id), id);
       const createdAt = worker.getState().createdAt;
 
       expect(createdAt).toBeGreaterThanOrEqual(beforeCreation);
@@ -231,7 +243,7 @@ describe("Worker Lifecycle", () => {
       const ids = pool.spawn(3);
       workerIds.push(...ids);
 
-      const workers = ids.map((id) => pool.getWorker(id)!);
+      const workers = ids.map((id) => requireWorker(pool.getWorker(id), id));
 
       for (const worker of workers) {
         expect(worker.getState().initialized).toBe(true);
@@ -246,7 +258,7 @@ describe("Worker Lifecycle", () => {
       const ids = new Set([id1, id2, id3]);
       expect(ids.size).toBe(3);
 
-      const workers = [id1, id2, id3].map((id) => pool.getWorker(id)!);
+      const workers = [id1, id2, id3].map((id) => requireWorker(pool.getWorker(id), id));
       const uniqueWorkers = new Set(workers);
       expect(uniqueWorkers.size).toBe(3);
     });
@@ -255,7 +267,7 @@ describe("Worker Lifecycle", () => {
       const [id] = pool.spawn(1);
       workerIds.push(id);
 
-      const worker = pool.getWorker(id)!;
+      const worker = requireWorker(pool.getWorker(id), id);
       expect(worker.getMessageQueueLength()).toBe(0);
     });
   });
@@ -264,7 +276,7 @@ describe("Worker Lifecycle", () => {
     it("should transition to processing on message", async () => {
       const [id] = pool.spawn(1);
       workerIds.push(id);
-      const worker = pool.getWorker(id)!;
+      const worker = requireWorker(pool.getWorker(id), id);
 
       expect(worker.getState().processing).toBe(false);
 
@@ -283,7 +295,7 @@ describe("Worker Lifecycle", () => {
     it("should remain ready after message processing", async () => {
       const [id] = pool.spawn(1);
       workerIds.push(id);
-      const worker = pool.getWorker(id)!;
+      const worker = requireWorker(pool.getWorker(id), id);
 
       await new Promise<void>((resolve) => {
         worker.on("message", () => resolve());
@@ -297,7 +309,7 @@ describe("Worker Lifecycle", () => {
     it("should transition to terminated on terminate call", () => {
       const [id] = pool.spawn(1);
       workerIds.push(id);
-      const worker = pool.getWorker(id)!;
+      const worker = requireWorker(pool.getWorker(id), id);
 
       expect(worker.getState().terminated).toBe(false);
       expect(worker.isReady()).toBe(true);
@@ -311,7 +323,7 @@ describe("Worker Lifecycle", () => {
     it("should not accept messages after termination", () => {
       const [id] = pool.spawn(1);
       workerIds.push(id);
-      const worker = pool.getWorker(id)!;
+      const worker = requireWorker(pool.getWorker(id), id);
 
       worker.terminate();
 
@@ -323,9 +335,11 @@ describe("Worker Lifecycle", () => {
     it("should track idle duration changes through activity", async () => {
       const [id] = pool.spawn(1);
       workerIds.push(id);
-      const worker = pool.getWorker(id)!;
+      const worker = requireWorker(pool.getWorker(id), id);
 
-      await new Promise((resolve) => setTimeout(resolve, 50));
+      await new Promise((resolve) => {
+        setTimeout(resolve, 50);
+      });
       const initialIdleDuration = worker.getIdleDuration();
 
       await new Promise<void>((resolve) => {
@@ -333,7 +347,9 @@ describe("Worker Lifecycle", () => {
         worker.postMessage("test");
       });
 
-      await new Promise((resolve) => setTimeout(resolve, 1));
+      await new Promise((resolve) => {
+        setTimeout(resolve, 1);
+      });
       const idleDurationAfterActivity = worker.getIdleDuration();
 
       expect(idleDurationAfterActivity).toBeLessThan(initialIdleDuration);
@@ -343,10 +359,10 @@ describe("Worker Lifecycle", () => {
   });
 
   describe("Resource Management", () => {
-    it("should clean up message queue on termination", async () => {
+    it("should clean up message queue on termination", () => {
       const [id] = pool.spawn(1);
       workerIds.push(id);
-      const worker = pool.getWorker(id)!;
+      const worker = requireWorker(pool.getWorker(id), id);
 
       worker.postMessage("msg1");
       worker.postMessage("msg2");
@@ -360,7 +376,7 @@ describe("Worker Lifecycle", () => {
     it("should prevent listener registration after termination", () => {
       const [id] = pool.spawn(1);
       workerIds.push(id);
-      const worker = pool.getWorker(id)!;
+      const worker = requireWorker(pool.getWorker(id), id);
 
       const listener = vi.fn();
       worker.on("message", listener);
@@ -380,7 +396,7 @@ describe("Worker Lifecycle", () => {
     it("should support event listener removal and not invoke removed listeners", async () => {
       const [id] = pool.spawn(1);
       workerIds.push(id);
-      const worker = pool.getWorker(id)!;
+      const worker = requireWorker(pool.getWorker(id), id);
 
       const listener = vi.fn();
       worker.on("message", listener);
@@ -397,7 +413,7 @@ describe("Worker Lifecycle", () => {
     it("should invoke all registered listeners on message event", async () => {
       const [id] = pool.spawn(1);
       workerIds.push(id);
-      const worker = pool.getWorker(id)!;
+      const worker = requireWorker(pool.getWorker(id), id);
 
       const listener1 = vi.fn();
       const listener2 = vi.fn();
@@ -420,7 +436,7 @@ describe("Worker Lifecycle", () => {
     it("should track uptime monotonically across operations", async () => {
       const [id] = pool.spawn(1);
       workerIds.push(id);
-      const worker = pool.getWorker(id)!;
+      const worker = requireWorker(pool.getWorker(id), id);
 
       const uptime1 = worker.getUptime();
 
@@ -444,7 +460,7 @@ describe("Worker Lifecycle", () => {
 
       expect(pool.getActiveWorkerCount()).toBe(5);
 
-      const worker = pool.getWorker(ids[0])!;
+      const worker = requireWorker(pool.getWorker(ids[0]), ids[0]);
       worker.terminate();
 
       expect(pool.getActiveWorkerCount()).toBe(4);
@@ -460,7 +476,7 @@ describe("Worker Lifecycle", () => {
       expect(stats.terminated).toBe(0);
       expect(stats.ready).toBe(5);
 
-      pool.getWorker(ids[0])!.terminate();
+      requireWorker(pool.getWorker(ids[0]), ids[0]).terminate();
 
       stats = pool.getPoolStats();
       expect(stats.total).toBe(5);
@@ -480,7 +496,7 @@ describe("Worker Lifecycle", () => {
       expect(stats.terminated).toBe(3);
 
       for (const id of ids) {
-        const worker = pool.getWorker(id)!;
+        const worker = requireWorker(pool.getWorker(id), id);
         expect(worker.getState().terminated).toBe(true);
       }
     });
@@ -490,7 +506,7 @@ describe("Worker Lifecycle", () => {
     it("should initialize in ready state", () => {
       const [id] = pool.spawn(1);
       workerIds.push(id);
-      const worker = pool.getWorker(id)!;
+      const worker = requireWorker(pool.getWorker(id), id);
 
       expect(worker.isReady()).toBe(true);
       expect(worker.getState().initialized).toBe(true);
@@ -500,7 +516,7 @@ describe("Worker Lifecycle", () => {
     it("should emit message event when receiving messages", async () => {
       const [id] = pool.spawn(1);
       workerIds.push(id);
-      const worker = pool.getWorker(id)!;
+      const worker = requireWorker(pool.getWorker(id), id);
 
       const messageHandler = vi.fn();
       worker.on("message", messageHandler);
@@ -517,7 +533,7 @@ describe("Worker Lifecycle", () => {
     it("should emit terminate event on termination", () => {
       const [id] = pool.spawn(1);
       workerIds.push(id);
-      const worker = pool.getWorker(id)!;
+      const worker = requireWorker(pool.getWorker(id), id);
 
       const terminateHandler = vi.fn();
       worker.on("terminate", terminateHandler);
@@ -527,10 +543,10 @@ describe("Worker Lifecycle", () => {
       expect(terminateHandler).toHaveBeenCalled();
     });
 
-    it("should handle errors in event listeners gracefully", async () => {
+    it("should handle errors in event listeners gracefully", () => {
       const [id] = pool.spawn(1);
       workerIds.push(id);
-      const worker = pool.getWorker(id)!;
+      const worker = requireWorker(pool.getWorker(id), id);
 
       const throwingListener = vi.fn(() => {
         throw new Error("Listener error");
@@ -553,7 +569,7 @@ describe("Worker Lifecycle", () => {
     it("should complete initialize-use-terminate cycle", async () => {
       const [id] = pool.spawn(1);
       workerIds.push(id);
-      const worker = pool.getWorker(id)!;
+      const worker = requireWorker(pool.getWorker(id), id);
 
       expect(worker.getState().initialized).toBe(true);
 
@@ -571,7 +587,7 @@ describe("Worker Lifecycle", () => {
     it("should handle multiple use cycles before termination", async () => {
       const [id] = pool.spawn(1);
       workerIds.push(id);
-      const worker = pool.getWorker(id)!;
+      const worker = requireWorker(pool.getWorker(id), id);
 
       for (let i = 0; i < 3; i++) {
         await new Promise<void>((resolve) => {
@@ -591,13 +607,15 @@ describe("Worker Lifecycle", () => {
       workerIds.push(...ids);
 
       const [id1, id2] = ids;
-      const worker1 = pool.getWorker(id1)!;
-      const worker2 = pool.getWorker(id2)!;
+      const worker1 = requireWorker(pool.getWorker(id1), id1);
+      const worker2 = requireWorker(pool.getWorker(id2), id2);
 
       const uptime1Before = worker1.getUptime();
       const uptime2Before = worker2.getUptime();
 
-      await new Promise((resolve) => setTimeout(resolve, 50));
+      await new Promise((resolve) => {
+        setTimeout(resolve, 50);
+      });
 
       const uptime1After = worker1.getUptime();
       const uptime2After = worker2.getUptime();

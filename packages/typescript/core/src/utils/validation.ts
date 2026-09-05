@@ -9,15 +9,18 @@
  * and is exposed through crates/kreuzberg-node/src/lib.rs
  */
 
-let nativeModule: Record<string, any>;
+type NativeModule = Record<string, (...args: unknown[]) => unknown>;
 
-function getNativeModule(): Record<string, any> {
+let nativeModule: NativeModule;
+
+function getNativeModule(): NativeModule {
   if (!nativeModule) {
     try {
       nativeModule = require("kreuzberg-node");
     } catch (error) {
       throw new Error(
         `Unable to load native kreuzberg-node module: ${error instanceof Error ? error.message : String(error)}`,
+        { cause: error },
       );
     }
   }
@@ -56,7 +59,7 @@ function createValidator<T>(rule: ValidationRule<T>): (value: T) => void {
  * @param paramCount Number of parameters to validate
  * @returns A validator function that throws on invalid input
  */
-function createMultiParamValidator<T extends any[]>(
+function createMultiParamValidator<T extends unknown[]>(
   rule: ValidationRule<T>,
   _paramCount: number,
 ): (...args: T) => void {
@@ -351,7 +354,7 @@ export const validateChunkingParams = createMultiParamValidator(VALIDATION_RULES
  */
 export async function getValidBinarizationMethods(): Promise<string[]> {
   const getter = getNativeModule()["getValidBinarizationMethods"];
-  return getter();
+  return (await getter()) as string[];
 }
 
 /**
@@ -369,7 +372,7 @@ export async function getValidBinarizationMethods(): Promise<string[]> {
  */
 export async function getValidLanguageCodes(): Promise<string[]> {
   const getter = getNativeModule()["getValidLanguageCodes"];
-  return getter();
+  return (await getter()) as string[];
 }
 
 /**
@@ -387,7 +390,7 @@ export async function getValidLanguageCodes(): Promise<string[]> {
  */
 export async function getValidOcrBackends(): Promise<string[]> {
   const getter = getNativeModule()["getValidOcrBackends"];
-  return getter();
+  return (await getter()) as string[];
 }
 
 /**
@@ -405,5 +408,5 @@ export async function getValidOcrBackends(): Promise<string[]> {
  */
 export async function getValidTokenReductionLevels(): Promise<string[]> {
   const getter = getNativeModule()["getValidTokenReductionLevels"];
-  return getter();
+  return (await getter()) as string[];
 }

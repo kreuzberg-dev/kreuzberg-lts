@@ -96,28 +96,28 @@ describe("FFI Boundary Tests", () => {
       const data = encoder.encode(text);
 
       expect(() => {
-        extractFileSync("test.txt", data as any, null);
+        extractFileSync("test.txt", data as unknown as string, null);
       }).toThrow();
     });
 
     it("should reject null file paths (sync)", () => {
       expect(() => {
-        extractFileSync(null as any, null, null);
+        extractFileSync(null as unknown as string, null, null);
       }).toThrow();
     });
 
     it("should reject null file paths (async)", async () => {
-      await expect(extractFile(null as any, null, null)).rejects.toThrow();
+      await expect(extractFile(null as unknown as string, null, null)).rejects.toThrow();
     });
 
     it("should reject null byte arrays (sync)", () => {
       expect(() => {
-        extractBytesSync(null as any, "text/plain", null);
+        extractBytesSync(null as unknown as Uint8Array, "text/plain", null);
       }).toThrow();
     });
 
     it("should reject null byte arrays (async)", async () => {
-      await expect(extractBytes(null as any, "text/plain", null)).rejects.toThrow();
+      await expect(extractBytes(null as unknown as Uint8Array, "text/plain", null)).rejects.toThrow();
     });
   });
 
@@ -182,34 +182,34 @@ describe("FFI Boundary Tests", () => {
   describe("Type conversion errors", () => {
     it("should reject invalid buffer types (sync)", () => {
       expect(() => {
-        extractBytesSync("not a buffer" as any, "text/plain", null);
+        extractBytesSync("not a buffer", "text/plain", null);
       }).toThrow();
     });
 
     it("should reject invalid buffer types (async)", async () => {
-      await expect(extractBytes("not a buffer" as any, "text/plain", null)).rejects.toThrow();
+      await expect(extractBytes("not a buffer", "text/plain", null)).rejects.toThrow();
     });
 
     it("should reject array instead of Uint8Array (sync)", () => {
       expect(() => {
-        extractBytesSync([1, 2, 3] as any, "text/plain", null);
+        extractBytesSync([1, 2, 3] as unknown as Uint8Array, "text/plain", null);
       }).toThrow();
     });
 
     it("should reject array instead of Uint8Array (async)", async () => {
-      await expect(extractBytes([1, 2, 3] as any, "text/plain", null)).rejects.toThrow();
+      await expect(extractBytes([1, 2, 3] as unknown as Uint8Array, "text/plain", null)).rejects.toThrow();
     });
 
     it("should reject invalid MIME type format (sync)", () => {
       const data = new Uint8Array([1, 2, 3]);
       expect(() => {
-        extractBytesSync(data, 123 as any, null);
+        extractBytesSync(data, 123 as unknown as string, null);
       }).toThrow();
     });
 
     it("should reject invalid MIME type format (async)", async () => {
       const data = new Uint8Array([1, 2, 3]);
-      await expect(extractBytes(data, 123 as any, null)).rejects.toThrow();
+      await expect(extractBytes(data, 123 as unknown as string, null)).rejects.toThrow();
     });
   });
 

@@ -211,7 +211,7 @@ export class TesseractWasmBackend implements OcrBackendProtocol {
       this.loadedLanguages.clear();
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      throw new Error(`Failed to initialize TesseractWasmBackend: ${message}`);
+      throw new Error(`Failed to initialize TesseractWasmBackend: ${message}`, { cause: error });
     }
   }
 
@@ -296,7 +296,7 @@ export class TesseractWasmBackend implements OcrBackendProtocol {
       };
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      throw new Error(`OCR processing failed for language "${language}": ${message}`);
+      throw new Error(`OCR processing failed for language "${language}": ${message}`, { cause: error });
     } finally {
       this.reportProgress(100);
     }
@@ -318,7 +318,7 @@ export class TesseractWasmBackend implements OcrBackendProtocol {
    * await backend.shutdown(); // Clean up resources
    * ```
    */
-  async shutdown(): Promise<void> {
+  shutdown(): void {
     try {
       if (this.client) {
         if (typeof this.client.destroy === "function") {
@@ -384,7 +384,9 @@ export class TesseractWasmBackend implements OcrBackendProtocol {
       await this.client.loadModel(modelUrl);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      throw new Error(`Failed to load model for language "${language}" from ${modelUrl}: ${message}`);
+      throw new Error(`Failed to load model for language "${language}" from ${modelUrl}: ${message}`, {
+        cause: error,
+      });
     }
   }
 
@@ -421,7 +423,7 @@ export class TesseractWasmBackend implements OcrBackendProtocol {
       return imageBitmap;
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      throw new Error(`Failed to convert image bytes to ImageBitmap: ${message}`);
+      throw new Error(`Failed to convert image bytes to ImageBitmap: ${message}`, { cause: error });
     }
   }
 
@@ -483,6 +485,7 @@ export class TesseractWasmBackend implements OcrBackendProtocol {
       const message = error instanceof Error ? error.message : String(error);
       throw new Error(
         `Failed to import tesseract-wasm. Ensure it is installed via: npm install tesseract-wasm. Error: ${message}`,
+        { cause: error },
       );
     }
   }

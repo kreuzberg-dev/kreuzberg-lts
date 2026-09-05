@@ -117,7 +117,6 @@ describe("Edge Cases and Coverage", () => {
       } catch (e) {
         const errorMessage = e instanceof Error ? e.message : String(e);
         if (errorMessage.includes("Tesseract") && errorMessage.includes("Failed to initialize")) {
-          console.log("Skipping test: Tesseract OCR not available on this platform");
           return;
         }
         throw e;

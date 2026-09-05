@@ -26,7 +26,9 @@ class AsyncWordCountProcessor implements PostProcessorProtocol {
   }
 
   async process(result: ExtractionResult): Promise<ExtractionResult> {
-    await new Promise((resolve) => setTimeout(resolve, 10));
+    await new Promise((resolve) => {
+      setTimeout(resolve, 10);
+    });
 
     const wordCount = result.content.split(/\s+/).filter((w) => w).length;
     result.metadata.async_word_count = wordCount;
@@ -103,7 +105,9 @@ class AsyncErrorProcessor implements PostProcessorProtocol {
   }
 
   async process(_result: ExtractionResult): Promise<ExtractionResult> {
-    await new Promise((resolve) => setTimeout(resolve, 5));
+    await new Promise((resolve) => {
+      setTimeout(resolve, 5);
+    });
     throw new Error("Async processor error");
   }
 }
@@ -116,7 +120,9 @@ class ChainedAsyncProcessor implements PostProcessorProtocol {
   }
 
   async process(result: ExtractionResult): Promise<ExtractionResult> {
-    await new Promise((resolve) => setTimeout(resolve, 5));
+    await new Promise((resolve) => {
+      setTimeout(resolve, 5);
+    });
 
     this.counter++;
     result.metadata.chain_count = this.counter;
@@ -313,7 +319,9 @@ describe("Async PostProcessor Support", () => {
               return `async_proc_${i}`;
             }
             async process(result: ExtractionResult) {
-              await new Promise((resolve) => setTimeout(resolve, 10));
+              await new Promise((resolve) => {
+                setTimeout(resolve, 10);
+              });
               result.metadata[`proc_${i}_executed`] = true;
               return result;
             }
@@ -324,15 +332,11 @@ describe("Async PostProcessor Support", () => {
         registerPostProcessor(p);
       }
 
-      const start = Date.now();
       const result = await extractBytes(Buffer.from("Concurrent test"), "text/plain");
-      const duration = Date.now() - start;
 
       for (let i = 0; i < 5; i++) {
         expect(result.metadata[`proc_${i}_executed`]).toBe(true);
       }
-
-      console.log(`Concurrent execution took ${duration}ms`);
     });
   });
 

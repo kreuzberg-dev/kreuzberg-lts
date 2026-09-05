@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { ExtractionConfig } from "../../src/types.js";
+import type { ExtractionConfig, OcrConfig } from "../../src/types.js";
 
 describe("ExtractionConfig", () => {
   describe("construction", () => {
@@ -125,7 +125,7 @@ describe("ExtractionConfig", () => {
 
     it("should handle null OCR config", () => {
       const config: ExtractionConfig = {
-        ocr: null as any,
+        ocr: null as unknown as OcrConfig,
       };
 
       expect(config.ocr).toBeNull();

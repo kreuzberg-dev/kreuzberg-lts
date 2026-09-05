@@ -254,7 +254,7 @@ export async function enableOcr(): Promise<void> {
     );
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    throw new Error(`Failed to enable OCR: ${message}`);
+    throw new Error(`Failed to enable OCR: ${message}`, { cause: error });
   }
 }
 
@@ -291,7 +291,7 @@ function registerBackendInRustRegistry(wasm: ReturnType<typeof getWasmModule>, b
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     if (!msg.toLowerCase().includes("already registered")) {
-      throw new Error(`Failed to register OCR backend in the Rust plugin registry: ${msg}`);
+      throw new Error(`Failed to register OCR backend in the Rust plugin registry: ${msg}`, { cause: err });
     }
   }
 }

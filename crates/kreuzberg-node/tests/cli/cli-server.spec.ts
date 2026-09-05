@@ -57,7 +57,9 @@ describeServer("CLI Server Commands", () => {
     });
 
     try {
-      await new Promise((resolve) => setTimeout(resolve, 5000));
+      await new Promise((resolve) => {
+        setTimeout(resolve, 5000);
+      });
 
       const healthResponse = await fetch(`http://127.0.0.1:${port}/health`);
       expect(healthResponse.status).toBe(200);
@@ -104,7 +106,9 @@ language = "eng"
     });
 
     try {
-      await new Promise((resolve) => setTimeout(resolve, 5000));
+      await new Promise((resolve) => {
+        setTimeout(resolve, 5000);
+      });
 
       const response = await fetch(`http://127.0.0.1:${port}/health`);
       expect(response.status).toBe(200);
@@ -132,7 +136,9 @@ language = "eng"
     });
 
     try {
-      await new Promise((resolve) => setTimeout(resolve, 5000));
+      await new Promise((resolve) => {
+        setTimeout(resolve, 5000);
+      });
 
       const testContent = "Hello, Kreuzberg API from TypeScript!";
       const formData = new FormData();

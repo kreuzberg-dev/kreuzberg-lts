@@ -229,8 +229,8 @@ describe("ImageExtractionConfig", () => {
 
     it("should handle null values", () => {
       const config: ImageExtractionConfig = {
-        extractImages: null as any,
-        targetDpi: null as any,
+        extractImages: null as unknown as boolean,
+        targetDpi: null as unknown as number,
       };
 
       expect(config.extractImages).toBeNull();
@@ -363,7 +363,8 @@ describe("ImageExtractionConfig", () => {
         maxDpi: 300,
       };
 
-      expect(config.minDpi).toBeLessThan(config.maxDpi!);
+      if (config.maxDpi == null) throw new Error("expected config.maxDpi to be defined");
+      expect(config.minDpi).toBeLessThan(config.maxDpi);
     });
 
     it("should handle equal minDpi and maxDpi", () => {
@@ -440,7 +441,8 @@ describe("ImageExtractionConfig", () => {
         maxDpi: 72,
       };
 
-      expect(config.minDpi).toBeGreaterThan(config.maxDpi!);
+      if (config.maxDpi == null) throw new Error("expected config.maxDpi to be defined");
+      expect(config.minDpi).toBeGreaterThan(config.maxDpi);
     });
   });
 });

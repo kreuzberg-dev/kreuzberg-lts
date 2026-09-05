@@ -259,13 +259,13 @@ describe("unregisterOcrBackend", () => {
         return ["en"];
       }
 
-      async processImage(_imageBytes: Uint8Array, _language: string) {
-        return {
+      processImage(_imageBytes: Uint8Array, _language: string) {
+        return Promise.resolve({
           content: "test",
           mime_type: "text/plain",
           metadata: {},
           tables: [],
-        };
+        });
       }
     }
 
@@ -296,12 +296,13 @@ describe("clearOcrBackends", () => {
     const customBackend: OcrBackendProtocol = {
       name: () => "test_clear_backend",
       supportedLanguages: () => ["en"],
-      processImage: async (_imageBytes: Uint8Array, _language: string) => ({
-        content: "test",
-        mime_type: "text/plain",
-        metadata: {},
-        tables: [],
-      }),
+      processImage: (_imageBytes: Uint8Array, _language: string) =>
+        Promise.resolve({
+          content: "test",
+          mime_type: "text/plain",
+          metadata: {},
+          tables: [],
+        }),
     };
 
     registerOcrBackend(customBackend);

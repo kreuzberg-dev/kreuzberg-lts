@@ -16,7 +16,7 @@
 
 import { readFileSync, realpathSync } from "node:fs";
 import { beforeAll, describe, expect, it } from "vitest";
-import { extractBytesSync, extractFileSync } from "../../dist/index.js";
+import { extractBytesSync, extractFile, extractFileSync } from "../../dist/index.js";
 import type { ExtractedImage, ExtractionConfig } from "../../src/types.js";
 import { getTestDocumentPath } from "../helpers/index.js";
 
@@ -531,7 +531,7 @@ describe("Image Extraction (Node.js Bindings)", () => {
         },
       };
 
-      const result = extractFileSync(samplePdfPath, config);
+      const result = await extractFile(samplePdfPath, config);
 
       expect(result).toBeDefined();
       expect(result.images).toBeDefined();

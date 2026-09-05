@@ -34,6 +34,9 @@ class MockWasmModule {
    * Initialize the WASM module
    */
   async init(): Promise<void> {
+    // Real await so an already-initialized throw is a promise rejection, matching the WASM
+    // boundary this mock stands in for. ~keep
+    await Promise.resolve();
     if (this.initialized) {
       throw new Error("WASM module already initialized");
     }
@@ -110,6 +113,9 @@ class MockWasmModule {
    * Simulate file reading with various error conditions
    */
   async readFile(path: string, mimeType: string): Promise<Uint8Array> {
+    // Real await so every throw below is a promise rejection, matching the WASM boundary
+    // this mock stands in for. ~keep
+    await Promise.resolve();
     if (!path || path.length === 0) {
       throw new Error("File path cannot be empty");
     }
@@ -141,6 +147,9 @@ class MockWasmModule {
    * Simulate async extraction with timeout behavior
    */
   async extract(data: Uint8Array, config: unknown, timeoutMs?: number): Promise<unknown> {
+    // Real await so validateConfig's synchronous throw is a promise rejection, matching the
+    // WASM boundary this mock stands in for. ~keep
+    await Promise.resolve();
     const DEFAULT_TIMEOUT = 30000;
     const timeout = timeoutMs ?? DEFAULT_TIMEOUT;
 
@@ -329,7 +338,7 @@ describe("error-handling: Malformed Document Handling", () => {
     await expect(wasmModule.readFile("corrupted_images.pdf", "application/pdf")).rejects.toThrow(/corrupted/i);
   });
 
-  it("should throw error for invalid document structure", async () => {
+  it("should throw error for invalid document structure", () => {
     expect(() => {
       wasmModule.validateConfig(null);
     }).toThrow(/must be an object/i);
@@ -413,7 +422,7 @@ describe("error-handling: WASM Initialization Errors", () => {
     await expect(wasmModule.init()).rejects.toThrow(/already initialized/i);
   });
 
-  it("should initialize module successfully on first call", async () => {
+  it("should initialize module successfully on first call", () => {
     const wasmModule = new MockWasmModule();
 
     expect(() => {
@@ -430,7 +439,7 @@ describe("error-handling: Complex Error Scenarios", () => {
     await wasmModule.init();
   });
 
-  it("should handle cascading validation errors", async () => {
+  it("should handle cascading validation errors", () => {
     const config: ExtractionConfig = {
       chunking: { maxChars: -100 },
       images: { targetDpi: -50 } as ImageExtractionConfig,
@@ -496,7 +505,7 @@ describe("error-handling: WASM Worker Errors", () => {
     await expect(wasmModule.extract(data, config, 5)).rejects.toThrow(/timeout/i);
   });
 
-  it("should handle serialization errors in worker messages", async () => {
+  it("should handle serialization errors in worker messages", () => {
     const config: ExtractionConfig = {
       useCache: true,
       chunking: {
@@ -536,7 +545,7 @@ describe("error-handling: WASM Boundary Transfer Errors", () => {
     await wasmModule.init();
   });
 
-  it("should handle transfer of oversized documents", async () => {
+  it("should handle transfer of oversized documents", () => {
     const hugeData = new Uint8Array(512 * 1024 * 1024 + 1);
     const config: ExtractionConfig = {};
 
@@ -545,7 +554,7 @@ describe("error-handling: WASM Boundary Transfer Errors", () => {
     expect(promise).toBeInstanceOf(Promise);
   });
 
-  it("should handle null or undefined data gracefully", async () => {
+  it("should handle null or undefined data gracefully", () => {
     const config: ExtractionConfig = {};
 
     expect(() => {
@@ -598,10 +607,12 @@ describe("error-handling: WASM-Specific Resource Limits", () => {
   it("should handle concurrent memory allocations", () => {
     const allocations = [];
 
+    const allocateOneMegabyte = () => {
+      wasmModule.allocateMemory(1024 * 1024);
+    };
+
     for (let i = 0; i < 5; i++) {
-      expect(() => {
-        wasmModule.allocateMemory(1024 * 1024);
-      }).not.toThrow();
+      expect(allocateOneMegabyte).not.toThrow();
       allocations.push(1024 * 1024);
     }
 
@@ -641,7 +652,7 @@ describe("error-handling: WASM-Specific Resource Limits", () => {
 });
 
 describe("error-handling: WASM Module State Errors", () => {
-  it("should prevent operations on uninitialized module", async () => {
+  it("should prevent operations on uninitialized module", () => {
     const wasmModule = new MockWasmModule();
 
     const config: ExtractionConfig = {};

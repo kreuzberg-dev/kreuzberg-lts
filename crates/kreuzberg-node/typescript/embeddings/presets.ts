@@ -135,7 +135,7 @@ export function embedSync(texts: string[], config?: EmbeddingConfig): number[][]
  * console.log(embeddings[0].length); // 768
  * ```
  */
-export async function embed(texts: string[], config?: EmbeddingConfig): Promise<number[][]> {
+export function embed(texts: string[], config?: EmbeddingConfig): Promise<number[][]> {
   const binding = getBinding();
   return binding.embed(texts, (config ?? null) as Record<string, unknown> | null);
 }

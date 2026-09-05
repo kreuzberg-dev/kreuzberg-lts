@@ -197,7 +197,7 @@ export function loadNativeBinding(): NativeBinding {
 
   if (typeof loadedModule !== "object" || loadedModule === null) {
     throw new Error(
-      "Native binding is not a valid object. " + "Ensure the native module is properly built and compatible.",
+      "Native binding is not a valid object. Ensure the native module is properly built and compatible.",
     );
   }
 

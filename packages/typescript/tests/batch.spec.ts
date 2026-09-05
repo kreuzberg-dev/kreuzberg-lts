@@ -29,7 +29,9 @@ class MockBatchExtractor {
    * Extract a single document, simulating async operation
    */
   async extractFile(filePath: string, config?: ExtractionConfig): Promise<ExtractionResult> {
-    await new Promise((resolve) => setTimeout(resolve, this.processingDelay));
+    await new Promise((resolve) => {
+      setTimeout(resolve, this.processingDelay);
+    });
 
     if (Math.random() < this.failureRate) {
       throw new Error(`Failed to extract ${filePath}`);
@@ -83,7 +85,7 @@ class MockBatchExtractor {
   /**
    * Extract multiple documents concurrently
    */
-  async batchExtractConcurrent(
+  batchExtractConcurrent(
     filePaths: string[],
     config?: ExtractionConfig,
     concurrency = 3,
