@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [Unreleased]
+
+### Fixed
+
+- **CSV extraction dropped its header-value embedding-quality rendering.** `content` fell back to a flat, space-separated table dump instead of the `Row N:` / `Header: Value` pairs added for embedding/search quality, after CSV was migrated onto the generic `InternalDocument`+`Table` pipeline. Restored in `crates/kreuzberg/src/extractors/csv.rs`.
+- **DOCX nested lists rendered flat, with no indentation.** Word nests list items under a single `numId` and uses `w:ilvl` to mark depth, but `build_internal_document` only opened a new list container on `numId` changes and ignored `ilvl` entirely — every level under one list collapsed into a single unindented list. Fixed with a level-tracking stack in `crates/kreuzberg/src/extractors/docx.rs`.
+
 ## [4.10.3] - 2026-09-05
 
 ### Fixed

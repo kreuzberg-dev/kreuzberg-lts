@@ -287,8 +287,11 @@ fn build_internal_document(doc: &crate::extraction::docx::parser::Document) -> I
 
     let mut builder = InternalDocumentBuilder::new("docx");
 
-    let mut current_list_numbering_id: Option<i64> = None;
-    let mut current_list_ordered: bool = false;
+    // (numbering_id, ilvl, ordered) for each currently open nested list, outermost first.
+    // Word nests list items under one numId by incrementing `w:ilvl`, not by starting a
+    // new numId per level, so tracking numId alone (as this used to) collapsed every
+    // level under the same list into one flat, unindented list (#5).
+    let mut list_stack: Vec<(i64, i64, bool)> = Vec::new();
 
     for element in &doc.elements {
         match element {
@@ -298,9 +301,8 @@ fn build_internal_document(doc: &crate::extraction::docx::parser::Document) -> I
                 let (text, annotations, math_formulas) = collect_run_annotations(&paragraph.runs);
 
                 if text.is_empty() && math_formulas.is_empty() {
-                    if current_list_numbering_id.is_some() {
+                    while list_stack.pop().is_some() {
                         builder.end_list();
-                        current_list_numbering_id = None;
                     }
                     continue;
                 }
@@ -317,9 +319,8 @@ fn build_internal_document(doc: &crate::extraction::docx::parser::Document) -> I
                 });
 
                 let element_idx: Option<u32> = if let Some(level) = heading_level {
-                    if current_list_numbering_id.is_some() {
+                    while list_stack.pop().is_some() {
                         builder.end_list();
-                        current_list_numbering_id = None;
                     }
                     let heading_text = if text.is_empty() {
                         paragraph.runs_to_markdown()
@@ -332,9 +333,8 @@ fn build_internal_document(doc: &crate::extraction::docx::parser::Document) -> I
                     }
                     Some(idx)
                 } else if is_quote_style {
-                    if current_list_numbering_id.is_some() {
+                    while list_stack.pop().is_some() {
                         builder.end_list();
-                        current_list_numbering_id = None;
                     }
                     builder.push_quote_start();
                     let para_idx = builder.push_paragraph(&text, annotations.clone(), None, None);
@@ -345,29 +345,41 @@ fn build_internal_document(doc: &crate::extraction::docx::parser::Document) -> I
                         builder.push_formula(formula, None, None);
                     }
                     if !text.is_empty() {
-                        let is_ordered = paragraph
-                            .numbering_id
-                            .zip(paragraph.numbering_level)
-                            .and_then(|(nid, nlvl)| doc.numbering_defs.get(&(nid, nlvl)))
+                        let nlvl = paragraph.numbering_level.unwrap_or(0);
+                        let is_ordered = doc
+                            .numbering_defs
+                            .get(&(nid, nlvl))
                             .is_some_and(|lt| *lt == crate::extraction::docx::parser::ListType::Numbered);
-                        if current_list_numbering_id != Some(nid) {
-                            if current_list_numbering_id.is_some() {
+
+                        // Close nested lists deeper than this item's level.
+                        while list_stack.last().is_some_and(|&(_, top_level, _)| top_level > nlvl) {
+                            list_stack.pop();
+                            builder.end_list();
+                        }
+
+                        let same_list = list_stack
+                            .last()
+                            .is_some_and(|&(top_nid, top_level, _)| top_nid == nid && top_level == nlvl);
+
+                        if !same_list {
+                            // A different list starting at a depth already open: close it first.
+                            if list_stack.last().is_some_and(|&(_, top_level, _)| top_level == nlvl) {
+                                list_stack.pop();
                                 builder.end_list();
                             }
                             builder.push_list(is_ordered);
-                            current_list_numbering_id = Some(nid);
-                            current_list_ordered = is_ordered;
+                            list_stack.push((nid, nlvl, is_ordered));
                         }
-                        let li_idx =
-                            builder.push_list_item(&text, current_list_ordered, annotations.clone(), None, None);
+
+                        let current_ordered = list_stack.last().map(|&(_, _, ordered)| ordered).unwrap_or(is_ordered);
+                        let li_idx = builder.push_list_item(&text, current_ordered, annotations.clone(), None, None);
                         Some(li_idx)
                     } else {
                         None
                     }
                 } else {
-                    if current_list_numbering_id.is_some() {
+                    while list_stack.pop().is_some() {
                         builder.end_list();
-                        current_list_numbering_id = None;
                     }
                     for formula in &math_formulas {
                         builder.push_formula(formula, None, None);
@@ -415,9 +427,8 @@ fn build_internal_document(doc: &crate::extraction::docx::parser::Document) -> I
                 }
             }
             crate::extraction::docx::parser::DocumentElement::Table(idx) => {
-                if current_list_numbering_id.is_some() {
+                while list_stack.pop().is_some() {
                     builder.end_list();
-                    current_list_numbering_id = None;
                 }
                 let table = &doc.tables[*idx];
                 if let Some(ref props) = table.properties
@@ -473,9 +484,8 @@ fn build_internal_document(doc: &crate::extraction::docx::parser::Document) -> I
                     continue;
                 }
 
-                if current_list_numbering_id.is_some() {
+                while list_stack.pop().is_some() {
                     builder.end_list();
-                    current_list_numbering_id = None;
                 }
                 let description = drawing.doc_properties.as_ref().and_then(|dp| dp.description.clone());
 
@@ -519,7 +529,7 @@ fn build_internal_document(doc: &crate::extraction::docx::parser::Document) -> I
         }
     }
 
-    if current_list_numbering_id.is_some() {
+    while list_stack.pop().is_some() {
         builder.end_list();
     }
 
