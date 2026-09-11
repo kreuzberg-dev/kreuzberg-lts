@@ -8,6 +8,7 @@
 #![cfg(feature = "office")]
 
 use kreuzberg::core::config::{ExtractionConfig, OutputFormat};
+use kreuzberg::core::pipeline::apply_output_format;
 use kreuzberg::extraction::derive::derive_extraction_result;
 use kreuzberg::extractors::EpubExtractor;
 use kreuzberg::plugins::DocumentExtractor;
@@ -100,7 +101,12 @@ async fn test_epub_markdown_output_keeps_headings() {
         .extract_bytes(&bytes, "application/epub+zip", &config)
         .await
         .expect("EPUB extraction should succeed");
-    let result = derive_extraction_result(doc, false, kreuzberg::OutputFormat::Plain);
+    let mut result = derive_extraction_result(doc, false, kreuzberg::OutputFormat::Markdown);
+    // `derive_extraction_result` always fills `content` with plain text; the pre-rendered
+    // Markdown lives in `formatted_content` until `apply_output_format` swaps it in — the
+    // step `run_pipeline` performs for every real extraction, skipped here since this test
+    // drives the extractor directly.
+    apply_output_format(&mut result, kreuzberg::OutputFormat::Markdown);
 
     assert!(
         result.processing_warnings.is_empty(),
@@ -134,7 +140,8 @@ async fn test_epub_djot_output_keeps_headings() {
         .extract_bytes(&bytes, "application/epub+zip", &config)
         .await
         .expect("EPUB extraction should succeed");
-    let result = derive_extraction_result(doc, false, kreuzberg::OutputFormat::Plain);
+    let mut result = derive_extraction_result(doc, false, kreuzberg::OutputFormat::Djot);
+    apply_output_format(&mut result, kreuzberg::OutputFormat::Djot);
 
     assert!(
         result.processing_warnings.is_empty(),
