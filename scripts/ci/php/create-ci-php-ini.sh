@@ -2,7 +2,6 @@
 
 set -e
 
-
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../../../" && pwd)"
 TARGET_DIR="$REPO_ROOT/target/release/deps"
@@ -46,7 +45,7 @@ else
   DISPLAY_DIR="$TARGET_DIR"
 fi
 
-if cat >"$INI_FILE" <<EOF; then
+if cat >"$INI_FILE" <<EOF
 ; Kreuzberg PHP Extension Configuration for CI Testing
 ; This file is generated automatically by create-ci-php-ini.sh
 ; It allows loading the locally-built extension without system-wide installation
@@ -55,6 +54,7 @@ if cat >"$INI_FILE" <<EOF; then
 ; This avoids overriding extension_dir which would prevent core extensions from loading
 extension="$DISPLAY_DIR/$EXT_FILE"
 EOF
+then
   echo "✓ INI file created: $INI_FILE"
   echo ""
   echo "INI file contents:"
