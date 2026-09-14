@@ -204,9 +204,58 @@ tasks:
       - task: _build_wf:all:ci
 
   test:scripts:
-    desc: "Run the contract tests for the repo's own shell scripts"
+    desc: "Run the contract tests for the repo's own shell and PowerShell scripts"
     cmds:
       - task: test:scripts:bats
+      - task: test:scripts:pester
+
+  test:scripts:pester:
+    desc: "Run the Pester contract tests for scripts/**/*.ps1"
+    vars:
+      # The same pin ci-scripts.yaml passes to install-pester, so a local run and a CI run
+      # exercise the same Pester.
+      PESTER_VERSION: "6.2.0"
+    preconditions:
+      - sh: command -v pwsh
+        msg: "pwsh is required for the Pester suites. Install PowerShell 7 or newer."
+      - sh: >-
+          pwsh -NoProfile -Command
+          'exit [int](@(Get-Module -ListAvailable Pester).Version -notcontains [version]"{{.PESTER_VERSION}}")'
+        msg: >-
+          Pester {{.PESTER_VERSION}} is missing. Install it with:
+          Install-Module Pester -RequiredVersion {{.PESTER_VERSION}} -Scope CurrentUser
+    cmds:
+      # Suites are DISCOVERED under scripts/tests/pester, not listed, so a new one is picked up
+      # with no registration -- the same property `bats --recursive` gives the shell side.
+      # Scoped to that directory rather than the whole tree so the walk never reaches .venv or
+      # node_modules, and found with `find` rather than `git ls-files` so a suite works before it
+      # is staged.
+      #
+      # The count is asserted non-empty: Invoke-Pester with no paths exits 0, so a stale scope
+      # would report a pass having run nothing.
+      #
+      # -PassThru with an explicit exit: a plain Invoke-Pester prints its failures and still
+      # returns 0, which would leave this task green with a red suite. ~keep
+      - |
+        pwsh -NoProfile -Command '
+          $suites = @(Get-ChildItem -Path scripts/tests/pester -Recurse -File -Filter "*.Tests.ps1")
+          if ($suites.Count -eq 0) { throw "no *.Tests.ps1 suites found under scripts/tests/pester" }
+          exit (Invoke-Pester -Path $suites.FullName -Output Detailed -PassThru).FailedCount'
+
+  test:scripts:bats:
+    desc: "Run the Bats contract tests for scripts/**/*.sh"
+    env:
+      # Suites load the shared helpers with `bats_load_library xberg-bats`, which searches
+      # BATS_LIB_PATH and nothing else. CI passes the same directory to run-bats via lib-path.
+      BATS_LIB_PATH: "{{.ROOT_DIR}}/scripts/tests/lib"
+    preconditions:
+      - sh: command -v bats
+        msg: "bats is required: brew install bats-core"
+      - sh: test -f scripts/tests/lib/xberg-bats/load.bash
+        msg: "shared Bats helpers are missing; run `task test:scripts:lib:sync`"
+    cmds:
+      - bats --recursive --print-output-on-failure scripts/tests/bats
+
 
   test:scripts:bats:
     desc: "Run the Bats contract tests for scripts/**/*.sh"

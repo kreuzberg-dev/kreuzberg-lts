@@ -225,3 +225,7 @@ poly.local.toml
 .github/copilot-instructions.md
 .github/skills/
 # END ai-rulez
+
+# `Invoke-Pester -CI` enables NUnit output and defaults its path to ./testResults.xml, so any
+# local run with that flag drops an artifact in the repo root.
+testResults.xml
