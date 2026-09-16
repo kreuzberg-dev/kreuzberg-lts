@@ -10,7 +10,7 @@ priority: critical
 
 ## Chunking Architecture Overview
 
-**Location**: `crates/kreuzberg/src/chunking/`, `crates/kreuzberg/src/embeddings.rs`
+**Location**: `crates/kreuzberg/src/chunking/`, `crates/kreuzberg/src/embeddings/`
 
 ```text
 Extracted Text
@@ -59,7 +59,7 @@ Usage: set `config.chunking.preset = Some("balanced")` in `ExtractionConfig`.
 
 ## Embedding Generation with FastEmbed
 
-**Location**: `crates/kreuzberg/src/embeddings.rs`
+**Location**: `crates/kreuzberg/src/embeddings/`
 
 ### Model Selection
 

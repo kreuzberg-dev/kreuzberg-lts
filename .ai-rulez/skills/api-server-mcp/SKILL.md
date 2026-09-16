@@ -61,7 +61,7 @@ JSON Response / MCP ToolResult
 
 ## Server Setup & Configuration
 
-**Location**: `crates/kreuzberg/src/api/server.rs`
+**Location**: `crates/kreuzberg/src/api/ (`router.rs`, `startup.rs`, `handlers.rs`)`
 
 Server initialization pattern: Create `ApiState` (holds `ExtractionConfig` + `ExtractionCache`), build Axum `Router` with all REST + MCP routes, apply middleware layers (body limits, CORS, tracing), serve via `tokio::net::TcpListener`.
 
