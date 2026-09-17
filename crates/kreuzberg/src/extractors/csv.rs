@@ -113,15 +113,18 @@ impl DocumentExtractor for CsvExtractor {
             },
         };
 
+        // The table itself carries the raw grid for programmatic consumers (`doc.tables`,
+        // below); `content` instead gets header-value pairs so cell values keep their
+        // semantic association with column names for embedding/search quality, rather
+        // than the flat space-separated text a plain table render would produce.
+        let content_text = build_content_text(&table.cells, has_header);
+
         let mut builder = InternalDocumentBuilder::new("csv");
-        let cloned_table = Table {
-            cells: table.cells.clone(),
-            markdown: table.markdown.clone(),
-            page_number: table.page_number,
-            bounding_box: table.bounding_box,
-        };
-        builder.push_table(cloned_table, None, None);
+        if !content_text.is_empty() {
+            builder.push_paragraph(&content_text, Vec::new(), None, None);
+        }
         let mut doc = builder.build();
+        doc.tables.push(table);
         doc.mime_type = Cow::Owned(mime_type.to_string());
 
         doc.metadata = Metadata {
@@ -390,6 +393,52 @@ fn infer_column_types(rows: &[Vec<String>], has_header: bool) -> Vec<String> {
             }
         })
         .collect()
+}
+
+/// Build text content with header-value pairs for embedding quality.
+///
+/// When a header row is detected, produces `Row N:\n  Header: Value` pairs
+/// that preserve the semantic association between column names and cell values.
+/// Empty cells are skipped. Falls back to space-separated values when no
+/// header is detected.
+fn build_content_text(rows: &[Vec<String>], has_header: bool) -> String {
+    if rows.is_empty() {
+        return String::new();
+    }
+
+    if !has_header || rows.len() < 2 {
+        return rows
+            .iter()
+            .map(|row| {
+                row.iter()
+                    .map(|cell| cell.trim())
+                    .filter(|cell| !cell.is_empty())
+                    .collect::<Vec<_>>()
+                    .join(" ")
+            })
+            .filter(|line| !line.is_empty())
+            .collect::<Vec<_>>()
+            .join("\n");
+    }
+
+    let headers = &rows[0];
+    let mut sections = Vec::with_capacity(rows.len() - 1);
+
+    for (i, row) in rows[1..].iter().enumerate() {
+        let mut lines = vec![format!("Row {}:", i + 1)];
+        for (header, value) in headers.iter().zip(row.iter()) {
+            let h = header.trim();
+            let v = value.trim();
+            if !h.is_empty() && !v.is_empty() {
+                lines.push(format!("  {}: {}", h, v));
+            }
+        }
+        if lines.len() > 1 {
+            sections.push(lines.join("\n"));
+        }
+    }
+
+    sections.join("\n\n")
 }
 
 /// Build a Markdown table from parsed rows.
