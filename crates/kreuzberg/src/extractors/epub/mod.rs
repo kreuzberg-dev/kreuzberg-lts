@@ -19,7 +19,6 @@ use crate::Result;
 use crate::core::config::{ExtractionConfig, OutputFormat};
 use crate::plugins::{DocumentExtractor, Plugin};
 use crate::types::Metadata;
-use crate::types::ProcessingWarning;
 use crate::types::internal::InternalDocument;
 use crate::types::internal_builder::InternalDocumentBuilder;
 use crate::types::metadata::{EpubMetadata, FormatMetadata};
@@ -56,53 +55,24 @@ impl Default for EpubExtractor {
 }
 
 #[cfg(feature = "office")]
-#[allow(dead_code)]
 struct RenderedSpineDocument {
     content_fragment: String,
     content_fully_converted: bool,
-    document: Option<crate::types::document_structure::DocumentStructure>,
-    warnings: Vec<ProcessingWarning>,
 }
 
 #[cfg(feature = "office")]
-#[allow(dead_code)]
 fn trim_trailing_newlines(s: &str) -> &str {
     s.trim_end_matches(['\n', '\r'])
 }
 
 #[cfg(feature = "office")]
-#[allow(dead_code)]
 impl EpubExtractor {
-    fn build_fallback_document_structure(
-        document: &content::EpubSpineDocument,
-        index: usize,
-    ) -> crate::types::document_structure::DocumentStructure {
-        use crate::types::builder::DocumentStructureBuilder;
-
-        let mut builder = DocumentStructureBuilder::new().source_format("epub");
-        let chapter_title =
-            extract_title_from_xhtml(&document.xhtml).unwrap_or_else(|| format!("Chapter {}", index + 1));
-        builder.push_heading(1, &chapter_title, None, None);
-
-        let text = extract_text_from_xhtml(&document.xhtml);
-        for paragraph in text.split("\n\n") {
-            let trimmed = paragraph.trim();
-            if !trimmed.is_empty() {
-                builder.push_paragraph(trimmed, vec![], None, None);
-            }
-        }
-
-        builder.build()
-    }
-
     /// Render a spine document once.
     fn render_spine_document(
         document: &content::EpubSpineDocument,
-        index: usize,
         config: &ExtractionConfig,
     ) -> RenderedSpineDocument {
         let wants_markup = matches!(config.output_format, OutputFormat::Markdown | OutputFormat::Djot);
-        let mut warnings = Vec::new();
 
         let (content_fragment, content_fully_converted) = if wants_markup {
             let html_options = super::html::apply_content_filter_to_html_options(
@@ -116,13 +86,12 @@ impl EpubExtractor {
             ) {
                 Ok((converted, _)) => (trim_trailing_newlines(&converted).to_string(), true),
                 Err(err) => {
-                    warnings.push(ProcessingWarning {
-                        source: std::borrow::Cow::Borrowed("epub"),
-                        message: std::borrow::Cow::Owned(format!(
-                            "XHTML conversion failed for spine item '{}'; falling back to plain text: {}",
-                            document.file_path, err
-                        )),
-                    });
+                    tracing::warn!(
+                        source = "epub",
+                        file_path = %document.file_path,
+                        "XHTML conversion failed for spine item; falling back to plain text"
+                    );
+                    tracing::debug!(error = %err, "epub xhtml conversion error detail");
                     (extract_text_from_xhtml(&document.xhtml).trim_end().to_string(), false)
                 }
             }
@@ -130,59 +99,10 @@ impl EpubExtractor {
             (extract_text_from_xhtml(&document.xhtml).trim_end().to_string(), true)
         };
 
-        let document = if config.include_document_structure {
-            let chapter_structure = crate::extraction::html::structure::build_document_structure(&document.xhtml);
-
-            if chapter_structure.nodes.is_empty() {
-                warnings.push(ProcessingWarning {
-                    source: std::borrow::Cow::Borrowed("epub"),
-                    message: std::borrow::Cow::Owned(format!(
-                        "Document structure extraction produced no nodes for spine item '{}'; falling back to plain-text structure",
-                        document.file_path
-                    )),
-                });
-                Some(Self::build_fallback_document_structure(document, index))
-            } else {
-                Some(chapter_structure)
-            }
-        } else {
-            None
-        };
-
         RenderedSpineDocument {
             content_fragment,
             content_fully_converted,
-            document,
-            warnings,
         }
-    }
-
-    fn build_document_structure(
-        rendered_documents: &[RenderedSpineDocument],
-    ) -> Option<crate::types::document_structure::DocumentStructure> {
-        use crate::types::builder::DocumentStructureBuilder;
-
-        let mut builder = DocumentStructureBuilder::new().source_format("epub");
-        let mut has_nodes = false;
-
-        for rendered in rendered_documents {
-            let Some(chapter_structure) = &rendered.document else {
-                continue;
-            };
-
-            for node in &chapter_structure.nodes {
-                has_nodes = true;
-                builder.push_raw(
-                    node.content.clone(),
-                    None,
-                    None,
-                    node.content_layer,
-                    node.annotations.clone(),
-                );
-            }
-        }
-
-        if has_nodes { Some(builder.build()) } else { None }
     }
 
     /// Build an `InternalDocument` from the EPUB spine.
@@ -199,10 +119,16 @@ impl EpubExtractor {
         manifest_dir: &str,
         nav_hrefs: &AHashSet<String>,
         cover_image_path: Option<&str>,
+        config: &ExtractionConfig,
     ) -> Option<InternalDocument> {
         use crate::types::internal::{ElementKind, InternalElement};
 
         let mut builder = InternalDocumentBuilder::new("epub");
+
+        // Accumulate pre-rendered markdown/djot when all chapters convert successfully
+        let wants_markup = matches!(config.output_format, OutputFormat::Markdown | OutputFormat::Djot);
+        let mut pre_rendered_fragments = Vec::new();
+        let mut all_converted_successfully = wants_markup;
 
         if let Some(cover_path) = cover_image_path {
             let mut buf = Vec::new();
@@ -259,6 +185,20 @@ impl EpubExtractor {
 
             let normalized = content::normalize_xhtml(&xhtml_content);
             let sanitized = strip_specialized_navigation_sections(&strip_document_head(&normalized));
+
+            // If markdown/djot output requested, try to pre-render this chapter
+            if wants_markup {
+                let spine_doc = content::EpubSpineDocument {
+                    file_path: file_path.clone(),
+                    xhtml: sanitized.clone(),
+                };
+                let rendered = Self::render_spine_document(&spine_doc, config);
+                if rendered.content_fully_converted {
+                    pre_rendered_fragments.push(rendered.content_fragment);
+                } else {
+                    all_converted_successfully = false;
+                }
+            }
 
             if looks_like_navigation_document(&sanitized) {
                 continue;
@@ -404,7 +344,23 @@ impl EpubExtractor {
             }
         }
 
-        Some(builder.build())
+        let mut doc = builder.build();
+
+        // If markdown/djot was requested and all chapters converted successfully,
+        // store the pre-rendered content and mark the output format so
+        // derive_extraction_result uses it directly instead of re-rendering.
+        if all_converted_successfully && !pre_rendered_fragments.is_empty() {
+            let combined = pre_rendered_fragments.join("\n\n");
+            doc.pre_rendered_content = Some(combined);
+            let format_name = match config.output_format {
+                OutputFormat::Markdown => "markdown",
+                OutputFormat::Djot => "djot",
+                _ => "plain",
+            };
+            doc.metadata.output_format = Some(format_name.to_string());
+        }
+
+        Some(doc)
     }
 }
 
@@ -514,7 +470,6 @@ impl DocumentExtractor for EpubExtractor {
         config: &ExtractionConfig,
     ) -> Result<InternalDocument> {
         tracing::debug!(format = "epub", size_bytes = content.len(), "extraction starting");
-        let _ = config;
         let cursor = Cursor::new(content.to_vec());
 
         let mut archive = ZipArchive::new(cursor).map_err(|e| crate::KreuzbergError::Parsing {
@@ -567,11 +522,19 @@ impl DocumentExtractor for EpubExtractor {
             .collect();
 
         let cover_image_path = package.metadata.cover_image_href.as_deref();
-        let mut doc =
-            Self::build_internal_document(&mut archive, &spine_hrefs, &manifest_dir, &nav_hrefs, cover_image_path)
-                .unwrap_or_else(|| InternalDocumentBuilder::new("epub").build());
+        let mut doc = Self::build_internal_document(
+            &mut archive,
+            &spine_hrefs,
+            &manifest_dir,
+            &nav_hrefs,
+            cover_image_path,
+            config,
+        )
+        .unwrap_or_else(|| InternalDocumentBuilder::new("epub").build());
         doc.mime_type = Cow::Owned(mime_type.to_string());
 
+        // Preserve output_format if it was set by build_internal_document (markdown/djot pre-rendering)
+        let output_format = doc.metadata.output_format.take();
         doc.metadata = Metadata {
             title: package.metadata.title,
             authors: package.metadata.creator.map(|c| vec![c]),
@@ -579,6 +542,7 @@ impl DocumentExtractor for EpubExtractor {
             created_at: package.metadata.date,
             format: Some(epub_format_metadata),
             additional: metadata_map,
+            output_format,
             ..Default::default()
         };
 

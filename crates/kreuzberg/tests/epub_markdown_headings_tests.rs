@@ -100,24 +100,25 @@ async fn test_epub_markdown_output_keeps_headings() {
         .extract_bytes(&bytes, "application/epub+zip", &config)
         .await
         .expect("EPUB extraction should succeed");
-    let result = derive_extraction_result(doc, false, kreuzberg::OutputFormat::Plain);
+    let result = derive_extraction_result(doc, false, kreuzberg::OutputFormat::Markdown);
 
     assert!(
         result.processing_warnings.is_empty(),
         "Expected no warnings, got: {:?}",
         result.processing_warnings
     );
+    let content_to_check = result.formatted_content.as_deref().unwrap_or(&result.content);
     assert!(
-        result.content.contains("# Chapter One"),
+        content_to_check.contains("# Chapter One"),
         "Expected Markdown heading, got:\n{}",
-        result.content
+        content_to_check
     );
     assert!(
-        !result.content.starts_with("---"),
+        !content_to_check.starts_with("---"),
         "Expected no YAML frontmatter injection, got:\n{}",
-        result.content
+        content_to_check
     );
-    assert!(result.content.contains("Some text."), "Expected body text");
+    assert!(content_to_check.contains("Some text."), "Expected body text");
 }
 
 #[tokio::test]
@@ -134,24 +135,25 @@ async fn test_epub_djot_output_keeps_headings() {
         .extract_bytes(&bytes, "application/epub+zip", &config)
         .await
         .expect("EPUB extraction should succeed");
-    let result = derive_extraction_result(doc, false, kreuzberg::OutputFormat::Plain);
+    let result = derive_extraction_result(doc, false, kreuzberg::OutputFormat::Djot);
 
     assert!(
         result.processing_warnings.is_empty(),
         "Expected no warnings, got: {:?}",
         result.processing_warnings
     );
+    let content_to_check = result.formatted_content.as_deref().unwrap_or(&result.content);
     assert!(
-        result.content.contains("# Chapter One"),
+        content_to_check.contains("# Chapter One"),
         "Expected Djot heading, got:\n{}",
-        result.content
+        content_to_check
     );
     assert!(
-        !result.content.starts_with("---"),
+        !content_to_check.starts_with("---"),
         "Expected no YAML frontmatter injection, got:\n{}",
-        result.content
+        content_to_check
     );
-    assert!(result.content.contains("Some text."), "Expected body text");
+    assert!(content_to_check.contains("Some text."), "Expected body text");
 }
 
 #[tokio::test]
