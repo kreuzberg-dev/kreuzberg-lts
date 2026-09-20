@@ -841,7 +841,7 @@ fn chunk_text_impl(_params: super::params::ChunkTextParams) -> Result<CallToolRe
 
 #[tool_handler]
 impl ServerHandler for KreuzbergMcp {
-    fn get_info(&self) -> ServerInfo {
+    fn get_info(&self) -> ServerConfig {
         let mut capabilities = ServerCapabilities::default();
         capabilities.tools = Some(ToolsCapability::default());
 
