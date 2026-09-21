@@ -506,7 +506,7 @@ dependencies = [
  "cexpr",
  "clang-sys",
  "log",
- "prettyplease 0.3.0",
+ "prettyplease 0.2.37",
  "proc-macro2",
  "quote",
  "regex",
@@ -1857,7 +1857,7 @@ checksum = "d0881ea181b1df73ff77ffaaf9c7544ecc11e82fba9b5f27b262a3c73a332555"
 
 [[package]]
 name = "e2e-rust"
-version = "4.10.3"
+version = "4.10.4"
 dependencies = [
  "kreuzberg",
  "serde_json",
@@ -3465,7 +3465,7 @@ checksum = "e037a2e1d8d5fdbd49b16a4ea09d5d6401c1f29eca5ff29d03d3824dba16256a"
 
 [[package]]
 name = "kreuzberg"
-version = "4.10.3"
+version = "4.10.4"
 dependencies = [
  "ahash",
  "anyhow",
@@ -3571,7 +3571,7 @@ dependencies = [
 
 [[package]]
 name = "kreuzberg-cli"
-version = "4.10.3"
+version = "4.10.4"
 dependencies = [
  "anstyle",
  "anyhow",
@@ -3591,7 +3591,7 @@ dependencies = [
 
 [[package]]
 name = "kreuzberg-ffi"
-version = "4.10.3"
+version = "4.10.4"
 dependencies = [
  "ahash",
  "async-trait",
@@ -3611,7 +3611,7 @@ dependencies = [
 
 [[package]]
 name = "kreuzberg-node"
-version = "4.10.3"
+version = "4.10.4"
 dependencies = [
  "ahash",
  "async-trait",
@@ -3634,7 +3634,7 @@ dependencies = [
 
 [[package]]
 name = "kreuzberg-paddle-ocr"
-version = "4.10.3"
+version = "4.10.4"
 dependencies = [
  "geo-clipper",
  "geo-types",
@@ -3648,7 +3648,7 @@ dependencies = [
 
 [[package]]
 name = "kreuzberg-pdfium-render"
-version = "4.10.3"
+version = "4.10.4"
 dependencies = [
  "bindgen",
  "bitflags 2.13.1",
@@ -3672,7 +3672,7 @@ dependencies = [
 
 [[package]]
 name = "kreuzberg-php"
-version = "4.10.3"
+version = "4.10.4"
 dependencies = [
  "ahash",
  "ctor",
@@ -3688,7 +3688,7 @@ dependencies = [
 
 [[package]]
 name = "kreuzberg-py"
-version = "4.10.3"
+version = "4.10.4"
 dependencies = [
  "ahash",
  "async-trait",
@@ -3705,7 +3705,7 @@ dependencies = [
 
 [[package]]
 name = "kreuzberg-tesseract"
-version = "4.10.3"
+version = "4.10.4"
 dependencies = [
  "cc",
  "cmake",
@@ -3744,7 +3744,7 @@ dependencies = [
 
 [[package]]
 name = "kreuzberg_rustler"
-version = "4.10.3"
+version = "4.10.4"
 dependencies = [
  "kreuzberg",
  "rustler",

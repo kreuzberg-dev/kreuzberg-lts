@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.10.4] - 2026-09-21
+
+Patch release: CLI acceleration and output-formatting fixes, a dependency refresh, and a TLS advisory bump.
+
+### Fixed
+
+- **CLI release binaries honour `ORT_DYLIB_PATH`.** The CLI statically linked its bundled CPU ONNX Runtime, so `--acceleration cuda` failed with "CUDA execution provider requested but not available" even when `ORT_DYLIB_PATH` pointed at a GPU-enabled runtime. Release artifacts now load ONNX Runtime dynamically and ship a CPU fallback next to the binary. (#8)
+- **Markdown formatting is no longer stripped from DOCX, EPUB and CSV output.** (#5)
+- **`kreuzberg-tesseract` releases the native text array when UTF-8 conversion fails**, closing an error-path leak. (#7)
+
+### Security
+
+- **`rustls` bumped past RUSTSEC-2026-0285.** TLS 1.3 handshake messages were accepted across encryption-level boundaries; fixed in 0.23.45.
+
+### Changed
+
+- Dependency refresh: `liter-llm` 1.19 → 2.0.3, `tree-sitter-language-pack` 1.16.1 → 1.20.0, `html-to-markdown-rs` 3.12.0 → 3.14.3, and in-range bumps to `reqwest`, `toml`, `encoding_rs`, `mail-parser`, `rmcp` and `cc`.
+- Breaking dependency bumps: `cfb` 0.15, `comrak` 0.55, `lzma-rust2` 0.21, `dirs` 7, `lopdf` 0.45, `jsonschema` 0.56, `bindgen` 0.73.
+- The Node package builds with pnpm 12 (two-document lockfile).
+- Internal: shell sources are formatted by `poly`, and the script test suite gains Bats and Pester coverage.
+
 ## [4.10.3] - 2026-09-05
 
 ### Fixed

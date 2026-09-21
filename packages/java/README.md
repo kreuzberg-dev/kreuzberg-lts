@@ -96,7 +96,7 @@ Install via one of the supported package managers:
 <dependency>
     <groupId>dev.kreuzberg</groupId>
     <artifactId>kreuzberg</artifactId>
-    <version>4.10.3</version>
+    <version>4.10.4</version>
 </dependency>
 ```
 
@@ -106,7 +106,7 @@ Install via one of the supported package managers:
 **Gradle:**
 
 ```gradle
-implementation 'dev.kreuzberg:kreuzberg:4.10.3'
+implementation 'dev.kreuzberg:kreuzberg:4.10.4'
 ```
 
 
