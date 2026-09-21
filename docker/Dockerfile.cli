@@ -54,10 +54,15 @@ RUN file /build/kreuzberg && \
 
 FROM alpine:edge
 
+# ~keep The CLI builds with ort-dynamic, so ONNX Runtime is dlopen'd by its
+# unversioned soname (libonnxruntime.so). Alpine's runtime `onnxruntime` package
+# ships only the versioned libonnxruntime.so.1, so the symlink below is required —
+# without it every OCR/embedding call panics on library load.
 RUN apk add --no-cache libstdc++ libgcc && \
     apk add --no-cache onnxruntime \
     --repository=https://dl-cdn.alpinelinux.org/alpine/edge/community \
-    --repository=https://dl-cdn.alpinelinux.org/alpine/edge/main
+    --repository=https://dl-cdn.alpinelinux.org/alpine/edge/main && \
+    ln -sf libonnxruntime.so.1 /usr/lib/libonnxruntime.so
 
 COPY --from=builder /build/kreuzberg /usr/local/bin/kreuzberg
 

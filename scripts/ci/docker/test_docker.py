@@ -146,6 +146,41 @@ def test_help(t: TestRunner) -> None:
         t.fail_test("CLI help", "Expected 'extract' in help output")
 
 
+def test_onnx_runtime_loadable(t: TestRunner) -> None:
+    """The CLI dlopens ONNX Runtime by its unversioned soname (ort-dynamic).
+
+    Alpine's runtime onnxruntime package only ships libonnxruntime.so.1, so the
+    image must add the libonnxruntime.so symlink or every OCR/embedding call
+    panics on load.
+    """
+    t.start("ONNX Runtime dlopen target present")
+    name = t.container_name()
+    r = subprocess.run(
+        [
+            "docker",
+            "run",
+            "--rm",
+            "--name",
+            name,
+            "--entrypoint",
+            "/bin/sh",
+            t.image,
+            "-c",
+            "ls /usr/lib/libonnxruntime.so",
+        ],
+        capture_output=True,
+        text=True,
+        timeout=30,
+    )
+    if r.returncode == 0 and "libonnxruntime.so" in r.stdout:
+        t.pass_test()
+    else:
+        t.fail_test(
+            "ONNX Runtime dlopen target",
+            f"libonnxruntime.so missing: exit={r.returncode} {r.stderr.strip()}",
+        )
+
+
 def test_mime_detection(t: TestRunner) -> None:
     t.start("MIME type detection (detect command)")
     out = t.run_cli_output("detect", "/data/pdf/searchable.pdf", volumes=True)
@@ -823,6 +858,7 @@ def run_cli_tests(t: TestRunner) -> None:
     test_cli_image_size(t)
     test_version(t)
     test_help(t)
+    test_onnx_runtime_loadable(t)
     test_mime_detection(t)
     test_extract_text(t)
     test_extract_pdf(t)

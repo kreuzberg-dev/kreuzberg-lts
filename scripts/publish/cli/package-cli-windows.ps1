@@ -1,3 +1,4 @@
+#!/usr/bin/env pwsh
 $ErrorActionPreference = "Stop"
 
 $target = $env:CLI_TARGET
@@ -34,6 +35,20 @@ Copy-Item "README.md" $stage
 
 if (Test-Path ("target/" + $target + "/release/pdfium.dll")) {
   Copy-Item ("target/" + $target + "/release/pdfium.dll") $stage
+}
+
+# ~keep Bundle the CPU ONNX Runtime DLL next to the exe. The CLI builds with
+# ort-dynamic and dlopens ONNX Runtime at runtime, honoring ORT_DYLIB_PATH for
+# GPU builds; the Windows loader resolves the fallback DLL from the exe's own
+# directory. ORT_BUNDLE_DIR is the extracted official ORT win-x64 tgz root.
+$ortBundleDir = $env:ORT_BUNDLE_DIR
+if ($ortBundleDir -and (Test-Path (Join-Path $ortBundleDir "lib"))) {
+  $ortLib = Join-Path $ortBundleDir "lib"
+  Get-ChildItem -Path $ortLib -Filter "onnxruntime.dll*" | ForEach-Object {
+    Copy-Item $_.FullName $stage
+  }
+} else {
+  Write-Host "skipping ONNX Runtime bundling (ORT_BUNDLE_DIR is unset or empty)"
 }
 
 Compress-Archive -Path "$stage/*" -DestinationPath ($stage + ".zip") -Force

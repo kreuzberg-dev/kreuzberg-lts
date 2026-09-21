@@ -34,7 +34,14 @@ default = [
 
 bundled-pdfium = ["kreuzberg/bundled-pdfium"]
 static-pdfium = ["kreuzberg/static-pdfium"]
+# ~keep ort-bundled statically links a downloaded CPU ONNX Runtime. It is pulled
+# in transitively by paddle-ocr/layout-detection/embeddings, which keeps the
+# default and brew builds self-contained. The release artifacts instead opt into
+# ort-dynamic (see `all`), which short-circuits ort-sys' download/static link and
+# dlopen's ONNX Runtime at runtime, honouring ORT_DYLIB_PATH (issue #8) with a CPU
+# fallback shipped next to the binary.
 ort-bundled = ["kreuzberg/ort-bundled"]
+ort-dynamic = ["kreuzberg/ort-dynamic"]
 
 ocr = ["kreuzberg/ocr"]
 
@@ -57,6 +64,11 @@ all = [
     "chunking-tokenizers",
     "tree-sitter",
     "liter-llm",
+    # ~keep `all` is what every release artifact and container builds with. Enable
+    # dynamic ONNX Runtime loading here (not in `default`) so shipped binaries
+    # honour ORT_DYLIB_PATH for GPU acceleration while source/crates.io installs
+    # stay statically linked and self-contained.
+    "ort-dynamic",
 ]
 
 [dependencies]

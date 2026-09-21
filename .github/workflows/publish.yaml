@@ -974,15 +974,19 @@ jobs:
           - os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
             use_cross: false
+            ort_asset: onnxruntime-linux-x64
           - os: ubuntu-24.04-arm
             target: aarch64-unknown-linux-gnu
             use_cross: false
+            ort_asset: onnxruntime-linux-aarch64
           - os: macos-latest
             target: aarch64-apple-darwin
             use_cross: false
+            ort_asset: onnxruntime-osx-arm64
           - os: windows-latest
             target: x86_64-pc-windows-msvc
             use_cross: false
+            ort_asset: onnxruntime-win-x64
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -1022,6 +1026,40 @@ jobs:
         if: ${{ matrix.target == 'aarch64-unknown-linux-gnu' }}
         run: scripts/publish/cli/configure-cross-linker.sh
 
+      - name: Download ONNX Runtime (bundled fallback)
+        if: runner.os != 'Windows'
+        shell: bash
+        env:
+          ORT_VERSION: ${{ env.ORT_VERSION }}
+          ORT_ASSET: ${{ matrix.ort_asset }}
+        run: |
+          ORT_DEST="$RUNNER_TEMP/ort-bundle"
+          rm -rf "$ORT_DEST" "$RUNNER_TEMP/ort-download"
+          mkdir -p "$ORT_DEST"
+          ORT_URL="https://github.com/microsoft/onnxruntime/releases/download/v${ORT_VERSION}/${ORT_ASSET}-${ORT_VERSION}.tgz"
+          curl -fsSL "$ORT_URL" -o "$RUNNER_TEMP/ort-download"
+          tar -xzf "$RUNNER_TEMP/ort-download" -C "$ORT_DEST" --strip-components=1
+          echo "ORT_BUNDLE_DIR=$ORT_DEST" >> "$GITHUB_ENV"
+          echo "Bundled ORT: $(ls "$ORT_DEST/lib" | grep -E 'onnxruntime' | tr '\n' ' ')"
+
+      - name: Download ONNX Runtime (bundled fallback, Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        env:
+          ORT_ASSET: ${{ matrix.ort_asset }}
+        run: |
+          $ortVersion = "${{ env.ORT_VERSION }}"
+          $dest = Join-Path $env:RUNNER_TEMP "ort-bundle"
+          Remove-Item -Recurse -Force $dest -ErrorAction SilentlyContinue
+          $zip = Join-Path $env:RUNNER_TEMP "ort.zip"
+          $url = "https://github.com/microsoft/onnxruntime/releases/download/v$ortVersion/$env:ORT_ASSET-$ortVersion.zip"
+          Invoke-WebRequest -Uri $url -OutFile $zip
+          Expand-Archive -Path $zip -DestinationPath $dest -Force
+          $inner = Get-ChildItem -Path $dest -Directory | Select-Object -First 1
+          $bundle = if ($inner) { $inner.FullName } else { $dest }
+          Add-Content -Path $env:GITHUB_ENV -Value "ORT_BUNDLE_DIR=$bundle"
+          Write-Host "Bundled ORT: $((Get-ChildItem (Join-Path $bundle 'lib') -Filter 'onnxruntime*').Name -join ' ')"
+
       - name: Build CLI
         shell: bash
         run: scripts/build_cli_binary.sh ${{ matrix.target }}
@@ -1030,12 +1068,45 @@ jobs:
         if: runner.os != 'Windows'
         run: scripts/package_cli_artifact.sh ${{ matrix.target }}
 
+      - name: Verify bundled ONNX Runtime (non-Windows)
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          TARBALL="kreuzberg-cli-${{ matrix.target }}.tar.gz"
+          STAGE="kreuzberg-cli-${{ matrix.target }}"
+          echo "=== Tarball bundled libraries ==="
+          tar -tzf "$TARBALL" | grep -E 'lib/libonnxruntime' >/dev/null || { echo "FAIL: no bundled ORT in tarball"; exit 1; }
+          rm -rf "$RUNNER_TEMP/ort-verify" && mkdir -p "$RUNNER_TEMP/ort-verify"
+          tar -xzf "$TARBALL" -C "$RUNNER_TEMP/ort-verify"
+          BIN="$RUNNER_TEMP/ort-verify/${STAGE}/kreuzberg"
+          if [[ "${{ matrix.target }}" == *apple-darwin ]]; then
+            otool -l "$BIN" | grep -q '@loader_path/lib' || { echo "FAIL: rpath @loader_path/lib missing"; exit 1; }
+          else
+            command -v patchelf >/dev/null 2>&1 || { echo "FAIL: patchelf is required on Linux"; exit 1; }
+            R=$(patchelf --print-rpath "$BIN")
+            echo "RPATH=$R"
+            [[ "$R" == *'$ORIGIN/lib'* ]] || { echo "FAIL: RPATH missing \$ORIGIN/lib"; exit 1; }
+          fi
+          echo "OK: ONNX Runtime bundled in shipped artifact"
+
       - name: Package CLI artifact (Windows)
         if: runner.os == 'Windows'
         shell: pwsh
         env:
           CLI_TARGET: ${{ matrix.target }}
         run: ./scripts/publish/cli/package-cli-windows.ps1
+
+      - name: Verify bundled ONNX Runtime (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $stage = "kreuzberg-cli-${{ matrix.target }}"
+          $tmp = Join-Path $env:RUNNER_TEMP "ort-verify"
+          Remove-Item -Recurse -Force $tmp -ErrorAction SilentlyContinue
+          Expand-Archive -Path "$stage.zip" -DestinationPath $tmp -Force
+          $dll = Get-ChildItem -Path $tmp -Recurse -Filter "onnxruntime.dll*"
+          if ($null -eq $dll) { Write-Error "FAIL: onnxruntime.dll not bundled in zip"; exit 1 }
+          Write-Host "OK: bundled $($dll.FullName)"
 
       - name: Upload CLI artifact
         if: runner.os != 'Windows'
@@ -1095,15 +1166,18 @@ jobs:
 
       - name: Verify CLI binary
         run: |
-          file dist/kreuzberg
+          file dist/kreuzberg dist/kreuzberg.bin
           echo "=== Dynamic dependencies ==="
-          readelf -d dist/kreuzberg 2>/dev/null | grep -E "NEEDED|RPATH|RUNPATH" || echo "No dependencies"
+          readelf -d dist/kreuzberg.bin 2>/dev/null | grep -E "NEEDED|RPATH|RUNPATH" || echo "No dependencies"
           echo "=== Bundled libraries ==="
-          ls -la dist/lib/ 2>/dev/null || echo "No bundled libraries"
-          # Binary is dynamically linked against musl libc for dlopen support
-          # (required by PDFium bundled strategy). RPATH is set to $ORIGIN/lib
-          # so runtime libraries are found relative to the binary.
-          echo "Binary built successfully"
+          ls -la dist/lib/
+          # The binary is dynamically linked against musl libc for dlopen support
+          # (required by the PDFium bundled strategy) and dlopens ONNX Runtime
+          # (ort-dynamic). Both the fallback library and the $ORIGIN/lib RPATH that
+          # resolves it must be present, or every OCR/embedding call panics on load.
+          test -e dist/lib/libonnxruntime.so || { echo "FAIL: libonnxruntime.so not bundled"; exit 1; }
+          readelf -d dist/kreuzberg.bin | grep -q '\$ORIGIN/lib' || { echo "FAIL: RUNPATH missing \$ORIGIN/lib"; exit 1; }
+          echo "OK: ONNX Runtime bundled and RUNPATH resolves"
 
       - name: Package CLI artifact
         run: |
