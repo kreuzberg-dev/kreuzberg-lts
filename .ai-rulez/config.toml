@@ -5,7 +5,7 @@ version = '4.0'
 name = 'Kreuzberg'
 description = 'Rust document intelligence library with polyglot bindings (Python/TypeScript/Ruby/Java/Go/Elixir/C#/PHP)'
 gitignore = true
-presets = ['claude', 'copilot', 'cursor', 'antigravity', 'codex']
+presets = ['claude', 'copilot', 'cursor', 'antigravity', 'codex', 'opencode']
 builtins = [
   'rust',
   'python',
