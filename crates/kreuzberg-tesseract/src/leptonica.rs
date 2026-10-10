@@ -24,7 +24,11 @@
 use crate::error::{Result, TesseractError};
 use std::ffi::c_void;
 
-#[cfg(any(feature = "build-tesseract", feature = "build-tesseract-wasm"))]
+#[cfg(any(
+    feature = "build-tesseract",
+    feature = "build-tesseract-wasm",
+    feature = "dynamic-linking"
+))]
 ffi_extern! {
     /// Allocates a new Pix with the given dimensions and bit depth.
     fn pixCreate(width: i32, height: i32, depth: i32) -> *mut c_void;
@@ -154,12 +158,20 @@ ffi_extern! {
 /// `Pix` is `Send` because Leptonica image objects are independent heap
 /// allocations with no shared mutable state. Concurrent mutation from multiple
 /// threads is **not** safe (no `Sync`).
-#[cfg(any(feature = "build-tesseract", feature = "build-tesseract-wasm"))]
+#[cfg(any(
+    feature = "build-tesseract",
+    feature = "build-tesseract-wasm",
+    feature = "dynamic-linking"
+))]
 pub struct Pix {
     ptr: *mut c_void,
 }
 
-#[cfg(any(feature = "build-tesseract", feature = "build-tesseract-wasm"))]
+#[cfg(any(
+    feature = "build-tesseract",
+    feature = "build-tesseract-wasm",
+    feature = "dynamic-linking"
+))]
 impl std::fmt::Debug for Pix {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Pix").field("ptr", &self.ptr).finish()
@@ -167,10 +179,18 @@ impl std::fmt::Debug for Pix {
 }
 
 // SAFETY: A Pix owns a uniquely heap-allocated Leptonica PIX. There is no
-#[cfg(any(feature = "build-tesseract", feature = "build-tesseract-wasm"))]
+#[cfg(any(
+    feature = "build-tesseract",
+    feature = "build-tesseract-wasm",
+    feature = "dynamic-linking"
+))]
 unsafe impl Send for Pix {}
 
-#[cfg(any(feature = "build-tesseract", feature = "build-tesseract-wasm"))]
+#[cfg(any(
+    feature = "build-tesseract",
+    feature = "build-tesseract-wasm",
+    feature = "dynamic-linking"
+))]
 impl Pix {
     /// Creates a 32 bpp Leptonica Pix from a packed RGB byte slice.
     ///
@@ -628,7 +648,11 @@ impl Pix {
     }
 }
 
-#[cfg(any(feature = "build-tesseract", feature = "build-tesseract-wasm"))]
+#[cfg(any(
+    feature = "build-tesseract",
+    feature = "build-tesseract-wasm",
+    feature = "dynamic-linking"
+))]
 impl Drop for Pix {
     fn drop(&mut self) {
         if !self.ptr.is_null() {
@@ -639,7 +663,11 @@ impl Drop for Pix {
 }
 
 #[cfg(test)]
-#[cfg(any(feature = "build-tesseract", feature = "build-tesseract-wasm"))]
+#[cfg(any(
+    feature = "build-tesseract",
+    feature = "build-tesseract-wasm",
+    feature = "dynamic-linking"
+))]
 mod tests {
     use super::*;
 

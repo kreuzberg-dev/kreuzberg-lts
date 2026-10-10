@@ -439,7 +439,11 @@ impl Drop for ResultIterator {
     }
 }
 
-#[cfg(any(feature = "build-tesseract", feature = "build-tesseract-wasm"))]
+#[cfg(any(
+    feature = "build-tesseract",
+    feature = "build-tesseract-wasm",
+    feature = "dynamic-linking"
+))]
 ffi_extern! {
     pub fn TessResultIteratorDelete(handle: *mut c_void);
     pub fn TessPageIteratorBegin(handle: *mut c_void);

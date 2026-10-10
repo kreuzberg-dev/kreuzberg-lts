@@ -1,5 +1,9 @@
 #![cfg_attr(
-    not(any(feature = "build-tesseract", feature = "build-tesseract-wasm")),
+    not(any(
+        feature = "build-tesseract",
+        feature = "build-tesseract-wasm",
+        feature = "dynamic-linking"
+    )),
     allow(unused_variables, dead_code)
 )]
 #![allow(clippy::arc_with_non_send_sync)]
@@ -189,5 +193,9 @@ pub use enums::{
 mod api;
 pub use api::{BoundingBoxArray, TesseractAPI};
 pub mod leptonica;
-#[cfg(any(feature = "build-tesseract", feature = "build-tesseract-wasm"))]
+#[cfg(any(
+    feature = "build-tesseract",
+    feature = "build-tesseract-wasm",
+    feature = "dynamic-linking"
+))]
 pub use leptonica::Pix;
