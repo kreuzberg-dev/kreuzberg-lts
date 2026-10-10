@@ -4,9 +4,15 @@
   "description": "Shared test utilities for Kreuzberg e2e and integration tests",
   "author": {
     "name": "Na'aman Hirschfeld",
-    "email": "naaman@kreuzberg.dev",
+    "email": "naaman@xberg.io",
     "url": "https://kreuzberg.dev"
   },
+  "contributors": [
+    {
+      "name": "Tobias Perlstein",
+      "email": "tobias@xberg.io"
+    }
+  ],
   "homepage": "https://kreuzberg.dev",
   "bugs": {
     "url": "https://github.com/kreuzberg-dev/kreuzberg-lts/issues"

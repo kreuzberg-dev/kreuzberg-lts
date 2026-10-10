@@ -4,9 +4,15 @@
   "description": "Kreuzberg document intelligence - Node.js native bindings",
   "author": {
     "name": "Na'aman Hirschfeld",
-    "email": "naaman@kreuzberg.dev",
+    "email": "naaman@xberg.io",
     "url": "https://kreuzberg.dev"
   },
+  "contributors": [
+    {
+      "name": "Tobias Perlstein",
+      "email": "tobias@xberg.io"
+    }
+  ],
   "homepage": "https://kreuzberg.dev",
   "bugs": {
     "url": "https://github.com/kreuzberg-dev/kreuzberg-lts/issues"

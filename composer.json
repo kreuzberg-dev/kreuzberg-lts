@@ -31,8 +31,13 @@
   "authors": [
     {
       "name": "Na'aman Hirschfeld",
-      "email": "naaman@kreuzberg.dev",
-      "role": "creator"
+      "email": "naaman@xberg.io",
+      "role": "maintainer"
+    },
+    {
+      "name": "Tobias Perlstein",
+      "email": "tobias@xberg.io",
+      "role": "maintainer"
     }
   ],
   "require": {

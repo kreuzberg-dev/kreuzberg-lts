@@ -24,8 +24,12 @@
 
   <developers>
     <developer>
-      <name>Na'aman Hirschfeld</name>
-      <email>nhirschfeld@gmail.com</email>
+      <name>Na&apos;aman Hirschfeld</name>
+      <email>naaman@xberg.io</email>
+    </developer>
+    <developer>
+      <name>Tobias Perlstein</name>
+      <email>tobias@xberg.io</email>
     </developer>
   </developers>
 

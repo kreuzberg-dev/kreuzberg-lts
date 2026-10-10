@@ -149,8 +149,8 @@ files = files.uniq
 Gem::Specification.new do |spec|
   spec.name = 'kreuzberg'
   spec.version = Kreuzberg::VERSION
-  spec.authors = ['Na\'aman Hirschfeld']
-  spec.email = ['nhirschfeld@gmail.com']
+  spec.authors = ["Na'aman Hirschfeld", "Tobias Perlstein"]
+  spec.email = ["naaman@xberg.io", "tobias@xberg.io"]
 
   spec.summary = 'Document intelligence library — extract text from PDFs, Office docs, images, and 75+ formats'
   spec.description = <<~DESC
