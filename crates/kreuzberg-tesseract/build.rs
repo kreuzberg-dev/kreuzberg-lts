@@ -1713,6 +1713,10 @@ Installation instructions:
 }
 
 fn main() {
+    if std::env::var_os("DOCS_RS").is_some() {
+        return;
+    }
+
     #[cfg(any(feature = "build-tesseract", feature = "build-tesseract-wasm"))]
     {
         build_tesseract::build();
