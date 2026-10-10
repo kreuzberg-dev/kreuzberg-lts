@@ -1,4 +1,11 @@
 [package]
+include = [
+    "/Cargo.toml",
+    "/Cargo.lock",
+    "/README.md",
+    "/LICENSE*",
+    "/src/**",
+]
 name = "kreuzberg-paddle-ocr"
 version.workspace = true
 edition = "2024"
@@ -12,7 +19,6 @@ documentation = "https://docs.rs/kreuzberg-paddle-ocr"
 readme = "README.md"
 keywords = ["paddle", "ocr", "onnx", "recognition", "detection"]
 categories = ["computer-vision", "text-processing"]
-exclude = ["tests/*", ".github/*"]
 
 [package.metadata.docs.rs]
 all-features = true

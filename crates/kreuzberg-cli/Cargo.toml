@@ -1,4 +1,12 @@
 [package]
+include = [
+    "/Cargo.toml",
+    "/Cargo.lock",
+    "/README.md",
+    "/LICENSE*",
+    "/src/**",
+    "/build.rs",
+]
 name = "kreuzberg-cli"
 version.workspace = true
 edition.workspace = true

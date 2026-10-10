@@ -779,7 +779,7 @@ dependencies = [
  "log",
  "quick-xml 0.41.0",
  "serde",
- "zip 8.6.0",
+ "zip",
 ]
 
 [[package]]
@@ -2003,7 +2003,7 @@ dependencies = [
  "parking_lot",
  "skeptic",
  "ureq 3.4.0",
- "zip 8.6.0",
+ "zip",
 ]
 
 [[package]]
@@ -3566,7 +3566,7 @@ dependencies = [
  "v_htmlescape",
  "wasm-bindgen-rayon",
  "whatlang",
- "zip 7.2.0",
+ "zip",
 ]
 
 [[package]]
@@ -3712,7 +3712,7 @@ dependencies = [
  "image",
  "reqwest",
  "thiserror",
- "zip 8.6.0",
+ "zip",
 ]
 
 [[package]]
@@ -8680,19 +8680,6 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 3.0.5",
-]
-
-[[package]]
-name = "zip"
-version = "7.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c42e33efc22a0650c311c2ef19115ce232583abbe80850bc8b66509ebef02de0"
-dependencies = [
- "crc32fast",
- "flate2",
- "indexmap",
- "memchr",
- "typed-path",
 ]
 
 [[package]]

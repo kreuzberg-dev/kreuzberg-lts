@@ -33,8 +33,8 @@ base64 = { workspace = true }
 console_error_panic_hook = { workspace = true, optional = true }
 # Use getrandom with wasm_js feature for WASM compatibility
 getrandom = { version = "0.4", features = ["wasm_js"] }
-# Also need to explicitly depend on 0.3.4 to enable wasm_js for transitive deps
-getrandom_compat = { package = "getrandom", version = "=0.3.4", features = ["wasm_js"] }
+# Enable wasm_js for the 0.3 dependency family as well. ~keep
+getrandom_compat = { package = "getrandom", version = "0.3.4", features = ["wasm_js"] }
 image = { workspace = true, features = ["png", "jpeg", "gif", "bmp", "tiff"], optional = true }
 js-sys = { workspace = true }
 kreuzberg = { workspace = true, default-features = false, features = ["wasm-target"] }

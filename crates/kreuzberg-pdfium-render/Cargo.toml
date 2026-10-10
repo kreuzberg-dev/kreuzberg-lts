@@ -1,4 +1,14 @@
 [package]
+include = [
+    "/Cargo.toml",
+    "/Cargo.lock",
+    "/README.md",
+    "/LICENSE*",
+    "/src/**",
+    "/build.rs",
+    "/include/**",
+    "!/include/**/rust-import-wrapper.h",
+]
 name = "kreuzberg-pdfium-render"
 version.workspace = true
 edition.workspace = true
@@ -13,7 +23,6 @@ keywords = ["pdf", "pdfium", "rendering", "extraction"]
 categories = ["api-bindings", "multimedia::images"]
 readme = "README.md"
 build = "build.rs"
-exclude = ["include/**/rust-import-wrapper.h"]
 
 [package.metadata.cargo-machete]
 ignored = ["bindgen"]

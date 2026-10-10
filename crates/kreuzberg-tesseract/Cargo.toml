@@ -1,4 +1,13 @@
 [package]
+include = [
+    "/Cargo.toml",
+    "/Cargo.lock",
+    "/README.md",
+    "/LICENSE*",
+    "/src/**",
+    "/build.rs",
+    "/patches/tesseract.diff",
+]
 name = "kreuzberg-tesseract"
 version.workspace = true
 edition.workspace = true
@@ -14,7 +23,6 @@ keywords = ["tesseract", "ocr", "bindings", "vision", "recognition"]
 categories = ["external-ffi-bindings", "computer-vision", "text-processing"]
 build = "build.rs"
 links = "kreuzberg_tesseract"
-exclude = ["tessdata/*", "third_party/*"]
 
 [package.metadata.docs.rs]
 features = ["docs-only"]
@@ -40,7 +48,7 @@ thiserror = { workspace = true }
 [build-dependencies]
 cc = { version = "1.4.7", optional = true }
 cmake = { version = "0.1.58", optional = true }
-zip = { version = ">=7.0.0", optional = true, default-features = false, features = [
+zip = { version = "8", optional = true, default-features = false, features = [
     "deflate-flate2-zlib-rs",
 ] }
 
