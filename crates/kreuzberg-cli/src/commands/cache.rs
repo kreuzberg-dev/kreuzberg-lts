@@ -134,7 +134,10 @@ pub fn clear_command(cache_dir: Option<PathBuf>, format: WireFormat) -> Result<(
 
 /// Execute cache manifest command - outputs expected model files with checksums.
 pub fn manifest_command(format: WireFormat) -> Result<()> {
+    #[cfg(any(feature = "paddle-ocr", feature = "layout-detection"))]
     let mut entries = Vec::new();
+    #[cfg(not(any(feature = "paddle-ocr", feature = "layout-detection")))]
+    let entries: Vec<()> = Vec::new();
 
     #[cfg(feature = "paddle-ocr")]
     {
@@ -151,7 +154,10 @@ pub fn manifest_command(format: WireFormat) -> Result<()> {
         entries.extend(kreuzberg::ocr::TessdataManager::manifest());
     }
 
+    #[cfg(any(feature = "paddle-ocr", feature = "layout-detection"))]
     let total_size_bytes: u64 = entries.iter().map(|e| e.size_bytes).sum();
+    #[cfg(not(any(feature = "paddle-ocr", feature = "layout-detection")))]
+    let total_size_bytes: u64 = 0;
     let version = env!("CARGO_PKG_VERSION");
 
     match format {
@@ -169,6 +175,7 @@ pub fn manifest_command(format: WireFormat) -> Result<()> {
                 style::label("SHA256")
             );
             println!("{}", style::dim(&format!("{:<50} {:>12} ------", "----", "----")));
+            #[cfg(any(feature = "paddle-ocr", feature = "layout-detection"))]
             for entry in &entries {
                 let size_str = if entry.size_bytes > 0 {
                     format!("{:.1} MB", entry.size_bytes as f64 / 1_048_576.0)
