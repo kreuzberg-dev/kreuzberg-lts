@@ -67,7 +67,8 @@ wasm-bindgen-futures = { workspace = true }
 web-sys = { workspace = true }
 
 [build-dependencies]
-bindgen = { version = "0.73.2", optional = true }
+# prettyplease uses syn 2, while bindgen can select syn 3; use its default rustfmt formatter. ~keep
+bindgen = { version = "0.73.2", optional = true, default-features = false, features = ["runtime", "logging"] }
 
 [lints.rust.unexpected_cfgs]
 level = "allow"

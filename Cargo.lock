@@ -506,7 +506,6 @@ dependencies = [
  "cexpr",
  "clang-sys",
  "log",
- "prettyplease 0.2.37",
  "proc-macro2",
  "quote",
  "regex",
