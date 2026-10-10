@@ -2487,11 +2487,44 @@ jobs:
         shell: pwsh
         run: scripts/ci/go/setup-msys2-windows.ps1
 
+      - name: Build shared and static C FFI libraries
+        id: build_ffi
+        uses: xberg-io/actions/build-rust-ffi@v1
+        with:
+          crate-name: kreuzberg-ffi
+          features: ${{ matrix.settings.build_features }}
+          target: ${{ matrix.settings.target }}
+          require-static: "true"
+
       - name: Package C FFI distribution
         shell: bash
         env:
           BUILD_FEATURES: ${{ matrix.settings.build_features }}
         run: scripts/publish/c-ffi/package-c-ffi.sh "${{ matrix.settings.label }}" "${{ needs.prepare.outputs.version }}" dist
+
+      - name: Add native static-link metadata to C FFI distribution
+        if: ${{ steps.build_ffi.outputs.native-static-libs-path != '' }}
+        shell: bash
+        env:
+          ARCHIVE: dist/c-ffi-${{ matrix.settings.label }}.tar.gz
+          METADATA: ${{ steps.build_ffi.outputs.native-static-libs-path }}
+          PLATFORM: ${{ matrix.settings.label }}
+          VERSION: ${{ needs.prepare.outputs.version }}
+        run: |
+          set -euo pipefail
+          [ -n "$ARCHIVE" ] && [ -f "$ARCHIVE" ] || { echo "::error::C FFI archive is missing"; exit 1; }
+          [ -n "$METADATA" ] && [ -s "$METADATA" ] || { echo "::error::native static-link metadata is missing or empty"; exit 1; }
+          stage_name="kreuzberg-ffi-${VERSION}-${PLATFORM}"
+          temp_dir=$(mktemp -d "${RUNNER_TEMP:?}/kreuzberg-ffi-metadata.XXXXXX")
+          replacement="${ARCHIVE}.tmp"
+          trap 'rm -rf "$temp_dir" "$replacement"' EXIT
+          tar -xzf "$ARCHIVE" -C "$temp_dir"
+          [ -d "$temp_dir/$stage_name/lib" ] || { echo "::error::C FFI archive layout is invalid"; exit 1; }
+          static_count=$(find "$temp_dir/$stage_name/lib" -maxdepth 1 -type f \( -name '*.a' -o -name '*.lib' \) | wc -l | tr -d ' ')
+          [ "$static_count" -ge 1 ] || { echo "::error::C FFI archive contains no static library"; exit 1; }
+          cp "$METADATA" "$temp_dir/$stage_name/lib/native-static-libs.txt"
+          tar -czf "$replacement" -C "$temp_dir" "$stage_name"
+          mv "$replacement" "$ARCHIVE"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v7
