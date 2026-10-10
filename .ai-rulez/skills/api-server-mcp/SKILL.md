@@ -1,7 +1,13 @@
 ---
-description: "api server mcp"
-name: api-server-mcp
-priority: critical
+type: Playbook
+title: Api Server Mcp
+description: api server mcp
+x-ai-rulez:
+  kind: skill
+  id: api-server-mcp
+  metadata:
+    priority: critical
+    name: api-server-mcp
 ---
 
 # API Server & MCP Protocol

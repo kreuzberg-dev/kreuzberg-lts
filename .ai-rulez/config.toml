@@ -1,11 +1,11 @@
 # AI-Rulez Configuration (migrated to V4 TOML format)
 # Documentation: https://github.com/Goldziher/ai-rulez
 
-version = '4.0'
+version = "5.0"
 name = 'Kreuzberg'
 description = 'Rust document intelligence library with polyglot bindings (Python/TypeScript/Ruby/Java/Go/Elixir/C#/PHP)'
 gitignore = true
-presets = ['claude', 'copilot', 'cursor', 'antigravity', 'codex', 'opencode']
+presets = ["claude", "copilot", "cursor", "antigravity", "codex", "opencode", "pi"]
 builtins = [
   'rust',
   'python',
@@ -68,3 +68,7 @@ command = 'ai-rulez'
 args = ['mcp']
 transport = 'stdio'
 enabled = true
+
+# Pinned by `ai-rulez migrate v5`: the 4.x default. Remove this line to take the v5 default.
+[header]
+hashes = "full"

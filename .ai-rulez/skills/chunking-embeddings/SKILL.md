@@ -1,7 +1,13 @@
 ---
-description: "chunking emueddings"
-name: chunking-embeddings
-priority: critical
+type: Playbook
+title: Chunking Embeddings
+description: chunking emueddings
+x-ai-rulez:
+  kind: skill
+  id: chunking-embeddings
+  metadata:
+    priority: critical
+    name: chunking-embeddings
 ---
 
 # Chunking & Embeddings

@@ -1,5 +1,11 @@
 ---
-priority: high
+type: Decision
+title: Feature Flag Policy
+x-ai-rulez:
+  kind: rule
+  id: feature-flag-policy
+  metadata:
+    priority: high
 ---
 
 # Feature Flag Policy

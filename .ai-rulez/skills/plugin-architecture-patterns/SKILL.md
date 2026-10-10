@@ -1,6 +1,12 @@
 ---
-description: "plugin architecture patterns"
-priority: critical
+type: Playbook
+title: Plugin Architecture Patterns
+description: plugin architecture patterns
+x-ai-rulez:
+  kind: skill
+  id: plugin-architecture-patterns
+  metadata:
+    priority: critical
 ---
 
 ## priority: critical

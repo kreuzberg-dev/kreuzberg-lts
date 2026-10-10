@@ -1,7 +1,13 @@
 ---
-description: "extraction pipeline patterns"
-name: extraction-pipeline-patterns
-priority: critical
+type: Playbook
+title: Extraction Pipeline Patterns
+description: extraction pipeline patterns
+x-ai-rulez:
+  kind: skill
+  id: extraction-pipeline-patterns
+  metadata:
+    priority: critical
+    name: extraction-pipeline-patterns
 ---
 
 # Extraction Pipeline Patterns

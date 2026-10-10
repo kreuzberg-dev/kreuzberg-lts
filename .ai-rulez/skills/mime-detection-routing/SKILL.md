@@ -1,6 +1,12 @@
 ---
-description: "mime detection routing"
-priority: high
+type: Playbook
+title: Mime Detection Routing
+description: mime detection routing
+x-ai-rulez:
+  kind: skill
+  id: mime-detection-routing
+  metadata:
+    priority: high
 ---
 
 ## priority: high

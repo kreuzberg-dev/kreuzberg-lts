@@ -1,5 +1,11 @@
 ---
-priority: high
+type: Concept
+title: Crate Structure
+x-ai-rulez:
+  kind: context
+  id: crate-structure
+  metadata:
+    priority: high
 ---
 
 # Crate Structure

@@ -1,6 +1,12 @@
 ---
-description: "wasm constraints"
-priority: high
+type: Playbook
+title: Wasm Constraints
+description: wasm constraints
+x-ai-rulez:
+  kind: skill
+  id: wasm-constraints
+  metadata:
+    priority: high
 ---
 
 ## priority: high

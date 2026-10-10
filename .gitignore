@@ -223,15 +223,21 @@ testResults.xml
 
 # BEGIN ai-rulez (DO NOT EDIT - managed by ai-rulez)
 .agents/agents/
-.agents/settings.json
+.agents/mcp_config.json
 .agents/skills/
 .ai-rulez/.generated-manifest.json
+.ai-rulez/.generated-manifest.local.json
+.ai-rulez/local/
+.cursor/agents/
 .cursor/commands/
-.cursor/rules/
+.cursor/mcp.json
 .github/agents/
-.github/commands/
-.github/copilot-instructions.md
-.github/skills/
+.github/prompts/iterate.prompt.md
+.github/prompts/parallelize.prompt.md
 .opencode/agents/
-.opencode/skills/
+.opencode/commands/
+.pi/agents/
+.pi/mcp.json
+.pi/prompts/
+opencode.json
 # END ai-rulez

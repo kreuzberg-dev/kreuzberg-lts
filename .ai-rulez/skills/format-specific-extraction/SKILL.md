@@ -1,6 +1,12 @@
 ---
-description: "format specific extraction"
-priority: high
+type: Playbook
+title: Format Specific Extraction
+description: format specific extraction
+x-ai-rulez:
+  kind: skill
+  id: format-specific-extraction
+  metadata:
+    priority: high
 ---
 
 ## priority: high

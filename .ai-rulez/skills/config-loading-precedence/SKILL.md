@@ -1,6 +1,12 @@
 ---
-description: "config loading precedence"
-priority: high
+type: Playbook
+title: Config Loading Precedence
+description: config loading precedence
+x-ai-rulez:
+  kind: skill
+  id: config-loading-precedence
+  metadata:
+    priority: high
 ---
 
 ## priority: high
