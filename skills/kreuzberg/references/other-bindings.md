@@ -156,7 +156,7 @@ See the [Elixir binding documentation](https://github.com/kreuzberg-dev/kreuzber
 **Installation:**
 
 ```bash
-npm install @kreuzberg/wasm
+pnpm add @kreuzberg/wasm
 ```
 
 **Basic Extraction:**

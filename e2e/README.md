@@ -121,8 +121,8 @@ Requirements:
 
 ```bash
 cd e2e/typescript
-npm install
-npm test
+pnpm install
+pnpm test
 ```
 
 Or with pnpm:
@@ -243,7 +243,7 @@ Example CI step:
     cd e2e/python && pytest tests/test_config_parity.py -v
 
     # TypeScript
-    cd ../typescript && npm test
+    cd ../typescript && pnpm test
 
     # Ruby
     cd ../ruby && bundle exec rspec spec/config_parity_spec.rb

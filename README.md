@@ -181,7 +181,7 @@ Kreuzberg ships with an [Agent Skill](https://agentskills.io) that teaches AI co
 Install the skill into any project using the [Vercel Skills CLI](https://github.com/vercel-labs/skills):
 
 ```bash
-npx skills add kreuzberg-dev/kreuzberg-lts
+pnpm dlx skills add kreuzberg-dev/kreuzberg-lts
 ```
 
 The skill is located at [`skills/kreuzberg/SKILL.md`](skills/kreuzberg/SKILL.md) and is automatically discovered by supported AI coding tools once installed.

@@ -58,7 +58,17 @@
     "native",
     "nodejs"
   ],
-  "files": ["dist", "index.js", "*.cjs", "*.d.ts", "*.node", "*.dylib", "*.so", "*.dll", "README.md"],
+  "files": [
+    "dist",
+    "index.js",
+    "*.cjs",
+    "*.d.ts",
+    "*.node",
+    "*.dylib",
+    "*.so",
+    "*.dll",
+    "README.md"
+  ],
   "napi": {
     "binaryName": "kreuzberg-node",
     "package": {
@@ -99,18 +109,19 @@
     "version": "napi version"
   },
   "devDependencies": {
-    "@napi-rs/cli": "^3.9.0",
+    "@napi-rs/cli": "^3.10.8",
     "@types/archiver": "^8.0.0",
-    "@types/node": "^26.4.1",
+    "@types/node": "^26.6.5",
     "@types/which": "^3.0.4",
-    "@vitest/coverage-v8": "^5.0.0",
+    "@vitest/coverage-v8": "^5.0.3",
     "archiver": "^8.0.0",
     "tsup": "^8.5.1",
     "typescript": "^7.0.2",
-    "vitest": "^5.0.0"
+    "vitest": "^5.0.3"
   },
   "dependencies": {
     "@emnapi/runtime": "1.11.3",
     "which": "^7.0.0"
-  }
+  },
+  "packageManager": "pnpm@12.11.2"
 }

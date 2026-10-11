@@ -93,7 +93,7 @@ Install via one of the supported package managers:
 **npm:**
 
 ```bash
-npm install @kreuzberg/wasm
+pnpm add @kreuzberg/wasm
 ```
 
 

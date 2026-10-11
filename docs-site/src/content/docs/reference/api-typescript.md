@@ -14,7 +14,7 @@ For browser and edge environments, see the [WASM API Reference](/reference/api-w
 ## Installation
 
 ```bash title="Terminal"
-npm install @kreuzberg/node
+pnpm add @kreuzberg/node
 ```
 
 **Or with other package managers:**

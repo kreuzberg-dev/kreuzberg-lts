@@ -37,7 +37,7 @@ The v4 packages keep their existing names and install paths:
 | Ecosystem | Install |
 |-----------|---------|
 | Python (PyPI) | `pip install "kreuzberg>=4,<5"` |
-| npm | `npm install @kreuzberg/kreuzberg@^4` |
+| npm | `pnpm add @kreuzberg/kreuzberg@^4` |
 | Go | `go get github.com/kreuzberg-dev/kreuzberg-lts/v4` |
 | Docker | `docker pull ghcr.io/kreuzberg-dev/kreuzberg-full:4` |
 | Helm | `helm install kreuzberg oci://ghcr.io/kreuzberg-dev/charts/kreuzberg --version 4.10.0` |

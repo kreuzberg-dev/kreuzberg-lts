@@ -50,5 +50,6 @@
     "registry": "https://registry.npmjs.org/",
     "access": "public"
   },
-  "os": ["win32"]
+  "os": ["win32"],
+  "packageManager": "pnpm@12.11.2"
 }

@@ -51,5 +51,6 @@
     "access": "public"
   },
   "os": ["linux"],
-  "libc": ["glibc"]
+  "libc": ["glibc"],
+  "packageManager": "pnpm@12.11.2"
 }

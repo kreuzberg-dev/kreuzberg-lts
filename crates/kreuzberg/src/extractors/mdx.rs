@@ -1050,7 +1050,7 @@ Final paragraph.
         assert!(!result.content.contains("{/* more */}"), "JSX comment not stripped");
 
         assert!(
-            result.content.contains("npm install @types/mdx"),
+            result.content.contains("pnpm add @types/mdx"),
             "Code block content should be preserved"
         );
 

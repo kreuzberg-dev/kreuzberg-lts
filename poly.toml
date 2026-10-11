@@ -910,8 +910,7 @@ traineddata = "traineddata"
   "N801",
 ]
 "**/text_repair.rs" = ["typo"]
-# console output is the legitimate product, not incidental logging: cli.ts is the npx
-# kreuzberg-node proxy CLI's entry point, the others are Node build/postinstall scripts run
+# console output is the legitimate product, not incidental logging: cli.ts is the pnpm dlx # kreuzberg-node proxy CLI's entry point, the others are Node build/postinstall scripts run
 # by npm/CI rather than shipped as library code. ~keep
 "crates/kreuzberg-node/typescript/cli.ts" = ["no-console"]
 "crates/kreuzberg-wasm/scripts/copy-pkg.js" = ["no-console"]

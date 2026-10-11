@@ -50,7 +50,7 @@ All other Kreuzberg features work fully in WASM:
 ## Installation
 
 ```bash title="npm"
-npm install @kreuzberg/wasm
+pnpm add @kreuzberg/wasm
 ```
 
 **Or with other package managers:**
@@ -1986,7 +1986,7 @@ module.exports = {
 The `@kreuzberg/core` package is a peer dependency. Install it:
 
 ```bash title="Install Kreuzberg Core Package"
-npm install @kreuzberg/core
+pnpm add @kreuzberg/core
 ```
 
 ---

@@ -1,8 +1,8 @@
 ```bash title="Bash"
 # Start MCP server via TypeScript CLI proxy
-npx kreuzberg mcp
+pnpm dlx kreuzberg mcp
 
 # With custom config
-npx kreuzberg mcp --config kreuzberg.toml
+pnpm dlx kreuzberg mcp --config kreuzberg.toml
 
 ```

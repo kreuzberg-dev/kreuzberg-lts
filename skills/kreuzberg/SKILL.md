@@ -40,7 +40,7 @@ pip install kreuzberg[easyocr]    # EasyOCR
 ### Node.js
 
 ```bash
-npm install @kreuzberg/node
+pnpm add @kreuzberg/node
 ```
 
 ### Rust

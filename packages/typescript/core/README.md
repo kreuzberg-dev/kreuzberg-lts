@@ -18,7 +18,7 @@ Kreuzberg shared core types and utilities for use across all language bindings a
 ## Installation
 
 ```bash
-npm install @kreuzberg/core
+pnpm add @kreuzberg/core
 ```
 
 ## Usage
@@ -44,26 +44,26 @@ import { /* utilities */ } from "@kreuzberg/core/utils";
 ### Build
 
 ```bash
-npm run build
+pnpm run build
 ```
 
 ### Type checking
 
 ```bash
-npm run typecheck
+pnpm run typecheck
 ```
 
 ### Testing
 
 ```bash
-npm test
+pnpm test
 ```
 
 ### Linting
 
 ```bash
-npm run lint
-npm run lint:fix
+pnpm run lint
+pnpm run lint:fix
 ```
 
 ## License

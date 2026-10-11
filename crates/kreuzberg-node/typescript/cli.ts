@@ -3,7 +3,7 @@
 /**
  * Proxy entry point that forwards to the Rust-based Kreuzberg CLI.
  *
- * This keeps `npx kreuzberg` working without shipping an additional TypeScript CLI implementation.
+ * This keeps `pnpm dlx kreuzberg` working without shipping an additional TypeScript CLI implementation.
  */
 
 import { spawnSync } from "node:child_process";

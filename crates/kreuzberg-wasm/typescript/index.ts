@@ -16,7 +16,7 @@
  * ## Installation
  *
  * ```bash
- * npm install @kreuzberg/wasm
+ * pnpm add @kreuzberg/wasm
  * ```
  *
  * ## Basic Usage

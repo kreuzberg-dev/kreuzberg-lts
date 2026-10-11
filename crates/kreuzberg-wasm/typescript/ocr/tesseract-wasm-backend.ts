@@ -484,7 +484,7 @@ export class TesseractWasmBackend implements OcrBackendProtocol {
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       throw new Error(
-        `Failed to import tesseract-wasm. Ensure it is installed via: npm install tesseract-wasm. Error: ${message}`,
+        `Failed to import tesseract-wasm. Ensure it is installed via: pnpm add tesseract-wasm. Error: ${message}`,
         { cause: error },
       );
     }

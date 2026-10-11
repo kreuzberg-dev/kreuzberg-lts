@@ -50,5 +50,6 @@
     "registry": "https://registry.npmjs.org/",
     "access": "public"
   },
-  "os": ["darwin"]
+  "os": ["darwin"],
+  "packageManager": "pnpm@12.11.2"
 }
