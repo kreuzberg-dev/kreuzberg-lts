@@ -4,7 +4,7 @@
 version = 1
 ai_rulez_version = '5.3.0'
 scope = 'all'
-tree = 'sha256:c914e9d5f73e84972cc07c224e895c4c07bcff84eb6a3c48e4d66925195ef5a1'
+tree = 'sha256:b1a0c676b908301c9ea96dd0e4caac91c7274e9c7f91a5a0350dda194fc84e94'
 
 [[include]]
 name = 'kreuzberg-cicd'
@@ -352,6 +352,12 @@ kind = 'rule'
 id = 'alef-generated-bindings'
 path = 'rules/alef-generated-bindings.md'
 digest = 'sha256:67252b98fa4a5c7aa9d2f655c4ea399908fd5e0538f3dd4b155fb61b3fa9eaaa'
+
+[[item]]
+kind = 'rule'
+id = 'extraction-measurement-hygiene'
+path = 'rules/extraction-measurement-hygiene.md'
+digest = 'sha256:d9151570ce9cce7f8110d066cad677ded37d9a3a0968c09a73cf7b85af9258ff'
 
 [[item]]
 kind = 'rule'
