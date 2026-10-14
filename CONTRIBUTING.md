@@ -82,7 +82,9 @@ Kreuzberg LTS is written following strict AI engineering practices. That is, its
 We use the tool `ai-rulez`, vibe coded by @Goldziher, to manage our AI conventions. You are encouraged to use this tool — running the `task setup` will get you going, or run in your terminal:
 
 ```sh
-pnpm dlx ai-rulez@latest generate
+task governance:hooks
+task governance:generate
+task governance:check
 ```
 
 This will be scaffold the AI agent conventions (e.g. CLAUDE.md, AGENTS.md, subagents, skills, etc.). You can see the AGENTS.md generated afterwards.
@@ -105,3 +107,7 @@ We do vendor code from other libraries and allow this, in some situations. If yo
 - **License:** [MIT License](LICENSE)
 
 Thank you for helping make Kreuzberg LTS better!
+
+## Coding-agent plugin
+
+Installing governance hooks requires Python 3.11 or newer. Use ai-rulez 5.3.0 with the reviewed source revision pinned in CI. Plugin authoring lives in `plugin/.ai-rulez`; run `task plugin:generate` and `task plugin:verify`. Public `skills/` files are generated exports. See [runtime installation and publishing](plugin/assets/README.md).

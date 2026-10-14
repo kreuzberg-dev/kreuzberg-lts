@@ -303,5 +303,67 @@
     ".pi/mcp.json": [],
     ".vscode/mcp.json": [],
     "opencode.json": []
+  },
+  "servers": {
+    ".agents/mcp_config.json": [
+      [
+        "mcpServers",
+        "ai-rulez"
+      ],
+      [
+        "mcpServers",
+        "playwright"
+      ]
+    ],
+    ".codex/config.toml": [
+      [
+        "mcp_servers",
+        "ai-rulez"
+      ],
+      [
+        "mcp_servers",
+        "playwright"
+      ]
+    ],
+    ".cursor/mcp.json": [
+      [
+        "mcpServers",
+        "ai-rulez"
+      ],
+      [
+        "mcpServers",
+        "playwright"
+      ]
+    ],
+    ".mcp.json": [
+      [
+        "mcpServers",
+        "ai-rulez"
+      ],
+      [
+        "mcpServers",
+        "playwright"
+      ]
+    ],
+    ".pi/mcp.json": [
+      [
+        "mcpServers",
+        "ai-rulez"
+      ],
+      [
+        "mcpServers",
+        "playwright"
+      ]
+    ],
+    "opencode.json": [
+      [
+        "mcp",
+        "ai-rulez"
+      ],
+      [
+        "mcp",
+        "playwright"
+      ]
+    ]
   }
 }

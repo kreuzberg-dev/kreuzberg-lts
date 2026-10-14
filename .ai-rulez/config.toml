@@ -1,7 +1,5 @@
-# AI-Rulez Configuration (migrated to V4 TOML format)
-# Documentation: https://github.com/Goldziher/ai-rulez
-
 version = "5.0"
+default_layers = ["plugins"]
 name = 'Kreuzberg'
 description = 'Rust document intelligence library with polyglot bindings (Python/TypeScript/Ruby/Java/Go/Elixir/C#/PHP)'
 gitignore = true
@@ -18,7 +16,7 @@ builtins = [
   'elixir',
   'r',
   'security',
-  'git-workflow',
+  '!git-workflow',
   'code-quality',
   'testing',
   'token-efficiency',
@@ -28,54 +26,54 @@ builtins = [
 [[includes]]
 name = 'kreuzberg-core'
 source = 'https://github.com/kreuzberg-dev/ai-rulez.git'
+ref = "41783fcc1f8578ac8cfdd6835653fb2ac46edd4e"
 path = 'modules/core'
 merge_strategy = 'local-override'
 
 [[includes]]
 name = 'kreuzberg-languages'
 source = 'https://github.com/kreuzberg-dev/ai-rulez.git'
+ref = "41783fcc1f8578ac8cfdd6835653fb2ac46edd4e"
 path = 'modules/languages'
 merge_strategy = 'local-override'
 
 [[includes]]
 name = 'kreuzberg-cicd'
 source = 'https://github.com/kreuzberg-dev/ai-rulez.git'
+ref = "41783fcc1f8578ac8cfdd6835653fb2ac46edd4e"
 path = 'modules/cicd'
 merge_strategy = 'local-override'
 
 [[includes]]
 name = 'kreuzberg-infrastructure'
 source = 'https://github.com/kreuzberg-dev/ai-rulez.git'
+ref = "41783fcc1f8578ac8cfdd6835653fb2ac46edd4e"
 path = 'modules/infrastructure'
 merge_strategy = 'local-override'
 
 [[installed_skills]]
 name = 'alef'
 source = 'https://github.com/kreuzberg-dev/alef.git'
+ref = "0f9a0e0b0d7e71b0b20eb1babeeadcc59901a461"
 
 [[mcp_servers]]
 name = 'playwright'
 description = 'Browser automation for testing and web interaction'
 command = 'npx'
-args = ['-y', '@playwright/mcp']
+args = ['-y', '@playwright/mcp@0.0.83']
 transport = 'stdio'
 enabled = true
 
 [[mcp_servers]]
 name = 'ai-rulez'
 description = 'AI-Rulez MCP server for configuration management'
-command = 'ai-rulez'
-args = ['mcp']
+command = 'pnpm'
+args = ['dlx', 'ai-rulez@5.3.0', 'mcp']
 transport = 'stdio'
 enabled = true
 
-# Pinned by `ai-rulez migrate v5`: the 4.x default. Remove this line to take the v5 default.
-[header]
-text = """AI-RULEZ :: GENERATED FILE - DO NOT EDIT
-Source: .ai-rulez/config.toml
-Modify .ai-rulez/ content and regenerate with pnpm dlx ai-rulez@5.0.1 generate
-MCP server: pnpm dlx ai-rulez@5.0.1 mcp"""
-hashes = "full"
-
 [mcp]
-self_server_command = ["pnpm", "dlx", "ai-rulez@5.0.1", "mcp"]
+self_server_command = ["pnpm", "dlx", "ai-rulez@5.3.0", "mcp"]
+
+[lock]
+include_outputs = false

@@ -1,0 +1,12 @@
+version = "5.0"
+default_layers = ["plugins"]
+name = "kreuzberg-lts"
+description = "Kreuzberg 4.x document extraction skills and MCP integration"
+agents_md = false
+gitignore = true
+
+[mcp]
+self_server = false
+
+[lock]
+include_outputs = false

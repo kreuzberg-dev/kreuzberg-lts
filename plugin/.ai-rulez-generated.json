@@ -1,0 +1,343 @@
+{
+  "schema_version": "v1",
+  "source_hash": "blake3:72012ae1ae96eb7dfd293c06108cd5d130db0cfc71e8265f06d4f05692877cc3",
+  "outputs": {
+    ".claude-plugin/plugin.json": {
+      "content_hash": "blake3:1c24d98f0e6068ccbb0de321248c6d8b944703597d3affe1a2fafefc50a8d872",
+      "mode": "0644"
+    },
+    ".codex-plugin/plugin.json": {
+      "content_hash": "blake3:6615ef6841c7fb1c650e0905bb1748e8d1e21751b4f69ad302dab5a3afe8afae",
+      "mode": "0644"
+    },
+    ".cursor-plugin/plugin.json": {
+      "content_hash": "blake3:94d82f99f65f8df78cc7e5df8cb007da283e3c2d18262b22a709952fadeda76a",
+      "mode": "0644"
+    },
+    ".cursor-plugin/skills/kreuzberg/SKILL.md": {
+      "content_hash": "blake3:1c4e9e891d22c42c6abd5e8427e68957a62042d46d0929e0928cac9283f75677",
+      "mode": "0644"
+    },
+    ".cursor-plugin/skills/kreuzberg/index.md": {
+      "content_hash": "blake3:7b155bb7a94c0b829cc0b79283ce70594823e27ee733241ddd84b8d27195b0d2",
+      "mode": "0644"
+    },
+    ".cursor-plugin/skills/kreuzberg/references/advanced-features.md": {
+      "content_hash": "blake3:6e63db3ebbe4cd24e619bf74b1dff718f66676df05054f0fd6fb1c1076ed5c74",
+      "mode": "0644"
+    },
+    ".cursor-plugin/skills/kreuzberg/references/cli-reference.md": {
+      "content_hash": "blake3:24a0a7d53d203e54453ad6915f05c16493231a443a1522d657d382972e1883d1",
+      "mode": "0644"
+    },
+    ".cursor-plugin/skills/kreuzberg/references/configuration.md": {
+      "content_hash": "blake3:80febc66a07d7a479b4e38fc83e6d0ff76efaa088bd2767dce8f8e631aabece3",
+      "mode": "0644"
+    },
+    ".cursor-plugin/skills/kreuzberg/references/nodejs-api.md": {
+      "content_hash": "blake3:12c456f0654763a4b97fbbbf9919a2d39e2128b44d007f7535ef00f67c859150",
+      "mode": "0644"
+    },
+    ".cursor-plugin/skills/kreuzberg/references/other-bindings.md": {
+      "content_hash": "blake3:b7ac0b1e0e9cd30dd796bc35b13980b130fcfd96c7971f311e639e732cc25cd7",
+      "mode": "0644"
+    },
+    ".cursor-plugin/skills/kreuzberg/references/python-api.md": {
+      "content_hash": "blake3:70b8bead9b77c7bce4d19f18f0db662c9b7f8f0add6abfcf44f4ab5fde0650bc",
+      "mode": "0644"
+    },
+    ".cursor-plugin/skills/kreuzberg/references/rust-api.md": {
+      "content_hash": "blake3:7218d2e5b219319b01e779830566ac4adddc486790965f1f8d5e185cb4715c0f",
+      "mode": "0644"
+    },
+    ".cursor-plugin/skills/kreuzberg/references/supported-formats.md": {
+      "content_hash": "blake3:d3c91f8b3d13d484510c635362bb3d86605f41b0246d8176ffd101b66502dd47",
+      "mode": "0644"
+    },
+    ".factory-plugin/plugin.json": {
+      "content_hash": "blake3:4021482a2382ffa5f30096e4144a051b61c40cba6fd0b74057a3f2634613ca6e",
+      "mode": "0644"
+    },
+    ".hermes/package/pyproject.toml": {
+      "content_hash": "blake3:a648ca052fdd59023ade50b8ea22181ef1beae4793366ebe8ea77ea9c2df415a",
+      "mode": "0644"
+    },
+    ".hermes/package/src/kreuzberg_hermes_plugin/__init__.py": {
+      "content_hash": "blake3:5809175943c5b44cfc27e3bd5537a66c096d272dc757a119b64a93c813cfe0fb",
+      "mode": "0644"
+    },
+    ".hermes/package/src/kreuzberg_hermes_plugin/hermes.py": {
+      "content_hash": "blake3:4e6f701cc5825eb821d5926e0e3d6790cf6caa37df5d6b28c992ceb7a859ae78",
+      "mode": "0644"
+    },
+    ".hermes/package/src/kreuzberg_hermes_plugin/plugin.yaml": {
+      "content_hash": "blake3:211c1041a0df7bc9436565c09959541164ad6629c697caf839cc970eb72ab238",
+      "mode": "0644"
+    },
+    ".hermes/package/src/kreuzberg_hermes_plugin/skills/kreuzberg/SKILL.md": {
+      "content_hash": "blake3:1c4e9e891d22c42c6abd5e8427e68957a62042d46d0929e0928cac9283f75677",
+      "mode": "0644"
+    },
+    ".hermes/package/src/kreuzberg_hermes_plugin/skills/kreuzberg/index.md": {
+      "content_hash": "blake3:7b155bb7a94c0b829cc0b79283ce70594823e27ee733241ddd84b8d27195b0d2",
+      "mode": "0644"
+    },
+    ".hermes/package/src/kreuzberg_hermes_plugin/skills/kreuzberg/references/advanced-features.md": {
+      "content_hash": "blake3:6e63db3ebbe4cd24e619bf74b1dff718f66676df05054f0fd6fb1c1076ed5c74",
+      "mode": "0644"
+    },
+    ".hermes/package/src/kreuzberg_hermes_plugin/skills/kreuzberg/references/cli-reference.md": {
+      "content_hash": "blake3:24a0a7d53d203e54453ad6915f05c16493231a443a1522d657d382972e1883d1",
+      "mode": "0644"
+    },
+    ".hermes/package/src/kreuzberg_hermes_plugin/skills/kreuzberg/references/configuration.md": {
+      "content_hash": "blake3:80febc66a07d7a479b4e38fc83e6d0ff76efaa088bd2767dce8f8e631aabece3",
+      "mode": "0644"
+    },
+    ".hermes/package/src/kreuzberg_hermes_plugin/skills/kreuzberg/references/nodejs-api.md": {
+      "content_hash": "blake3:12c456f0654763a4b97fbbbf9919a2d39e2128b44d007f7535ef00f67c859150",
+      "mode": "0644"
+    },
+    ".hermes/package/src/kreuzberg_hermes_plugin/skills/kreuzberg/references/other-bindings.md": {
+      "content_hash": "blake3:b7ac0b1e0e9cd30dd796bc35b13980b130fcfd96c7971f311e639e732cc25cd7",
+      "mode": "0644"
+    },
+    ".hermes/package/src/kreuzberg_hermes_plugin/skills/kreuzberg/references/python-api.md": {
+      "content_hash": "blake3:70b8bead9b77c7bce4d19f18f0db662c9b7f8f0add6abfcf44f4ab5fde0650bc",
+      "mode": "0644"
+    },
+    ".hermes/package/src/kreuzberg_hermes_plugin/skills/kreuzberg/references/rust-api.md": {
+      "content_hash": "blake3:7218d2e5b219319b01e779830566ac4adddc486790965f1f8d5e185cb4715c0f",
+      "mode": "0644"
+    },
+    ".hermes/package/src/kreuzberg_hermes_plugin/skills/kreuzberg/references/supported-formats.md": {
+      "content_hash": "blake3:d3c91f8b3d13d484510c635362bb3d86605f41b0246d8176ffd101b66502dd47",
+      "mode": "0644"
+    },
+    ".hermes/plugins/kreuzberg/__init__.py": {
+      "content_hash": "blake3:5809175943c5b44cfc27e3bd5537a66c096d272dc757a119b64a93c813cfe0fb",
+      "mode": "0644"
+    },
+    ".hermes/plugins/kreuzberg/hermes.py": {
+      "content_hash": "blake3:4e6f701cc5825eb821d5926e0e3d6790cf6caa37df5d6b28c992ceb7a859ae78",
+      "mode": "0644"
+    },
+    ".hermes/plugins/kreuzberg/plugin.yaml": {
+      "content_hash": "blake3:211c1041a0df7bc9436565c09959541164ad6629c697caf839cc970eb72ab238",
+      "mode": "0644"
+    },
+    ".hermes/plugins/kreuzberg/skills/kreuzberg/SKILL.md": {
+      "content_hash": "blake3:1c4e9e891d22c42c6abd5e8427e68957a62042d46d0929e0928cac9283f75677",
+      "mode": "0644"
+    },
+    ".hermes/plugins/kreuzberg/skills/kreuzberg/index.md": {
+      "content_hash": "blake3:7b155bb7a94c0b829cc0b79283ce70594823e27ee733241ddd84b8d27195b0d2",
+      "mode": "0644"
+    },
+    ".hermes/plugins/kreuzberg/skills/kreuzberg/references/advanced-features.md": {
+      "content_hash": "blake3:6e63db3ebbe4cd24e619bf74b1dff718f66676df05054f0fd6fb1c1076ed5c74",
+      "mode": "0644"
+    },
+    ".hermes/plugins/kreuzberg/skills/kreuzberg/references/cli-reference.md": {
+      "content_hash": "blake3:24a0a7d53d203e54453ad6915f05c16493231a443a1522d657d382972e1883d1",
+      "mode": "0644"
+    },
+    ".hermes/plugins/kreuzberg/skills/kreuzberg/references/configuration.md": {
+      "content_hash": "blake3:80febc66a07d7a479b4e38fc83e6d0ff76efaa088bd2767dce8f8e631aabece3",
+      "mode": "0644"
+    },
+    ".hermes/plugins/kreuzberg/skills/kreuzberg/references/nodejs-api.md": {
+      "content_hash": "blake3:12c456f0654763a4b97fbbbf9919a2d39e2128b44d007f7535ef00f67c859150",
+      "mode": "0644"
+    },
+    ".hermes/plugins/kreuzberg/skills/kreuzberg/references/other-bindings.md": {
+      "content_hash": "blake3:b7ac0b1e0e9cd30dd796bc35b13980b130fcfd96c7971f311e639e732cc25cd7",
+      "mode": "0644"
+    },
+    ".hermes/plugins/kreuzberg/skills/kreuzberg/references/python-api.md": {
+      "content_hash": "blake3:70b8bead9b77c7bce4d19f18f0db662c9b7f8f0add6abfcf44f4ab5fde0650bc",
+      "mode": "0644"
+    },
+    ".hermes/plugins/kreuzberg/skills/kreuzberg/references/rust-api.md": {
+      "content_hash": "blake3:7218d2e5b219319b01e779830566ac4adddc486790965f1f8d5e185cb4715c0f",
+      "mode": "0644"
+    },
+    ".hermes/plugins/kreuzberg/skills/kreuzberg/references/supported-formats.md": {
+      "content_hash": "blake3:d3c91f8b3d13d484510c635362bb3d86605f41b0246d8176ffd101b66502dd47",
+      "mode": "0644"
+    },
+    ".mcp.json": {
+      "content_hash": "blake3:0e6cadf1e822b99b45433d77cc3a952a25aca9e74cbe2a955033425abf1649d8",
+      "mode": "0644"
+    },
+    ".opencode/ai-rulez-bundle.json": {
+      "content_hash": "blake3:2b18231bd8bda69343093893a9ca06ab15a913feec3ec4187be3f23a469c0c02",
+      "mode": "0644"
+    },
+    ".opencode/ai-rulez-content.js": {
+      "content_hash": "blake3:011ec20caa671eb4bd4e886b09e15f720a786de4bf747419efd0690889fc5549",
+      "mode": "0644"
+    },
+    ".opencode/plugins/kreuzberg.js": {
+      "content_hash": "blake3:a8a7aa35477a5f99890b713c11490fc4f3fe1d5e83b606cf1ec0792cd35a295b",
+      "mode": "0644"
+    },
+    ".opencode/skills/kreuzberg/SKILL.md": {
+      "content_hash": "blake3:1c4e9e891d22c42c6abd5e8427e68957a62042d46d0929e0928cac9283f75677",
+      "mode": "0644"
+    },
+    ".opencode/skills/kreuzberg/index.md": {
+      "content_hash": "blake3:7b155bb7a94c0b829cc0b79283ce70594823e27ee733241ddd84b8d27195b0d2",
+      "mode": "0644"
+    },
+    ".opencode/skills/kreuzberg/references/advanced-features.md": {
+      "content_hash": "blake3:6e63db3ebbe4cd24e619bf74b1dff718f66676df05054f0fd6fb1c1076ed5c74",
+      "mode": "0644"
+    },
+    ".opencode/skills/kreuzberg/references/cli-reference.md": {
+      "content_hash": "blake3:24a0a7d53d203e54453ad6915f05c16493231a443a1522d657d382972e1883d1",
+      "mode": "0644"
+    },
+    ".opencode/skills/kreuzberg/references/configuration.md": {
+      "content_hash": "blake3:80febc66a07d7a479b4e38fc83e6d0ff76efaa088bd2767dce8f8e631aabece3",
+      "mode": "0644"
+    },
+    ".opencode/skills/kreuzberg/references/nodejs-api.md": {
+      "content_hash": "blake3:12c456f0654763a4b97fbbbf9919a2d39e2128b44d007f7535ef00f67c859150",
+      "mode": "0644"
+    },
+    ".opencode/skills/kreuzberg/references/other-bindings.md": {
+      "content_hash": "blake3:b7ac0b1e0e9cd30dd796bc35b13980b130fcfd96c7971f311e639e732cc25cd7",
+      "mode": "0644"
+    },
+    ".opencode/skills/kreuzberg/references/python-api.md": {
+      "content_hash": "blake3:70b8bead9b77c7bce4d19f18f0db662c9b7f8f0add6abfcf44f4ab5fde0650bc",
+      "mode": "0644"
+    },
+    ".opencode/skills/kreuzberg/references/rust-api.md": {
+      "content_hash": "blake3:7218d2e5b219319b01e779830566ac4adddc486790965f1f8d5e185cb4715c0f",
+      "mode": "0644"
+    },
+    ".opencode/skills/kreuzberg/references/supported-formats.md": {
+      "content_hash": "blake3:d3c91f8b3d13d484510c635362bb3d86605f41b0246d8176ffd101b66502dd47",
+      "mode": "0644"
+    },
+    ".pi/skills/kreuzberg/SKILL.md": {
+      "content_hash": "blake3:1c4e9e891d22c42c6abd5e8427e68957a62042d46d0929e0928cac9283f75677",
+      "mode": "0644"
+    },
+    ".pi/skills/kreuzberg/index.md": {
+      "content_hash": "blake3:7b155bb7a94c0b829cc0b79283ce70594823e27ee733241ddd84b8d27195b0d2",
+      "mode": "0644"
+    },
+    ".pi/skills/kreuzberg/references/advanced-features.md": {
+      "content_hash": "blake3:6e63db3ebbe4cd24e619bf74b1dff718f66676df05054f0fd6fb1c1076ed5c74",
+      "mode": "0644"
+    },
+    ".pi/skills/kreuzberg/references/cli-reference.md": {
+      "content_hash": "blake3:24a0a7d53d203e54453ad6915f05c16493231a443a1522d657d382972e1883d1",
+      "mode": "0644"
+    },
+    ".pi/skills/kreuzberg/references/configuration.md": {
+      "content_hash": "blake3:80febc66a07d7a479b4e38fc83e6d0ff76efaa088bd2767dce8f8e631aabece3",
+      "mode": "0644"
+    },
+    ".pi/skills/kreuzberg/references/nodejs-api.md": {
+      "content_hash": "blake3:12c456f0654763a4b97fbbbf9919a2d39e2128b44d007f7535ef00f67c859150",
+      "mode": "0644"
+    },
+    ".pi/skills/kreuzberg/references/other-bindings.md": {
+      "content_hash": "blake3:b7ac0b1e0e9cd30dd796bc35b13980b130fcfd96c7971f311e639e732cc25cd7",
+      "mode": "0644"
+    },
+    ".pi/skills/kreuzberg/references/python-api.md": {
+      "content_hash": "blake3:70b8bead9b77c7bce4d19f18f0db662c9b7f8f0add6abfcf44f4ab5fde0650bc",
+      "mode": "0644"
+    },
+    ".pi/skills/kreuzberg/references/rust-api.md": {
+      "content_hash": "blake3:7218d2e5b219319b01e779830566ac4adddc486790965f1f8d5e185cb4715c0f",
+      "mode": "0644"
+    },
+    ".pi/skills/kreuzberg/references/supported-formats.md": {
+      "content_hash": "blake3:d3c91f8b3d13d484510c635362bb3d86605f41b0246d8176ffd101b66502dd47",
+      "mode": "0644"
+    },
+    "assets/GEMINI.md": {
+      "content_hash": "blake3:86ee6dfc8bff7e03b6bfe356698b8be85be3d6065e50322b2d8cb23f3d5657c3",
+      "mode": "0644"
+    },
+    "assets/README.md": {
+      "content_hash": "blake3:5b88ccf5ab7ebb01485dec70c68083cc5add3ca1c4c8a6780411681e81af0fc4",
+      "mode": "0644"
+    },
+    "gemini-extension.json": {
+      "content_hash": "blake3:481b2bf9f79e4cfa896b182deb50fb9847c93e800466f6bd00f23aa96f99b5ce",
+      "mode": "0644"
+    },
+    "kimi.plugin.json": {
+      "content_hash": "blake3:f76dcb14573a6a6d83278532de47f399fccdf2ce1f7e316394e02adc7ba87bce",
+      "mode": "0644"
+    },
+    "mcp.json": {
+      "content_hash": "blake3:dddc918509bd3425926f7ed064677ad480a4701ec1e1d2dc16363fc6396ec48f",
+      "mode": "0644"
+    },
+    "package.json": {
+      "content_hash": "blake3:6b20325997b5f1b9efe962b83e07ad17a815bac0a685d49827f9d78c0c64933c",
+      "mode": "0644"
+    },
+    "plugin.json": {
+      "content_hash": "blake3:bad5023e730744f1e9b0673ecc49e30eb1b3fb9d4cc96581b1ffdbc7224694b1",
+      "mode": "0644"
+    },
+    "scripts/mcp-launch.sh": {
+      "content_hash": "blake3:05fd6eb342f97bccb054fc03f4b0783b1436f78497dd12587ff66d97d7f123d2",
+      "mode": "0755"
+    },
+    "skills/kreuzberg/SKILL.md": {
+      "content_hash": "blake3:1c4e9e891d22c42c6abd5e8427e68957a62042d46d0929e0928cac9283f75677",
+      "mode": "0644"
+    },
+    "skills/kreuzberg/index.md": {
+      "content_hash": "blake3:7b155bb7a94c0b829cc0b79283ce70594823e27ee733241ddd84b8d27195b0d2",
+      "mode": "0644"
+    },
+    "skills/kreuzberg/references/advanced-features.md": {
+      "content_hash": "blake3:6e63db3ebbe4cd24e619bf74b1dff718f66676df05054f0fd6fb1c1076ed5c74",
+      "mode": "0644"
+    },
+    "skills/kreuzberg/references/cli-reference.md": {
+      "content_hash": "blake3:24a0a7d53d203e54453ad6915f05c16493231a443a1522d657d382972e1883d1",
+      "mode": "0644"
+    },
+    "skills/kreuzberg/references/configuration.md": {
+      "content_hash": "blake3:80febc66a07d7a479b4e38fc83e6d0ff76efaa088bd2767dce8f8e631aabece3",
+      "mode": "0644"
+    },
+    "skills/kreuzberg/references/nodejs-api.md": {
+      "content_hash": "blake3:12c456f0654763a4b97fbbbf9919a2d39e2128b44d007f7535ef00f67c859150",
+      "mode": "0644"
+    },
+    "skills/kreuzberg/references/other-bindings.md": {
+      "content_hash": "blake3:b7ac0b1e0e9cd30dd796bc35b13980b130fcfd96c7971f311e639e732cc25cd7",
+      "mode": "0644"
+    },
+    "skills/kreuzberg/references/python-api.md": {
+      "content_hash": "blake3:70b8bead9b77c7bce4d19f18f0db662c9b7f8f0add6abfcf44f4ab5fde0650bc",
+      "mode": "0644"
+    },
+    "skills/kreuzberg/references/rust-api.md": {
+      "content_hash": "blake3:7218d2e5b219319b01e779830566ac4adddc486790965f1f8d5e185cb4715c0f",
+      "mode": "0644"
+    },
+    "skills/kreuzberg/references/supported-formats.md": {
+      "content_hash": "blake3:d3c91f8b3d13d484510c635362bb3d86605f41b0246d8176ffd101b66502dd47",
+      "mode": "0644"
+    }
+  },
+  "includes": [
+    "assets/GEMINI.md",
+    "assets/README.md",
+    "scripts/mcp-launch.sh"
+  ]
+}

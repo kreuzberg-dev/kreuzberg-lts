@@ -1,0 +1,20 @@
+{
+  "name": "kreuzberg-lts",
+  "interface": {
+    "displayName": "kreuzberg-lts"
+  },
+  "plugins": [
+    {
+      "name": "kreuzberg",
+      "source": {
+        "source": "local",
+        "path": "./plugin"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "document-intelligence"
+    }
+  ]
+}

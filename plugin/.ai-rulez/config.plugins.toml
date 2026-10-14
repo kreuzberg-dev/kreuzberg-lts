@@ -1,0 +1,49 @@
+[plugin]
+name = "kreuzberg"
+version = "4.10.4"
+runtimes = [
+  "claude",
+  "cursor",
+  "codex",
+  "gemini",
+  "kimi",
+  "opencode",
+  "factory",
+  "hermes",
+  "pi",
+  "agent-plugins",
+  "copilot",
+]
+display_name = "Kreuzberg LTS"
+description = "Extract document text, tables and metadata with the legacy Kreuzberg 4.x CLI and MCP tools."
+repository = "https://github.com/kreuzberg-dev/kreuzberg-lts"
+license = "MIT"
+category = "document-intelligence"
+keywords = ["documents", "extraction", "ocr", "kreuzberg-lts"]
+include = ["assets/**", "scripts/**"]
+
+[plugin.author]
+name = "Kreuzberg, Inc."
+
+[[plugin.mcp]]
+name = "kreuzberg"
+command = "${PLUGIN_ROOT}/scripts/mcp-launch.sh"
+args = ["mcp", "--transport", "stdio"]
+
+[plugin.interface]
+display_name = "Kreuzberg LTS"
+short_description = "Local document extraction with Kreuzberg 4.x"
+long_description = "Extract document text, tables and metadata with the legacy Kreuzberg 4.x API. Install a separately built Kreuzberg 4.x CLI with MCP support. Includes one product skill and eight API reference resources."
+developer_name = "Kreuzberg, Inc."
+category = "document-intelligence"
+capabilities = ["Read"]
+default_prompt = [
+  "Extract text from this document with Kreuzberg 4.x",
+  "Review this Kreuzberg 4.x extraction configuration",
+]
+
+[plugin.gemini]
+context_file_name = "assets/GEMINI.md"
+
+[plugin.hermes]
+dependencies = ["mcp==1.28.1", "PyYAML==6.0.3"]

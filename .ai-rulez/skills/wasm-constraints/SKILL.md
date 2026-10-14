@@ -1,7 +1,7 @@
 ---
 type: Playbook
 title: Wasm Constraints
-description: wasm constraints
+description: Respect WebAssembly runtime limitations when implementing extraction features
 x-ai-rulez:
   kind: skill
   id: wasm-constraints

@@ -1,0 +1,16 @@
+{
+  "source": "plugin/skills",
+  "skill_count": 1,
+  "files": {
+    "kreuzberg/SKILL.md": "9bf6a952e075d993ebdd37d9c4427615b01ffe9c4ac41dc9098fd34ebee72cab",
+    "kreuzberg/index.md": "fce75bc6925a0a24921c673454d3cf04b6b6cb34a1037e77977e69c51a605d1c",
+    "kreuzberg/references/advanced-features.md": "88771e3bb318f5ef3f18f3eabc0705bf17252e93c812d50f19b69294d9b9ac05",
+    "kreuzberg/references/cli-reference.md": "51dc8fe4af5ddb8d177cd3b7f7ab32cbbb59d2752fad56a00f5bc3404e4fc08d",
+    "kreuzberg/references/configuration.md": "f4c95a73e55d54b13dfad3a3b8bc047a59057cce299c48aabdcc3eeeabb4b532",
+    "kreuzberg/references/nodejs-api.md": "09829f7f967e3ce6c7ffe8248ec88d0974696c25f7c618388c445725671043b4",
+    "kreuzberg/references/other-bindings.md": "59b2e254dd3469cb2e89a0b351b270cc2e21842b943c4571d5d02ab760731232",
+    "kreuzberg/references/python-api.md": "5f8f02fe8b65aabac5eebbdd6015a17ae7a24e3bb34256720857c04ab5e8c48b",
+    "kreuzberg/references/rust-api.md": "4dd19bb56037fd4e7088b9950ccf1761e530744e08b272b3f4d042dd5522c608",
+    "kreuzberg/references/supported-formats.md": "e2cd4cd5e7120ddd50d0c41af5c659b4b33ab44d2751544b9b3f436ed9137f77"
+  }
+}

@@ -1,7 +1,7 @@
 ---
 type: Playbook
 title: Chunking Embeddings
-description: chunking emueddings
+description: Configure document chunking and embedding pipelines in Kreuzberg 4.x
 x-ai-rulez:
   kind: skill
   id: chunking-embeddings

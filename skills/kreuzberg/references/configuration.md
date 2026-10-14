@@ -1,3 +1,10 @@
+<!--
+AI-RULEZ :: GENERATED FILE — DO NOT EDIT
+Content-Hash: blake3:80febc66a07d7a479b4e38fc83e6d0ff76efaa088bd2767dce8f8e631aabece3
+Source-Hash: blake3:72012ae1ae96eb7dfd293c06108cd5d130db0cfc71e8265f06d4f05692877cc3
+Schema-Version: v1
+-->
+
 # Configuration Reference
 
 Kreuzberg uses a hierarchical configuration system supporting multiple formats and auto-discovery mechanisms. This reference covers all available configuration options, field names across programming languages, and loading strategies.
@@ -281,7 +288,7 @@ enabled = true
 
 ## FileExtractionConfig (Per-File Overrides)
 
-Passed as an optional parameter to `batch_extract_file` / `batch_extract_bytes` (and their sync variants) to override settings per file in a batch. All fields optional — `None` = use batch default. The separate `_with_configs` functions were removed in v4.5.0.
+In Rust, use the optional final element of each input tuple to `batch_extract_file` / `batch_extract_bytes` (and their sync variants) to override settings per file. In Python and Node.js, use the parallel `file_configs` / `fileConfigs` array. All fields optional — `None` = use batch default. The separate `_with_configs` functions were removed in v4.5.0.
 
 **Overridable fields:** `enable_quality_processing`, `ocr`, `force_ocr`, `chunking`, `images`, `pdf_options`, `token_reduction`, `language_detection`, `pages`, `keywords`, `postprocessor`, `html_options`, `result_format`, `output_format`, `include_document_structure`, `layout`.
 

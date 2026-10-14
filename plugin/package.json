@@ -1,0 +1,62 @@
+{
+  "author": {
+    "name": "Kreuzberg, Inc."
+  },
+  "dependencies": {
+    "@opencode/plugin": "^2.0.26"
+  },
+  "description": "Extract document text, tables and metadata with the legacy Kreuzberg 4.x CLI and MCP tools.",
+  "exports": {
+    ".": "./.opencode/plugins/kreuzberg.js"
+  },
+  "files": [
+    ".opencode/ai-rulez-bundle.json",
+    ".opencode/ai-rulez-content.js",
+    ".opencode/plugins/kreuzberg.js",
+    ".opencode/skills/kreuzberg/SKILL.md",
+    ".opencode/skills/kreuzberg/index.md",
+    ".opencode/skills/kreuzberg/references/advanced-features.md",
+    ".opencode/skills/kreuzberg/references/cli-reference.md",
+    ".opencode/skills/kreuzberg/references/configuration.md",
+    ".opencode/skills/kreuzberg/references/nodejs-api.md",
+    ".opencode/skills/kreuzberg/references/other-bindings.md",
+    ".opencode/skills/kreuzberg/references/python-api.md",
+    ".opencode/skills/kreuzberg/references/rust-api.md",
+    ".opencode/skills/kreuzberg/references/supported-formats.md",
+    ".pi/skills/kreuzberg/SKILL.md",
+    ".pi/skills/kreuzberg/index.md",
+    ".pi/skills/kreuzberg/references/advanced-features.md",
+    ".pi/skills/kreuzberg/references/cli-reference.md",
+    ".pi/skills/kreuzberg/references/configuration.md",
+    ".pi/skills/kreuzberg/references/nodejs-api.md",
+    ".pi/skills/kreuzberg/references/other-bindings.md",
+    ".pi/skills/kreuzberg/references/python-api.md",
+    ".pi/skills/kreuzberg/references/rust-api.md",
+    ".pi/skills/kreuzberg/references/supported-formats.md",
+    "README.md",
+    "assets/",
+    "scripts/"
+  ],
+  "keywords": [
+    "documents",
+    "extraction",
+    "kreuzberg-lts",
+    "ocr",
+    "pi-package"
+  ],
+  "license": "MIT",
+  "main": ".opencode/plugins/kreuzberg.js",
+  "name": "@kreuzberg-dev/opencode-kreuzberg",
+  "pi": {
+    "prompts": [],
+    "skills": [
+      "./.pi/skills/kreuzberg"
+    ]
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kreuzberg-dev/kreuzberg-lts"
+  },
+  "type": "module",
+  "version": "4.10.4"
+}

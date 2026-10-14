@@ -1,0 +1,40 @@
+{
+  "name": "kreuzberg",
+  "version": "4.10.4",
+  "description": "Extract document text, tables and metadata with the legacy Kreuzberg 4.x CLI and MCP tools.",
+  "author": {
+    "name": "Kreuzberg, Inc."
+  },
+  "license": "MIT",
+  "keywords": [
+    "documents",
+    "extraction",
+    "ocr",
+    "kreuzberg-lts"
+  ],
+  "skills": "./skills/",
+  "mcpServers": {
+    "kreuzberg": {
+      "command": "./scripts/mcp-launch.sh",
+      "args": [
+        "mcp",
+        "--transport",
+        "stdio"
+      ]
+    }
+  },
+  "interface": {
+    "displayName": "Kreuzberg LTS",
+    "shortDescription": "Local document extraction with Kreuzberg 4.x",
+    "longDescription": "Extract document text, tables and metadata with the legacy Kreuzberg 4.x API. Install a separately built Kreuzberg 4.x CLI with MCP support. Includes one product skill and eight API reference resources.",
+    "developerName": "Kreuzberg, Inc.",
+    "category": "document-intelligence",
+    "capabilities": [
+      "Read"
+    ],
+    "defaultPrompt": [
+      "Extract text from this document with Kreuzberg 4.x",
+      "Review this Kreuzberg 4.x extraction configuration"
+    ]
+  }
+}

@@ -1,3 +1,10 @@
+<!--
+AI-RULEZ :: GENERATED FILE — DO NOT EDIT
+Content-Hash: blake3:12c456f0654763a4b97fbbbf9919a2d39e2128b44d007f7535ef00f67c859150
+Source-Hash: blake3:72012ae1ae96eb7dfd293c06108cd5d130db0cfc71e8265f06d4f05692877cc3
+Schema-Version: v1
+-->
+
 # Node.js/TypeScript API Reference
 
 ## Overview
@@ -14,7 +21,7 @@ import { extractFile, batchExtractFiles } from '@kreuzberg/node';
 const { extractFile, batchExtractFiles } = require('@kreuzberg/node');
 ```
 
-**Current Version**: 4.2.14
+**Current Version**: 4.10.4
 
 ---
 
@@ -1364,4 +1371,4 @@ export type {
 
 ## Version
 
-**Package Version**: 4.2.14
+**Package Version**: 4.10.4

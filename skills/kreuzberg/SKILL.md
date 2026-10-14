@@ -1,17 +1,19 @@
 ---
-name: kreuzberg
-description: >-
-  Extract text, tables, metadata, and images from 91+ document formats
-  (PDF, Office, images, HTML, email, archives, academic) using Kreuzberg.
-  Use when writing code that calls Kreuzberg APIs in Python, Node.js/TypeScript,
-  Rust, or CLI. Covers installation, extraction (sync/async), configuration
-  (OCR, chunking, output format), batch processing, error handling, and plugins.
+description: Extract text, tables, metadata, and images from 91+ document formats (PDF, Office, images, HTML, email, archives, academic) using Kreuzberg. Use when writing code that calls Kreuzberg APIs in Python, Node.js/TypeScript, Rust, or CLI. Covers installation, extraction (sync/async), configuration (OCR, chunking, output format), batch processing, error handling, and plugins.
 license: MIT
 metadata:
-  author: kreuzberg-dev
-  version: "1.0"
-  repository: https://github.com/kreuzberg-dev/kreuzberg-lts
+    author: kreuzberg-dev
+    version: "1.0"
+    repository: https://github.com/kreuzberg-dev/kreuzberg-lts
+name: kreuzberg
 ---
+
+<!--
+AI-RULEZ :: GENERATED FILE — DO NOT EDIT
+Content-Hash: blake3:1c4e9e891d22c42c6abd5e8427e68957a62042d46d0929e0928cac9283f75677
+Source-Hash: blake3:72012ae1ae96eb7dfd293c06108cd5d130db0cfc71e8265f06d4f05692877cc3
+Schema-Version: v1
+-->
 
 # Kreuzberg Document Extraction
 
@@ -32,15 +34,20 @@ Use this skill when writing code that:
 ### Python
 
 ```bash
-pip install kreuzberg
+pip install "kreuzberg>=4.10.4,<5"
 # Optional OCR backends:
-pip install kreuzberg[easyocr]    # EasyOCR
+pip install "kreuzberg[easyocr]>=4.10.4,<5"    # EasyOCR
 ```
 
 ### Node.js
 
 ```bash
-pnpm add @kreuzberg/node
+# The historical npm package is unavailable at the registry checked during this audit.
+# Build the v4.10.4 checkout, then install the resulting local package:
+task node:install
+task node:build
+# In your consuming project:
+pnpm add /absolute/path/to/kreuzberg-lts/crates/kreuzberg-node
 ```
 
 ### Rust
@@ -57,7 +64,7 @@ kreuzberg = { version = "4", features = ["tokio-runtime"] }
 
 ```bash
 # Download from GitHub releases, or:
-cargo install kreuzberg-cli
+cargo install kreuzberg-cli --version 4.10.4
 ```
 
 ## Quick Start
@@ -257,7 +264,8 @@ use kreuzberg::{batch_extract_file, ExtractionConfig};
 
 let config = ExtractionConfig::default();
 let paths = vec!["doc1.pdf", "doc2.docx"];
-let results = batch_extract_file(paths, &config).await?;
+let items = paths.into_iter().map(|path| (std::path::PathBuf::from(path), None)).collect();
+    let results = batch_extract_file(items, &config).await?;
 ```
 
 ### CLI
@@ -274,7 +282,7 @@ OCR runs automatically for images and scanned PDFs. Tesseract is the default bac
 ### Backends
 
 - **Tesseract** (default): Built-in native binding. All Tesseract languages supported.
-- **EasyOCR** (Python only): `pip install kreuzberg[easyocr]`. Pass `easyocr_kwargs={"gpu": True}`.
+- **EasyOCR** (Python only): `pip install "kreuzberg[easyocr]>=4.10.4,<5"`. Pass `easyocr_kwargs={"gpu": True}`.
 - **PaddleOCR** (Python only): Bundled since 4.8.5, no extra install needed. Pass `paddleocr_kwargs={"use_angle_cls": True}`.
 - **Guten** (Node.js only): Built-in OCR backend via `GutenOcrBackend`.
 

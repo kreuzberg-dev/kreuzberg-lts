@@ -1,0 +1,8 @@
+name: "kreuzberg"
+version: "4.10.4"
+description: "Extract document text, tables and metadata with the legacy Kreuzberg 4.x CLI and MCP tools."
+author: "Kreuzberg, Inc."
+kind: "standalone"
+python_dependencies:
+  - "mcp==1.28.1"
+  - "PyYAML==6.0.3"

@@ -1,3 +1,10 @@
+<!--
+AI-RULEZ :: GENERATED FILE — DO NOT EDIT
+Content-Hash: blake3:7218d2e5b219319b01e779830566ac4adddc486790965f1f8d5e185cb4715c0f
+Source-Hash: blake3:72012ae1ae96eb7dfd293c06108cd5d130db0cfc71e8265f06d4f05692877cc3
+Schema-Version: v1
+-->
+
 # Kreuzberg Rust API Reference
 
 Complete API reference for the Kreuzberg document extraction library in Rust.
@@ -144,7 +151,7 @@ Extract multiple files concurrently.
 
 ```rust
 pub async fn batch_extract_file(
-    paths: Vec<impl AsRef<Path>>,
+    items: Vec<(std::path::PathBuf, Option<FileExtractionConfig>)>,
     config: &ExtractionConfig,
 ) -> Result<Vec<ExtractionResult>>
 ```
@@ -156,7 +163,8 @@ pub async fn batch_extract_file(
 async fn main() -> kreuzberg::Result<()> {
     let config = ExtractionConfig::default();
     let paths = vec!["doc1.pdf", "doc2.pdf", "doc3.pdf"];
-    let results = batch_extract_file(paths, &config).await?;
+    let items = paths.into_iter().map(|path| (std::path::PathBuf::from(path), None)).collect();
+    let results = batch_extract_file(items, &config).await?;
     println!("Processed {} files", results.len());
     Ok(())
 }
@@ -168,20 +176,20 @@ Extract multiple byte arrays concurrently.
 
 ```rust
 pub async fn batch_extract_bytes(
-    contents: Vec<(Vec<u8>, String)>,
+    items: Vec<(Vec<u8>, String, Option<FileExtractionConfig>)>,
     config: &ExtractionConfig,
 ) -> Result<Vec<ExtractionResult>>
 ```
 
-**Requires tokio-runtime feature.** Each tuple is `(bytes, mime_type)`.
+**Requires tokio-runtime feature.** Each tuple is `(bytes, mime_type, optional_per_file_config)`.
 
 ```rust
 #[tokio::main]
 async fn main() -> kreuzberg::Result<()> {
     let config = ExtractionConfig::default();
     let contents = vec![
-        (b"PDF content".to_vec(), "application/pdf".to_string()),
-        (b"Text content".to_vec(), "text/plain".to_string()),
+        (b"PDF content".to_vec(), "application/pdf".to_string(), None),
+        (b"Text content".to_vec(), "text/plain".to_string(), None),
     ];
     let results = batch_extract_bytes(contents, &config).await?;
     Ok(())
@@ -194,7 +202,7 @@ Synchronous wrapper for batch file extraction.
 
 ```rust
 pub fn batch_extract_file_sync(
-    paths: Vec<impl AsRef<Path>>,
+    items: Vec<(std::path::PathBuf, Option<FileExtractionConfig>)>,
     config: &ExtractionConfig,
 ) -> Result<Vec<ExtractionResult>>
 ```
@@ -205,7 +213,8 @@ pub fn batch_extract_file_sync(
 fn main() -> kreuzberg::Result<()> {
     let config = ExtractionConfig::default();
     let paths = vec!["doc1.pdf", "doc2.pdf"];
-    let results = batch_extract_file_sync(paths, &config)?;
+    let items = paths.into_iter().map(|path| (std::path::PathBuf::from(path), None)).collect();
+    let results = batch_extract_file_sync(items, &config)?;
     Ok(())
 }
 ```
@@ -216,19 +225,19 @@ Synchronous wrapper for batch byte extraction.
 
 ```rust
 pub fn batch_extract_bytes_sync(
-    contents: Vec<(Vec<u8>, String)>,
+    items: Vec<(Vec<u8>, String, Option<FileExtractionConfig>)>,
     config: &ExtractionConfig,
 ) -> Result<Vec<ExtractionResult>>
 ```
 
-**Always available.** Each tuple is `(bytes, mime_type)`.
+**Always available.** Each tuple is `(bytes, mime_type, optional_per_file_config)`.
 
 ```rust
 fn main() -> kreuzberg::Result<()> {
     let config = ExtractionConfig::default();
     let contents = vec![
-        (b"content 1".to_vec(), "text/plain".to_string()),
-        (b"content 2".to_vec(), "text/plain".to_string()),
+        (b"content 1".to_vec(), "text/plain".to_string(), None),
+        (b"content 2".to_vec(), "text/plain".to_string(), None),
     ];
     let results = batch_extract_bytes_sync(contents, &config)?;
     Ok(())
@@ -237,9 +246,9 @@ fn main() -> kreuzberg::Result<()> {
 
 ### `FileExtractionConfig`
 
-Per-file overrides for batch operations, passed as an optional parameter to `batch_extract_file` / `batch_extract_bytes` (and their sync variants). All fields `Option<T>` — `None` = use batch default.
+Per-file overrides for Rust batch operations are the optional final element of each input tuple to `batch_extract_file` / `batch_extract_bytes` (and their sync variants). All fields `Option<T>` — `None` = use batch default.
 
-> **Note (v4.5.0):** The separate `batch_extract_file_with_configs` / `batch_extract_bytes_with_configs` functions have been removed. Per-file configs are now an optional parameter on the unified batch functions.
+> **Note (v4.5.0):** The separate `batch_extract_file_with_configs` / `batch_extract_bytes_with_configs` functions have been removed. In Rust, per-file configs are the optional final element of each input tuple. In Python and Node.js they are a separate parallel array.
 
 ```rust
 pub struct FileExtractionConfig {

@@ -380,3 +380,44 @@ tasks:
       - task: php:e2e:lint
       - task: r:e2e:lint
       - task: c:e2e:lint
+
+  governance:hooks:
+    desc: Install version-pinned governance hooks while preserving local preferences
+    cmds:
+      - python3 -c 'from pathlib import Path; p = Path("poly.local.toml"); p.write_text("[hook_preferences]\nchannels = [\"system\"]\n") if not p.exists() else None'
+      - poly hooks update
+      - poly hooks install
+
+  governance:generate:
+    desc: Generate coding-agent governance from native source
+    cmds:
+      - ai-rulez generate --no-local --strict-config
+
+  governance:check:
+    desc: Check native governance formats, content, locks and generated freshness
+    cmds:
+      - ai-rulez migrate okf --check
+      - ai-rulez validate --no-local --strict
+      - ai-rulez lock --check
+      - ai-rulez generate --no-local --strict-config --check
+
+  plugin:generate:
+    desc: Generate all supported plugin formats and public skill exports
+    cmds:
+      - python3 scripts/sync_plugin_version.py
+      - ai-rulez generate --plugin --no-local --strict-config
+      - python3 scripts/sync_public_skills.py
+
+  plugin:verify:
+    desc: Verify shipped plugin sources, versions and skill exports
+    cmds:
+      - python3 scripts/sync_plugin_version.py --check
+      - ai-rulez verify --plugin
+      - python3 scripts/sync_public_skills.py --check
+
+  plugin:test:
+    desc: Verify product skills, runtime registration and launcher boundaries
+    cmds:
+      - python3 scripts/tests/test_public_skills.py
+      - python3 scripts/tests/test_plugin_launcher.py
+      - node --test scripts/tests/plugin-skills.test.mjs

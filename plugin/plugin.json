@@ -1,0 +1,17 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "kreuzberg",
+  "version": "4.10.4",
+  "description": "Extract document text, tables and metadata with the legacy Kreuzberg 4.x CLI and MCP tools.",
+  "author": {
+    "name": "Kreuzberg, Inc."
+  },
+  "repository": "https://github.com/kreuzberg-dev/kreuzberg-lts",
+  "license": "MIT",
+  "keywords": [
+    "documents",
+    "extraction",
+    "ocr",
+    "kreuzberg-lts"
+  ]
+}

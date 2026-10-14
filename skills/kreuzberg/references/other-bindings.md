@@ -1,13 +1,20 @@
+<!--
+AI-RULEZ :: GENERATED FILE — DO NOT EDIT
+Content-Hash: blake3:b7ac0b1e0e9cd30dd796bc35b13980b130fcfd96c7971f311e639e732cc25cd7
+Source-Hash: blake3:72012ae1ae96eb7dfd293c06108cd5d130db0cfc71e8265f06d4f05692877cc3
+Schema-Version: v1
+-->
+
 # Language Bindings Reference
 
-Kreuzberg provides native bindings for multiple programming languages, each with precompiled binaries for x86_64 and aarch64 on Linux and macOS. This reference covers installation and basic usage for each binding.
+Kreuzberg provides native bindings for multiple programming languages. Precompiled binaries and required native dependencies vary by binding and platform; inspect the pinned 4.x package or release artifacts. This reference covers installation and basic usage for each binding.
 
 ## Go
 
 **Installation:**
 
 ```bash
-go get github.com/kreuzberg-dev/kreuzberg-lts/v4
+go get github.com/kreuzberg-dev/kreuzberg-lts/v4@v4.10.4
 ```
 
 **Basic Extraction:**
@@ -16,14 +23,12 @@ go get github.com/kreuzberg-dev/kreuzberg-lts/v4
 package main
 
 import (
-    "context"
-    "fmt"
-    "github.com/kreuzberg-dev/kreuzberg-lts/v4/kreuzberg"
+        "fmt"
+    "github.com/kreuzberg-dev/kreuzberg-lts/v4"
 )
 
 func main() {
-    ctx := context.Background()
-    result, err := kreuzberg.ExtractFile(ctx, "document.pdf", nil)
+    result, err := kreuzberg.ExtractFileSync("document.pdf", nil)
     if err != nil {
         panic(err)
     }
@@ -38,13 +43,13 @@ See the [Go binding documentation](https://github.com/kreuzberg-dev/kreuzberg-lt
 **Installation:**
 
 ```bash
-gem install kreuzberg
+gem install kreuzberg --version '~> 4.10'
 ```
 
 Or in your Gemfile:
 
 ```ruby
-gem 'kreuzberg'
+gem 'kreuzberg', '~> 4.10'
 ```
 
 **Basic Extraction:**
@@ -67,7 +72,7 @@ Add to your Maven `pom.xml`:
 <dependency>
     <groupId>dev.kreuzberg</groupId>
     <artifactId>kreuzberg</artifactId>
-    <version>4.2.x</version>
+    <version>4.10.4</version>
 </dependency>
 ```
 
@@ -87,12 +92,12 @@ public class Example {
 
 See the [Java binding documentation](https://github.com/kreuzberg-dev/kreuzberg-lts/tree/main/packages/java) for complete API reference.
 
-## C
+## C#
 
 **Installation:**
 
 ```bash
-dotnet add package Kreuzberg
+dotnet add package Kreuzberg --version 4.10.4
 ```
 
 **Basic Extraction:**
@@ -111,7 +116,7 @@ See the [C# binding documentation](https://github.com/kreuzberg-dev/kreuzberg-lt
 **Installation:**
 
 ```bash
-composer require kreuzberg/kreuzberg
+composer require kreuzberg/kreuzberg:^4.10
 ```
 
 **Basic Extraction:**
@@ -137,7 +142,7 @@ Add to your `mix.exs` dependencies:
 ```elixir
 def deps do
   [
-    kreuzberg: "~> 4.2"
+    kreuzberg: "~> 4.10"
   ]
 end
 ```
@@ -156,7 +161,11 @@ See the [Elixir binding documentation](https://github.com/kreuzberg-dev/kreuzber
 **Installation:**
 
 ```bash
-pnpm add @kreuzberg/wasm
+# Build the v4.10.4 checkout rather than resolving an unverified registry version:
+task wasm:install
+task wasm:build
+# Install the built local package in the consuming project:
+pnpm add /absolute/path/to/kreuzberg-lts/crates/kreuzberg-wasm
 ```
 
 **Basic Extraction:**

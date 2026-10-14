@@ -1,0 +1,26 @@
+{
+  "name": "kreuzberg",
+  "description": "Extract document text, tables and metadata with the legacy Kreuzberg 4.x CLI and MCP tools.",
+  "version": "4.10.4",
+  "author": {
+    "name": "Kreuzberg, Inc."
+  },
+  "repository": "https://github.com/kreuzberg-dev/kreuzberg-lts",
+  "license": "MIT",
+  "keywords": [
+    "documents",
+    "extraction",
+    "ocr",
+    "kreuzberg-lts"
+  ],
+  "mcpServers": {
+    "kreuzberg": {
+      "command": "${CLAUDE_PLUGIN_ROOT}/scripts/mcp-launch.sh",
+      "args": [
+        "mcp",
+        "--transport",
+        "stdio"
+      ]
+    }
+  }
+}

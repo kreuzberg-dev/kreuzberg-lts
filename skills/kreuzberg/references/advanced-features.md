@@ -1,3 +1,10 @@
+<!--
+AI-RULEZ :: GENERATED FILE — DO NOT EDIT
+Content-Hash: blake3:6e63db3ebbe4cd24e619bf74b1dff718f66676df05054f0fd6fb1c1076ed5c74
+Source-Hash: blake3:72012ae1ae96eb7dfd293c06108cd5d130db0cfc71e8265f06d4f05692877cc3
+Schema-Version: v1
+-->
+
 # Advanced Features Reference
 
 Kreuzberg provides powerful advanced features for customization, semantic processing, and integration with external systems.

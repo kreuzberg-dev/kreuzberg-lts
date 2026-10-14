@@ -1,0 +1,16 @@
+{
+  "name": "kreuzberg",
+  "version": "4.10.4",
+  "description": "Extract document text, tables and metadata with the legacy Kreuzberg 4.x CLI and MCP tools.",
+  "contextFileName": "assets/GEMINI.md",
+  "mcpServers": {
+    "kreuzberg": {
+      "command": "${extensionPath}/scripts/mcp-launch.sh",
+      "args": [
+        "mcp",
+        "--transport",
+        "stdio"
+      ]
+    }
+  }
+}

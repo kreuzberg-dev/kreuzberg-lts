@@ -1,0 +1,7 @@
+[marketplace]
+name = "kreuzberg-lts"
+description = "Kreuzberg 4.x document extraction skills and MCP integrations"
+members = ["plugin"]
+
+[marketplace.owner]
+name = "Kreuzberg, Inc."

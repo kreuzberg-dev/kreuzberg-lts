@@ -1,0 +1,20 @@
+{
+  "plugin": "kreuzberg",
+  "mcp": {
+    "kreuzberg": {
+      "type": "local",
+      "command": [
+        "${PLUGIN_ROOT}/scripts/mcp-launch.sh",
+        "mcp",
+        "--transport",
+        "stdio"
+      ]
+    }
+  },
+  "skills": {
+    "kreuzberg": {
+      "name": "kreuzberg",
+      "description": "Extract text, tables, metadata, and images from 91+ document formats (PDF, Office, images, HTML, email, archives, academic) using Kreuzberg. Use when writing code that calls Kreuzberg APIs in Python, Node.js/TypeScript, Rust, or CLI. Covers installation, extraction (sync/async), configuration (OCR, chunking, output format), batch processing, error handling, and plugins."
+    }
+  }
+}

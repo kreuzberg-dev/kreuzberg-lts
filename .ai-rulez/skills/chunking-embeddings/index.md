@@ -1,3 +1,3 @@
 # Concepts
 
-* [Chunking Embeddings](SKILL.md) - chunking emueddings
+* [Chunking Embeddings](SKILL.md) - Configure document chunking and embedding pipelines in Kreuzberg 4.x

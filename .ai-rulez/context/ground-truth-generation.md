@@ -1,3 +1,12 @@
+---
+type: Concept
+title: Ground Truth Generation
+description: Generate independent document extraction ground truth with Pandoc and reviewed cleanup
+x-ai-rulez:
+  kind: context
+  id: ground-truth-generation
+---
+
 # Ground Truth Generation
 
 ## Pandoc Commands

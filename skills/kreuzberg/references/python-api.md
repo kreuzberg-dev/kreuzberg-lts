@@ -1,3 +1,10 @@
+<!--
+AI-RULEZ :: GENERATED FILE — DO NOT EDIT
+Content-Hash: blake3:70b8bead9b77c7bce4d19f18f0db662c9b7f8f0add6abfcf44f4ab5fde0650bc
+Source-Hash: blake3:72012ae1ae96eb7dfd293c06108cd5d130db0cfc71e8265f06d4f05692877cc3
+Schema-Version: v1
+-->
+
 # Kreuzberg Python API Reference
 
 Comprehensive documentation for the Kreuzberg Python API. All extraction logic and heavy lifting is implemented in high-performance Rust, with Python adding OCR backends (EasyOCR, PaddleOCR) and custom post-processor support.

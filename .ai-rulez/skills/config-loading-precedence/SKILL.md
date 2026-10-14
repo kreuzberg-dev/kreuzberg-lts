@@ -54,7 +54,7 @@ Use `--config-json-base64` for shell escaping.
 use_cache = true
 [ocr]
 backend = "tesseract"
-languages = ["eng", "deu"]
+language = "eng+deu"
 [security_limits]
 max_archive_size = 524288000
 ```

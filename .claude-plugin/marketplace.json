@@ -1,0 +1,14 @@
+{
+  "name": "kreuzberg-lts",
+  "description": "Kreuzberg 4.x document extraction skills and MCP integrations",
+  "owner": {
+    "name": "Kreuzberg, Inc."
+  },
+  "plugins": [
+    {
+      "name": "kreuzberg",
+      "description": "Extract document text, tables and metadata with the legacy Kreuzberg 4.x CLI and MCP tools.",
+      "source": "./plugin"
+    }
+  ]
+}

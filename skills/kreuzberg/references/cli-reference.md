@@ -1,3 +1,10 @@
+<!--
+AI-RULEZ :: GENERATED FILE — DO NOT EDIT
+Content-Hash: blake3:24a0a7d53d203e54453ad6915f05c16493231a443a1522d657d382972e1883d1
+Source-Hash: blake3:72012ae1ae96eb7dfd293c06108cd5d130db0cfc71e8265f06d4f05692877cc3
+Schema-Version: v1
+-->
+
 # Kreuzberg CLI Reference
 
 Comprehensive command-line interface for the Kreuzberg document intelligence library.
@@ -7,10 +14,10 @@ Comprehensive command-line interface for the Kreuzberg document intelligence lib
 Install from crates.io:
 
 ```bash
-cargo install kreuzberg-cli
+cargo install kreuzberg-cli --version 4.10.4
 ```
 
-Or download pre-built binaries from [GitHub Releases](https://github.com/lukasmwirth/kreuzberg/releases).
+Or download pre-built binaries from [GitHub Releases](https://github.com/kreuzberg-dev/kreuzberg-lts/releases).
 
 ## Commands
 
@@ -120,7 +127,7 @@ kreuzberg batch <paths...> [FLAGS]
 **Notes**
 
 - Batch command defaults to JSON output format (unlike `extract` which defaults to text).
-- Does not support `--mime-type` or `--detect-language` flags.
+- Does not support `--mime-type`; `--detect-language <bool>` is an extraction override supported by batch.
 
 **Examples**
 
