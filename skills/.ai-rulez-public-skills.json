@@ -2,15 +2,15 @@
   "source": "plugin/skills",
   "skill_count": 1,
   "files": {
-    "kreuzberg/SKILL.md": "9bf6a952e075d993ebdd37d9c4427615b01ffe9c4ac41dc9098fd34ebee72cab",
-    "kreuzberg/index.md": "fce75bc6925a0a24921c673454d3cf04b6b6cb34a1037e77977e69c51a605d1c",
-    "kreuzberg/references/advanced-features.md": "88771e3bb318f5ef3f18f3eabc0705bf17252e93c812d50f19b69294d9b9ac05",
-    "kreuzberg/references/cli-reference.md": "51dc8fe4af5ddb8d177cd3b7f7ab32cbbb59d2752fad56a00f5bc3404e4fc08d",
-    "kreuzberg/references/configuration.md": "f4c95a73e55d54b13dfad3a3b8bc047a59057cce299c48aabdcc3eeeabb4b532",
-    "kreuzberg/references/nodejs-api.md": "09829f7f967e3ce6c7ffe8248ec88d0974696c25f7c618388c445725671043b4",
-    "kreuzberg/references/other-bindings.md": "59b2e254dd3469cb2e89a0b351b270cc2e21842b943c4571d5d02ab760731232",
-    "kreuzberg/references/python-api.md": "5f8f02fe8b65aabac5eebbdd6015a17ae7a24e3bb34256720857c04ab5e8c48b",
-    "kreuzberg/references/rust-api.md": "4dd19bb56037fd4e7088b9950ccf1761e530744e08b272b3f4d042dd5522c608",
-    "kreuzberg/references/supported-formats.md": "e2cd4cd5e7120ddd50d0c41af5c659b4b33ab44d2751544b9b3f436ed9137f77"
+    "kreuzberg/SKILL.md": "600a00a75ab8e6785e96557b2e7c2e3ef59abb3e8f1fc7d0550583b1d61bbd49",
+    "kreuzberg/index.md": "9d079aa9a0a4501f75b5043a0b1092c9421629881684e44f5ca38eec8c23246e",
+    "kreuzberg/references/advanced-features.md": "6fe6b515c1dc6bb3abe7b77ac28a644277be0c19a5c2d6015af9693bfb8645d7",
+    "kreuzberg/references/cli-reference.md": "aff99f90ce134a5020767efa68c05c081caeb1f052265cd792d468a96d5ebabe",
+    "kreuzberg/references/configuration.md": "75d3aea715b75a981666ffacc8ae121459b0427e7e97f474b66ddb3233ca18a6",
+    "kreuzberg/references/nodejs-api.md": "7abe3c2762bc78dbfeda4e600767413e9a5f68dfe50dd1c1a317f410e0621534",
+    "kreuzberg/references/other-bindings.md": "bbddecd275324268abf5ff14197f1697a355419163fdb0a4f08818e5a21ede35",
+    "kreuzberg/references/python-api.md": "fee3ba2ae0582c3d8bf2dae0f0660806761c879f09efdce0d798febcecf5f12b",
+    "kreuzberg/references/rust-api.md": "12f70864fca72d25c0f82c537866829cbce086eef505b325dada457283c8379e",
+    "kreuzberg/references/supported-formats.md": "dd095c0b999c99a34ea3bda379926f6eca199116ffef1440cfe8c3e2f60fc92e"
   }
 }
