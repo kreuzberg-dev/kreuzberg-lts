@@ -111,3 +111,5 @@ Thank you for helping make Kreuzberg LTS better!
 ## Coding-agent plugin
 
 Installing governance hooks requires Python 3.11 or newer. Use ai-rulez 5.3.0 with the reviewed source revision pinned in CI. Plugin authoring lives in `plugin/.ai-rulez`; run `task plugin:generate` and `task plugin:verify`. Public `skills/` files are generated exports. See [runtime installation and publishing](plugin/assets/README.md).
+
+Registry publisher identities and initial account enrollment are documented in [Plugin distribution](.github/PLUGIN-PUBLISHING.md).
