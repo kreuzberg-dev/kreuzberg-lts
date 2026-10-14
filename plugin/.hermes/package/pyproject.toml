@@ -6,16 +6,20 @@ build-backend = 'hatchling.build'
 name = 'kreuzberg-hermes-plugin'
 version = '4.10.4'
 description = 'Extract document text, tables and metadata with the legacy Kreuzberg 4.x CLI and MCP tools.'
+license = 'MIT'
 requires-python = '>=3.11'
 dependencies = ['mcp==1.28.1', 'PyYAML==6.0.3']
 keywords = ['documents', 'extraction', 'ocr', 'kreuzberg-lts']
+
+[project.readme]
+content-type = 'text/markdown'
+text = "# kreuzberg Hermes plugin\n\nExtract document text, tables and metadata with the legacy Kreuzberg 4.x CLI and MCP tools.\n\nInstall this package in the same Python environment as Hermes Agent:\n\n```sh\npython -m pip install kreuzberg-hermes-plugin\n```\n\nEnable the plugin through Hermes Agent's plugin configuration. Available registrations depend on the plugin's authored Hermes adapter.\n"
 
 [project.entry-points]
 [project.entry-points.'hermes_agent.plugins']
 kreuzberg = 'kreuzberg_hermes_plugin'
 
 [project.urls]
-Homepage = ''
 Repository = 'https://github.com/kreuzberg-dev/kreuzberg-lts'
 
 [tool]
