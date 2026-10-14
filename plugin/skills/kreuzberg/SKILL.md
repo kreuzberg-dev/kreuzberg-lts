@@ -10,8 +10,8 @@ name: kreuzberg
 
 <!--
 AI-RULEZ :: GENERATED FILE — DO NOT EDIT
-Content-Hash: blake3:1c4e9e891d22c42c6abd5e8427e68957a62042d46d0929e0928cac9283f75677
-Source-Hash: blake3:46284503978a9fe28bdb604aa436c47d7ddecdcf9a8739e93a8acf4b2e31121c
+Content-Hash: blake3:2a083e90e6f4936d2dc8f98024a07dcef270845f55ea58a73983f6641e40f985
+Source-Hash: blake3:901163c93cd1f09795c49bf6078d600e691112f66b88467ba8b237dff29330c4
 Schema-Version: v1
 -->
 
@@ -19,7 +19,7 @@ Schema-Version: v1
 
 Kreuzberg is a high-performance document intelligence library with a Rust core and native bindings for Python, Node.js/TypeScript, Ruby, Go, Java, C#, PHP, and Elixir. It extracts text, tables, metadata, and images from 91+ file formats including PDF, Office documents, images (with OCR), HTML, email, archives, and academic formats.
 
-> **Version note:** This skill covers Kreuzberg **v4**, the legacy long-term-support line (critical bug and security fixes only, best-effort through the end of 2026). The current version is **[Xberg](https://github.com/xberg-io/xberg)** (v5+), the actively developed successor where all new features land. For new projects, prefer Xberg — repo <https://github.com/xberg-io/xberg>, docs <https://docs.xberg.io>. Use this skill when the project already targets Kreuzberg v4. Migration guide: <https://docs.kreuzberg.dev/lts/>.
+> **Version note:** This skill covers Kreuzberg **v4**, the legacy long-term-support line (critical bug and security fixes only, best-effort through the end of 2026). The current version is **[Xberg](https://github.com/xberg-io/xberg)**, the actively developed successor where all new features land. For new projects, prefer Xberg — repo <https://github.com/xberg-io/xberg>, docs <https://docs.xberg.io>. Use this skill when the project already targets Kreuzberg v4. Migration guide: <https://docs.kreuzberg.dev/lts/>.
 
 Use this skill when writing code that:
 

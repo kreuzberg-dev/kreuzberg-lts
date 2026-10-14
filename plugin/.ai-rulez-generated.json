@@ -1,6 +1,6 @@
 {
   "schema_version": "v1",
-  "source_hash": "blake3:46284503978a9fe28bdb604aa436c47d7ddecdcf9a8739e93a8acf4b2e31121c",
+  "source_hash": "blake3:901163c93cd1f09795c49bf6078d600e691112f66b88467ba8b237dff29330c4",
   "outputs": {
     ".claude-plugin/plugin.json": {
       "content_hash": "blake3:1c24d98f0e6068ccbb0de321248c6d8b944703597d3affe1a2fafefc50a8d872",
@@ -15,7 +15,7 @@
       "mode": "0644"
     },
     ".cursor-plugin/skills/kreuzberg/SKILL.md": {
-      "content_hash": "blake3:1c4e9e891d22c42c6abd5e8427e68957a62042d46d0929e0928cac9283f75677",
+      "content_hash": "blake3:2a083e90e6f4936d2dc8f98024a07dcef270845f55ea58a73983f6641e40f985",
       "mode": "0644"
     },
     ".cursor-plugin/skills/kreuzberg/index.md": {
@@ -75,7 +75,7 @@
       "mode": "0644"
     },
     ".hermes/package/src/kreuzberg_hermes_plugin/skills/kreuzberg/SKILL.md": {
-      "content_hash": "blake3:1c4e9e891d22c42c6abd5e8427e68957a62042d46d0929e0928cac9283f75677",
+      "content_hash": "blake3:2a083e90e6f4936d2dc8f98024a07dcef270845f55ea58a73983f6641e40f985",
       "mode": "0644"
     },
     ".hermes/package/src/kreuzberg_hermes_plugin/skills/kreuzberg/index.md": {
@@ -127,7 +127,7 @@
       "mode": "0644"
     },
     ".hermes/plugins/kreuzberg/skills/kreuzberg/SKILL.md": {
-      "content_hash": "blake3:1c4e9e891d22c42c6abd5e8427e68957a62042d46d0929e0928cac9283f75677",
+      "content_hash": "blake3:2a083e90e6f4936d2dc8f98024a07dcef270845f55ea58a73983f6641e40f985",
       "mode": "0644"
     },
     ".hermes/plugins/kreuzberg/skills/kreuzberg/index.md": {
@@ -183,7 +183,7 @@
       "mode": "0644"
     },
     ".opencode/skills/kreuzberg/SKILL.md": {
-      "content_hash": "blake3:1c4e9e891d22c42c6abd5e8427e68957a62042d46d0929e0928cac9283f75677",
+      "content_hash": "blake3:2a083e90e6f4936d2dc8f98024a07dcef270845f55ea58a73983f6641e40f985",
       "mode": "0644"
     },
     ".opencode/skills/kreuzberg/index.md": {
@@ -223,7 +223,7 @@
       "mode": "0644"
     },
     ".pi/skills/kreuzberg/SKILL.md": {
-      "content_hash": "blake3:1c4e9e891d22c42c6abd5e8427e68957a62042d46d0929e0928cac9283f75677",
+      "content_hash": "blake3:2a083e90e6f4936d2dc8f98024a07dcef270845f55ea58a73983f6641e40f985",
       "mode": "0644"
     },
     ".pi/skills/kreuzberg/index.md": {
@@ -295,7 +295,7 @@
       "mode": "0755"
     },
     "skills/kreuzberg/SKILL.md": {
-      "content_hash": "blake3:1c4e9e891d22c42c6abd5e8427e68957a62042d46d0929e0928cac9283f75677",
+      "content_hash": "blake3:2a083e90e6f4936d2dc8f98024a07dcef270845f55ea58a73983f6641e40f985",
       "mode": "0644"
     },
     "skills/kreuzberg/index.md": {
