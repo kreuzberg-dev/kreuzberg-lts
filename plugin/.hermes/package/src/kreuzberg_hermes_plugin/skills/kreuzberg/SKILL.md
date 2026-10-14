@@ -11,7 +11,7 @@ name: kreuzberg
 <!--
 AI-RULEZ :: GENERATED FILE — DO NOT EDIT
 Content-Hash: blake3:1c4e9e891d22c42c6abd5e8427e68957a62042d46d0929e0928cac9283f75677
-Source-Hash: blake3:72012ae1ae96eb7dfd293c06108cd5d130db0cfc71e8265f06d4f05692877cc3
+Source-Hash: blake3:46284503978a9fe28bdb604aa436c47d7ddecdcf9a8739e93a8acf4b2e31121c
 Schema-Version: v1
 -->
 

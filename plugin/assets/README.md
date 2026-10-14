@@ -7,7 +7,7 @@ Install a Kreuzberg 4.x CLI separately. Use the v4.10.4 binaries from <https://g
 | Agent | Installation |
 | --- | --- |
 | Claude | Add this repository as marketplace `kreuzberg-lts`, install `kreuzberg@kreuzberg-lts` |
-| Codex | `codex marketplace add <repository-checkout>` then `codex plugin add kreuzberg@kreuzberg-lts` |
+| Codex | `codex plugin marketplace add <repository-checkout>` then `codex plugin add kreuzberg@kreuzberg-lts` |
 | Cursor | Install the generated `.cursor-plugin` bundle or import the published Cursor team marketplace |
 | Agent Plugins | Install `plugin/` using its portable `plugin.json` manifest |
 | Copilot | Install the portable `plugin/plugin.json` bundle with the host's plugin installer |
