@@ -26,7 +26,7 @@ default = []
 ahash = { workspace = true }
 
 ctor = { workspace = true }
-ext-php-rs = "0.15"
+ext-php-rs = "0.16"
 kreuzberg = { workspace = true, features = ["bundled-pdfium", "full"] }
 num_cpus = { workspace = true }
 once_cell = { workspace = true }

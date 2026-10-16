@@ -19,6 +19,6 @@ pdf = ["kreuzberg/pdf"]
 [dependencies]
 kreuzberg = { workspace = true, features = ["bundled-pdfium", "full"] }
 
-rustler = { version = "0.38" }
+rustler = { version = "0.39" }
 serde_json = "1.0"
 tracing = { workspace = true }

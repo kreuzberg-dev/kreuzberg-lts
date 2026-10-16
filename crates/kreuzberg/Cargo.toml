@@ -207,7 +207,7 @@ async-trait = { workspace = true }
 axum = { version = "0.8", features = ["macros", "json", "multipart"], optional = true }
 base64 = { workspace = true }
 biblatex = { version = "0.12", optional = true }
-biblib = { version = "0.8", default-features = false, features = ["ris", "pubmed", "xml"], optional = true }
+biblib = { version = "0.10", default-features = false, features = ["ris", "pubmed", "xml"], optional = true }
 bitvec = "1.1"
 blake3 = { workspace = true }
 bytes = { workspace = true }
@@ -223,7 +223,7 @@ encoding_rs = { version = "0.8.41" }
 fast_image_resize = { version = "6.1.0", optional = true }
 flate2 = { version = "1.1", optional = true }
 hayro-jbig2 = { version = "0.3", default-features = false, features = ["std"], optional = true }
-hayro-jpeg2000 = { version = "0.3", default-features = false, features = ["std", "simd"], optional = true }
+hayro-jpeg2000 = { version = "0.4", default-features = false, features = ["std", "simd"], optional = true }
 hex = { workspace = true }
 html-to-markdown-rs = { workspace = true, features = ["inline-images", "metadata"], optional = true }
 image = { workspace = true, default-features = false, features = [
@@ -254,16 +254,16 @@ minijinja = { workspace = true, optional = true }
 ndarray = { version = "0.17", optional = true }
 num_cpus = { workspace = true }
 once_cell = { workspace = true }
-opentelemetry = { version = "0.32", features = ["trace"], optional = true }
-opentelemetry_sdk = { version = "0.32", features = ["rt-tokio"], optional = true }
+opentelemetry = { version = "0.33", features = ["trace"], optional = true }
+opentelemetry_sdk = { version = "0.33", features = ["rt-tokio"], optional = true }
 org = { version = "0.3", optional = true }
-ort = { version = "=2.0.0-rc.12", default-features = false, features = ["std", "ndarray", "api-18"], optional = true }
+ort = { version = "=2.0.0-rc.14", default-features = false, features = ["std", "ndarray", "api-18"], optional = true }
 outlook-pst = { version = "1.2.0", optional = true }
 parking_lot = { workspace = true }
 pastey = "0.2"
 pdfium-render = { workspace = true, features = ["thread_safe", "image_latest"], optional = true }
 pulldown-cmark = { version = "0.13" }
-quick-xml = { version = "0.41.0", features = ["serialize"], optional = true }
+quick-xml = { version = "0.42.0", features = ["serialize"], optional = true }
 rake = { version = "0.3.6", optional = true }
 rayon = { workspace = true }
 regex = "1.13.1"
@@ -282,13 +282,13 @@ serde = { workspace = true }
 serde_json = { workspace = true }
 serde_toon_format = { workspace = true }
 serde_yaml_ng = "0.10.0"
-sevenz-rust2 = { version = "0.20.2", optional = true }
+sevenz-rust2 = { version = "0.24.0", optional = true }
 sha2 = { version = "0.11", optional = true }
 simdutf8 = { version = "0.1", optional = true }
 snap = { version = "1.1", optional = true }
 tar = { version = "0.4.46", optional = true }
 tempfile = { workspace = true, optional = true }
-text-splitter = { version = "0.32.0", features = ["markdown"], optional = true }
+text-splitter = { version = "0.33.0", features = ["markdown"], optional = true }
 thiserror = { workspace = true }
 tiff = { version = "0.11", optional = true }
 # Keep aligned with text-splitter's optional tokenizers integration so ChunkSizer
@@ -307,12 +307,12 @@ tower-http = { version = "0.7", features = [
     "compression-full",
 ], optional = true }
 tracing = { workspace = true }
-tracing-opentelemetry = { version = "0.33", optional = true }
+tracing-opentelemetry = { version = "0.34", optional = true }
 unicode-normalization = { version = "0.1.25", optional = true }
 urlencoding = "2"
-utoipa = { version = "5.5", features = ["axum_extras"], optional = true }
+utoipa = { version = "6.0", features = ["axum_extras"], optional = true }
 # Keep the 0.15 API: newer minor releases replace `escape` with an `Escape` struct. ~keep
-v_htmlescape = { version = "0.15.8", optional = true }
+v_htmlescape = { version = "0.17.0", optional = true }
 whatlang = { version = "0.18.0", optional = true }
 zip = { version = "8", optional = true, default-features = false, features = ["deflate-flate2"] }
 
@@ -351,8 +351,8 @@ criterion = { workspace = true }
 dotenvy = "0.15"
 filetime = "0.2"
 image = { workspace = true, default-features = false, features = ["png"] }
-jsonschema = "0.56"
-serial_test = "3.5.0"
+jsonschema = "0.58"
+serial_test = "4.0.1"
 tar = "0.4.46"
 tempfile = { workspace = true }
 tokio = { workspace = true, features = ["macros", "time"] }
