@@ -30,7 +30,7 @@ defmodule Kreuzberg.MixProject do
   defp deps do
     [
     {:jason, "~> 1.4", runtime: false},
-    {:rustler, "~> 0.37.0", optional: true, runtime: false},
+    {:rustler, "~> 0.38.0", optional: true, runtime: false},
     {:rustler_precompiled, "~> 0.9"},
     {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
     {:ex_doc, "~> 0.34", only: :dev, runtime: false}
